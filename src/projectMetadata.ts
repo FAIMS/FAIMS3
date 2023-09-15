@@ -77,13 +77,14 @@ export async function setProjectMetadata(
       );
       doc._rev = existing_metaDoc._rev;
     } catch (err) {
-      // Probably no existing UI info
+      // Probably no existing UI info, safe to ignore
     }
 
     await projdb.put(doc);
   } catch (err) {
-    console.warn('failed to set metadata', err);
-    throw Error('failed to set metadata');
+    throw Error(
+      `failed to set metadata for project ${project_id}, '${metadata_key}': '${metadata}'`
+    );
   }
 }
 

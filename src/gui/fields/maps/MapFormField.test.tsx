@@ -1,43 +1,9 @@
 import React from 'react';
-import {fireEvent, render} from '@testing-library/react';
+import {fireEvent} from '@testing-library/react';
 import {it, expect} from 'vitest';
-import {Field, Formik, FormikConfig, FormikProps} from 'formik';
+import {Field} from 'formik';
 import {MapFormField} from './MapFormField';
-import {noop} from 'lodash';
-
-// Borrowed from formik/packages/formik/test/Field.test.tsx
-
-const initialValues = {point: {}};
-type Values = typeof initialValues;
-
-function renderForm(
-  ui?: React.ReactNode,
-  props?: Partial<FormikConfig<Values>>
-) {
-  let injected: FormikProps<Values>;
-  const {rerender, ...rest} = render(
-    <Formik onSubmit={noop} initialValues={initialValues} {...props}>
-      {(formikProps: FormikProps<Values>) =>
-        (injected = formikProps) && ui ? ui : null
-      }
-    </Formik>
-  );
-
-  return {
-    getFormProps(): FormikProps<Values> {
-      return injected;
-    },
-    ...rest,
-    rerender: () =>
-      rerender(
-        <Formik onSubmit={noop} initialValues={initialValues} {...props}>
-          {(formikProps: FormikProps<Values>) =>
-            (injected = formikProps) && ui ? ui : null
-          }
-        </Formik>
-      ),
-  };
-}
+import {renderForm, instantiateField} from '../utils';
 
 it('renders as a button', async () => {
   const {container} = renderForm(
@@ -54,6 +20,32 @@ it('creates a map when the button is pressed', async () => {
   const button = container.querySelector('button');
   if (button) fireEvent.click(button);
   expect(container.querySelector('.ol-viewport'));
+});
+
+it('renders from the uiSpec', async () => {
+  const uiSpec = {
+    'component-namespace': 'mapping-plugin',
+    'component-name': 'MapFormField',
+    'type-returned': 'faims-core::JSON',
+    'component-parameters': {
+      name: 'map',
+      id: 'map',
+      variant: 'outlined',
+      required: false,
+      featureType: 'Point',
+      zoom: 12,
+      label: '',
+      geoTiff: '',
+      FormLabelProps: {
+        children: '',
+      },
+    },
+    validationSchema: [['yup.string']],
+    initialValue: '1',
+  };
+
+  const {container} = instantiateField(uiSpec);
+  expect(container.querySelector('button'));
 });
 
 export {};

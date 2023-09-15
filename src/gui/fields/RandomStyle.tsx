@@ -21,7 +21,7 @@
 import React from 'react';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from 'faims3-datamodel';
-import {Typography} from '@mui/material';
+import {Box, Typography} from '@mui/material';
 
 interface Props {
   helperText?: string;
@@ -33,13 +33,19 @@ interface Props {
 export class RandomStyle extends React.Component<Props> {
   render() {
     return (
-      <div>
+      <Box sx={{p: 2, border: '1px dashed grey'}}>
         <Typography variant={this.props.variant_style}>
           {this.props.label}
         </Typography>
         <Typography variant="caption">{this.props.helperText}</Typography>
         <div dangerouslySetInnerHTML={{__html: this.props.html_tag}} />
-      </div>
+        <Typography
+          paragraph
+          sx={{fontWeight: 'fontWeightLight', fontSize: 11}}
+        >
+          This is a deprecated RandomStyle field, please migrate to RichText.
+        </Typography>
+      </Box>
     );
   }
 }
