@@ -16,6 +16,7 @@
  * Filename: branchingLogic.test.tsx
  */
 
+import {expect, it, describe} from 'vitest';
 import {
   get_logic_fields,
   get_logic_views,

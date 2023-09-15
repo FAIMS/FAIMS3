@@ -22,5 +22,9 @@
 // allows you to do things like:
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom';
-jest.setTimeout(15000); // in milliseconds
+//import '@testing-library/jest-dom';
+//jest.setTimeout(15000); // in milliseconds
+
+import PouchDB from 'pouchdb-browser';
+import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
+PouchDB.plugin(PouchDBAdaptorMemory);

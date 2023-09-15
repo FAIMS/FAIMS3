@@ -22,10 +22,11 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import AboutBuild from './about-build';
 import {doDumpDownload, doDumpShare} from '../../sync/data-dump';
+import {expect, test, vi} from 'vitest';
 
-jest.mock('../../sync/data-dump', () => ({
-  doDumpShare: jest.fn(),
-  doDumpDownload: jest.fn(),
+vi.mock('../../sync/data-dump', () => ({
+  doDumpShare: vi.fn(() => {}),
+  doDumpDownload: vi.fn(() => {}),
 }));
 
 test('Check about-build component', async () => {

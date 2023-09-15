@@ -21,6 +21,7 @@
 import {render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import NotFound404 from './404';
+import {test, expect} from 'vitest';
 
 test('Check 404 page', async () => {
   render(

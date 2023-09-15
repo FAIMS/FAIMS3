@@ -110,6 +110,7 @@ import {
   file_attachments_to_data,
 } from 'faims3-datamodel';
 import {QRCodeFormField, QRCodeFieldBuilderSettings} from '../fields/qrcode';
+import {RichTextField} from '../fields/RichText';
 
 /*
  * This should be enough to make typescript/the build system happy
@@ -480,6 +481,17 @@ registerComponent(
     RandomStyleSetting,
     DefaultComponentSetting,
     getAutoBuilderIcon()
+  )
+);
+
+registerComponent(
+  'faims-custom',
+  'RichText',
+  setupComponentProperties(
+    'Rich Text',
+    'Rich Text Editor',
+    'Special',
+    RichTextField
   )
 );
 

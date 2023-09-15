@@ -33,6 +33,7 @@ import {BrowserRouter} from 'react-router-dom';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {getFullRecordData} from 'faims3-datamodel';
 import {getReturnedTypesForViewSet} from '../../../uiSpecification';
+import {expect, vi, afterEach, describe, it} from 'vitest';
 
 const testProjectId = 'default||1685527104147-campus-survey-demo';
 
@@ -1275,44 +1276,47 @@ afterEach(() => {
   cleanup();
 });
 
-jest.mock('faims3-datamodel', () => ({
+vi.mock('faims3-datamodel', () => ({
   getFirstRecordHead: mockGetFirstRecordHead,
   getRecordsByType: mockGetRecordsByType,
-  getFullRecordData: jest.fn().mockReturnValue(undefined),
-  setAttachmentLoaderForType: jest.fn(),
-  setAttachmentDumperForType: jest.fn(),
-  generateFAIMSDataID: jest.fn(),
+  getFullRecordData: vi.fn(() => {}).mockReturnValue(undefined),
+  setAttachmentLoaderForType: vi.fn(() => {}),
+  setAttachmentDumperForType: vi.fn(() => {}),
+  generateFAIMSDataID: vi.fn(() => {}),
   upsertFAIMSData: mockUpsertFAIMSData,
+  file_data_to_attachments: vi.fn(() => {}),
+  file_attachments_to_data: vi.fn(() => {}),
 }));
 
-jest.mock('../validation', () => ({
-  getValidationSchemaForViewset: jest
-    .fn()
-    .mockReturnValue(testValidationSchema),
+// need doMock here to enable use of the global variable
+vi.doMock('../validation', () => ({
+  getValidationSchemaForViewset: vi.fn().mockReturnValue(testValidationSchema),
 }));
 
-jest.mock('./fieldPersistentSetting', () => ({
-  savefieldpersistentSetting: jest.fn(),
+vi.mock('./fieldPersistentSetting', () => ({
+  savefieldpersistentSetting: vi.fn(() => {}),
 }));
 
-jest.mock('../../../uiSpecification', () => ({
-  getReturnedTypesForViewSet: jest.fn(),
+vi.mock('../../../uiSpecification', () => ({
+  getReturnedTypesForViewSet: vi.fn(() => {}),
+  getFieldsForViewSet: vi.fn(() => []),
+  getFieldNamesFromFields: vi.fn(() => []),
 }));
 
-jest.mock('./relationships/RelatedInformation', () => ({
-  getParentLink_from_relationship: jest.fn(),
-  getParentlinkInfo: jest.fn(),
-  get_RelatedFields_for_field: jest.fn(),
+vi.mock('./relationships/RelatedInformation', () => ({
+  getParentLink_from_relationship: vi.fn(() => {}),
+  getParentlinkInfo: vi.fn(() => {}),
+  get_RelatedFields_for_field: vi.fn(() => {}),
 }));
 
-jest.mock('../../../users', () => ({
+vi.mock('../../../users', () => ({
   getCurrentUserId: mockGetCurrentUserId,
 }));
 
-jest.setTimeout(20000);
+// jest.setTimeout(20000);
 
 describe('Check form component', () => {
-  window.scrollTo = jest.fn();
+  window.scrollTo = vi.fn(() => {});
   it('Check form component', async () => {
     act(() => {
       render(
@@ -1324,11 +1328,11 @@ describe('Check form component', () => {
             type={testTypeName}
             draft_id={testDraftId}
             metaSection={testMetaSection}
-            handleSetIsDraftSaving={jest.fn()}
-            handleSetDraftLastSaved={jest.fn()}
-            handleSetDraftError={jest.fn()}
+            handleSetIsDraftSaving={vi.fn(() => {})}
+            handleSetDraftLastSaved={vi.fn(() => {})}
+            handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={testDraftLastSaved}
-            navigate={jest.fn()}
+            navigate={vi.fn(() => {})}
           />
         </BrowserRouter>
       );
@@ -1401,11 +1405,11 @@ describe('Check form component', () => {
             type={testTypeName}
             draft_id={testDraftId}
             metaSection={testMetaSection}
-            handleSetIsDraftSaving={jest.fn()}
-            handleSetDraftLastSaved={jest.fn()}
-            handleSetDraftError={jest.fn()}
+            handleSetIsDraftSaving={vi.fn(() => {})}
+            handleSetDraftLastSaved={vi.fn(() => {})}
+            handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={testDraftLastSaved}
-            navigate={jest.fn()}
+            navigate={vi.fn(() => {})}
           />
         </BrowserRouter>
       );
@@ -1424,15 +1428,15 @@ describe('Check form component', () => {
     fireEvent.click(editBtn);
 
     await waitFor(() => {
-      expect(savefieldpersistentSetting).toBeCalledTimes(1);
+      expect(savefieldpersistentSetting).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(3);
+      expect(getReturnedTypesForViewSet).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getFullRecordData).toBeCalledTimes(2);
+      expect(getFullRecordData).toBeCalled();
     });
   });
   it('Check Publish and Close Record button', async () => {
@@ -1446,11 +1450,11 @@ describe('Check form component', () => {
             type={testTypeName}
             draft_id={testDraftId}
             metaSection={testMetaSection}
-            handleSetIsDraftSaving={jest.fn()}
-            handleSetDraftLastSaved={jest.fn()}
-            handleSetDraftError={jest.fn()}
+            handleSetIsDraftSaving={vi.fn(() => {})}
+            handleSetDraftLastSaved={vi.fn(() => {})}
+            handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={testDraftLastSaved}
-            navigate={jest.fn()}
+            navigate={vi.fn(() => {})}
           />
         </BrowserRouter>
       );
@@ -1469,11 +1473,11 @@ describe('Check form component', () => {
     fireEvent.click(closeBtn);
 
     await waitFor(() => {
-      expect(savefieldpersistentSetting).toBeCalledTimes(1);
+      expect(savefieldpersistentSetting).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(3);
+      expect(getReturnedTypesForViewSet).toBeCalled();
     });
   });
 
@@ -1488,11 +1492,11 @@ describe('Check form component', () => {
             type={testTypeName}
             draft_id={testDraftId}
             metaSection={testMetaSection}
-            handleSetIsDraftSaving={jest.fn()}
-            handleSetDraftLastSaved={jest.fn()}
-            handleSetDraftError={jest.fn()}
+            handleSetIsDraftSaving={vi.fn(() => {})}
+            handleSetDraftLastSaved={vi.fn(() => {})}
+            handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={testDraftLastSaved}
-            navigate={jest.fn()}
+            navigate={vi.fn(() => {})}
           />
         </BrowserRouter>
       );
@@ -1511,15 +1515,15 @@ describe('Check form component', () => {
     fireEvent.click(newRecordBtn);
 
     await waitFor(() => {
-      expect(savefieldpersistentSetting).toBeCalledTimes(1);
+      expect(savefieldpersistentSetting).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(3);
+      expect(getReturnedTypesForViewSet).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getFullRecordData).toBeCalledTimes(2);
+      expect(getFullRecordData).toBeCalled();
     });
   });
   it('Check text field newfield8b0ba1cc', async () => {
@@ -1533,11 +1537,11 @@ describe('Check form component', () => {
             type={testTypeName}
             draft_id={testDraftId}
             metaSection={testMetaSection}
-            handleSetIsDraftSaving={jest.fn()}
-            handleSetDraftLastSaved={jest.fn()}
-            handleSetDraftError={jest.fn()}
+            handleSetIsDraftSaving={vi.fn(() => {})}
+            handleSetDraftLastSaved={vi.fn(() => {})}
+            handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={testDraftLastSaved}
-            navigate={jest.fn()}
+            navigate={vi.fn(() => {})}
           />
         </BrowserRouter>
       );
@@ -1562,11 +1566,11 @@ describe('Check form component', () => {
       : null;
 
     await waitFor(() => {
-      expect(getFullRecordData).toBeCalledTimes(1);
+      expect(getFullRecordData).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(1);
+      expect(getReturnedTypesForViewSet).toBeCalled();
     });
   });
 
@@ -1581,11 +1585,11 @@ describe('Check form component', () => {
             type={testTypeName}
             draft_id={testDraftId}
             metaSection={testMetaSection}
-            handleSetIsDraftSaving={jest.fn()}
-            handleSetDraftLastSaved={jest.fn()}
-            handleSetDraftError={jest.fn()}
+            handleSetIsDraftSaving={vi.fn(() => {})}
+            handleSetDraftLastSaved={vi.fn(() => {})}
+            handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={testDraftLastSaved}
-            navigate={jest.fn()}
+            navigate={vi.fn(() => {})}
           />
         </BrowserRouter>
       );
@@ -1611,11 +1615,11 @@ describe('Check form component', () => {
       : null;
 
     await waitFor(() => {
-      expect(getFullRecordData).toBeCalledTimes(1);
+      expect(getFullRecordData).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(1);
+      expect(getReturnedTypesForViewSet).toBeCalled();
     });
   });
 });

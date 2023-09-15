@@ -378,7 +378,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             value={metaAdded}
           /> */}
           <br />
-          {String(process.env.REACT_APP_SERVER) === 'developers' && (
+          {String(import.meta.env.VITE_SERVER) === 'developers' && (
             <Paper>
               <Typography variant="caption">
                 Tips: This block is only used for debug only, if get the

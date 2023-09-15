@@ -178,7 +178,6 @@ export default function Record() {
 
   useEffect(() => {
     const getIni = async () => {
-      console.debug('record start initial', project_id, record_id, revision_id);
       setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
       listFAIMSRecordRevisions(project_id!, record_id!)
@@ -199,14 +198,6 @@ export default function Record() {
         ]);
         setrevision_id(revision_id);
         setselectedRevision(revision_id!);
-        //check if record loading correctly when link
-        console.debug(
-          'get breadcrumbs project_id',
-          breadcrumbs,
-          project_id,
-          record_id,
-          hrid
-        );
         setValue('1');
       });
     };
@@ -234,7 +225,6 @@ export default function Record() {
 
   useEffect(() => {
     const getConflictList = async () => {
-      console.debug('record start initial conflict', selectrevision);
       try {
         if (selectrevision !== null) {
           setrevision_id(selectrevision); //set revision_id what is in the form, so it can be same
@@ -251,12 +241,6 @@ export default function Record() {
 
   useEffect(() => {
     const getType = async () => {
-      console.debug(
-        'record start initial type',
-        project_id,
-        record_id,
-        updatedrevision_id
-      );
       try {
         const latest_record = await getFullRecordData(
           project_id!,
@@ -267,7 +251,7 @@ export default function Record() {
         if (latest_record !== null) {
           setType(latest_record.type);
           setRecordinfo(
-            getLocalDate(latest_record.updated).replaceAll('T', ' ') +
+            getLocalDate(latest_record.updated).replace('T', ' ') +
               ' ' +
               latest_record.updated_by
           );
@@ -314,10 +298,6 @@ export default function Record() {
               record_id!,
               updatedrevision_id!
             );
-            console.debug(
-              'record start initial relationship relationship',
-              newRelationship
-            );
             setRelatedRecords(newRelationship);
             const newParent = await getParentPersistenceData(
               uiSpec,
@@ -360,13 +340,6 @@ export default function Record() {
               ];
             }
             setBreadcrumbs(newBreadcrumbs);
-            console.debug(
-              'get breadcrumbs project_id',
-              breadcrumbs,
-              newBreadcrumbs,
-              record_id,
-              hrid
-            );
           }
           // setValue('1');
           setIs_link_ready(true);

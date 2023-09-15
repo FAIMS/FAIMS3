@@ -33,8 +33,7 @@ const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
  */
 
 function commit_version(): string {
-  const commitVersion = process.env.REACT_APP_COMMIT_VERSION;
-  console.log('Commit version', commitVersion);
+  const commitVersion = import.meta.env.VITE_COMMIT_VERSION;
   if (
     commitVersion === '' ||
     commitVersion === undefined ||
@@ -47,7 +46,7 @@ function commit_version(): string {
 }
 
 function prod_build(): boolean {
-  const productionBuild = process.env.REACT_APP_PRODUCTION_BUILD;
+  const productionBuild = import.meta.env.VITE_PRODUCTION_BUILD;
   if (
     productionBuild === '' ||
     productionBuild === undefined ||
@@ -57,7 +56,7 @@ function prod_build(): boolean {
   } else if (FALSEY_STRINGS.includes(productionBuild.toLowerCase())) {
     return false;
   } else {
-    logError('REACT_APP_PRODUCTION_BUILD badly defined, assuming false');
+    logError('VITE_PRODUCTION_BUILD badly defined, assuming false');
     return false;
   }
 }
@@ -69,7 +68,7 @@ function prod_build(): boolean {
 const PROD_BUILD = prod_build();
 
 function include_pouchdb_debugging(): boolean {
-  const debug_pouch = process.env.REACT_APP_DEBUG_POUCHDB;
+  const debug_pouch = import.meta.env.VITE_DEBUG_POUCHDB;
   if (debug_pouch === '' || debug_pouch === undefined) {
     return false;
   }
@@ -78,13 +77,13 @@ function include_pouchdb_debugging(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_pouch.toLowerCase())) {
     return true;
   } else {
-    logError('REACT_APP_DEBUG_POUCHDB badly defined, assuming false');
+    logError('VITE_DEBUG_POUCHDB badly defined, assuming false');
     return false;
   }
 }
 
 function include_app_debugging(): boolean {
-  const debug_app = process.env.REACT_APP_DEBUG_APP;
+  const debug_app = import.meta.env.VITE_DEBUG_APP;
   if (debug_app === '' || debug_app === undefined) {
     return false;
   }
@@ -93,13 +92,13 @@ function include_app_debugging(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    logError('REACT_APP_DEBUG_APP badly defined, assuming true');
+    logError('VITE_DEBUG_APP badly defined, assuming true');
     return true;
   }
 }
 
 function show_minifauxton(): boolean {
-  const debug_app = process.env.REACT_APP_SHOW_MINIFAUXTON;
+  const debug_app = import.meta.env.VITE_SHOW_MINIFAUXTON;
   if (debug_app === '' || debug_app === undefined) {
     return true;
   }
@@ -108,13 +107,13 @@ function show_minifauxton(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    logError('REACT_APP_SHOW_MINIFAUXTON badly defined, assuming true');
+    logError('VITE_SHOW_MINIFAUXTON badly defined, assuming true');
     return true;
   }
 }
 
 function show_wipe(): boolean {
-  const debug_app = process.env.REACT_APP_SHOW_WIPE;
+  const debug_app = import.meta.env.VITE_SHOW_WIPE;
   if (debug_app === '' || debug_app === undefined) {
     return true;
   }
@@ -123,13 +122,13 @@ function show_wipe(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    logError('REACT_APP_SHOW_WIPE badly defined, assuming true');
+    logError('VITE_SHOW_WIPE badly defined, assuming true');
     return true;
   }
 }
 
 function show_new_notebook(): boolean {
-  const debug_app = process.env.REACT_APP_SHOW_NEW_NOTEBOOK;
+  const debug_app = import.meta.env.VITE_SHOW_NEW_NOTEBOOK;
   if (debug_app === '' || debug_app === undefined) {
     return true;
   }
@@ -138,13 +137,13 @@ function show_new_notebook(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    logError('REACT_APP_SHOW_NEW_NOTEBOOK badly defined, assuming true');
+    logError('VITE_SHOW_NEW_NOTEBOOK badly defined, assuming true');
     return true;
   }
 }
 
 function directory_protocol(): string {
-  const useHTTPS = process.env.REACT_APP_USE_HTTPS;
+  const useHTTPS = import.meta.env.VITE_USE_HTTPS;
   if (PROD_BUILD) {
     return 'https';
   } else if (
@@ -156,13 +155,13 @@ function directory_protocol(): string {
   } else if (TRUTHY_STRINGS.includes(useHTTPS.toLowerCase())) {
     return 'https';
   } else {
-    logError('REACT_APP_USE_HTTPS badly defined, assuming false');
+    logError('VITE_USE_HTTPS badly defined, assuming false');
     return 'http';
   }
 }
 
 function directory_host(): string {
-  const host = process.env.REACT_APP_DIRECTORY_HOST;
+  const host = import.meta.env.VITE_DIRECTORY_HOST;
   if (host === '' || host === undefined) {
     return 'dev.db.faims.edu.au';
   }
@@ -170,7 +169,7 @@ function directory_host(): string {
 }
 
 function directory_port(): number {
-  const port = process.env.REACT_APP_DIRECTORY_PORT;
+  const port = import.meta.env.VITE_DIRECTORY_PORT;
   if (port === '' || port === undefined) {
     if (PROD_BUILD) {
       return 443;
@@ -189,7 +188,7 @@ function directory_port(): number {
  * See batch_size in https://pouchdb.com/api.html#replication
  */
 function pouch_batch_size(): number {
-  const pouch_batch_size = process.env.REACT_APP_POUCH_BATCH_SIZE;
+  const pouch_batch_size = import.meta.env.VITE_POUCH_BATCH_SIZE;
   if (pouch_batch_size === '' || pouch_batch_size === undefined) {
     return 1000;
   }
@@ -205,7 +204,7 @@ function pouch_batch_size(): number {
  * See batches_limit in https://pouchdb.com/api.html#replication
  */
 function pouch_batches_limit(): number {
-  const pouch_batches_limit = process.env.REACT_APP_POUCH_BATCHES_LIMIT;
+  const pouch_batches_limit = import.meta.env.VITE_POUCH_BATCHES_LIMIT;
   if (pouch_batches_limit === '' || pouch_batches_limit === undefined) {
     return 10;
   }
@@ -219,8 +218,8 @@ function pouch_batches_limit(): number {
 
 function directory_auth(): undefined | {username: string; password: string} {
   // Used in the server, as opposed to COUCHDB_USER and PASSWORD for testing.
-  const username = process.env.REACT_APP_DIRECTORY_USERNAME;
-  const password = process.env.REACT_APP_DIRECTORY_PASSWORD;
+  const username = import.meta.env.VITE_DIRECTORY_USERNAME;
+  const password = import.meta.env.VITE_DIRECTORY_PASSWORD;
 
   if (
     username === '' ||
@@ -235,14 +234,12 @@ function directory_auth(): undefined | {username: string; password: string} {
 }
 
 function is_testing() {
-  const jest_worker_is_running = process.env.JEST_WORKER_ID !== undefined;
-  const jest_imported = typeof jest !== 'undefined';
-  const test_node_env = process.env.NODE_ENV === 'test';
-  return jest_worker_is_running || jest_imported || test_node_env;
+  const test_node_env = import.meta.env.NODE_ENV === 'test';
+  return test_node_env;
 }
 
 function cluster_admin_group_name(): string {
-  const name = process.env.REACT_APP_CLUSTER_ADMIN_GROUP_NAME;
+  const name = import.meta.env.VITE_CLUSTER_ADMIN_GROUP_NAME;
   if (name === '' || name === undefined) {
     return 'cluster-admin';
   }
@@ -250,7 +247,7 @@ function cluster_admin_group_name(): string {
 }
 
 function disable_signin_redirect(): boolean {
-  const disable_signin = process.env.REACT_APP_DISABLE_SIGNIN_REDIRECT;
+  const disable_signin = import.meta.env.VITE_DISABLE_SIGNIN_REDIRECT;
   if (disable_signin === '' || disable_signin === undefined) {
     return false;
   }
@@ -259,13 +256,13 @@ function disable_signin_redirect(): boolean {
   } else if (TRUTHY_STRINGS.includes(disable_signin.toLowerCase())) {
     return true;
   } else {
-    logError('REACT_APP_DISABLE_SIGNIN_REDIRECT badly defined, assuming false');
+    logError('VITE_DISABLE_SIGNIN_REDIRECT badly defined, assuming false');
     return false;
   }
 }
 
 function get_login_token(): string | undefined {
-  const login_token = process.env.REACT_APP_LOGIN_TOKEN;
+  const login_token = import.meta.env.VITE_LOGIN_TOKEN;
   if (login_token === '' || login_token === undefined) {
     return undefined;
   }
@@ -275,9 +272,9 @@ function get_login_token(): string | undefined {
   return login_token;
 }
 
-// If REACT_APP_BUGSNAG_KEY is not defined then we don't use Bugsnag
+// If VITE_BUGSNAG_KEY is not defined then we don't use Bugsnag
 function get_bugsnag_key(): string | false {
-  const bugsnag_key = process.env.REACT_APP_BUGSNAG_KEY;
+  const bugsnag_key = import.meta.env.VITE_BUGSNAG_KEY;
   if (bugsnag_key === '' || bugsnag_key === undefined) {
     return false;
   }

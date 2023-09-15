@@ -18,8 +18,8 @@ export default function SupportEmail(props: SupportEmailProps) {
   const theme = useTheme();
   let supportEmail = 'support@fieldmark.au';
   if (
-    process.env.REACT_APP_COMMIT_VERSION !== undefined &&
-    process.env.REACT_APP_COMMIT_VERSION.includes('psmip')
+    import.meta.env.VITE_COMMIT_VERSION !== undefined &&
+    import.meta.env.VITE_COMMIT_VERSION.includes('psmip')
   ) {
     supportEmail = 'support@fieldmark.au';
   }

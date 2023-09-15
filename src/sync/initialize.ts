@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 
 import {DEBUG_POUCHDB} from '../buildconfig';
 
@@ -47,14 +47,14 @@ export function initialize() {
     return Promise.resolve(); //Already initialized
   } else if (initialize_state === false) {
     // Real initialization
-    return (initialize_state = initialize_nocheck());
+    return (initialize_state = initializeNoCheck());
   } else {
     // Already initializing
     return initialize_state;
   }
 }
 
-async function initialize_nocheck() {
+async function initializeNoCheck() {
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
 
   register_sync_state(events);

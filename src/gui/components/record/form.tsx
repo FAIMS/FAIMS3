@@ -106,6 +106,7 @@ type RecordFormProps = {
 
       // To avoid 'type' in this.props, and since in JS when a key is not set,
       // you get back undefined:
+      // type is the viewSet name - the name of the form that allows editing of this record
       type?: undefined;
     }
   | {
@@ -143,6 +144,17 @@ type RecordFormState = {
   views: string[];
 };
 
+/*
+  Callers of RecordForm
+
+  RecordForm is used in two places:
+  - RecordData - the main record editing component
+    - project_id, record_id, revision_id, ViewName (null unless following a relation link)
+  - DraftEdit - used in creating a new record
+    - project_id, record_id, type, draft_id are specified
+    - this one works ok
+*/
+
 class RecordForm extends React.Component<
   // RecordFormProps & RouteComponentProps,
   // RecordFormState
@@ -153,33 +165,24 @@ class RecordForm extends React.Component<
 
   // List of timeouts that unmount must cancel
   timeouts: (typeof setTimeout)[] = [];
-  _isMounted = false;
 
   async componentDidUpdate(
     prevProps: RecordFormProps,
     prevState: RecordFormState
   ) {
-    if (DEBUG_APP)
-      console.debug(
-        'initial set up ',
-        prevProps.revision_id,
-        this.state.revision_cached,
-        this.props.revision_id
-      );
+    // check whether the record has changed in the update
+    // if it has, we need to reload everything
+
+    // need to check if revision id been passed corrected:
+    //   after conflict resolved, user save form and
+    //   user open another form
     if (
       prevProps.project_id !== this.props.project_id ||
       // prevProps.record_id !== this.props.record_id ||
       (prevProps.revision_id !== this.props.revision_id &&
         this.state.revision_cached !== this.props.revision_id) ||
-      prevProps.draft_id !== this.props.draft_id //add this to reload the form when user jump back to previous record
+      prevProps.draft_id !== this.props.draft_id // add this to reload the form when user jump back to previous record
     ) {
-      if (DEBUG_APP)
-        console.debug(
-          'initial set up update',
-          prevProps.revision_id,
-          this.state.revision_cached,
-          this.props.revision_id
-        );
       // Stop rendering immediately (i.e. go to loading screen immediately)
       this.setState({
         initialValues: null,
@@ -193,9 +196,10 @@ class RecordForm extends React.Component<
       });
       // Re-initialize basically everything.
       // if (this.props.revision_id !== undefined)
-      this.formChanged(true, this.props.revision_id); // need to check if revision id been passed corrected: after conflict resolved, user save form and user open another form
+      this.formChanged(true, this.props.revision_id);
     }
-    // update the viewName if user click link
+    // if viewName is specified it is the result of the user clicking
+    // on a relation link within a record
     if (this.props.ViewName !== this.state.view_cached) {
       if (
         this.props.ViewName !== null &&
@@ -236,15 +240,15 @@ class RecordForm extends React.Component<
     this.onChangeTab = this.onChangeTab.bind(this);
   }
 
-  componentDidMount() {
-    // On mount, draftState.start() must be called, so give this false:
-    this._isMounted = true;
-    if (this._isMounted) {
-      if (this.state.revision_cached !== null)
-        this.formChanged(false, this.state.revision_cached);
-      //need to check if revision id been passed corrected
-      else this.formChanged(false, this.props.revision_id);
-    }
+  async componentDidMount() {
+    // call formChanged to update the form data, either with
+    // the revision_id from state or the one passed in
+    let revision_id = this.props.revision_id;
+    if (this.state.revision_cached !== null)
+      revision_id = this.state.revision_cached;
+
+    await this.identifyRecordType(revision_id);
+    await this.formChanged(false, revision_id);
   }
 
   newDraftListener(draft_id: string) {
@@ -274,10 +278,6 @@ class RecordForm extends React.Component<
         )
           this.props.handleSetDraftLastSaved(new Date());
       } else {
-        if (DEBUG_APP) {
-          console.log('saveListener', val);
-        }
-
         this.props.handleSetIsDraftSaving(false);
         this.props.handleSetDraftError(error_message);
         (this.context as any).dispatch({
@@ -289,6 +289,92 @@ class RecordForm extends React.Component<
         });
       }
     }
+  }
+
+  // identifyRecordType - work out what type of record this is
+  //   specifically the type (viewSetName) and viewName
+  //   return true if we found them and updated the State
+  //          false otherwise
+  async identifyRecordType(revision_id: string | undefined): Promise<boolean> {
+    // bail early if we already know the type and viewname
+    if (this.state.view_cached && this.state.type_cached) {
+      return true;
+    }
+
+    let viewSetName;
+    if (this.props.type === undefined) {
+      if (revision_id !== undefined) {
+        // get the record so we can see the type
+        const latest_record = await getFullRecordData(
+          this.props.project_id,
+          this.props.record_id,
+          revision_id
+        );
+
+        if (latest_record === null) {
+          this.props.handleSetDraftError(
+            `Could not find data for record ${this.props.record_id}`
+          );
+          (this.context as any).dispatch({
+            type: ActionType.ADD_ALERT,
+            payload: {
+              message:
+                'Could not load existing record: ' + this.props.record_id,
+              severity: 'warning',
+            },
+          });
+          return false;
+        } else {
+          viewSetName = latest_record.type;
+        }
+      } else {
+        // can't identify the record so
+        return false;
+      }
+    } else {
+      viewSetName = this.props.type;
+    }
+
+    // validate the type we've found
+    if (!(viewSetName in this.props.ui_specification.viewsets)) {
+      return false;
+    }
+
+    if (!('views' in this.props.ui_specification.viewsets[viewSetName])) {
+      return false;
+    }
+
+    if (this.props.ui_specification.viewsets[viewSetName].views.length === 0) {
+      return false;
+      // throw Error(`Viewset for type '${viewSetName}' has no views`);
+    }
+
+    // now retrieve the view name from the uiSpec
+    const viewSet = this.props.ui_specification.viewsets[viewSetName];
+    // default to the first view
+    let viewName = viewSet.views[0];
+
+    // override with the viewName from props or the cached value
+    // if they are present
+    if (
+      this.props.ViewName !== null &&
+      this.props.ViewName !== undefined &&
+      viewSet.views.includes(this.props.ViewName)
+    ) {
+      viewName = this.props.ViewName;
+    } else if (
+      this.state.view_cached !== null &&
+      this.state.view_cached !== undefined &&
+      viewSet.views.includes(this.state.view_cached)
+    ) {
+      viewName = this.state.view_cached;
+    }
+    this.setState({
+      type_cached: viewSetName,
+      view_cached: viewName,
+      revision_cached: revision_id, // TODO: not sure this should be set here...
+    });
+    return true;
   }
 
   async formChanged(
@@ -308,86 +394,12 @@ class RecordForm extends React.Component<
         if (DEBUG_APP) console.debug('new record', this.props.record_id);
       }
     }
-    try {
-      let this_type;
-      if (this.props.type === undefined) {
-        if (revision_id !== undefined) {
-          const latest_record = await getFullRecordData(
-            this.props.project_id,
-            this.props.record_id,
-            revision_id
-          );
-          if (DEBUG_APP)
-            console.debug('back from getFullRecordData', latest_record);
-          if (latest_record === null) {
-            this.props.handleSetDraftError(
-              `Could not find data for record ${this.props.record_id}`
-            );
-            (this.context as any).dispatch({
-              type: ActionType.ADD_ALERT,
-              payload: {
-                message:
-                  'Could not load existing record: ' + this.props.record_id,
-                severity: 'warning',
-              },
-            });
-            return;
-          } else {
-            this_type = latest_record.type;
-          }
-        } else {
-          throw Error(`Viewset for type '${this_type}' is missing`);
-        }
-      } else {
-        this_type = this.props.type;
-      }
-
-      if (!(this_type in this.props.ui_specification.viewsets)) {
-        throw Error(`Viewset for type '${this_type}' is missing`);
-      }
-
-      if (!('views' in this.props.ui_specification.viewsets[this_type])) {
-        throw Error(
-          `Viewset for type '${this_type}' is missing 'views' property'`
-        );
-      }
-
-      if (this.props.ui_specification.viewsets[this_type].views.length === 0) {
-        throw Error(`Viewset for type '${this_type}' has no views`);
-      }
-
-      // this.get_view_description(this.props.ui_specification.viewsets[this_type].views[0])
-      let viewName = this.props.ui_specification.viewsets[this_type].views[0];
-      if (
-        this.props.ViewName !== null &&
-        this.props.ViewName !== undefined &&
-        this.props.ui_specification.viewsets[this_type].views.includes(
-          this.props.ViewName
-        )
-      ) {
-        viewName = this.props.ViewName;
-      } else if (
-        this.state.view_cached !== null &&
-        this.state.view_cached !== undefined &&
-        this.props.ui_specification.viewsets[this_type].views.includes(
-          this.state.view_cached
-        )
-      ) {
-        viewName = this.state.view_cached;
-      }
-      console.log('state here', this.state);
-      await this.setState({
-        type_cached: this_type,
-        view_cached: viewName,
-        revision_cached: revision_id,
-      });
-      console.log('state here', this.state);
-    } catch (err: any) {
-      console.warn('setUISpec/setLastRev error', err);
+    // work out the record type or default it
+    if (!(await this.identifyRecordType(revision_id))) {
       (this.context as any).dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message: `Project is not fully downloaded or not setup correctly (${err.toString()})`,
+          message: 'Project is not fully downloaded or not setup correctly',
           severity: 'error',
         },
       });
@@ -395,9 +407,8 @@ class RecordForm extends React.Component<
       this.props.navigate(-1);
       return;
     }
-    try {
-      // these come after setUISpec & setLastRev has set view_name & revision_id these to not null
-      this.requireView();
+
+    if (this.getViewName() && this.getViewsetName()) {
       // If the draft saving has .start()'d already,
       // The proper way to change the record/revision/etc is this
       // (saveListener is already bound at this point)
@@ -406,23 +417,22 @@ class RecordForm extends React.Component<
           type: this.state.type_cached!,
           field_types: getReturnedTypesForViewSet(
             this.props.ui_specification,
-            this.requireViewsetName()
+            this.getViewsetName()
           ),
         });
       } else {
         this.draftState.saveListener = this.saveListener.bind(this);
         this.draftState.newDraftListener = this.newDraftListener.bind(this);
-        await this.draftState.start({
+        this.draftState.start({
           type: this.state.type_cached!,
           field_types: getReturnedTypesForViewSet(
             this.props.ui_specification,
-            this.requireViewsetName()
+            this.getViewsetName()
           ),
         });
       }
-    } catch (err) {
-      logError(err);
     }
+
     try {
       await this.setInitialValues(revision_id);
     } catch (err: any) {
@@ -445,12 +455,6 @@ class RecordForm extends React.Component<
 
     try {
       //save the child record when child record been pop
-      if (DEBUG_APP)
-        console.debug(
-          'current revision ID after in formChanged initial',
-          this.props.revision_id,
-          this.state.revision_cached
-        );
       if (
         this.props.revision_id === undefined &&
         this.state.revision_cached === undefined
@@ -469,17 +473,11 @@ class RecordForm extends React.Component<
             location.state.child_record_id !== this.props.record_id
           ) {
             //child_record_id should always be current record_id, otherwise there would be an issue
-            if (DEBUG_APP) {
-              console.debug(
-                'child_record_id is not record_id  ',
-                this.props.record_id,
-                location.state.child_record_id
-              );
-            }
-          } else
-            this.save(this.state.initialValues, false, 'continue', () =>
-              console.log('saved')
+            logError(
+              `Error in formChanged, data not saved, child_record_id is not record_id ${this.props.record_id} != ${location.state.child_record_id}`
             );
+          } else
+            this.save(this.state.initialValues, false, 'continue', () => {});
         }
       }
     } catch (err: any) {
@@ -490,7 +488,6 @@ class RecordForm extends React.Component<
   async componentWillUnmount() {
     await this.draftState.forceSave();
     //end of update values
-    this._isMounted = false;
     for (const timeout_id of this.timeouts) {
       clearTimeout(timeout_id as unknown as Parameters<typeof clearTimeout>[0]);
     }
@@ -502,7 +499,6 @@ class RecordForm extends React.Component<
      * Formik requires a single object for initialValues, collect these from the
      * (in order high priority to last resort): draft storage, database, ui schema
      */
-    if (DEBUG_APP) console.debug('current revision id in Initial', revision_id);
     const fromdb: any =
       revision_id === undefined
         ? {}
@@ -514,12 +510,8 @@ class RecordForm extends React.Component<
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
 
-    console.log('back from db query', database_data, database_annotations);
     const [staged_data, staged_annotations] =
       await this.draftState.getInitialValues();
-    if (DEBUG_APP) {
-      console.debug('Staged values', staged_data, staged_annotations);
-    }
 
     const fields = getFieldsForViewSet(
       this.props.ui_specification,
@@ -632,7 +624,6 @@ class RecordForm extends React.Component<
       annotation: annotations,
       relationship: fromdb.relationship ?? relationship,
     });
-    if (DEBUG_APP) console.debug('current revision id', initialValues);
   }
 
   /**
@@ -656,10 +647,18 @@ class RecordForm extends React.Component<
   requireView(): string {
     //It always throw Error because this.state.view_cached === null by default
     //And it block unit tests for this file
-    /* if (this.state.view_cached === null) {
-      throw Error('The view name has not been determined yet');
-    } */
+    if (this.state.view_cached === null) {
+      throw Error('The cached view has not been determined yet');
+    }
+    return this.state.view_cached;
+  }
+
+  getViewName(): string {
     return this.state.view_cached || '';
+  }
+
+  getViewsetName(): string {
+    return this.state.type_cached || '';
   }
 
   requireViewsetName(): string {
@@ -680,10 +679,6 @@ class RecordForm extends React.Component<
     if (viewName === null || this.props.metaSection === null) {
       console.warn('The description has not been determined yet');
       return '';
-    }
-    if (DEBUG_APP) {
-      console.log('+++++++++++' + viewName);
-      console.log(this.props.metaSection);
     }
     if (
       viewName !== null &&
@@ -718,14 +713,8 @@ class RecordForm extends React.Component<
 
   onChangeTab(event: React.ChangeEvent<{}>, newValue: string) {
     const activeStepIndex = parseInt(newValue);
-    console.log(activeStepIndex);
 
     if (this.state.type_cached !== null) {
-      console.log(
-        this.props.ui_specification.viewsets[this.state.type_cached].views[
-          activeStepIndex
-        ]
-      );
       const viewname =
         this.props.ui_specification.viewsets[this.state.type_cached].views[
           activeStepIndex
@@ -799,10 +788,9 @@ class RecordForm extends React.Component<
           console.log('SAVING DOC', this.props.project_id, doc);
           return upsertFAIMSData(this.props.project_id, doc).then(
             revision_id => {
-              // add to save the information for relationship when form saved,  TODO: need to be defined if it's saved when form been save
+              // add to save the information for relationship when form saved,
+              // TODO: need to be defined if it's saved when form been save
               try {
-                if (DEBUG_APP)
-                  console.debug('get new revision id++++' + revision_id);
                 this.setState({revision_cached: revision_id});
                 this.formChanged(true, revision_id);
                 if (this.props.setRevision_id !== undefined)
@@ -818,9 +806,6 @@ class RecordForm extends React.Component<
           );
         })
         .then(result => {
-          if (DEBUG_APP) {
-            console.log(result);
-          }
           const message = 'Record successfully saved';
           (this.context as any).dispatch({
             type: ActionType.ADD_ALERT,
@@ -829,7 +814,6 @@ class RecordForm extends React.Component<
               severity: 'success',
             },
           });
-          console.log('Saved record', result);
           return result;
         })
         .catch(err => {
@@ -856,7 +840,6 @@ class RecordForm extends React.Component<
             return result;
           } else {
             const RelationState = this.props.location?.state;
-            if (DEBUG_APP) console.debug('Location ', RelationState);
             if (RelationState !== undefined && RelationState !== null) {
               const {state_parent, is_direct} = getParentlinkInfo(
                 result,
@@ -942,8 +925,6 @@ class RecordForm extends React.Component<
                                 (new_revision_id || '').toString()
                               ).replace('/notebooks/', '');
                             location_state['child_record_id'] = new_record_id;
-                            if (DEBUG_APP)
-                              console.debug('new child state', location_state);
                             this.props.navigate(
                               ROUTES.NOTEBOOK +
                                 this.props.project_id +
@@ -978,7 +959,6 @@ class RecordForm extends React.Component<
               }
             } else {
               const relationship = this.state.relationship;
-              if (DEBUG_APP) console.debug('location state', relationship);
               if (
                 relationship === undefined ||
                 relationship === null ||
@@ -1054,7 +1034,6 @@ class RecordForm extends React.Component<
                                 (new_revision_id || '').toString()
                               ).replace('/notebooks/', '');
                             location_state['child_record_id'] = new_record_id;
-                            console.debug('new child state', location_state);
                             this.props.navigate(
                               ROUTES.NOTEBOOK +
                                 this.props.project_id +
@@ -1129,10 +1108,6 @@ class RecordForm extends React.Component<
         annotation[name] = {annotation: '', uncertainty: false};
         annotation[name][type] = value;
       }
-    } else {
-      if (DEBUG_APP) {
-        console.log(name + value);
-      }
     }
     this.setState({...this.state, annotation: annotation});
   }
@@ -1195,17 +1170,6 @@ class RecordForm extends React.Component<
       let is_final_view = view_index + 1 === views.length;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
-      // console.debug(
-      //   'check current revision id',
-      //   this.props.revision_id,
-      //   this.state.revision_cached
-      // );
-      console.debug(
-        'check current revision id draft',
-        this.props.draft_id,
-        this.state.draft_created,
-        this.draftState
-      );
       return (
         <Box>
           {/* {this.state.revision_cached} */}

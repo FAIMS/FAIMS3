@@ -21,6 +21,7 @@
 import {render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import Breadcrumbs from './breadcrumbs';
+import {describe, it, expect} from 'vitest';
 
 const testData1 = [{title: 'Workspace'}];
 const testData2 = [{title: 'Workspace'}, {title: 'Notebook'}];

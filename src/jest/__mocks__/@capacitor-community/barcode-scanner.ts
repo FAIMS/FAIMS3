@@ -17,14 +17,15 @@
  * Description:
  *   Jest mock stub for the barcode scanner.
  */
+import {vi} from 'vitest';
 
-jest.mock('@capacitor-community/barcode-scanner', () => {
+vi.mock('@capacitor-community/barcode-scanner', () => {
   return {
-    hideBackground: jest.fn(),
-    startScan: jest.fn(),
-    showBackground: jest.fn(),
-    checkPermission: jest.fn(),
-    openAppSettings: jest.fn(),
+    hideBackground: vi.fn(() => {}),
+    startScan: vi.fn(() => {}),
+    showBackground: vi.fn(() => {}),
+    checkPermission: vi.fn(() => {}),
+    openAppSettings: vi.fn(() => {}),
   };
 });
 

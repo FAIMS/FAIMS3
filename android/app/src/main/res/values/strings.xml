@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">FAIMS3</string>
-    <string name="title_activity_main">FAIMS3</string>
+    <string name="app_name">Fieldmark</string>
+    <string name="title_activity_main">Fieldmark</string>
     <string name="package_name">org.fedarch.faims3</string>
     <string name="custom_url_scheme">org.fedarch.faims3</string>
 </resources>

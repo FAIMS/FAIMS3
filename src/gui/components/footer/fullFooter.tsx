@@ -184,7 +184,7 @@ export default function FullFooter(props: FullFooterProps) {
             <Box sx={{textAlign: 'right'}}>
               <Link
                 href={
-                  process.env.REACT_APP_PARTNERS_HREF ??
+                  import.meta.env.VITE_PARTNERS_HREF ??
                   'https://faims.edu.au/partners/'
                 }
                 variant="caption"

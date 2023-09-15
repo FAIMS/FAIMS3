@@ -1,6 +1,6 @@
 {
 	"appId": "org.fedarch.faims3",
-	"appName": "FAIMS3",
+	"appName": "Fieldmark",
 	"npmClient": "npm",
 	"webDir": "build",
 	"plugins": {
@@ -9,9 +9,7 @@
 		}
 	},
 	"server": {
-		"allowNavigation": [
-			"*.faims.edu.au"
-		]
+		"allowNavigation": []
 	},
 	"android": {
 		"webContentsDebuggingEnabled": true
