@@ -19,6 +19,7 @@
  */
 import PouchDB from 'pouchdb-browser';
 import {jsonStringifyStream} from '@worker-tools/json-stream';
+import {Filesystem, Directory, Encoding} from '@capacitor/filesystem';
 
 import {draft_db} from './draft-storage';
 import {
@@ -31,11 +32,188 @@ import {
   data_dbs,
 } from './databases';
 import {downloadBlob, shareStringAsFileOnApp} from '../utils/downloadShare';
+import {Share} from '@capacitor/share';
 
 const PREFIX = 'faims3-';
 
 interface DumpObject {
   [name: string]: unknown;
+}
+
+/**
+ * progressiveDump - dump a database in chunks
+ *  callback function is called with each chunk of data, if it
+ * returns true then the dump continues, if it returns false
+ * then the dump is aborted.
+ *
+ * @param db - database to be dumped
+ * @param callback - callback function called to indicate progress
+ * @returns true if dump was completed, false if it was aborted
+ */
+async function progressiveDump(
+  db: PouchDB.Database<any>,
+  callback: (rows: any[], progress: number) => Promise<boolean>
+) {
+  console.log('dumping database', db.name);
+
+  const blockSize = 10;
+  let count = 0;
+  let total_rows = blockSize;
+  const info = await db.info();
+
+  // write an initial 'header' row with the database name
+  const headerRow = {type: 'header', database: db.name, info: info};
+  await callback([headerRow], 0);
+
+  while (count < total_rows) {
+    const newDocs = await db.allDocs({
+      attachments: true, // We want base64 strings so we can get JSON
+      conflicts: true, // We want to see conflict information
+      include_docs: true, // We want the actual data
+      update_seq: true,
+      limit: blockSize,
+      skip: count,
+    });
+    total_rows = newDocs.total_rows;
+    count += newDocs.rows.length;
+    //console.log('dump got ', count, ' docs out of ', newDocs.total_rows);
+    if (newDocs.rows.length > 0) {
+      if (!(await callback(newDocs.rows, (100 * count) / total_rows))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+async function permissionOK() {
+  // check for permissions, not needed on newer Android but just
+  // in case for older systems
+  let permission = await Filesystem.checkPermissions();
+
+  if (permission.publicStorage !== 'granted') {
+    permission = await Filesystem.requestPermissions();
+  }
+  if (permission.publicStorage !== 'granted') {
+    console.error('Permission to write files not granted', permission);
+    return false;
+  }
+  return true;
+}
+
+async function appendToFile(path: string, rows: any[]) {
+  //console.debug('Appending to file:', path);
+
+  const directory = Directory.Documents;
+
+  if (!(await permissionOK())) {
+    return;
+  }
+
+  const data = rows.map(row => JSON.stringify(row)).join('\n') + '\n';
+
+  //console.log('writing', data.length, 'characters');
+  // crash when data length is > 35M so batch in chunks
+  const chunkSize = 10000000;
+
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const chunk = data.slice(i, i + chunkSize);
+    await Filesystem.appendFile({
+      path: path,
+      data: chunk,
+      directory: directory,
+      encoding: Encoding.UTF8,
+    });
+  }
+}
+
+export async function progressiveSaveFiles(
+  progressCallback: (n: number) => boolean
+) {
+  if (!(await Share.canShare()).value) {
+    progressCallback(-1); // signal inability to share back to caller
+    return;
+  }
+
+  const isodate = new Date();
+  const dateString = isodate.toISOString().slice(0, 10);
+  const milliseconds = isodate.valueOf();
+  const filename = `fieldmark-backup-${dateString}-${milliseconds}.jsonl`;
+  let keepDumping = true;
+
+  const writer = (start: number, end: number) => {
+    // return a writer for the named database
+    return async (rows: any[], progress: number): Promise<boolean> => {
+      await appendToFile(filename, rows);
+      return progressCallback(start + (progress * (end - start)) / 100);
+    };
+  };
+
+  keepDumping = await progressiveDump(directory_db.local, writer(0, 5));
+  if (keepDumping)
+    keepDumping = await progressiveDump(active_db, writer(5, 10));
+  if (keepDumping)
+    keepDumping = await progressiveDump(getLocalStateDB(), writer(10, 12));
+  if (keepDumping)
+    keepDumping = await progressiveDump(local_auth_db, writer(12, 15));
+  if (keepDumping)
+    keepDumping = await progressiveDump(draft_db, writer(15, 20));
+
+  let start = 20;
+  let end;
+  let size = Object.keys(projects_dbs).length;
+  for (const [name, db] of Object.entries(projects_dbs)) {
+    end = start + 10 / size;
+    if (keepDumping)
+      keepDumping = await progressiveDump(db.local, writer(start, end));
+    start = end;
+  }
+
+  start = 30;
+  size = Object.keys(metadata_dbs).length;
+  for (const [name, db] of Object.entries(metadata_dbs)) {
+    end = start + 10 / size;
+    if (keepDumping)
+      keepDumping = await progressiveDump(db.local, writer(start, end));
+    start = end;
+  }
+
+  start = 40;
+  size = Object.keys(data_dbs).length;
+  for (const [name, db] of Object.entries(data_dbs)) {
+    end = start + 60 / size;
+    if (keepDumping)
+      keepDumping = await progressiveDump(db.local, writer(start, end));
+    start = end;
+  }
+
+  // early exit if we were aborted
+  if (!keepDumping) {
+    // clean up - remove the file we made
+    await Filesystem.deleteFile({
+      directory: Directory.Documents,
+      path: filename,
+    });
+    return;
+  }
+
+  const statResult = await Filesystem.stat({
+    directory: Directory.Documents,
+    path: filename,
+  });
+
+  // share the file we made
+
+  try {
+    await Share.share({
+      title: filename,
+      text: 'Fieldmark database dump',
+      url: statResult.uri,
+      dialogTitle: 'Share Fieldmark database dump',
+    });
+  } catch (err) {
+    console.error('Share failed', err);
+  }
 }
 
 async function dumpDatabase(db: PouchDB.Database<any>): Promise<unknown> {

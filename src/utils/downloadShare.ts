@@ -41,37 +41,70 @@ export async function shareStringAsFileOnApp(
 ): Promise<undefined> {
   const isodate = new Date().toJSON().slice(0, 10);
   console.debug('Starting writing of file');
-  for (const dir of [
-    Directory.Library,
-    Directory.Cache,
-    Directory.Documents,
-    Directory.Data,
-    Directory.External,
-    Directory.ExternalStorage,
-  ]) {
-    try {
-      console.debug('Trying ', dir);
-      const url = (
-        await Filesystem.writeFile({
-          path: `${isodate}-${dir}-${filename}`,
-          data: s,
-          directory: dir,
-          encoding: Encoding.UTF8,
-          recursive: true,
-        })
-      ).uri;
-      console.debug('Writing of file complete, sharing file', url);
-      await Share.share({
-        title: `${title} ${dir} ${isodate}.json`,
-        text: dialogTitle,
-        url: url,
-        dialogTitle: dialogTitle,
-      });
-      return undefined;
-    } catch (err) {
-      logError(err);
-    }
+
+  const directory = Directory.Documents;
+
+  // check for permissions, not needed on newer Android but just
+  // in case for older systems
+  let permission = await Filesystem.checkPermissions();
+
+  if (permission.publicStorage !== 'granted') {
+    permission = await Filesystem.requestPermissions();
   }
+  if (permission.publicStorage !== 'granted') {
+    console.error('Permission to write files not granted', permission);
+    return undefined;
+  }
+
+  const file = await Filesystem.writeFile({
+    path: `${isodate}-${title}-${filename}`,
+    data: s,
+    directory: directory,
+    encoding: Encoding.UTF8,
+    recursive: true,
+  });
+
+  console.log('wrote file', file.uri);
+
+  await Share.share({
+    title: `${title} ${isodate}.json`,
+    text: dialogTitle,
+    url: file.uri,
+    dialogTitle: dialogTitle,
+  });
+
+  // for (const dir of [
+  //   Directory.Documents,
+  //   Directory.Library,
+  //   Directory.Cache,
+  //   Directory.Data,
+  //   Directory.External,
+  //   Directory.ExternalStorage,
+  // ]) {
+  //   try {
+  //     console.debug('Trying ', dir);
+  //     const url = (
+  //       await Filesystem.writeFile({
+  //         path: `${isodate}-${dir}-${filename}`,
+  //         data: s,
+  //         directory: dir,
+  //         encoding: Encoding.UTF8,
+  //         recursive: true,
+  //       })
+  //     ).uri;
+  //     console.debug('Writing of file complete, sharing file', url);
+  //     await Share.share({
+  //       title: `${title} ${dir} ${isodate}.json`,
+  //       text: dialogTitle,
+  //       url: url,
+  //       dialogTitle: dialogTitle,
+  //     });
+  //     return undefined;
+  //   } catch (err) {
+  //     logError(err);
+  //   }
+
+  // }
   return undefined;
 }
 
