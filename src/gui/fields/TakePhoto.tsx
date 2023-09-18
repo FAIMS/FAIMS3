@@ -249,7 +249,6 @@ export class TakePhoto extends React.Component<
           promptLabelHeader: 'Take/Select a photo (drag to view more)',
         })
       );
-      console.log(image);
       const newimages =
         this.props.field.value !== null
           ? this.props.field.value.concat(image)
