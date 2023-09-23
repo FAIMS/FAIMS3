@@ -31,14 +31,9 @@ import {
   metadata_dbs,
   data_dbs,
 } from './databases';
-import {downloadBlob, shareStringAsFileOnApp} from '../utils/downloadShare';
 import {Share} from '@capacitor/share';
 
 const PREFIX = 'faims3-';
-
-interface DumpObject {
-  [name: string]: unknown;
-}
 
 /**
  * progressiveDump - dump a database in chunks
@@ -127,6 +122,12 @@ async function appendToFile(path: string, rows: any[]) {
   }
 }
 
+/**
+ * progressiveSaveFiles - save all the databases to a file and share it
+ * @param progressCallback - callback function takes a progress
+ * value between 0 and 100 and returns true if we should carry on, false if we should abort
+ * @returns true if the dump was completed, false if it was aborted
+ */
 export async function progressiveSaveFiles(
   progressCallback: (n: number) => boolean
 ) {
@@ -162,7 +163,7 @@ export async function progressiveSaveFiles(
   let start = 20;
   let end;
   let size = Object.keys(projects_dbs).length;
-  for (const [name, db] of Object.entries(projects_dbs)) {
+  for (const [, db] of Object.entries(projects_dbs)) {
     end = start + 10 / size;
     if (keepDumping)
       keepDumping = await progressiveDump(db.local, writer(start, end));
@@ -171,7 +172,7 @@ export async function progressiveSaveFiles(
 
   start = 30;
   size = Object.keys(metadata_dbs).length;
-  for (const [name, db] of Object.entries(metadata_dbs)) {
+  for (const [, db] of Object.entries(metadata_dbs)) {
     end = start + 10 / size;
     if (keepDumping)
       keepDumping = await progressiveDump(db.local, writer(start, end));
@@ -180,7 +181,7 @@ export async function progressiveSaveFiles(
 
   start = 40;
   size = Object.keys(data_dbs).length;
-  for (const [name, db] of Object.entries(data_dbs)) {
+  for (const [, db] of Object.entries(data_dbs)) {
     end = start + 60 / size;
     if (keepDumping)
       keepDumping = await progressiveDump(db.local, writer(start, end));
@@ -216,14 +217,25 @@ export async function progressiveSaveFiles(
   }
 }
 
-async function dumpDatabase(db: PouchDB.Database<any>): Promise<unknown> {
-  return await db.allDocs({
-    attachments: true, // We want base64 strings so we can get JSON
-    conflicts: true, // We want to see conflict information
-    include_docs: true, // We want the actual data
-    update_seq: true,
-    // This may help with debugging and with tracking multiple dumps
-  });
+//*************** Streaming download of a database dump   ****************/
+
+// TODO: change the format to match that of the progressive download above
+//  also make this progressive and interruptible
+
+/**
+ * downloadBlob - download a blob as a file onto a user's device
+ * @param b - blob to download
+ * @param filename - filename for the downloaded file
+ */
+function downloadBlob(b: Blob, filename: string) {
+  const u = URL.createObjectURL(b);
+  const a = document.createElement('a');
+  a.href = u;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(u);
 }
 
 async function streamedDumpDownload(filename: string, obj: any) {
@@ -243,34 +255,13 @@ async function streamedDumpDownload(filename: string, obj: any) {
   downloadBlob(b, PREFIX + filename + '.json');
 }
 
-export async function doDumpShare() {
-  console.debug('Starting app system dump');
-  const dump: DumpObject = {};
-  dump['directory'] = await dumpDatabase(directory_db.local);
-  dump['active'] = await dumpDatabase(active_db);
-  dump['local_state'] = await dumpDatabase(getLocalStateDB());
-  dump['local_auth'] = await dumpDatabase(local_auth_db);
-  dump['draft'] = await dumpDatabase(draft_db);
-
-  for (const [name, db] of Object.entries(projects_dbs)) {
-    dump['proj' + name] = await dumpDatabase(db.local);
-  }
-
-  for (const [name, db] of Object.entries(metadata_dbs)) {
-    dump['meta' + name] = await dumpDatabase(db.local);
-  }
-
-  for (const [name, db] of Object.entries(data_dbs)) {
-    dump['data' + name] = await dumpDatabase(db.local);
-  }
-  const s = JSON.stringify(dump);
-
-  await shareStringAsFileOnApp(
-    s,
-    'Fieldmark Database Dump',
-    'Share all the Fieldmark data on your device',
-    'fieldmark-dump.json'
-  );
+async function dumpDatabase(db: PouchDB.Database<any>) {
+  return db.allDocs({
+    attachments: true, // We want base64 strings so we can get JSON
+    conflicts: true, // We want to see conflict information
+    include_docs: true, // We want the actual data
+    update_seq: true,
+  });
 }
 
 export async function doDumpDownload() {

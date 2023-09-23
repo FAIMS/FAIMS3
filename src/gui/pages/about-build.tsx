@@ -30,7 +30,6 @@ import {
   AlertTitle,
   LinearProgress,
   AppBar,
-  IconButton,
   Toolbar,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
@@ -57,7 +56,6 @@ import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
 import Link from '@mui/material/Link';
-import {set} from 'lodash';
 
 export default function AboutBuild() {
   const breadcrumbs = [
