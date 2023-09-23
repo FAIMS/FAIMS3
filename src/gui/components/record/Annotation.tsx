@@ -15,7 +15,7 @@
  *
  * Filename: Annotation.tsx
  * Description:
- *   This is the file about the Annoation Tag, which is part of Form Field, check view.tsx file
+ *   This is the file about the Annotation Tag, which is part of Form Field, check view.tsx file
  *    - Annotation Icon , user can click to fold or unfold Annotation Field
  *    - Annotation Field(which will been unfold after user click)
  */
