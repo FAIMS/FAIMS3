@@ -70,4 +70,5 @@ jobs:
     - run: npm run build --if-present || ${{ matrix.experimental }}
     - run: npm run test  || ${{ matrix.experimental }}
     - run: npx cap copy || ${{ matrix.experimental }}
-    - run: npx cap doctor android || ${{ matrix.experimental }} # ios requires xcode
+    # cap doctor broken for android just now
+    # - run: npx cap doctor android || ${{ matrix.experimental }} # ios requires xcode
