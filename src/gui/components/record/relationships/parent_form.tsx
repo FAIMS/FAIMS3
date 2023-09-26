@@ -61,7 +61,7 @@ export default function ParentForm(props: ParentFormProps) {
               ui_specification={ui_specification}
               formProps={formProps}
               annotation={annotation}
-              handerannoattion={updateannotation}
+              handleAnnotation={updateannotation}
               fieldNames={fieldNames}
               disabled={true}
             />

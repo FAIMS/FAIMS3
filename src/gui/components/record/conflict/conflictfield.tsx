@@ -219,7 +219,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
                   annotation={{
                     [fieldName]: {...annotation},
                   }}
-                  handerannoattion={() => {
+                  handleAnnotation={() => {
                     console.log('annotation');
                   }}
                   disabled={true}

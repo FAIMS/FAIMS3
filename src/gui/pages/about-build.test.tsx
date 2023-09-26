@@ -21,11 +21,11 @@
 import {fireEvent, render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import AboutBuild from './about-build';
-import {doDumpDownload, doDumpShare} from '../../sync/data-dump';
+import {doDumpDownload, progressiveSaveFiles} from '../../sync/data-dump';
 import {expect, test, vi} from 'vitest';
 
 vi.mock('../../sync/data-dump', () => ({
-  doDumpShare: vi.fn(() => {}),
+  progressiveSaveFiles: vi.fn(() => {}),
   doDumpDownload: vi.fn(() => {}),
 }));
 
@@ -53,5 +53,5 @@ test('Check about-build component', async () => {
 
   fireEvent.click(screen.getByText('Share local database contents'));
 
-  expect(doDumpShare).toBeCalled();
+  expect(progressiveSaveFiles).toBeCalled();
 });

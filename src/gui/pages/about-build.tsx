@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 import {
   Box,
   Paper,
@@ -28,6 +28,9 @@ import {
   Grid,
   Alert,
   AlertTitle,
+  LinearProgress,
+  AppBar,
+  Toolbar,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -37,7 +40,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import StorageIcon from '@mui/icons-material/Storage';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
-import {doDumpShare, doDumpDownload} from '../../sync/data-dump';
+import {doDumpDownload, progressiveSaveFiles} from '../../sync/data-dump';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
@@ -60,26 +63,53 @@ export default function AboutBuild() {
     {title: 'about-build'},
   ];
 
-  // const {state, dispatch} = useContext(store);
+  const [wipeDialogOpen, setWipeDialogOpen] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const [showingProgress, setShowingProgress] = React.useState(false);
+  const [progressiveDump, setProgressiveDump] = React.useState(false);
+  const [progressMessage, setProgressMessage] = React.useState('');
 
-  // const handleStartSyncUp = () => {
-  //   startSync(dispatch, ActionType.IS_SYNCING_UP);
-  // };
-  // const handleStartSyncDown = () => {
-  //   startSync(dispatch, ActionType.IS_SYNCING_DOWN);
-  // };
-  // const handleToggleSyncError = () => {
-  //   setSyncError(dispatch, !state.isSyncError);
-  // };
-  const [open, setOpen] = React.useState(false);
+  // need useRef here because this value is used in a callback which
+  // needs to see the live value so that when we cancel, it can
+  // pass back to the caller.  Just using `progressiveDump` here
+  // doesn't work as it freezes the value from the time of the initial
+  // call to `progressiveSaveFiles`
+  const keepDumping = useRef(false);
 
-  const handleOpen = () => {
-    setOpen(true);
+  // update progress and return true if the dump should continue
+  const handleProgress = (progress: number): boolean => {
+    setProgress(progress);
+    if (progress < 0) {
+      keepDumping.current = false;
+      setProgressMessage('Share is not available on this device/browser');
+      setProgressiveDump(false);
+    }
+    if (progress > 100) {
+      setProgressMessage('Share is complete');
+      setShowingProgress(false);
+    }
+    return keepDumping.current;
   };
 
-  const handleClose = () => {
-    setOpen(false);
+  useEffect(() => {
+    if (progressiveDump) {
+      keepDumping.current = true;
+      progressiveSaveFiles(handleProgress);
+    } else {
+      keepDumping.current = false;
+    }
+  }, [progressiveDump]);
+
+  const handleShareDump = async () => {
+    setShowingProgress(true);
+    setProgressiveDump(true);
   };
+
+  const handleCancelDump = () => {
+    setProgressiveDump(false);
+    setShowingProgress(false);
+  };
+
   return (
     <Box sx={{p: 2}}>
       <Breadcrumbs data={breadcrumbs} />
@@ -203,24 +233,21 @@ export default function AboutBuild() {
               <Grid item sm={'auto'}>
                 <Typography variant={'body2'}>Browsers only</Typography>
               </Grid>
+
               <Grid item>
                 <Button
                   disableElevation
                   size={'small'}
                   color={'info'}
                   variant={'contained'}
-                  onClick={async () => {
-                    await doDumpShare();
-                  }}
+                  onClick={handleShareDump}
                   startIcon={<ShareIcon />}
                 >
                   Share local database contents
                 </Button>
               </Grid>
               <Grid item sm={'auto'}>
-                <Typography variant={'body2'}>
-                  Apps and some browsers
-                </Typography>
+                <Typography variant={'body2'}>App and some browsers</Typography>
               </Grid>
             </Grid>
           </Grid>
@@ -245,7 +272,7 @@ export default function AboutBuild() {
                   {SHOW_WIPE && (
                     <Grid item>
                       <Button
-                        onClick={handleOpen}
+                        onClick={() => setWipeDialogOpen(true)}
                         color={'error'}
                         variant={'contained'}
                         disableElevation={true}
@@ -254,8 +281,8 @@ export default function AboutBuild() {
                         Wipe and reset everything
                       </Button>
                       <Dialog
-                        open={open}
-                        onClose={handleClose}
+                        open={wipeDialogOpen}
+                        onClose={() => setWipeDialogOpen(false)}
                         aria-labelledby="alert-dialog-title"
                         aria-describedby="alert-dialog-description"
                       >
@@ -267,7 +294,7 @@ export default function AboutBuild() {
                           style={{justifyContent: 'space-between'}}
                         >
                           <Button
-                            onClick={handleClose}
+                            onClick={() => setWipeDialogOpen(false)}
                             autoFocus
                             color={'warning'}
                           >
@@ -314,6 +341,21 @@ export default function AboutBuild() {
           )}
         </Grid>
       </Box>
+      <Dialog open={showingProgress}>
+        <AppBar sx={{position: 'relative'}}>
+          <Toolbar>
+            <Typography sx={{ml: 2, flex: 1}} variant="h6" component="div">
+              {progressMessage
+                ? progressMessage
+                : 'Preparing to Share Database Dump...'}
+            </Typography>
+            <Button autoFocus color="inherit" onClick={handleCancelDump}>
+              {progressMessage ? 'Dismiss' : 'Cancel'}
+            </Button>
+          </Toolbar>
+        </AppBar>
+        <LinearProgress variant="determinate" value={progress} />
+      </Dialog>
     </Box>
   );
 }

@@ -785,6 +785,7 @@ class RecordForm extends React.Component<
           return doc;
         })
         .then(doc => {
+          console.log('SAVING DOC', this.props.project_id, doc);
           return upsertFAIMSData(this.props.project_id, doc).then(
             revision_id => {
               // add to save the information for relationship when form saved,
@@ -1081,6 +1082,16 @@ class RecordForm extends React.Component<
   }
 
   isReady(): boolean {
+    if (DEBUG_APP) {
+      if (!this.state.type_cached)
+        console.debug('isReady false because type_cached is false');
+      if (!this.state.initialValues)
+        console.debug('isReady false because initialValues is false');
+      if (!this.props.ui_specification)
+        console.debug('isReady false because ui_specification is false');
+      if (!this.state.view_cached)
+        console.debug('isReady false because view_cached is false');
+    }
     return Boolean(
       this.state.type_cached &&
         this.state.initialValues &&
@@ -1243,7 +1254,7 @@ class RecordForm extends React.Component<
                           formProps={formProps}
                           draftState={this.draftState}
                           annotation={this.state.annotation}
-                          handerannoattion={this.updateannotation}
+                          handleAnnotation={this.updateannotation}
                           isSyncing={this.props.isSyncing}
                           conflictfields={this.props.conflictfields}
                           handleChangeTab={this.props.handleChangeTab}

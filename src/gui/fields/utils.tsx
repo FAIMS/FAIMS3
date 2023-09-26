@@ -74,6 +74,7 @@ export const instantiateField = (uiSpec: any) => {
     submitCount: 0,
   };
   // can't get all of the members of FormikProps, so just ignore the error
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   const element = getComponentFromFieldConfig(uiSpec, 'test', formProps);
   return renderForm(element);
