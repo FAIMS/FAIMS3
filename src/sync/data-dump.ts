@@ -208,13 +208,14 @@ export async function progressiveSaveFiles(
   try {
     await Share.share({
       title: filename,
-      text: 'Fieldmark database dump',
       url: statResult.uri,
       dialogTitle: 'Share Fieldmark database dump',
     });
   } catch (err) {
     console.error('Share failed', err);
   }
+  // signal end of processing
+  progressCallback(110);
 }
 
 //*************** Streaming download of a database dump   ****************/

@@ -84,6 +84,10 @@ export default function AboutBuild() {
       setProgressMessage('Share is not available on this device/browser');
       setProgressiveDump(false);
     }
+    if (progress > 100) {
+      setProgressMessage('Share is complete');
+      setShowingProgress(false);
+    }
     return keepDumping.current;
   };
 
