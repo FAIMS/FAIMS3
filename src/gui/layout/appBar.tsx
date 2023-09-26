@@ -37,7 +37,6 @@ import Collapse from '@mui/material/Collapse';
 import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
 import AddIcon from '@mui/icons-material/Add';
 import HomeIcon from '@mui/icons-material/Home';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -70,7 +69,11 @@ type ProjectListItemProps = {
   disabled: boolean;
 };
 // in place of deprecated React.ReactChild
-type IconType = undefined | string | number | React.ReactElement<any, string | React.JSXElementConstructor<any>>;
+type IconType =
+  | undefined
+  | string
+  | number
+  | React.ReactElement<any, string | React.JSXElementConstructor<any>>;
 
 type MenuItemProps = {
   nested?: any;
