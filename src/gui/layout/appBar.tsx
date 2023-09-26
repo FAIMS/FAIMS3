@@ -27,6 +27,7 @@ import {
   IconButton,
   Toolbar,
   createTheme,
+  ListItemButton,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import {createUseStyles as makeStyles} from 'react-jss';
@@ -68,12 +69,15 @@ type ProjectListItemProps = {
   to: string;
   disabled: boolean;
 };
+// in place of deprecated React.ReactChild
+type IconType = undefined | string | number | React.ReactElement<any, string | React.JSXElementConstructor<any>>;
+
 type MenuItemProps = {
   nested?: any;
   title: string;
   to: string;
   disabled: boolean;
-  icon: React.ReactChild | undefined;
+  icon: IconType;
 };
 
 const drawerWidth = 240;
@@ -296,8 +300,7 @@ export default function AppBar(props: NavbarProps) {
             {topMenuItems.map((item: MenuItemProps) => {
               return Object.prototype.hasOwnProperty.call(item, 'nested') ? (
                 <React.Fragment key={'menuItem' + item.title}>
-                  <ListItem
-                    button
+                  <ListItemButton
                     onClick={() => {
                       setNestedMenuOpen(prevNestedMenuOpen => ({
                         ...prevNestedMenuOpen,
@@ -315,7 +318,7 @@ export default function AppBar(props: NavbarProps) {
                     ) : (
                       <ExpandMore />
                     )}
-                  </ListItem>
+                  </ListItemButton>
                   <Collapse
                     in={nestedMenuOpen[item.title]}
                     timeout="auto"
@@ -325,12 +328,11 @@ export default function AppBar(props: NavbarProps) {
                     <List component="div" disablePadding dense={true}>
                       {item.nested.map(
                         (nestedItem: {
-                          icon: React.ReactChild;
+                          icon: IconType;
                           title: string;
                           to: string;
                         }) => (
-                          <ListItem
-                            button
+                          <ListItemButton
                             className={classes.nested}
                             key={
                               'nestedMenuItem' + item.title + nestedItem.title
@@ -338,26 +340,27 @@ export default function AppBar(props: NavbarProps) {
                             to={nestedItem.to}
                             component={RouterLink}
                             disabled={item.disabled}
+                            onClick={toggle}
                           >
                             <ListItemIcon>{nestedItem.icon}</ListItemIcon>
                             <ListItemText primary={nestedItem.title} />
-                          </ListItem>
+                          </ListItemButton>
                         )
                       )}
                     </List>
                   </Collapse>
                 </React.Fragment>
               ) : (
-                <ListItem
-                  button
+                <ListItemButton
                   key={item.title}
                   to={item.to}
                   component={RouterLink}
                   disabled={item.disabled}
+                  onClick={toggle}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.title} />
-                </ListItem>
+                </ListItemButton>
               );
             })}
           </List>
@@ -366,20 +369,20 @@ export default function AppBar(props: NavbarProps) {
             {bottomMenuItems.map(
               (item: {
                 title: string;
-                icon: React.ReactChild | undefined;
+                icon: IconType;
                 disabled: boolean;
                 to: any;
               }) => (
-                <ListItem
-                  button
+                <ListItemButton
                   key={item.title}
                   disabled={item.disabled}
                   to={item.to}
                   component={RouterLink}
+                  onClick={toggle}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.title} />
-                </ListItem>
+                </ListItemButton>
               )
             )}
           </List>
