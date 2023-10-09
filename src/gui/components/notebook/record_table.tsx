@@ -377,10 +377,10 @@ function RecordsTable(props: RecordsTableProps) {
           getRowClassName={params => {
             return `${params.row.conflicts ? 'bg-warning' : ''}`;
           }}
-          components={{
+          slots={{
             Toolbar: NotebookDataGridToolbar,
           }}
-          componentsProps={{
+          slotProps={{
             filterPanel: {sx: {maxWidth: '96vw'}},
             toolbar: {
               handleQueryFunction: props.handleQueryFunction,
@@ -458,10 +458,6 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
     };
     getData();
   }, [props.project_id, query]);
-
-  if (DEBUG_APP) {
-    console.debug('New records:', pouchData);
-  }
 
   const rows = pouchData ?? [];
   const loading = pouchData === undefined;
