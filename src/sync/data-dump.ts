@@ -109,7 +109,7 @@ async function appendToFile(path: string, rows: any[]) {
 
   //console.log('writing', data.length, 'characters');
   // crash when data length is > 35M so batch in chunks
-  const chunkSize = 10000000;
+  const chunkSize = 1000000;
 
   for (let i = 0; i < data.length; i += chunkSize) {
     const chunk = data.slice(i, i + chunkSize);
