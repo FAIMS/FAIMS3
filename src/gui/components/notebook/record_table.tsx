@@ -233,6 +233,7 @@ function RecordsTable(props: RecordsTableProps) {
           type: 'string',
           filterable: true,
           hide: true,
+          minWidth: 75,
           valueGetter: getRowType,
         },
         {
@@ -240,7 +241,7 @@ function RecordsTable(props: RecordsTableProps) {
           headerName: 'HRID/UUID',
           description: 'Human Readable Record ID',
           type: 'string',
-          flex: 1,
+          minWidth: 150,
           filterable: true,
           renderCell: (params: GridCellParams) => {
             return (
@@ -252,12 +253,6 @@ function RecordsTable(props: RecordsTableProps) {
                   alignItems="center"
                   spacing={0}
                 >
-                  <Grid item>
-                    <ArticleIcon
-                      fontSize={'small'}
-                      sx={{verticalAlign: 'middle', marginRight: '4px'}}
-                    />
-                  </Grid>
                   <Grid item>
                     <Typography>Kind: {getRowType(params)}</Typography>
                   </Grid>
