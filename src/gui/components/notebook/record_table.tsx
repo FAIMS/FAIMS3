@@ -378,7 +378,7 @@ function RecordsTable(props: RecordsTableProps) {
             return `${params.row.conflicts ? 'bg-warning' : ''}`;
           }}
           slots={{
-            Toolbar: NotebookDataGridToolbar,
+            toolbar: NotebookDataGridToolbar,
           }}
           slotProps={{
             filterPanel: {sx: {maxWidth: '96vw'}},
