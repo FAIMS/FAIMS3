@@ -63,6 +63,14 @@ export class FAIMSErrorBoundary extends React.Component<EBProps, EBState> {
 export const ErrorPage = () => {
   const theme = useTheme();
 
+  useEffect(() => {
+    document.body.classList.add('bg-primary-gradient');
+
+    return () => {
+      document.body.classList.remove('bg-primary-gradient');
+    };
+  });
+
   // Do a full page reload of the workspace to ensure we get out of
   // any bogus state...may not be the right way to respond
   const navigateWS = () => {
