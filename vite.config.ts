@@ -31,6 +31,7 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: 'build',
+    sourcemap: 'inline',
   },
   plugins: [react()],
   define: {
