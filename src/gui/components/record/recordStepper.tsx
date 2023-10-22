@@ -38,7 +38,7 @@ type RecordStepperProps = {
   views: {[key: string]: any};
 };
 
-const useStyles = createUseStyles(() => ({
+const useStyles = createUseStyles({
   stepperStyle: {
     overflowY: 'hidden',
     overflowX: 'auto',
@@ -53,7 +53,7 @@ const useStyles = createUseStyles(() => ({
       borderRadius: 2,
     },
   },
-}));
+});
 
 export default function RecordStepper(props: RecordStepperProps) {
   const classes = useStyles();
