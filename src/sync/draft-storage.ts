@@ -15,7 +15,7 @@
  *
  * Filename: draft-storage.ts
  * Description:
- *   TODO
+ *   Handle storage of draft records
  */
 
 import PouchDB from 'pouchdb-browser';
@@ -28,14 +28,12 @@ import {
   FAIMSTypeName,
   HRID_STRING,
   Relationship,
-} from 'faims3-datamodel';
-import {DEBUG_APP} from '../buildconfig';
-import {local_pouch_options} from './connection';
-import {
   EncodedDraft,
   DraftMetadataList,
   attachment_to_file,
 } from 'faims3-datamodel';
+import {DEBUG_APP} from '../buildconfig';
+import {local_pouch_options} from './connection';
 import {logError} from '../logging';
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
@@ -47,7 +45,6 @@ export const draft_db: DraftDB = new PouchDB(
 
 // Note: duplicated from faims3-datamodel as it doesn't do anything important
 export function generate_file_name(): string {
-  console.debug('Generating a uuid-filename');
   return 'file-' + uuidv4();
 }
 
@@ -184,9 +181,6 @@ function encodeStagedData(
             content_type: file.type,
             data: file,
           };
-          if (DEBUG_APP) {
-            console.debug('Saving draft file:', file_name);
-          }
           attachment_metadata[field_name].push(file_name);
         }
       } else {
@@ -302,17 +296,12 @@ function getDraftHRID(record: EncodedDraft): string | null {
     }
   }
 
-  if (DEBUG_APP) {
-    console.debug('hrid_name:', hrid_name);
-  }
   if (hrid_name === null) {
-    console.warn('No HRID field found');
     return null;
   }
 
   const hrid_id = record.fields[hrid_name] as string | undefined | null;
   if (hrid_id === undefined || hrid_id === null) {
-    console.warn('No HRID field set for revision');
     return null;
   }
   return hrid_id;

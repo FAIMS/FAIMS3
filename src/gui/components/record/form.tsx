@@ -756,12 +756,6 @@ class RecordForm extends React.Component<
       this.state.annotation,
       ui_specification
     );
-    if (DEBUG_APP)
-      console.debug(
-        'current revision id',
-        this.state.revision_cached,
-        this.props.revision_id
-      );
     return (
       getCurrentUserId(this.props.project_id)
         .then(userid => {
@@ -817,7 +811,10 @@ class RecordForm extends React.Component<
           return result;
         })
         .catch(err => {
+          // TODO: this is actually very serious and we should work out how
+          // to never get here or provide a good reason if we do
           const message = 'Could not save record';
+          console.error('Could not save record:', err);
           (this.context as any).dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
