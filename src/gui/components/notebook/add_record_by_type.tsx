@@ -33,10 +33,8 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
 
   const [showQRButton, setShowQRButton] = useState(false);
 
-  getProjectMetadata(project_id, 'meta').then(meta => {
-    if (meta.showQRCodeButton === 'true') {
-      setShowQRButton(true);
-    }
+  getProjectMetadata(project_id, 'showQRCodeButton').then(value => {
+    setShowQRButton(value === true || value === 'true');
   });
 
   const [selectedRecord, setSelectedRecord] = useState<
