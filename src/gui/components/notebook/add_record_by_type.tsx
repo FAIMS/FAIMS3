@@ -14,7 +14,7 @@ import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {
   ProjectInformation,
-  getAllRecordsWithRegex,
+  getRecordsWithRegex,
   RecordMetadata,
 } from 'faims3-datamodel';
 import {getProjectMetadata} from '../../../projectMetadata';
@@ -67,7 +67,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
 
   const handleScanResult = (value: string) => {
     // find a record with this field value
-    getAllRecordsWithRegex(project_id, value).then(records => {
+    getRecordsWithRegex(project_id, value, true).then(records => {
       // navigate to it
       // what should happen if there are more than one?
       for (const key in records) {
