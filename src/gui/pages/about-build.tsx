@@ -205,18 +205,18 @@ export default function AboutBuild() {
           </Grid>
           <Grid item md={4} sm={6} xs={12}>
             <Typography variant={'h5'} gutterBottom>
-              Downloading data from this device
+              Backup from this device
             </Typography>
 
             <Typography variant={'body2'}>
-              Data download functionality is not well-supported by all
-              device+browser combinations. Try the following buttons to access
-              data from this device.
+              Share or save a file containing all notebooks and records stored
+              on this device. Data download functionality is not well-supported
+              by all device+browser combinations.
             </Typography>
           </Grid>
           <Grid item md={8} sm={6} xs={12}>
             <Grid container spacing={2} alignItems={'center'}>
-              <Grid item>
+              {/* <Grid item>
                 <Button
                   disableElevation
                   variant={'contained'}
@@ -232,7 +232,7 @@ export default function AboutBuild() {
               </Grid>
               <Grid item sm={'auto'}>
                 <Typography variant={'body2'}>Browsers only</Typography>
-              </Grid>
+              </Grid> */}
 
               <Grid item>
                 <Button
@@ -245,9 +245,6 @@ export default function AboutBuild() {
                 >
                   Share local database contents
                 </Button>
-              </Grid>
-              <Grid item sm={'auto'}>
-                <Typography variant={'body2'}>App and some browsers</Typography>
               </Grid>
             </Grid>
           </Grid>
