@@ -28,8 +28,7 @@ import {BarcodeScanner} from '@capacitor-community/barcode-scanner';
 import {FieldProps} from 'formik';
 import ReactDOM from 'react-dom';
 import {Capacitor} from '@capacitor/core';
-import { createUseStyles } from 'react-jss';
-
+import {createUseStyles} from 'react-jss';
 
 const useStyles = createUseStyles({
   container: {
@@ -85,7 +84,8 @@ const useStyles = createUseStyles({
     width: '100%',
     margin: '1rem',
     border: '2px solid #fff',
-    boxShadow: '0px 0px 2px 1px rgb(0 0 0 / 0.5), inset 0px 0px 2px 1px rgb(0 0 0 / 0.5)',
+    boxShadow:
+      '0px 0px 2px 1px rgb(0 0 0 / 0.5), inset 0px 0px 2px 1px rgb(0 0 0 / 0.5)',
     borderRadius: '1rem',
     backgroundColor: 'transparent',
   },
