@@ -167,66 +167,6 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             mb={{xs: 1, sm: 2, md: 3}}
           >
             <Typography variant={'h6'} sx={{mb: 2}}>
-              Notebook Status
-            </Typography>
-            <Grid container spacing={1}>
-              <Grid item xs={12}>
-                <Box>
-                  <ProjectStatus status={project_info.status} />
-                </Box>
-              </Grid>
-              {role_info.value?.can_edit_notebook_on_device ||
-              role_info.value?.can_edit_notebook_on_server ||
-              project_info.status === 'local_draft' ? ( // FAIMS3-573 check local project
-                <Grid item xs={12}>
-                  <Button
-                    color="primary"
-                    variant={'outlined'}
-                    startIcon={<EditIcon />}
-                    component={RouterLink}
-                    to={ROUTES.PROJECT_DESIGN + project_id}
-                  >
-                    Edit Notebook Design
-                  </Button>
-                </Grid>
-              ) : (
-                ''
-              )}
-              {role_info.value?.can_edit_notebook_on_device ||
-              project_info.status === 'local_draft' ? (
-                <Grid item xs={12}>
-                  <Alert severity={'info'}>
-                    You may edit the notebook, but your changes will only be
-                    saved locally to your device. Contact the Fieldmark team to
-                    publish your notebook.
-                  </Alert>
-                </Grid>
-              ) : (
-                ''
-              )}
-              {role_info.value?.can_edit_notebook_on_device ||
-              role_info.value?.can_edit_notebook_on_server ||
-              project_info.status === 'local_draft' ? (
-                <Grid item xs={12}>
-                  <Alert severity={'warning'}>
-                    If this notebook already has records saved, editing the
-                    notebook may cause issues. Proceed with caution.
-                  </Alert>
-                </Grid>
-              ) : (
-                ''
-              )}
-            </Grid>
-          </Box>
-
-          <Box
-            component={Paper}
-            variant={'outlined'}
-            elevation={0}
-            p={2}
-            mb={{xs: 1, sm: 2, md: 3}}
-          >
-            <Typography variant={'h6'} sx={{mb: 2}}>
               Sync Notebook
             </Typography>
             <NotebookSyncSwitch
@@ -292,24 +232,6 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             />
           </Grid>
         )}
-      </Grid>
-      <Grid
-        container
-        rowSpacing={{xs: 1, sm: 2, md: 3}}
-        columnSpacing={{xs: 1, sm: 2, md: 3}}
-      >
-        <Grid item xs={12} sm={12} md={8}>
-          <Box component={Paper} variant={'outlined'} elevation={0} p={2}>
-            <Typography variant={'h6'} sx={{mb: 2}}>
-              Metadata DB contents
-            </Typography>
-            {loading ? (
-              <CircularLoading label={'Loading...'} />
-            ) : (
-              <MetaDataJsonComponentProps value={metadbContents} />
-            )}
-          </Box>
-        </Grid>
       </Grid>
     </Box>
   ) : (
