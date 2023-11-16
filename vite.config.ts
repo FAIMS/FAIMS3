@@ -37,9 +37,6 @@ export default defineConfig({
     global: global,
     'process.env': {} /* some libraries check this */,
   },
-  optimizeDeps: {
-    exclude: ['@ionic/pwa-elements'],
-  },
   test: {
     globals: true,
     environment: 'jsdom',
