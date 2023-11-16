@@ -19,7 +19,6 @@
  */
 
 import React, {useState} from 'react';
-import './QRCodeFormField.module.css';
 import Button from '@mui/material/Button';
 
 import {BarcodeScanner} from '@capacitor-community/barcode-scanner';
@@ -28,6 +27,69 @@ import {BarcodeScanner} from '@capacitor-community/barcode-scanner';
 
 import {FieldProps} from 'formik';
 import ReactDOM from 'react-dom';
+import {Capacitor} from '@capacitor/core';
+import { createUseStyles } from 'react-jss';
+
+
+const useStyles = createUseStyles({
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    display: 'flex',
+  },
+  relative: {
+    position: 'relative',
+    zIndex: 1,
+    textAlign: 'center',
+    color: 'white',
+  },
+  square: {
+    width: '100%',
+    position: 'relative',
+    marginTop: '50px',
+
+    overflow: 'hidden',
+    transition: '0.3s',
+    backgroundColor: 'transparent',
+    '&:after': {
+      content: '""',
+      top: 0,
+      display: 'block',
+      paddingBottom: '100%',
+    },
+  },
+  surroundCover: {
+    boxShadow: [0, 0, 0, '99999px', 'rgba(0, 0, 0, 0.5)'],
+  },
+  barcodeContainer: {
+    width: '80%',
+    height: '100%',
+    maxWidth: 'min(500px, 80vh)',
+    margin: 'auto',
+  },
+  outer: {
+    display: 'flex',
+    borderRadius: '1em',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
+  },
+  inner: {
+    width: '100%',
+    margin: '1rem',
+    border: '2px solid #fff',
+    boxShadow: '0px 0px 2px 1px rgb(0 0 0 / 0.5), inset 0px 0px 2px 1px rgb(0 0 0 / 0.5)',
+    borderRadius: '1rem',
+    backgroundColor: 'transparent',
+  },
+});
 
 export interface QRCodeFieldProps extends FieldProps {
   label?: string;
@@ -77,7 +139,12 @@ export interface QRCodeButtonProps {
 
 export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
   const [scanning, setScanning] = useState(false);
-  const [canScanMsg, setCanScanMsg] = useState('');
+  const runningInBrowser = Capacitor.getPlatform() === 'web';
+  const [canScanMsg, setCanScanMsg] = useState(
+    runningInBrowser ? 'Scanning not supported in browsers, mobile only' : ''
+  );
+
+  const classes = useStyles();
 
   const updateField = (value: any) => {
     props.onScanResult(value);
@@ -152,17 +219,17 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
 
     if (target) {
       return ReactDOM.createPortal(
-        <div className="container">
-          <div className="barcodeContainer">
-            <div className="relative">
+        <div className={classes.container}>
+          <div className={classes.barcodeContainer}>
+            <div className={classes.relative}>
               <p>Aim your camera at a barcode</p>
               <Button color="primary" variant="contained" onClick={stopScan}>
                 Stop Scan
               </Button>
             </div>
-            <div className="square">
-              <div className="outer">
-                <div className="inner"></div>
+            <div className={classes.square}>
+              <div className={classes.outer}>
+                <div className={classes.inner}></div>
               </div>
             </div>
           </div>
