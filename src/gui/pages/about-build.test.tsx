@@ -21,7 +21,7 @@
 import {fireEvent, render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import AboutBuild from './about-build';
-import {doDumpDownload, progressiveSaveFiles} from '../../sync/data-dump';
+import {progressiveSaveFiles} from '../../sync/data-dump';
 import {expect, test, vi} from 'vitest';
 
 vi.mock('../../sync/data-dump', () => ({
