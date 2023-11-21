@@ -29,6 +29,7 @@ import {FieldProps} from 'formik';
 import ReactDOM from 'react-dom';
 import {Capacitor} from '@capacitor/core';
 import {createUseStyles} from 'react-jss';
+import {Box} from '@mui/material';
 
 const useStyles = createUseStyles({
   container: {
@@ -123,7 +124,9 @@ export function QRCodeFormField({
         label={props.label || 'Scan QR Code'}
         onScanResult={updateField}
       />
-      <div>{valueText}</div>
+      <Box sx={{width: '100vw', height: '2em', overflow: 'hidden'}}>
+        {valueText}
+      </Box>
     </div>
   );
 }
