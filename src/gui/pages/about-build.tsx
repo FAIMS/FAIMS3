@@ -33,14 +33,13 @@ import {
   Toolbar,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
-import DownloadIcon from '@mui/icons-material/Download';
 import ErrorIcon from '@mui/icons-material/Error';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ShareIcon from '@mui/icons-material/Share';
 import StorageIcon from '@mui/icons-material/Storage';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
-import {doDumpDownload, progressiveSaveFiles} from '../../sync/data-dump';
+import {progressiveSaveFiles} from '../../sync/data-dump';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,

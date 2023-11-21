@@ -19,33 +19,22 @@
  */
 
 import React, {useContext, useEffect, useState} from 'react';
-import {useParams, Navigate, Link as RouterLink} from 'react-router-dom';
+import {useParams, Navigate} from 'react-router-dom';
 
 import {
   Box,
-  Button,
   Typography,
   Grid,
   Paper,
   CircularProgress,
   FormControlLabel,
   Switch,
-  Alert,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-
-import * as ROUTES from '../../../../constants/routes';
 
 import {getProjectInfo, listenProjectInfo} from '../../../../databaseAccess';
-import {
-  useEventedPromise,
-  constantArgsShared,
-  constantArgsSplit,
-} from '../../../pouchHook';
+import {useEventedPromise, constantArgsShared} from '../../../pouchHook';
 import {ProjectInformation} from 'faims3-datamodel';
-import {dumpMetadataDBContents} from '../../../../uiSpecification';
-import {ProjectID, split_full_project_id} from 'faims3-datamodel';
-import MetaDataJsonComponentProps from './metadata_json';
+import {ProjectID} from 'faims3-datamodel';
 import {
   isSyncingProjectAttachments,
   listenSyncingProjectAttachments,
@@ -54,14 +43,6 @@ import {
 import {ActionType} from '../../../../context/actions';
 import {store} from '../../../../context/store';
 import AutoIncrementerSettingsList from './auto_incrementers';
-import {
-  getUserProjectRolesForCluster,
-  isClusterAdmin,
-  ADMIN_ROLE,
-} from '../../../../users';
-import {listenDataDB} from '../../../../sync';
-import CircularLoading from '../../ui/circular_loading';
-import ProjectStatus from './status';
 import NotebookSyncSwitch from './sync_switch';
 import {ProjectUIModel} from 'faims3-datamodel';
 import {logError} from '../../../../logging';
@@ -71,46 +52,6 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
 
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
   const {dispatch} = useContext(store);
-
-  // TODO: remove these once we can send new project up
-  const [loading, setLoading] = useState(true);
-  const [metadbContents, setMetadbContents] = useState<object[]>([]);
-
-  // What rights does the user have on this notebook?
-  const role_info = useEventedPromise(
-    'NotebookSettings component',
-    async (project_id: ProjectID) => {
-      const split_id = await split_full_project_id(project_id);
-      const roles = await getUserProjectRolesForCluster(split_id.listing_id);
-      const is_admin = await isClusterAdmin(split_id.listing_id);
-
-      let can_edit_notebook_on_server = false;
-      const can_edit_notebook_on_device = true; // BBS 20230215 workaround because edit notebook isn't appearing at all.
-      for (const role in roles) {
-        // TODO FIX This seems broken, also doesn't account for 'cluster-admin'
-        if (
-          (role === split_id.project_id && roles[role].includes(ADMIN_ROLE)) ||
-          is_admin
-        ) {
-          can_edit_notebook_on_server = true;
-        }
-      }
-      return {
-        can_edit_notebook_on_device: can_edit_notebook_on_device,
-        can_edit_notebook_on_server: can_edit_notebook_on_server,
-        is_admin: is_admin,
-        roles: roles,
-      };
-    },
-    constantArgsSplit(
-      listenDataDB,
-      [project_id!, {since: 'now', live: true}],
-      [project_id]
-    ),
-    false,
-    [project_id],
-    project_id!
-  );
 
   useEffect(() => {
     try {
@@ -140,15 +81,6 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
       throw err;
     }
   }
-
-  useEffect(() => {
-    if (project_id === null) return;
-    const getDB = async () => {
-      setMetadbContents(await dumpMetadataDBContents(project_id!));
-      setLoading(false);
-    };
-    getDB();
-  }, []);
 
   return project_info ? (
     <Box>
@@ -220,18 +152,12 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             )}
           </Box>
         </Grid>
-        {loading ? (
-          <Grid item>
-            <CircularLoading label={'Loading autoincrementer information...'} />
-          </Grid>
-        ) : (
-          <Grid item xs={12} sm={12} md={6} lg={8}>
-            <AutoIncrementerSettingsList
-              project_info={project_info}
-              uiSpec={props.uiSpec}
-            />
-          </Grid>
-        )}
+        <Grid item xs={12} sm={12} md={6} lg={8}>
+          <AutoIncrementerSettingsList
+            project_info={project_info}
+            uiSpec={props.uiSpec}
+          />
+        </Grid>
       </Grid>
     </Box>
   ) : (
