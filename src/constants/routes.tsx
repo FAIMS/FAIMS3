@@ -38,8 +38,6 @@ export const RECORD_RECORD = '/record/';
 export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 export const AUTOINCREMENT = '/autoincrements/';
-export const PROJECT_CREATE = '/new-notebook';
-export const PROJECT_DESIGN = '/notebook/';
 export const PROJECT_ATTACHMENT = '/attachment/';
 
 export function getRecordRoute(
