@@ -113,6 +113,13 @@ function get_default_relation_label(
   return [];
 }
 
+/**
+ * Remove any records from the array that are already linked to the current record.
+ * @param multiple - do we allow multiple relations?
+ * @param value - current value of the field
+ * @param all_records - array of records that are available to link to
+ * @returns a reduced array of records for linking
+ */
 function excludes_related_record(
   multiple: boolean,
   value: any,
@@ -120,16 +127,23 @@ function excludes_related_record(
 ) {
   const relations: string[] = multiple ? [] : [value?.record_id];
   const records: RecordReference[] = [];
+
+  // if we allow multiple links and we have a current value then extract
+  // the record_ids from the current value and add them to the relations array
   if (multiple && value)
     value.map((record: RecordReference) =>
       record !== null ? relations.push(record.record_id) : record
     );
 
+  // filter the all_records array to remove any records that are already linked
+  // if we don't allow multiple values OR we have no current value
+  // then all records would be included
   all_records.map((record: RecordReference) =>
     relations.includes(record.record_id) ? record : records.push(record)
   );
   return records;
 }
+
 type DisplayChildProps = {
   handleUnlink: Function;
   handleReset: Function;
@@ -239,12 +253,18 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     let mounted = true;
     (async () => {
       if (project_id !== undefined && mounted && props.isconflict !== true) {
+        // need to enable the field for multiple=false since it defaults to disabled
+        // enable if there is no existing value or if the existing value doesn't have
+        // a record id (why would it not have a record ID?)
         if (
           !multiple &&
           props.form.values[field_name] &&
           props.form.values[field_name]['record_id'] === undefined
         )
           setIs_enabled(true);
+        // or just no existing value
+        if (!multiple && !props.form.values[field_name]) setIs_enabled(true);
+
         if (!multiple) {
           if (
             props.form.values[field_name] &&
@@ -607,8 +627,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
               </Typography>
               {is_enabled && (
                 <Typography variant="caption">
-                  It's a single related, to enable Add record or Link, remove
-                  link firstly
+                  Remove existing link to enable Add record or Link
                 </Typography>
               )}
             </Grid>

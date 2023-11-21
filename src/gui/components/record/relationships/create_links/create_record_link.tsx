@@ -289,7 +289,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             >
               <Typography variant="caption">
                 {' '}
-                To enable Add record or Link, remove link firstly
+                Remove existing link to enable Add record or Link
               </Typography>
             </Grid>
           )}
