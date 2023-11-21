@@ -32,7 +32,6 @@ import NoteBookList from './gui/pages/notebook_list';
 import Notebook from './gui/pages/notebook';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
-import ProjectCreate from './gui/pages/project-create';
 import NotFound404 from './gui/pages/404';
 import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';

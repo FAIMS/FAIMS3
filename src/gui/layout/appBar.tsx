@@ -37,7 +37,6 @@ import Collapse from '@mui/material/Collapse';
 import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
-import AddIcon from '@mui/icons-material/Add';
 import HomeIcon from '@mui/icons-material/Home';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -51,7 +50,6 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
 
 import * as ROUTES from '../../constants/routes';
-import {SHOW_NEW_NOTEBOOK} from '../../buildconfig';
 import {getActiveProjectList, listenProjectList} from '../../databaseAccess';
 import SystemAlert from '../components/alert';
 import {ProjectInformation} from 'faims3-datamodel';
