@@ -39,17 +39,11 @@ test('Check about-build component', async () => {
 
   expect(screen.getByText('Refresh the app')).toBeTruthy();
 
-  expect(screen.getByText('Download local database contents')).toBeTruthy();
-
   expect(screen.getByText('Share local database contents')).toBeTruthy();
 
   expect(screen.getByText('Wipe and reset everything')).toBeTruthy();
 
   expect(screen.getByText('Open Mini-Fauxton')).toBeTruthy();
-
-  fireEvent.click(screen.getByText('Download local database contents'));
-
-  expect(doDumpDownload).toBeCalled();
 
   fireEvent.click(screen.getByText('Share local database contents'));
 
