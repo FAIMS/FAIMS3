@@ -215,12 +215,6 @@ export default function AppBar(props: NavbarProps) {
           to: '/',
           disabled: true,
         },
-    {
-      title: 'New Notebook',
-      icon: <AddIcon />,
-      to: ROUTES.PROJECT_CREATE,
-      disabled: !SHOW_NEW_NOTEBOOK,
-    },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
     isAuthenticated

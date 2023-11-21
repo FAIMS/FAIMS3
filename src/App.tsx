@@ -115,22 +115,6 @@ export default function App() {
                   }
                 />
                 <Route
-                  path={ROUTES.PROJECT_CREATE}
-                  element={
-                    <PrivateRoute allowed={Boolean(token)}>
-                      <ProjectCreate />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path={ROUTES.PROJECT_DESIGN + ':project_id'}
-                  element={
-                    <PrivateRoute allowed={Boolean(token)}>
-                      <ProjectCreate />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
                   path={ROUTES.NOTEBOOK + ':project_id'}
                   element={
                     <PrivateRoute allowed={Boolean(token)}>
