@@ -125,21 +125,32 @@ function UserSwitcher(props: UserSwitcherProps) {
             disablePortal
             id={`user-switcher-${props.listing_id}`}
             options={userList}
-            getOptionLabel={option =>
-              option.name ? option.name : option.username
-            }
-            renderOption={(props, option) => (
-              <Box component="li" {...props}>
-                {option.name ? (
-                  <span>
-                    {option.name}{' '}
-                    <Chip size={'small'} label={option.username} />
-                  </span>
-                ) : (
-                  option.username
-                )}
-              </Box>
-            )}
+            getOptionLabel={option => {
+              if (option) return option.name ? option.name : option.username;
+              else return '';
+            }}
+            renderOption={(props, option) => {
+              if (option) {
+                return (
+                  <Box component="li" {...props}>
+                    {option.name ? (
+                      <span>
+                        {option.name}{' '}
+                        <Chip size={'small'} label={option.username} />
+                      </span>
+                    ) : (
+                      option.username
+                    )}
+                  </Box>
+                );
+              } else {
+                return (
+                  <Box component="li" {...props}>
+                    Unknown User
+                  </Box>
+                );
+              }
+            }}
             value={value}
             onChange={(
               event: any,
@@ -148,7 +159,7 @@ function UserSwitcher(props: UserSwitcherProps) {
               setValue(newValue);
             }}
             isOptionEqualToValue={(option, value) =>
-              option.username === value.username
+              option && value ? option.username === value.username : false
             }
             fullWidth
             renderInput={params => (
