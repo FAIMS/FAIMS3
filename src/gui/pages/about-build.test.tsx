@@ -35,15 +35,15 @@ test('Check about-build component', async () => {
       <AboutBuild />
     </Router>
   );
-  expect(screen.getByText('Directory Server')).toBeTruthy();
+  expect(screen.getByText('Directory Server:')).toBeTruthy();
 
   expect(screen.getByText('Refresh the app')).toBeTruthy();
 
-  expect(screen.getByText('Share local database contents')).toBeTruthy();
+  expect(screen.getByText('Backup from this device')).toBeTruthy();
 
   expect(screen.getByText('Wipe and reset everything')).toBeTruthy();
 
-  expect(screen.getByText('Open Mini-Fauxton')).toBeTruthy();
+  expect(screen.getByText('Open Raw Database Interface')).toBeTruthy();
 
   fireEvent.click(screen.getByText('Share local database contents'));
 
