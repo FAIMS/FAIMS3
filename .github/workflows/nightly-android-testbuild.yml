@@ -68,6 +68,11 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+      - name: Get PR Number
+        id: prnum
+        run: |
+          echo -n "value=$(bin/getDescribeString.sh gh-play)" >> "$GITHUB_OUTPUT"        
+        shell: bash  
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Cache Gradle packages
         uses: actions/cache@v3
@@ -94,17 +99,6 @@ jobs:
           ruby-version: 2.7.5
           bundler-cache: true
           working-directory: android
-      # We'll do this when we have android-specific tests...
-      # - name: Run tests
-      #   run: |
-      #     cd android 
-      #     bundle exec fastlane android test
-        # echo -n "::set-output name=value::$(git log --perl-regexp --pretty='%s' | grep 'Merge #' | head -n1 | cut -d'#' -f2)-$(git describe --long 2>/dev/null || git describe --all --long --always)"
-      - name: Get PR Number
-        id: prnum
-        run: |
-          echo -n "value=$(bin/getDescribeString.sh gh-play)" >> "$GITHUB_OUTPUT"        
-        shell: bash        
       - name: Decode Service Account Key JSON File
         uses: timheuer/base64-to-file@v1
         id: service_account_json_file
@@ -125,7 +119,7 @@ jobs:
           export platform="github-actions-play"
           export serverprefix="testing"
           export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
-          export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh testing-android)
+          export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh android)
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_NEW_NOTEBOOK=true
           export VITE_SHOW_MINIFAUXTON=true

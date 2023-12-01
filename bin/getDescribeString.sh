@@ -5,6 +5,6 @@ if [ -z "$1" ]; then
 else
 	platform="$1";
 fi
-
-# use the most recent tag as the main version descriptor, add the platform
-echo $(git describe --tags --abbrev=0)-"$platform"
+# get the version number from package.json
+version=$(grep '"version":' package.json | cut -d: -f 2 | sed -e 's/[", ]//g')
+echo v$version-$platform
