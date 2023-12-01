@@ -41,9 +41,7 @@ import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {progressiveSaveFiles} from '../../sync/data-dump';
 import {
-  DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
-  DIRECTORY_PORT,
   RUNNING_UNDER_TEST,
   COMMIT_VERSION,
   SHOW_MINIFAUXTON,
@@ -112,24 +110,22 @@ export default function AboutBuild() {
   return (
     <Box sx={{p: 2}}>
       <Breadcrumbs data={breadcrumbs} />
-      <BoxTab title={'Developer tool: About the build'} bgcolor={grey[100]} />
+      <BoxTab title={'Fieldmark Configuration'} bgcolor={grey[100]} />
       <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}} mb={2}>
         <pre>
           <table>
             <tbody>
               <tr>
-                <td>Directory Server</td>
-                <td>
-                  {DIRECTORY_PROTOCOL}://{DIRECTORY_HOST}:{DIRECTORY_PORT}/
-                </td>
+                <td>Directory Server:</td>
+                <td>{DIRECTORY_HOST}</td>
               </tr>
               <tr>
-                <td>Commit Version</td>
+                <td>Version:</td>
                 <td>{COMMIT_VERSION}</td>
               </tr>
               <tr>
-                <td>Running under test</td>
-                <td>{RUNNING_UNDER_TEST ? 'True' : 'False'}</td>
+                <td>{RUNNING_UNDER_TEST ? 'Running under test' : ''}</td>
+                <td></td>
               </tr>
             </tbody>
           </table>
@@ -148,32 +144,6 @@ export default function AboutBuild() {
           alignItems="left"
           spacing={2}
         >
-          <Grid item md={4} sm={6} xs={12}>
-            <Typography variant={'h5'} gutterBottom>
-              Exporting your data?
-            </Typography>
-
-            <Typography variant={'body2'}>
-              Here is a link for a laptop or desktop to visit a page listing our
-              exporters. You can choose to export data from individual notebooks
-              using tools on this page.
-            </Typography>
-          </Grid>
-          <Grid item md={8} sm={6} xs={12}>
-            <Typography variant={'h6'}>
-              <br />
-              <Link
-                href="https://faims.edu.au/export/"
-                target={'_blank'}
-                rel="noreferrer"
-              >
-                Visit exporter list (external to app)
-              </Link>
-            </Typography>
-          </Grid>
-          <Grid item xs={12}>
-            <Divider />
-          </Grid>
           <Grid item md={4} sm={6} xs={12}>
             <Typography variant={'h5'} gutterBottom>
               Having issues?
@@ -256,11 +226,14 @@ export default function AboutBuild() {
               <Divider flexItem orientation={'horizontal'} />
               <Grid item md={4} sm={6} xs={12}>
                 <Typography variant={'h5'} gutterBottom>
-                  Devtools
+                  Developer Tools
                 </Typography>
 
                 <Typography variant={'body2'}>
-                  Use the following with care!
+                  Use the following with care! "Wipe and Reset" will delete all
+                  data stored on this device and require you to login again.
+                  "Raw Database Interface" is a tool for developers to inspect
+                  inspect the raw data stored on this device.
                 </Typography>
               </Grid>
               <Grid item md={8} sm={6} xs={12}>
@@ -327,7 +300,7 @@ export default function AboutBuild() {
                         }}
                         startIcon={<StorageIcon />}
                       >
-                        Open Mini-Fauxton
+                        Open Raw Database Interface
                       </Button>
                     </Grid>
                   )}
