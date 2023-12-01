@@ -52,7 +52,6 @@ import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
-import Link from '@mui/material/Link';
 
 export default function AboutBuild() {
   const breadcrumbs = [
