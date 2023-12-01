@@ -153,10 +153,10 @@ platform :android do
                          skip_upload_screenshots: true
                         )
   end
-  lane :deploy_fip do
+
+  lane :deploy_fieldmark_production do
     gradle(task: "clean")
     sh("echo", VERSION_NAME)
-    sh("echo", FIP_CLOSED_LANE)
     sh("../bin/changelog.sh", VERSION)
     gradle(task: "bundle",
            build_type: "Release",
@@ -169,7 +169,8 @@ platform :android do
               "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
            }
            )
-    upload_to_play_store(track: FIP_CLOSED_LANE,
+    upload_to_play_store(json_key: ENV["ANDROID_JSON_KEY_FILE"],
+                         track: 'production',
                          release_status: 'completed',
                          skip_upload_metadata: true,
                          skip_upload_images: true,

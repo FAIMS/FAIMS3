@@ -118,20 +118,18 @@ jobs:
       - name: Building webapp
         run: |
           export platform="github-actions-play"
-          export serverprefix="testing"
-          export REACT_APP_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
-          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh android)
-          export REACT_APP_SHOW_WIPE=true
-          export REACT_APP_SHOW_NEW_NOTEBOOK=false
-          export REACT_APP_SHOW_MINIFAUXTON=true
-          export REACT_APP_DIRECTORY_HOST=db.fieldmark.app
-          export REACT_APP_DIRECTORY_PORT=443
-          export REACT_APP_PRODUCTION_BUILD=true          
-          export REACT_APP_SERVICES=FAIMSTEXT
-          export REACT_APP_USE_REAL_DATA=true
-          export REACT_APP_PROD_BUILD=true          
-          export REACT_APP_TAG=prodAndroid          
-          export REACT_APP_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
+          export serverprefix="fieldmark"
+          export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
+          export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh android)
+          export VITE_SHOW_WIPE=true
+          export VITE_SHOW_MINIFAUXTON=false
+          export VITE_DIRECTORY_HOST=db.fieldmark.app
+          export VITE_DIRECTORY_PORT=443
+          export VITE_PRODUCTION_BUILD=true          
+          export VITE_SERVICES=FAIMSTEXT
+          export VITE_PROD_BUILD=true          
+          export VITE_TAG=prodAndroid      
+          export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
           git clean -xfd
           npm ci
           npm run build
@@ -143,14 +141,14 @@ jobs:
         run: |
           cd android
           bundle install
-          bundle exec fastlane deploy_fieldmark_closed_track
+          bundle exec fastlane deploy_fieldmark_production
         env:
           JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
           JAVA_KEYSTORE_PASSWORD: ${{ secrets.JAVA_KEYSTORE_PASSWORD }}
           JAVA_KEY: ${{ secrets.JAVA_KEY}}
           JAVA_KEY_PASSWORD: ${{ secrets.JAVA_KEY_PASSWORD }}
           ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
-          serverprefix: "testing"
+          serverprefix: "fieldmark"
           prnum: ${{steps.prnum.outputs.value}}
       # - run: cd android && ./gradlew assembleDebug
       - name: Upload build artifacts
