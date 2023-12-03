@@ -80,9 +80,9 @@ jobs:
           npm ci
           npm run build
         # env:
-        #   REACT_APP_LOGIN_TOKEN: '{"token": "${{ secrets.JWT_TEST_TOKEN }}", "pubkey": "${{ secrets.JWT_SERVER_FLATTENED_PUBKEY }}", "pubalg": "RS256"}'
+        #   VITE_LOGIN_TOKEN: '{"token": "${{ secrets.JWT_TEST_TOKEN }}", "pubkey": "${{ secrets.JWT_SERVER_FLATTENED_PUBKEY }}", "pubalg": "RS256"}'
 
-      # export REACT_APP_LOGIN_TOKEN="${{ secrets.JWT_TEST_TOKEN }}"
+      # export VITE_LOGIN_TOKEN="${{ secrets.JWT_TEST_TOKEN }}"
       # https://capacitorjs.com/docs/android
       - run: npx cap update ios
       - run: npx cap sync --deployment ios
@@ -96,7 +96,7 @@ jobs:
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
         env:
-          REACT_APP_LOGIN_TOKEN: "${{ secrets.JWT_TEST_TOKEN }}"
+          VITE_LOGIN_TOKEN: "${{ secrets.JWT_TEST_TOKEN }}"
           APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
           DEVELOPER_APP_ID: '${{ secrets.DEVELOPER_APP_ID }}'
           DEVELOPER_APP_IDENTIFIER: '${{ secrets.DEVELOPER_APP_IDENTIFIER }}'
