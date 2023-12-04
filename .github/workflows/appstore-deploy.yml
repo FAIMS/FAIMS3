@@ -75,7 +75,7 @@ jobs:
           export VITE_TAG=prodIOS      
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}  
           git clean -xfd
-          npm ci
+          npm ci --python=python3.10
           npm run build
         # env:
         #   VITE_LOGIN_TOKEN: '{"token": "${{ secrets.JWT_TEST_TOKEN }}", "pubkey": "${{ secrets.JWT_SERVER_FLATTENED_PUBKEY }}", "pubalg": "RS256"}'
