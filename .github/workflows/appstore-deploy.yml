@@ -60,7 +60,7 @@ jobs:
           python-version: '3.10' 
       - name: Building webapp
         run: |
-          export platform="github-actions-appstore"
+          export platform="github-actions-ios"
           export serverprefix="fieldmark"
           export PYTHON=python3.10
           export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
