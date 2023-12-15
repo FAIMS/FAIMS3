@@ -1,5 +1,5 @@
 PODS:
-  - Capacitor (5.4.0):
+  - Capacitor (5.4.1):
     - CapacitorCordova
   - CapacitorApp (5.0.6):
     - Capacitor
@@ -11,7 +11,7 @@ PODS:
     - Capacitor
   - CapacitorCommunityBarcodeScanner (4.0.1):
     - Capacitor
-  - CapacitorCordova (5.4.0)
+  - CapacitorCordova (5.4.1)
   - CapacitorDevice (5.0.6):
     - Capacitor
   - CapacitorFilesystem (5.1.4):
@@ -69,13 +69,13 @@ EXTERNAL SOURCES:
     :path: "../capacitor-cordova-ios-plugins"
 
 SPEC CHECKSUMS:
-  Capacitor: a5cd803e02b471591c81165f400ace01f40b11d3
+  Capacitor: 4c0681b47eebeba1f902093d24149cf2f518393e
   CapacitorApp: 024e1b1bea5f883d79f6330d309bc441c88ad04a
   CapacitorAppLauncher: 5a9f06c13c6b4f5d65b550a07128ef04f3a216b3
   CapacitorBrowser: 7a0fb6a1011abfaaf2dfedfd8248f942a8eda3d6
   CapacitorCamera: 084b0b228bba7d00587910337b1c89e93b1d32ab
   CapacitorCommunityBarcodeScanner: 7feb206489c8555a8ca0c74c57ddf49ead774eb8
-  CapacitorCordova: 66ce22f9976de30fd816f746e9e92e07d6befafd
+  CapacitorCordova: 1222fdd78bfd0d323cc22bf254eed1484fe6c92a
   CapacitorDevice: 2c968f98a1ec4d22357418c1521e7ddc46c675e6
   CapacitorFilesystem: af704badfbc69f6f8623d9ed313e5490e3723dcb
   CapacitorGeolocation: 7be5f77abc205c0efe319fff8587a7183e7b0240
@@ -85,4 +85,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 7037c2c6a20467555148679f1b13974b9d4a6209
 
-COCOAPODS: 1.10.0
+COCOAPODS: 1.11.3
