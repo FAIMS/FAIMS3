@@ -64,7 +64,7 @@
     "@emotion/react": "11.10.8",
     "@emotion/styled": "11.10.8",
     "@ionic/pwa-elements": "^3.2.2",
-    "@mui/icons-material": "5.11.16",
+    "@mui/icons-material": "5.14.5",
     "@mui/lab": "5.0.0-alpha.129",
     "@mui/material": "5.12.3",
     "@mui/x-data-grid": "6.3.0",
