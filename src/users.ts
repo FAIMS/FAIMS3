@@ -24,7 +24,7 @@
 import {jwtVerify, KeyLike, importSPKI} from 'jose';
 
 import {CLUSTER_ADMIN_GROUP_NAME, BUILT_LOGIN_TOKEN} from './buildconfig';
-import {active_db, local_auth_db} from './sync/databases';
+import {local_auth_db} from './sync/databases';
 import {reprocess_listing} from './sync/process-initialization';
 import {
   ClusterProjectRoles,
@@ -33,7 +33,6 @@ import {
   split_full_project_id,
   TokenContents,
   LocalAuthDoc,
-  JWTTokenInfo,
   JWTTokenMap,
 } from 'faims3-datamodel';
 import {RecordMetadata} from 'faims3-datamodel';
@@ -228,8 +227,8 @@ export async function getAllUsersForCluster(
   const token_contents = [];
   const doc = await local_auth_db.get(cluster_id);
   for (const token_details of Object.values(doc.available_tokens)) {
-    const token_info = await getTokenInfoForSubDoc(token_details);
-    token_contents.push(await parseToken(token_info.token, token_info.pubkey));
+    const pubkey = await importSPKI(token_details.pubkey, token_details.pubalg);
+    token_contents.push(await parseToken(token_details.token, pubkey));
   }
   return token_contents;
 }
@@ -422,7 +421,6 @@ export async function shouldDisplayRecord(
   }
   return false;
 }
-
 
 /**
  * Find the default login token if we have one
