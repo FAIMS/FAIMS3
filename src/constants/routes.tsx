@@ -22,7 +22,6 @@ import {ProjectID, RecordID, RevisionID} from 'faims3-datamodel';
 
 export const INDEX = '/';
 export const SIGN_IN = '/signin/';
-export const SIGN_IN_RETURN = '/signin-return';
 
 export const NOT_FOUND = '/not-found';
 export const WORKSPACE = '/workspace';

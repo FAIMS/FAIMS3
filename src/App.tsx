@@ -25,7 +25,6 @@ import * as ROUTES from './constants/routes';
 import {PrivateRoute} from './constants/privateRouter';
 import Index from './gui/pages';
 import {SignIn} from './gui/pages/signin';
-import {SignInReturnLoader} from './gui/pages/signin-return';
 import AboutBuild from './gui/pages/about-build';
 import Workspace from './gui/pages/workspace';
 import NoteBookList from './gui/pages/notebook_list';
@@ -92,10 +91,6 @@ export default function App() {
                       <SignIn setToken={setToken} />
                     </PrivateRoute>
                   }
-                />
-                <Route
-                  path={ROUTES.SIGN_IN_RETURN}
-                  Component={SignInReturnLoader}
                 />
                 <Route
                   path={ROUTES.WORKSPACE}
