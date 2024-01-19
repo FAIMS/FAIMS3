@@ -22,7 +22,7 @@
 import {App as CapacitorApp} from '@capacitor/app';
 
 import {getSyncableListingsInfo} from './databaseAccess';
-import {setTokenForCluster, getTokenContentsForCluster} from './users';
+import {setTokenForCluster} from './users';
 import {reprocess_listing} from './sync/process-initialization';
 
 interface TokenURLObject {
@@ -72,8 +72,6 @@ function processUrlPassedToken(token_obj: TokenURLObject) {
       return listing_id;
     })
     .then(async listing_id => {
-      const token = await getTokenContentsForCluster(listing_id);
-      console.debug('token is', token);
       reprocess_listing(listing_id);
     })
     .catch(err => {

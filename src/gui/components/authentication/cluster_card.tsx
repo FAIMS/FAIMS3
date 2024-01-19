@@ -95,7 +95,7 @@ function UserSwitcher(props: UserSwitcherProps) {
           props.listing_id
         );
         console.log(
-          'awaiting getTokenInfoForCluster() returned',
+          'awaiting getTokenContentsForCluster() returned',
           token_contents
         );
         props.setToken(token_contents);

@@ -36,7 +36,6 @@ import {
   JWTTokenInfo,
   JWTTokenMap,
 } from 'faims3-datamodel';
-import {LOCALLY_CREATED_PROJECT_PREFIX} from './sync/new-project';
 import {RecordMetadata} from 'faims3-datamodel';
 import {logError} from './logging';
 
@@ -50,41 +49,34 @@ interface TokenInfo {
   pubkey: KeyLike;
 }
 
-export const ADMIN_ROLE = 'admin';
-
-export async function getFriendlyUserName(
-  project_id: ProjectID
-): Promise<string> {
-  const doc = await active_db.get(project_id);
-  if (doc.friendly_name !== undefined) {
-    return doc.friendly_name;
-  }
-  if (doc.username !== undefined && doc.username !== null) {
-    return doc.username;
-  }
-  const token_contents = await getTokenContentsForCluster(
-    split_full_project_id(project_id).listing_id
-  );
-  if (token_contents === undefined) {
-    return 'Anonymous User';
-  }
-  return token_contents.name ?? token_contents.username;
-}
-
+/**
+ * Get the current logged in user identifier for this project
+ *  - used in two places:
+ *    - when we add a record, to fill the `updated_by` field
+ *    - when we delete a record, to store in the `created_by` field of the deleted revision
+ * @param project_id current project identifier
+ * @returns a promise resolving to the user identifier
+ */
 export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
-  const doc = await active_db.get(project_id);
-  if (doc.username !== undefined && doc.username !== null) {
-    return doc.username;
-  }
+  // look in the stored token for the project's server, this will 
+  // get the current logged in username
   const token_contents = await getTokenContentsForCluster(
     split_full_project_id(project_id).listing_id
   );
+  // otherwise we don't know who this is (probably should not happen given the callers)
   if (token_contents === undefined) {
     return 'Anonymous User';
   }
   return token_contents.username;
 }
 
+/**
+ * Store a token for a server (cluster)
+ * @param token new authentication token
+ * @param pubkey token public key
+ * @param pubalg token pubkey algorithm
+ * @param cluster_id server identifier that this token is for
+ */
 export async function setTokenForCluster(
   token: string,
   pubkey: string,
@@ -118,6 +110,15 @@ export async function setTokenForCluster(
   }
 }
 
+/**
+ * Add a token to an auth object or create a new one
+ * @param token auth token
+ * @param pubkey public key
+ * @param pubalg pubkey algorithm
+ * @param cluster_id server identifier
+ * @param current_doc current auth doc if any
+ * @returns a promise resolving to a new or updated auth document
+ */
 async function addTokenToDoc(
   token: string,
   pubkey: string,
@@ -251,36 +252,30 @@ async function getUsernameFromToken(
   return (await parseToken(token, keyobj)).username;
 }
 
-async function getTokenInfoForSubDoc(
-  token_details: JWTTokenInfo
-): Promise<TokenInfo> {
-  const pubkey = await importSPKI(token_details.pubkey, token_details.pubalg);
-  return {
-    token: token_details.token,
-    pubkey: pubkey,
-  };
-}
-
-async function getCurrentTokenInfoForDoc(
-  doc: LocalAuthDoc
-): Promise<TokenInfo> {
-  const username = doc.current_username;
-  // console.debug('Current username', username, doc);
-  return await getTokenInfoForSubDoc(doc.available_tokens[username]);
-}
-
-export async function getTokenInfoForCluster(
+async function getTokenInfoForCluster(
   cluster_id: string
 ): Promise<TokenInfo | undefined> {
   try {
     const doc = await local_auth_db.get(cluster_id);
-    return await getCurrentTokenInfoForDoc(doc);
+    const username = doc.current_username;
+    const token_details = doc.available_tokens[username];
+    const pubkey = await importSPKI(token_details.pubkey, token_details.pubalg);
+    return {
+      token: token_details.token,
+      pubkey: pubkey,
+    };
   } catch (err) {
     console.warn('Token not found for:', cluster_id, err);
     return undefined;
   }
 }
 
+/**
+ * Get the content of the current auth token for a server
+ *   - used in UI login panel to get username, roles etc.
+ * @param cluster_id server identity
+ * @returns Expanded contents of the current auth token
+ */
 export async function getTokenContentsForCluster(
   cluster_id: string
 ): Promise<TokenContents | undefined> {
@@ -365,6 +360,11 @@ function splitCouchDBRole(couch_role: string): SplitCouchDBRole | undefined {
   };
 }
 
+/**
+ * Is the current user a cluster admin?
+ * @param cluster_id server identifier
+ * @returns true if the current user has cluster admin permissions
+ */
 export async function isClusterAdmin(cluster_id: string): Promise<boolean> {
   const token_contents = await getTokenContentsForCluster(cluster_id);
   if (token_contents === undefined) {
@@ -379,9 +379,6 @@ export async function shouldDisplayProject(
   full_proj_id: ProjectID
 ): Promise<boolean> {
   const split_id = split_full_project_id(full_proj_id);
-  if (split_id.listing_id === LOCALLY_CREATED_PROJECT_PREFIX) {
-    return true;
-  }
   const is_admin = await isClusterAdmin(split_id.listing_id);
   if (is_admin) {
     return true;
@@ -404,34 +401,34 @@ export async function shouldDisplayRecord(
 ): Promise<boolean> {
   const split_id = split_full_project_id(full_proj_id);
   const user_id = await getCurrentUserId(full_proj_id);
-  if (split_id.listing_id === LOCALLY_CREATED_PROJECT_PREFIX) {
-    // console.info('See record as local project', record_metadata.record_id);
-    return true;
-  }
   if (record_metadata.created_by === user_id) {
-    // console.info('See record as user created', record_metadata.record_id);
     return true;
   }
   const is_admin = await isClusterAdmin(split_id.listing_id);
   if (is_admin) {
-    // console.info('See record as cluster admin', record_metadata.record_id);
     return true;
   }
   const roles = await getUserProjectRolesForCluster(split_id.listing_id);
   if (roles === undefined) {
-    // console.info('Not see record as not in cluster', record_metadata.record_id);
     return false;
   }
   for (const role in roles) {
-    if (role === split_id.project_id && roles[role].includes(ADMIN_ROLE)) {
-      // console.info('See record as notebook admin', record_metadata.record_id);
+    if (
+      role === split_id.project_id &&
+      roles[role].includes(CLUSTER_ADMIN_GROUP_NAME)
+    ) {
       return true;
     }
   }
-  // console.info('Not see record hit fallback', record_metadata.record_id);
   return false;
 }
 
+
+/**
+ * Find the default login token if we have one
+ *   - called in App.tsx to get an initial token for the app
+ * @returns current login token for default server, if present
+ */
 export async function getTokenContentsForRouting(): Promise<
   TokenContents | undefined
 > {
