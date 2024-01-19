@@ -184,64 +184,6 @@ export async function get_default_instance(): Promise<NonNullListingsObject> {
   return default_instance;
 }
 
-let default_projects_db: null | ConnectionInfo = null;
-
-export async function get_base_connection_info(
-  listing_object: ListingsObject
-): Promise<ConnectionInfo> {
-  if (default_projects_db === null) {
-    try {
-      // Normal case of a single DEFAULT listing in the directory
-      const possibly_corrupted_instance = await directory_db.local.get(
-        DEFAULT_LISTING_ID
-      );
-      return (default_projects_db = materializeConnectionInfo(
-        directory_connection_info,
-        possibly_corrupted_instance.projects_db
-      ));
-    } catch (err: any) {
-      // Missing when directory_db has NOTHING in it
-      // i.e. current FAIMS app doesn't have a directory
-      // this is usually because it's the server, not the app.
-      if (err.message !== 'missing') {
-        // Other DB error
-        throw err;
-      }
-
-      const nullExcept = <T>(val: T | undefined | null, err: any): T => {
-        if (val === null || val === undefined) {
-          throw err;
-        }
-        return val;
-      };
-
-      // If running in server mode
-      // the listings object MUST have all the connection properties
-      return {
-        proto: nullExcept(
-          listing_object.projects_db?.proto,
-          'Server misconfigured: Missing proto'
-        ),
-        host: nullExcept(
-          listing_object.projects_db?.host,
-          'Server misconfigured: Missing host'
-        ),
-        port: nullExcept(
-          listing_object.projects_db?.port,
-          'Server misconfigured: Missing port'
-        ),
-        lan: listing_object.projects_db?.lan,
-        db_name: nullExcept(
-          listing_object.projects_db?.db_name,
-          'Server misconfigured: Missing db_name'
-        ),
-        auth: listing_object.projects_db?.auth,
-      };
-    }
-  }
-  return default_projects_db;
-}
-
 /**
  * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
