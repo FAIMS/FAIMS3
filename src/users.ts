@@ -82,6 +82,7 @@ export async function setTokenForCluster(
   pubalg: string,
   cluster_id: string
 ) {
+  if (token === undefined) throw Error('Token undefined in setTokenForCluster');
   try {
     const doc = await local_auth_db.get(cluster_id);
     const new_doc = await addTokenToDoc(token, pubkey, pubalg, cluster_id, doc);

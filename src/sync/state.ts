@@ -143,6 +143,12 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
       all_projects_updated &&
       Array.from(projects_data_synced.values()).every(v => v);
 
+    console.log(
+      'COMMON CHECK',
+      all_projects_updated,
+      !listings_updated,
+      listing_projects_synced
+    );
     initializeEvents.emit('all_state');
   };
 
@@ -178,7 +184,7 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
   });
   initializeEvents.on(
     'project_update',
-    (type, data_changed, meta_changed, listing, active) => {
+    (type, data_changed, meta_changed, active) => {
       // Now we know we have to wait for the data/meta DB of a project
       // to, if not fully sync, then at least be created (But not if
       // *_changed == false, and no projects_sync_state triggers)
@@ -188,20 +194,20 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
       common_check();
     }
   );
-  initializeEvents.on('project_error', (listing, active, err) => {
-    console.debug('project_error info', listing, 'active', active, 'err', err);
+  initializeEvents.on('project_error', (active, err) => {
+    console.debug('project_error active', active, 'err', err);
     // Don't hold up other things waiting for it to not be an error:
     projects_meta_synced.set(active._id, true);
     projects_data_synced.set(active._id, true);
 
     common_check();
   });
-  initializeEvents.on('meta_sync_state', (syncing, listing, active) => {
+  initializeEvents.on('meta_sync_state', (syncing, active) => {
     projects_meta_synced.set(active._id, !syncing);
 
     common_check();
   });
-  initializeEvents.on('data_sync_state', (syncing, listing, active) => {
+  initializeEvents.on('data_sync_state', (syncing, active) => {
     projects_data_synced.set(active._id, !syncing);
 
     common_check();

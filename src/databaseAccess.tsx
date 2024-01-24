@@ -136,12 +136,8 @@ export async function getAllProjectList(): Promise<ProjectInformation[]> {
   return output;
 }
 
-export function listenProjectList(
-  listener: () => void,
-  error: (err: any) => void
-): () => void {
+export function listenProjectList(listener: () => void): () => void {
   events.on('project_update', listener);
-  console.warn(`${error} will never be called`);
   return () => {
     // Event remover
     events.removeListener('project_update', listener);

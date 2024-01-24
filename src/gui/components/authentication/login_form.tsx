@@ -45,7 +45,6 @@ export function LoginButton(props: LoginButtonProps) {
         window.addEventListener(
           'message',
           async event => {
-            console.log('Received token for:', props.listing_id);
             await setTokenForCluster(
               event.data.token,
               event.data.pubkey,
@@ -60,12 +59,7 @@ export function LoginButton(props: LoginButtonProps) {
                 props.setToken(token);
                 reprocess_listing(props.listing_id);
               })
-              .catch(err => {
-                console.warn(
-                  'Failed to get token for: ',
-                  props.listing_id,
-                  err
-                );
+              .catch(() => {
                 props.setToken(undefined);
               });
           },

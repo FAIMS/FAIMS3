@@ -132,14 +132,21 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
     //opts.keepalive = true;
     return PouchDB.fetch(url, opts);
   };
-  return new PouchDB(
-    encodeURIComponent(connection_info.proto) +
+  let db_url: string;
+  if (connection_info.base_url) {
+    if (connection_info.base_url.endsWith('/'))
+      db_url = connection_info.base_url + connection_info.db_name;
+    else db_url = connection_info.base_url + '/' + connection_info.db_name;
+  } else {
+    db_url =
+      encodeURIComponent(connection_info.proto) +
       '://' +
       encodeURIComponent(connection_info.host) +
       ':' +
       encodeURIComponent(connection_info.port) +
       '/' +
-      encodeURIComponent(connection_info.db_name),
-    pouch_options
-  );
+      encodeURIComponent(connection_info.db_name);
+  }
+
+  return new PouchDB(db_url, pouch_options);
 }
