@@ -24,7 +24,6 @@ import {
   split_full_project_id,
   NonUniqueProjectID,
   resolve_project_id,
-  ActiveDoc,
 } from 'faims3-datamodel';
 import {ConnectionInfo, ListingsObject, ProjectObject} from 'faims3-datamodel';
 import {logError} from '../logging';
@@ -41,7 +40,6 @@ import {
   active_db,
   data_dbs,
   default_changes_opts,
-  DEFAULT_LISTING_ID,
   directory_db,
   ensure_local_db,
   ensure_synced_db,
@@ -369,12 +367,7 @@ export async function update_listing(
   // get the projects from remote and update our local db
   const directory = await get_projects_from_conductor(listing_object);
 
-  // TODO
-  // we now need to make any database connections that will be needed
-  // for the active projects
-  // for each active project, call process_project (I think)
-  // then check what if anything below here is still needed
-
+  // for all active projects, ensure we have the right database connections
   const active_projects = await get_active_projects();
 
   active_projects.rows.forEach(info => {
@@ -422,7 +415,7 @@ export async function activate_project(
     console.debug('Have already activated', active_id);
     return active_id;
   } else {
-    console.debug('Activating', active_id);
+    console.debug('%cActivating', 'background-color: pink;', active_id);
     const active_doc = {
       _id: active_id,
       listing_id: listing_id,
@@ -432,13 +425,50 @@ export async function activate_project(
       is_sync: is_sync,
       is_sync_attachments: false,
     };
-    await active_db.put(active_doc);
-
-    // this should happen here but we need to get the project object
-    // from somewhere
-    // await ensure_project_databases(active_doc, project_object);
+    const response = await active_db.put(active_doc);
+    if (response.ok) {
+      const project_object = await get_project_from_directory(
+        active_doc.listing_id,
+        project_id
+      );
+      console.log(
+        '%cProject Object',
+        'background-color: pink;',
+        project_object
+      );
+      if (project_object)
+        await ensure_project_databases(
+          {...active_doc, _rev: response.rev},
+          project_object
+        );
+      else
+        throw Error(
+          `Unable to initialise databases for new active project ${project_id}`
+        );
+    } else {
+      console.warn('Error saving new active document', response);
+      throw Error(`Unable to store new active project ${project_id}`);
+    }
 
     return active_id;
+  }
+}
+
+async function get_project_from_directory(
+  listing_id: ListingID,
+  project_id: ProjectID
+) {
+  // look in the project databases for this project id
+  // and return the record from there
+
+  if (listing_id in projects_dbs) {
+    const project_db = projects_dbs[listing_id];
+    try {
+      const result = await project_db.local.get(project_id);
+      return result as ProjectObject;
+    } catch {
+      return undefined;
+    }
   }
 }
 
