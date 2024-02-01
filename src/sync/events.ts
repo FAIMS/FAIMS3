@@ -32,7 +32,12 @@ export class DebugEmitter extends EventEmitter {
   }
   emit(event: string | symbol, ...args: unknown[]): boolean {
     if (DEBUG_APP) {
-      console.debug('FAIMS EventEmitter event', event, ...args);
+      console.log(
+        '%cFAIMS EventEmitter event',
+        'background-color: red; color: white;',
+        event,
+        ...args
+      );
     }
     return super.emit(event, ...args);
   }
