@@ -47,6 +47,9 @@ import {logError} from '../logging';
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(pouchdbDebug);
 
+// turn on verbose pouch debugging
+if (DEBUG_APP) PouchDB.debug.enable('*');
+
 /**
  * Allows the user to asynchronously await for any of listings_updated,
  * all_projects_updated, listing_projects_synced, all_meta_synced,
