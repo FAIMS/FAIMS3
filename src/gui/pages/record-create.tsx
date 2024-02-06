@@ -19,7 +19,13 @@
  */
 
 import React, {useContext, useState, useEffect} from 'react';
-import {Navigate, useNavigate, useParams, useLocation} from 'react-router-dom';
+import {
+  Navigate,
+  useNavigate,
+  useParams,
+  useLocation,
+  Location,
+} from 'react-router-dom';
 
 import {
   AppBar,
@@ -68,6 +74,7 @@ interface DraftCreateProps {
   type_name: string;
   state?: any;
   record_id: string;
+  location?: Location;
 }
 
 function DraftCreate(props: DraftCreateProps) {
@@ -135,6 +142,7 @@ interface DraftEditProps {
   project_info: ProjectInformation | null;
   record_id: RecordID;
   state?: any;
+  location?: Location;
 }
 
 function DraftEdit(props: DraftEditProps) {
@@ -165,11 +173,9 @@ function DraftEdit(props: DraftEditProps) {
     }
   }, [project_id]);
 
-  console.debug('state', props.state);
+  console.debug('DraftEdit Props', props);
 
   useEffect(() => {
-    let mounted = true;
-
     (async () => {
       if (
         uiSpec !== null &&
@@ -199,12 +205,6 @@ function DraftEdit(props: DraftEditProps) {
         setIs_link_ready(true);
       }
     })();
-
-    return () => {
-      // executed when unmount
-      mounted = false;
-      console.log(mounted);
-    };
   }, [project_id, record_id, uiSpec]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
@@ -302,6 +302,7 @@ function DraftEdit(props: DraftEditProps) {
                       draftLastSaved={draftLastSaved}
                       mq_above_md={mq_above_md}
                       navigate={navigate}
+                      location={props.location}
                     />
                   </Box>
                 </Box>
@@ -405,6 +406,7 @@ export default function RecordCreate() {
             type_name={type_name!}
             state={location.state}
             record_id={draft_record_id}
+            location={location}
           />
         ) : (
           <DraftEdit
@@ -414,6 +416,7 @@ export default function RecordCreate() {
             draft_id={draft_id}
             record_id={record_id}
             state={location.state}
+            location={location}
           />
         )}
       </Box>
