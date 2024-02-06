@@ -230,7 +230,6 @@ export async function get_base_connection_info(
           listing_object.projects_db?.port,
           'Server misconfigured: Missing port'
         ),
-        lan: listing_object.projects_db?.lan,
         db_name: nullExcept(
           listing_object.projects_db?.db_name,
           'Server misconfigured: Missing db_name'

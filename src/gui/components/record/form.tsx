@@ -779,7 +779,6 @@ class RecordForm extends React.Component<
           return doc;
         })
         .then(doc => {
-          console.log('SAVING DOC', this.props.project_id, doc);
           return upsertFAIMSData(this.props.project_id, doc).then(
             revision_id => {
               // add to save the information for relationship when form saved,

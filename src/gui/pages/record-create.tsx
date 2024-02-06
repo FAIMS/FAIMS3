@@ -173,8 +173,6 @@ function DraftEdit(props: DraftEditProps) {
     }
   }, [project_id]);
 
-  console.debug('DraftEdit Props', props);
-
   useEffect(() => {
     (async () => {
       if (
