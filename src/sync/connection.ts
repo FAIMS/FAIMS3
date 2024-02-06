@@ -132,12 +132,14 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
     //opts.keepalive = true;
     return PouchDB.fetch(url, opts);
   };
+  // these defaults are really just to keep typescript happy since the
+  // connection_info properties might be undefined
   return new PouchDB(
-    encodeURIComponent(connection_info.proto) +
+    encodeURIComponent(connection_info.proto || 'http') +
       '://' +
-      encodeURIComponent(connection_info.host) +
+      encodeURIComponent(connection_info.host || 'localhost') +
       ':' +
-      encodeURIComponent(connection_info.port) +
+      encodeURIComponent(connection_info.port || '5984') +
       '/' +
       encodeURIComponent(connection_info.db_name),
     pouch_options
