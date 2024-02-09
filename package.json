@@ -139,7 +139,7 @@
     "@types/react-dom": "18.2.3",
     "@types/react-router": "5.1.20",
     "@types/react-router-dom": "5.3.3",
-    "@types/react-router-hash-link": "^2.4.6",
+    "@types/react-router-hash-link": "^2.4.9",
     "@types/trusted-types": "^2.0.3",
     "@types/uuid": "9.0.1",
     "@types/yup": "0.29.14",
