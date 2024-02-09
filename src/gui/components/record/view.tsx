@@ -235,10 +235,10 @@ function displayErrors(
       <dl>
         {Object.keys(errors).map(field => (
           <>
-            <dt>
+            <dt key="{field}error">
               {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
             </dt>
-            <dd>{errors[field]}</dd>
+            <dd key="{field}errorMessage">{errors[field]}</dd>
           </>
         ))}
       </dl>
