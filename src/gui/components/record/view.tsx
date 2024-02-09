@@ -29,6 +29,7 @@ import {Box, Grid, Paper, Alert, IconButton, Collapse} from '@mui/material';
 import {EditConflictDialog} from './conflict/conflictDialog';
 import NoteIcon from '@mui/icons-material/Note';
 import {grey} from '@mui/material/colors';
+import {uiSpecType} from '../project/data/ComponentSetting';
 // import makeStyles from '@mui/styles/makeStyles';
 // import {useTheme} from '@mui/material/styles';
 type ViewProps = {
@@ -203,13 +204,77 @@ export function ViewComponent(props: ViewProps) {
       {!props.formProps.isValid && error !== false && (
         <Alert severity="error">
           Form has errors, please scroll up and make changes before submitting.
+          {displayErrors(
+            props.formProps.errors,
+            props.viewName,
+            ui_specification
+          )}
         </Alert>
       )}
       {!props.formProps.isValid && error === false && (
         <Alert severity="warning">
           Form has errors, please check other tabs before submitting.
+          {displayErrors(
+            props.formProps.errors,
+            props.viewName,
+            ui_specification
+          )}
         </Alert>
       )}
     </React.Fragment>
   );
+}
+
+function displayErrors(
+  errors: any | undefined,
+  thisView: string,
+  ui_specification: uiSpecType
+) {
+  if (errors) {
+    return (
+      <dl>
+        {Object.keys(errors).map(field => (
+          <>
+            <dt key="{field}error">
+              {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
+            </dt>
+            <dd key="{field}errorMessage">{errors[field]}</dd>
+          </>
+        ))}
+      </dl>
+    );
+  } else {
+    return <p>No errors to display</p>;
+  }
+}
+
+/**
+ * Generate a useful field name, <section>:<field> so that a user can see where an error is
+ * @param field a form field name
+ * @param thisView current view name
+ * @param ui_specification the ui specification object
+ */
+function getUsefulFieldNameFromUiSpec(
+  field: string,
+  thisView: string,
+  ui_specification: uiSpecType
+) {
+  if (field in ui_specification.fields) {
+    const fieldInfo = ui_specification.fields[field];
+    const fieldName =
+      fieldInfo.label ||
+      fieldInfo['component-parameters'].InputLabelProps.label ||
+      field;
+    // get the view that this field is part of
+    let sectionName = '';
+    for (const section in ui_specification.views) {
+      if (ui_specification.views[section].fields.indexOf(field) >= 0) {
+        if (section === thisView) sectionName = 'This section';
+        else sectionName = ui_specification.views[section].label || section;
+      }
+    }
+    return `${sectionName} > ${fieldName}`;
+  } else {
+    return field;
+  }
 }
