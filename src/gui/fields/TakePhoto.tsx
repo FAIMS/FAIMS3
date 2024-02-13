@@ -296,9 +296,7 @@ export class TakePhoto extends React.Component<
           variant="outlined"
           color={'primary'}
           style={{marginRight: '10px'}}
-          {...this.props}
-          // Props from the metadata db will overwrite the above
-          // style attributes, but not overwrite the below onclick.
+          fullWidth={true}
           onClick={async () => {
             await this.takePhoto();
           }}
