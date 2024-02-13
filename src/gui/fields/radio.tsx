@@ -92,6 +92,9 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
       error = true;
     }
 
+    // remove helperText from props so we don't pass it into the element
+    delete radioGroupProps.helperText;
+
     return (
       <FormControl error={error}>
         <FormLabel children={label} />
