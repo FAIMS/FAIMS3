@@ -234,6 +234,7 @@ function ValueChipsArray(props: ValueChipsArrayProps) {
             attachments={props.attachments}
             value={value}
             isactive={props.isactive}
+            key={'key' + value}
           />
         ) : (
           value
