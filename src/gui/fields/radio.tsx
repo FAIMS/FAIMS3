@@ -58,8 +58,10 @@ interface ElementProps {
 }
 
 interface Props {
-  FormLabelProps: FormLabelProps;
-  FormHelperTextProps: FormHelperTextProps;
+  FormLabelProps?: FormLabelProps;
+  FormHelperTextProps?: FormHelperTextProps;
+  label?: string;
+  helperText?: string;
   ElementProps: ElementProps;
   disabled?: boolean;
 }
@@ -74,6 +76,14 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
       ...radioGroupProps
     } = this.props;
 
+    // for backwards compatibility we check these properties as well as
+    // just the plain label and helperText properties
+    const label =
+      this.props.label || FormLabelProps?.children || this.props.field.name;
+
+    const helperText =
+      this.props.helperText || FormHelperTextProps?.children || '';
+
     let error = false;
     if (
       radioGroupProps.form.errors[radioGroupProps.field.name] &&
@@ -84,7 +94,7 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
 
     return (
       <FormControl error={error}>
-        <FormLabel {...FormLabelProps} />
+        <FormLabel children={label} />
         <MuiRadioGroup {...fieldToRadioGroup(radioGroupProps)}>
           {ElementProps.options.map(option => (
             <FormControlLabel
@@ -104,7 +114,7 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
             }
           />
         ) : (
-          <FormHelperText {...FormHelperTextProps} />
+          <FormHelperText children={helperText} />
         )}
       </FormControl>
     );
