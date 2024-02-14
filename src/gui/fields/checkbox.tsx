@@ -43,6 +43,7 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
     const {
       FormControlLabelProps,
       FormHelperTextProps,
+      helperText,
       ...checkboxWithLabelProps
     } = this.props;
 
@@ -51,8 +52,7 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
     const label =
       this.props.label || FormControlLabelProps?.label || this.props.field.name;
 
-    const helperText =
-      this.props.helperText || FormHelperTextProps?.children || '';
+    const theHelperText = helperText || FormHelperTextProps?.children || '';
 
     let error = false;
     if (
@@ -82,7 +82,7 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
             }
           />
         ) : (
-          <FormHelperText children={helperText} />
+          <FormHelperText children={theHelperText} />
         )}
       </FormControl>
     );
