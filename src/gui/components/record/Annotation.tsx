@@ -104,8 +104,10 @@ type AnnotationFieldProp = {
   annotation: any;
   disabled?: boolean;
   isxs?: boolean;
-  isannotationshow: boolean;
-  isuncertityshow: boolean;
+  showAnnotation: boolean;
+  annotationLabel: string;
+  showUncertainty: boolean;
+  uncertaintyLabel: string;
   // formProps:any
 };
 
@@ -148,7 +150,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
 
   return (
     <Box>
-      {props.isannotationshow && (
+      {props.showAnnotation && (
         <Field
           component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
           name={fieldName + 'annotation'}
@@ -157,14 +159,14 @@ export function AnnotationField(props: AnnotationFieldProp) {
           variant="outlined"
           onChange={handlerchangesAnnotation}
           InputProps={{type: 'text', multiline: true, minRows: 4}}
-          label={field['meta']['annotation_label']}
+          label={props.annotationLabel}
           InputLabelProps={{shrink: true}}
           disabled={disabled}
           fullWidth
           sx={{backgroundColor: 'white'}}
         />
       )}
-      {props.isuncertityshow && (
+      {props.showUncertainty && (
         <Field
           component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
           name={props.fieldName + 'uncertainty'}
@@ -173,7 +175,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
           value={uncertainty}
           variant="outlined"
           FormControlLabelProps={{
-            label: field['meta']['uncertainty']['label'],
+            label: props.uncertaintyLabel,
           }}
           onChange={handlerchangesUncertainty}
           disabled={disabled}
