@@ -1345,7 +1345,7 @@ describe('Check form component', () => {
     );
 
     expect(
-      screen.getByText(
+      screen.getAllByText(
         testUiSpecification.fields.hridSurveyAreaForm['component-parameters']
           .InputLabelProps.label
       )
