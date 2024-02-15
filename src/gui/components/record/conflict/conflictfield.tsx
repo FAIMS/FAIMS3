@@ -150,9 +150,6 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
       ? data['fields'][fieldName]['annotations']
       : null;
 
-  const isannotationshow =
-    fieldConfig.meta !== undefined && fieldConfig.meta.annotation !== false;
-
   // get annotation config, backward compatible with old
   // format (DUPLICATED CODE FORM views.tsx - should be inside the annotation component)
   const annotationConfig = {
