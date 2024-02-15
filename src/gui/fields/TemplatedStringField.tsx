@@ -48,6 +48,7 @@ function render_template(template: string, values: FieldValues): string {
 interface Props {
   template: string;
   disabled?: boolean;
+  value?: string;
 }
 
 interface State {
@@ -89,19 +90,16 @@ export class TemplatedStringField extends React.Component<
   }
 
   render() {
-    const {children, ...textFieldProps} = this.props;
-
-    const text_props = fieldToTextField(textFieldProps);
-    if (text_props.InputProps === undefined) {
-      text_props.InputProps = {};
-    }
-    text_props.InputProps.readOnly = true;
-
     return (
       <>
-        <MuiTextField {...text_props}>{children}</MuiTextField>
-        <br />
-        <br />
+        <MuiTextField
+          value={this.props.value}
+          id={this.props.id}
+          label={this.props.label}
+          variant="outlined"
+          inputProps={{readOnly: true}}
+          fullWidth
+        ></MuiTextField>
       </>
     );
   }
@@ -209,7 +207,6 @@ export function TemplatedStringcomponentsetting(
         });
       }
     }
-    console.log(options);
     if (options.length > 0) {
       //get numbers of fields that not IDs
 

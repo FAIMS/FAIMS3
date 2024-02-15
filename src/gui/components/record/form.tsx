@@ -680,6 +680,16 @@ class RecordForm extends React.Component<
       console.warn('The description has not been determined yet');
       return '';
     }
+    // get the description from the view if it's there
+    if (
+      viewName !== null &&
+      this.props.ui_specification.views[viewName] != undefined &&
+      this.props.ui_specification.views[viewName].description != undefined
+    ) {
+      return this.props.ui_specification.views[viewName].description;
+    }
+
+    // backwards compatibility - look in the metadata section
     if (
       viewName !== null &&
       this.props.metaSection !== undefined &&

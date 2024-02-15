@@ -81,19 +81,43 @@ function SingleComponent(props: SingleComponentProps) {
   const isHiddenField =
     fieldConfig['component-name'] === 'BasicAutoIncrementer';
 
-  const isannotationshow =
-    fieldConfig.meta !== undefined && fieldConfig.meta.annotation !== false;
-  const isuncertityshow =
-    fieldConfig.meta !== undefined &&
-    fieldConfig.meta['uncertainty'] !== undefined &&
-    fieldConfig['meta']['uncertainty']['include'];
+  // get annotation config, backward compatible with old
+  // format
+  const annotationConfig = {
+    include: false,
+    label: 'Annotation',
+  };
+  if (fieldConfig.meta?.annotation) {
+    // value could be a string (legacy) or an object
+    if (typeof fieldConfig.meta.annotation !== 'object') {
+      annotationConfig.include = fieldConfig.meta.annotation;
+      // also label is probably set like this
+      if (fieldConfig.meta.annotation_label)
+        annotationConfig.label = fieldConfig.meta.annotation_label;
+    } else {
+      // we have a new style object spec
+      annotationConfig.include = fieldConfig.meta.annotation.include || false;
+      annotationConfig.label =
+        fieldConfig.meta.annotation.label || 'Annotation';
+    }
+  }
+
+  // uncertainty is simpler as it's always been an object
+  const uncertaintyConfig = fieldConfig.meta?.uncertainty || {
+    include: false,
+    label: 'Uncertainty',
+  };
+
+  // should we show annotation/uncertainty at all
+  // don't show for a few field types but otherwise do if it is configured
   const show_annotation =
     props.annotation !== undefined &&
     fields[fieldName].meta !== undefined &&
     fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
     fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
     fields[fieldName]['component-name'] !== 'RandomStyle' &&
-    (isannotationshow || isuncertityshow);
+    fields[fieldName]['component-name'] !== 'RichText' &&
+    (annotationConfig.include || uncertaintyConfig.include);
   return (
     <Box
       key={fieldName + props.index}
@@ -124,8 +148,10 @@ function SingleComponent(props: SingleComponentProps) {
                   field={fields[fieldName]}
                   annotation={props.annotation}
                   handleAnnotation={props.handleAnnotation}
-                  isannotationshow={isannotationshow}
-                  isuncertityshow={isuncertityshow}
+                  showAnnotation={annotationConfig.include}
+                  annotationLabel={annotationConfig.label}
+                  showUncertainty={uncertaintyConfig.include}
+                  uncertaintyLabel={uncertaintyConfig.label}
                   disabled={props.disabled}
                 />
               </Box>

@@ -149,12 +149,40 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
     data['fields'][fieldName] !== undefined
       ? data['fields'][fieldName]['annotations']
       : null;
-  const isannotationshow =
-    fieldConfig.meta !== undefined && fieldConfig.meta.annotation !== false;
-  const isuncertityshow =
+
+  // get annotation config, backward compatible with old
+  // format (DUPLICATED CODE FORM views.tsx - should be inside the annotation component)
+  const annotationConfig = {
+    include: false,
+    label: 'Annotation',
+  };
+  if (fieldConfig.meta?.annotation) {
+    // value could be a string (legacy) or an object
+    if (typeof fieldConfig.meta.annotation !== 'object') {
+      annotationConfig.include = fieldConfig.meta.annotation;
+      // also label is probably set like this
+      if (fieldConfig.meta.annotation_label)
+        annotationConfig.label = fieldConfig.meta.annotation_label;
+    } else {
+      // we have a new style object spec
+      annotationConfig.include = fieldConfig.meta.annotation.include || false;
+      annotationConfig.label =
+        fieldConfig.meta.annotation.label || 'Annotation';
+    }
+  }
+  // uncertainty is simpler as it's always been an object
+  const uncertaintyConfig = fieldConfig.meta?.uncertainty || {
+    include: false,
+    label: 'Uncertainty',
+  };
+  const show_annotation =
+    annotation !== null &&
     fieldConfig.meta !== undefined &&
-    fieldConfig.meta['uncertainty'] !== undefined &&
-    fieldConfig['meta']['uncertainty']['include'];
+    fieldConfig['component-name'] !== 'BasicAutoIncrementer' &&
+    fieldConfig['component-name'] !== 'TemplatedStringField' &&
+    fieldConfig['component-name'] !== 'RandomStyle' &&
+    fieldConfig['component-name'] !== 'RichText' &&
+    (annotationConfig.include || uncertaintyConfig.include);
 
   return ['warning', 'delete', 'clear', 'automerge'].includes(styletype) ? (
     <Box p={2} minHeight="470px" maxHeight="470px" sx={{mt: 0}}>
@@ -206,28 +234,25 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             )}
             <br />
             <br />
-            {fieldConfig['meta'] !== undefined &&
-              fieldConfig['meta']['annotation'] !== undefined &&
-              fieldConfig['component-name'] !== 'BasicAutoIncrementer' &&
-              fieldConfig['component-name'] !== 'TemplatedStringField' &&
-              fieldConfig['component-name'] !== 'RandomStyle' &&
-              annotation !== null && (
-                <AnnotationField
-                  key={'annotation' + fieldName + 'box'}
-                  fieldName={fieldName}
-                  field={fieldConfig}
-                  annotation={{
-                    [fieldName]: {...annotation},
-                  }}
-                  handleAnnotation={() => {
-                    console.log('annotation');
-                  }}
-                  disabled={true}
-                  isxs={false}
-                  isannotationshow={isannotationshow}
-                  isuncertityshow={isuncertityshow}
-                />
-              )}
+            {show_annotation && (
+              <AnnotationField
+                key={'annotation' + fieldName + 'box'}
+                fieldName={fieldName}
+                field={fieldConfig}
+                annotation={{
+                  [fieldName]: {...annotation},
+                }}
+                handleAnnotation={() => {
+                  console.log('annotation');
+                }}
+                disabled={true}
+                isxs={false}
+                showAnnotation={show_annotation}
+                annotationLabel={annotationConfig.label}
+                showUncertainty={uncertaintyConfig.include}
+                uncertaintyLabel={uncertaintyConfig.label}
+              />
+            )}
           </Grid>
         </CardContent>
         <CardActions sx={{backgroundColor: grey[100]}}>

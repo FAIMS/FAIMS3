@@ -32,8 +32,10 @@ import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from 'faims3-datamodel';
 interface Props {
-  FormControlLabelProps: FormControlLabelProps;
-  FormHelperTextProps: FormHelperTextProps;
+  FormControlLabelProps?: FormControlLabelProps; // deprecated
+  FormHelperTextProps?: FormHelperTextProps; // deprecated
+  helperText?: string;
+  label?: string;
 }
 
 export class Checkbox extends React.Component<CheckboxProps & Props> {
@@ -41,8 +43,16 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
     const {
       FormControlLabelProps,
       FormHelperTextProps,
+      helperText,
       ...checkboxWithLabelProps
     } = this.props;
+
+    // for backwards compatibility we check these properties as well as
+    // just the plain label and helperText properties
+    const label =
+      this.props.label || FormControlLabelProps?.label || this.props.field.name;
+
+    const theHelperText = helperText || FormHelperTextProps?.children || '';
 
     let error = false;
     if (
@@ -55,7 +65,7 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
     return (
       <FormControl error={error}>
         <FormControlLabel
-          {...FormControlLabelProps}
+          label={label}
           control={
             <MuiCheckbox
               {...fieldToCheckbox(checkboxWithLabelProps)}
@@ -72,7 +82,7 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
             }
           />
         ) : (
-          <FormHelperText {...FormHelperTextProps} />
+          <FormHelperText children={theHelperText} />
         )}
       </FormControl>
     );
@@ -88,12 +98,9 @@ const uiSpec = {
     id: 'checkbox-field',
     required: false,
     type: 'checkbox',
-    FormControlLabelProps: {
-      label: 'Terms and Conditions',
-    },
-    FormHelperTextProps: {
-      children: 'Read the terms and conditions carefully.',
-    },
+    label: 'Terms and Conditions',
+    helperText: 'Read the terms and conditions carefully.',
+
     // Label: {label: 'Terms and Conditions'},
   },
   validationSchema: [

@@ -7,14 +7,16 @@ import {renderForm, instantiateField} from '../utils';
 
 it('renders as a button', async () => {
   const {container} = renderForm(
-    <Field component={MapFormField} name="point" featureType="Point" />
+    <Field component={MapFormField} name="point" featureType="Point" />,
+    {point: {}}
   );
   expect(container.querySelector('button'));
 });
 
 it('creates a map when the button is pressed', async () => {
   const {container} = renderForm(
-    <Field component={MapFormField} name="point" featureType="Point" />
+    <Field component={MapFormField} name="point" featureType="Point" />,
+    {point: {}}
   );
 
   const button = container.querySelector('button');
@@ -44,7 +46,7 @@ it('renders from the uiSpec', async () => {
     initialValue: '1',
   };
 
-  const {container} = instantiateField(uiSpec);
+  const {container} = instantiateField(uiSpec, {});
   expect(container.querySelector('button'));
 });
 

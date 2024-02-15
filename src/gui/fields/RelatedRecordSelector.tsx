@@ -61,6 +61,7 @@ interface Props {
   relation_type: FAIMSTypeName;
   multiple?: boolean;
   id: string;
+  label?: string;
   InputLabelProps: {label: string};
   required: boolean;
   helperText?: string;
@@ -203,6 +204,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;
+  let field_label = field_name;
+  // get field label from label property if there, otherwise back off
+  // to InputLabelProps and finally just the field name
+  if (props.label) field_label = props.label;
+  else if (props.InputLabelProps?.label)
+    field_label = props.InputLabelProps.label;
+
   const [options, setOptions] = React.useState<RecordReference[]>([]);
   const multiple = props.multiple !== undefined ? props.multiple : false;
   const location = useLocation();
@@ -300,7 +308,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.related_type,
           relationshipPair,
           field_name,
-          props.InputLabelProps.label,
+          field_label,
           multiple,
           props.related_type_label,
           props.current_form,
@@ -597,7 +605,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             project_id={project_id}
             relation_type={type}
             add_related_child={add_related_child}
-            field_label={props.InputLabelProps.label}
+            field_label={field_label}
             pathname={
               ROUTES.NOTEBOOK +
               project_id +
@@ -640,7 +648,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             record_hrid={props.form.values['_id']}
             record_type={props.form.values['type']}
             relation_type={type}
-            field_label={props.InputLabelProps.label}
+            field_label={field_label}
             handleUnlink={remove_related_child}
             handleReset={() => SetUpdated(uuidv4())}
             disabled={disabled}

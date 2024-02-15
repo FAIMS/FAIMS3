@@ -19,7 +19,6 @@
  */
 
 import React from 'react';
-import {Values, initialValues} from './RichText.test';
 import {getComponentFromFieldConfig} from '../components/record/fields';
 import {render} from '@testing-library/react';
 import {Formik, FormikConfig, FormikProps} from 'formik';
@@ -30,27 +29,27 @@ import {Formik, FormikConfig, FormikProps} from 'formik';
  * @param props - properties to inject into the element
  **/
 export const renderForm = (
-  ui?: React.ReactNode,
-  props?: Partial<FormikConfig<Values>>
+  ui: React.ReactNode,
+  initialValues: any,
+  props?: Partial<FormikConfig<any>>
 ) => {
-  let injected: FormikProps<Values>;
+  let injected: FormikProps<any>;
   const {rerender, ...rest} = render(
     <Formik onSubmit={() => {}} initialValues={initialValues} {...props}>
-      {(formikProps: FormikProps<Values>) =>
+      {(formikProps: FormikProps<any>) =>
         (injected = formikProps) && ui ? ui : null
       }
     </Formik>
   );
-
   return {
-    getFormProps(): FormikProps<Values> {
+    getFormProps(): FormikProps<any> {
       return injected;
     },
     ...rest,
     rerender: () =>
       rerender(
         <Formik onSubmit={() => {}} initialValues={initialValues} {...props}>
-          {(formikProps: FormikProps<Values>) =>
+          {(formikProps: FormikProps<any>) =>
             (injected = formikProps) && ui ? ui : null
           }
         </Formik>
@@ -62,7 +61,7 @@ export const renderForm = (
  * @param uiSpec - uiSpec for the field we want to render
  * @returns - the rendered field element
  */
-export const instantiateField = (uiSpec: any) => {
+export const instantiateField = (uiSpec: any, initialValues: any) => {
   const formProps = {
     values: {},
     errors: {},
@@ -77,5 +76,6 @@ export const instantiateField = (uiSpec: any) => {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   const element = getComponentFromFieldConfig(uiSpec, 'test', formProps);
-  return renderForm(element);
+  console.log('ELEMENT', element);
+  return renderForm(element, initialValues);
 };

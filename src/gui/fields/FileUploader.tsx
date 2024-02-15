@@ -42,6 +42,7 @@ import FaimsDialog from '../components/ui/Dialog';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
+  label?: string;
   accepted_filetypes?: string | string[];
   disabled?: boolean;
   multiple?: boolean;
@@ -96,6 +97,9 @@ export function FileUploader(props: FieldProps & Props) {
   };
   return (
     <div>
+      <Typography variant="caption" color="textSecondary">
+        {props.label}
+      </Typography>
       {props.disabled !== true && (
         <Dropzone
           // accept={accepted_filetypes}
@@ -204,6 +208,7 @@ const uiSpec = {
   'component-name': 'FileUploader',
   'type-returned': 'faims-attachment::Files', // matches a type in the Project Model
   'component-parameters': {
+    label: 'Information Files',
     name: 'file-upload-field',
     id: 'file-upload-field',
     helperText: 'Choose a file',
