@@ -48,6 +48,7 @@ function render_template(template: string, values: FieldValues): string {
 interface Props {
   template: string;
   disabled?: boolean;
+  value?: string;
 }
 
 interface State {
