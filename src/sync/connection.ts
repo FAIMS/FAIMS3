@@ -20,8 +20,23 @@
 
 import PouchDB from 'pouchdb-browser';
 import {SyncStatusCallbacks} from 'faims3-datamodel';
-import {ConnectionInfo, PossibleConnectionInfo} from 'faims3-datamodel';
+import {PossibleConnectionInfo} from 'faims3-datamodel';
 import * as _ from 'lodash';
+
+export interface ConnectionInfo {
+  proto: string;
+  host: string;
+  port: number;
+  lan?: boolean;
+  db_name: string;
+  auth?: {
+    username: string;
+    password: string;
+  };
+  jwt_token?: string;
+}
+
+
 /**
  * Configure local pouchdb settings; note that this applies to *ALL* local
  * databases (remote ones are handled separately), so don't add db-specific

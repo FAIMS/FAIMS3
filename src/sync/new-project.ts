@@ -18,9 +18,14 @@
  *   TODO
  */
 import {v4 as uuidv4} from 'uuid';
-import {ListingsObject, ProjectID, NonUniqueProjectID} from 'faims3-datamodel';
+import {ProjectID, NonUniqueProjectID} from 'faims3-datamodel';
 
-import {directory_db, ensure_local_db, projects_dbs} from './databases';
+import {
+  directory_db,
+  ensure_local_db,
+  projects_dbs,
+  ListingsObject,
+} from './databases';
 import {activate_project} from './process-initialization';
 import {logError} from '../logging';
 

@@ -23,13 +23,16 @@ import {
   ProjectObject,
   ProjectMetaObject,
   ProjectDataObject,
-  ActiveDoc,
   isRecord,
-  ListingsObject,
   mergeHeads,
 } from 'faims3-datamodel';
 
-import {ExistingActiveDoc, LocalDB} from './databases';
+import {
+  ListingsObject,
+  ActiveDoc,
+  ExistingActiveDoc,
+  LocalDB,
+} from './databases';
 import {DirectoryEmitter} from './events';
 import {logError} from '../logging';
 
