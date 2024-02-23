@@ -26,7 +26,7 @@ import {Geolocation} from '@capacitor/geolocation';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 
 import {FieldProps} from 'formik';
-import { Alert } from '@mui/material';
+import {Alert} from '@mui/material';
 export interface MapFieldProps extends FieldProps {
   label?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';

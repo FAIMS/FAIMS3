@@ -26,10 +26,7 @@ import PouchDBFind from 'pouchdb-find';
 import pouchdbDebug from 'pouchdb-debug';
 import {ProjectID} from 'faims3-datamodel';
 import {DEBUG_APP} from '../buildconfig';
-import {
-  ProjectDataObject,
-  ProjectMetaObject,
-} from 'faims3-datamodel';
+import {ProjectDataObject, ProjectMetaObject} from 'faims3-datamodel';
 import {
   data_dbs,
   ExistingActiveDoc,

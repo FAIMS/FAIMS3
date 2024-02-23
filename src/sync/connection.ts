@@ -36,7 +36,6 @@ export interface ConnectionInfo {
   jwt_token?: string;
 }
 
-
 /**
  * Configure local pouchdb settings; note that this applies to *ALL* local
  * databases (remote ones are handled separately), so don't add db-specific
