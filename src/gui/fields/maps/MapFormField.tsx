@@ -122,7 +122,7 @@ export function MapFormField({
           geoTiff={props.geoTiff}
           projection={props.projection}
         />
-        {isAlert &&
+        {isAlert && (
           <Alert severity="error" sx={{width: '100%'}}>
             Please enable location permissions for this app.
           </Alert>
