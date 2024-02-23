@@ -26,7 +26,6 @@ import {Geolocation} from '@capacitor/geolocation';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 
 import {FieldProps} from 'formik';
-import {AlertError} from './Alert';
 import { Alert } from '@mui/material';
 export interface MapFieldProps extends FieldProps {
   label?: string;
