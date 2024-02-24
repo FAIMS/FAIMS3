@@ -27,17 +27,17 @@ import {
   POUCH_BATCHES_LIMIT,
 } from '../buildconfig';
 import {
-  ActiveDoc,
-  ConnectionInfo,
-  ListingsObject,
   ProjectMetaObject,
   ProjectDataObject,
   ProjectObject,
-  LocalAuthDoc,
-  NonNullListingsObject,
+  ProjectID,
+  ListingID,
+  NonUniqueProjectID,
+  PossibleConnectionInfo,
 } from 'faims3-datamodel';
 import {logError} from '../logging';
 import {
+  ConnectionInfo,
   ConnectionInfo_create_pouch,
   local_pouch_options,
   materializeConnectionInfo,
@@ -53,6 +53,19 @@ export const directory_connection_info: ConnectionInfo = {
   port: DIRECTORY_PORT,
   db_name: 'directory',
 };
+
+export interface ListingsObject {
+  _id: ListingID;
+  name: string;
+  description: string;
+  projects_db?: PossibleConnectionInfo;
+  conductor_url?: string;
+  local_only?: boolean;
+}
+
+export interface NonNullListingsObject extends ListingsObject {
+  projects_db: ConnectionInfo;
+}
 
 export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<ActiveDoc>;
 export type ExistingListings = PouchDB.Core.ExistingDocument<ListingsObject>;
@@ -126,6 +139,17 @@ export const directory_db: LocalDB<ListingsObject> = {
  *   * project_id: A project id (from the project_db in the couchdb instance object.)
  *   * authentication mechanism used (id of a doc in the auth_db)
  */
+export interface ActiveDoc {
+  _id: ProjectID;
+  listing_id: ListingID;
+  project_id: NonUniqueProjectID;
+  username: string | null;
+  password: string | null;
+  friendly_name?: string;
+  is_sync: boolean;
+  is_sync_attachments: boolean;
+}
+
 export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
 
 /**
@@ -140,6 +164,25 @@ export const getLocalStateDB = () => {
 /**
  * Login tokens for each FAIMS Cluster that needs it
  */
+export type JWTToken = string;
+
+export interface JWTTokenInfo {
+  pubkey: string;
+  pubalg: string;
+  token: JWTToken;
+}
+
+export type JWTTokenMap = {
+  [username: string]: JWTTokenInfo;
+};
+
+export interface LocalAuthDoc {
+  _id: string; //Corresponds to a listings ID
+  _rev?: string; // optional as we may want to include the raw json in places
+  current_username: string;
+  available_tokens: JWTTokenMap;
+}
+
 export const local_auth_db = new PouchDB<LocalAuthDoc>(
   'local_auth',
   local_pouch_options

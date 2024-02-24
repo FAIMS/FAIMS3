@@ -25,12 +25,7 @@ import {
   NonUniqueProjectID,
   resolve_project_id,
 } from 'faims3-datamodel';
-import {
-  ConnectionInfo,
-  PossibleConnectionInfo,
-  ListingsObject,
-  ProjectObject,
-} from 'faims3-datamodel';
+import {PossibleConnectionInfo, ProjectObject} from 'faims3-datamodel';
 import {logError} from '../logging';
 import {getTokenForCluster} from '../users';
 
@@ -41,8 +36,10 @@ import {
   throttled_ping_sync_down,
   ping_sync_error,
   ping_sync_denied,
+  ConnectionInfo,
 } from './connection';
 import {
+  ListingsObject,
   active_db,
   data_dbs,
   default_changes_opts,
