@@ -97,9 +97,9 @@ export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
   }
 
   for (const view in ui_specification.views) {
-    if (ui_specification.fields[view].is_logic)
-      ui_specification.fields[view].conditionFn = compileIsLogic(
-        ui_specification.fields[view].is_logic
+    if (ui_specification.views[view].is_logic)
+      ui_specification.views[view].conditionFn = compileIsLogic(
+        ui_specification.views[view].is_logic
       );
     else
       ui_specification.views[view].conditionFn = compileExpression(
@@ -128,10 +128,28 @@ export function getFieldsForViewSet(
   return fields;
 }
 
+export function getFieldsForView(
+  ui_specification: ProjectUIModel,
+  view_name: string
+) {
+  if (view_name in ui_specification.views) {
+    return ui_specification.views[view_name].fields;
+  } else {
+    return [];
+  }
+}
+
 export function getFieldNamesFromFields(fields: {
   [key: string]: {[key: string]: any};
 }): string[] {
   return Object.keys(fields);
+}
+
+export function getViewsForViewSet(
+  ui_specification: ProjectUIModel,
+  viewset_name: string
+) {
+  return ui_specification.viewsets[viewset_name].views;
 }
 
 export function getReturnedTypesForViewSet(
