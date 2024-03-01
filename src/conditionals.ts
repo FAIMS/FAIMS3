@@ -41,11 +41,11 @@ const registerCompiler = (operator: string, compiler: FieldCompilerFn) => {
 
 // compile an is_logic expression for backward compatibility
 // return a comparisonFn
-export const compileIsLogic = (isLogic: {[field_name: string]: any}) => {
+export const compileIsLogic = (
+  isLogic: {[field_name: string]: any} | undefined
+) => {
   return (values: RecordValues) => {
-    console.log('is_logic test', isLogic);
     for (const field in isLogic) {
-      console.log('>>>', field, values[field], isLogic[field].includes(values[field]));
       if (!isLogic[field].includes(values[field])) return false;
     }
     return true;

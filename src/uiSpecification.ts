@@ -106,11 +106,6 @@ export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
         ui_specification.views[view].condition
       );
   }
-  console.log(
-    '%ccompiled conditionals',
-    'background-color: pink;',
-    ui_specification
-  );
 }
 
 export function getFieldsForViewSet(
