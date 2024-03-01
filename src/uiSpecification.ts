@@ -22,6 +22,7 @@ import {getProjectDB} from './sync';
 import {ProjectID, FAIMSTypeName} from 'faims3-datamodel';
 import {UI_SPECIFICATION_NAME, EncodedProjectUIModel} from 'faims3-datamodel';
 import {ProjectUIModel} from 'faims3-datamodel';
+import {compileExpression, compileIsLogic} from './conditionals';
 
 export async function getUiSpecForProject(
   project_id: ProjectID
@@ -31,7 +32,7 @@ export async function getUiSpecForProject(
     const encUIInfo: EncodedProjectUIModel = await projdb.get(
       UI_SPECIFICATION_NAME
     );
-    return {
+    const uiSpec = {
       _id: encUIInfo._id,
       _rev: encUIInfo._rev,
       fields: encUIInfo.fields,
@@ -39,6 +40,8 @@ export async function getUiSpecForProject(
       viewsets: encUIInfo.viewsets,
       visible_types: encUIInfo.visible_types,
     };
+    compileUiSpecConditionals(uiSpec);
+    return uiSpec;
   } catch (err) {
     console.warn('failed to find ui specification for', project_id, err);
     throw Error(`Could not find ui specification for ${project_id}`);
@@ -73,6 +76,41 @@ export async function setUiSpecForProject(
     console.warn('failed to set ui specification', err);
     throw Error('failed to set ui specification');
   }
+}
+
+// compile all conditional expressions in this UiSpec and store the
+// compiled versions
+export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
+  // conditionals can appear on views or fields
+  // compile each one and add compiled fn as a property on the field/view
+  // any field/view with no condition will get a conditionFn returning true
+  // so we can always just call this fn to filter fields/views
+  for (const field in ui_specification.fields) {
+    if (ui_specification.fields[field].is_logic)
+      ui_specification.fields[field].conditionFn = compileIsLogic(
+        ui_specification.fields[field].is_logic
+      );
+    else
+      ui_specification.fields[field].conditionFn = compileExpression(
+        ui_specification.fields[field].condition
+      );
+  }
+
+  for (const view in ui_specification.views) {
+    if (ui_specification.fields[view].is_logic)
+      ui_specification.fields[view].conditionFn = compileIsLogic(
+        ui_specification.fields[view].is_logic
+      );
+    else
+      ui_specification.views[view].conditionFn = compileExpression(
+        ui_specification.views[view].condition
+      );
+  }
+  console.log(
+    '%ccompiled conditionals',
+    'background-color: pink;',
+    ui_specification
+  );
 }
 
 export function getFieldsForViewSet(

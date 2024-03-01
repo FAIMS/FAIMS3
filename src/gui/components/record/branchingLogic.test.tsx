@@ -23,25 +23,25 @@ import {
   update_by_branching_logic,
 } from './branchingLogic';
 
-const testViewName = 'SurveyAreaFormSECTION1';
+const testViewName = 'view_always_shown';
 
 const testFormType = 'SurveyAreaForm';
 
-const testValuesNoLogic = {
+const testValues = {
   _id: 'rec-2d2f08c0-1335-4fb2-a5fa-5c77473795da',
   _project_id: 'default||1685527104147-campus-survey-demo',
   _current_revision_id: 'frev-2e0743b1-9710-488b-a462-4fdd90cca0d9',
   hridSurveyAreaForm: 'Survey Area: Zone Charlie;  ',
-  newfield800c3f33: 'Zone Charlie; ',
-  newfield31fa5e828: '',
-  newfield530132cf: '1',
-  newfield5363dcf4: null,
-  newfield323848d82: null,
-  newfield8b0ba1cc: '901231',
-  newfield59982156: [],
-  newfield2574953d: [],
-  newfield29872100: null,
-  newfield708566a7: '',
+  conditional_source: 'Zone Charlie; ',
+  area_name: '',
+  map_polygon: '1',
+  take_point1: null,
+  take_point_conditional: null,
+  mtext: '901231',
+  related_record: [],
+  related_survey_area: [],
+  take_photo2: null,
+  journal: '',
   fieldNames: [],
   views: [],
 };
@@ -50,21 +50,21 @@ const testUiSpecification = {
   _id: 'ui-specification',
   _rev: '1-34af17ce7b63419f95cd0513a00339fc',
   fields: {
-    newfield5363dcf4: {
+    take_point1: {
       'component-namespace': 'faims-custom',
       'component-name': 'TakePoint',
       'type-returned': 'faims-pos::Location',
       'component-parameters': {
         fullWidth: true,
-        name: 'newfield5363dcf4',
-        id: 'newfield5363dcf4',
+        name: 'take_point1',
+        id: 'take_point1',
         helperText: 'Tap to select the starting point for the survey.',
         variant: 'outlined',
         label: 'Take GPS Starting Point',
       },
       validationSchema: [['yup.object'], ['yup.nullable']],
       is_logic: {
-        newfield800c3f33: ['Zone Alpha; ', 'Zone Charlie; '],
+        conditional_source: ['Zone Alpha; ', 'Zone Charlie; '],
       },
       initialValue: null,
       access: ['admin'],
@@ -77,7 +77,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield800c3f33: {
+    conditional_source: {
       'component-namespace': 'faims-custom',
       'component-name': 'Select',
       'type-returned': 'faims-core::String',
@@ -117,8 +117,8 @@ const testUiSpecification = {
         InputLabelProps: {
           label: 'Campus Zone',
         },
-        id: 'newfield800c3f33',
-        name: 'newfield800c3f33',
+        id: 'conditional_source',
+        name: 'conditional_source',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -135,7 +135,7 @@ const testUiSpecification = {
         type: ['field', 'view'],
       },
     },
-    newfield8b0ba1cc: {
+    mtext: {
       'component-namespace': 'formik-material-ui',
       'component-name': 'MultipleTextField',
       'type-returned': 'faims-core::String',
@@ -154,8 +154,8 @@ const testUiSpecification = {
           label: 'Survey Note',
         },
         FormHelperTextProps: {},
-        id: 'newfield8b0ba1cc',
-        name: 'newfield8b0ba1cc',
+        id: 'mtext',
+        name: 'mtext',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -169,21 +169,21 @@ const testUiSpecification = {
         },
       },
     },
-    newfield323848d82: {
+    take_point_conditional: {
       'component-namespace': 'faims-custom',
       'component-name': 'TakePoint',
       'type-returned': 'faims-pos::Location',
       'component-parameters': {
         fullWidth: true,
-        name: 'newfield323848d82',
-        id: 'newfield323848d82',
+        name: 'take_point_conditional',
+        id: 'take_point_conditional',
         helperText: 'Tap to select the end point for the survey.',
         variant: 'outlined',
         label: 'Take GPS End Point',
       },
       validationSchema: [['yup.object'], ['yup.nullable']],
       is_logic: {
-        newfield800c3f33: ['Zone Alpha; ', 'Zone Charlie; '],
+        conditional_source: ['Zone Alpha; ', 'Zone Charlie; '],
       },
       initialValue: null,
       access: ['admin'],
@@ -208,7 +208,7 @@ const testUiSpecification = {
           'This is unique ID for each landscape element composed from an auto-incrementer and the element type.',
         variant: 'filled',
         required: true,
-        template: 'Element: {{newfield5284a817}}-{{newfield3148d0b3e}}',
+        template: 'Element: {{select2}}-{{autoInc}}',
         InputProps: {
           type: 'text',
           readOnly: true,
@@ -220,8 +220,8 @@ const testUiSpecification = {
         linked: 'newfield218d25ed',
         numberfield: 3,
         fieldselect10: 'A',
-        fieldselect11: 'newfield5284a817',
-        fieldselect12: 'newfield3148d0b3e',
+        fieldselect11: 'select2',
+        fieldselect12: 'autoInc',
       },
       validationSchema: [['yup.string'], ['yup.required']],
       initialValue: '',
@@ -235,17 +235,17 @@ const testUiSpecification = {
         },
       },
     },
-    newfield3148d0b3e: {
+    autoInc: {
       'component-namespace': 'faims-custom',
       'component-name': 'BasicAutoIncrementer',
       'type-returned': 'faims-core::String',
       'component-parameters': {
-        name: 'newfield3148d0b3e',
-        id: 'newfield3148d0b3e',
+        name: 'autoInc',
+        id: 'autoInc',
         variant: 'outlined',
         required: true,
         num_digits: 5,
-        form_id: 'LandscapeElementFormSECTION1',
+        form_id: 'view_show_if_alpha',
         label: 'AutoIncrementer',
       },
       validationSchema: [['yup.string'], ['yup.required']],
@@ -260,7 +260,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield5284a817: {
+    select2: {
       'component-namespace': 'faims-custom',
       'component-name': 'Select',
       'type-returned': 'faims-core::String',
@@ -324,8 +324,8 @@ const testUiSpecification = {
         InputLabelProps: {
           label: 'Element Type',
         },
-        id: 'newfield5284a817',
-        name: 'newfield5284a817',
+        id: 'select2',
+        name: 'select2',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -339,14 +339,14 @@ const testUiSpecification = {
         },
       },
     },
-    newfield31bf571: {
+    take_point3: {
       'component-namespace': 'faims-custom',
       'component-name': 'TakePoint',
       'type-returned': 'faims-pos::Location',
       'component-parameters': {
         fullWidth: true,
-        name: 'newfield31bf571',
-        id: 'newfield31bf571',
+        name: 'take_point3',
+        id: 'take_point3',
         helperText: '',
         variant: 'outlined',
         label: 'Take GPS Point',
@@ -363,7 +363,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield45892ead: {
+    asset_number: {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
@@ -381,8 +381,8 @@ const testUiSpecification = {
           label: 'Asset number',
         },
         FormHelperTextProps: {},
-        id: 'newfield45892ead',
-        name: 'newfield45892ead',
+        id: 'asset_number',
+        name: 'asset_number',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -396,13 +396,13 @@ const testUiSpecification = {
         },
       },
     },
-    newfield0d7f0350: {
+    radio1: {
       'component-namespace': 'faims-custom',
       'component-name': 'RadioGroup',
       'type-returned': 'faims-core::String',
       'component-parameters': {
-        name: 'newfield0d7f0350',
-        id: 'newfield0d7f0350',
+        name: 'radio1',
+        id: 'radio1',
         variant: 'outlined',
         required: false,
         ElementProps: {
@@ -464,7 +464,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield42b1b859: {
+    description: {
       'component-namespace': 'formik-material-ui',
       'component-name': 'MultipleTextField',
       'type-returned': 'faims-core::String',
@@ -483,8 +483,8 @@ const testUiSpecification = {
           label: 'Element Notes',
         },
         FormHelperTextProps: {},
-        id: 'newfield42b1b859',
-        name: 'newfield42b1b859',
+        id: 'description',
+        name: 'description',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -498,14 +498,14 @@ const testUiSpecification = {
         },
       },
     },
-    newfield48b901e2: {
+    take_photo: {
       'component-namespace': 'faims-custom',
       'component-name': 'TakePhoto',
       'type-returned': 'faims-attachment::Files',
       'component-parameters': {
         fullWidth: true,
-        name: 'newfield48b901e2',
-        id: 'newfield48b901e2',
+        name: 'take_photo',
+        id: 'take_photo',
         helperText: 'Take a photo',
         variant: 'outlined',
         label: 'Take Photo',
@@ -522,7 +522,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield122849e9: {
+    nearest_bldg: {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
@@ -538,8 +538,8 @@ const testUiSpecification = {
           label: 'Nearest building',
         },
         FormHelperTextProps: {},
-        id: 'newfield122849e9',
-        name: 'newfield122849e9',
+        id: 'nearest_bldg',
+        name: 'nearest_bldg',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -565,7 +565,7 @@ const testUiSpecification = {
           'A read-only field composited from campus-zone and nickname to make a custom ID.',
         variant: 'filled',
         required: true,
-        template: 'Survey Area: {{newfield800c3f33}} {{newfield31fa5e828}}',
+        template: 'Survey Area: {{conditional_source}} {{area_name}}',
         InputProps: {
           type: 'text',
           readOnly: true,
@@ -575,8 +575,8 @@ const testUiSpecification = {
         },
         hrid: true,
         numberfield: 2,
-        fieldselect10: 'newfield800c3f33',
-        fieldselect11: 'newfield31fa5e828',
+        fieldselect10: 'conditional_source',
+        fieldselect11: 'area_name',
         linked: 'newfield757083da',
       },
       validationSchema: [['yup.string'], ['yup.required']],
@@ -591,7 +591,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield59982156: {
+    related_record: {
       'component-namespace': 'faims-custom',
       'component-name': 'RelatedRecordSelector',
       'type-returned': 'faims-core::Relationship',
@@ -612,8 +612,8 @@ const testUiSpecification = {
           label: 'Landscape Elements',
         },
         FormHelperTextProps: {},
-        id: 'newfield59982156',
-        name: 'newfield59982156',
+        id: 'related_record',
+        name: 'related_record',
       },
       validationSchema: [['yup.string']],
       initialValue: [],
@@ -627,7 +627,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield31fa5e828: {
+    area_name: {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
@@ -644,8 +644,8 @@ const testUiSpecification = {
           label: 'Survey Area Nickname',
         },
         FormHelperTextProps: {},
-        id: 'newfield31fa5e828',
-        name: 'newfield31fa5e828',
+        id: 'area_name',
+        name: 'area_name',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -659,14 +659,14 @@ const testUiSpecification = {
         },
       },
     },
-    newfield29872100: {
+    take_photo2: {
       'component-namespace': 'faims-custom',
       'component-name': 'TakePhoto',
       'type-returned': 'faims-attachment::Files',
       'component-parameters': {
         fullWidth: true,
-        name: 'newfield29872100',
-        id: 'newfield29872100',
+        name: 'take_photo2',
+        id: 'take_photo2',
         helperText: 'Take a photo',
         variant: 'outlined',
         label: 'Take Photo',
@@ -683,7 +683,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield708566a7: {
+    journal: {
       'component-namespace': 'formik-material-ui',
       'component-name': 'MultipleTextField',
       'type-returned': 'faims-core::String',
@@ -702,8 +702,8 @@ const testUiSpecification = {
           label: 'Journal',
         },
         FormHelperTextProps: {},
-        id: 'newfield708566a7',
-        name: 'newfield708566a7',
+        id: 'journal',
+        name: 'journal',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -717,13 +717,13 @@ const testUiSpecification = {
         },
       },
     },
-    newfield275df5b6: {
+    safety_hazard: {
       'component-namespace': 'faims-custom',
       'component-name': 'Checkbox',
       'type-returned': 'faims-core::Bool',
       'component-parameters': {
-        name: 'newfield275df5b6',
-        id: 'newfield275df5b6',
+        name: 'safety_hazard',
+        id: 'safety_hazard',
         required: false,
         type: 'checkbox',
         FormControlLabelProps: {
@@ -745,13 +745,13 @@ const testUiSpecification = {
         },
       },
     },
-    newfield530132cf: {
+    map_polygon: {
       'component-namespace': 'mapping-plugin',
       'component-name': 'MapFormField',
       'type-returned': 'faims-core::JSON',
       'component-parameters': {
-        name: 'newfield530132cf',
-        id: 'newfield530132cf',
+        name: 'map_polygon',
+        id: 'map_polygon',
         variant: 'outlined',
         required: false,
         featureType: 'Polygon',
@@ -773,7 +773,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield2574953d: {
+    related_survey_area: {
       'component-namespace': 'faims-custom',
       'component-name': 'RelatedRecordSelector',
       'type-returned': 'faims-core::Relationship',
@@ -793,8 +793,8 @@ const testUiSpecification = {
           label: 'Related Survey Area',
         },
         FormHelperTextProps: {},
-        id: 'newfield2574953d',
-        name: 'newfield2574953d',
+        id: 'related_survey_area',
+        name: 'related_survey_area',
         relation_linked_vocabPair: [
           ['performed after', 'performed before'],
           ['is similar to', 'is similar to'],
@@ -818,98 +818,200 @@ const testUiSpecification = {
     },
   },
   views: {
-    SurveyAreaFormSECTION1: {
+    view_always_shown: {
       fields: [
         'hridSurveyAreaForm',
-        'newfield800c3f33',
-        'newfield31fa5e828',
-        'newfield530132cf',
-        'newfield5363dcf4',
-        'newfield323848d82',
-        'newfield8b0ba1cc',
-        'newfield59982156',
-        'newfield2574953d',
+        'conditional_source',
+        'area_name',
+        'map_polygon',
+        'take_point1',
+        'take_point_conditional',
+        'mtext',
+        'related_record',
+        'related_survey_area',
       ],
       uidesign: 'form',
       label: 'Survey Details',
     },
-    LandscapeElementFormSECTION1: {
+    view_show_if_alpha: {
       fields: [
         'hridLandscapeElementForm',
-        'newfield3148d0b3e',
-        'newfield45892ead',
-        'newfield5284a817',
-        'newfield31bf571',
-        'newfield122849e9',
-        'newfield275df5b6',
-        'newfield0d7f0350',
-        'newfield48b901e2',
-        'newfield42b1b859',
+        'autoInc',
+        'asset_number',
+        'select2',
+        'take_point3',
+        'nearest_bldg',
+        'safety_hazard',
+        'radio1',
+        'take_photo',
+        'description',
       ],
       uidesign: 'form',
       label: 'Description',
+      is_logic: {
+        conditional_source: ['Zone Alpha; '],
+      },
     },
-    SurveyAreaFormSECTION2: {
-      fields: ['newfield29872100', 'newfield708566a7'],
+    view_show_if_beta_charlie: {
+      fields: ['take_photo2', 'journal'],
       uidesign: 'form',
       label: 'Journal',
       is_logic: {
-        newfield800c3f33: ['Zone Beta; ', 'Zone Charlie; '],
+        conditional_source: ['Zone Beta; ', 'Zone Charlie; '],
       },
     },
   },
   viewsets: {
     SurveyAreaForm: {
-      views: ['SurveyAreaFormSECTION1', 'SurveyAreaFormSECTION2'],
+      views: [
+        'view_always_shown',
+        'view_show_if_alpha',
+        'view_show_if_beta_charlie',
+      ],
       label: 'Survey Area',
     },
-    LandscapeElementForm: {
-      views: ['LandscapeElementFormSECTION1'],
-      label: 'Landscape Element',
-    },
   },
-  visible_types: ['SurveyAreaForm', 'LandscapeElementForm'],
+  visible_types: ['SurveyAreaForm'],
 };
 
 const testResultGetField = [
   'hridSurveyAreaForm',
-  'newfield800c3f33',
-  'newfield31fa5e828',
-  'newfield530132cf',
-  'newfield5363dcf4',
-  'newfield323848d82',
-  'newfield8b0ba1cc',
-  'newfield59982156',
-  'newfield2574953d',
+  'conditional_source',
+  'area_name',
+  'map_polygon',
+  'take_point1',
+  'take_point_conditional',
+  'mtext',
+  'related_record',
+  'related_survey_area',
 ];
-
-const testResultGetLogic = ['SurveyAreaFormSECTION1', 'SurveyAreaFormSECTION2'];
 
 describe('Check branching logic methods', () => {
   it('Check get_field method', () => {
     expect(
-      get_logic_fields(testUiSpecification, testValuesNoLogic, testViewName)
+      get_logic_fields(testUiSpecification, testValues, testViewName)
     ).toStrictEqual(testResultGetField);
   });
 
-  it('Check get_logic_views method', () => {
+  it('Get Views no conditional matched', () => {
+    // conditional source is empty
+    const values = {...testValues, conditional_source: 'Zone Delta; '};
     expect(
-      get_logic_views(testUiSpecification, testFormType, testValuesNoLogic)
-    ).toStrictEqual(testResultGetLogic);
+      get_logic_views(testUiSpecification, testFormType, values)
+    ).toStrictEqual(['view_always_shown']);
+  });
+
+  it('Get Views conditional alpha', () => {
+    // conditional source is empty
+    const values = {...testValues, conditional_source: 'Zone Alpha; '};
+    expect(
+      get_logic_views(testUiSpecification, testFormType, values)
+    ).toStrictEqual(['view_always_shown', 'view_show_if_alpha']);
+  });
+
+  it('Get Views conditional beta', () => {
+    // conditional source is empty
+    const values = {...testValues, conditional_source: 'Zone Beta; '};
+    expect(
+      get_logic_views(testUiSpecification, testFormType, values)
+    ).toStrictEqual(['view_always_shown', 'view_show_if_beta_charlie']);
+  });
+
+  it('Get Views conditional charlie', () => {
+    // conditional source is empty
+    const values = {...testValues, conditional_source: 'Zone Charlie; '};
+    expect(
+      get_logic_views(testUiSpecification, testFormType, values)
+    ).toStrictEqual(['view_always_shown', 'view_show_if_beta_charlie']);
   });
 
   it('Check update_by_branching_logic method', () => {
+    const targetViewName = 'view_always_shown';
+    const fieldNames = get_logic_fields(
+      testUiSpecification,
+      testValues,
+      targetViewName
+    );
+    const viewNames = Object.keys(testUiSpecification.views);
+
     expect(
+      // test field selection, zone alpha should include all fields
       update_by_branching_logic(
         testUiSpecification,
-        testValuesNoLogic,
+        {...testValues, conditional_source: 'Zone Alpha; '},
         true,
-        testResultGetField,
-        testResultGetLogic,
-        testViewName,
-        testFormType,
+        fieldNames,
+        viewNames,
+        targetViewName,
+        'SurveyAreaForm',
         {}
       )
-    ).toStrictEqual(testResultGetField);
+    ).toStrictEqual(fieldNames);
+
+    expect(
+      // test field selection, zone charlie should include all fields
+      update_by_branching_logic(
+        testUiSpecification,
+        {...testValues, conditional_source: 'Zone Charlie; '},
+        true,
+        fieldNames,
+        viewNames,
+        targetViewName,
+        'SurveyAreaForm',
+        {}
+      )
+    ).toStrictEqual(fieldNames);
+
+    expect(
+      // test field selection, zone delta should exclude take_point_conditional
+      update_by_branching_logic(
+        testUiSpecification,
+        {...testValues, conditional_source: 'Zone Delta; '},
+        true,
+        fieldNames,
+        viewNames,
+        targetViewName,
+        'SurveyAreaForm',
+        {}
+      )
+    ).not.toContain('take_point_conditional');
+  });
+
+  it('Double exclude regression', () => {
+    const targetViewName = 'view_always_shown';
+
+    const fieldNames = get_logic_fields(
+      testUiSpecification,
+      {...testValues, conditional_source: 'Zone Delta; '},
+      targetViewName
+    );
+    const viewNames = Object.keys(testUiSpecification.views);
+
+    // this field should be excluded
+    expect(fieldNames).not.toContain('take_point_conditional');
+
+    // now we set up the values to include it
+    expect(
+      // test field selection, zone alpha should include all fields
+      update_by_branching_logic(
+        testUiSpecification,
+        {
+          ...testValues,
+          conditional_source: 'Zone Alpha; ',
+          updateField: 'journal',
+        },
+        true,
+        fieldNames,
+        viewNames,
+        targetViewName,
+        'SurveyAreaForm',
+        {journal: true, conditional_source: true}
+      )
+    ).toContain('take_point_conditional');
   });
 });
+
+// error condition
+// original values excludes a field in get_logic_fields
+// updated value would include it but since it is not in
+// the fields passed to update_by_branching_logic
