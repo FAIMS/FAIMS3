@@ -24,7 +24,13 @@
 import {jwtVerify, KeyLike, importSPKI} from 'jose';
 
 import {CLUSTER_ADMIN_GROUP_NAME, BUILT_LOGIN_TOKEN} from './buildconfig';
-import {local_auth_db} from './sync/databases';
+import {
+  LocalAuthDoc,
+  JWTTokenInfo,
+  JWTTokenMap,
+  active_db,
+  local_auth_db,
+} from './sync/databases';
 import {reprocess_listing} from './sync/process-initialization';
 import {
   ClusterProjectRoles,
@@ -32,8 +38,6 @@ import {
   ProjectRole,
   split_full_project_id,
   TokenContents,
-  LocalAuthDoc,
-  JWTTokenMap,
 } from 'faims3-datamodel';
 import {RecordMetadata} from 'faims3-datamodel';
 import {logError} from './logging';

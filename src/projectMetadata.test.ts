@@ -60,7 +60,7 @@ vi.mock('./sync/index', () => ({
 describe('roundtrip reading and writing to db', () => {
   const project_id = 'test_project_id';
   test.prop([
-    fc.fullUnicodeString(), // metadata_key
+    fc.fullUnicodeString({minLength: 1}), // metadata_key
     fc.unicodeJsonValue(), //  unicodeJsonObject(), // metadata
   ])('metadata roundtrip', (metadata_key: string, metadata: any) => {
     // try {

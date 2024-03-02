@@ -26,7 +26,7 @@ import {Geolocation} from '@capacitor/geolocation';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 
 import {FieldProps} from 'formik';
-import {AlertError} from './Alert';
+import {Alert} from '@mui/material';
 export interface MapFieldProps extends FieldProps {
   label?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
@@ -49,7 +49,6 @@ export function MapFormField({
   }
 
   const [isAlert, setIsAlert] = useState(false);
-  const [geoPositionError, setGeoPositionError] = useState(false);
 
   const [drawnFeatures, setDrawnFeatures] =
     useState<GeoJSONFeatureCollection>(initialFeatures);
@@ -78,10 +77,6 @@ export function MapFormField({
     form.setFieldValue(field.name, theFeatures);
   };
 
-  const handleAlertClose = () => {
-    setIsAlert(false);
-  };
-
   // get the current GPS location if don't know the map center
   if (center[0] === 0 && center[1] === 0) {
     Geolocation.getCurrentPosition()
@@ -89,10 +84,7 @@ export function MapFormField({
         setCenter([result.coords.longitude, result.coords.latitude]);
       })
       .catch(() => {
-        if (!isAlert && !geoPositionError) {
-          setIsAlert(true);
-          setGeoPositionError(true);
-        }
+        setIsAlert(true);
       });
   }
 
@@ -117,11 +109,6 @@ export function MapFormField({
   }
   return (
     <div>
-      {isAlert && (
-        <div className="alertErrorWrapper">
-          <AlertError isOpen={isAlert} handleClose={handleAlertClose} />
-        </div>
-      )}
       <div>
         <MapWrapper
           label={
@@ -135,6 +122,11 @@ export function MapFormField({
           geoTiff={props.geoTiff}
           projection={props.projection}
         />
+        {isAlert && (
+          <Alert severity="error" sx={{width: '100%'}}>
+            Please enable location permissions for this app.
+          </Alert>
+        )}
         <p>{valueText}</p>
       </div>
     </div>

@@ -25,9 +25,8 @@ import {Grid, Box, Typography, Divider} from '@mui/material';
 
 import {firstDefinedFromList} from './helpers';
 import {
-  get_logic_fields,
-  get_logic_views,
-  update_by_branching_logic,
+  getViewsMatchingCondition,
+  getFieldsMatchingCondition,
 } from './branchingLogic';
 
 import {ViewComponent} from './view';
@@ -680,6 +679,16 @@ class RecordForm extends React.Component<
       console.warn('The description has not been determined yet');
       return '';
     }
+    // get the description from the view if it's there
+    if (
+      viewName !== null &&
+      this.props.ui_specification.views[viewName] !== undefined &&
+      this.props.ui_specification.views[viewName].description !== undefined
+    ) {
+      return this.props.ui_specification.views[viewName].description;
+    }
+
+    // backwards compatibility - look in the metadata section
     if (
       viewName !== null &&
       this.props.metaSection !== undefined &&
@@ -779,7 +788,6 @@ class RecordForm extends React.Component<
           return doc;
         })
         .then(doc => {
-          console.log('SAVING DOC', this.props.project_id, doc);
           return upsertFAIMSData(this.props.project_id, doc).then(
             revision_id => {
               // add to save the information for relationship when form saved,
@@ -1148,23 +1156,14 @@ class RecordForm extends React.Component<
       const initialValues = this.requireInitialValues();
       const ui_specification = this.props.ui_specification;
       //fields list and views list could be updated depends on values user choose
-      let fieldNames = get_logic_fields(
-        this.props.ui_specification,
-        initialValues,
-        viewName
-      );
-      let views = get_logic_views(
-        this.props.ui_specification,
-        viewsetName,
-        initialValues
-      );
+      let fieldNames: string[] = [];
+      let views: string[] = [];
       const validationSchema = getValidationSchemaForViewset(
         ui_specification,
         viewsetName
       );
-      //value could be update for branching logic, change to let
-      let view_index = views.indexOf(viewName);
-      let is_final_view = view_index + 1 === views.length;
+      let view_index = 0;
+      let is_final_view = true;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
       return (
@@ -1194,23 +1193,17 @@ class RecordForm extends React.Component<
             >
               {formProps => {
                 //ONLY update if the updated field is the controller field
-                fieldNames = update_by_branching_logic(
+                fieldNames = getFieldsMatchingCondition(
                   this.props.ui_specification,
                   formProps.values,
-                  true,
                   fieldNames,
-                  views,
                   viewName,
-                  viewsetName,
                   formProps.touched
                 );
-                views = update_by_branching_logic(
+                views = getViewsMatchingCondition(
                   this.props.ui_specification,
                   formProps.values,
-                  false,
-                  fieldNames,
                   views,
-                  viewName,
                   viewsetName,
                   formProps.touched
                 );

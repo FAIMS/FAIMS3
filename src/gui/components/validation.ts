@@ -26,7 +26,7 @@ import {
   getFieldNamesFromFields,
 } from '../../uiSpecification';
 
-function check_field_type(
+function expand_validation_schema(
   ui_specification: ProjectUIModel,
   fieldName: string,
   validationSchema: any
@@ -42,8 +42,14 @@ function check_field_type(
         ? validate
         : new_validationSchema.push(validate)
     );
-    console.debug('new validation', fieldName, new_validationSchema);
     return new_validationSchema;
+  }
+  // insert yup.required for any field marked as required if it doesn't
+  // have it already
+  const fieldInfo = ui_specification.fields[fieldName];
+  if (fieldInfo['component-parameters'].required) {
+    if (validationSchema.indexOf(['yup.required']) < 0)
+      return [...validationSchema, ['yup.required']];
   }
 
   return validationSchema;
@@ -61,7 +67,7 @@ export function getValidationSchemaForViewset(
   const fieldNames = getFieldNamesFromFields(fields);
   const validationSchema = Object();
   fieldNames.forEach(fieldName => {
-    validationSchema[fieldName] = check_field_type(
+    validationSchema[fieldName] = expand_validation_schema(
       ui_specification,
       fieldName,
       fields[fieldName]['validationSchema']

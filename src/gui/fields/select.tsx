@@ -54,6 +54,10 @@ export class Select extends React.Component<TextFieldProps & Props> {
   render() {
     const {ElementProps, children, ...textFieldProps} = this.props;
     /***make select not multiple to avoid error */
+    // ensure we have a valid default value to avoid warnings
+    if (textFieldProps.defaultValue === undefined) {
+      textFieldProps.defaultValue = '';
+    }
     return (
       <>
         <MuiTextField

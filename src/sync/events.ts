@@ -22,8 +22,8 @@ import {EventEmitter} from 'events';
 
 import {DEBUG_APP} from '../buildconfig';
 import {ListingID} from 'faims3-datamodel';
-import {ListingsObject, ProjectObject} from 'faims3-datamodel';
-import {ExistingActiveDoc} from './databases';
+import {ProjectObject} from 'faims3-datamodel';
+import {ListingsObject, ExistingActiveDoc} from './databases';
 import {createdListingsInterface, createdProjectsInterface} from './state';
 
 export class DebugEmitter extends EventEmitter {

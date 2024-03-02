@@ -35,8 +35,10 @@ import {
   throttled_ping_sync_down,
   ping_sync_error,
   ping_sync_denied,
+  ConnectionInfo,
 } from './connection';
 import {
+  ListingsObject,
   active_db,
   data_dbs,
   default_changes_opts,

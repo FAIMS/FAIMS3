@@ -53,7 +53,8 @@ function base64image_to_blob(image: CameraPhoto): Blob {
 }
 
 interface Props {
-  helpertext?: string;
+  helpertext?: string; // this should be removed but will appear in older notebooks
+  helperText?: string;
   label?: string;
   issyncing?: string;
   isconflict?: boolean;
@@ -290,14 +291,12 @@ export class TakePhoto extends React.Component<
     // It also looks like we don't have multiple photos being returned...
     return (
       <div>
-        {this.props.helpertext}
+        {this.props.helpertext || this.props.helperText}
         <Button
           variant="outlined"
           color={'primary'}
           style={{marginRight: '10px'}}
-          {...this.props}
-          // Props from the metadata db will overwrite the above
-          // style attributes, but not overwrite the below onclick.
+          fullWidth={true}
           onClick={async () => {
             await this.takePhoto();
           }}
@@ -341,7 +340,7 @@ const uiSpec = {
     fullWidth: true,
     name: 'take-photo-field',
     id: 'take-photo-field',
-    helpertext: 'Take a photo',
+    helperText: 'Take a photo',
     variant: 'outlined',
     label: 'Take Photo',
   },
@@ -351,7 +350,7 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helpertext'];
+  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
   newuiSetting['viewsets'] = {
     settings: {
       views: ['FormParamater'],

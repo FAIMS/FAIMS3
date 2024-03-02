@@ -26,14 +26,11 @@ import PouchDBFind from 'pouchdb-find';
 import pouchdbDebug from 'pouchdb-debug';
 import {ProjectID} from 'faims3-datamodel';
 import {DEBUG_APP} from '../buildconfig';
-import {
-  ProjectDataObject,
-  ProjectMetaObject,
-  ListingsObject,
-} from 'faims3-datamodel';
+import {ProjectDataObject, ProjectMetaObject} from 'faims3-datamodel';
 import {
   data_dbs,
   ExistingActiveDoc,
+  ListingsObject,
   metadata_dbs,
   directory_db,
 } from './databases';
@@ -47,8 +44,9 @@ import {logError} from '../logging';
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(pouchdbDebug);
 
-// turn on verbose pouch debugging
-if (DEBUG_APP) PouchDB.debug.enable('*');
+// generate verbose debug output from pouchdb
+if (import.meta.env.VITE_POUCHDB_DEBUG === 'true') PouchDB.debug.enable('*');
+else PouchDB.debug.disable();
 
 /**
  * Allows the user to asynchronously await for any of listings_updated,

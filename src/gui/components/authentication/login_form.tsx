@@ -5,7 +5,6 @@ import {Device} from '@capacitor/device';
 import {Browser} from '@capacitor/browser';
 
 import {TokenContents} from 'faims3-datamodel';
-import {ConductorURL} from 'faims3-datamodel';
 import {setTokenForCluster, getTokenContentsForCluster} from '../../../users';
 import {reprocess_listing} from '../../../sync/process-initialization';
 import {logError} from '../../../logging';
@@ -17,7 +16,7 @@ export async function isWeb(): Promise<boolean> {
 
 export type LoginButtonProps = {
   listing_id: string;
-  conductor_url: ConductorURL;
+  conductor_url: string;
   listing_name: string;
   setToken: React.Dispatch<React.SetStateAction<TokenContents | undefined>>;
   is_refresh: boolean;

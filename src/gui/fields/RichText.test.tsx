@@ -6,13 +6,14 @@ import {renderForm, instantiateField} from './utils';
 
 // Borrowed from formik/packages/formik/test/Field.test.tsx
 
-export const initialValues = {point: {}};
+export const initialValues = {test: {}};
 export type Values = typeof initialValues;
 
 it('renders some markdown', async () => {
   const content = 'Hello __World__';
   const {container} = renderForm(
-    <Field component={RichTextField} content={content} />
+    <Field component={RichTextField} content={content} />,
+    initialValues
   );
   expect(container.innerHTML).toContain('<strong>World</strong>');
 });
@@ -20,7 +21,8 @@ it('renders some markdown', async () => {
 it('does not allow unsafe content', async () => {
   const content = 'Hello <script>alert("World")</script>';
   const {container} = renderForm(
-    <Field component={RichTextField} content={content} />
+    <Field component={RichTextField} content={content} />,
+    initialValues
   );
   expect(container.innerHTML).not.toContain('<script>alert("World")</script>');
 });
@@ -36,7 +38,8 @@ it('renders from the uiSpec', async () => {
     },
   };
 
-  const {container} = instantiateField(uiSpec);
+  const {container} = instantiateField(uiSpec, initialValues);
+  console.log('XXXX', container.innerHTML);
   expect(container.innerHTML).toContain('<strong>World</strong>');
 });
 
