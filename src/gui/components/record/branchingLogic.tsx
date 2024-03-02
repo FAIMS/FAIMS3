@@ -70,7 +70,9 @@ export function getViewsMatchingCondition(
   if (modified.length > 0 || views.length === 0) {
     // filter the whole set of views
     const result = allViews.filter(view => {
-      return ui_specification.views[view].conditionFn(values);
+      const fn = ui_specification.views[view].conditionFn;
+      if (fn !== undefined) return fn(values);
+      else return true;
     });
     return result;
   } else {

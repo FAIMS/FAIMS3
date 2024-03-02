@@ -17,7 +17,44 @@
  */
 
 import {expect, it, describe} from 'vitest';
-import {compileExpression} from './conditionals';
+import {compileExpression, getDependantFields} from './conditionals';
+
+describe('get dependant fields', () => {
+  it('finds dependant fields in a nested expression', () => {
+    const expr = {
+      operator: 'and',
+      left: {
+        operator: 'or',
+        left: {
+          operator: 'equal',
+          field: 'x',
+          value: 'A',
+        },
+        right: {
+          operator: 'equal',
+          field: 'x',
+          value: 'B',
+        },
+      },
+      right: {
+        operator: 'or',
+        left: {
+          operator: 'less',
+          field: 'y',
+          value: 10,
+        },
+        right: {
+          operator: 'greater',
+          field: 'y',
+          value: 100,
+        },
+      },
+    };
+    const fields = getDependantFields(expr);
+    expect(fields).toEqual(new Set(['x', 'y']));
+  });
+});
+
 
 describe('compiling expressions', () => {
   it('compiles undefined to a fn returning true', () => {

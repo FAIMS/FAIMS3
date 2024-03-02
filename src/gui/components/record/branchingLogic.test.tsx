@@ -17,15 +17,11 @@
  */
 
 import {expect, it, describe} from 'vitest';
+import {getFieldsMatchingCondition} from './branchingLogic';
 import {
-  get_logic_fields,
-  get_logic_views,
-  update_by_branching_logic,
-} from './branchingLogic';
-
-const testViewName = 'view_always_shown';
-
-const testFormType = 'SurveyAreaForm';
+  compileUiSpecConditionals,
+  getFieldsForView,
+} from '../../../uiSpecification';
 
 const testValues = {
   _id: 'rec-2d2f08c0-1335-4fb2-a5fa-5c77473795da',
@@ -874,144 +870,43 @@ const testUiSpecification = {
   visible_types: ['SurveyAreaForm'],
 };
 
-const testResultGetField = [
-  'hridSurveyAreaForm',
-  'conditional_source',
-  'area_name',
-  'map_polygon',
-  'take_point1',
-  'take_point_conditional',
-  'mtext',
-  'related_record',
-  'related_survey_area',
-];
+compileUiSpecConditionals(testUiSpecification);
 
 describe('Check branching logic methods', () => {
-  it('Check get_field method', () => {
-    expect(
-      get_logic_fields(testUiSpecification, testValues, testViewName)
-    ).toStrictEqual(testResultGetField);
-  });
-
-  it('Get Views no conditional matched', () => {
-    // conditional source is empty
-    const values = {...testValues, conditional_source: 'Zone Delta; '};
-    expect(
-      get_logic_views(testUiSpecification, testFormType, values)
-    ).toStrictEqual(['view_always_shown']);
-  });
-
-  it('Get Views conditional alpha', () => {
-    // conditional source is empty
-    const values = {...testValues, conditional_source: 'Zone Alpha; '};
-    expect(
-      get_logic_views(testUiSpecification, testFormType, values)
-    ).toStrictEqual(['view_always_shown', 'view_show_if_alpha']);
-  });
-
-  it('Get Views conditional beta', () => {
-    // conditional source is empty
-    const values = {...testValues, conditional_source: 'Zone Beta; '};
-    expect(
-      get_logic_views(testUiSpecification, testFormType, values)
-    ).toStrictEqual(['view_always_shown', 'view_show_if_beta_charlie']);
-  });
-
-  it('Get Views conditional charlie', () => {
-    // conditional source is empty
-    const values = {...testValues, conditional_source: 'Zone Charlie; '};
-    expect(
-      get_logic_views(testUiSpecification, testFormType, values)
-    ).toStrictEqual(['view_always_shown', 'view_show_if_beta_charlie']);
-  });
-
-  it('Check update_by_branching_logic method', () => {
+  it('Check getFieldsMatchingCondition method', () => {
     const targetViewName = 'view_always_shown';
-    const fieldNames = get_logic_fields(
-      testUiSpecification,
-      testValues,
-      targetViewName
-    );
-    const viewNames = Object.keys(testUiSpecification.views);
-
+    const fieldNames = getFieldsForView(testUiSpecification, targetViewName);
     expect(
       // test field selection, zone alpha should include all fields
-      update_by_branching_logic(
+      getFieldsMatchingCondition(
         testUiSpecification,
         {...testValues, conditional_source: 'Zone Alpha; '},
-        true,
         fieldNames,
-        viewNames,
         targetViewName,
-        'SurveyAreaForm',
-        {}
+        {conditional_source: true}
       )
     ).toStrictEqual(fieldNames);
 
     expect(
       // test field selection, zone charlie should include all fields
-      update_by_branching_logic(
+      getFieldsMatchingCondition(
         testUiSpecification,
         {...testValues, conditional_source: 'Zone Charlie; '},
-        true,
         fieldNames,
-        viewNames,
         targetViewName,
-        'SurveyAreaForm',
-        {}
+        {conditional_source: true}
       )
     ).toStrictEqual(fieldNames);
 
     expect(
       // test field selection, zone delta should exclude take_point_conditional
-      update_by_branching_logic(
+      getFieldsMatchingCondition(
         testUiSpecification,
         {...testValues, conditional_source: 'Zone Delta; '},
-        true,
         fieldNames,
-        viewNames,
         targetViewName,
-        'SurveyAreaForm',
-        {}
+        {conditional_source: true}
       )
     ).not.toContain('take_point_conditional');
   });
-
-  it('Double exclude regression', () => {
-    const targetViewName = 'view_always_shown';
-
-    const fieldNames = get_logic_fields(
-      testUiSpecification,
-      {...testValues, conditional_source: 'Zone Delta; '},
-      targetViewName
-    );
-    const viewNames = Object.keys(testUiSpecification.views);
-
-    // this field should be excluded
-    expect(fieldNames).not.toContain('take_point_conditional');
-
-    // now we set up the values to include it
-    expect(
-      // test field selection, zone alpha should include all fields
-      update_by_branching_logic(
-        testUiSpecification,
-        {
-          ...testValues,
-          conditional_source: 'Zone Alpha; ',
-          updateField: 'journal',
-        },
-        true,
-        fieldNames,
-        viewNames,
-        targetViewName,
-        'SurveyAreaForm',
-        {journal: true, conditional_source: true}
-      )
-    ).toContain('take_point_conditional');
-  });
 });
-
-// error condition
-// original values excludes a field in get_logic_fields
-// updated value would include it but since it is not in
-// the fields passed to update_by_branching_logic

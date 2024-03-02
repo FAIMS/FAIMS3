@@ -25,9 +25,6 @@ import {Grid, Box, Typography, Divider} from '@mui/material';
 
 import {firstDefinedFromList} from './helpers';
 import {
-  get_logic_fields,
-  get_logic_views,
-  update_by_branching_logic,
   getViewsMatchingCondition,
   getFieldsMatchingCondition,
 } from './branchingLogic';

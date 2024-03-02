@@ -52,6 +52,21 @@ export const compileIsLogic = (
   };
 };
 
+// return an array of the field names that are referenced
+// in this expression
+export const getDependantFields = (
+  expression: ConditionalExpression | undefined
+): Set<string> => {
+  if (expression === undefined) return new Set();
+  else if (expression.field !== undefined) return new Set([expression.field]);
+  else {
+    return new Set([
+      ...getDependantFields(expression.left),
+      ...getDependantFields(expression.right),
+    ]);
+  }
+};
+
 // compile an expression into a function that will evaluate
 // that expression given a set of field values
 export const compileExpression = (
