@@ -22,7 +22,7 @@ import {getProjectDB} from './sync';
 import {ProjectID, FAIMSTypeName} from 'faims3-datamodel';
 import {UI_SPECIFICATION_NAME, EncodedProjectUIModel} from 'faims3-datamodel';
 import {ProjectUIModel} from 'faims3-datamodel';
-import {compileExpression, compileIsLogic} from './conditionals';
+import {compileExpression, compileIsLogic, getDependantFields} from './conditionals';
 
 export async function getUiSpecForProject(
   project_id: ProjectID
@@ -85,6 +85,9 @@ export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
   // compile each one and add compiled fn as a property on the field/view
   // any field/view with no condition will get a conditionFn returning true
   // so we can always just call this fn to filter fields/views
+
+  let depFields: string[] = [];
+
   for (const field in ui_specification.fields) {
     if (ui_specification.fields[field].is_logic)
       ui_specification.fields[field].conditionFn = compileIsLogic(
@@ -94,6 +97,10 @@ export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
       ui_specification.fields[field].conditionFn = compileExpression(
         ui_specification.fields[field].condition
       );
+    depFields = [
+      ...depFields,
+      ...getDependantFields(ui_specification.fields[field].condition)
+    ];
   }
 
   for (const view in ui_specification.views) {
@@ -105,7 +112,12 @@ export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
       ui_specification.views[view].conditionFn = compileExpression(
         ui_specification.views[view].condition
       );
+    depFields = [
+      ...depFields,
+      ...getDependantFields(ui_specification.views[view].condition)
+    ];
   }
+  ui_specification.conditional_sources = new Set(depFields);
 }
 
 export function getFieldsForViewSet(

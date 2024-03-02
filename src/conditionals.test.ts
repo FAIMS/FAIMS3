@@ -55,7 +55,6 @@ describe('get dependant fields', () => {
   });
 });
 
-
 describe('compiling expressions', () => {
   it('compiles undefined to a fn returning true', () => {
     const fn = compileExpression(undefined);

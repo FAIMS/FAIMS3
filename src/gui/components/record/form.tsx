@@ -1207,7 +1207,6 @@ class RecordForm extends React.Component<
                   viewsetName,
                   formProps.touched
                 );
-                console.log('new views', views);
                 view_index = views.indexOf(viewName);
                 is_final_view = view_index + 1 === views.length;
                 this.draftState.renderHook(

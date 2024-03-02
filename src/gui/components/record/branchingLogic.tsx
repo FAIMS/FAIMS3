@@ -37,7 +37,7 @@ export function getFieldsMatchingCondition(
   let modified = Object.keys(touched);
   if (values.updateField) modified.push(values.updateField);
   modified = modified.filter((f: string) =>
-    is_controller_field('field', ui_specification, f)
+    is_controller_field(ui_specification, f)
   );
   const allFields = getFieldsForView(ui_specification, viewName);
   // run the checks if there are modified control fields or the original views are empty
@@ -63,7 +63,7 @@ export function getViewsMatchingCondition(
   let modified = Object.keys(touched);
   if (values.updateField) modified.push(values.updateField);
   modified = modified.filter((f: string) =>
-    is_controller_field('field', ui_specification, f)
+    is_controller_field(ui_specification, f)
   );
   const allViews = getViewsForViewSet(ui_specification, viewsetName);
   // run the checks if there are modified control fields or the original views are empty
@@ -84,21 +84,14 @@ export function getViewsMatchingCondition(
 // check whether this field is a 'controller' field for branching
 // logic, return true if it is, false otherwise
 //
-function is_controller_field(
-  kind: 'field' | 'view',
-  ui_specification: ProjectUIModel,
-  field: string
-) {
-  try {
-    // why are these returning true?
-    if (field === undefined || field === '') return true;
+function is_controller_field(ui_specification: ProjectUIModel, field: string) {
+  // we have two possible sources
+  // - old logic_select property on the field
+  // - new conditional_sources property on the ui_specification
 
-    // get the array of logic_select values, default to empty
-    const condition = ui_specification['fields'][field]['logic_select'];
-    if (condition !== undefined) return condition['type'].includes(kind);
-    else return false;
-  } catch (error) {
-    logError(error);
-    return false;
-  }
+  // here we return true if there is any logic_select property
+  // which might be a false positive but shouldn't cost too much
+  if ('logic_select' in ui_specification.fields[field]) return true;
+  else if (field in ui_specification.conditional_sources) return true;
+  else return false;
 }
