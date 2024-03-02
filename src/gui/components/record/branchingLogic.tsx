@@ -18,7 +18,7 @@
  *  Implement functions to filter fields and views by conditional
  * rules.  Rules are compiled as a function (conditionFn) on the
  * view or field in the uiSpec.   This returns true if the field/view
- * is to be shown.  Here we provide functions to return an array of 
+ * is to be shown.  Here we provide functions to return an array of
  * visible fields/views.
  */
 import {ProjectUIModel} from 'faims3-datamodel';

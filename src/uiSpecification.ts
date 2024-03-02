@@ -22,7 +22,11 @@ import {getProjectDB} from './sync';
 import {ProjectID, FAIMSTypeName} from 'faims3-datamodel';
 import {UI_SPECIFICATION_NAME, EncodedProjectUIModel} from 'faims3-datamodel';
 import {ProjectUIModel} from 'faims3-datamodel';
-import {compileExpression, compileIsLogic, getDependantFields} from './conditionals';
+import {
+  compileExpression,
+  compileIsLogic,
+  getDependantFields,
+} from './conditionals';
 
 export async function getUiSpecForProject(
   project_id: ProjectID

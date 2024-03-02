@@ -1475,7 +1475,6 @@ describe('Check form component', () => {
     await waitFor(() => {
       expect(savefieldpersistentSetting).toBeCalled();
     });
-
   });
 
   it('Check Publish and New Record button', async () => {
