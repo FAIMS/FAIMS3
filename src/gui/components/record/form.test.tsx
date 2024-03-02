@@ -32,7 +32,7 @@ import RecordForm from './form';
 import {BrowserRouter} from 'react-router-dom';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {getFullRecordData} from 'faims3-datamodel';
-import {getReturnedTypesForViewSet} from '../../../uiSpecification';
+import {compileUiSpecConditionals} from '../../../uiSpecification';
 import {expect, vi, afterEach, describe, it} from 'vitest';
 
 const testProjectId = 'default||1685527104147-campus-survey-demo';
@@ -878,6 +878,8 @@ const testUiSpecification = {
   visible_types: ['SurveyAreaForm', 'LandscapeElementForm'],
 };
 
+compileUiSpecConditionals(testUiSpecification);
+
 const testValidationSchema = {
   _deps: [],
   _conditions: [],
@@ -1297,11 +1299,13 @@ vi.mock('./fieldPersistentSetting', () => ({
   savefieldpersistentSetting: vi.fn(() => {}),
 }));
 
-vi.mock('../../../uiSpecification', () => ({
-  getReturnedTypesForViewSet: vi.fn(() => {}),
-  getFieldsForViewSet: vi.fn(() => []),
-  getFieldNamesFromFields: vi.fn(() => []),
-}));
+// vi.mock('../../../uiSpecification', () => ({
+//   getReturnedTypesForViewSet: vi.fn(() => {}),
+//   getFieldsForViewSet: vi.fn(() => []),
+//   getFieldNamesFromFields: vi.fn(() => []),
+//   getFieldsForView: vi.fn(() => []),
+//   getViewsForViewSet: vi.fn(() => []),
+// }));
 
 vi.mock('./relationships/RelatedInformation', () => ({
   getParentLink_from_relationship: vi.fn(() => {}),
@@ -1432,10 +1436,6 @@ describe('Check form component', () => {
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalled();
-    });
-
-    await waitFor(() => {
       expect(getFullRecordData).toBeCalled();
     });
   });
@@ -1476,9 +1476,6 @@ describe('Check form component', () => {
       expect(savefieldpersistentSetting).toBeCalled();
     });
 
-    await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalled();
-    });
   });
 
   it('Check Publish and New Record button', async () => {
@@ -1516,10 +1513,6 @@ describe('Check form component', () => {
 
     await waitFor(() => {
       expect(savefieldpersistentSetting).toBeCalled();
-    });
-
-    await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalled();
     });
 
     await waitFor(() => {
@@ -1568,10 +1561,6 @@ describe('Check form component', () => {
     await waitFor(() => {
       expect(getFullRecordData).toBeCalled();
     });
-
-    await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalled();
-    });
   });
 
   it('Check text field newfield6fa5e828', async () => {
@@ -1616,10 +1605,6 @@ describe('Check form component', () => {
 
     await waitFor(() => {
       expect(getFullRecordData).toBeCalled();
-    });
-
-    await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalled();
     });
   });
 });

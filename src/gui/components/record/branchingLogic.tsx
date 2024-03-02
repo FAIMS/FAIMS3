@@ -15,157 +15,87 @@
  *
  * Filename: branchingLogic.tsx
  * Description:
- *  This is the file is to set the fields and views for branchingLogic, so can only show relevant tabs and fields
- *  the value should be defined only for single field and with equal value or not equal value
- *  default value for field could be empty/ ''/none and etc, no relevant tabs/fields should be displayed for the initial value
- * (which means that all fields and tabs with is_logic setup should not be displayed with initial value unless initial value is included)
+ *  Implement functions to filter fields and views by conditional
+ * rules.  Rules are compiled as a function (conditionFn) on the
+ * view or field in the uiSpec.   This returns true if the field/view
+ * is to be shown.  Here we provide functions to return an array of 
+ * visible fields/views.
  */
 import {ProjectUIModel} from 'faims3-datamodel';
-import {logError} from '../../../logging';
+import {getFieldsForView, getViewsForViewSet} from '../../../uiSpecification';
 
-export function update_by_branching_logic(
+// Return a list of field or view names that should be shown, taking account
+// of branching logic.
+
+export function getFieldsMatchingCondition(
   ui_specification: ProjectUIModel,
   values: {[field_name: string]: any},
-  is_field: boolean,
   fieldNames: string[],
-  views: string[],
   viewName: string,
-  viewsetName: string,
   touched: {[field_name: string]: any}
 ) {
-  let returnValue = update_by_check(
-    ui_specification,
-    values,
-    is_field,
-    viewName,
-    viewsetName,
-    values.updateField
+  let modified = Object.keys(touched);
+  if (values.updateField) modified.push(values.updateField);
+  modified = modified.filter((f: string) =>
+    is_controller_field(ui_specification, f)
   );
-  if (returnValue !== null) return returnValue;
-  for (const FieldName of Object.keys(touched)) {
-    returnValue = update_by_check(
-      ui_specification,
-      values,
-      is_field,
-      viewName,
-      viewsetName,
-      FieldName
-    );
-    if (returnValue !== null) {
-      break;
-    }
+  const allFields = getFieldsForView(ui_specification, viewName);
+  // run the checks if there are modified control fields or the original views are empty
+  if (modified.length > 0 || fieldNames.length === 0) {
+    // filter the whole set of views
+    const result = allFields.filter(field => {
+      return ui_specification.fields[field].conditionFn(values);
+    });
+    return result;
+  } else {
+    // shortcut return the existing set of fieldNames
+    return fieldNames;
   }
-  if (returnValue !== null) return returnValue;
-  if (is_field) return fieldNames;
-  else return views;
 }
 
-function update_by_check(
+export function getViewsMatchingCondition(
   ui_specification: ProjectUIModel,
   values: {[field_name: string]: any},
-  is_field: boolean,
-  viewName: string,
+  views: string[],
   viewsetName: string,
-  fieldName: string
+  touched: {[field_name: string]: any} = {}
 ) {
-  const is_checked = check_by_branching_logic(
-    ui_specification,
-    is_field,
-    fieldName
+  let modified = Object.keys(touched);
+  if (values.updateField) modified.push(values.updateField);
+  modified = modified.filter((f: string) =>
+    is_controller_field(ui_specification, f)
   );
-  if (is_checked) {
-    if (is_field) {
-      const newFieldNames = get_logic_fields(
-        ui_specification,
-        values,
-        viewName
-      );
-      return newFieldNames;
-    } else {
-      const newViews = get_logic_views(ui_specification, viewsetName, values);
-      return newViews;
-    }
-  }
-  return null;
-}
-//function is to get all relevant fields
-function check_by_branching_logic(
-  ui_specification: ProjectUIModel,
-  is_field: boolean,
-  field: string
-) {
-  try {
-    if (field === undefined || field === '') return true;
-
-    if (ui_specification['fields'][field]['logic_select'] === undefined)
-      return false;
-
-    if (
-      is_field &&
-      ui_specification['fields'][field]['logic_select']['type'].includes(
-        'field'
-      )
-    )
-      return true;
-
-    if (
-      !is_field &&
-      ui_specification['fields'][field]['logic_select']['type'].includes('view')
-    )
-      return true;
-
-    return false;
-  } catch (error) {
-    logError(error);
-    return false;
+  const allViews = getViewsForViewSet(ui_specification, viewsetName);
+  // run the checks if there are modified control fields or the original views are empty
+  if (modified.length > 0 || views.length === 0) {
+    // filter the whole set of views
+    const result = allViews.filter(view => {
+      const fn = ui_specification.views[view].conditionFn;
+      if (fn !== undefined) return fn(values);
+      else return true;
+    });
+    return result;
+  } else {
+    // shortcut return the existing set of views
+    return views;
   }
 }
 
-export function get_logic_fields(
-  ui_specification: ProjectUIModel,
-  values: {[field_name: string]: any},
-  viewName: string
-) {
-  const fields: string[] = [];
-  ui_specification['views'][viewName]['fields'].map((field: string) =>
-    get_field(ui_specification['fields'][field], values, ui_specification)
-      ? fields.push(field)
-      : field
-  );
-  return fields;
-}
+// check whether this field is a 'controller' field for branching
+// logic, return true if it is, false otherwise
+//
+function is_controller_field(ui_specification: ProjectUIModel, field: string) {
+  // we have two possible sources
+  // - old logic_select property on the field
+  // - new conditional_sources property on the ui_specification
 
-const get_field = (
-  value: any,
-  values: {[field_name: string]: any},
-  ui_specification: ProjectUIModel
-) => {
-  if (value['is_logic'] === undefined) return true;
-  let is_display = true;
-  for (const [name] of Object.entries(value['is_logic'])) {
-    if (!value['is_logic'][name].includes(values[name])) {
-      is_display = false;
-      return is_display;
-    }
-    //check the upper level to not display the not relevant value in loop
-    if (!get_field(ui_specification['fields'][name], values, ui_specification))
-      return false;
-  }
-  return is_display;
-};
-
-//function is to get all relevant views/tabs
-export function get_logic_views(
-  ui_specification: ProjectUIModel,
-  form_type: string,
-  values: {[field_name: string]: any}
-) {
-  const views: string[] = [];
-  ui_specification['viewsets'][form_type]['views'].map((view: string) =>
-    get_field(ui_specification['views'][view], values, ui_specification)
-      ? views.push(view)
-      : view
-  );
-
-  return views;
+  // here we return true if there is any logic_select property
+  // which might be a false positive but shouldn't cost too much
+  if ('logic_select' in ui_specification.fields[field]) return true;
+  else if (
+    ui_specification.conditional_sources &&
+    ui_specification.conditional_sources.has(field)
+  )
+    return true;
+  else return false;
 }
