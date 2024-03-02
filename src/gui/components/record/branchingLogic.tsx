@@ -89,6 +89,11 @@ function is_controller_field(ui_specification: ProjectUIModel, field: string) {
   // - old logic_select property on the field
   // - new conditional_sources property on the ui_specification
 
+  // check that this is a field, touched can contain non-field stuff
+  if (ui_specification.fields[field] === undefined) {
+    return false;
+  }
+
   // here we return true if there is any logic_select property
   // which might be a false positive but shouldn't cost too much
   if ('logic_select' in ui_specification.fields[field]) return true;
