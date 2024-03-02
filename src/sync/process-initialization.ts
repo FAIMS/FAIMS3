@@ -187,7 +187,7 @@ export async function update_directory(
     options: {},
   };
 
-  console.debug('Setting up directory local connection');
+  console.debug('%cSetting up directory local connection', 'background-color: cyan', directory_db);
   setLocalConnection({...directory_db, remote: directory_db.remote!});
 
   directory_db.remote!.connection!.once('paused', directory_pause('Sync'));
@@ -251,6 +251,7 @@ export function process_listing(
 }
 
 function delete_listing_by_id(listing_id: ListingID) {
+  console.debug('delete_listing_by_id', listing_id);
   // Delete listing from memory
   if (projects_dbs[listing_id]?.remote?.connection !== null) {
     projects_dbs[listing_id].local.removeAllListeners();
@@ -366,6 +367,39 @@ export async function update_listing(
 
   // get the projects from remote and update our local db
   const directory = await get_projects_from_conductor(listing_object);
+  const jwt_token = await getTokenForCluster(listing_id);
+  let jwt_conn: PossibleConnectionInfo = {};
+  if (jwt_token === undefined) {
+    if (DEBUG_APP) {
+      console.debug('%cNo JWT token for:', 'background-color: cyan', listing_id);
+    }
+  } else {
+    if (DEBUG_APP) {
+      console.debug('%cUsing JWT token for:', 'background-color: cyan', listing_id);
+    }
+    jwt_conn = {
+      jwt_token: jwt_token,
+    };
+  }
+
+  //const people_local_id = listing_object['people_db']
+  //  ? listing_id
+  //  : DEFAULT_LISTING_ID;
+
+  const projects_local_id = listing_object['projects_db']
+    ? listing_id
+    : DEFAULT_LISTING_ID;
+
+  const projects_connection = materializeConnectionInfo(
+    (await get_default_instance())['projects_db'],
+    listing_object['projects_db'],
+    jwt_conn
+  );
+
+  //const people_connection = materializeConnectionInfo(
+  //  (await get_default_instance())['people_db'],
+  //  listing_object['people_db']
+  //);
 
   // for all active projects, ensure we have the right database connections
   const active_projects = await get_active_projects();
