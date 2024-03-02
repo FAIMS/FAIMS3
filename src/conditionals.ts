@@ -17,18 +17,7 @@
  * Description:  Evaluate conditional expressions for branching logic etc.
  *
  */
-
-export interface ConditionalExpression {
-  operator: string;
-  left?: ConditionalExpression;
-  right?: ConditionalExpression;
-  field?: string;
-  value?: any;
-}
-
-interface RecordValues {
-  [field_name: string]: any;
-}
+import {RecordValues, ConditionalExpression} from 'faims3-datamodel';
 
 // Create a register of compiler functions
 type FieldCompilerFn = (

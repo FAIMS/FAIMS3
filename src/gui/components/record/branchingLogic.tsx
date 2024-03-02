@@ -15,13 +15,13 @@
  *
  * Filename: branchingLogic.tsx
  * Description:
- *  This is the file is to set the fields and views for branchingLogic, so can only show relevant tabs and fields
- *  the value should be defined only for single field and with equal value or not equal value
- *  default value for field could be empty/ ''/none and etc, no relevant tabs/fields should be displayed for the initial value
- * (which means that all fields and tabs with is_logic setup should not be displayed with initial value unless initial value is included)
+ *  Implement functions to filter fields and views by conditional
+ * rules.  Rules are compiled as a function (conditionFn) on the
+ * view or field in the uiSpec.   This returns true if the field/view
+ * is to be shown.  Here we provide functions to return an array of 
+ * visible fields/views.
  */
 import {ProjectUIModel} from 'faims3-datamodel';
-import {logError} from '../../../logging';
 import {getFieldsForView, getViewsForViewSet} from '../../../uiSpecification';
 
 // Return a list of field or view names that should be shown, taking account
@@ -92,6 +92,10 @@ function is_controller_field(ui_specification: ProjectUIModel, field: string) {
   // here we return true if there is any logic_select property
   // which might be a false positive but shouldn't cost too much
   if ('logic_select' in ui_specification.fields[field]) return true;
-  else if (field in ui_specification.conditional_sources) return true;
+  else if (
+    ui_specification.conditional_sources &&
+    ui_specification.conditional_sources.has(field)
+  )
+    return true;
   else return false;
 }

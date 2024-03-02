@@ -178,8 +178,18 @@ const testUiSpecification = {
         label: 'Take GPS End Point',
       },
       validationSchema: [['yup.object'], ['yup.nullable']],
-      is_logic: {
-        conditional_source: ['Zone Alpha; ', 'Zone Charlie; '],
+      condition: {
+        operator: 'or',
+        left: {
+          operator: 'equal',
+          field: 'conditional_source',
+          value: 'Zone Alpha; ',
+        },
+        right: {
+          operator: 'equal',
+          field: 'conditional_source',
+          value: 'Zone Charlie; ',
+        },
       },
       initialValue: null,
       access: ['admin'],
@@ -852,8 +862,18 @@ const testUiSpecification = {
       fields: ['take_photo2', 'journal'],
       uidesign: 'form',
       label: 'Journal',
-      is_logic: {
-        conditional_source: ['Zone Beta; ', 'Zone Charlie; '],
+      condition: {
+        operator: 'or',
+        left: {
+          operator: 'equal',
+          field: 'conditional_source',
+          value: 'Zone Beta; ',
+        },
+        right: {
+          operator: 'equal',
+          field: 'conditional_source',
+          value: 'Zone Charlie; ',
+        },
       },
     },
   },

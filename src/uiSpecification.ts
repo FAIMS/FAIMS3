@@ -79,7 +79,11 @@ export async function setUiSpecForProject(
 }
 
 // compile all conditional expressions in this UiSpec and store the
-// compiled versions
+// compiled versions as a property `conditionFn` on the field or view
+// also collect a Set of field names that are used in condition expressions
+// so that we can react to changes in these fields and update the visible
+// fields/views
+//
 export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
   // conditionals can appear on views or fields
   // compile each one and add compiled fn as a property on the field/view
@@ -99,7 +103,7 @@ export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
       );
     depFields = [
       ...depFields,
-      ...getDependantFields(ui_specification.fields[field].condition)
+      ...getDependantFields(ui_specification.fields[field].condition),
     ];
   }
 
@@ -114,9 +118,10 @@ export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
       );
     depFields = [
       ...depFields,
-      ...getDependantFields(ui_specification.views[view].condition)
+      ...getDependantFields(ui_specification.views[view].condition),
     ];
   }
+  // add dependant fields as a property on the uiSpec
   ui_specification.conditional_sources = new Set(depFields);
 }
 
