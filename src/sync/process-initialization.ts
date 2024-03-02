@@ -25,7 +25,7 @@ import {
   NonUniqueProjectID,
   resolve_project_id,
 } from 'faims3-datamodel';
-import {ConnectionInfo, ListingsObject, ProjectObject} from 'faims3-datamodel';
+import {ProjectObject} from 'faims3-datamodel';
 import {logError} from '../logging';
 import {getTokenForCluster} from '../users';
 
