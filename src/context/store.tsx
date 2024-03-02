@@ -193,16 +193,23 @@ const StateProvider = (props: any) => {
 
   useEffect(() => {
     initialize()
-      .then(() =>
-        setTimeout(
-          () =>
-            dispatch({
-              type: ActionType.INITIALIZED,
-              payload: undefined,
-            }),
-          10000
-        )
-      )
+      .then(() => {
+        console.log('HERE GOES NOTHING');
+        dispatch({
+          type: ActionType.INITIALIZED,
+          payload: undefined,
+        });
+
+        // console.log('SETTING INIT TIMEOUT');
+        // setTimeout(
+        //   () =>
+        //     dispatch({
+        //       type: ActionType.INITIALIZED,
+        //       payload: undefined,
+        //     }),
+        //   10000
+        // );
+      })
       .catch(err => {
         console.log('Could not initialize: ', err);
         dispatch({

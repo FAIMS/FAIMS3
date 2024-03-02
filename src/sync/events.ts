@@ -32,7 +32,12 @@ export class DebugEmitter extends EventEmitter {
   }
   emit(event: string | symbol, ...args: unknown[]): boolean {
     if (DEBUG_APP) {
-      console.debug('FAIMS EventEmitter event', event, ...args);
+      console.log(
+        '%cFAIMS EventEmitter event',
+        'background-color: red; color: white;',
+        event,
+        ...args
+      );
     }
     return super.emit(event, ...args);
   }
@@ -41,7 +46,7 @@ export class DebugEmitter extends EventEmitter {
 export const events: DirectoryEmitter = new DebugEmitter();
 events.setMaxListeners(100); // Default is 10, but that is soon exceeded with multiple watchers of a single project
 
-type ProjectEventInfo = [ListingsObject, ExistingActiveDoc, ProjectObject];
+type ProjectEventInfo = [ExistingActiveDoc, ProjectObject];
 
 export interface DirectoryEmitter extends EventEmitter {
   /**
@@ -180,7 +185,6 @@ export interface DirectoryEmitter extends EventEmitter {
   ): boolean;
   emit(
     event: 'project_error',
-    listing: ListingsObject,
     active: ExistingActiveDoc,
     err: unknown
   ): boolean;

@@ -47,7 +47,6 @@ import {
   getprojectform,
 } from './data/ComponentSetting';
 import {setUiSpecForProject} from '../../../uiSpecification';
-import {create_new_project_dbs} from '../../../sync/new-project';
 import {
   setProjectMetadata,
   getProjectMetadata,
@@ -799,4 +798,9 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       </Grid>
     </div>
   );
+}
+
+// has been removed as will this whole module eventually
+async function create_new_project_dbs(name: any) {
+  return '';
 }

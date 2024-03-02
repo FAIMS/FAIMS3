@@ -26,7 +26,6 @@ import ClusterCard from '../components/authentication/cluster_card';
 import * as ROUTES from '../../constants/routes';
 import {ListingInformation} from 'faims3-datamodel';
 import {getSyncableListingsInfo} from '../../databaseAccess';
-import {ensure_locally_created_project_listing} from '../../sync/new-project';
 import {logError} from '../../logging';
 
 type SignInProps = {
@@ -38,10 +37,6 @@ export function SignIn(props: SignInProps) {
   const breadcrumbs = [{link: ROUTES.INDEX, title: 'Home'}, {title: 'Sign In'}];
 
   useEffect(() => {
-    const getlocalist = async () => {
-      await ensure_locally_created_project_listing();
-    };
-    getlocalist();
     getSyncableListingsInfo().then(setListings).catch(logError);
   }, []);
 
