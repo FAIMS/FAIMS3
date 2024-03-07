@@ -83,7 +83,7 @@
     "formik-mui": "4.0.0",
     "formik-mui-lab": "1.0.0",
     "graphviz-react": "1.2.5",
-    "jose": "4.14.4",
+    "jose": "4.15.5",
     "json-stable-stringify": "1.0.2",
     "jsonpointer": "5.0.1",
     "levelup": "^5.1.1",
