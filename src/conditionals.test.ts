@@ -29,7 +29,7 @@ describe('get dependant fields', () => {
           operator: 'or',
           conditions: [
             {operator: 'equal', field: 'x', value: 'A'},
-            {operator: 'equal', field: 'x', value: 'B'}
+            {operator: 'equal', field: 'x', value: 'B'},
           ],
         },
         {
@@ -171,7 +171,7 @@ describe('compiling expressions', () => {
           operator: 'or',
           conditions: [
             {operator: 'equal', field: 'x', value: 'A'},
-            {operator: 'equal', field: 'x', value: 'B'}
+            {operator: 'equal', field: 'x', value: 'B'},
           ],
         },
         {
