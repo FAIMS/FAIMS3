@@ -48,12 +48,18 @@ export const getDependantFields = (
 ): Set<string> => {
   if (expression === undefined) return new Set();
   else if (expression.field !== undefined) return new Set([expression.field]);
-  else {
-    return new Set([
-      ...getDependantFields(expression.left),
-      ...getDependantFields(expression.right),
-    ]);
+  else if (expression.conditions) {
+    let result = new Set<string>();
+    for (let i = 0; i < expression.conditions.length; i++) {
+      result = new Set([
+        ...result,
+        ...getDependantFields(expression.conditions[i]),
+      ]);
+    }
+    return result;
   }
+  // fallback would only be for malformed conditions (no field, no conditions)
+  return new Set<string>();
 };
 
 // compile an expression into a function that will evaluate
@@ -131,25 +137,35 @@ registerCompiler('regex', (expression: ConditionalExpression) => {
 });
 
 registerCompiler('or', (expression: ConditionalExpression) => {
-  const lFn = expression.left
-    ? compileExpression(expression.left)
-    : () => false;
-  const rFn = expression.right
-    ? compileExpression(expression.right)
-    : () => false;
-  return (values: RecordValues) => {
-    return lFn(values) || rFn(values);
-  };
+  // true if any of the conditions are true
+  if (expression.conditions) {
+    const compiledConditions = expression.conditions.map(
+      (condition: ConditionalExpression) => {
+        return compileExpression(condition);
+      }
+    );
+    return (values: RecordValues) => {
+      return compiledConditions.some(fn => fn(values));
+    };
+  } else {
+    // if there are no conditions then default to true
+    return () => true;
+  }
 });
 
 registerCompiler('and', (expression: ConditionalExpression) => {
-  const lFn = expression.left
-    ? compileExpression(expression.left)
-    : () => false;
-  const rFn = expression.right
-    ? compileExpression(expression.right)
-    : () => false;
-  return (values: RecordValues) => {
-    return lFn(values) && rFn(values);
-  };
+  // true if all of the conditions are true
+  if (expression.conditions) {
+    const compiledConditions = expression.conditions.map(
+      (condition: ConditionalExpression) => {
+        return compileExpression(condition);
+      }
+    );
+    return (values: RecordValues) => {
+      return compiledConditions.every(fn => fn(values));
+    };
+  } else {
+    // if there are no conditions then default to true
+    return () => true;
+  }
 });

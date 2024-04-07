@@ -24,32 +24,22 @@ describe('get dependant fields', () => {
   it('finds dependant fields in a nested expression', () => {
     const expr = {
       operator: 'and',
-      left: {
-        operator: 'or',
-        left: {
-          operator: 'equal',
-          field: 'x',
-          value: 'A',
+      conditions: [
+        {
+          operator: 'or',
+          conditions: [
+            {operator: 'equal', field: 'x', value: 'A'},
+            {operator: 'equal', field: 'x', value: 'B'}
+          ],
         },
-        right: {
-          operator: 'equal',
-          field: 'x',
-          value: 'B',
+        {
+          operator: 'or',
+          conditions: [
+            {operator: 'less', field: 'y', value: 10},
+            {operator: 'greater', field: 'y', value: 100},
+          ],
         },
-      },
-      right: {
-        operator: 'or',
-        left: {
-          operator: 'less',
-          field: 'y',
-          value: 10,
-        },
-        right: {
-          operator: 'greater',
-          field: 'y',
-          value: 100,
-        },
-      },
+      ],
     };
     const fields = getDependantFields(expr);
     expect(fields).toEqual(new Set(['x', 'y']));
@@ -145,16 +135,10 @@ describe('compiling expressions', () => {
   it('compiles an or expression', () => {
     const expr = {
       operator: 'or',
-      left: {
-        operator: 'equal',
-        field: 'surveyArea',
-        value: 'Zone Alpha; ',
-      },
-      right: {
-        operator: 'greater',
-        field: 'price',
-        value: 100,
-      },
+      conditions: [
+        {operator: 'equal', field: 'surveyArea', value: 'Zone Alpha; '},
+        {operator: 'greater', field: 'price', value: 100},
+      ],
     };
     const fn = compileExpression(expr);
     expect(fn({surveyArea: 'Zone Alpha; ', price: 10})).toBe(true);
@@ -166,16 +150,10 @@ describe('compiling expressions', () => {
   it('compiles an and expression', () => {
     const expr = {
       operator: 'and',
-      left: {
-        operator: 'equal',
-        field: 'surveyArea',
-        value: 'Zone Alpha; ',
-      },
-      right: {
-        operator: 'less',
-        field: 'price',
-        value: 100,
-      },
+      conditions: [
+        {operator: 'equal', field: 'surveyArea', value: 'Zone Alpha; '},
+        {operator: 'less', field: 'price', value: 100},
+      ],
     };
     const fn = compileExpression(expr);
     expect(fn({surveyArea: 'Zone Alpha; ', price: 10})).toBe(true);
@@ -188,32 +166,22 @@ describe('compiling expressions', () => {
     // (x=A or x=B) and (y<10 or y>100)
     const expr = {
       operator: 'and',
-      left: {
-        operator: 'or',
-        left: {
-          operator: 'equal',
-          field: 'x',
-          value: 'A',
+      conditions: [
+        {
+          operator: 'or',
+          conditions: [
+            {operator: 'equal', field: 'x', value: 'A'},
+            {operator: 'equal', field: 'x', value: 'B'}
+          ],
         },
-        right: {
-          operator: 'equal',
-          field: 'x',
-          value: 'B',
+        {
+          operator: 'or',
+          conditions: [
+            {operator: 'less', field: 'y', value: 10},
+            {operator: 'greater', field: 'y', value: 100},
+          ],
         },
-      },
-      right: {
-        operator: 'or',
-        left: {
-          operator: 'less',
-          field: 'y',
-          value: 10,
-        },
-        right: {
-          operator: 'greater',
-          field: 'y',
-          value: 100,
-        },
-      },
+      ],
     };
     const fn = compileExpression(expr);
     expect(fn({x: 'A', y: 200})).toBe(true);
