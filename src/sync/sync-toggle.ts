@@ -32,7 +32,7 @@ import {
   setLocalConnection,
 } from './databases';
 import {events} from './events';
-import {createdListings, createdProjects} from './state';
+import {createdProjects} from './state';
 
 export function listenSyncingProject(
   active_id: ProjectID,
@@ -42,7 +42,6 @@ export function listenSyncingProject(
     _type: unknown,
     _mc: unknown,
     _dc: unknown,
-    _listing: unknown,
     active: ExistingActiveDoc
   ) => {
     if (active._id === active_id) {
@@ -114,7 +113,6 @@ export async function setSyncingProject(
     ],
     false,
     false,
-    createdListings[created.active.listing_id].listing,
     created.active,
     created.project
   );
@@ -128,7 +126,6 @@ export function listenSyncingProjectAttachments(
     _type: unknown,
     _mc: unknown,
     _dc: unknown,
-    _listing: unknown,
     active: ExistingActiveDoc
   ) => {
     if (active._id === active_id) {
@@ -195,7 +192,6 @@ export async function setSyncingProjectAttachments(
     ],
     false,
     false,
-    createdListings[created.active.listing_id].listing,
     created.active,
     created.project
   );

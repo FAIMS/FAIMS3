@@ -24,13 +24,7 @@
 import {jwtVerify, KeyLike, importSPKI} from 'jose';
 
 import {CLUSTER_ADMIN_GROUP_NAME, BUILT_LOGIN_TOKEN} from './buildconfig';
-import {
-  LocalAuthDoc,
-  JWTTokenInfo,
-  JWTTokenMap,
-  active_db,
-  local_auth_db,
-} from './sync/databases';
+import {LocalAuthDoc, JWTTokenMap, local_auth_db} from './sync/databases';
 import {reprocess_listing} from './sync/process-initialization';
 import {
   ClusterProjectRoles,
@@ -61,7 +55,7 @@ interface TokenInfo {
  * @returns a promise resolving to the user identifier
  */
 export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
-  // look in the stored token for the project's server, this will 
+  // look in the stored token for the project's server, this will
   // get the current logged in username
   const token_contents = await getTokenContentsForCluster(
     split_full_project_id(project_id).listing_id

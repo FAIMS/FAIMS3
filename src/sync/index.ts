@@ -201,7 +201,6 @@ export function listenProject(
     type: ['update', createdProjectsInterface] | ['delete'] | ['create'],
     meta_changed: boolean,
     data_changed: boolean,
-    _listing: unknown,
     active: ExistingActiveDoc
   ) => {
     if (DEBUG_APP) {

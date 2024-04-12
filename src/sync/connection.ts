@@ -24,9 +24,10 @@ import {PossibleConnectionInfo} from 'faims3-datamodel';
 import * as _ from 'lodash';
 
 export interface ConnectionInfo {
-  proto: string;
-  host: string;
-  port: number;
+  proto?: string;
+  host?: string;
+  port?: number;
+  base_url?: string;
   lan?: boolean;
   db_name: string;
   auth?: {
@@ -147,13 +148,14 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
     return PouchDB.fetch(url, opts);
   };
   let db_url: string;
+  // if we have a base_url configured, make the connection url from that
   if (connection_info.base_url) {
     if (connection_info.base_url.endsWith('/'))
       db_url = connection_info.base_url + connection_info.db_name;
     else db_url = connection_info.base_url + '/' + connection_info.db_name;
   } else {
     db_url =
-      encodeURIComponent(connection_info.proto) +
+      encodeURIComponent(connection_info.proto || 'http') +
       '://' +
       encodeURIComponent(connection_info.host || 'localhost') +
       ':' +
