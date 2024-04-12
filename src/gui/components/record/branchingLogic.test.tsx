@@ -180,16 +180,18 @@ const testUiSpecification = {
       validationSchema: [['yup.object'], ['yup.nullable']],
       condition: {
         operator: 'or',
-        left: {
-          operator: 'equal',
-          field: 'conditional_source',
-          value: 'Zone Alpha; ',
-        },
-        right: {
-          operator: 'equal',
-          field: 'conditional_source',
-          value: 'Zone Charlie; ',
-        },
+        conditions: [
+          {
+            operator: 'equal',
+            field: 'conditional_source',
+            value: 'Zone Alpha; ',
+          },
+          {
+            operator: 'equal',
+            field: 'conditional_source',
+            value: 'Zone Charlie; ',
+          },
+        ],
       },
       initialValue: null,
       access: ['admin'],
@@ -864,16 +866,18 @@ const testUiSpecification = {
       label: 'Journal',
       condition: {
         operator: 'or',
-        left: {
-          operator: 'equal',
-          field: 'conditional_source',
-          value: 'Zone Beta; ',
-        },
-        right: {
-          operator: 'equal',
-          field: 'conditional_source',
-          value: 'Zone Charlie; ',
-        },
+        conditions: [
+          {
+            operator: 'equal',
+            field: 'conditional_source',
+            value: 'Zone Beta; ',
+          },
+          {
+            operator: 'equal',
+            field: 'conditional_source',
+            value: 'Zone Charlie; ',
+          },
+        ],
       },
     },
   },
