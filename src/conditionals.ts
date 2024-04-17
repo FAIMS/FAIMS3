@@ -46,7 +46,7 @@ export const compileIsLogic = (
 export const getDependantFields = (
   expression: ConditionalExpression | undefined
 ): Set<string> => {
-  if (expression === undefined) return new Set();
+  if (expression === undefined || expression === null) return new Set();
   else if (expression.field !== undefined) return new Set([expression.field]);
   else if (expression.conditions) {
     let result = new Set<string>();
@@ -69,7 +69,7 @@ export const compileExpression = (
 ) => {
   // if we don't get an expression, then this field/view has no condition
   // so return a fn that will always return true
-  if (expression === undefined) return () => true;
+  if (expression === undefined || expression === null) return () => true;
   if (expression.operator in compileFns) {
     return compileFns[expression.operator](expression);
   } else {
