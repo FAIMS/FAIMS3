@@ -14,5 +14,19 @@
 	"android": {
 		"webContentsDebuggingEnabled": true
 	},
-	"cordova": {}
+	"cordova": {},
+	"packageClassList": [
+		"BarcodeScanner",
+		"BarcodeScanner",
+		"AppPlugin",
+		"AppLauncherPlugin",
+		"CAPBrowserPlugin",
+		"CAPCameraPlugin",
+		"DevicePlugin",
+		"FilesystemPlugin",
+		"GeolocationPlugin",
+		"SharePlugin",
+		"StatusBarPlugin",
+		"CDVPlugin"
+	]
 }

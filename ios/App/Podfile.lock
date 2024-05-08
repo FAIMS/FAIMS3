@@ -1,28 +1,28 @@
 PODS:
-  - Capacitor (5.4.1):
+  - Capacitor (6.0.0):
     - CapacitorCordova
-  - CapacitorApp (5.0.6):
+  - CapacitorApp (6.0.0):
     - Capacitor
-  - CapacitorAppLauncher (5.0.6):
+  - CapacitorAppLauncher (6.0.0):
     - Capacitor
-  - CapacitorBrowser (5.1.0):
+  - CapacitorBrowser (6.0.0):
     - Capacitor
-  - CapacitorCamera (5.0.7):
+  - CapacitorCamera (6.0.0):
     - Capacitor
   - CapacitorCommunityBarcodeScanner (4.0.1):
     - Capacitor
-  - CapacitorCordova (5.4.1)
-  - CapacitorDevice (5.0.6):
+  - CapacitorCordova (6.0.0)
+  - CapacitorDevice (6.0.0):
     - Capacitor
-  - CapacitorFilesystem (5.1.4):
+  - CapacitorFilesystem (6.0.0):
     - Capacitor
-  - CapacitorGeolocation (5.0.6):
+  - CapacitorGeolocation (6.0.0):
     - Capacitor
-  - CapacitorShare (5.0.6):
+  - CapacitorShare (6.0.0):
     - Capacitor
-  - CapacitorStatusBar (5.0.6):
+  - CapacitorStatusBar (6.0.0):
     - Capacitor
-  - CordovaPlugins (5.0.3):
+  - CordovaPlugins (6.0.0):
     - CapacitorCordova
 
 DEPENDENCIES:
@@ -69,19 +69,19 @@ EXTERNAL SOURCES:
     :path: "../capacitor-cordova-ios-plugins"
 
 SPEC CHECKSUMS:
-  Capacitor: 4c0681b47eebeba1f902093d24149cf2f518393e
-  CapacitorApp: 024e1b1bea5f883d79f6330d309bc441c88ad04a
-  CapacitorAppLauncher: 5a9f06c13c6b4f5d65b550a07128ef04f3a216b3
-  CapacitorBrowser: 7a0fb6a1011abfaaf2dfedfd8248f942a8eda3d6
-  CapacitorCamera: 084b0b228bba7d00587910337b1c89e93b1d32ab
+  Capacitor: 559d073c4ca6c27f8e7002c807eea94c3ba435a9
+  CapacitorApp: 9d53aec7101f7b030a950c5bdc4df8612576b279
+  CapacitorAppLauncher: 24ce4be152a84883378d22114ffe6c492056ced2
+  CapacitorBrowser: 7e1e2cdbb3e372f09f0bad0c4c21a6d187b679ad
+  CapacitorCamera: b61f125d92a0ef75d7becb7956fed7dd13187ee0
   CapacitorCommunityBarcodeScanner: 7feb206489c8555a8ca0c74c57ddf49ead774eb8
-  CapacitorCordova: 1222fdd78bfd0d323cc22bf254eed1484fe6c92a
-  CapacitorDevice: 2c968f98a1ec4d22357418c1521e7ddc46c675e6
-  CapacitorFilesystem: af704badfbc69f6f8623d9ed313e5490e3723dcb
-  CapacitorGeolocation: 7be5f77abc205c0efe319fff8587a7183e7b0240
-  CapacitorShare: cd41743331cb71d217c029de54b681cbd91e0fcc
-  CapacitorStatusBar: 565c0a1ebd79bb40d797606a8992b4a105885309
-  CordovaPlugins: 3eca01ad832b2c42f4665c50b5a227f5da12d4b3
+  CapacitorCordova: 8c4bfdf69368512e85b1d8b724dd7546abeb30af
+  CapacitorDevice: f8fd88f9edd1261c55a109f32015b09bbbfdc4a0
+  CapacitorFilesystem: 60e59ba274c234a979e7a3be2552feaadcee4263
+  CapacitorGeolocation: 1f12bbe372b65116e851bd8e3a94cf0ef9bacebb
+  CapacitorShare: a771200d3b924a5d7ad9d9fecbac517e4c0aa74f
+  CapacitorStatusBar: 2e4369f99166125435641b1908d05f561eaba6f6
+  CordovaPlugins: a121d2011a2545bb9bec8f3cd03bcc5e2b56a355
 
 PODFILE CHECKSUM: 7037c2c6a20467555148679f1b13974b9d4a6209
 
