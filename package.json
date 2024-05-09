@@ -47,7 +47,7 @@
     "@awesome-cordova-plugins/in-app-browser": "6.3.0",
     "@bugsnag/js": "^7.20.2",
     "@bugsnag/plugin-react": "^7.19.0",
-    "@capacitor-community/barcode-scanner": "^4.0.1",
+    "@capacitor-mlkit/barcode-scanning": "^6.1.0",
     "@capacitor/android": "^6.0.0",
     "@capacitor/app": "^6.0.0",
     "@capacitor/app-launcher": "^6.0.0",

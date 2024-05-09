@@ -21,15 +21,14 @@
 import React, {useState} from 'react';
 import Button from '@mui/material/Button';
 
-import {BarcodeScanner} from '@capacitor-community/barcode-scanner';
-// requires a workaround for jest - see mock in src/jest/__mocks__
-// https://github.com/capacitor-community/barcode-scanner/issues/67
+import {BarcodeScanner} from '@capacitor-mlkit/barcode-scanning';
+// TODO: check whether mocks are still needed for testing
 
 import {FieldProps} from 'formik';
 import ReactDOM from 'react-dom';
 import {Capacitor} from '@capacitor/core';
 import {createUseStyles} from 'react-jss';
-import {Box} from '@mui/material';
+import {Box, Input} from '@mui/material';
 
 const useStyles = createUseStyles({
   container: {
@@ -154,60 +153,55 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
   };
 
   const startScan = async () => {
-    BarcodeScanner.checkPermission({force: true})
-      .then(permissions => {
-        if (permissions.granted) {
-          // hide the main app so we can overlay the viewfinder
-          // relies on knowing the root id of the page
-          //
-          const rootcontainer = document.getElementById('root');
-          if (rootcontainer) {
-            rootcontainer.style.visibility = 'hidden';
-          }
+    setScanning(true);
+    hideBackground();
 
-          // make background of WebView transparent
-          BarcodeScanner.hideBackground();
+    const listener = await BarcodeScanner.addListener(
+      'barcodeScanned',
+      async result => {
+        await listener.remove();
+        showBackground();
+        await BarcodeScanner.stopScan();
+        setScanning(false);
+        updateField(result.barcode.displayValue);
+      }
+    );
 
-          // and everything else too
-          document.getElementsByTagName('body')[0].style.backgroundColor =
-            'transparent';
-
-          // scroll to top to so that our viewfinder etc is visible
-          window.scrollTo(0, 0);
-
-          setScanning(true);
-
-          BarcodeScanner.startScan({}).then(result => {
-            // if the result has content
-            if (result.hasContent) {
-              console.debug('Barcode content:', result.content); // log the raw scanned content
-              updateField(result.content);
-            }
-            stopScan();
-          });
-        } else {
-          setCanScanMsg('Camera Access Permission not Granted');
-        }
-      })
-      .catch(() => {
-        setCanScanMsg('Scanning not supported in web browsers, mobile only');
-      });
+    await BarcodeScanner.startScan();
   };
 
-  const stopScan = () => {
-    BarcodeScanner.showBackground()
-      .then(() => {
-        const rootcontainer = document.getElementById('root');
-        if (rootcontainer) {
-          rootcontainer.style.visibility = 'visible';
-        }
-        BarcodeScanner.stopScan()
-          .then(() => {
-            setScanning(false);
-          })
-          .catch(() => console.debug('stopScan'));
-      })
-      .catch(() => console.debug('showBackground'));
+  const stopScan = async () => {
+    showBackground();
+
+    // Remove all listeners
+    await BarcodeScanner.removeAllListeners();
+    // Stop the barcode scanner
+    await BarcodeScanner.stopScan();
+    setScanning(false);
+  };
+
+  const hideBackground = () => {
+    // hide the main app so we can overlay the viewfinder
+    // relies on knowing the root id of the page
+    //
+    const rootcontainer = document.getElementById('root');
+    if (rootcontainer) {
+      rootcontainer.style.visibility = 'hidden';
+    }
+
+    // and everything else too
+    document.getElementsByTagName('body')[0].style.backgroundColor =
+      'transparent';
+
+    // scroll to top to so that our viewfinder etc is visible
+    window.scrollTo(0, 0);
+  };
+
+  const showBackground = () => {
+    const rootcontainer = document.getElementById('root');
+    if (rootcontainer) {
+      rootcontainer.style.visibility = 'visible';
+    }
   };
 
   if (scanning) {

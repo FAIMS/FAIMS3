@@ -16,8 +16,8 @@
 	},
 	"cordova": {},
 	"packageClassList": [
-		"BarcodeScanner",
-		"BarcodeScanner",
+		"BarcodeScannerPlugin",
+		"BarcodeScannerPlugin",
 		"AppPlugin",
 		"AppLauncherPlugin",
 		"CAPBrowserPlugin",
