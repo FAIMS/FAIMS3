@@ -28,7 +28,7 @@ import {FieldProps} from 'formik';
 import ReactDOM from 'react-dom';
 import {Capacitor} from '@capacitor/core';
 import {createUseStyles} from 'react-jss';
-import {Box, Input} from '@mui/material';
+import {Box} from '@mui/material';
 
 const useStyles = createUseStyles({
   container: {
@@ -153,12 +153,32 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
   };
 
   const startScan = async () => {
+    const permissions = await BarcodeScanner.checkPermissions();
+    if (permissions.camera !== 'granted') {
+      setCanScanMsg('Camera permission not granted.');
+      return;
+    }
+
     setScanning(true);
     hideBackground();
 
+    let scanCount = 0;
+    let scanResult = '';
     const listener = await BarcodeScanner.addListener(
       'barcodeScanned',
       async result => {
+        // require ten consecutive scans of the same code before
+        // accepting the scan
+        if (scanCount < 10) {
+          if (scanResult !== result.barcode.displayValue) {
+            scanResult = result.barcode.displayValue;
+            scanCount = 1;
+          } else {
+            scanCount = scanCount + 1;
+          }
+          return;
+        }
+
         await listener.remove();
         showBackground();
         await BarcodeScanner.stopScan();
@@ -186,7 +206,7 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
     //
     const rootcontainer = document.getElementById('root');
     if (rootcontainer) {
-      rootcontainer.style.visibility = 'hidden';
+      rootcontainer.style.display = 'none';
     }
 
     // and everything else too
@@ -200,7 +220,7 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
   const showBackground = () => {
     const rootcontainer = document.getElementById('root');
     if (rootcontainer) {
-      rootcontainer.style.visibility = 'visible';
+      rootcontainer.style.display = 'block';
     }
   };
 
