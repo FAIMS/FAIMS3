@@ -260,7 +260,7 @@ function displayErrors(
     return (
       <dl>
         {Object.keys(errors).map(field => (
-          <React.Fragment key="{field}error">
+          <React.Fragment key={field}>
             <dt>
               {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
             </dt>
