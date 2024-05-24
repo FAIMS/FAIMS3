@@ -56,8 +56,7 @@ import {
 } from '../../../uiSpecification';
 import {DEBUG_APP} from '../../../buildconfig';
 import {getCurrentUserId} from '../../../users';
-import {Link} from '@mui/material';
-import {NavigateFunction, Link as RouterLink} from 'react-router-dom';
+import {NavigateFunction} from 'react-router-dom';
 import RecordStepper from './recordStepper';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
@@ -160,7 +159,7 @@ class RecordForm extends React.Component<
   any,
   RecordFormState
 > {
-  draftState: RecordDraftState;
+  draftState: RecordDraftState | null = null;
 
   // List of timeouts that unmount must cancel
   timeouts: (typeof setTimeout)[] = [];
@@ -217,7 +216,7 @@ class RecordForm extends React.Component<
 
   constructor(props: RecordFormProps) {
     super(props);
-    this.draftState = new RecordDraftState(this.props as any);
+
     this.state = {
       type_cached: this.props.type ?? null,
       view_cached: null,
@@ -240,6 +239,10 @@ class RecordForm extends React.Component<
   }
 
   async componentDidMount() {
+    // moved from constructor since it has a side-effect of setting up a global timer
+    if (!this.draftState) {
+      this.draftState = new RecordDraftState(this.props as any);
+    }
     // call formChanged to update the form data, either with
     // the revision_id from state or the one passed in
     let revision_id = this.props.revision_id;
@@ -250,10 +253,22 @@ class RecordForm extends React.Component<
     await this.formChanged(false, revision_id);
   }
 
+  async componentWillUnmount() {
+    this.draftState && (await this.draftState.forceSaveAndStop());
+    //end of update values
+    for (const timeout_id of this.timeouts) {
+      clearTimeout(timeout_id as unknown as Parameters<typeof clearTimeout>[0]);
+    }
+  }
+
   newDraftListener(draft_id: string) {
     this.setState({draft_created: draft_id});
   }
 
+  // callback function for draftStorage that will be called with:
+  // true - if saving is in progress
+  // false - if saving finished ok
+  // an error if something went wrong with saving the draft
   saveListener(val: boolean | {}) {
     if (val === true) {
       // Start saving
@@ -383,13 +398,15 @@ class RecordForm extends React.Component<
     let revision_id = passed_revision_id;
     if (revision_id === undefined) {
       try {
-        // for new draft but saved record, get the revision instead of using the null
+        // for new draft but saved record, get the revision instead of using undefined
         const first_revision_id = await getFirstRecordHead(
           this.props.project_id,
           this.props.record_id
         );
         revision_id = first_revision_id;
       } catch (error) {
+        // here if there was no existing record with this id above
+        // so we ca't update revision_id so it is still undefined
         if (DEBUG_APP) console.debug('new record', this.props.record_id);
       }
     }
@@ -407,7 +424,7 @@ class RecordForm extends React.Component<
       return;
     }
 
-    if (this.getViewName() && this.getViewsetName()) {
+    if (this.draftState && this.getViewName() && this.getViewsetName()) {
       // If the draft saving has .start()'d already,
       // The proper way to change the record/revision/etc is this
       // (saveListener is already bound at this point)
@@ -484,145 +501,139 @@ class RecordForm extends React.Component<
     }
   }
 
-  async componentWillUnmount() {
-    await this.draftState.forceSave();
-    //end of update values
-    for (const timeout_id of this.timeouts) {
-      clearTimeout(timeout_id as unknown as Parameters<typeof clearTimeout>[0]);
-    }
-    this.draftState.stop();
-  }
-
   async setInitialValues(revision_id: string | undefined) {
-    /***
-     * Formik requires a single object for initialValues, collect these from the
-     * (in order high priority to last resort): draft storage, database, ui schema
-     */
-    const fromdb: any =
-      revision_id === undefined
-        ? {}
-        : (await getFullRecordData(
-            this.props.project_id,
-            this.props.record_id,
-            revision_id
-          )) || {};
-    const database_data = fromdb.data ?? {};
-    const database_annotations = fromdb.annotations ?? {};
+    // can't do this if draftState hasn't been initialised
+    if (this.draftState) {
+      /***
+       * Formik requires a single object for initialValues, collect these from the
+       * (in order high priority to last resort): draft storage, database, ui schema
+       */
+      const fromdb: any =
+        revision_id === undefined
+          ? {}
+          : (await getFullRecordData(
+              this.props.project_id,
+              this.props.record_id,
+              revision_id
+            )) || {};
+      const database_data = fromdb.data ?? {};
+      const database_annotations = fromdb.annotations ?? {};
 
-    const [staged_data, staged_annotations] =
-      await this.draftState.getInitialValues();
+      const [staged_data, staged_annotations] =
+        await this.draftState.getInitialValues();
 
-    const fields = getFieldsForViewSet(
-      this.props.ui_specification,
-      this.requireViewsetName()
-    );
-    const fieldNames = getFieldNamesFromFields(fields);
+      const fields = getFieldsForViewSet(
+        this.props.ui_specification,
+        this.requireViewsetName()
+      );
+      const fieldNames = getFieldNamesFromFields(fields);
 
-    // get value from persistent
-    let persistentvalue: any = {};
-    if (this.state.type_cached !== null)
-      persistentvalue = await getFieldPersistentData(
-        this.props.project_id,
-        this.state.type_cached
+      // get value from persistent
+      let persistentvalue: any = {};
+      if (this.state.type_cached !== null)
+        persistentvalue = await getFieldPersistentData(
+          this.props.project_id,
+          this.state.type_cached
+        );
+
+      const initialValues: {[key: string]: any} = {
+        _id: this.props.record_id!,
+        _project_id: this.props.project_id,
+        _current_revision_id: revision_id,
+      };
+      const annotations: {[key: string]: any} = {};
+
+      fieldNames.forEach(fieldName => {
+        let initial_value = fields[fieldName]['initialValue'];
+        // set value from persistence
+        if (
+          persistentvalue.data !== undefined &&
+          persistentvalue.data[fieldName] !== undefined
+        )
+          initial_value = persistentvalue.data[fieldName];
+
+        initialValues[fieldName] = firstDefinedFromList([
+          staged_data[fieldName],
+          database_data[fieldName],
+          initial_value,
+        ]);
+        // set annotation from persistence
+        let annotation_value = {annotation: '', uncertainty: false};
+
+        if (
+          persistentvalue.annotations !== undefined &&
+          persistentvalue.annotations[fieldName] !== undefined
+        )
+          annotation_value = persistentvalue.annotations[fieldName];
+        annotations[fieldName] = firstDefinedFromList([
+          staged_annotations[fieldName],
+          database_annotations[fieldName],
+          annotation_value,
+        ]);
+      });
+
+      // save child/link information into the parent/linked record when back to upper level
+      const {field_id, new_record, is_related} = getChildInfo(
+        this.props.location?.state,
+        this.props.project_id
       );
 
-    const initialValues: {[key: string]: any} = {
-      _id: this.props.record_id!,
-      _project_id: this.props.project_id,
-      _current_revision_id: revision_id,
-    };
-    const annotations: {[key: string]: any} = {};
+      if (is_related && new_record !== null) {
+        if (
+          this.props.ui_specification['fields'][field_id][
+            'component-parameters'
+          ]['multiple']
+        ) {
+          let isincluded = false;
+          initialValues[field_id].map((r: any) => {
+            if (r.record_id === new_record.record_id) {
+              isincluded = true;
+            }
+          });
 
-    fieldNames.forEach(fieldName => {
-      let initial_value = fields[fieldName]['initialValue'];
-      // set value from persistence
-      if (
-        persistentvalue.data !== undefined &&
-        persistentvalue.data[fieldName] !== undefined
-      )
-        initial_value = persistentvalue.data[fieldName];
-
-      initialValues[fieldName] = firstDefinedFromList([
-        staged_data[fieldName],
-        database_data[fieldName],
-        initial_value,
-      ]);
-      // set annotation from persistence
-      let annotation_value = {annotation: '', uncertainty: false};
-
-      if (
-        persistentvalue.annotations !== undefined &&
-        persistentvalue.annotations[fieldName] !== undefined
-      )
-        annotation_value = persistentvalue.annotations[fieldName];
-      annotations[fieldName] = firstDefinedFromList([
-        staged_annotations[fieldName],
-        database_annotations[fieldName],
-        annotation_value,
-      ]);
-    });
-
-    // save child/link information into the parent/linked record when back to upper level
-    const {field_id, new_record, is_related} = getChildInfo(
-      this.props.location?.state,
-      this.props.project_id
-    );
-
-    if (is_related && new_record !== null) {
-      if (
-        this.props.ui_specification['fields'][field_id]['component-parameters'][
-          'multiple'
-        ]
-      ) {
-        let isincluded = false;
-        initialValues[field_id].map((r: any) => {
-          if (r.record_id === new_record.record_id) {
-            isincluded = true;
+          if (isincluded === false) {
+            initialValues[field_id].push(new_record);
           }
-        });
-
-        if (isincluded === false) {
-          initialValues[field_id].push(new_record);
+        } else {
+          initialValues[field_id] = new_record;
         }
-      } else {
-        initialValues[field_id] = new_record;
       }
+      const related: Relationship = {};
+      let parent = null;
+      if (
+        this.draftState.data.state !== 'uninitialized' &&
+        this.draftState.data.relationship !== undefined
+      )
+        parent = fromdb.relationship?.parent;
+      if (
+        parent !== null &&
+        parent !== undefined &&
+        parent.record_id !== undefined
+      )
+        related['parent'] = parent;
+
+      let linked = null;
+      if (
+        this.draftState.data.state !== 'uninitialized' &&
+        this.draftState.data.relationship !== undefined
+      )
+        linked = fromdb.relationship?.linked;
+      if (linked !== null && linked !== undefined && linked.length > 0)
+        related['linked'] = linked;
+
+      const relationship = getParentInfo(
+        this.props.location?.state,
+        related,
+        this.props.record_id
+      );
+      initialValues['fieldNames'] = [];
+      initialValues['views'] = [];
+      this.setState({
+        initialValues: initialValues,
+        annotation: annotations,
+        relationship: fromdb.relationship ?? relationship,
+      });
     }
-    const related: Relationship = {};
-    let parent = null;
-    if (
-      this.draftState.data.state !== 'uninitialized' &&
-      this.draftState.data.relationship !== undefined
-    )
-      parent = fromdb.relationship?.parent;
-    if (
-      parent !== null &&
-      parent !== undefined &&
-      parent.record_id !== undefined
-    )
-      related['parent'] = parent;
-
-    let linked = null;
-    if (
-      this.draftState.data.state !== 'uninitialized' &&
-      this.draftState.data.relationship !== undefined
-    )
-      linked = fromdb.relationship?.linked;
-    if (linked !== null && linked !== undefined && linked.length > 0)
-      related['linked'] = linked;
-
-    const relationship = getParentInfo(
-      this.props.location?.state,
-      related,
-      this.props.record_id
-    );
-    initialValues['fieldNames'] = [];
-    initialValues['views'] = [];
-    this.setState({
-      initialValues: initialValues,
-      annotation: annotations,
-      relationship: fromdb.relationship ?? relationship,
-    });
   }
 
   /**
@@ -768,6 +779,7 @@ class RecordForm extends React.Component<
     return (
       getCurrentUserId(this.props.project_id)
         .then(userid => {
+          // prepare the record for saving
           const now = new Date();
           const doc = {
             record_id: this.props.record_id,
@@ -788,13 +800,17 @@ class RecordForm extends React.Component<
           return doc;
         })
         .then(doc => {
+          // store the record
           return upsertFAIMSData(this.props.project_id, doc).then(
             revision_id => {
-              // add to save the information for relationship when form saved,
-              // TODO: need to be defined if it's saved when form been save
+              // update the component state with the new revision id and notify the parent
               try {
                 this.setState({revision_cached: revision_id});
-                this.formChanged(true, revision_id);
+                // SC. Removing this call since it prevents deletion of the draft
+                // later on (draftState.clear())
+                // by changing the draft state to 'uninitialised'
+                //
+                //this.formChanged(true, revision_id);
                 if (this.props.setRevision_id !== undefined)
                   this.props.setRevision_id(revision_id); //pass the revision id back
               } catch (error) {
@@ -833,13 +849,12 @@ class RecordForm extends React.Component<
           logError('Unsaved record error:' + err);
         })
         //Clear the current draft area (Possibly after redirecting back to project page)
-        .then(result => {
-          return this.draftState.clear().then(() => {
-            return result;
-          });
+        .then(async result => {
+          this.draftState && (await this.draftState.clear());
+          return result;
         })
         .then(result => {
-          //when user try to close the page
+          // publish and continue editing
           if (is_close === 'continue') {
             setSubmitting(false);
             return result;
@@ -852,10 +867,12 @@ class RecordForm extends React.Component<
                 this.props.record_id
               );
               if (is_direct === false) {
+                // publish and close
                 if (is_close === 'close') {
                   this.props.navigate(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
                   window.scrollTo(0, 0);
                   return result;
+                  // publish and new record
                 } else if (is_close === 'new') {
                   //not child record
                   setSubmitting(false);
@@ -1087,16 +1104,16 @@ class RecordForm extends React.Component<
   }
 
   isReady(): boolean {
-    if (DEBUG_APP) {
-      if (!this.state.type_cached)
-        console.debug('isReady false because type_cached is false');
-      if (!this.state.initialValues)
-        console.debug('isReady false because initialValues is false');
-      if (!this.props.ui_specification)
-        console.debug('isReady false because ui_specification is false');
-      if (!this.state.view_cached)
-        console.debug('isReady false because view_cached is false');
-    }
+    // if (DEBUG_APP) {
+    //   if (!this.state.type_cached)
+    //     console.debug('isReady false because type_cached is false');
+    //   if (!this.state.initialValues)
+    //     console.debug('isReady false because initialValues is false');
+    //   if (!this.props.ui_specification)
+    //     console.debug('isReady false because ui_specification is false');
+    //   if (!this.state.view_cached)
+    //     console.debug('isReady false because view_cached is false');
+    // }
     return Boolean(
       this.state.type_cached &&
         this.state.initialValues &&
@@ -1118,37 +1135,38 @@ class RecordForm extends React.Component<
   }
 
   render() {
-    if (this.state.draft_created !== null) {
-      // If a draft was created, that implies this form started from
-      // a non draft, so it must have been an existing record (see props
-      // as it's got a type {existing record} | {draft already created}
-      (this.context as any).dispatch({
-        type: ActionType.ADD_CUSTOM_ALERT,
-        payload: {
-          severity: 'success',
-          element: (
-            <React.Fragment>
-              <Link
-                component={RouterLink}
-                to={
-                  ROUTES.NOTEBOOK +
-                  this.props.project_id +
-                  ROUTES.RECORD_EXISTING +
-                  this.props.record_id! +
-                  ROUTES.REVISION +
-                  this.props.revision_id! +
-                  ROUTES.RECORD_DRAFT +
-                  this.state.draft_created
-                }
-              >
-                Created new draft
-              </Link>
-            </React.Fragment>
-          ),
-        },
-      });
-      this.setState({draft_created: null});
-    }
+    // we can't do this here because it changes state and forces a redraw
+    // if (this.state.draft_created !== null) {
+    //   // If a draft was created, that implies this form started from
+    //   // a non draft, so it must have been an existing record (see props
+    //   // as it's got a type {existing record} | {draft already created}
+    //   (this.context as any).dispatch({
+    //     type: ActionType.ADD_CUSTOM_ALERT,
+    //     payload: {
+    //       severity: 'success',
+    //       element: (
+    //         <React.Fragment>
+    //           <Link
+    //             component={RouterLink}
+    //             to={
+    //               ROUTES.NOTEBOOK +
+    //               this.props.project_id +
+    //               ROUTES.RECORD_EXISTING +
+    //               this.props.record_id! +
+    //               ROUTES.REVISION +
+    //               this.props.revision_id! +
+    //               ROUTES.RECORD_DRAFT +
+    //               this.state.draft_created
+    //             }
+    //           >
+    //             Created new draft
+    //           </Link>
+    //         </React.Fragment>
+    //       ),
+    //     },
+    //   });
+    //   this.setState({draft_created: null});
+    // }
 
     if (this.isReady()) {
       const viewName = this.requireView();
@@ -1209,11 +1227,12 @@ class RecordForm extends React.Component<
                 );
                 view_index = views.indexOf(viewName);
                 is_final_view = view_index + 1 === views.length;
-                this.draftState.renderHook(
-                  formProps.values,
-                  this.state.annotation,
-                  this.state.relationship ?? {}
-                );
+                this.draftState &&
+                  this.draftState.renderHook(
+                    formProps.values,
+                    this.state.annotation,
+                    this.state.relationship ?? {}
+                  );
                 return (
                   <Form>
                     {views.length > 1 && (
