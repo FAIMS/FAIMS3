@@ -222,7 +222,7 @@ class RecordDraftState {
     try {
       this._fetchData(loadedProps);
     } catch (e: any) {
-      console.log('error in _fetchData', e);
+      logError(`error in _fetchData ${e}`);
     }
     // clear any existing timers before making a new one
     if (this.interval) {
@@ -519,7 +519,6 @@ class RecordDraftState {
     this.is_saving = true;
     let result;
     try {
-      const [data_to_save, annotations_to_save] = await this._touchedData();
       if (this.data.state !== 'edited') {
         // Nothing to save yet, probably the user hasn't touched an
         // existing record
@@ -528,6 +527,9 @@ class RecordDraftState {
         this.saveListener(Error('no changes'));
         return;
       }
+      // moved this below the above since it doesn't change 'data.state'
+      // and was causing problems because is_saving wasn't being quickly reset
+      const [data_to_save, annotations_to_save] = await this._touchedData();
       result = await setStagedData(
         await this.data.draft_id,
         data_to_save,
@@ -559,14 +561,16 @@ class RecordDraftState {
   }
 
   /**
-   * Force pushes the currently touched values into the draft DB, needed when
+   * Force pushes the currently touched values into the draft DB,
+   * and stop the periodic callback; needed when
    * the user leaves the page.
    *
    * This is awaitable as a normal async function
    */
-  async forceSave(): Promise<void> {
+  async forceSaveAndStop(): Promise<void> {
     this.is_saving = false; // don't skip saving if we're still saving
     await this._saveData();
+    this.stop();
   }
 
   /**
