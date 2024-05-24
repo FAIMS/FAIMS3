@@ -36,7 +36,7 @@ type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;
   formProps: FormikProps<{[key: string]: unknown}>;
-  draftState?: RecordDraftState;
+  draftState?: RecordDraftState | null;
   annotation: any;
   handleAnnotation: any;
   isSyncing?: string;
@@ -52,7 +52,7 @@ type SingleComponentProps = {
   formProps: FormikProps<{[key: string]: unknown}>;
   annotation: any;
   handleAnnotation: any;
-  draftState?: RecordDraftState;
+  draftState?: RecordDraftState | null;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
   isSyncing?: string;
