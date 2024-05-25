@@ -131,10 +131,15 @@ function excludes_related_record(
 
   // if we allow multiple links and we have a current value then extract
   // the record_ids from the current value and add them to the relations array
-  if (multiple && value)
-    value.map((record: RecordReference) =>
-      record !== null ? relations.push(record.record_id) : record
-    );
+  if (multiple && value) {
+    if (Array.isArray(value)) {
+      value.map((record: RecordReference) =>
+        record !== null ? relations.push(record.record_id) : record
+      );
+    } else {
+      relations.push(value.record_id);
+    }
+  }
 
   // filter the all_records array to remove any records that are already linked
   // if we don't allow multiple values OR we have no current value
@@ -281,11 +286,19 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           )
             setPreferred(props.form.values[field_name]['record_id']);
         } else if (props.form.values[field_name]) {
-          props.form.values[field_name].map((child_record: RecordReference) => {
-            if (child_record.is_preferred === true) {
-              setPreferred(child_record['record_id']);
-            }
-          });
+          // edge case: this record was created when multiple=false, so the values
+          // were stored as a singleton
+          if (Array.isArray(props.form.values[field_name])) {
+            props.form.values[field_name].map(
+              (child_record: RecordReference) => {
+                if (child_record.is_preferred === true) {
+                  setPreferred(child_record['record_id']);
+                }
+              }
+            );
+          } else {
+            setPreferred(props.form.values[field_name]['record_id']);
+          }
         }
         const all_records = await getRecordsByType(
           project_id,
@@ -411,8 +424,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       relation_type_vocabPair: relationshipPair,
     };
     let newValue = props.form.values[field_name];
-    if (multiple) newValue = [...(newValue ?? []), new_child_record];
-    else newValue = new_child_record;
+    if (multiple) {
+      // edge case: existing value could be a singleton if schema was changed
+      if (Array.isArray(newValue))
+        newValue = [...(newValue ?? []), new_child_record];
+      else newValue = [newValue, new_child_record];
+    } else newValue = new_child_record;
     props.form.setFieldValue(props.field.name, newValue);
     return new_record_id;
   };
@@ -465,6 +482,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       options
     );
     setOptions(records);
+    // now that we have a value, disable if we don't allow multiple values
     if (!multiple) setIs_enabled(false);
     //set the form value
     if (multiple) SetSelectedRecord(null);
@@ -622,10 +640,27 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         {props.form.isValid === false && (
           <Grid item xs={12} sm={12} md={12} lg={12}>
             <Typography variant="caption" color="error">
-              To enable Add record or Link, please make sure form has no error
+              To enable Add record or Link, please make sure form has no errors
             </Typography>
           </Grid>
         )}
+        <Grid item xs={12} sm={12} md={12} lg={12}>
+          <Typography variant="caption">
+            {props.helperText}
+            {'   '}
+          </Typography>
+        </Grid>
+
+        {!is_enabled && (
+          <Grid item xs={12} sm={12} md={12} lg={12}>
+            <Typography variant="caption" color="error">
+              Only one related record allowed. Remove existing link to enable
+              Add record or Link
+            </Typography>
+          </Grid>
+        )}
+
+        {/*
         {disabled === false ||
           (props.helperText === '' && !is_enabled && (
             <Grid item xs={12} sm={12} md={12} lg={12}>
@@ -640,6 +675,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
               )}
             </Grid>
           ))}
+        */}
         <Grid item xs={12} sm={12} md={12} lg={12}>
           {/* {multiple?props.form.values[field_name][0]['record_id']:props.form.values[field_name]['record_id']} */}
           <DisplayChild
