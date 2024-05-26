@@ -478,9 +478,7 @@ async function get_field_RelatedFields(
   form_type: string,
   hrid: string,
   relation_type: string,
-  current_revision_id: string,
-  is_display = false,
-  displayFields: string[] = []
+  current_revision_id: string
 ): Promise<Array<RecordLinkProps>> {
   for (const index in fields) {
     const field = fields[index]['field'];
@@ -1048,7 +1046,7 @@ async function check_if_parent_link(
   record_id: string
 ) {
   let is_exist = false;
-  const {latest_record, revision_id} = await getRecordInformation(record);
+  const {latest_record} = await getRecordInformation(record);
   if (latest_record !== null) {
     if (Array.isArray(latest_record.data[field_id])) {
       //if field value is array, child_record has this record,then link exist
@@ -1174,7 +1172,7 @@ async function conflict_update_child_record(
       record_id: record_id,
       record_label: record_id,
     };
-    const {latest_record, revision_id} = await getRecordInformation(record);
+    const {latest_record} = await getRecordInformation(record);
     if (latest_record !== null) {
       const is_linked = check_if_child_link(
         latest_record?.relationship,
