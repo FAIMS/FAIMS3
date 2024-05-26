@@ -31,31 +31,36 @@ import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
 import getLocalDate from '../../../fields/LocalDate';
 import {logError} from '../../../../logging';
-//get parent link when child record been open
-export async function getParentLink_from_relationship(
-  hrid: string,
-  relationship: any,
-  record_id: string,
+
+/**
+ * Generate an object containing information to be stored in
+ *   `location.state` to persist between page views.
+ * @param parentLink - details of the linked (parent) record
+ * @param project_id - current project id
+ * @returns {location_state, latest_record, revision_id}
+ */
+export async function generateLocationState(
+  parentLink: LinkedRelation,
   project_id: string
 ) {
   const parent_record = {
     project_id: project_id,
-    record_id: relationship.parent.record_id,
-    record_label: relationship.parent.record_id,
+    record_id: parentLink.record_id,
+    record_label: parentLink.record_id,
   };
   const {latest_record, revision_id} = await getRecordInformation(
     parent_record
   );
   return {
     location_state: {
-      field_id: relationship.parent.field_id,
+      field_id: parentLink.field_id,
       parent: latest_record?.relationship?.parent,
       parent_link: ROUTES.getRecordRoute(
         project_id ?? '',
-        (relationship.parent.record_id || '').toString(),
+        (parentLink.record_id || '').toString(),
         (revision_id || '').toString()
       ),
-      parent_record_id: relationship.parent.record_id,
+      parent_record_id: parentLink.record_id,
       type: 'Child',
       // relation_type_vocabPair: relationship.parent.relation_type_vocabPair,
     },
@@ -63,46 +68,55 @@ export async function getParentLink_from_relationship(
     revision_id: revision_id,
   };
 }
-export function getParentlinkInfo(
+
+/**
+ * getParentLinkInfo - get information about whether a new record is a child of some parent record
+ * @param hrid - the HRID or revision_id of a record
+ * @param relationState - stored relation state
+ * @param record_id - the id of the record
+ * @returns {state_parent, is_direct} - `is_direct` is true if the record is a child record, false if
+ *          not.  `state_parent` contains details about the parent record or `{}` if none.
+ */
+export function getParentLinkInfo(
   hrid: string,
-  RelationState: any,
+  relationState: any,
   record_id: string
 ) {
   let is_direct = false;
   let state_parent: LocationState = {};
 
-  if (RelationState === undefined || RelationState === null)
+  if (relationState === undefined || relationState === null)
     return {state_parent, is_direct};
-  if (RelationState.field_id !== undefined) is_direct = true;
+  if (relationState.field_id !== undefined) is_direct = true;
 
   state_parent = {
-    field_id: RelationState.field_id,
+    field_id: relationState.field_id,
     record_id: record_id,
     hrid: hrid,
-    parent: RelationState.parent,
-    parent_link: RelationState.parent_link,
-    parent_record_id: RelationState.parent_record_id,
-    type: RelationState.type,
-    relation_type_vocabPair: RelationState.relation_type_vocabPair,
+    parent: relationState.parent,
+    parent_link: relationState.parent_link,
+    parent_record_id: relationState.parent_record_id,
+    type: relationState.type,
+    relation_type_vocabPair: relationState.relation_type_vocabPair,
   };
-  //check if the parent is exist
+  //check if the parent exists in the relationState record
   if (
-    RelationState.parent !== undefined &&
-    RelationState.parent.field_id !== undefined
+    relationState.parent !== undefined &&
+    relationState.parent.field_id !== undefined
   ) {
     if (
-      record_id === RelationState.parent_record_id &&
-      RelationState.parent.parent !== undefined
+      record_id === relationState.parent_record_id &&
+      relationState.parent.parent !== undefined
     ) {
       state_parent = {
-        field_id: RelationState.parent.field_id,
+        field_id: relationState.parent.field_id,
         record_id: record_id,
         hrid: hrid,
-        parent: RelationState.parent.parent,
-        parent_link: RelationState.parent.parent_link,
-        parent_record_id: RelationState.parent.parent_record_id,
-        type: RelationState.parent.type,
-        relation_type_vocabPair: RelationState.parent.relation_type_vocabPair,
+        parent: relationState.parent.parent,
+        parent_link: relationState.parent.parent_link,
+        parent_record_id: relationState.parent.parent_record_id,
+        type: relationState.parent.type,
+        relation_type_vocabPair: relationState.parent.relation_type_vocabPair,
       };
     }
   }
@@ -116,12 +130,77 @@ export function getParentlinkInfo(
   return {state_parent, is_direct};
 }
 
-const check_if_link_exist = (
+/**
+ * Generate a Relationship object to represent a relation between records
+ * @param location_state - existing location.state object
+ * @param parent - details of parent relationship
+ * @param record_id - current record id
+ * @returns a Relationship object
+ */
+export function generateRelationship(
+  location_state: any,
+  parent: Relationship,
+  record_id: string
+): Relationship {
+  let state = location_state;
+  if (state === undefined || state === null) return parent;
+  if (record_id === location_state.parent_record_id)
+    state = location_state.parent;
+  if (state === undefined || state === null) return parent;
+  if (state.type === undefined) return parent;
+  if (state.type === 'Child')
+    return {
+      ...parent,
+      parent: {
+        record_id: state.parent_record_id,
+        field_id: state.field_id,
+        relation_type_vocabPair: ['Child', 'Parent'],
+      },
+    };
+  if (state.type === 'Linked') {
+    if (parent['linked'] === undefined)
+      parent['linked'] = [
+        {
+          record_id: state.parent_record_id,
+          field_id: state.field_id,
+          relation_type_vocabPair: state.relation_type_vocabPair,
+        },
+      ];
+    else if (
+      !linkExists(parent['linked'], state.parent_record_id, state.field_id)
+    )
+      parent['linked'].push({
+        record_id: state.parent_record_id,
+        field_id: state.field_id,
+        relation_type_vocabPair: state.relation_type_vocabPair,
+      });
+    //get parent
+    if (
+      state.parent !== undefined &&
+      state.parent.type === 'Child' &&
+      state.parent.parent_record_id !== record_id //check to confirm
+    )
+      parent['parent'] = {
+        record_id: state.parent.parent_record_id,
+        field_id: state.parent.field_id,
+        relation_type_vocabPair: [],
+      };
+  }
+  return parent;
+}
+
+/**
+ * Check whether a link exists to a parent
+ * @param linkRecords - an array of link records
+ * @param parent_record_id - parent record
+ * @param field_id - relation field id
+ * @returns true if there is a link to this record
+ */
+const linkExists = (
   linkRecords: Array<LinkedRelation>,
   parent_record_id: string,
   field_id: string
 ) => {
-  //get all linked record_id
   if (linkRecords.length === 0) return false;
   let is_linked = false;
   linkRecords.map((linkRecord: LinkedRelation) =>
@@ -132,86 +211,6 @@ const check_if_link_exist = (
   );
   return is_linked;
 };
-
-//function to get parent/to be linked information to save in the child
-export function getParentInfo(
-  RelationState: any,
-  parent: Relationship,
-  record_id: string
-): Relationship {
-  let Relate_parent = RelationState;
-  if (Relate_parent === undefined || Relate_parent === null) return parent;
-  if (record_id === RelationState.parent_record_id)
-    Relate_parent = RelationState.parent;
-  if (Relate_parent === undefined || Relate_parent === null) return parent;
-  if (Relate_parent.type === undefined) return parent;
-  if (Relate_parent.type === 'Child')
-    return {
-      ...parent,
-      parent: {
-        record_id: Relate_parent.parent_record_id,
-        field_id: Relate_parent.field_id,
-        relation_type_vocabPair: ['Child', 'Parent'],
-      },
-    };
-  if (Relate_parent.type === 'Linked') {
-    if (parent['linked'] === undefined)
-      parent['linked'] = [
-        {
-          record_id: Relate_parent.parent_record_id,
-          field_id: Relate_parent.field_id,
-          relation_type_vocabPair: Relate_parent.relation_type_vocabPair,
-        },
-      ];
-    else if (
-      !check_if_link_exist(
-        parent['linked'],
-        Relate_parent.parent_record_id,
-        Relate_parent.field_id
-      )
-    )
-      parent['linked'].push({
-        record_id: Relate_parent.parent_record_id,
-        field_id: Relate_parent.field_id,
-        relation_type_vocabPair: Relate_parent.relation_type_vocabPair,
-      });
-    //get parent
-    if (
-      Relate_parent.parent !== undefined &&
-      Relate_parent.parent.type === 'Child' &&
-      Relate_parent.parent.parent_record_id !== record_id //check to confirm
-    )
-      parent['parent'] = {
-        record_id: Relate_parent.parent.parent_record_id,
-        field_id: Relate_parent.parent.field_id,
-        relation_type_vocabPair: [],
-      };
-  }
-  return parent;
-}
-//function to get child/linked information to save in parent
-export function getChildInfo(child_state: any, project_id: string) {
-  let is_related = false;
-  let field_id = '';
-  let new_record: RecordReference | null = null;
-  if (
-    child_state !== undefined &&
-    child_state !== null &&
-    child_state.record_id !== undefined
-  ) {
-    //save the sub_record id into initial value
-    field_id = child_state.field_id.replace('?', '');
-    new_record = {
-      project_id: project_id,
-      record_id: child_state.record_id,
-      record_label: child_state.hrid ?? child_state.record_id,
-      relation_type_vocabPair: child_state.relation_type_vocabPair ?? null,
-    };
-    is_related = true;
-    return {field_id, new_record, is_related};
-  }
-  return {field_id, new_record, is_related};
-}
 
 async function getRecordInformation(child_record: RecordReference) {
   let latest_record = null;
@@ -486,7 +485,6 @@ async function get_field_RelatedFields(
   displayFields: string[] = []
 ): Promise<Array<RecordLinkProps>> {
   for (const index in fields) {
-    console.debug('get related field', fields[index]['value']);
     const field = fields[index]['field'];
     const child_record = fields[index]['value'];
 
@@ -593,8 +591,6 @@ export async function addLinkedRecord(
     });
   }
 
-  console.debug('parent field information', parent_links, parent);
-
   for (const index in parent_links) {
     const parent_link = parent_links[index];
     const {latest_record, revision_id} = await getRecordInformation({
@@ -602,12 +598,6 @@ export async function addLinkedRecord(
       record_id: parent_link.record_id,
       record_label: parent_link.record_id,
     });
-    console.debug(
-      'get revisons and latest_record',
-      latest_record,
-      record_id,
-      revision_id
-    );
     if (revision_id !== undefined) {
       const child_record = {
         project_id: project_id,
@@ -967,7 +957,7 @@ export function AddLink(
   linked: LinkedRelation
 ): LinkedRelation[] {
   if (relation === undefined || relation.linked === undefined) return [linked];
-  if (check_if_link_exist(relation.linked, linked.record_id, linked.field_id))
+  if (linkExists(relation.linked, linked.record_id, linked.field_id))
     return relation.linked;
   const new_linked = relation.linked;
   new_linked.push(linked);
