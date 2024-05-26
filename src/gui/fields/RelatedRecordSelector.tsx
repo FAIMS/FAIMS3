@@ -382,7 +382,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const newState: LocationState = {
     parent_record_id: props.form.values._id, //current form record id
     parent_hrid: hrid,
-    field_id: props.id,
+    field_id: props.field.name, // the field identifier
     type: type, //type of this relation
     parent_link: location.pathname.replace('/notebooks/', ''), // current form link
     parent: {},
