@@ -176,19 +176,16 @@ export default function DataGridFieldLinksComponent(
     setIsSubmitting(true);
 
     if (props.handleUnlink !== undefined)
-      props
-        .handleUnlink(modalLink.record_id, modalLink.hrid)
-        .then((result: string) => {
-          console.debug('UnClick result', result);
-          const timer = setTimeout(() => {
-            // reset local state of component
-            setIsSubmitting(false);
-            setModalOpen(false);
-          }, 500);
-          return () => {
-            clearTimeout(timer);
-          };
-        });
+      props.handleUnlink(modalLink.record_id, modalLink.hrid).then(() => {
+        const timer = setTimeout(() => {
+          // reset local state of component
+          setIsSubmitting(false);
+          setModalOpen(false);
+        }, 500);
+        return () => {
+          clearTimeout(timer);
+        };
+      });
   }
   function recordDisplay(
     current_record_id: RecordID,
@@ -208,7 +205,6 @@ export default function DataGridFieldLinksComponent(
       </Typography>
     );
   }
-  console.debug('updated record relationship', props.links);
   const columns: any = [
     {
       field: 'relation_type_vocabPair',

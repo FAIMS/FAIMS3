@@ -116,7 +116,8 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           headerClassName: 'faims-record-link--header',
           minWidth: 100,
           flex: 0.2,
-          valueGetter: (params: GridCellParams) => params.row.value[0],
+          valueGetter: (params: GridCellParams) =>
+            params.row.value ? params.row.value[0] : 'unknown',
         },
         {
           field: 'linked_field',
@@ -191,7 +192,8 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           headerClassName: 'faims-record-link--header',
           minWidth: 150,
           flex: 0.1,
-          valueGetter: (params: gridParamsDataType) => params.value[0],
+          valueGetter: (params: gridParamsDataType) =>
+            params.row.value ? params.row.value[0] : 'unknown',
         },
         {
           field: 'linked_field',
