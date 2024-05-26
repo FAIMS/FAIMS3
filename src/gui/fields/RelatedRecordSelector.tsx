@@ -327,10 +327,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.current_form,
           type
         );
-        console.debug('record information', records_info);
         setRecordsInformation(records_info);
       } else {
-        console.debug('Project ID is not available');
+        console.debug('Project ID is not available - this is probably bad');
         // setIsactive(true);
       }
     })();
@@ -357,7 +356,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.current_form,
           type
         );
-        console.debug('record information', records_info);
         setRecordsInformation(records_info);
         SetUpdated(uuidv4());
       } else {

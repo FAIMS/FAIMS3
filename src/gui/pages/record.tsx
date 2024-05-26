@@ -315,10 +315,6 @@ export default function Record() {
               },
               {title: hrid! ?? record_id!},
             ];
-            console.debug(
-              'updated record relationship parent newParent ',
-              newParent
-            );
             if (
               newParent !== null &&
               newParent.length > 0 &&
@@ -385,7 +381,6 @@ export default function Record() {
         newRelationship: RecordLinkProps[];
       }) => {
         if (result.is_updated) {
-          console.debug('updated record relationship parent ', result);
           if (
             result.new_revision_id !== undefined &&
             result.new_revision_id !== null &&
@@ -402,7 +397,6 @@ export default function Record() {
               record_id!
             ).then(newParent => {
               setParentLinks(newParent);
-              console.debug('updated record relationship parent ', newParent);
             });
           }
         } else {

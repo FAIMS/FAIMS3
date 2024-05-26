@@ -179,7 +179,6 @@ export default function DataGridFieldLinksComponent(
       props
         .handleUnlink(modalLink.record_id, modalLink.hrid)
         .then((result: string) => {
-          console.debug('UnClick result', result);
           const timer = setTimeout(() => {
             // reset local state of component
             setIsSubmitting(false);
@@ -208,7 +207,6 @@ export default function DataGridFieldLinksComponent(
       </Typography>
     );
   }
-  console.debug('updated record relationship', props.links);
   const columns: any = [
     {
       field: 'relation_type_vocabPair',

@@ -228,7 +228,6 @@ async function getRecordInformation(child_record: RecordReference) {
       revision_id,
       false
     );
-    console.debug('get latest record', latest_record);
   } catch (error) {
     throw Error('Error to get record information' + child_record.project_id);
   }
@@ -424,7 +423,6 @@ function get_route_for_field(
       (current_revision_id || '').toString()
     );
   } catch (error) {
-    console.log('Parent Route not passed correctly', current_revision_id);
     return project_id + record_id + current_revision_id;
   }
 }
@@ -550,10 +548,6 @@ async function get_field_RelatedFields(
           latest_record?.deleted ?? false,
           is_deleted
         );
-        // get the displayed information for the child or link item, this is used by field
-        if (is_display && latest_record !== null) {
-          console.debug('display values', displayFields);
-        }
         newfields.push(child);
       }
     } catch (error) {
@@ -836,12 +830,6 @@ export async function getDetailRelatedInformation(
 function get_last_updated(updated_by: string, updated: Date | undefined) {
   if (updated === undefined) return updated_by;
   const update_time = getLocalDate(updated).replace('T', ' ');
-  console.debug(
-    'update time',
-    getLocalDate(updated),
-    getLocalDate(new Date()),
-    update_time
-  );
   return updated_by + ' at ' + update_time;
 }
 export async function Update_New_Link(
@@ -1061,7 +1049,6 @@ async function check_if_parent_link(
 ) {
   let is_exist = false;
   const {latest_record, revision_id} = await getRecordInformation(record);
-  console.log(revision_id);
   if (latest_record !== null) {
     if (Array.isArray(latest_record.data[field_id])) {
       //if field value is array, child_record has this record,then link exist
@@ -1118,15 +1105,6 @@ export async function update_child_records_conflict(
 ) {
   for (const field of Object.keys(relation_fields)) {
     const field_info = relation_fields[field];
-    console.debug(
-      'conflict update child record',
-      conflictA.fields[field].data,
-      conflictB.fields[field].data,
-      mergeresult.fields[field].data,
-      field_info.relation_type.replace('faims-core::', ''),
-      project_id,
-      field
-    );
     await update_field_child_record_conflict(
       conflictA.fields[field].data,
       conflictB.fields[field].data,
@@ -1197,7 +1175,6 @@ async function conflict_update_child_record(
       record_label: record_id,
     };
     const {latest_record, revision_id} = await getRecordInformation(record);
-    console.log(revision_id);
     if (latest_record !== null) {
       const is_linked = check_if_child_link(
         latest_record?.relationship,
@@ -1363,7 +1340,6 @@ export async function remove_deleted_parent(
       const now = new Date();
       new_doc['updated'] = now;
       new_doc['relationship'] = new_relation;
-      console.debug('updated record relationship', new_relation);
       try {
         result['is_updated'] = true;
         result['newRelationship'] = remove_deleted_parent_link(
