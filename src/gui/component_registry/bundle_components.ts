@@ -26,77 +26,25 @@ import {Select as FormikSelect} from 'formik-mui';
 import {RadioGroup as FormikRadioGroup} from 'formik-mui';
 // import {CheckboxWithLabel as FormikCheckboxWithLabel} from 'formik-mui';
 
-import {
-  Select as FAIMSSelect,
-  SelectSetting,
-  Selectcomponentsetting,
-  getSelectBuilderIcon,
-} from '../fields/select';
-import {
-  AdvancedSelect,
-  AdvancedSelectSetting,
-  AdvancedSelectcomponentsetting,
-} from '../fields/selectadvanced';
-import {
-  MultiSelect,
-  MultiSelectSetting,
-  MultiSelectcomponentsetting,
-} from '../fields/multiselect';
-import {ActionButton, ActionSetting} from '../fields/ActionButton';
-import {TakePoint, TakePointSetting} from '../fields/TakePoint';
-import {
-  Checkbox as FAIMSCheckbox,
-  CheckboxSetting,
-  getCheckBoxBuilderIcon,
-} from '../fields/checkbox';
-import {
-  RadioGroup as FAIMSRadioGroup,
-  RadioSetting,
-  Radiocomponentsetting,
-  getRadioBuilderIcon,
-} from '../fields/radio';
+import {Select as FAIMSSelect} from '../fields/select';
+import {AdvancedSelect} from '../fields/selectadvanced';
+import {MultiSelect} from '../fields/multiselect';
+import {ActionButton} from '../fields/ActionButton';
+import {TakePoint} from '../fields/TakePoint';
+import {Checkbox as FAIMSCheckbox} from '../fields/checkbox';
+import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
 import {TemplatedStringField} from '../fields/TemplatedStringField';
-import {
-  BasicAutoIncrementer,
-  AutoSetting,
-  getAutoBuilderIcon,
-} from '../fields/BasicAutoIncrementer';
-import {
-  RelatedRecordSelector,
-  LinkedSetting,
-  getLinkedBuilderIcon,
-  Linkedcomponentsetting,
-} from '../fields/RelatedRecordSelector';
-import {
-  FileUploader,
-  FileuploadSetting,
-  getFileuploadBuilderIcon,
-} from '../fields/FileUploader';
-import {TakePhoto, TakePhotoSetting} from '../fields/TakePhoto';
+import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
+import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
+import {FileUploader} from '../fields/FileUploader';
+import {TakePhoto} from '../fields/TakePhoto';
 
 import {registerComponent, setupComponentProperties} from './internals';
-import {
-  TextuiSpec,
-  TextuiSetting,
-  DefaultComponentSetting,
-  MultiTextuiSetting,
-  MultiTextuiSpec,
-} from '../fields/BasicFieldSettings';
-import {RandomStyle, RandomStyleSetting} from '../fields/RandomStyle';
+import {RandomStyle} from '../fields/RandomStyle';
 // Mapping plugin imports
-import {
-  MapFormField,
-  MapFieldBuilderSettings,
-  MapComponentSetting,
-} from '../fields/MapFormField';
-// import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
+import {MapFormField} from '../fields/maps/MapFormField';
 
-import {
-  DateTimeNow,
-  DateTimeNowSetting,
-  DateTimeNowComponentSettings,
-  getDateTimeNowBuilderIcon,
-} from '../fields/DateTimeNow';
+import {DateTimeNow} from '../fields/DateTimeNow';
 
 import {
   setAttachmentLoaderForType,
@@ -104,7 +52,7 @@ import {
   file_data_to_attachments,
   file_attachments_to_data,
 } from 'faims3-datamodel';
-import {QRCodeFormField, QRCodeFieldBuilderSettings} from '../fields/qrcode';
+import {QRCodeFormField} from '../fields/qrcode';
 import {RichTextField} from '../fields/RichText';
 
 /*
@@ -155,16 +103,7 @@ registerComponent(
     'Input field',
     'text plus special characters',
     'Text',
-    FormikTextField,
-    {
-      namespace: 'formik-material-ui',
-      componentName: 'TextField',
-      type_return: 'faims-core::String',
-      validationSchema: [['yup.string']],
-      type: 'text',
-    },
-    [TextuiSetting, TextuiSpec],
-    DefaultComponentSetting
+    FormikTextField
   )
 );
 
@@ -181,23 +120,7 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'Select',
-  setupComponentProperties(
-    'Select',
-    'Select one item',
-    'Select',
-    FAIMSSelect,
-    {
-      namespace: 'faims-custom',
-      componentName: 'Select',
-      select: true,
-      type_return: 'faims-core::String',
-      validationSchema: [['yup.string']],
-      type: 'select',
-    },
-    SelectSetting,
-    Selectcomponentsetting,
-    getSelectBuilderIcon()
-  )
+  setupComponentProperties('Select', 'Select one item', 'Select', FAIMSSelect)
 );
 registerComponent(
   'faims-custom',
@@ -206,18 +129,7 @@ registerComponent(
     'MultiSelect',
     'Select multiple items',
     'Select',
-    MultiSelect,
-    {
-      namespace: 'faims-custom',
-      componentName: 'MultiSelect',
-      select: true,
-      type_return: 'faims-core::Array',
-      validationSchema: [['yup.Array']],
-      type: 'select',
-    },
-    MultiSelectSetting,
-    MultiSelectcomponentsetting,
-    getSelectBuilderIcon()
+    MultiSelect
   )
 );
 registerComponent(
@@ -227,57 +139,18 @@ registerComponent(
     'Hierarchical Select',
     'Hierarchical vocabularies pick',
     'Select',
-    AdvancedSelect,
-    {
-      namespace: 'faims-custom',
-      componentName: 'AdvancedSelect',
-      select: true,
-      type_return: 'faims-core::string',
-      validationSchema: [['yup.string']],
-      type: 'select',
-    },
-    AdvancedSelectSetting,
-    AdvancedSelectcomponentsetting,
-    getSelectBuilderIcon()
+    AdvancedSelect
   )
 );
 registerComponent(
   'faims-custom',
   'Checkbox',
-  setupComponentProperties(
-    'Checkbox',
-    'Checkbox',
-    'Select',
-    FAIMSCheckbox,
-    {
-      namespace: 'faims-custom',
-      componentName: 'Checkbox',
-      type_return: 'faims-core::Bool',
-      validationSchema: [['yup.bool']],
-      type: 'checkbox',
-    },
-    CheckboxSetting,
-    DefaultComponentSetting,
-    getCheckBoxBuilderIcon()
-  )
+  setupComponentProperties('Checkbox', 'Checkbox', 'Select', FAIMSCheckbox)
 );
 registerComponent(
   'faims-custom',
   'RadioGroup',
-  setupComponentProperties(
-    'Radio',
-    'Radio',
-    'Select',
-    FAIMSRadioGroup,
-    {
-      ...RadioSetting[1],
-      namespace: 'faims-custom',
-      componentName: 'RadioGroup',
-    },
-    RadioSetting,
-    Radiocomponentsetting,
-    getRadioBuilderIcon()
-  )
+  setupComponentProperties('Radio', 'Radio', 'Select', FAIMSRadioGroup)
 );
 registerComponent(
   'faims-custom',
@@ -286,65 +159,18 @@ registerComponent(
     'Action Button',
     'Do an action',
     'Special',
-    ActionButton,
-    {
-      namespace: 'faims-custom',
-      componentName: 'ActionButton',
-      type_return: 'faims-core::String',
-      validationSchema: [['yup.string']],
-      type: 'string',
-    },
-    ActionSetting,
-    DefaultComponentSetting
+    ActionButton
   )
 );
 registerComponent(
   'faims-custom',
   'TakePoint',
-  setupComponentProperties(
-    'Take Point',
-    '',
-    'Special',
-    TakePoint,
-    {
-      namespace: 'faims-custom',
-      componentName: 'TakePoint',
-      type_return: 'faims-pos::Location',
-      initialValue: null,
-      validationSchema: [
-        ['yup.object'],
-        ['yup.nullable'],
-        [
-          'yup.shape',
-          {
-            latitude: [['yup.number'], ['yup.required']],
-            longitude: [['yup.number'], ['yup.required']],
-          },
-        ],
-      ],
-    },
-    TakePointSetting,
-    DefaultComponentSetting
-  )
+  setupComponentProperties('Take Point', '', 'Special', TakePoint)
 );
 registerComponent(
   'faims-custom',
   'TakePhoto',
-  setupComponentProperties(
-    'Take Photo',
-    'Take photo',
-    'Images',
-    TakePhoto,
-    {
-      namespace: 'faims-custom',
-      componentName: 'TakePhoto',
-      type_return: 'faims-attachment::Files',
-      initialValue: null,
-      validationSchema: [['yup.object'], ['yup.nullable']],
-    },
-    TakePhotoSetting,
-    DefaultComponentSetting
-  )
+  setupComponentProperties('Take Photo', 'Take photo', 'Images', TakePhoto)
 );
 registerComponent(
   'faims-custom',
@@ -353,16 +179,7 @@ registerComponent(
     'Unique ID',
     'Build a value up from other fields',
     'Special',
-    TemplatedStringField,
-    {
-      namespace: 'faims-custom',
-      componentName: 'TemplatedStringField',
-      type_return: 'faims-core::String',
-      required: true,
-      validationSchema: [['yup.string'], ['yup.required']],
-      type: 'text',
-      template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',
-    }
+    TemplatedStringField
   )
 );
 registerComponent(
@@ -372,11 +189,7 @@ registerComponent(
     'Basic AutoIncrementer',
     'A basic autoincrementer to help create identifiers',
     'Special',
-    BasicAutoIncrementer,
-    AutoSetting[1],
-    AutoSetting,
-    DefaultComponentSetting,
-    getAutoBuilderIcon()
+    BasicAutoIncrementer
   )
 );
 registerComponent(
@@ -386,11 +199,7 @@ registerComponent(
     'Related field',
     'Add relations between records',
     'Special',
-    RelatedRecordSelector,
-    LinkedSetting[1],
-    LinkedSetting,
-    Linkedcomponentsetting,
-    getLinkedBuilderIcon()
+    RelatedRecordSelector
   )
 );
 
@@ -401,10 +210,7 @@ registerComponent(
     'QR Code Scanning',
     'Scan a QR/Bar code',
     'QRCode',
-    QRCodeFormField,
-    QRCodeFieldBuilderSettings[1],
-    QRCodeFieldBuilderSettings,
-    DefaultComponentSetting
+    QRCodeFormField
   )
 );
 
@@ -417,10 +223,7 @@ registerComponent(
     'Map Input Field',
     'Input Geo Data via a map',
     'Maps',
-    MapFormField,
-    MapFieldBuilderSettings[1],
-    MapFieldBuilderSettings,
-    MapComponentSetting
+    MapFormField
   )
 );
 
@@ -431,18 +234,7 @@ registerComponent(
     'Input Box',
     'Multiple line Input Box',
     'Text',
-    FormikTextField,
-    {
-      namespace: 'formik-material-ui',
-      componentName: 'MultipleTextField',
-      type_return: 'faims-core::String',
-      validationSchema: [['yup.string']],
-      type: 'text',
-      multiline: true,
-      multirows: 4,
-    },
-    [MultiTextuiSetting, MultiTextuiSpec],
-    DefaultComponentSetting
+    FormikTextField
   )
 );
 
@@ -453,11 +245,7 @@ registerComponent(
     'File Upload',
     'Upload File',
     'Special',
-    FileUploader,
-    FileuploadSetting[1],
-    FileuploadSetting,
-    DefaultComponentSetting,
-    getFileuploadBuilderIcon()
+    FileUploader
   )
 );
 
@@ -468,11 +256,7 @@ registerComponent(
     'Title',
     'A sub Title for part',
     'Special',
-    RandomStyle,
-    RandomStyleSetting[1],
-    RandomStyleSetting,
-    DefaultComponentSetting,
-    getAutoBuilderIcon()
+    RandomStyle
   )
 );
 
@@ -494,15 +278,7 @@ registerComponent(
     'DateTimeNow',
     'TZ-aware DateTime field with Now button',
     'Special',
-    DateTimeNow,
-    {
-      ...DateTimeNowSetting[1],
-      namespace: 'faims-custom',
-      componentName: 'DateTimeNow',
-    },
-    DateTimeNowSetting,
-    DateTimeNowComponentSettings,
-    getDateTimeNowBuilderIcon()
+    DateTimeNow
   )
 );
 
