@@ -55,12 +55,7 @@ import {
   Radiocomponentsetting,
   getRadioBuilderIcon,
 } from '../fields/radio';
-import {
-  TemplatedStringField,
-  TemplatedStringSetting,
-  TemplatedStringcomponentsetting,
-  getTemplatedStringBuilderIcon,
-} from '../fields/TemplatedStringField';
+import {TemplatedStringField} from '../fields/TemplatedStringField';
 import {
   BasicAutoIncrementer,
   AutoSetting,
@@ -367,10 +362,7 @@ registerComponent(
       validationSchema: [['yup.string'], ['yup.required']],
       type: 'text',
       template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',
-    },
-    TemplatedStringSetting,
-    TemplatedStringcomponentsetting,
-    getTemplatedStringBuilderIcon()
+    }
   )
 );
 registerComponent(

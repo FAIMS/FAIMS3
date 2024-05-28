@@ -24,10 +24,47 @@ import React, {useEffect, useState} from 'react';
 import {Field} from 'formik';
 import {IconButton, Box} from '@mui/material';
 import NoteIcon from '@mui/icons-material/Note';
-
-import {UpButton, DownButton} from '../project/tabs/ProjectButton';
 import {getComponentByName} from '../../component_registry';
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
+type UpDownButtonProps = {
+  onButtonClick: CallableFunction;
+  value: any;
+  id: string;
+};
+
+export function UpButton(props: UpDownButtonProps) {
+  return (
+    <IconButton
+      edge="end"
+      onClick={() => props.onButtonClick(props.id)}
+      aria-label={'Up'}
+      value={props.value}
+      id={props.id}
+      size="small"
+      style={{paddingLeft: 0}}
+    >
+      <ExpandLessIcon fontSize="small" />
+    </IconButton>
+  );
+}
+export function DownButton(props: UpDownButtonProps) {
+  return (
+    <IconButton
+      edge="end"
+      aria-label={'Down'}
+      onClick={() => props.onButtonClick(props.id)}
+      value={props.value}
+      id={props.id}
+      size="small"
+      style={{paddingLeft: 0}}
+    >
+      <ExpandMoreIcon fontSize="small" />
+    </IconButton>
+  );
+}
+
 export function Annotation(props: any) {
   const {field, setIsClick} = props;
   const [subisclicked, setIsclicks] = useState(false);
@@ -78,7 +115,7 @@ export function Annotation(props: any) {
             setIsclicks(false);
           }}
           value={1}
-          id={1}
+          id={'1'}
         />
       ) : (
         <DownButton
@@ -87,7 +124,7 @@ export function Annotation(props: any) {
             setIsclicks(true);
           }}
           value={0}
-          id={0}
+          id={'0'}
         />
       )}
       <br />
@@ -112,7 +149,7 @@ type AnnotationFieldProp = {
 };
 
 export function AnnotationField(props: AnnotationFieldProp) {
-  const {field, fieldName, handleAnnotation} = props;
+  const {fieldName, handleAnnotation} = props;
   const disabled = props.disabled ?? false; // this is disabled on conflict tab , default value is false
   const [annotation, setAnnotation] = useState(
     props.annotation !== undefined
