@@ -75,7 +75,7 @@
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
     "clsx": "1.2.1",
-    "cordova": "11.1.0",
+    "cordova": "12.0.0",
     "cordova-plugin-inappbrowser": "^5.0.0",
     "faims3-datamodel": "github:FAIMS/faims3-data-model#v1.1.4",
     "fast-json-stable-stringify": "2.1.0",
