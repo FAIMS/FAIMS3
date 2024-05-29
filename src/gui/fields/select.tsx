@@ -22,17 +22,8 @@ import React from 'react';
 import MuiTextField from '@mui/material/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import {MenuItem} from '@mui/material';
-import BookmarksIcon from '@mui/icons-material/Bookmarks';
-import {
-  DefaultComponentSetting,
-  getDefaultuiSetting,
-} from './BasicFieldSettings';
 import {ElementOption} from 'faims3-datamodel';
-import {
-  ProjectUIModel,
-  componenentSettingprops,
-  FAIMSEVENTTYPE,
-} from 'faims3-datamodel';
+
 // import TextField from '@mui/material/TextField';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // interface option {

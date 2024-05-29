@@ -17,16 +17,6 @@
  * Description:
  *   TODO
  */
-import BrokenImageIcon from '@mui/icons-material/BrokenImage';
-import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
-
-export function getDefaultBuilderComponent() {
-  return <p>This field has no configuration options.</p>;
-}
-
-export function getDefaultBuilderIcon() {
-  return <BrokenImageIcon />;
-}
 
 export function getDefaultuiSpecProps() {
   return {
@@ -36,8 +26,4 @@ export function getDefaultuiSpecProps() {
     validationSchema: [['yup.string']],
     type: 'text',
   };
-}
-
-export function getDefaultuisettings() {
-  return [getDefaultuiSetting()];
 }

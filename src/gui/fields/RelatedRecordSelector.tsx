@@ -37,9 +37,7 @@ import DataGridFieldLinksComponent, {
   DataGridNoLink,
 } from '../components/record/relationships/field_level_links/datagrid';
 import {RecordLinkProps} from '../components/record/relationships/types';
-
 import {SelectChangeEvent} from '@mui/material';
-import {v4 as uuidv4} from 'uuid';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {generateFAIMSDataID} from 'faims3-datamodel';
 import {logError} from '../../logging';
@@ -193,6 +191,7 @@ function DisplayChild(props: DisplayChildProps) {
     />
   );
 }
+
 export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
   const record_id = props.form.values['_id'];
@@ -229,11 +228,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [selectedRecord, SetSelectedRecord] =
     React.useState<RecordReference | null>(null);
   const url_split = search.split('&');
-  // const [columns, SetColumns] = React.useState<GridColDef[]>(defaultColumns);
-  const [fieldValue, setFieldValue] = React.useState(
-    props.form.values[field_name]
-  );
-  const [updated, SetUpdated] = React.useState(uuidv4());
+
   const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
   const [preferred, setPreferred] = React.useState(null as string | null);
   const relation_preferred_label = props.relation_preferred_label ?? '';
@@ -345,7 +340,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           type
         );
         setRecordsInformation(records_info);
-        SetUpdated(uuidv4());
       } else {
         console.debug('Project ID is not available');
         // setIsactive(true);
@@ -428,7 +422,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     if (multiple) newValue = [...(newValue ?? []), selectedRecord];
     else newValue = selectedRecord;
 
-    setFieldValue(newValue);
     props.form.setFieldValue(props.field.name, newValue);
     props.form.submitForm();
     const current_record = {
@@ -503,8 +496,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       //   // only splice array when item is found
       //   newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
       // }
-      setFieldValue(newValue);
-    } else setFieldValue('');
+    }
 
     const records = options;
     records.push(child_record);
@@ -672,7 +664,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             relation_type={type}
             field_label={field_label}
             handleUnlink={remove_related_child}
-            handleReset={() => SetUpdated(uuidv4())}
+            handleReset={() => {}}
             disabled={disabled}
             value={props.form.values[field_name]}
             multiple={multiple}

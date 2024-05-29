@@ -152,11 +152,6 @@ const CustomTreeItem = (props: TreeItemProps & SelectProps & CustomerProps) => (
     }
   />
 );
-const data: RenderTree = {
-  // id: '0',
-  name: 'Default',
-  children: [],
-};
 
 interface ValueChipsArrayProps {
   data: any;

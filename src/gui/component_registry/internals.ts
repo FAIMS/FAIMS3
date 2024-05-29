@@ -22,18 +22,8 @@ import {
   ComponentRegistry,
   ComponentRegistryProperties,
   FAIMSFormField,
-  FAIMSBuilderFormField,
-  FAIMSBuilderIcon,
-  FAIMSUiSpec,
   FormComponentList,
 } from 'faims3-datamodel';
-
-import {
-  getDefaultBuilderComponent,
-  getDefaultBuilderIcon,
-  getDefaultuiSpecProps,
-  getDefaultuisettings,
-} from './defaults';
 
 const componentRegistry: ComponentRegistry = {};
 
@@ -83,25 +73,18 @@ export function setupComponentProperties(
   human_readable_name: string,
   description: string,
   category: string,
-  component: FAIMSFormField,
-  uiSpecProps: FAIMSUiSpec | null = null,
-  settingsProps: Array<FAIMSUiSpec> | null = null,
-  builder_component: FAIMSBuilderFormField | null = null,
-  icon: FAIMSBuilderIcon | null = null
+  component: FAIMSFormField
 ): ComponentRegistryProperties {
   const props: ComponentRegistryProperties = {
     human_readable_name: human_readable_name,
     description: description,
     category: category,
     component: component,
-    settingsProps:
-      settingsProps !== null ? settingsProps : getDefaultuisettings(),
-    uiSpecProps: uiSpecProps !== null ? uiSpecProps : getDefaultuiSpecProps(),
-    builder_component:
-      builder_component !== null
-        ? builder_component
-        : getDefaultBuilderComponent(),
-    icon: icon !== null ? icon : getDefaultBuilderIcon(),
+    // below were used in the form builder, no longer needed
+    settingsProps: [],
+    uiSpecProps: null,
+    builder_component: null,
+    icon: null,
   };
   return props;
 }

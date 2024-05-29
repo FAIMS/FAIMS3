@@ -21,9 +21,7 @@
 import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@mui/material/Button';
-import {Camera, CameraResultType, CameraPhoto} from '@capacitor/camera';
-import {getDefaultuiSetting} from './BasicFieldSettings';
-import {ProjectUIModel} from 'faims3-datamodel';
+import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 
 // import ImageList from '@mui/material/ImageList';
 import ImageListItem from '@mui/material/ImageListItem';
@@ -37,7 +35,7 @@ import {createTheme, styled} from '@mui/material/styles';
 import {List, ListItem} from '@mui/material';
 import {logError} from '../../logging';
 
-function base64image_to_blob(image: CameraPhoto): Blob {
+function base64image_to_blob(image: Photo): Blob {
   if (image.base64String === undefined) {
     throw Error('No photo data found');
   }
