@@ -69,7 +69,7 @@
     "@mui/material": "5.12.3",
     "@mui/x-data-grid": "6.3.0",
     "@sentry/react": "7.50.0",
-    "@sentry/tracing": "7.50.0",
+    "@sentry/tracing": "7.114.0",
     "@worker-tools/json-stream": "^0.1.0-pre.12",
     "animate.css": "^4.1.1",
     "assert": "^2.0.0",
