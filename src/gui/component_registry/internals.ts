@@ -60,6 +60,28 @@ export function getComponentPropertiesByName(
   return componentRegistry[namespace][componentName];
 }
 
+export function registerField(
+  namespace: string,
+  component_name: string,
+  human_readable_name: string,
+  description: string,
+  category: string,
+  component: FAIMSFormField
+) {
+  const n = getNameSpace(namespace);
+  n[component_name] = {
+    human_readable_name: human_readable_name,
+    description: description,
+    category: category,
+    component: component,
+    // below were used in the form builder, no longer needed
+    settingsProps: [],
+    uiSpecProps: null,
+    builder_component: null,
+    icon: null,
+  };
+}
+
 export function registerComponent(
   namespace: string,
   component_name: string,
