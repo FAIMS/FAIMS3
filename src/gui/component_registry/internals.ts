@@ -27,16 +27,6 @@ import {
 
 const componentRegistry: ComponentRegistry = {};
 
-//export function NoSuchComponentNamespace(message: string) {
-//    this.message = message;
-//    this.name = 'NoSuchComponentNamespace';
-//}
-//
-//export function NoSuchComponent(message: string) {
-//    this.message = message;
-//    this.name = 'NoSuchComponent';
-//}
-
 export function getComponentByName(namespace: string, componentName: string) {
   if (componentRegistry[namespace] === undefined) {
     throw new Error(`Unknown namespace ${namespace}`);
@@ -80,35 +70,6 @@ export function registerField(
     builder_component: null,
     icon: null,
   };
-}
-
-export function registerComponent(
-  namespace: string,
-  component_name: string,
-  component_properties: ComponentRegistryProperties
-) {
-  const n = getNameSpace(namespace);
-  n[component_name] = component_properties;
-}
-
-export function setupComponentProperties(
-  human_readable_name: string,
-  description: string,
-  category: string,
-  component: FAIMSFormField
-): ComponentRegistryProperties {
-  const props: ComponentRegistryProperties = {
-    human_readable_name: human_readable_name,
-    description: description,
-    category: category,
-    component: component,
-    // below were used in the form builder, no longer needed
-    settingsProps: [],
-    uiSpecProps: null,
-    builder_component: null,
-    icon: null,
-  };
-  return props;
 }
 
 function getNameSpace(namespace: string) {
