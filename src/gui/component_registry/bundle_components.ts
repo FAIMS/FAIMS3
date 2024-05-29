@@ -38,12 +38,9 @@ import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
 import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
 import {FileUploader} from '../fields/FileUploader';
 import {TakePhoto} from '../fields/TakePhoto';
-
-import {registerComponent, setupComponentProperties} from './internals';
+import {registerField} from './internals';
 import {RandomStyle} from '../fields/RandomStyle';
-// Mapping plugin imports
 import {MapFormField} from '../fields/maps/MapFormField';
-
 import {DateTimeNow} from '../fields/DateTimeNow';
 
 import {
@@ -55,231 +52,225 @@ import {
 import {QRCodeFormField} from '../fields/qrcode';
 import {RichTextField} from '../fields/RichText';
 
-/*
- * This should be enough to make typescript/the build system happy
- */
 const bundle = null;
 export default bundle;
 
-// This is temporary, need to work out how to best tie this in as a plugin
-// system
-
-registerComponent(
+registerField(
   'core-material-ui',
   'Input',
-  setupComponentProperties(
-    'HTML input field',
-    'Catchall field',
-    'Advanced',
-    Input
-  )
+  'HTML input field',
+  'Catchall field',
+  'Advanced',
+  Input
 );
-registerComponent(
+
+registerField(
   'core-material-ui',
   'Checkbox',
-  setupComponentProperties(
-    'HTML checkbox field',
-    'A simple checkbox',
-    'Simple',
-    Checkbox
-  )
+  'HTML checkbox field',
+  'A simple checkbox',
+  'Simple',
+  Checkbox
 );
-registerComponent(
+
+registerField(
   'core-material-ui',
   'TextField',
-  setupComponentProperties(
-    'HTML text field',
-    'A simple text field',
-    'Simple',
-    TextField
-  )
+  'HTML text field',
+  'A simple text field',
+  'Simple',
+  TextField
 );
-//this is for testing
 
-registerComponent(
+registerField(
   'formik-material-ui',
   'TextField',
-  setupComponentProperties(
-    'Input field',
-    'text plus special characters',
-    'Text',
-    FormikTextField
-  )
+  'Input field',
+  'text plus special characters',
+  'Text',
+  FormikTextField
 );
 
-registerComponent(
+registerField(
   'formik-material-ui',
   'Select',
-  setupComponentProperties('', '', 'Simple', FormikSelect)
+  'Select Field',
+  'Text',
+  'Simple',
+  FormikSelect
 );
-registerComponent(
+
+registerField(
   'formik-material-ui',
   'RadioGroup',
-  setupComponentProperties('Radio', 'Radio', 'Simple', FormikRadioGroup)
+  'Radio',
+  'Radio',
+  'Simple',
+  FormikRadioGroup
 );
-registerComponent(
+
+registerField(
   'faims-custom',
   'Select',
-  setupComponentProperties('Select', 'Select one item', 'Select', FAIMSSelect)
+  'Select',
+  'Select one item',
+  'Select',
+  FAIMSSelect
 );
-registerComponent(
+
+registerField(
   'faims-custom',
   'MultiSelect',
-  setupComponentProperties(
-    'MultiSelect',
-    'Select multiple items',
-    'Select',
-    MultiSelect
-  )
-);
-registerComponent(
-  'faims-custom',
-  'AdvancedSelect',
-  setupComponentProperties(
-    'Hierarchical Select',
-    'Hierarchical vocabularies pick',
-    'Select',
-    AdvancedSelect
-  )
-);
-registerComponent(
-  'faims-custom',
-  'Checkbox',
-  setupComponentProperties('Checkbox', 'Checkbox', 'Select', FAIMSCheckbox)
-);
-registerComponent(
-  'faims-custom',
-  'RadioGroup',
-  setupComponentProperties('Radio', 'Radio', 'Select', FAIMSRadioGroup)
-);
-registerComponent(
-  'faims-custom',
-  'ActionButton',
-  setupComponentProperties(
-    'Action Button',
-    'Do an action',
-    'Special',
-    ActionButton
-  )
-);
-registerComponent(
-  'faims-custom',
-  'TakePoint',
-  setupComponentProperties('Take Point', '', 'Special', TakePoint)
-);
-registerComponent(
-  'faims-custom',
-  'TakePhoto',
-  setupComponentProperties('Take Photo', 'Take photo', 'Images', TakePhoto)
-);
-registerComponent(
-  'faims-custom',
-  'TemplatedStringField',
-  setupComponentProperties(
-    'Unique ID',
-    'Build a value up from other fields',
-    'Special',
-    TemplatedStringField
-  )
-);
-registerComponent(
-  'faims-custom',
-  'BasicAutoIncrementer',
-  setupComponentProperties(
-    'Basic AutoIncrementer',
-    'A basic autoincrementer to help create identifiers',
-    'Special',
-    BasicAutoIncrementer
-  )
-);
-registerComponent(
-  'faims-custom',
-  'RelatedRecordSelector',
-  setupComponentProperties(
-    'Related field',
-    'Add relations between records',
-    'Special',
-    RelatedRecordSelector
-  )
+  'MultiSelect',
+  'Select multiple items',
+  'Select',
+  MultiSelect
 );
 
-registerComponent(
+registerField(
+  'faims-custom',
+  'AdvancedSelect',
+  'Hierarchical Select',
+  'Hierarchical vocabularies pick',
+  'Select',
+  AdvancedSelect
+);
+
+registerField(
+  'faims-custom',
+  'Checkbox',
+  'Checkbox',
+  'Checkbox',
+  'Select',
+  FAIMSCheckbox
+);
+
+registerField(
+  'faims-custom',
+  'RadioGroup',
+  'Radio',
+  'Radio',
+  'Select',
+  FAIMSRadioGroup
+);
+
+registerField(
+  'faims-custom',
+  'ActionButton',
+  'Action Button',
+  'Do an action',
+  'Special',
+  ActionButton
+);
+
+registerField(
+  'faims-custom',
+  'TakePoint',
+  'Take Point',
+  'Capture the current GPS location',
+  'Special',
+  TakePoint
+);
+
+registerField(
+  'faims-custom',
+  'TakePhoto',
+  'Take Photo',
+  'Use the camera to take a photo',
+  'Images',
+  TakePhoto
+);
+
+registerField(
+  'faims-custom',
+  'TemplatedStringField',
+  'Unique ID',
+  'Build a value up from other fields',
+  'Special',
+  TemplatedStringField
+);
+
+registerField(
+  'faims-custom',
+  'BasicAutoIncrementer',
+  'Basic AutoIncrementer',
+  'A basic autoincrementer to help create identifiers',
+  'Special',
+  BasicAutoIncrementer
+);
+
+registerField(
+  'faims-custom',
+  'RelatedRecordSelector',
+  'Related field',
+  'Add relations between records',
+  'Special',
+  RelatedRecordSelector
+);
+
+registerField(
   'qrcode',
   'QRCodeFormField',
-  setupComponentProperties(
-    'QR Code Scanning',
-    'Scan a QR/Bar code',
-    'QRCode',
-    QRCodeFormField
-  )
+  'QR Code Scanning',
+  'Scan a QR/Bar code',
+  'QRCode',
+  QRCodeFormField
 );
 
 // Mapping Plugin registration
 
-registerComponent(
+registerField(
   'mapping-plugin',
   'MapFormField',
-  setupComponentProperties(
-    'Map Input Field',
-    'Input Geo Data via a map',
-    'Maps',
-    MapFormField
-  )
+  'Map Input Field',
+  'Input Geo Data via a map',
+  'Maps',
+  MapFormField
 );
 
-registerComponent(
+registerField(
   'formik-material-ui',
   'MultipleTextField',
-  setupComponentProperties(
-    'Input Box',
-    'Multiple line Input Box',
-    'Text',
-    FormikTextField
-  )
+  'Input Box',
+  'Multiple line Input Box',
+  'Text',
+  FormikTextField
 );
 
-registerComponent(
+registerField(
   'faims-custom',
   'FileUploader',
-  setupComponentProperties(
-    'File Upload',
-    'Upload File',
-    'Special',
-    FileUploader
-  )
+  'File Upload',
+  'Upload File',
+  'Special',
+  FileUploader
 );
 
-registerComponent(
+registerField(
   'faims-custom',
   'RandomStyle',
-  setupComponentProperties(
-    'Title',
-    'A sub Title for part',
-    'Special',
-    RandomStyle
-  )
+  'Title',
+  'A sub Title for part',
+  'Special',
+  RandomStyle
 );
 
-registerComponent(
+registerField(
   'faims-custom',
   'RichText',
-  setupComponentProperties(
-    'Rich Text',
-    'Rich Text Editor',
-    'Special',
-    RichTextField
-  )
+  'Rich Text',
+  'Rich Text Editor',
+  'Special',
+  RichTextField
 );
 
-registerComponent(
+registerField(
   'faims-custom',
   'DateTimeNow',
-  setupComponentProperties(
-    'DateTimeNow',
-    'TZ-aware DateTime field with Now button',
-    'Special',
-    DateTimeNow
-  )
+  'DateTimeNow',
+  'TZ-aware DateTime field with Now button',
+  'Special',
+  DateTimeNow
 );
 
 /*
