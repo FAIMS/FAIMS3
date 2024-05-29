@@ -19,17 +19,6 @@
  */
 import React, {useEffect} from 'react';
 import {TextFieldProps} from 'formik-mui';
-
-import {
-  DefaultComponentSetting,
-  getDefaultuiSetting,
-} from './BasicFieldSettings';
-
-import {
-  ProjectUIModel,
-  componenentSettingprops,
-  FAIMSEVENTTYPE,
-} from 'faims3-datamodel';
 import Box from '@mui/material/Box';
 import TreeView from '@mui/lab/TreeView';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -372,143 +361,25 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   );
 }
 
-export function AdvancedSelectcomponentsetting(props: componenentSettingprops) {
-  const {handlerchangewithview, ...others} = props;
-
-  const handlerchanges = (event: FAIMSEVENTTYPE) => {
-    console.debug(event);
-  };
-
-  const handlerchangewithviewSpec = (event: FAIMSEVENTTYPE, view: string) => {
-    //any actions that could in this form
-    handlerchangewithview(event, view);
-
-    if (
-      view === 'ElementProps' &&
-      event.target.name.replace(props.fieldName, '') === 'optiontree'
-    ) {
-      try {
-        const newvalues = props.uiSpec;
-        newvalues['fields'][props.fieldName]['component-parameters'][
-          'ElementProps'
-        ]['optiontree'] = JSON.parse(event.target.value);
-        //event.target.value;
-        props.setuiSpec({...newvalues});
-      } catch (error) {
-        logError(error);
-      }
-    }
-  };
-
-  return (
-    <DefaultComponentSetting
-      handlerchangewithview={handlerchangewithviewSpec}
-      handlerchanges={handlerchanges}
-      {...others}
-      fieldui={props.fieldui}
-    />
-  );
-}
-
-const uiSpec = {
-  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  'component-name': 'AdvancedSelect',
-  'type-returned': 'faims-core::String', // matches a type in the Project Model
-  'component-parameters': {
-    fullWidth: true,
-    helperText: 'Select from list',
-    variant: 'outlined',
-    required: false,
-    select: true,
-    InputProps: {},
-    SelectProps: {},
-    ElementProps: {
-      optiontree: [data],
-    },
-    // select_others:'otherswith',
-    label: 'Select Field',
-    valuetype: 'full',
-  },
-  validationSchema: [['yup.string']],
-  initialValue: '',
-};
-
-const uiSetting = () => {
-  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['fields']['optiontree'] = {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::Json',
-    'component-parameters': {
-      name: 'optiontree',
-      id: 'optiontree',
-      variant: 'outlined',
-      required: false,
-      multiline: true,
-      InputProps: {
-        type: 'text',
-        rows: 4,
-      },
-      fullWidth: true,
-      helperText: 'Add options in json format',
-      InputLabelProps: {
-        label: 'Options',
-      },
-      type: 'text',
-    },
-    alert: false,
-    validationSchema: [['yup.string']],
-    initialValue: JSON.stringify([data]),
-  };
-
-  newuiSetting['fields']['valuetype'] = {
-    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-    'component-name': 'Select',
-    'type-returned': 'faims-core::String', // matches a type in the Project Model
-    'component-parameters': {
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      required: false,
-      select: true,
-      InputProps: {},
-      SelectProps: {},
-      ElementProps: {
-        options: [
-          {
-            value: 'full',
-            label: 'Full path',
-          },
-          {
-            value: 'child',
-            label: 'Only Child',
-          },
-        ],
-      },
-      InputLabelProps: {
-        label: 'Select Type of Value',
-      },
-    },
-    validationSchema: [['yup.string']],
-    initialValue: 'full',
-  };
-
-  newuiSetting['views']['FormParamater']['fields'] = [
-    'label',
-    'helperText',
-    'valuetype',
-  ];
-
-  newuiSetting['views']['ElementProps']['fields'] = ['optiontree'];
-
-  newuiSetting['viewsets'] = {
-    settings: {
-      views: ['InputLabelProps', 'FormParamater', 'ElementProps'],
-      label: 'settings',
-    },
-  };
-
-  return newuiSetting;
-};
-
-export const AdvancedSelectSetting = [uiSetting(), uiSpec];
+// const uiSpec = {
+//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+//   'component-name': 'AdvancedSelect',
+//   'type-returned': 'faims-core::String', // matches a type in the Project Model
+//   'component-parameters': {
+//     fullWidth: true,
+//     helperText: 'Select from list',
+//     variant: 'outlined',
+//     required: false,
+//     select: true,
+//     InputProps: {},
+//     SelectProps: {},
+//     ElementProps: {
+//       optiontree: [data],
+//     },
+//     // select_others:'otherswith',
+//     label: 'Select Field',
+//     valuetype: 'full',
+//   },
+//   validationSchema: [['yup.string']],
+//   initialValue: '',
+// };

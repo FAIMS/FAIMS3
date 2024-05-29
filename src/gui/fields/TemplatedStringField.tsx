@@ -23,7 +23,7 @@ import MuiTextField from '@mui/material/TextField';
 import {TextFieldProps} from 'formik-mui';
 import Mustache from 'mustache';
 import getLocalDate from './LocalDate';
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 interface FieldValues {
   [field_name: string]: any;
 }

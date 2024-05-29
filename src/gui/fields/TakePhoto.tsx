@@ -274,9 +274,9 @@ export class TakePhoto extends React.Component<
   render() {
     //const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
-
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
+      console.log('PHOTO ERRORS', this.props.field.name, error);
       error_text = (
         <span {...this.props['ErrorTextProps']}>{error as string}</span>
       );
@@ -332,33 +332,18 @@ export class TakePhoto extends React.Component<
   }
 }
 
-const uiSpec = {
-  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  'component-name': 'TakePhoto',
-  'type-returned': 'faims-attachment::Files', // matches a type in the Project Model
-  'component-parameters': {
-    fullWidth: true,
-    name: 'take-photo-field',
-    id: 'take-photo-field',
-    helperText: 'Take a photo',
-    variant: 'outlined',
-    label: 'Take Photo',
-  },
-  validationSchema: [['yup.object'], ['yup.nullable']],
-  initialValue: null,
-};
-
-const uiSetting = () => {
-  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
-  newuiSetting['viewsets'] = {
-    settings: {
-      views: ['FormParamater'],
-      label: 'settings',
-    },
-  };
-
-  return newuiSetting;
-};
-
-export const TakePhotoSetting = [uiSetting(), uiSpec];
+// const uiSpec = {
+//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+//   'component-name': 'TakePhoto',
+//   'type-returned': 'faims-attachment::Files', // matches a type in the Project Model
+//   'component-parameters': {
+//     fullWidth: true,
+//     name: 'take-photo-field',
+//     id: 'take-photo-field',
+//     helperText: 'Take a photo',
+//     variant: 'outlined',
+//     label: 'Take Photo',
+//   },
+//   validationSchema: [['yup.object'], ['yup.nullable']],
+//   initialValue: null,
+// };
