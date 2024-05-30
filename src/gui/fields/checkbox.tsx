@@ -28,9 +28,7 @@ import {
   FormControlLabelProps,
 } from '@mui/material';
 import {fieldToCheckbox, CheckboxProps} from 'formik-mui';
-import BookmarksIcon from '@mui/icons-material/Bookmarks';
-import {getDefaultuiSetting} from './BasicFieldSettings';
-import {ProjectUIModel} from 'faims3-datamodel';
+
 interface Props {
   FormControlLabelProps?: FormControlLabelProps; // deprecated
   FormHelperTextProps?: FormHelperTextProps; // deprecated
@@ -89,40 +87,23 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
   }
 }
 
-const uiSpec = {
-  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  'component-name': 'Checkbox',
-  'type-returned': 'faims-core::Bool', // matches a type in the Project Model
-  'component-parameters': {
-    name: 'checkbox-field',
-    id: 'checkbox-field',
-    required: false,
-    type: 'checkbox',
-    label: 'Terms and Conditions',
-    helperText: 'Read the terms and conditions carefully.',
+// const uiSpec = {
+//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+//   'component-name': 'Checkbox',
+//   'type-returned': 'faims-core::Bool', // matches a type in the Project Model
+//   'component-parameters': {
+//     name: 'checkbox-field',
+//     id: 'checkbox-field',
+//     required: false,
+//     type: 'checkbox',
+//     label: 'Terms and Conditions',
+//     helperText: 'Read the terms and conditions carefully.',
 
-    // Label: {label: 'Terms and Conditions'},
-  },
-  validationSchema: [
-    ['yup.bool'],
-    // ['yup.oneOf', [true], ''],
-  ],
-  initialValue: false,
-};
-
-const uiSetting = () => {
-  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['viewsets'] = {
-    settings: {
-      views: ['FormControlLabelProps', 'FormHelperTextProps'],
-      label: 'settings',
-    },
-  };
-
-  return newuiSetting;
-};
-
-export function getCheckBoxBuilderIcon() {
-  return <BookmarksIcon />;
-}
-export const CheckboxSetting = [uiSetting(), uiSpec];
+//     // Label: {label: 'Terms and Conditions'},
+//   },
+//   validationSchema: [
+//     ['yup.bool'],
+//     // ['yup.oneOf', [true], ''],
+//   ],
+//   initialValue: false,
+// };

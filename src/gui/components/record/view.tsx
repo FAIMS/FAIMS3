@@ -29,7 +29,6 @@ import {Box, Grid, Paper, Alert, IconButton, Collapse} from '@mui/material';
 import {EditConflictDialog} from './conflict/conflictDialog';
 import NoteIcon from '@mui/icons-material/Note';
 import {grey} from '@mui/material/colors';
-import {uiSpecType} from '../project/data/ComponentSetting';
 // import makeStyles from '@mui/styles/makeStyles';
 // import {useTheme} from '@mui/material/styles';
 type ViewProps = {
@@ -254,7 +253,7 @@ export function ViewComponent(props: ViewProps) {
 function displayErrors(
   errors: any | undefined,
   thisView: string,
-  ui_specification: uiSpecType
+  ui_specification: ProjectUIModel
 ) {
   if (errors) {
     return (
@@ -283,7 +282,7 @@ function displayErrors(
 function getUsefulFieldNameFromUiSpec(
   field: string,
   thisView: string,
-  ui_specification: uiSpecType
+  ui_specification: ProjectUIModel
 ) {
   if (field in ui_specification.fields) {
     const fieldInfo = ui_specification.fields[field];
