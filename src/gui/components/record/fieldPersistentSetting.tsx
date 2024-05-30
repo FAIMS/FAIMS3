@@ -34,7 +34,7 @@ export function savefieldpersistentSetting(
   // check if the persistence value is set
   let isPersistent = false;
   for (const [name] of Object.entries(uiSpec.fields)) {
-    if (uiSpec['fields'][name]['persistent'] !== undefined) {
+    if (uiSpec['fields'][name]['persistent']) {
       newData[name] = values[name];
       newAnnotation[name] = annotations[name];
       isPersistent = true;

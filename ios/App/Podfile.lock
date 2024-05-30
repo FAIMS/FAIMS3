@@ -1,29 +1,86 @@
 PODS:
-  - Capacitor (5.4.1):
+  - Capacitor (6.0.0):
     - CapacitorCordova
-  - CapacitorApp (5.0.6):
+  - CapacitorApp (6.0.0):
     - Capacitor
-  - CapacitorAppLauncher (5.0.6):
+  - CapacitorAppLauncher (6.0.0):
     - Capacitor
-  - CapacitorBrowser (5.1.0):
+  - CapacitorBrowser (6.0.0):
     - Capacitor
-  - CapacitorCamera (5.0.7):
+  - CapacitorCamera (6.0.0):
     - Capacitor
-  - CapacitorCommunityBarcodeScanner (4.0.1):
+  - CapacitorCordova (6.0.0)
+  - CapacitorDevice (6.0.0):
     - Capacitor
-  - CapacitorCordova (5.4.1)
-  - CapacitorDevice (5.0.6):
+  - CapacitorFilesystem (6.0.0):
     - Capacitor
-  - CapacitorFilesystem (5.1.4):
+  - CapacitorGeolocation (6.0.0):
     - Capacitor
-  - CapacitorGeolocation (5.0.6):
+  - CapacitorMlkitBarcodeScanning (6.1.0):
     - Capacitor
-  - CapacitorShare (5.0.6):
+    - GoogleMLKit/BarcodeScanning (= 5.0.0)
+  - CapacitorShare (6.0.0):
     - Capacitor
-  - CapacitorStatusBar (5.0.6):
+  - CapacitorStatusBar (6.0.0):
     - Capacitor
-  - CordovaPlugins (5.0.3):
-    - CapacitorCordova
+  - GoogleDataTransport (9.4.1):
+    - GoogleUtilities/Environment (~> 7.7)
+    - nanopb (< 2.30911.0, >= 2.30908.0)
+    - PromisesObjC (< 3.0, >= 1.2)
+  - GoogleMLKit/BarcodeScanning (5.0.0):
+    - GoogleMLKit/MLKitCore
+    - MLKitBarcodeScanning (~> 4.0.0)
+  - GoogleMLKit/MLKitCore (5.0.0):
+    - MLKitCommon (~> 10.0.0)
+  - GoogleToolboxForMac/DebugUtils (2.3.2):
+    - GoogleToolboxForMac/Defines (= 2.3.2)
+  - GoogleToolboxForMac/Defines (2.3.2)
+  - GoogleToolboxForMac/Logger (2.3.2):
+    - GoogleToolboxForMac/Defines (= 2.3.2)
+  - "GoogleToolboxForMac/NSData+zlib (2.3.2)":
+    - GoogleToolboxForMac/Defines (= 2.3.2)
+  - "GoogleToolboxForMac/NSDictionary+URLArguments (2.3.2)":
+    - GoogleToolboxForMac/DebugUtils (= 2.3.2)
+    - GoogleToolboxForMac/Defines (= 2.3.2)
+    - "GoogleToolboxForMac/NSString+URLArguments (= 2.3.2)"
+  - "GoogleToolboxForMac/NSString+URLArguments (2.3.2)"
+  - GoogleUtilities/Environment (7.13.2):
+    - GoogleUtilities/Privacy
+    - PromisesObjC (< 3.0, >= 1.2)
+  - GoogleUtilities/Logger (7.13.2):
+    - GoogleUtilities/Environment
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Privacy (7.13.2)
+  - GoogleUtilities/UserDefaults (7.13.2):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
+  - GoogleUtilitiesComponents (1.1.0):
+    - GoogleUtilities/Logger
+  - GTMSessionFetcher/Core (3.4.1)
+  - MLImage (1.0.0-beta5)
+  - MLKitBarcodeScanning (4.0.0):
+    - MLKitCommon (~> 10.0)
+    - MLKitVision (~> 6.0)
+  - MLKitCommon (10.0.0):
+    - GoogleDataTransport (~> 9.0)
+    - GoogleToolboxForMac/Logger (~> 2.1)
+    - "GoogleToolboxForMac/NSData+zlib (~> 2.1)"
+    - "GoogleToolboxForMac/NSDictionary+URLArguments (~> 2.1)"
+    - GoogleUtilities/UserDefaults (~> 7.0)
+    - GoogleUtilitiesComponents (~> 1.0)
+    - GTMSessionFetcher/Core (< 4.0, >= 1.1)
+  - MLKitVision (6.0.0):
+    - GoogleToolboxForMac/Logger (~> 2.1)
+    - "GoogleToolboxForMac/NSData+zlib (~> 2.1)"
+    - GTMSessionFetcher/Core (< 4.0, >= 1.1)
+    - MLImage (= 1.0.0-beta5)
+    - MLKitCommon (~> 10.0)
+  - nanopb (2.30910.0):
+    - nanopb/decode (= 2.30910.0)
+    - nanopb/encode (= 2.30910.0)
+  - nanopb/decode (2.30910.0)
+  - nanopb/encode (2.30910.0)
+  - PromisesObjC (2.4.0)
 
 DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
@@ -31,14 +88,28 @@ DEPENDENCIES:
   - "CapacitorAppLauncher (from `../../node_modules/@capacitor/app-launcher`)"
   - "CapacitorBrowser (from `../../node_modules/@capacitor/browser`)"
   - "CapacitorCamera (from `../../node_modules/@capacitor/camera`)"
-  - "CapacitorCommunityBarcodeScanner (from `../../node_modules/@capacitor-community/barcode-scanner`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorDevice (from `../../node_modules/@capacitor/device`)"
   - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
   - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
+  - "CapacitorMlkitBarcodeScanning (from `../../node_modules/@capacitor-mlkit/barcode-scanning`)"
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
   - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
-  - CordovaPlugins (from `../capacitor-cordova-ios-plugins`)
+
+SPEC REPOS:
+  trunk:
+    - GoogleDataTransport
+    - GoogleMLKit
+    - GoogleToolboxForMac
+    - GoogleUtilities
+    - GoogleUtilitiesComponents
+    - GTMSessionFetcher
+    - MLImage
+    - MLKitBarcodeScanning
+    - MLKitCommon
+    - MLKitVision
+    - nanopb
+    - PromisesObjC
 
 EXTERNAL SOURCES:
   Capacitor:
@@ -51,8 +122,6 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/browser"
   CapacitorCamera:
     :path: "../../node_modules/@capacitor/camera"
-  CapacitorCommunityBarcodeScanner:
-    :path: "../../node_modules/@capacitor-community/barcode-scanner"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorDevice:
@@ -61,28 +130,39 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/filesystem"
   CapacitorGeolocation:
     :path: "../../node_modules/@capacitor/geolocation"
+  CapacitorMlkitBarcodeScanning:
+    :path: "../../node_modules/@capacitor-mlkit/barcode-scanning"
   CapacitorShare:
     :path: "../../node_modules/@capacitor/share"
   CapacitorStatusBar:
     :path: "../../node_modules/@capacitor/status-bar"
-  CordovaPlugins:
-    :path: "../capacitor-cordova-ios-plugins"
 
 SPEC CHECKSUMS:
-  Capacitor: 4c0681b47eebeba1f902093d24149cf2f518393e
-  CapacitorApp: 024e1b1bea5f883d79f6330d309bc441c88ad04a
-  CapacitorAppLauncher: 5a9f06c13c6b4f5d65b550a07128ef04f3a216b3
-  CapacitorBrowser: 7a0fb6a1011abfaaf2dfedfd8248f942a8eda3d6
-  CapacitorCamera: 084b0b228bba7d00587910337b1c89e93b1d32ab
-  CapacitorCommunityBarcodeScanner: 7feb206489c8555a8ca0c74c57ddf49ead774eb8
-  CapacitorCordova: 1222fdd78bfd0d323cc22bf254eed1484fe6c92a
-  CapacitorDevice: 2c968f98a1ec4d22357418c1521e7ddc46c675e6
-  CapacitorFilesystem: af704badfbc69f6f8623d9ed313e5490e3723dcb
-  CapacitorGeolocation: 7be5f77abc205c0efe319fff8587a7183e7b0240
-  CapacitorShare: cd41743331cb71d217c029de54b681cbd91e0fcc
-  CapacitorStatusBar: 565c0a1ebd79bb40d797606a8992b4a105885309
-  CordovaPlugins: 3eca01ad832b2c42f4665c50b5a227f5da12d4b3
+  Capacitor: 559d073c4ca6c27f8e7002c807eea94c3ba435a9
+  CapacitorApp: 9d53aec7101f7b030a950c5bdc4df8612576b279
+  CapacitorAppLauncher: 24ce4be152a84883378d22114ffe6c492056ced2
+  CapacitorBrowser: 7e1e2cdbb3e372f09f0bad0c4c21a6d187b679ad
+  CapacitorCamera: b61f125d92a0ef75d7becb7956fed7dd13187ee0
+  CapacitorCordova: 8c4bfdf69368512e85b1d8b724dd7546abeb30af
+  CapacitorDevice: f8fd88f9edd1261c55a109f32015b09bbbfdc4a0
+  CapacitorFilesystem: 60e59ba274c234a979e7a3be2552feaadcee4263
+  CapacitorGeolocation: 1f12bbe372b65116e851bd8e3a94cf0ef9bacebb
+  CapacitorMlkitBarcodeScanning: 63e217d376f8f63b1be84c0d19568f318e87f4d3
+  CapacitorShare: a771200d3b924a5d7ad9d9fecbac517e4c0aa74f
+  CapacitorStatusBar: 2e4369f99166125435641b1908d05f561eaba6f6
+  GoogleDataTransport: 6c09b596d841063d76d4288cc2d2f42cc36e1e2a
+  GoogleMLKit: 90ba06e028795a50261f29500d238d6061538711
+  GoogleToolboxForMac: 8bef7c7c5cf7291c687cf5354f39f9db6399ad34
+  GoogleUtilities: c56430aef51a1aa57b25da78c3f8397e522c67b7
+  GoogleUtilitiesComponents: 679b2c881db3b615a2777504623df6122dd20afe
+  GTMSessionFetcher: 8000756fc1c19d2e5697b90311f7832d2e33f6cd
+  MLImage: 1824212150da33ef225fbd3dc49f184cf611046c
+  MLKitBarcodeScanning: 9cb0ec5ec65bbb5db31de4eba0a3289626beab4e
+  MLKitCommon: afcd11b6c0735066a0dde8b4bf2331f6197cbca2
+  MLKitVision: 90922bca854014a856f8b649d1f1f04f63fd9c79
+  nanopb: 438bc412db1928dac798aa6fd75726007be04262
+  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
 
-PODFILE CHECKSUM: 7037c2c6a20467555148679f1b13974b9d4a6209
+PODFILE CHECKSUM: 085e5e23909a05801518e3f8bca66d180cf98125
 
-COCOAPODS: 1.11.3
+COCOAPODS: 1.15.2

@@ -22,30 +22,10 @@ import {
   ComponentRegistry,
   ComponentRegistryProperties,
   FAIMSFormField,
-  FAIMSBuilderFormField,
-  FAIMSBuilderIcon,
-  FAIMSUiSpec,
   FormComponentList,
 } from 'faims3-datamodel';
 
-import {
-  getDefaultBuilderComponent,
-  getDefaultBuilderIcon,
-  getDefaultuiSpecProps,
-  getDefaultuisettings,
-} from './defaults';
-
 const componentRegistry: ComponentRegistry = {};
-
-//export function NoSuchComponentNamespace(message: string) {
-//    this.message = message;
-//    this.name = 'NoSuchComponentNamespace';
-//}
-//
-//export function NoSuchComponent(message: string) {
-//    this.message = message;
-//    this.name = 'NoSuchComponent';
-//}
 
 export function getComponentByName(namespace: string, componentName: string) {
   if (componentRegistry[namespace] === undefined) {
@@ -70,40 +50,26 @@ export function getComponentPropertiesByName(
   return componentRegistry[namespace][componentName];
 }
 
-export function registerComponent(
+export function registerField(
   namespace: string,
   component_name: string,
-  component_properties: ComponentRegistryProperties
-) {
-  const n = getNameSpace(namespace);
-  n[component_name] = component_properties;
-}
-
-export function setupComponentProperties(
   human_readable_name: string,
   description: string,
   category: string,
-  component: FAIMSFormField,
-  uiSpecProps: FAIMSUiSpec | null = null,
-  settingsProps: Array<FAIMSUiSpec> | null = null,
-  builder_component: FAIMSBuilderFormField | null = null,
-  icon: FAIMSBuilderIcon | null = null
-): ComponentRegistryProperties {
-  const props: ComponentRegistryProperties = {
+  component: FAIMSFormField
+) {
+  const n = getNameSpace(namespace);
+  n[component_name] = {
     human_readable_name: human_readable_name,
     description: description,
     category: category,
     component: component,
-    settingsProps:
-      settingsProps !== null ? settingsProps : getDefaultuisettings(),
-    uiSpecProps: uiSpecProps !== null ? uiSpecProps : getDefaultuiSpecProps(),
-    builder_component:
-      builder_component !== null
-        ? builder_component
-        : getDefaultBuilderComponent(),
-    icon: icon !== null ? icon : getDefaultBuilderIcon(),
+    // below were used in the form builder, no longer needed
+    settingsProps: [],
+    uiSpecProps: null,
+    builder_component: null,
+    icon: null,
   };
-  return props;
 }
 
 function getNameSpace(namespace: string) {

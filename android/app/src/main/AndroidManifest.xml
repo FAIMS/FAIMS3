@@ -45,6 +45,10 @@
 
         </activity>
 
+        <meta-data 
+            android:name="com.google.mlkit.vision.DEPENDENCIES" 
+            android:value="barcode_ui"/>
+        
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -83,6 +87,8 @@
     <!-- Navigator.getUserMedia -->
     <!-- Video -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- To get access to the flashlight. -->
+    <uses-permission android:name="android.permission.FLASHLIGHT"/>
     <!-- Audio -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />

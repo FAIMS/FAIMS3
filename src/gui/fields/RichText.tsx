@@ -33,14 +33,12 @@ export const RichTextField = ({content}: Props) => {
   return <div dangerouslySetInnerHTML={{__html: renderedContent}} />;
 };
 
-const uiSpec = {
-  'component-namespace': 'faims-custom',
-  'component-name': 'RichText',
-  'type-returned': 'faims-core::String',
-  'component-parameters': {
-    label: 'Unused',
-    content: '',
-  },
-};
-
-export const RichTextSetting = [{}, uiSpec];
+// const uiSpec = {
+//   'component-namespace': 'faims-custom',
+//   'component-name': 'RichText',
+//   'type-returned': 'faims-core::String',
+//   'component-parameters': {
+//     label: 'Unused',
+//     content: '',
+//   },
+// };

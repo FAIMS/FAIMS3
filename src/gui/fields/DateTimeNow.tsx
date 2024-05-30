@@ -1,18 +1,7 @@
 import React, {useEffect} from 'react';
 import {Stack, Button, FormHelperText} from '@mui/material';
-// import moment from 'moment';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import MuiTextField from '@mui/material/TextField';
-import {
-  ProjectUIModel,
-  componenentSettingprops,
-  FAIMSEVENTTYPE,
-} from 'faims3-datamodel';
-import {
-  DefaultComponentSetting,
-  getDefaultuiSetting,
-} from './BasicFieldSettings';
-import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import getLocalDate from './LocalDate';
 import {logError} from '../../logging';
 
@@ -132,91 +121,22 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
     </React.Fragment>
   );
 }
-// TODO Kate to fill in for notebook editor
-export function DateTimeNowComponentSettings(props: componenentSettingprops) {
-  const {handlerchangewithview, ...others} = props;
-  const handlerchanges = (event: FAIMSEVENTTYPE) => {
-    console.log(event);
-  };
-  const handlerchangewithviewSpec = (event: FAIMSEVENTTYPE, view: string) => {
-    //any actions that could in this form
-    const name = event.target.name.replace(props.fieldName, '');
-    if (name === 'is_auto_pick') {
-      const newvalues = props.uiSpec;
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'is_auto_pick'
-      ] = event.target.checked;
-      props.setuiSpec({...newvalues});
-    } else handlerchangewithview(event, view);
-  };
 
-  return (
-    <DefaultComponentSetting
-      handlerchangewithview={handlerchangewithviewSpec}
-      handlerchanges={handlerchanges}
-      {...others}
-      fieldui={props.fieldui}
-    />
-  );
-}
-const uiSpec = {
-  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  'component-name': 'DateTimeNow',
-  'type-returned': 'faims-core::String', // matches a type in the Project Model
-  'component-parameters': {
-    fullWidth: true,
-    helperText:
-      'Add a datetime stamp (click now to record the current date+time)',
-    variant: 'outlined',
-    required: false,
-    InputLabelProps: {
-      label: 'DateTimeNow Field',
-    },
-    is_auto_pick: false,
-  },
-  validationSchema: [['yup.string']],
-  initialValue: '',
-};
-
-const UISetting = () => {
-  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['fields']['is_auto_pick'] = {
-    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-    'component-name': 'Checkbox',
-    'type-returned': 'faims-core::Bool', // matches a type in the Project Model
-    'component-parameters': {
-      name: 'multiple',
-      id: 'multiple',
-      required: false,
-      type: 'checkbox',
-      FormControlLabelProps: {
-        label: 'Time pre-populated',
-      },
-      FormHelperTextProps: {
-        children:
-          'When the record is first created, populate this field with the current datetime',
-      },
-    },
-    validationSchema: [['yup.bool']],
-    initialValue: false,
-  };
-
-  newuiSetting['views']['FormParamater']['fields'] = [
-    'helperText',
-    'is_auto_pick',
-  ];
-
-  newuiSetting['viewsets'] = {
-    settings: {
-      views: ['InputLabelProps', 'FormParamater'],
-      label: 'settings',
-    },
-  };
-
-  return newuiSetting;
-};
-
-export function getDateTimeNowBuilderIcon() {
-  return <BookmarksIcon />;
-}
-export const DateTimeNowSetting = [UISetting(), uiSpec];
+// const uiSpec = {
+//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+//   'component-name': 'DateTimeNow',
+//   'type-returned': 'faims-core::String', // matches a type in the Project Model
+//   'component-parameters': {
+//     fullWidth: true,
+//     helperText:
+//       'Add a datetime stamp (click now to record the current date+time)',
+//     variant: 'outlined',
+//     required: false,
+//     InputLabelProps: {
+//       label: 'DateTimeNow Field',
+//     },
+//     is_auto_pick: false,
+//   },
+//   validationSchema: [['yup.string']],
+//   initialValue: '',
+// };

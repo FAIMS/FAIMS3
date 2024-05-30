@@ -20,82 +20,10 @@
  *    - Annotation Field(which will been unfold after user click)
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {Field} from 'formik';
-import {IconButton, Box} from '@mui/material';
-import NoteIcon from '@mui/icons-material/Note';
-
-import {UpButton, DownButton} from '../project/tabs/ProjectButton';
+import {Box} from '@mui/material';
 import {getComponentByName} from '../../component_registry';
-/* eslint-disable @typescript-eslint/no-unused-vars */
-export function Annotation(props: any) {
-  const {field, setIsClick} = props;
-  const [subisclicked, setIsclicks] = useState(false);
-
-  useEffect(() => {
-    let isactive = true;
-    if (isactive) {
-      setIsClick(false);
-    }
-    return () => {
-      isactive = false;
-    };
-  }, []);
-
-  return (field.meta !== undefined && field.meta.annotation !== false) ||
-    (field.meta !== undefined &&
-      field.meta.uncertainty !== undefined &&
-      field.meta.uncertainty.include !== false) ? (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      className="Button"
-      sx={{
-        width: 89,
-        height: 32,
-        borderRadius: '30px',
-        backgroundColor: '#e8f4fd',
-      }}
-    >
-      <IconButton
-        edge="end"
-        onClick={() => {
-          const isc = !subisclicked;
-          setIsClick(isc);
-          setIsclicks(isc);
-        }}
-        size="small"
-        // style={{paddingLeft:0,paddingRight:0}}
-      >
-        <NoteIcon fontSize="small" />
-      </IconButton>
-
-      {subisclicked ? (
-        <UpButton
-          onButtonClick={() => {
-            setIsClick(false);
-            setIsclicks(false);
-          }}
-          value={1}
-          id={1}
-        />
-      ) : (
-        <DownButton
-          onButtonClick={() => {
-            setIsClick(true);
-            setIsclicks(true);
-          }}
-          value={0}
-          id={0}
-        />
-      )}
-      <br />
-    </Box>
-  ) : (
-    <></>
-  );
-}
 
 type AnnotationFieldProp = {
   fieldName: string;
@@ -112,7 +40,7 @@ type AnnotationFieldProp = {
 };
 
 export function AnnotationField(props: AnnotationFieldProp) {
-  const {field, fieldName, handleAnnotation} = props;
+  const {fieldName, handleAnnotation} = props;
   const disabled = props.disabled ?? false; // this is disabled on conflict tab , default value is false
   const [annotation, setAnnotation] = useState(
     props.annotation !== undefined

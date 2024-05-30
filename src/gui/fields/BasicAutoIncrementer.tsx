@@ -27,9 +27,6 @@ import {
   getLocalAutoincrementStateForField,
   setLocalAutoincrementStateForField,
 } from '../../local-data/autoincrement';
-import {getDefaultuiSetting} from './BasicFieldSettings';
-import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
-import {ProjectUIModel} from 'faims3-datamodel';
 
 import {
   Grid,
@@ -248,40 +245,22 @@ export class BasicAutoIncrementer extends React.Component<
     );
   }
 }
+
 BasicAutoIncrementer.contextType = store;
 
-const uiSpec = {
-  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  'component-name': 'BasicAutoIncrementer',
-  'type-returned': 'faims-core::String', // matches a type in the Project Model
-  'component-parameters': {
-    name: 'basic-autoincrementer-field',
-    id: 'basic-autoincrementer-field',
-    variant: 'outlined',
-    required: true,
-    num_digits: 5,
-    form_id: 'default', // TODO: sort out this
-    label: 'Auto Increase Range',
-  },
-  validationSchema: [['yup.string'], ['yup.required']],
-  initialValue: null,
-};
-
-const uiSetting = () => {
-  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['label'];
-  newuiSetting['viewsets'] = {
-    settings: {
-      views: ['FormParamater'],
-      label: 'settings',
-    },
-  };
-
-  return newuiSetting;
-};
-
-export function getAutoBuilderIcon() {
-  return <LibraryBooksIcon />;
-}
-
-export const AutoSetting = [uiSetting(), uiSpec];
+// const uiSpec = {
+//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+//   'component-name': 'BasicAutoIncrementer',
+//   'type-returned': 'faims-core::String', // matches a type in the Project Model
+//   'component-parameters': {
+//     name: 'basic-autoincrementer-field',
+//     id: 'basic-autoincrementer-field',
+//     variant: 'outlined',
+//     required: true,
+//     num_digits: 5,
+//     form_id: 'default', // TODO: sort out this
+//     label: 'Auto Increase Range',
+//   },
+//   validationSchema: [['yup.string'], ['yup.required']],
+//   initialValue: null,
+// };

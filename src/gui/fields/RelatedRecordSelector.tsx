@@ -26,17 +26,6 @@ import * as ROUTES from '../../constants/routes';
 import {FAIMSTypeName, LocationState} from 'faims3-datamodel';
 import {RecordReference} from 'faims3-datamodel';
 import {getRecordsByType} from 'faims3-datamodel';
-import {
-  getDefaultuiSetting,
-  DefaultComponentSetting,
-} from './BasicFieldSettings';
-import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
-import {ElementOption} from 'faims3-datamodel';
-import {
-  ProjectUIModel,
-  componenentSettingprops,
-  FAIMSEVENTTYPE,
-} from 'faims3-datamodel';
 import {useLocation} from 'react-router-dom';
 import {Grid, Typography} from '@mui/material';
 import {
@@ -48,14 +37,11 @@ import DataGridFieldLinksComponent, {
   DataGridNoLink,
 } from '../components/record/relationships/field_level_links/datagrid';
 import {RecordLinkProps} from '../components/record/relationships/types';
-
 import {SelectChangeEvent} from '@mui/material';
-import {v4 as uuidv4} from 'uuid';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {generateFAIMSDataID} from 'faims3-datamodel';
 import {logError} from '../../logging';
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
   relation_type: FAIMSTypeName;
@@ -131,10 +117,15 @@ function excludes_related_record(
 
   // if we allow multiple links and we have a current value then extract
   // the record_ids from the current value and add them to the relations array
-  if (multiple && value)
-    value.map((record: RecordReference) =>
-      record !== null ? relations.push(record.record_id) : record
-    );
+  if (multiple && value) {
+    if (Array.isArray(value)) {
+      value.map((record: RecordReference) =>
+        record !== null ? relations.push(record.record_id) : record
+      );
+    } else {
+      relations.push(value.record_id);
+    }
+  }
 
   // filter the all_records array to remove any records that are already linked
   // if we don't allow multiple values OR we have no current value
@@ -200,6 +191,7 @@ function DisplayChild(props: DisplayChildProps) {
     />
   );
 }
+
 export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
   const record_id = props.form.values['_id'];
@@ -236,11 +228,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [selectedRecord, SetSelectedRecord] =
     React.useState<RecordReference | null>(null);
   const url_split = search.split('&');
-  // const [columns, SetColumns] = React.useState<GridColDef[]>(defaultColumns);
-  const [fieldValue, setFieldValue] = React.useState(
-    props.form.values[field_name]
-  );
-  const [updated, SetUpdated] = React.useState(uuidv4());
+
   const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
   const [preferred, setPreferred] = React.useState(null as string | null);
   const relation_preferred_label = props.relation_preferred_label ?? '';
@@ -281,11 +269,19 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           )
             setPreferred(props.form.values[field_name]['record_id']);
         } else if (props.form.values[field_name]) {
-          props.form.values[field_name].map((child_record: RecordReference) => {
-            if (child_record.is_preferred === true) {
-              setPreferred(child_record['record_id']);
-            }
-          });
+          // edge case: this record was created when multiple=false, so the values
+          // were stored as a singleton
+          if (Array.isArray(props.form.values[field_name])) {
+            props.form.values[field_name].map(
+              (child_record: RecordReference) => {
+                if (child_record.is_preferred === true) {
+                  setPreferred(child_record['record_id']);
+                }
+              }
+            );
+          } else {
+            setPreferred(props.form.values[field_name]['record_id']);
+          }
         }
         const all_records = await getRecordsByType(
           project_id,
@@ -314,10 +310,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.current_form,
           type
         );
-        console.debug('record information', records_info);
         setRecordsInformation(records_info);
       } else {
-        console.debug('Project ID is not available');
+        console.debug('Project ID is not available - this is probably bad');
         // setIsactive(true);
       }
     })();
@@ -344,9 +339,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.current_form,
           type
         );
-        console.debug('record information', records_info);
         setRecordsInformation(records_info);
-        SetUpdated(uuidv4());
       } else {
         console.debug('Project ID is not available');
         // setIsactive(true);
@@ -369,7 +362,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const newState: LocationState = {
     parent_record_id: props.form.values._id, //current form record id
     parent_hrid: hrid,
-    field_id: props.id,
+    field_id: props.field.name, // the field identifier
     type: type, //type of this relation
     parent_link: location.pathname.replace('/notebooks/', ''), // current form link
     parent: {},
@@ -411,8 +404,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       relation_type_vocabPair: relationshipPair,
     };
     let newValue = props.form.values[field_name];
-    if (multiple) newValue = [...(newValue ?? []), new_child_record];
-    else newValue = new_child_record;
+    if (multiple) {
+      // edge case: existing value could be a singleton if schema was changed
+      if (Array.isArray(newValue))
+        newValue = [...(newValue ?? []), new_child_record];
+      else newValue = [newValue, new_child_record];
+    } else newValue = new_child_record;
     props.form.setFieldValue(props.field.name, newValue);
     return new_record_id;
   };
@@ -425,7 +422,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     if (multiple) newValue = [...(newValue ?? []), selectedRecord];
     else newValue = selectedRecord;
 
-    setFieldValue(newValue);
     props.form.setFieldValue(props.field.name, newValue);
     props.form.submitForm();
     const current_record = {
@@ -465,6 +461,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       options
     );
     setOptions(records);
+    // now that we have a value, disable if we don't allow multiple values
     if (!multiple) setIs_enabled(false);
     //set the form value
     if (multiple) SetSelectedRecord(null);
@@ -499,8 +496,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       //   // only splice array when item is found
       //   newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
       // }
-      setFieldValue(newValue);
-    } else setFieldValue('');
+    }
 
     const records = options;
     records.push(child_record);
@@ -622,10 +618,27 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         {props.form.isValid === false && (
           <Grid item xs={12} sm={12} md={12} lg={12}>
             <Typography variant="caption" color="error">
-              To enable Add record or Link, please make sure form has no error
+              To enable Add record or Link, please make sure form has no errors
             </Typography>
           </Grid>
         )}
+        <Grid item xs={12} sm={12} md={12} lg={12}>
+          <Typography variant="caption">
+            {props.helperText}
+            {'   '}
+          </Typography>
+        </Grid>
+
+        {!is_enabled && (
+          <Grid item xs={12} sm={12} md={12} lg={12}>
+            <Typography variant="caption" color="error">
+              Only one related record allowed. Remove existing link to enable
+              Add record or Link
+            </Typography>
+          </Grid>
+        )}
+
+        {/*
         {disabled === false ||
           (props.helperText === '' && !is_enabled && (
             <Grid item xs={12} sm={12} md={12} lg={12}>
@@ -640,6 +653,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
               )}
             </Grid>
           ))}
+        */}
         <Grid item xs={12} sm={12} md={12} lg={12}>
           {/* {multiple?props.form.values[field_name][0]['record_id']:props.form.values[field_name]['record_id']} */}
           <DisplayChild
@@ -650,7 +664,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             relation_type={type}
             field_label={field_label}
             handleUnlink={remove_related_child}
-            handleReset={() => SetUpdated(uuidv4())}
+            handleReset={() => {}}
             disabled={disabled}
             value={props.form.values[field_name]}
             multiple={multiple}
@@ -665,270 +679,27 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   );
 }
 
-const uiSpec = {
-  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  'component-name': 'RelatedRecordSelector',
-  'type-returned': 'faims-core::Relationship', // matches a type in the Project Model
-  'component-parameters': {
-    fullWidth: true,
-    helperText: 'Select or add new related record',
-    variant: 'outlined',
-    required: true,
-    related_type: '',
-    relation_type: 'faims-core::Child',
-    InputProps: {
-      type: 'text', // must be a valid html type
-    },
-    multiple: false,
-    SelectProps: {},
-    InputLabelProps: {
-      label: 'Select Related',
-    },
-    FormHelperTextProps: {},
-  },
-  validationSchema: [['yup.string']],
-  initialValue: '',
-};
-
-const uiSetting = () => {
-  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['fields']['multiple'] = {
-    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-    'component-name': 'Checkbox',
-    'type-returned': 'faims-core::Bool', // matches a type in the Project Model
-    'component-parameters': {
-      name: 'multiple',
-      id: 'multiple',
-      required: false,
-      type: 'checkbox',
-      FormControlLabelProps: {
-        label: 'Multiple',
-      },
-      FormHelperTextProps: {
-        children: 'Tick if user can add multiple records for this relationship',
-      },
-    },
-    validationSchema: [['yup.bool']],
-    initialValue: false,
-  };
-  newuiSetting['fields']['relation_type'] = {
-    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-    'component-name': 'Select',
-    'type-returned': 'faims-core::String', // matches a type in the Project Model
-    'component-parameters': {
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      required: true,
-      select: true,
-      InputProps: {},
-      SelectProps: {},
-      ElementProps: {
-        options: [
-          {
-            value: 'faims-core::Child',
-            label: 'Child',
-          },
-          {
-            value: 'faims-core::Linked',
-            label: 'Linked',
-          },
-        ],
-      },
-      InputLabelProps: {
-        label: 'Select Relation Type',
-      },
-    },
-    validationSchema: [['yup.string'], ['yup.required']],
-    initialValue: 'faims-core::Child',
-  };
-  newuiSetting['fields']['relation_linked_vocabPair'] = {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      InputLabelProps: {
-        label: 'Relation type Pair Label',
-      },
-      fullWidth: false,
-      helperText: "Add relation type Pair, use ','to separate pair",
-      variant: 'outlined',
-      required: false,
-    },
-    validationSchema: [['yup.string']],
-    initialValue: 'is related to',
-  };
-  newuiSetting['fields']['relation_preferred_label'] = {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      InputLabelProps: {
-        label: 'Make Preferred Label',
-      },
-      fullWidth: false,
-      helperText: 'Make Preferred Label',
-      variant: 'outlined',
-      required: false,
-    },
-    validationSchema: [['yup.string']],
-    initialValue: null,
-    // BBS 20221117 set initialValue to null to default to disabled
-  };
-  newuiSetting['fields']['related_type'] = {
-    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-    'component-name': 'Select',
-    'type-returned': 'faims-core::String', // matches a type in the Project Model
-    'component-parameters': {
-      fullWidth: true,
-      helperText: ' ',
-      variant: 'outlined',
-      required: true,
-      select: true,
-      InputProps: {},
-      SelectProps: {},
-      ElementProps: {
-        options: [],
-      },
-      InputLabelProps: {
-        label: 'Select Related Form',
-      },
-    },
-    validationSchema: [['yup.string'], ['yup.required']],
-    initialValue: '',
-  };
-
-  newuiSetting['views']['FormParamater']['fields'] = [
-    'helperText',
-    'multiple',
-    'relation_type',
-    'relation_linked_vocabPair',
-    'related_type',
-  ];
-  newuiSetting['viewsets'] = {
-    settings: {
-      views: ['InputLabelProps', 'FormParamater'],
-      label: 'settings',
-    },
-  };
-
-  return newuiSetting;
-};
-
-export function getLinkedBuilderIcon() {
-  return <LibraryBooksIcon />;
-}
-
-export const LinkedSetting = [uiSetting(), uiSpec];
-
-export function Linkedcomponentsetting(props: componenentSettingprops) {
-  const [uiSetting, setuiSetting] = React.useState(props.uiSetting);
-
-  useEffect(() => {
-    setini();
-  }, [props.uiSpec['visible_types']]);
-
-  const setini = () => {
-    const options: Array<ElementOption> = [];
-    const fields: Array<ElementOption> = [];
-    props.uiSpec['visible_types'].map((viewset: string) =>
-      fields.push({
-        label: props.uiSpec['viewsets'][viewset]['label'] ?? viewset,
-        value: viewset,
-      })
-    );
-    // get the list of form
-    const newvalues = uiSetting;
-    if (
-      fields.length > 0 &&
-      newvalues['fields']['related_type' + props.fieldName] !== undefined
-    )
-      newvalues['fields']['related_type' + props.fieldName][
-        'component-parameters'
-      ]['ElementProps']['options'] = fields;
-    if (
-      props.uiSpec['fields'][props.fieldName]['component-parameters'][
-        'relation_type'
-      ] === 'faims-core::Child'
-    )
-      newvalues['views']['FormParamater']['fields'] = [
-        'helperText' + props.fieldName,
-        'multiple' + props.fieldName,
-        'relation_type' + props.fieldName,
-        'related_type' + props.fieldName,
-        'relation_preferred_label' + props.fieldName,
-      ];
-    setuiSetting({...newvalues});
-  };
-
-  const handlerchanges = (event: FAIMSEVENTTYPE) => {
-    const name = event.target.name.replace(props.fieldName, '');
-    if (name === 'multiple') {
-      const newvalues = props.uiSpec;
-      newvalues['fields'][props.fieldName]['component-parameters']['multiple'] =
-        event.target.checked;
-      if (event.target.checked === true)
-        newvalues['fields'][props.fieldName]['initialValue'] = [];
-      else newvalues['fields'][props.fieldName]['initialValue'] = '';
-      props.setuiSpec({...newvalues});
-    } else if (name === 'relation_type') {
-      const newvalues = uiSetting;
-      if (event.target.value === 'faims-core::Linked')
-        newvalues['views']['FormParamater']['fields'] = [
-          'helperText' + props.fieldName,
-          'multiple' + props.fieldName,
-          'relation_type' + props.fieldName,
-          'relation_linked_vocabPair' + props.fieldName,
-          'related_type' + props.fieldName,
-        ];
-      else
-        newvalues['views']['FormParamater']['fields'] = [
-          'helperText' + props.fieldName,
-          'multiple' + props.fieldName,
-          'relation_type' + props.fieldName,
-          'related_type' + props.fieldName,
-          'relation_preferred_label' + props.fieldName,
-        ];
-      setuiSetting({...newvalues});
-    } else if (name === 'relation_linked_vocabPair') {
-      const newvalues = props.uiSpec;
-      const pair_value = [
-        ['is_above', 'is below'],
-        ['is related', 'is related to'],
-      ];
-      //TO DO
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'relation_linked_vocabPair'
-      ] = pair_value;
-      props.setuiSpec({...newvalues});
-    } else if (name === 'related_type') {
-      const newvalues = props.uiSpec;
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'related_type'
-      ] = event.target.value;
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'related_type_label'
-      ] =
-        props.uiSpec['viewsets'][event.target.value]['label'] ??
-        event.target.value;
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'current_form'
-      ] = props.currentform; //currentform
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'current_form_label'
-      ] =
-        props.uiSpec['viewsets'][props.currentform]['label'] ??
-        props.currentform;
-      props.setuiSpec({...newvalues});
-    }
-  };
-
-  return (
-    <DefaultComponentSetting
-      handlerchanges={handlerchanges}
-      {...props}
-      fieldui={props.fieldui}
-      uiSetting={uiSetting}
-    />
-  );
-}
+// const uiSpec = {
+//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+//   'component-name': 'RelatedRecordSelector',
+//   'type-returned': 'faims-core::Relationship', // matches a type in the Project Model
+//   'component-parameters': {
+//     fullWidth: true,
+//     helperText: 'Select or add new related record',
+//     variant: 'outlined',
+//     required: true,
+//     related_type: '',
+//     relation_type: 'faims-core::Child',
+//     InputProps: {
+//       type: 'text', // must be a valid html type
+//     },
+//     multiple: false,
+//     SelectProps: {},
+//     InputLabelProps: {
+//       label: 'Select Related',
+//     },
+//     FormHelperTextProps: {},
+//   },
+//   validationSchema: [['yup.string']],
+//   initialValue: '',
+// };

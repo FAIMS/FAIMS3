@@ -21,8 +21,7 @@
 import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@mui/material/Button';
-import {getDefaultuiSetting} from './BasicFieldSettings';
-import {ProjectUIModel} from 'faims3-datamodel';
+
 interface Props {
   helperText?: string;
   label?: string;
@@ -57,31 +56,16 @@ export class ActionButton extends React.Component<
   }
 }
 
-const uiSpec = {
-  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  'component-name': 'ActionButton',
-  'type-returned': 'faims-core::String', // matches a type in the Project Model
-  'component-parameters': {
-    fullWidth: true,
-    helperText: 'Click To Take Action!',
-    variant: 'outlined',
-    label: 'Action!',
-  },
-  validationSchema: [['yup.string']],
-  initialValue: 'hello',
-};
-
-const uiSetting = () => {
-  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
-  newuiSetting['viewsets'] = {
-    settings: {
-      views: ['FormParamater'],
-      label: 'settings',
-    },
-  };
-
-  return newuiSetting;
-};
-
-export const ActionSetting = [uiSetting(), uiSpec];
+// const uiSpec = {
+//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+//   'component-name': 'ActionButton',
+//   'type-returned': 'faims-core::String', // matches a type in the Project Model
+//   'component-parameters': {
+//     fullWidth: true,
+//     helperText: 'Click To Take Action!',
+//     variant: 'outlined',
+//     label: 'Action!',
+//   },
+//   validationSchema: [['yup.string']],
+//   initialValue: 'hello',
+// };

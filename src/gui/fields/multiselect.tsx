@@ -22,17 +22,7 @@ import React from 'react';
 import MuiTextField from '@mui/material/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import {MenuItem} from '@mui/material';
-import BookmarksIcon from '@mui/icons-material/Bookmarks';
-import {
-  DefaultComponentSetting,
-  getDefaultuiSetting,
-} from './BasicFieldSettings';
 import {ElementOption} from 'faims3-datamodel';
-import {
-  ProjectUIModel,
-  componenentSettingprops,
-  FAIMSEVENTTYPE,
-} from 'faims3-datamodel';
 
 interface ElementProps {
   options: Array<ElementOption>;
@@ -70,132 +60,36 @@ export class MultiSelect extends React.Component<TextFieldProps & Props> {
   }
 }
 
-export function MultiSelectcomponentsetting(props: componenentSettingprops) {
-  const {handlerchangewithview, ...others} = props;
-
-  const handlerchanges = (event: FAIMSEVENTTYPE) => {
-    console.log(event);
-  };
-
-  const handlerchangewithviewSpec = (event: FAIMSEVENTTYPE, view: string) => {
-    //any actions that could in this form
-    handlerchangewithview(event, view);
-
-    if (
-      view === 'ElementProps' &&
-      event.target.name.replace(props.fieldName, '') === 'options'
-    ) {
-      const newvalues = props.uiSpec;
-      const options: Array<ElementOption> = [];
-      event.target.value.split(',').map(
-        (o: string, index: number) =>
-          (options[index] = {
-            value: o,
-            label: o,
-          })
-      );
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'ElementProps'
-      ]['options'] = options;
-      props.setuiSpec({...newvalues});
-    }
-
-    if (
-      view === 'FormParamater' &&
-      event.target.name.replace(props.fieldName, '') === 'select_others'
-    ) {
-      const newvalues = props.uiSpec;
-      let isothers = false;
-      let options: Array<ElementOption> =
-        newvalues['fields'][props.fieldName]['component-parameters'][
-          'ElementProps'
-        ]['options'];
-
-      options.map((o: ElementOption) =>
-        o.value === 'Others' ? (isothers = true) : o
-      );
-      if (event.target.value === 'no') {
-        options = options.filter((o: ElementOption) => o.value !== 'Others');
-      } else {
-        if (isothers === false) {
-          options = [
-            ...options,
-            {
-              value: 'Others',
-              label: 'Others',
-            },
-          ];
-        }
-      }
-
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'ElementProps'
-      ]['options'] = options;
-      props.setuiSpec({...newvalues});
-    }
-  };
-
-  return (
-    <DefaultComponentSetting
-      handlerchangewithview={handlerchangewithviewSpec}
-      handlerchanges={handlerchanges}
-      {...others}
-      fieldui={props.fieldui}
-    />
-  );
-}
-
-const uiSpec = {
-  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  'component-name': 'MultiSelect',
-  'type-returned': 'faims-core::Array', // matches a type in the Project Model
-  'component-parameters': {
-    fullWidth: true,
-    helperText: 'Choose items from the dropdown',
-    variant: 'outlined',
-    required: false,
-    select: true,
-    InputProps: {},
-    SelectProps: {
-      multiple: true,
-    },
-    ElementProps: {
-      options: [
-        {
-          value: 'Default',
-          label: 'Default',
-        },
-        {
-          value: 'Default2',
-          label: 'Default2',
-        },
-      ],
-    },
-    InputLabelProps: {
-      label: 'Select Multiple',
-    },
-  },
-  validationSchema: [['yup.array']],
-  initialValue: [],
-};
-
-const uiSetting = () => {
-  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['helperText'];
-  newuiSetting['fields']['options']['component-parameters']['helperText'] =
-    'Add more than 2 options here, use "," to separate option';
-  newuiSetting['viewsets'] = {
-    settings: {
-      views: ['InputLabelProps', 'FormParamater', 'ElementProps'],
-      label: 'settings',
-    },
-  };
-
-  return newuiSetting;
-};
-
-export function getSelectBuilderIcon() {
-  return <BookmarksIcon />;
-}
-
-export const MultiSelectSetting = [uiSetting(), uiSpec];
+// const uiSpec = {
+//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+//   'component-name': 'MultiSelect',
+//   'type-returned': 'faims-core::Array', // matches a type in the Project Model
+//   'component-parameters': {
+//     fullWidth: true,
+//     helperText: 'Choose items from the dropdown',
+//     variant: 'outlined',
+//     required: false,
+//     select: true,
+//     InputProps: {},
+//     SelectProps: {
+//       multiple: true,
+//     },
+//     ElementProps: {
+//       options: [
+//         {
+//           value: 'Default',
+//           label: 'Default',
+//         },
+//         {
+//           value: 'Default2',
+//           label: 'Default2',
+//         },
+//       ],
+//     },
+//     InputLabelProps: {
+//       label: 'Select Multiple',
+//     },
+//   },
+//   validationSchema: [['yup.array']],
+//   initialValue: [],
+// };

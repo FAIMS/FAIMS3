@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     namespace "au.edu.faims.fieldmark"
     //https://stackoverflow.com/a/69312217
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "au.edu.faims.fieldmark"
         minSdkVersion rootProject.ext.minSdkVersion

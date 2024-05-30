@@ -21,14 +21,12 @@
 import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@mui/material/Button';
-import {Geolocation, GeolocationPosition} from '@capacitor/geolocation';
-
-import {getDefaultuiSetting} from './BasicFieldSettings';
-import {ProjectUIModel, FAIMSPosition} from 'faims3-datamodel';
+import {Geolocation, Position} from '@capacitor/geolocation';
 import {logError} from '../../logging';
+import {FAIMSPosition} from 'faims3-datamodel';
 
 function capacitor_coordindates_to_faims_pos(
-  coordinates: GeolocationPosition
+  coordinates: Position
 ): FAIMSPosition {
   const position = coordinates.coords;
   const timestamp = coordinates.timestamp;
@@ -144,33 +142,18 @@ export class TakePoint extends React.Component<
   }
 }
 
-const uiSpec = {
-  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  'component-name': 'TakePoint',
-  'type-returned': 'faims-pos::Location', // matches a type in the Project Model
-  'component-parameters': {
-    fullWidth: true,
-    name: 'take-point-field',
-    id: 'take-point-field',
-    helperText: 'Click to save current location',
-    variant: 'outlined',
-    label: 'Take point',
-  },
-  validationSchema: [['yup.object'], ['yup.nullable']],
-  initialValue: null,
-};
-
-const uiSetting = () => {
-  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
-  newuiSetting['viewsets'] = {
-    settings: {
-      views: ['FormParamater'],
-      label: 'settings',
-    },
-  };
-
-  return newuiSetting;
-};
-
-export const TakePointSetting = [uiSetting(), uiSpec];
+// const uiSpec = {
+//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+//   'component-name': 'TakePoint',
+//   'type-returned': 'faims-pos::Location', // matches a type in the Project Model
+//   'component-parameters': {
+//     fullWidth: true,
+//     name: 'take-point-field',
+//     id: 'take-point-field',
+//     helperText: 'Click to save current location',
+//     variant: 'outlined',
+//     label: 'Take point',
+//   },
+//   validationSchema: [['yup.object'], ['yup.nullable']],
+//   initialValue: null,
+// };

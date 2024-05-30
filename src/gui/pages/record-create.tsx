@@ -77,6 +77,17 @@ interface DraftCreateProps {
   location?: Location;
 }
 
+// There is a problem here due to the side-effect of creating a new
+// draft (newStagedData) in the useEffect below. This is supposed to be
+// a UI rendering action but is side-effecting to the database
+// when it is run in strict mode, two drafts are created because of the
+// double render.  One is left behind after later cleanup fails to see the
+// duplicate.
+
+// Really this operation of creating a draft record should not be part of
+// a UI component lifecycle.   The draft should be made by some action and
+// then the UI created for that (DraftEdit).
+
 function DraftCreate(props: DraftCreateProps) {
   const {project_id, type_name, record_id} = props;
 
@@ -93,11 +104,14 @@ function DraftCreate(props: DraftCreateProps) {
 
   useEffect(() => {
     if (uiSpec !== null) {
-      const field_types = getReturnedTypesForViewSet(uiSpec, type_name);
-      newStagedData(project_id, null, type_name, field_types, record_id).then(
-        setDraft_id,
-        setError
-      );
+      // don't make a new draft if we already have one
+      if (draft_id === null) {
+        const field_types = getReturnedTypesForViewSet(uiSpec, type_name);
+        newStagedData(project_id, null, type_name, field_types, record_id).then(
+          setDraft_id,
+          setError
+        );
+      }
     } else {
       setDraft_id(null);
     }

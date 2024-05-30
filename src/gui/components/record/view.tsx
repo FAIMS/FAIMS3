@@ -29,14 +29,13 @@ import {Box, Grid, Paper, Alert, IconButton, Collapse} from '@mui/material';
 import {EditConflictDialog} from './conflict/conflictDialog';
 import NoteIcon from '@mui/icons-material/Note';
 import {grey} from '@mui/material/colors';
-import {uiSpecType} from '../project/data/ComponentSetting';
 // import makeStyles from '@mui/styles/makeStyles';
 // import {useTheme} from '@mui/material/styles';
 type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;
   formProps: FormikProps<{[key: string]: unknown}>;
-  draftState?: RecordDraftState;
+  draftState?: RecordDraftState | null;
   annotation: any;
   handleAnnotation: any;
   isSyncing?: string;
@@ -52,7 +51,7 @@ type SingleComponentProps = {
   formProps: FormikProps<{[key: string]: unknown}>;
   annotation: any;
   handleAnnotation: any;
-  draftState?: RecordDraftState;
+  draftState?: RecordDraftState | null;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
   isSyncing?: string;
@@ -254,18 +253,18 @@ export function ViewComponent(props: ViewProps) {
 function displayErrors(
   errors: any | undefined,
   thisView: string,
-  ui_specification: uiSpecType
+  ui_specification: ProjectUIModel
 ) {
   if (errors) {
     return (
       <dl>
         {Object.keys(errors).map(field => (
-          <>
-            <dt key="{field}error">
+          <React.Fragment key={field}>
+            <dt>
               {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
             </dt>
-            <dd key="{field}errorMessage">{errors[field]}</dd>
-          </>
+            <dd>{errors[field]}</dd>
+          </React.Fragment>
         ))}
       </dl>
     );
@@ -283,7 +282,7 @@ function displayErrors(
 function getUsefulFieldNameFromUiSpec(
   field: string,
   thisView: string,
-  ui_specification: uiSpecType
+  ui_specification: ProjectUIModel
 ) {
   if (field in ui_specification.fields) {
     const fieldInfo = ui_specification.fields[field];
