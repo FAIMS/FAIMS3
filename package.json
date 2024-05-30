@@ -71,7 +71,7 @@
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
     "clsx": "1.2.1",
-    "faims3-datamodel": "github:FAIMS/faims3-data-model#v1.1.4",
+    "faims3-datamodel": "github:FAIMS/faims3-data-model#v1.05",
     "fast-json-stable-stringify": "2.1.0",
     "formik": "2.4.5",
     "formik-mui": "4.0.0",
