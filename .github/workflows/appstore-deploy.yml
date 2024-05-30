@@ -48,8 +48,7 @@ jobs:
           working-directory: ios/App
           # No cache because permissions issues?
       - run: |
-          cd ios/App; bundle install # to get cocoapods...   
-          # bundle exec fastlane install_plugins
+          cd ios/App; bundle install; bundle exec fastlane install_plugins
       - name: Use Node.js 20
         uses: actions/setup-node@v3
         with:
