@@ -45,6 +45,7 @@ jobs:
         with:
           ruby-version: 3.3.1
           bundler-cache: false
+          working-directory: ios/App
           # No cache because permissions issues?
       - run: |
           bundle install # to get cocoapods...   
@@ -64,7 +65,7 @@ jobs:
           export serverprefix="fieldmark"
           export PYTHON=python3.10
           export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
-          export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh android)
+          export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh ios)
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_MINIFAUXTON=false
           export VITE_DIRECTORY_HOST=db.fieldmark.app
@@ -72,16 +73,11 @@ jobs:
           export VITE_PRODUCTION_BUILD=true          
           export VITE_SERVICES=FAIMSTEXT
           export VITE_PROD_BUILD=true          
-          export VITE_TAG=prodIOS      
+          export VITE_TAG=prodIOS
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}  
           git clean -xfd
           npm ci --python=python3.10
           npm run build
-        # env:
-        #   VITE_LOGIN_TOKEN: '{"token": "${{ secrets.JWT_TEST_TOKEN }}", "pubkey": "${{ secrets.JWT_SERVER_FLATTENED_PUBKEY }}", "pubalg": "RS256"}'
-
-      # export VITE_LOGIN_TOKEN="${{ secrets.JWT_TEST_TOKEN }}"
-      # https://capacitorjs.com/docs/android
       - run: npx cap update ios
       - run: npx cap sync --deployment ios
       - run: cd ios/App; pod install
