@@ -1,0 +1,114 @@
+---
+# Nightly compile for e2e testing
+name: Deploy to Apple App Store on Demo Track, Manual
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the main branch
+# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
+
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  # push:
+  #   branches:
+  #     - github-actions
+  #     - main
+
+  workflow_dispatch:
+    
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  check_date:
+    runs-on: ubuntu-latest
+    name: Check latest commit
+    outputs:
+      should_run: ${{ steps.should_run.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: print latest_commit
+        run: echo ${{ github.sha }}
+
+      - id: should_run
+        continue-on-error: true
+        name: check latest commit is less than a day
+        if: ${{ github.event_name == 'schedule' }}
+        run: test -z $(git rev-list  --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
+           
+  ios-deploy:
+    name: Deploying to Testflight
+    runs-on: macOS-latest
+    needs: check_date
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up ruby env
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.1
+          bundler-cache: false
+          working-directory: ios/App
+          # No cache because permissions issues?
+      - run: |
+          cd ios/App; bundle install; bundle exec fastlane install_plugins
+      - name: Use Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Use Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10' 
+      - name: Building webapp
+        run: |
+          export platform="github-actions-ios"
+          export serverprefix="fieldmark"
+          export PYTHON=python3.10
+          export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
+          export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh ios)
+          export VITE_SHOW_WIPE=true
+          export VITE_SHOW_MINIFAUXTON=false
+          export VITE_DIRECTORY_HOST=db.fieldmark.app
+          export VITE_DIRECTORY_PORT=443
+          export VITE_PRODUCTION_BUILD=true          
+          export VITE_SERVICES=FAIMSTEXT
+          export VITE_PROD_BUILD=true          
+          export VITE_TAG=prodIOS
+          export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}  
+          git clean -xfd
+          npm ci --python=python3.10
+          npm run build
+      - run: npx cap update ios
+      - run: npx cap sync --deployment ios
+      - run: cd ios/App; pod install
+      #- run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
+      - name: Deploy iOS Beta to TestFlight via Fastlane
+        uses: maierj/fastlane-action@v2.3.0
+        with:
+          lane: closed_beta_testflight
+          subdirectory: 'ios/App'
+          bundle-install-path: '$HOME/vendor/bundle'
+          verbose: false
+        env:
+          VITE_LOGIN_TOKEN: "${{ secrets.JWT_TEST_TOKEN }}"
+          APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
+          DEVELOPER_APP_ID: '${{ secrets.DEVELOPER_APP_ID }}'
+          DEVELOPER_APP_IDENTIFIER: '${{ secrets.DEVELOPER_APP_IDENTIFIER }}'
+          DEVELOPER_PORTAL_TEAM_ID: '${{ secrets.DEVELOPER_PORTAL_TEAM_ID }}'
+          FASTLANE_APPLE_ID: '${{ secrets.FASTLANE_APPLE_ID }}'
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: '${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}'
+          MATCH_PASSWORD: '${{ secrets.MATCH_PASSWORD }}'
+          GIT_AUTHORIZATION: '${{ secrets.GIT_AUTHORIZATION }}'
+          PROVISIONING_PROFILE_SPECIFIER: '${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}'
+          TEMP_KEYCHAIN_PASSWORD: '${{ secrets.TEMP_KEYCHAIN_PASSWORD }}'
+          TEMP_KEYCHAIN_USER: '${{ secrets.TEMP_KEYCHAIN_USER }}'
+          APPLE_KEY_ID: '${{ secrets.APPLE_KEY_ID }}'
+          APPLE_ISSUER_ID: '${{ secrets.APPLE_ISSUER_ID }}'
+          APPLE_KEY_CONTENT: '${{ secrets.APPLE_KEY_CONTENT }}'
+          BROWSERSTACK_USERNAME: '${{secrets.BROWSERSTACK_USERNAME}}'
+          BROWSERSTACK_ACCESS_KEY: '${{secrets.BROWSERSTACK_ACCESS_KEY}}'
+      - name: Archive ipas
+        uses: actions/upload-artifact@v3
+        with:
+          name: ipa
+          path: |
+            /Users/runner/work/FAIMS3/FAIMS3/ios/App/App.ipa
