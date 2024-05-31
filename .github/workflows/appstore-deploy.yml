@@ -80,11 +80,10 @@ jobs:
       - run: npx cap update ios
       - run: npx cap sync --deployment ios
       - run: cd ios/App; pod install
-      #- run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
-      - name: Deploy iOS Beta to TestFlight via Fastlane
+      - name: Deploy iOS app to production with Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:
-          lane: closed_beta_testflight
+          lane: production
           subdirectory: 'ios/App'
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
