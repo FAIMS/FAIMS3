@@ -235,6 +235,7 @@ platform :ios do
       submit_for_review: false,
       automatic_release: false,
       force: true,
+      run_precheck_before_submit: false
     )
 
     delete_temp_keychain(keychain_name)
