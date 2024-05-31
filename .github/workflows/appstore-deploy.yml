@@ -1,21 +1,9 @@
 ---
-# Nightly compile for e2e testing
-name: Deploy to Apple App Store on Demo Track, Manual
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the main branch
-# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
+name: Deploy to Apple App Store Production, Manual
 
 on:
-  # Trigger the workflow on push or pull request,
-  # but only for the main branch
-  # push:
-  #   branches:
-  #     - github-actions
-  #     - main
-
   workflow_dispatch:
     
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   check_date:
     runs-on: ubuntu-latest
@@ -34,7 +22,7 @@ jobs:
         run: test -z $(git rev-list  --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
            
   ios-deploy:
-    name: Deploying to Testflight
+    name: Deploying to Production
     runs-on: macOS-latest
     needs: check_date
     steps:
@@ -46,7 +34,6 @@ jobs:
           ruby-version: 3.3.1
           bundler-cache: false
           working-directory: ios/App
-          # No cache because permissions issues?
       - run: |
           cd ios/App; bundle install; bundle exec fastlane install_plugins
       - name: Use Node.js 20
