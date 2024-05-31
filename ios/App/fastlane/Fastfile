@@ -234,7 +234,6 @@ platform :ios do
     )
 
     deliver(
-      apple_id: "#{DEVELOPER_APP_ID}",
       app_identifier: "#{DEVELOPER_APP_IDENTIFIER}",
       ipa: "App.ipa",
       changelog: changelog,
