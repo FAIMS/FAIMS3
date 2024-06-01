@@ -66,7 +66,6 @@ jobs:
           npm run build
       - run: npx cap update ios
       - run: npx cap sync --deployment ios
-      - run: ./bin/update_ios_version.sh
       - run: cd ios/App; pod install
       - name: Deploy iOS app to production with Fastlane
         uses: maierj/fastlane-action@v2.3.0

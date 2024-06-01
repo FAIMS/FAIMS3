@@ -20,8 +20,11 @@
 # cat <<EOF > "${SRCROOT}"/Plist/Prefix
 # #define BUNDLE_VERSION ${BUNDLE_VERSION}
 # EOF
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJECT_DIR=$SCRIPT_DIR/../../../
 
+version=$(grep '"version":' $PROJECT_DIR/package.json | cut -d: -f 2 | sed -e 's/[", ]//g')
+buildNumber=$(date -u "+%Y-%m-%d-%H-%M")
 
-buildNumber=$(date -u "+%Y%m%d%H%M")
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $buildNumber" "App/Info.plist"
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.1.0" "App/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" "App/Info.plist"

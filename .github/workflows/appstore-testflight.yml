@@ -78,7 +78,6 @@ jobs:
           npm ci --python=python3.10
           npm run build
       - run: npx cap update ios
-      - run: ./bin/update_ios_version.sh
       - run: npx cap sync --deployment ios
       - run: cd ios/App; pod install
       #- run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
