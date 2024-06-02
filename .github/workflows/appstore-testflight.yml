@@ -1,9 +1,21 @@
 ---
-name: Deploy to Apple App Store Production, Manual
+# Nightly compile for e2e testing
+name: Deploy to Apple App Store on Demo Track, Manual
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the main branch
+# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 
 on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  # push:
+  #   branches:
+  #     - github-actions
+  #     - main
+
   workflow_dispatch:
     
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   check_date:
     runs-on: ubuntu-latest
@@ -22,7 +34,7 @@ jobs:
         run: test -z $(git rev-list  --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
            
   ios-deploy:
-    name: Deploying to Production
+    name: Deploying to Testflight
     runs-on: macOS-latest
     needs: check_date
     steps:
@@ -34,6 +46,7 @@ jobs:
           ruby-version: 3.3.1
           bundler-cache: false
           working-directory: ios/App
+          # No cache because permissions issues?
       - run: |
           cd ios/App; bundle install; bundle exec fastlane install_plugins
       - name: Use Node.js 20
@@ -54,7 +67,7 @@ jobs:
           export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh ios)
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_MINIFAUXTON=false
-          export VITE_DIRECTORY_HOST=db.fieldmark.app
+          export VITE_DIRECTORY_HOST=db.testing.fieldmark.app
           export VITE_DIRECTORY_PORT=443
           export VITE_PRODUCTION_BUILD=true          
           export VITE_SERVICES=FAIMSTEXT
@@ -67,10 +80,11 @@ jobs:
       - run: npx cap update ios
       - run: npx cap sync --deployment ios
       - run: cd ios/App; pod install
-      - name: Deploy iOS app to production with Fastlane
+      #- run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
+      - name: Deploy iOS Beta to TestFlight via Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:
-          lane: production
+          lane: closed_beta_testflight
           subdirectory: 'ios/App'
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
