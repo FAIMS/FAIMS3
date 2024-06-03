@@ -371,13 +371,12 @@ export default function DataGridFieldLinksComponent(
           <DataGrid
             autoHeight
             density={'compact'}
-            rowCount={5}
-            pageSizeOptions={[100]} // 100 here to disable an error thrown by MUI
+            pageSizeOptions={[5, 10, 20]}
             disableRowSelectionOnClick
-            components={{
-              Footer: RecordLinksToolbar,
+            slots={{
+              footer: RecordLinksToolbar,
             }}
-            componentsProps={{
+            slotProps={{
               filterPanel: {sx: {maxWidth: '96vw'}},
             }}
             columns={columns}
@@ -385,6 +384,7 @@ export default function DataGridFieldLinksComponent(
               sorting: {
                 sortModel: [{field: 'lastUpdatedBy', sort: 'desc'}],
               },
+              pagination: {paginationModel: {pageSize: 5}},
             }}
             rows={props.links}
             getRowId={getRowId}

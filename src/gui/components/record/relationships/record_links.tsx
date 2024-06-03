@@ -397,11 +397,12 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                     sorting: {
                       sortModel: [{field: 'lastUpdatedBy', sort: 'desc'}],
                     },
+                    pagination: {paginationModel: {pageSize: 5}},
                   }}
                   rows={subGroup}
                   getRowId={getRowId}
-                  components={{
-                    Footer: RecordLinksToolbar,
+                  slots={{
+                    footer: RecordLinksToolbar,
                   }}
                 />
               </Box>
