@@ -109,14 +109,16 @@ export function DataGridNoLink(props: {
       renderCell: (params: GridCellParams) =>
         params.value ? <>{props.relation_preferred_label}</> : <></>,
     });
+  // remove any invalid entries in links (due to a bug elsewhere)
+  const links = props.links.filter(link => link.record_id);
   return props.links !== null && props.links.length > 0 ? (
     <DataGrid
       autoHeight
       density={'compact'}
       rowCount={5}
-      pageSizeOptions={[100]} // 100 here to disable an error thrown by MUI
+      pageSizeOptions={[5, 10, 20]} // 100 here to disable an error thrown by MUI
       disableRowSelectionOnClick
-      componentsProps={{
+      slotProps={{
         filterPanel: {sx: {maxWidth: '96vw'}},
       }}
       columns={columns}
@@ -124,8 +126,9 @@ export function DataGridNoLink(props: {
         sorting: {
           sortModel: [{field: 'lastUpdatedBy', sort: 'desc'}],
         },
+        pagination: {paginationModel: {pageSize: 5}},
       }}
-      rows={props.links}
+      rows={links}
       getRowId={r => r.record_id}
     />
   ) : (
