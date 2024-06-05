@@ -162,7 +162,6 @@ function DisplayChild(props: DisplayChildProps) {
     is_values = false;
 
   if (!is_values) return <></>;
-
   if (props.recordsInformation === null) {
     if (is_values)
       return (
@@ -406,9 +405,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     let newValue = props.form.values[field_name];
     if (multiple) {
       // edge case: existing value could be a singleton if schema was changed
+      // but first make sure it's a relation record rather than eg. empty string
       if (Array.isArray(newValue))
         newValue = [...(newValue ?? []), new_child_record];
-      else newValue = [newValue, new_child_record];
+      else if (newValue.record_id !== undefined)
+        newValue = [newValue, new_child_record];
+      else newValue = [new_child_record];
     } else newValue = new_child_record;
     props.form.setFieldValue(props.field.name, newValue);
     return new_record_id;
