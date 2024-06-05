@@ -597,8 +597,7 @@ export async function addLinkedRecord(
           ? parent_link['relation_type_vocabPair']
           : ['is related to', 'is related to'];
       let type = latest_record?.type;
-      let hrid = getHRIDValue(parent_link.record_id, latest_record?.data);
-
+      const hrid = getHRIDValue(parent_link.record_id, latest_record?.data);
 
       if (type !== undefined) type = ui_specification.viewsets[type]['label'];
       const {section, section_label} = get_section(
