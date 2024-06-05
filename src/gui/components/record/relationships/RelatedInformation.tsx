@@ -339,20 +339,18 @@ export async function get_RelatedFields_for_field(
         relationLabel[0] === ''
       )
         relationLabel = relation_type_vocabPair;
-      const hrid = values['hrid' + form_type] ?? record_id;
+      const hrid = getHRIDValue(record_id, values);
       try {
         const {latest_record, revision_id} = await getRecordInformation(
           child_record
         );
 
         if (latest_record !== null)
-          child_record['record_label'] =
-            latest_record.data['hrid' + related_type];
-        if (
-          child_record['record_label'] === undefined ||
-          child_record['record_label'] === ''
-        )
-          child_record['record_label'] = child_record['record_id'];
+          child_record['record_label'] = getHRIDValue(
+            child_record['record_id'],
+            latest_record.data
+          );
+
         if (revision_id !== undefined) {
           const child = generate_RecordLink(
             child_record,
@@ -491,14 +489,10 @@ async function get_field_RelatedFields(
         fields[index]['value']
       );
       if (latest_record !== null && revision_id !== undefined) {
-        child_record['record_label'] =
-          latest_record.data['hrid' + related_type];
-
-        if (
-          child_record['record_label'] === undefined ||
-          child_record['record_label'] === ''
-        )
-          child_record['record_label'] = child_record['record_id'];
+        child_record['record_label'] = getHRIDValue(
+          child_record['record_id'],
+          latest_record.data
+        );
 
         const linked_vocab =
           child_record['relation_type_vocabPair'] !== null &&
@@ -603,12 +597,9 @@ export async function addLinkedRecord(
           ? parent_link['relation_type_vocabPair']
           : ['is related to', 'is related to'];
       let type = latest_record?.type;
-      let hrid = parent_link.record_id;
-      if (
-        latest_record !== null &&
-        latest_record.data['hrid' + type] !== undefined
-      )
-        hrid = latest_record?.data['hrid' + type] ?? parent_link.record_id;
+      let hrid = getHRIDValue(parent_link.record_id, latest_record?.data);
+
+
       if (type !== undefined) type = ui_specification.viewsets[type]['label'];
       const {section, section_label} = get_section(
         ui_specification,
@@ -731,10 +722,8 @@ export async function getParentPersistenceData(
         )
       );
 
-      // const data: Array<{[field_name: string]: any}> = [];
+      const parent_hrid = getHRIDValue(record_id, latest_record?.data);
 
-      let parent_hrid = latest_record?.data['hrid' + type] ?? record_id;
-      if (parent_hrid === ' ') parent_hrid = record_id;
       if (
         latest_record !== null &&
         type !== undefined &&
@@ -767,6 +756,20 @@ export async function getParentPersistenceData(
   return parentRecords;
 }
 
+function getHRIDValue(
+  record_id: string,
+  values: {[field_name: string]: any} | undefined
+) {
+  if (values === undefined) return record_id;
+
+  const possibleHRIDFields = Object.getOwnPropertyNames(values).filter(
+    (f: string) => f.startsWith('hrid')
+  );
+
+  if (possibleHRIDFields.length === 1) return values[possibleHRIDFields[0]];
+  else return record_id;
+}
+
 export async function getDetailRelatedInformation(
   ui_specification: ProjectUIModel,
   form_type: string,
@@ -784,8 +787,7 @@ export async function getDetailRelatedInformation(
     values
   );
 
-  let hrid = values['hrid' + form_type] ?? record_id;
-  if (hrid === ' ') hrid = record_id;
+  const hrid = getHRIDValue(record_id, values);
 
   if (record_to_field_links !== null) {
     // get field child records
