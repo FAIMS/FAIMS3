@@ -31,6 +31,11 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: 'build',
+  },  
+  resolve: {
+    alias: {
+      events: 'rollup-plugin-node-polyfills/polyfills/events',
+    },
   },
   plugins: [react()],
   define: {
