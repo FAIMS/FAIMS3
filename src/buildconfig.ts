@@ -19,7 +19,7 @@
  *   which server to use and whether to include test data
  */
 
-import BUILD_VERSION from './version';
+import {BUILD_VERSION} from './version';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
