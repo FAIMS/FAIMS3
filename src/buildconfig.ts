@@ -19,6 +19,8 @@
  *   which server to use and whether to include test data
  */
 
+import {BUILD_VERSION, BUILD_VERSION_DEFAULT} from './version';
+
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
 
@@ -33,6 +35,10 @@ const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
  */
 
 function commit_version(): string {
+  // BUILD_VERSION is updated by the 'set-version' script in package.json
+  // use that if it's not just the default
+  if (BUILD_VERSION !== BUILD_VERSION_DEFAULT) return BUILD_VERSION;
+  // otherwise look in the environment
   const commitVersion = import.meta.env.VITE_COMMIT_VERSION;
   if (
     commitVersion === '' ||
