@@ -332,7 +332,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.related_type,
           relationshipPair,
           field_name,
-          props.InputLabelProps.label,
+          field_label,
           multiple,
           props.related_type_label,
           props.current_form,
@@ -434,7 +434,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     Update_New_Link(
       selectedRecord,
       current_record,
-      props.InputLabelProps.label,
+      field_label,
       props.related_type_label ?? props.related_type,
       props.current_form,
       props.form.values['hrid' + props.current_form] ?? record_id,
@@ -523,7 +523,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       const new_child_record = await Update_New_Link(
         child_record,
         current_record,
-        props.InputLabelProps.label,
+        field_label,
         props.related_type_label ?? props.related_type,
         props.current_form,
         props.form.values['hrid' + props.current_form] ?? record_id,
