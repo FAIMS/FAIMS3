@@ -62,6 +62,8 @@ interface MapProps extends ButtonProps {
 }
 
 import {AppBar, Dialog, IconButton, Toolbar, Typography} from '@mui/material';
+import Feature from 'ol/Feature';
+import {Geometry} from 'ol/geom';
 
 const styles = {
   mapContainer: {
@@ -77,7 +79,7 @@ function MapWrapper(props: MapProps) {
   const [mapOpen, setMapOpen] = useState<boolean>(false);
   const [map, setMap] = useState<Map | undefined>();
   const [featuresLayer, setFeaturesLayer] =
-    useState<VectorLayer<VectorSource<any>>>();
+    useState<VectorLayer<Feature<Geometry>>>();
   const defaultMapProjection = 'EPSG:3857';
   const geoJson = new GeoJSON();
 
