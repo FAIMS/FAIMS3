@@ -108,7 +108,7 @@
     "markdown-it": "^14.1.0",
     "moment": "2.29.4",
     "mustache": "4.2.0",
-    "ol": "^7.3.0",
+    "ol": "^9.2.4",
     "pouchdb-adapter-memory": "^8.0.1",
     "pouchdb-browser": "^8.0.1",
     "pouchdb-debug": "^7.2.1",
