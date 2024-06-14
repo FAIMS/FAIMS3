@@ -299,7 +299,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                   autoHeight
                   density={'compact'}
                   rowCount={5}
-                  pageSizeOptions={[100]} // 100 here to disable an error thrown by MUI
+                  pageSizeOptions={[5, 10, 20]} // 100 here to disable an error thrown by MUI
                   disableRowSelectionOnClick
                   columns={
                     linkKey === 'links_to_record'
@@ -397,11 +397,12 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                     sorting: {
                       sortModel: [{field: 'lastUpdatedBy', sort: 'desc'}],
                     },
+                    pagination: {paginationModel: {pageSize: 5}},
                   }}
                   rows={subGroup}
                   getRowId={getRowId}
-                  components={{
-                    Footer: RecordLinksToolbar,
+                  slots={{
+                    footer: RecordLinksToolbar,
                   }}
                 />
               </Box>

@@ -86,7 +86,7 @@ jobs:
       - name: Set up ruby env
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.7.5
+          ruby-version: 3.3.1
           bundler-cache: true
           working-directory: android
       # We'll do this when we have android-specific tests...
