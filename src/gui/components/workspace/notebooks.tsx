@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Box, Paper, Typography, Alert, Button, Stack} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -33,7 +33,7 @@ import {
 import * as ROUTES from '../../../constants/routes';
 import {getAllProjectList, listenProjectList} from '../../../databaseAccess';
 import {useEventedPromise} from '../../pouchHook';
-import {TokenContents} from 'faims3-datamodel';
+import {ProjectInformation, TokenContents} from 'faims3-datamodel';
 import CircularLoading from '../../components/ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
@@ -55,7 +55,7 @@ type NoteBookListProps = {
 };
 
 export default function NoteBooks(props: NoteBookListProps) {
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [counter, setCounter] = React.useState(5);
   const [value, setValue] = React.useState('1');
 
@@ -66,13 +66,30 @@ export default function NoteBooks(props: NoteBookListProps) {
   const history = useNavigate();
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
-  const pouchProjectList = useEventedPromise(
-    'NoteBooks component',
-    getAllProjectList,
-    listenProjectList,
-    true,
-    []
-  ).expect();
+
+  const [pouchProjectList, setPouchProjectList] = useState<
+    ProjectInformation[]
+  >([]);
+
+  useEffect(() => {
+    getAllProjectList().then(projectList => {
+      setPouchProjectList(projectList);
+      setLoading(false);
+    });
+
+    if (counter === 0) {
+      if (pouchProjectList.length === 0) {
+        getAllProjectList().then(projectList => {
+          setPouchProjectList(projectList);
+          setLoading(false);
+        });
+        // reset counter
+        setCounter(5);
+      }
+    } else if (loading) {
+      setTimeout(() => setCounter(counter - 1), 1000);
+    }
+  }, [counter]);
 
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     if (params.row.is_activated) {
@@ -216,20 +233,10 @@ export default function NoteBooks(props: NoteBookListProps) {
         },
       ];
 
-  // if the counter changes, add a new timeout, but only if > 0
-  useEffect(() => {
-    counter > 0 && setTimeout(() => setCounter(counter - 1), 1000);
-    counter === 0 && setLoading(false);
-  }, [counter]);
-
   return (
     <Box>
-      {pouchProjectList === null ? (
+      {pouchProjectList.length === 0 ? (
         <CircularLoading label={'Loading notebooks'} />
-      ) : Object.keys(pouchProjectList).length === 0 ? (
-        <Alert severity={'info'}>
-          No notebooks found. Checking again in {counter} seconds.
-        </Alert>
       ) : (
         <Box component={Paper} elevation={0} p={2}>
           <Typography variant={'body1'} gutterBottom>
@@ -250,36 +257,15 @@ export default function NoteBooks(props: NoteBookListProps) {
             </Button>{' '}
             tab and click the activate button.
           </Typography>
-          <TabContext
-            value={
-              pouchProjectList.filter(r => r.is_activated).length === 0
-                ? '2'
-                : value
-            }
-          >
+          <TabContext value={pouchProjectList.filter(r => r.is_activated).length === 0 ? '2' : value}>
             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
               <TabList onChange={handleChange} aria-label="tablist">
                 <Tab
-                  label={
-                    'Activated (' +
-                    pouchProjectList.filter(r => r.is_activated).length +
-                    ')'
-                  }
+                  label={'Activated (' + pouchProjectList.filter(r => r.is_activated).length + ')'}
                   value="1"
-                  disabled={
-                    pouchProjectList.filter(r => r.is_activated).length === 0
-                      ? true
-                      : false
-                  }
+                  disabled={pouchProjectList.filter(r => r.is_activated).length === 0 ? true : false}
                 />
-                <Tab
-                  label={
-                    'Available (' +
-                    pouchProjectList.filter(r => !r.is_activated).length +
-                    ')'
-                  }
-                  value="2"
-                />
+                <Tab label={'Available (' + pouchProjectList.filter(r => r.is_activated).length + ')'} value="2" />
               </TabList>
             </Box>
             <TabPanel value="1" sx={{px: 0}}>
@@ -306,8 +292,8 @@ export default function NoteBooks(props: NoteBookListProps) {
                         },
                       },
                     }}
-                    components={{
-                      NoRowsOverlay: () => (
+                    slots={{
+                      noRowsOverlay: () => (
                         <Stack
                           height="100%"
                           alignItems="center"
@@ -344,8 +330,8 @@ export default function NoteBooks(props: NoteBookListProps) {
                         },
                       },
                     }}
-                    components={{
-                      NoRowsOverlay: () => (
+                    slots={{
+                      noRowsOverlay: () => (
                         <Stack
                           height="100%"
                           alignItems="center"
