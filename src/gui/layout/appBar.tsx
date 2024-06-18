@@ -169,7 +169,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
 type NavbarProps = {
   token?: null | undefined | TokenContents;
 };
-export default function AppBar(props: NavbarProps) {
+export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
   // const globalState = useContext(store);
 
@@ -177,6 +177,7 @@ export default function AppBar(props: NavbarProps) {
   const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
 
+  console.log('want to get the project list');
   const pouchProjectList = useEventedPromise(
     'AppBar component',
     getActiveProjectList,
