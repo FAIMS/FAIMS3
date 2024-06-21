@@ -51,7 +51,7 @@ type NotebookSyncSwitchProps = {
   project: ProjectInformation;
   showHelperText: boolean;
   project_status: string | undefined;
-  handleTabChange?: Function;
+  handleNotebookActivation?: Function;
 };
 
 async function listenSync(
@@ -60,6 +60,7 @@ async function listenSync(
 ): Promise<any> {
   return listenSyncingProject(active_id, callback); // the callback here will set isSyncing
 }
+
 export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
   const {project} = props;
   const {dispatch} = useContext(store);
@@ -99,7 +100,8 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
       .then(async () => {
         await handleStartSync();
         setIsWorking(false); // unblock the UI
-        props.handleTabChange !== undefined && props.handleTabChange('1'); // switch to "Activated" tab
+        console.log('calling handleNotebookActivation', props.handleNotebookActivation);
+        props.handleNotebookActivation !== undefined && props.handleNotebookActivation();
       })
       .catch(e => {
         dispatch({
