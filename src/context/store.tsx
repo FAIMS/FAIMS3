@@ -15,37 +15,32 @@
  *
  * Filename: store.tsx
  * Description:
- *   TODO
+ *   Define a global Context store to hold the state of sync and alerts
  */
 
-import React, {createContext, useReducer, Dispatch, useEffect} from 'react';
+import React, {
+  createContext,
+  useReducer,
+  Dispatch,
+  useEffect,
+  useState,
+} from 'react';
 
 import {v4 as uuidv4} from 'uuid';
 
-import {ProjectObject} from 'faims3-datamodel';
-import {Record} from 'faims3-datamodel';
 import {getSyncStatusCallbacks} from '../utils/status';
-import {
-  ProjectActions,
-  RecordActions,
-  SyncingActions,
-  AlertActions,
-  ActionType,
-} from './actions';
+import {SyncingActions, AlertActions, ActionType} from './actions';
 import LoadingApp from '../gui/components/loadingApp';
 import {initialize} from '../sync/initialize';
 import {set_sync_status_callbacks} from '../sync/connection';
 import {AlertColor} from '@mui/material/Alert/Alert';
 
 interface InitialStateProps {
-  initialized: boolean;
   isSyncingUp: boolean;
   isSyncingDown: boolean;
   hasUnsyncedChanges: boolean;
   isSyncError: boolean;
 
-  active_project: ProjectObject | null;
-  active_record: Record | null;
   alerts: Array<
     {
       severity: AlertColor;
@@ -55,22 +50,16 @@ interface InitialStateProps {
 }
 
 const InitialState = {
-  initialized: false,
   isSyncingUp: false,
   isSyncingDown: false,
   hasUnsyncedChanges: false,
   isSyncError: false,
-
-  active_project: null,
-  active_record: null,
   alerts: [],
 };
 
 export interface ContextType {
   state: InitialStateProps;
-  dispatch: Dispatch<
-    ProjectActions | RecordActions | SyncingActions | AlertActions
-  >;
+  dispatch: Dispatch<SyncingActions | AlertActions>;
 }
 
 const store = createContext<ContextType>({
@@ -81,18 +70,10 @@ const store = createContext<ContextType>({
 const {Provider} = store;
 
 const StateProvider = (props: any) => {
+  const [initialized, setInitialized] = useState(false);
   const [state, dispatch] = useReducer(
-    (
-      state: InitialStateProps,
-      action: ProjectActions | RecordActions | SyncingActions | AlertActions
-    ) => {
+    (state: InitialStateProps, action: SyncingActions | AlertActions) => {
       switch (action.type) {
-        case ActionType.INITIALIZED: {
-          return {
-            ...state,
-            initialized: true,
-          };
-        }
         case ActionType.IS_SYNCING_UP: {
           return {
             ...state,
@@ -116,12 +97,6 @@ const StateProvider = (props: any) => {
             ...state,
             isSyncError: action.payload,
           };
-        }
-        case ActionType.GET_ACTIVE_PROJECT: {
-          return {...state, active_project: action.payload};
-        }
-        case ActionType.DROP_ACTIVE_PROJECT: {
-          return {...state, active_project: null};
         }
 
         case ActionType.ADD_ALERT: {
@@ -156,32 +131,6 @@ const StateProvider = (props: any) => {
             alerts: [...state.alerts, alert],
           };
         }
-
-        // case ActionType.APPEND_RECORD_LIST: {
-        //   return {
-        //     ...state,
-        //     record_list: {
-        //       ...state.record_list,
-        //       [action.payload.project_id]: action.payload.data,
-        //     },
-        //   };
-        //   // return {...state, record_list: action.payload};
-        // }
-        // case ActionType.POP_RECORD_LIST: {
-        //   const new_record_list = {
-        //     ...state.record_list[action.payload.project_id],
-        //   };
-        //   action.payload.data_ids.forEach(
-        //     data_id => delete new_record_list[data_id]
-        //   );
-        //   return {
-        //     ...state,
-        //     record_list: {
-        //       ...state.record_list,
-        //       [action.payload.project_id]: new_record_list,
-        //     },
-        //   };
-        // }
         default:
           throw new Error();
       }
@@ -193,16 +142,9 @@ const StateProvider = (props: any) => {
 
   useEffect(() => {
     initialize()
-      .then(() =>
-        setTimeout(
-          () =>
-            dispatch({
-              type: ActionType.INITIALIZED,
-              payload: undefined,
-            }),
-          10000
-        )
-      )
+      .then(() => {
+        setInitialized(true);
+      })
       .catch(err => {
         console.log('Could not initialize: ', err);
         dispatch({
@@ -212,7 +154,7 @@ const StateProvider = (props: any) => {
       });
   }, []);
 
-  if (state.initialized) {
+  if (initialized) {
     return <Provider value={{state, dispatch}}>{props.children}</Provider>;
   } else {
     return (

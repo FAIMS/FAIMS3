@@ -53,8 +53,11 @@ export async function getProjectMetadata(
     }
     return doc.metadata;
   } catch (err) {
-    console.warn('failed to find metadata', err);
-    throw Error('failed to find metadata');
+    // this isn't an error, the metadata just has no value
+    // so return a default value of empty/false
+    return '';
+    // console.warn('failed to find metadata', err);
+    // throw Error('failed to find metadata');
   }
 }
 

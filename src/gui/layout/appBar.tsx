@@ -50,7 +50,8 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
 
 import * as ROUTES from '../../constants/routes';
-import {getActiveProjectList, listenProjectList} from '../../databaseAccess';
+import {getActiveProjectList} from '../../sync/projects';
+import {listenProjectList} from '../../databaseAccess';
 import SystemAlert from '../components/alert';
 import {ProjectInformation} from 'faims3-datamodel';
 import {useEventedPromise} from '../pouchHook';
@@ -169,7 +170,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
 type NavbarProps = {
   token?: null | undefined | TokenContents;
 };
-export default function AppBar(props: NavbarProps) {
+export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
   // const globalState = useContext(store);
 
@@ -177,6 +178,7 @@ export default function AppBar(props: NavbarProps) {
   const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
 
+  console.log('want to get the project list');
   const pouchProjectList = useEventedPromise(
     'AppBar component',
     getActiveProjectList,

@@ -288,9 +288,19 @@ function get_bugsnag_key(): string | false {
   return bugsnag_key;
 }
 
+
+function get_conductor_url(): string {
+  const url = import.meta.env.VITE_CONDUCTOR_URL;
+  if (url) {
+    return url;
+  } else {
+    return 'http://localhost:8154';
+  }
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
-
+export const CONDUCTOR_URL = get_conductor_url();
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
 export const DEBUG_APP = include_app_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();

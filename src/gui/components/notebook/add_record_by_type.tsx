@@ -59,7 +59,6 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   }
 
   if (ui_spec.loading || ui_spec.value === undefined) {
-    console.debug('Ui spec for', project_id, ui_spec);
     return <CircularProgress thickness={2} size={12} />;
   }
   const viewsets = ui_spec.value.viewsets;

@@ -427,10 +427,6 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
     undefined as RecordMetadata[] | undefined
   );
 
-  if (DEBUG_APP) {
-    console.debug('Filter deleted?:', props.filter_deleted);
-  }
-
   useEffect(() => {
     const getData = async () => {
       if (DEBUG_APP) {

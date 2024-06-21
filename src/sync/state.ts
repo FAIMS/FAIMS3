@@ -22,37 +22,14 @@ import {ProjectID} from 'faims3-datamodel';
 import {
   ProjectObject,
   ProjectMetaObject,
-  ProjectDataObject,
   isRecord,
   mergeHeads,
 } from 'faims3-datamodel';
 
-import {
-  ListingsObject,
-  ActiveDoc,
-  ExistingActiveDoc,
-  LocalDB,
-} from './databases';
+import {ListingsObject, ActiveDoc, LocalDB} from './databases';
 import {DirectoryEmitter} from './events';
 import {logError} from '../logging';
-
-export type createdProjectsInterface = {
-  project: ProjectObject;
-  active: ExistingActiveDoc;
-  meta: LocalDB<ProjectMetaObject>;
-  data: LocalDB<ProjectDataObject>;
-};
-
-/**
- * This is appended to whenever a project has its
- * meta & data local dbs come into existence.
- *
- * This is used by getProjectDB/getDataDB in index.ts, as the way to get
- * ProjectObjects
- *
- * Created/Modified by update_project in process-initialization.ts
- */
-export const createdProjects: {[key: string]: createdProjectsInterface} = {};
+import {addProjectListener} from './projects';
 
 export type createdListingsInterface = {
   listing: ListingsObject;
@@ -78,7 +55,7 @@ export const createdListings: {[key: string]: createdListingsInterface} = {};
  *
  * Created/Modified by register_sync_state in state.ts
  */
-export let listings_updated = false;
+export let listings_updated = true; // true because we now assume they are always up to date SC
 
 /**
  * True when the listings_sync_state is true, AND all projects that are to be
@@ -146,6 +123,12 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
       all_projects_updated &&
       Array.from(projects_data_synced.values()).every(v => v);
 
+    console.log(
+      'COMMON CHECK',
+      all_projects_updated,
+      !listings_updated,
+      listing_projects_synced
+    );
     initializeEvents.emit('all_state');
   };
 
@@ -181,7 +164,7 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
   });
   initializeEvents.on(
     'project_update',
-    (type, data_changed, meta_changed, listing, active) => {
+    (type, data_changed, meta_changed, active) => {
       // Now we know we have to wait for the data/meta DB of a project
       // to, if not fully sync, then at least be created (But not if
       // *_changed == false, and no projects_sync_state triggers)
@@ -191,20 +174,20 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
       common_check();
     }
   );
-  initializeEvents.on('project_error', (listing, active, err) => {
-    console.debug('project_error info', listing, 'active', active, 'err', err);
+  initializeEvents.on('project_error', (active, err) => {
+    console.debug('project_error active', active, 'err', err);
     // Don't hold up other things waiting for it to not be an error:
     projects_meta_synced.set(active._id, true);
     projects_data_synced.set(active._id, true);
 
     common_check();
   });
-  initializeEvents.on('meta_sync_state', (syncing, listing, active) => {
+  initializeEvents.on('meta_sync_state', (syncing, active) => {
     projects_meta_synced.set(active._id, !syncing);
 
     common_check();
   });
-  initializeEvents.on('data_sync_state', (syncing, listing, active) => {
+  initializeEvents.on('data_sync_state', (syncing, active) => {
     projects_data_synced.set(active._id, !syncing);
 
     common_check();
@@ -229,24 +212,17 @@ export function register_basic_automerge_resolver(
     // The data_sync_state event is only triggered on initial page load,
     // and when the actual data DB changes: So .changes
     // (as called in start_listening_for_changes) is called once per PouchDB)
-    start_listening_for_changes(active._id);
-  });
-}
 
-function start_listening_for_changes(proj_id: ProjectID) {
-  createdProjects[proj_id]!.data.local.changes({
-    since: 'now',
-    live: true,
-    include_docs: true,
-  }).on('change', async doc => {
-    if (doc !== undefined) {
-      if (doc.doc !== undefined && isRecord(doc.doc)) {
-        try {
-          await mergeHeads(proj_id, doc.id);
-        } catch (err: any) {
-          logError(err);
+    addProjectListener(active._id, async doc => {
+      if (doc !== undefined) {
+        if (doc.doc !== undefined && isRecord(doc.doc)) {
+          try {
+            await mergeHeads(active._id, doc.id);
+          } catch (err: any) {
+            logError(err);
+          }
         }
       }
-    }
+    });
   });
 }

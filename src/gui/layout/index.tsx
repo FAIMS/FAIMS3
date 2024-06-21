@@ -1,6 +1,6 @@
 import React from 'react';
 import {Box} from '@mui/material';
-import AppBar from './appBar';
+import MainAppBar from './appBar';
 import {TokenContents} from 'faims3-datamodel';
 import Footer from '../components/footer';
 import {useTheme} from '@mui/material/styles';
@@ -19,7 +19,7 @@ const MainLayout = (props: MainLayoutProps) => {
 
   return (
     <React.Fragment>
-      <AppBar token={props.token} />
+      <MainAppBar token={props.token} />
       <Box
         component="main"
         sx={{

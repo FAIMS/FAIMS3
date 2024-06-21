@@ -21,7 +21,6 @@ import PouchDB from 'pouchdb-browser';
 
 import {DEBUG_POUCHDB} from '../buildconfig';
 
-import {directory_connection_info} from './databases';
 import {events} from './events';
 import {update_directory} from './process-initialization';
 import {
@@ -60,21 +59,6 @@ async function initializeNoCheck() {
   register_sync_state(events);
   register_basic_automerge_resolver(events);
 
-  const initialized = new Promise<void>(resolve => {
-    // Resolve once only
-    let resolved = false;
-    events.on('all_state', () => {
-      if (all_projects_updated && !resolved) {
-        resolved = true;
-        resolve();
-      }
-    });
-  });
-  // It all starts here, once the events are all registered
   console.log('sync/initialize: starting');
-  update_directory(directory_connection_info).catch(err =>
-    events.emit('directory_error', err)
-  );
-  await initialized;
-  console.log('sync/initialize: finished');
+  update_directory().catch(err => events.emit('directory_error', err));
 }
