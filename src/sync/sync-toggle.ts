@@ -32,7 +32,7 @@ import {
   setLocalConnection,
 } from './databases';
 import {events} from './events';
-import {createdProjects} from './state';
+import {getProject} from './projects';
 
 export function listenSyncingProject(
   active_id: ProjectID,
@@ -97,7 +97,7 @@ export async function setSyncingProject(
     );
   }
 
-  const created = createdProjects[active_id];
+  const created = getProject(active_id);
 
   events.emit(
     'project_update',
@@ -177,7 +177,7 @@ export async function setSyncingProjectAttachments(
     logError(err);
   }
 
-  const created = createdProjects[active_id];
+  const created = getProject(active_id);
   events.emit(
     'project_update',
     [

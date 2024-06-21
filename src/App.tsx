@@ -40,10 +40,8 @@ import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 
-import {createdProjects} from './sync/state';
-import {ProjectsList} from 'faims3-datamodel';
 import theme from './gui/theme';
-import {getTokenContentsForRouting} from './users';
+import {getTokenContentsForCurrentUser} from './users';
 
 import {useEffect, useState} from 'react';
 
@@ -58,19 +56,13 @@ import {TokenContents} from 'faims3-datamodel';
 // };
 
 export default function App() {
-  const projects: ProjectsList = {};
-
-  for (const active_id in createdProjects) {
-    projects[active_id] = createdProjects[active_id].project;
-  }
-
   const [token, setToken] = useState(null as null | undefined | TokenContents);
 
   // TODO: Rather than returning the contents of a token, we should work out
   // what details are actually needed.
   useEffect(() => {
     const getToken = async () => {
-      setToken(await getTokenContentsForRouting());
+      setToken(await getTokenContentsForCurrentUser());
     };
     getToken();
   }, []);

@@ -13,9 +13,11 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: index.ts
+ * Filename: events.ts
  * Description:
- *   TODO
+ *   Set up events and event handlers for database sync
+ *   Define the DirectoryEmitter interface and create the exported
+ *   `events` instance for use in the sync module
  */
 
 import {EventEmitter} from 'events';
@@ -24,7 +26,8 @@ import {DEBUG_APP} from '../buildconfig';
 import {ListingID} from 'faims3-datamodel';
 import {ProjectObject} from 'faims3-datamodel';
 import {ListingsObject, ExistingActiveDoc} from './databases';
-import {createdListingsInterface, createdProjectsInterface} from './state';
+import {createdListingsInterface} from './state';
+import {createdProjectsInterface} from './projects';
 
 export class DebugEmitter extends EventEmitter {
   constructor(opts?: {captureRejections?: boolean}) {

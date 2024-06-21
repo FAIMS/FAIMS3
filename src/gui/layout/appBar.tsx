@@ -50,7 +50,8 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
 
 import * as ROUTES from '../../constants/routes';
-import {getActiveProjectList, listenProjectList} from '../../databaseAccess';
+import {getActiveProjectList} from '../../sync/projects';
+import {listenProjectList} from '../../databaseAccess';
 import SystemAlert from '../components/alert';
 import {ProjectInformation} from 'faims3-datamodel';
 import {useEventedPromise} from '../pouchHook';

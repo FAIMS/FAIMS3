@@ -38,51 +38,13 @@ import {
 } from 'faims3-datamodel';
 import {ProjectObject} from 'faims3-datamodel';
 import {ProjectInformation, ListingInformation} from 'faims3-datamodel';
-import {
-  all_projects_updated,
-  createdProjects,
-  createdListings,
-} from './sync/state';
+import {all_projects_updated, createdListings} from './sync/state';
 import {events} from './sync/events';
-import {
-  getProject,
-  listenProject,
-  waitForStateOnce,
-  getAllListings,
-} from './sync';
+import {getAllListings} from './sync';
+import {listenProject} from './sync/projects';
+import {getProject} from './sync/projects';
 import {shouldDisplayProject} from './users';
-
-export async function getActiveProjectList(): Promise<ProjectInformation[]> {
-  /**
-   * Return all active projects the user has access to, including the
-   * top 30 most recently updated records.
-   */
-  // TODO filter by user_id
-  // TODO filter by active projects
-  // TODO filter data by top 30 entries, sorted by most recently updated
-  // TODO decode .data
-  await waitForStateOnce(() => all_projects_updated);
-
-  const output: ProjectInformation[] = [];
-  for (const listing_id_project_id in createdProjects) {
-    if (await shouldDisplayProject(listing_id_project_id)) {
-      const split_id = split_full_project_id(listing_id_project_id);
-      output.push({
-        name: createdProjects[listing_id_project_id].project.name,
-        description: createdProjects[listing_id_project_id].project.description,
-        last_updated:
-          createdProjects[listing_id_project_id].project.last_updated,
-        created: createdProjects[listing_id_project_id].project.created,
-        status: createdProjects[listing_id_project_id].project.status,
-        project_id: listing_id_project_id,
-        is_activated: true,
-        listing_id: split_id.listing_id,
-        non_unique_project_id: split_id.project_id,
-      });
-    }
-  }
-  return output;
-}
+import {projectIsActivated} from './sync/projects';
 
 async function getAvailableProjectsFromListing(
   listing_id: ListingID
@@ -98,7 +60,6 @@ async function getAvailableProjectsFromListing(
       projects.push(e.doc as ProjectObject);
     }
   });
-  console.debug('All projects in listing', listing_id, projects);
   for (const project of projects) {
     const project_id = project._id;
     const full_project_id = resolve_project_id(listing_id, project_id);
@@ -110,12 +71,13 @@ async function getAvailableProjectsFromListing(
         created: project.created,
         status: project.status,
         project_id: full_project_id,
-        is_activated: createdProjects[full_project_id] !== undefined,
+        is_activated: projectIsActivated(full_project_id),
         listing_id: listing_id,
         non_unique_project_id: project_id,
       });
     }
   }
+  console.log('got these projects from', listing_id, output);
   return output;
 }
 
@@ -123,10 +85,13 @@ export async function getAllProjectList(): Promise<ProjectInformation[]> {
   /**
    * Return all projects the user has access to.
    */
-  await waitForStateOnce(() => all_projects_updated);
+
+  console.log('getAllProjectList', createdListings);
+  //await waitForStateOnce(() => all_projects_updated);
 
   const output: ProjectInformation[] = [];
   for (const listing_id in createdListings) {
+    console.log('getting for', listing_id);
     const projects = await getAvailableProjectsFromListing(listing_id);
     for (const proj of projects) {
       output.push(proj);
