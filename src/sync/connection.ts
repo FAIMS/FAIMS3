@@ -13,9 +13,9 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: index.ts
+ * Filename: connection.ts
  * Description:
- *   TODO
+ *   Utilities for creating database connections
  */
 
 import PouchDB from 'pouchdb-browser';
@@ -59,6 +59,7 @@ if (RUNNING_UNDER_TEST) {
   local_pouch_options['adapter'] = 'memory';
 }
 
+// merge one or more overlay structures to get a connection info object
 export function materializeConnectionInfo(
   base_info: ConnectionInfo,
   ...overlays: PossibleConnectionInfo[]
@@ -74,7 +75,7 @@ export function materializeConnectionInfo(
  * The following provide the infrastructure connect up the UI sync notifications
  * with pouchdb's callbacks.
  */
-export let sync_status_callbacks: SyncStatusCallbacks | null = null;
+let sync_status_callbacks: SyncStatusCallbacks | null = null;
 
 export function set_sync_status_callbacks(callbacks: SyncStatusCallbacks) {
   sync_status_callbacks = callbacks;
