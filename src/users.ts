@@ -422,25 +422,19 @@ export async function shouldDisplayRecord(
 }
 
 /**
- * Find the default login token if we have one
+ * Get a token for a logged in user if we have one
  *   - called in App.tsx to get an initial token for the app
+ *  - if we're logged in to more than one server, just return one of the tokens
+ *  - used to identify the user/whether we're logged in
  * @returns current login token for default server, if present
  */
-export async function getTokenContentsForRouting(): Promise<
+export async function getTokenContentsForCurrentUser(): Promise<
   TokenContents | undefined
 > {
-  // TODO: We need to add more generic handling of user details and login state
-  // here
-  const CLUSTER_TO_CHECK = 'default';
-
-  if (BUILT_LOGIN_TOKEN !== undefined) {
-    const parsed_token = JSON.parse(BUILT_LOGIN_TOKEN);
-    await setTokenForCluster(
-      parsed_token.token,
-      parsed_token.pubkey,
-      parsed_token.pubalg,
-      CLUSTER_TO_CHECK
-    );
+  const docs = await local_auth_db.allDocs();
+  console.log('GOT DOCS', docs);
+  if (docs.total_rows > 0) {
+    const cluster_id = docs.rows[0].id;
+    return getTokenContentsForCluster(cluster_id);
   }
-  return await getTokenContentsForCluster(CLUSTER_TO_CHECK);
 }
