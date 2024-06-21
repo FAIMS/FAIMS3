@@ -13,9 +13,9 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: index.ts
+ * Filename: databases.ts
  * Description:
- *   TODO
+ *   Create the main local databases and provide access to them
  */
 
 import PouchDB from 'pouchdb-browser';
@@ -331,7 +331,11 @@ export function setLocalConnection<Content extends {}>(
   db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
 ) {
   const options = db_info.remote.options;
-  console.debug('Setting local connection:', db_info);
+  console.debug(
+    '%cSetting local connection:',
+    'background-color: cyan;',
+    db_info
+  );
 
   if (db_info.is_sync) {
     if (db_info.remote.connection !== null) {
