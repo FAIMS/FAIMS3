@@ -52,7 +52,6 @@ export interface IS_SYNC_ERROR {
 }
 
 export type SyncingActions =
-  | INITIALIZED
   | IS_SYNCING_UP
   | IS_SYNCING_DOWN
   | HAS_UNSYNCED_CHANGES

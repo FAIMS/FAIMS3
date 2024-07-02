@@ -30,6 +30,7 @@ import {logError} from '../logging';
 import {getTokenForCluster} from '../users';
 
 import {
+  ExistingActiveDoc,
   ListingsObject,
   active_db,
   directory_db,
@@ -112,9 +113,9 @@ function process_listing(
   } else {
     // Create listing, convert from async to event emitter
     // DON'T MOVE THIS PAST AN AWAIT POINT
-    update_listing(listing).catch(err =>
-      events.emit('listing_error', listing._id, err)
-    );
+    // update_listing(listing).catch(err =>
+    //   events.emit('listing_error', listing._id, err)
+    // );
   }
 }
 
@@ -243,7 +244,8 @@ export async function ensureActiveProjects() {
       const project_id = split_id.project_id;
       get_project_from_directory(listing_id, project_id).then(
         project_object => {
-          if (project_object) ensure_project_databases(row.doc, project_object);
+          const doc = row.doc as ExistingActiveDoc;
+          if (project_object) ensure_project_databases(doc, project_object);
         }
       );
     }

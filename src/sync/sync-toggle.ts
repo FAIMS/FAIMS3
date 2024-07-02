@@ -97,7 +97,7 @@ export async function setSyncingProject(
     );
   }
 
-  const created = getProject(active_id);
+  const created = await getProject(active_id);
 
   events.emit(
     'project_update',
