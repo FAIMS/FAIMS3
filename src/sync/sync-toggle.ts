@@ -141,7 +141,7 @@ export function listenSyncingProjectAttachments(
 }
 
 export function isSyncingProjectAttachments(active_id: ProjectID): boolean {
-  return data_dbs[active_id]!.is_sync_attachments;
+  return data_dbs[active_id]?.is_sync_attachments;
 }
 
 export async function setSyncingProjectAttachments(
@@ -177,7 +177,7 @@ export async function setSyncingProjectAttachments(
     logError(err);
   }
 
-  const created = getProject(active_id);
+  const created = await getProject(active_id);
   events.emit(
     'project_update',
     [

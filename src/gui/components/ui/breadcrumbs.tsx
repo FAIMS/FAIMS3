@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  Box,
-  Link,
-  Typography,
-  Breadcrumbs as MuiBreadcrumbs,
-} from '@mui/material';
+import {Box, Typography, Breadcrumbs as MuiBreadcrumbs} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 
 import {useTheme} from '@mui/material/styles';
@@ -26,14 +21,9 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
       >
         {data.map(item => {
           return item.link !== undefined ? (
-            <Link
-              component={RouterLink}
-              to={item.link}
-              underline={'none'}
-              key={'breadcrumb-item-' + item.title}
-            >
+            <RouterLink to={item.link} key={'breadcrumb-item-' + item.title}>
               {item.title}
-            </Link>
+            </RouterLink>
           ) : (
             <Typography
               color="textPrimary"

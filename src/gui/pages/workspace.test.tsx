@@ -13,21 +13,23 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: workspace.tsx
+ * Filename: workspace.test.tsx
  * Description:
- *   TODO
+ *   Tests of the <Workspace /> component
  */
 
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import Workspace from './workspace';
 import {test, expect} from 'vitest';
 
 test('Check workspace component', async () => {
-  render(
-    <Router>
-      <Workspace />
-    </Router>
-  );
+  act(() => {
+    render(
+      <Router>
+        <Workspace />
+      </Router>
+    );
+  });
   expect(screen.getByText('My Notebooks')).toBeTruthy();
 });
