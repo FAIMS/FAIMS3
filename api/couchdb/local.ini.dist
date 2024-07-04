@@ -1,0 +1,31 @@
+; CouchDB Configuration Settings for FAIMS
+
+[couchdb]
+max_document_size = 4294967296 ; bytes
+os_process_timeout = 5000 ; 5 sec
+uuid = adf990d5dd21b735f65d4140ad1f10c2
+
+[chttpd]
+port = 5984
+bind_address = 0.0.0.0
+authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_auth, jwt_authentication_handler}, {chttpd_auth, default_authentication_handler}
+
+
+[httpd]
+enable_cors = true
+
+[couchdb]
+single_node=true
+
+[log]
+writer = syslog
+level = info
+
+[chttpd_auth]
+secret = db7a1a86dbc734593febf8ca6fdf0cf8
+
+[cors]
+origins = *
+headers = accept, authorization, content-type, origin, referer
+credentials = true
+methods = GET, PUT, POST, HEAD, DELETE

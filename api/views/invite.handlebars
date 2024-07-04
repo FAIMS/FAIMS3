@@ -1,0 +1,59 @@
+  <div class="container">
+    <h3 class="h3 mb-3 fw-normal">Invite Users to {{notebook.name}}</h3>
+
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="/notebooks/">Notebooks</a></li>
+        <li class="breadcrumb-item"><a href="/notebooks/{{notebook.project_id}}/">{{notebook.name}}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Create Invite</li>
+      </ol>
+    </nav>
+  </div>
+
+  <div class="container">
+    <div class="row gx-3 gy-3">
+      <div class="col-md-3 col-sm-12"></div>
+      <div class="col-md-6 col-sm-12">
+        <div class="card">
+          <div class="card-header">
+            Invite Users
+          </div>
+          <div class="card-body">
+            Create an invitation for users to sign up to
+            this notebook.   This will generate an invite
+            URL and QR code that can be used to register.
+            <div class="alert alert-warning mt-3" role="alert">
+              <i class="bi bi-info-circle"></i>&nbsp;&nbsp; Users will need 
+              internet access to sign in and accept invites.
+            </div>
+
+            <form class="mb-1 mt-2" method="post">
+              <div class="mb-3">
+                <label for="number">Invite valid for how many users?</label>
+                <input name="number" type="number" class="form-control" id="number" aria-describedby="numberHelp" value="1">
+                <div id="numberHelp" class="form-text">How many users should be able to
+                  use this invite.  Set to zero (0) for an unlimited number. 
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="role">Role</label>
+                <select name="role" class="form-control" id="role">
+                  {{#each roles}}
+                  <option value={{this}}>{{this}}</option>
+                  {{/each}}
+                </select>
+                <div id="roleHelp" class="form-text text-muted">
+                  Roles include: admin (user can see all records) and 
+                  team (user can only see their own records).</div>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Submit</button>
+              <button type="reset" class="btn" style="float:right">Reset</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

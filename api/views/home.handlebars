@@ -1,0 +1,101 @@
+<div class="form-signin w-100 m-auto text-center">
+    <h3 class="h3 mb-3 fw-normal" style="margin-top:50px">Hello <b>{{ user.name }}</b> </h3>
+    <p class=" mt-3">Currently signed in as <b>{{ user.name }}</b> with <b>{{{provider}}}</b> </p>
+    <div class="btn-group mt-2 mb-4 w-100" role="group">
+        <a href="/send-token/" class="w-100 btn btn-outline-primary" >Return to App<i class="bi bi-arrow-return-left"></i></a>
+        <a href="/logout/" class="w-100 btn btn-primary">Log Out of App <i class="bi bi-box-arrow-right"></i></a>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row gx-3 gy-3">
+      <div class="col-md-2"></div>
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            Assigned Roles
+          </div>
+          <div class="card-body">
+              {{{ project_roles }}}
+            <ul>
+              {{#each other_roles}}
+                <li>{{ this }}</li>
+              {{/each}}
+            </ul>
+          <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle"></i>&nbsp;&nbsp; If you can't see a role here you expect, try <a href="/logout">signing out</a> and back in again.
+          </div>
+            <a class="card-link" href="/notebooks/" class="card-link">Browse Notebooks</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            Switching User?
+          </div>
+          <div class="card-body">
+              <p class="card-text">To sign in as a different user, you need to
+                 <a href="/logout/">logout</a> first.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  <div class="row gx-3 gy-3">
+      <div class="col-md-2"></div>
+    <div class="col-md-4">
+      <div class="card">
+      <div class="card-header">
+            Need Bearer Token for Exporting Data?
+          </div>
+           <div class="card-body">
+            <p class="card-text">Click <a href="#" onClick="copyTokenToClipboard()">Copy Bearer Token to Clipboard</a> to copy the token that identifies you when instructed to do so by the exporter.</p>
+            <p class="card-text">
+            <div class="btn-group mt-2 mb-4 w-100" role="group">
+              <a class="w-100 btn btn-outline-primary" onClick="copyTokenToClipboard()">Copy Bearer Token to Clipboard</a>
+            </div>
+            </p>
+            <p class="card-text">
+              <details>
+                <summary>Show Bearer Token</summary>
+                  <pre>{{{token}}}
+                  </pre>
+                </details>
+              </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+      {{#if cluster_admin}}
+      <div class="card">
+        <div class="card-header">
+          Cluster Administration
+        </div>
+        <div class="card-body">
+          <a href="/users/">User Management</a>
+        </div>
+        {{#if developer}}
+         <div class="card-body">
+          <a href="/restore/">Restore from backup</a>
+        </div>   
+        {{/if}}
+
+      </div>
+      {{/if}}
+    </div>
+  </div>
+</div>
+
+
+  <script>
+const copyTokenToClipboard = () => {
+    navigator.permissions.query({name: "clipboard-write"}).then((result) => {
+    if (result.state === "granted" || result.state === "prompt") {
+        navigator.clipboard.writeText("{{{token}}}").then(() => {
+            alert("Bearer token copied to clipboard.")
+        }, () => {
+                alert("Could not copy token.")
+        });
+    }
+    });
+}
+</script>

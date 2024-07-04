@@ -1,0 +1,79 @@
+<div class="container">
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Home</a></li>
+    <li class="breadcrumb-item" active aria-current="page">Users</li>
+  </ol>
+</nav>
+
+
+<h1>Manage Cluster Admins</h1>
+
+<p>This page allows you to add or remove the cluster admin permission
+  for individual users.  Note that cluster admins can perform any task
+  on the server.
+</p>
+
+<table class="table">
+    <thead>
+      <th>Name</th>
+      <th>Create Notebooks</th>
+      <th>Cluster Admin</th>
+    </thead>
+    <tbody>
+    {{#each users}}
+     <tr>
+      <th>{{this.name}} ({{this.username}})</th>
+        <td>
+          <input type="checkbox" 
+            class="form-check-input" 
+            value="{{this.name}}"
+            data-username="{{this.username}}"
+            data-role="notebook-creator"
+            {{#if this.can_create_notebooks}}checked{{/if}}>
+        </td>
+        <td>
+          <input type="checkbox" 
+            class="form-check-input" 
+            value="{{this.name}}"
+            data-username="{{this.username}}"
+            data-role="cluster-admin"
+            {{#if this.is_cluster_admin}}checked{{/if}}>
+        </td>
+      </tr>
+    {{/each}}
+    </tbody>
+</table>
+
+</div>
+
+<script>
+function toggleRole(event) {
+  const target = event.target;
+  const url = `/api/users/${target.dataset.username}/admin`;
+  const data = {
+    addrole: target.checked,  // true/false
+    role: target.dataset.role
+  }
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status !== 'success') {
+      target.checked = !target.checked;
+      document.getElementById('message').innerText = data.error;
+    }
+  });
+}
+
+const inputs = document.getElementsByClassName('form-check-input')
+
+for(let i=0; i<inputs.length; i++) {
+  inputs[i].onclick = toggleRole;
+}
+</script>

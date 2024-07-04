@@ -1,0 +1,6 @@
+{
+    "platformName": "Android",
+    "appium:deviceName": "---",
+    "appium:app": "---",
+    "appium:automationName": "uiAutomator2"
+  }

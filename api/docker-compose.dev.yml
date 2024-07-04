@@ -1,0 +1,77 @@
+version: "3.9"
+services:
+  couchdb:
+    build:
+      context: couchdb
+      dockerfile: Dockerfile
+      # dockerfile relative path is from build context
+    volumes: 
+      - type: volume
+        source: couchdb-data
+        target: /opt/couchdb/data
+    ports:
+      - "0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984"     
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD
+    networks:
+      - conductor-local-dev
+  conductor:
+    build:
+      context: .
+    command: "npm run watch"
+    volumes:
+      - .:/app
+    ports:
+      - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
+    networks:
+      - conductor-local-dev
+    environment:
+      #  note that some of these are pulled from the environment (.env) 
+      #  while others get values here if the value is known for 
+      #  docker-compose setup
+
+      - PROFILE_NAME
+      - CONDUCTOR_INSTANCE_NAME
+      
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD
+
+      # Where is this server running
+      - CONDUCTOR_INTERNAL_PORT
+      - CONDUCTOR_EXTERNAL_PORT
+
+      - COUCHDB_PUBLIC_URL
+      - COUCHDB_INTERNAL_URL
+
+      # https://faimsproject.atlassian.net/wiki/spaces/FAIMS3/pages/151846960/FAIMS3+Conductor+build+run+environment+variables
+
+      # optional
+      - CLUSTER_ADMIN_GROUP_NAME
+
+      - FAIMS_COOKIE_SECRET
+
+      # public URL for accessing Conductor & CouchDB
+      - CONDUCTOR_PUBLIC_URL
+      - COMMIT_VERSION
+
+      - CONDUCTOR_AUTH_PROVIDERS
+      - CONDUCTOR_EMAIL_HOST_NAME
+      - CONDUCTOR_EMAIL_HOST_CONFIG
+
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+
+      - CONDUCTOR_EMAIL_FROM_ADDRESS
+      - CONDUCTOR_EMAIL_TRANSPORTER
+
+      - DEVELOPER_MODE
+
+      # URLs for apps for this instance
+      - WEB_APP_PUBLIC_URL
+      - ANDROID_APP_PUBLIC_URL
+      - IOS_APP_PUBLIC_URL
+networks:
+  conductor-local-dev: {}
+volumes:
+  couchdb-data:

@@ -1,0 +1,481 @@
+{
+
+    "openapi": "3.0.0",
+    "info": {
+        "description": "This is the FAIMS Conductor server API documentation.",
+        "version": "1.0.0",
+        "title": "FAIMS3 API",
+        "termsOfService": "http://faims.edu.au/terms/",
+        "contact": {
+            "email": "help@faims.edu.au"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        }
+    },
+    "servers": [
+        {"url": "/api"}
+    ],
+    "components": {
+        "securitySchemes": {
+            "Auth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        },
+        "responses": {
+            "UnauthorizedError": {
+                "description": "Access token is missing or invalid"
+            }
+        }
+    },
+    "paths": {
+        "/hello/": {
+            "get": {
+                "summary": "Say hello",
+                "description": "Return a hello message as JSON",
+                "security": {"Auth": []},
+                "produces": ["application/json"],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            }
+        },
+        "/notebooks/": {
+            "get": {
+                "summary": "Get a list of notebooks",
+                "description": "Get a list of the notebooks managed by this server",
+                "tags": ["Notebooks"],
+                "produces": ["application/json"], 
+                "security": {"Auth": []},
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/NotebookMeta",
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create a new notebook",
+                "description": "Create a new notebook by uploading JSON metadata and ui-specification",
+                "tags": ["Notebooks"],
+                "produces": ["application/json"],
+                "security": {"Auth": []},
+                "requestBody": {
+                    "description": "Notebook metadata and ui-specification",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/definitions/Notebook"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notebooks/{id}/": {
+            "get": {
+                "summary": "Get a notebook",
+                "description": "Get a notebook by id",
+                "tags": ["Notebooks"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Notebook id",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "produces": ["application/json"],
+                "security": {"Auth": []},
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/Notebook"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update a notebook",
+                "description": "Update a notebook by identifier",
+                "tags": ["Notebooks"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Notebook identifier",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "produces": ["application/json"],
+                "security": {"Auth": []},
+                "requestBody": {
+                    "description": "Notebook metadata and ui-specification",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/definitions/Notebook"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/Notebook"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            }
+        },
+        "/notebooks/{id}/records": {
+            "get": {
+                "summary": "Get a list of records",
+                "description": "Get a list of records for a notebook",
+                "tags": ["Notebooks"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Notebook identifier",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "produces": ["application/json"],
+                "security": {"Auth": []},
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/RecordList",
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            }
+        },
+        "/notebooks/{id}/{viewID}.csv": {
+            "get": {
+                "summary": "Get a records as CSV",
+                "description": "Export notebook records as CSV for one form",
+                "tags": ["Export"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Notebook identifier",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "viewID",
+                        "in": "path",
+                        "description": "view (form) dentifier",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "produces": ["text/csv"],
+                "security": {"Auth": []},
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            }
+        },
+        "/notebooks/{id}/{viewID}.zip": {
+            "get": {
+                "summary": "Get all record attachments as a zip file",
+                "description": "Export all attachments (photos, files) for a form as a zip file",
+                "tags": ["Export"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Notebook id",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "viewID",
+                        "in": "path",
+                        "description": "view (form) dentifier",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "produces": ["application/zip"],
+                "security": {"Auth": []},
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            }
+        },
+        "/notebooks/{id}/users": {
+            "get": {
+                "summary": "Get users for a notebook",
+                "description": "Get a list of users with access to a notebook",
+                "tags": ["Users"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Notebook id",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "produces": ["application/json"],
+                "security": {"Auth": []},
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/UserList",
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Add a user to a notebook",
+                "description": "Add a user to a notebook",
+                "tags": ["Users"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Notebook id",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "produces": ["application/json"],
+                "security": {"Auth": []},
+                "requestBody": {
+                    "description": "User Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "username": {"type": "string"},
+                                    "role": {"type": "string"},
+                                    "addrole": {"type": "boolean"}
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/UserList"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            }
+        },
+        "/users/{id}/admin": {
+            "post": {
+                "summary": "Set server admin status for a user",
+                "description": "Set server cluster-admin status for a user. Requires cluster-admin role.",
+                "tags": ["Users"],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "User id",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "produces": ["application/json"],
+                "security": {"Auth": []},
+                "requestBody": {
+                    "description": "User Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "username": {"type": "string"},
+                                    "addrole": {"type": "boolean"},
+                                    "role": {"type": "string", "enum": ["cluster-admin", "notebook-creator"]},
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "schema": {
+                            "$ref": "#/definitions/UserList"
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "NotebookMeta": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "Notebook": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "type": "object"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "ui-specification": {
+                    "type": "object"
+                },
+            }
+        },
+        "RecordList": {
+            "type": "object",
+            "properties": {
+                "records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Record"
+                    }
+                }
+            }
+        },
+        "Record": {
+            "type": "object",
+            "properties": {
+                "project_id": {"type": "string"},
+                "record_id": {"type": "string"},
+                "revision_id": {"type": "object"},
+                "type": {"type": "string"},
+                "data": {"type": "object"},
+                "annotations": {"type": "object"},
+                "field_types": {"type": "object"},
+                "relationship": {"type": "object"},
+                "deleted": {"type": "boolean"},
+                "updated_by": {"type": "string"},
+                "created_by": {"type": "string"},
+                "updated": {"type": "date-time"},
+                "created": {"type": "date-time"},
+            }
+        },
+        "UserList": {
+            "type": "object",
+            "properties": {
+                "roles": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/User"
+                    }
+                }
+            }
+        },
+        "User": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "username": {"type": "string"},
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "value": {"type": "string"}
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

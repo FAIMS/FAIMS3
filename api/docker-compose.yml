@@ -1,0 +1,80 @@
+version: "3.9"
+services:
+  couchdb:
+    image: couchdb:3@sha256:d341311cf03840dfb96a7c1bcf7ef5b6a6a4d2ac53e01e7a5095329cbe8cd37c
+    volumes: 
+      - type: volume
+        source: couchdb-data
+        target: /opt/couchdb/data
+      # mount local configuration containing admin user and keys
+      - './couchdb/:/opt/couchdb/etc/local.d'
+    ports:
+      - "0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984" 
+      
+    # volumes:
+    #   - ./couchdb/local.ini:/opt/couchdb/etc/local.d/local.ini
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD
+  conductor:
+    image: ghcr.io/faims/faims3-conductor:main
+    command: "npm start" 
+    ports:
+      - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
+    volumes:
+      # mount local configuration containing signing keys shared with couchdb
+      - './keys:/app/keys:ro'
+    environment:
+      #  note that some of these are pulled from the environment (.env) 
+      #  while others get values here if the value is known for 
+      #  docker-compose setup
+
+      - PROFILE_NAME
+      - CONDUCTOR_INSTANCE_NAME
+      
+      # COUCHDB_USER and COUCHDB_PASSWORD used by conductor as well
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD
+      - COUCHDB_INTERNAL_URL
+
+      # Where is this server running
+      - CONDUCTOR_EXTERNAL_PORT
+      - CONDUCTOR_INTERNAL_PORT
+
+
+      # Needed for conductor to talk to couchDB
+      - COUCHDB_PUBLIC_URL
+
+      # https://faimsproject.atlassian.net/wiki/spaces/FAIMS3/pages/151846960/FAIMS3+Conductor+build+run+environment+variables
+
+      # optional
+      - CLUSTER_ADMIN_GROUP_NAME
+
+      - FAIMS_COOKIE_SECRET
+
+      # public URL for accessing Conductor & CouchDB
+      - CONDUCTOR_PUBLIC_URL
+      - COMMIT_VERSION
+
+      - CONDUCTOR_AUTH_PROVIDERS
+      - CONDUCTOR_EMAIL_HOST_NAME
+      - CONDUCTOR_EMAIL_HOST_CONFIG
+ 
+      # https://faimsproject.atlassian.net/wiki/spaces/FAIMS3/pages/151846960/FAIMS3+Conductor+build+run+environment+variables#Authentication-Provider-Specific-environment-variables
+      - DATACENTRAL_GROUP_PREFIX
+      - DATACENTRAL_CLIENT_ID
+      - DATACENTRAL_CLIENT_SECRET
+      - HAVE_DATACENTRAL_MANAGE_ROLES=true
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+
+      - CONDUCTOR_EMAIL_FROM_ADDRESS
+      - CONDUCTOR_EMAIL_TRANSPORTER
+        #
+      # URLs for apps for this instance
+      - WEB_APP_PUBLIC_URL
+      - ANDROID_APP_PUBLIC_URL
+      - IOS_APP_PUBLIC_URL
+
+volumes:
+  couchdb-data:

@@ -1,0 +1,111 @@
+<div class="container">
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Home</a></li>
+    <li class="breadcrumb-item"><a href="/notebooks/">Notebooks</a></li>
+    <li class="breadcrumb-item"><a href="/notebooks/{{notebook.project_id}}">{{notebook.name}}</a></li>
+    <li class="breadcrumb-item" active aria-current="page">Users</li>
+  </ol>
+</nav>
+
+
+<h1>User Roles for {{notebook.name}}</h1>
+
+<div class="container">
+  <form id="add-user-form">
+    <input type="text" name="username" class="form-input" placeholder="Username or Email">
+    <input type="submit" value="Add User to Notebook">
+  </form>
+  <div id="message"></div>
+</div>
+
+
+<table class="table">
+    <thead>
+      <th>Name</th>
+      {{#each roles}}
+        <th>{{this}}</th>
+      {{/each}}
+    </thead>
+    <tbody>
+    {{#each users}}
+     <tr>
+      <th>{{this.name}} ({{this.username}})</th>
+      {{#each this.roles}}
+        <td>
+          <input type="checkbox" 
+            class="form-check-input" 
+            value="{{this.name}}"
+            id="role-{{../this.username}}-{{this}}"
+            data-username="{{../this.username}}"
+            {{#if this.value}}checked{{/if}}>
+        </td>
+      {{/each}}
+      </tr>
+    {{/each}}
+    </tbody>
+</table>
+
+</div>
+
+<script>
+function formHandler(event) {
+  event.preventDefault();
+  const url = '/api/notebooks/{{notebook.project_id}}/users/';
+  const form = event.target;
+  const username = form.querySelector('[name="username"]').value;
+  if (username) {
+      const data = {
+        username: username,
+        role: "user",
+        addrole: true
+      }
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          window.location.reload();
+        } else {
+          document.getElementById('message').innerText = data.error;
+        }
+      });
+  }
+}
+document.getElementById('add-user-form').onsubmit = formHandler;
+
+function handleRoleChange(event) {
+  const url = '/api/notebooks/{{notebook.project_id}}/users/';
+  const target = event.target;
+  const data = {
+    username: target.dataset.username,
+    role: target.value,
+    addrole: target.checked  // true/false
+  }
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status !== 'success') {
+      target.checked = !target.checked;
+      document.getElementById('message').innerText = data.error;
+    }
+  });
+}
+
+const inputs = document.getElementsByClassName('form-check-input')
+
+for(let i=0; i<inputs.length; i++) {
+  inputs[i].onclick = handleRoleChange;
+}
+</script>
