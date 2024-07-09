@@ -23,7 +23,7 @@ import {CircularProgress, Chip} from '@mui/material';
 
 import {getProjectMetadata} from '../../projectMetadata';
 import {ProjectID} from 'faims3-datamodel';
-import {listenProjectDB} from '../../sync';
+import {listenProjectDB} from '../../sync/projects';
 import {useEventedPromise, constantArgsSplit} from '../pouchHook';
 import {DEBUG_APP} from '../../buildconfig';
 

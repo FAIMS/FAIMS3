@@ -31,7 +31,8 @@ import {
   Switch,
 } from '@mui/material';
 
-import {getProjectInfo, listenProjectInfo} from '../../../../databaseAccess';
+import {listenProjectInfo} from '../../../../sync/projects';
+import {getProjectInfo} from '../../../../sync/projects';
 import {useEventedPromise, constantArgsShared} from '../../../pouchHook';
 import {ProjectInformation} from 'faims3-datamodel';
 import {ProjectID} from 'faims3-datamodel';

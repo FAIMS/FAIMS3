@@ -9,7 +9,7 @@ import AddIcon from '@mui/icons-material/Add';
 
 import * as ROUTES from '../../../constants/routes';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import {listenProjectDB} from '../../../sync';
+import { listenProjectDB } from '../../../sync/projects';
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {

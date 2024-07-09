@@ -29,20 +29,12 @@
  *   (Sync refactor)
  */
 
-import {DEBUG_APP} from './buildconfig';
-import {
-  ProjectID,
-  ListingID,
-  split_full_project_id,
-  resolve_project_id,
-} from 'faims3-datamodel';
+import {ListingID, resolve_project_id} from 'faims3-datamodel';
 import {ProjectObject} from 'faims3-datamodel';
 import {ProjectInformation, ListingInformation} from 'faims3-datamodel';
-import {all_projects_updated, createdListings} from './sync/state';
+import {createdListings} from './sync/state';
 import {events} from './sync/events';
 import {getAllListings} from './sync';
-import {listenProject} from './sync/projects';
-import {getProject} from './sync/projects';
 import {shouldDisplayProject} from './users';
 import {projectIsActivated} from './sync/projects';
 
@@ -107,46 +99,6 @@ export function listenProjectList(listener: () => void): () => void {
     // Event remover
     events.removeListener('project_update', listener);
   };
-}
-
-export async function getProjectInfo(
-  project_id: ProjectID
-): Promise<ProjectInformation> {
-  const proj = await getProject(project_id);
-
-  const split_id = split_full_project_id(project_id);
-  return {
-    project_id: project_id,
-    name: proj.project.name,
-    description: proj.project.description || 'No description',
-    last_updated: proj.project.last_updated || 'Unknown',
-    created: proj.project.created || 'Unknown',
-    status: proj.project.status || 'Unknown',
-    is_activated: true,
-    listing_id: split_id.listing_id,
-    non_unique_project_id: split_id.project_id,
-  };
-}
-
-export function listenProjectInfo(
-  project_id: ProjectID,
-  listener: () => unknown | Promise<void>,
-  error: (err: any) => void
-): () => void {
-  return listenProject(
-    project_id,
-    (value, throw_error) => {
-      const retval = listener();
-      if (DEBUG_APP) {
-        console.log('listenProjectInfo', value, throw_error, retval);
-      }
-      if (typeof retval === 'object' && retval !== null && 'catch' in retval) {
-        (retval as {catch: (err: unknown) => unknown}).catch(throw_error);
-      }
-      return 'noop';
-    },
-    error
-  );
 }
 
 export async function getSyncableListingsInfo(): Promise<ListingInformation[]> {

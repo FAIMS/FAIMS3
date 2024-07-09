@@ -43,7 +43,8 @@ import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {generateFAIMSDataID} from 'faims3-datamodel';
-import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
+import { listenProjectInfo } from '../../sync/projects';
+import { getProjectInfo } from '../../sync/projects';
 import {ProjectID, RecordID} from 'faims3-datamodel';
 import {
   ProjectUIModel,

@@ -22,7 +22,6 @@ import {
   ProjectObject,
   ProjectMetaObject,
   ProjectDataObject,
-  ProjectsList,
   ProjectInformation,
   split_full_project_id,
   ProjectID,
@@ -67,10 +66,21 @@ export type createdProjectsInterface = {
 
 const createdProjects: {[key: string]: createdProjectsInterface} = {};
 
+/**
+ * projectIsActivated
+ * @param project_id Project identifier
+ * @returns True if the project is activated for this user
+ */
 export const projectIsActivated = (project_id: string) => {
   return createdProjects[project_id] !== undefined;
 };
 
+/**
+ * Get pointers to the databases for a project
+ * @param project_id Project identifier
+ * @returns The createdProjectInterface record for this project
+ * @throws an error if the project is not known
+ */
 export const getProject = async (
   project_id: ProjectID
 ): Promise<createdProjectsInterface> => {
@@ -85,31 +95,304 @@ export const getProject = async (
 };
 
 /**
- * Return all active projects the user has access to.
+ * Get the details of a project
+ * Used in a few places just to get the name of the project and in
+ * NotebookComponent to get the description etc to display
+ *
+ * @param project_id Project Identifier
+ * @returns the ProjectInformation record for this project
+ */
+export async function getProjectInfo(
+  project_id: ProjectID
+): Promise<ProjectInformation> {
+  const proj = await getProject(project_id);
+
+  return formatProjectInformation(project_id, proj);
+}
+
+/**
+ * Get all active projects the user has access to.
+ *  Used to get the list of active projects to create the side menu
+ * @returns an array of ProjectInformation records
  */
 export const getActiveProjectList = async (): Promise<ProjectInformation[]> => {
   //await waitForStateOnce(() => all_projects_updated);
 
   const output: ProjectInformation[] = [];
-  for (const listing_id_project_id in createdProjects) {
-    if (await shouldDisplayProject(listing_id_project_id)) {
-      const split_id = split_full_project_id(listing_id_project_id);
-      output.push({
-        name: createdProjects[listing_id_project_id].project.name,
-        description: createdProjects[listing_id_project_id].project.description,
-        last_updated:
-          createdProjects[listing_id_project_id].project.last_updated,
-        created: createdProjects[listing_id_project_id].project.created,
-        status: createdProjects[listing_id_project_id].project.status,
-        project_id: listing_id_project_id,
-        is_activated: true,
-        listing_id: split_id.listing_id,
-        non_unique_project_id: split_id.project_id,
-      });
+  for (const project_id in createdProjects) {
+    if (await shouldDisplayProject(project_id)) {
+      output.push(
+        formatProjectInformation(project_id, createdProjects[project_id])
+      );
     }
   }
-  console.log('returning active projects', output);
   return output;
+};
+
+/**
+ * Create a project information record in the appropriate format
+ *
+ * @param project_id Project identifier
+ * @param proj createdProjectInterface record (from createdProjects global)
+ * @returns The ProjectInformation record
+ */
+function formatProjectInformation(
+  project_id: string,
+  proj: createdProjectsInterface
+) {
+  const split_id = split_full_project_id(project_id);
+  return {
+    project_id: project_id,
+    name: proj.project.name,
+    description: proj.project.description || 'No description',
+    last_updated: proj.project.last_updated || 'Unknown',
+    created: proj.project.created || 'Unknown',
+    status: proj.project.status || 'Unknown',
+    is_activated: true,
+    listing_id: split_id.listing_id,
+    non_unique_project_id: split_id.project_id,
+  };
+}
+
+/**
+ * Deletes a project
+ *
+ * Guaranteed to emit the project_updated event before first suspend point
+ *
+ * @param active_doc an ActiveDoc object with connection info
+ * @param project_object Project to delete/undelete
+ */
+export function delete_project(
+  active_doc: ExistingActiveDoc,
+  project_object: ProjectObject
+) {
+  console.log('Deleting project', active_doc, project_object);
+  // Delete project from memory
+  const project_id = active_doc.project_id;
+
+  if (metadata_dbs[project_id].remote?.connection !== null) {
+    metadata_dbs[project_id].local.removeAllListeners();
+    metadata_dbs[project_id].remote!.connection!.cancel();
+  }
+
+  if (data_dbs[project_id].remote?.connection !== null) {
+    data_dbs[project_id].local.removeAllListeners();
+    data_dbs[project_id].remote!.connection!.cancel();
+  }
+
+  delete metadata_dbs[active_doc._id];
+  delete data_dbs[active_doc._id];
+  delete createdProjects[active_doc._id];
+
+  // DON'T MOVE THIS PAST AN AWAIT POINT
+  events.emit(
+    'project_update',
+    ['delete'],
+    false,
+    false,
+    active_doc,
+    project_object
+  );
+}
+
+/**
+ * Creates or updates the local DBs for a project, using the info
+ * The databases might already exist in browser local storage, but this
+ * creates the corresponding PouchDBs.
+ *
+ * Sync start/end events are emitted.
+ *
+ * Guaranteed to emit the project_updated event before first suspend point
+ *
+ * @param active_doc an ActiveDoc object with project connection info
+ * @param project_object Project to update/create local DB
+ */
+
+export async function ensure_project_databases(
+  active_doc: ExistingActiveDoc,
+  project_object: ProjectObject
+): Promise<void> {
+  /**
+   * Each project needs to know it's active_id to lookup the local
+   * metadata/data databases.
+   */
+  const active_id = active_doc._id;
+
+  // get meta and data databases for the active project
+  const [meta_did_change, meta_local] = ensure_local_db(
+    'metadata',
+    active_id,
+    active_doc.is_sync,
+    metadata_dbs,
+    true
+  );
+  const [data_did_change, data_local] = ensure_local_db(
+    'data',
+    active_id,
+    active_doc.is_sync,
+    data_dbs,
+    active_doc.is_sync_attachments
+  );
+
+  // These createdProjects objects are created as soon as possible
+  // (As soon as the DBs are available)
+  const old_value = createdProjects?.[active_id];
+  createdProjects[active_id] = {
+    project: project_object,
+    active: active_doc,
+    meta: meta_local,
+    data: data_local,
+  };
+
+  // DON'T MOVE THIS PAST AN AWAIT POINT
+  events.emit(
+    'project_update',
+    old_value === undefined ? ['create'] : ['update', old_value],
+    data_did_change,
+    meta_did_change,
+    active_doc,
+    project_object
+  );
+
+  if (meta_did_change) {
+    events.emit('meta_sync_state', true, active_doc, project_object);
+  }
+
+  if (data_did_change) {
+    events.emit('data_sync_state', true, active_doc, project_object);
+  }
+  const meta_pause = (_message?: string) => () => {
+    if (!meta_did_change) return;
+    events.emit('meta_sync_state', false, active_doc, project_object);
+  };
+
+  const data_pause = (_message?: string) => () => {
+    if (!data_did_change) return;
+    events.emit('data_sync_state', false, active_doc, project_object);
+  };
+
+  // Connect to remote databases
+  // If we must sync with a remote endpoint immediately,
+  // do it here: (Otherwise, emit 'paused' anyway to allow
+  // other parts of FAIMS to continue)
+  const jwt_token = await getTokenForCluster(active_doc.listing_id);
+
+  // SC: this little dance is because the db_name in PossibleConnectionObject
+  // which is the type of metadata_db in the project object is possibly
+  // undefined.  This should really not be the case.
+  // TODO: make sure that all project objects have a proper db_name
+  let metadata_db_name;
+  if (project_object.metadata_db?.db_name)
+    metadata_db_name = project_object.metadata_db.db_name;
+  else metadata_db_name = 'metadata-' + project_object._id;
+
+  const meta_connection_info: ConnectionInfo = {
+    jwt_token: jwt_token,
+    db_name: metadata_db_name,
+    ...project_object.metadata_db,
+  };
+
+  let data_db_name;
+  if (project_object.data_db?.db_name)
+    data_db_name = project_object.data_db.db_name;
+  else data_db_name = 'data-' + project_object._id;
+
+  const data_connection_info: ConnectionInfo = {
+    jwt_token: jwt_token,
+    db_name: data_db_name,
+    ...project_object.data_db,
+  };
+
+  console.log('update_project data connection', data_connection_info);
+
+  // set up remote sync of metadata database
+  const [, meta_remote] = ensure_synced_db(
+    active_id,
+    meta_connection_info,
+    metadata_dbs
+  );
+
+  if (meta_remote.remote !== null && meta_remote.remote.connection !== null) {
+    meta_remote.remote.connection!.once('paused', meta_pause('Sync'));
+    meta_remote.remote
+      .connection!.on('active', () => {
+        console.debug('Meta sync started up again', active_id);
+        throttled_ping_sync_down();
+      })
+      .on('denied', err => {
+        console.debug('Meta sync denied', active_id, err);
+        ping_sync_denied();
+      })
+      .on('error', (err: any) => {
+        if (err.status === 401) {
+          console.debug('Meta sync waiting on auth', active_id);
+        } else {
+          console.debug('Meta sync error', active_id, err);
+          ping_sync_error();
+        }
+      });
+
+    // set up remote sync for data database
+    const [, data_remote] = ensure_synced_db(
+      active_id,
+      data_connection_info,
+      data_dbs,
+      {
+        push: {},
+        pull: {},
+      }
+    );
+
+    if (data_remote.remote !== null && data_remote.remote.connection !== null) {
+      data_remote.remote.connection!.once('paused', data_pause('Sync'));
+      data_remote.remote
+        .connection!.on('active', () => {
+          console.debug('Data sync started up again', active_id);
+          throttled_ping_sync_down();
+          throttled_ping_sync_up();
+        })
+        .on('denied', err => {
+          console.debug('Data sync denied', active_id, err);
+          ping_sync_denied();
+        })
+        .on('error', (err: any) => {
+          if (err.status === 401) {
+            console.debug('Data sync waiting on auth', active_id);
+          } else {
+            console.debug('Data sync error', active_id, err);
+            ping_sync_error();
+          }
+        });
+    } else {
+      data_pause('No Sync')();
+    }
+  } else {
+    meta_pause('Local-only; No Sync')();
+    data_pause('Local-only; No Sync')();
+  }
+}
+/**   Listeners
+ *
+ * These functions set up listeners on the projects database so that
+ * parts of the UI can be responsive to changes in PouchDB.
+ *
+ */
+
+/** add a listener for changes on the local project database for a project
+ *   listener will be called for any change in the database and passed
+ *   the changed document as an argument
+ * @param project_id - project id we are listening for
+ * @param handler - handler function
+ */
+export const addProjectListener = (
+  project_id: ProjectID,
+  handler: (doc: any) => Promise<void>
+) => {
+  createdProjects[project_id]!.data.local.changes({
+    since: 'now',
+    live: true,
+    include_docs: true,
+  }).on('change', handler);
 };
 
 /**
@@ -151,7 +434,6 @@ export const getActiveProjectList = async (): Promise<ProjectInformation[]> => {
  *     * errors in the destructor from listener
  * @returns Detach function: call this to stop all changes
  */
-
 export const listenProject = (
   project_id: ProjectID,
   listener: (
@@ -348,239 +630,126 @@ export const listenProject = (
 };
 
 /**
- * Deletes a project
  *
- * Guaranteed to emit the project_updated event before first suspend point
- *
- * @param active_doc an ActiveDoc object with connection info
- * @param project_object Project to delete/undelete
+ * @param project_id Project Id to listen on the DB for
+ * @param listener callback function called on any change
+ * @param error callback function called on any error
+ * @returns
  */
-function delete_project(
-  active_doc: ExistingActiveDoc,
-  project_object: ProjectObject
-) {
-  console.log('Deleting project', active_doc, project_object);
-  // Delete project from memory
-  const project_id = active_doc.project_id;
-
-  if (metadata_dbs[project_id].remote?.connection !== null) {
-    metadata_dbs[project_id].local.removeAllListeners();
-    metadata_dbs[project_id].remote!.connection!.cancel();
-  }
-
-  if (data_dbs[project_id].remote?.connection !== null) {
-    data_dbs[project_id].local.removeAllListeners();
-    data_dbs[project_id].remote!.connection!.cancel();
-  }
-
-  delete metadata_dbs[active_doc._id];
-  delete data_dbs[active_doc._id];
-  delete createdProjects[active_doc._id];
-
-  // DON'T MOVE THIS PAST AN AWAIT POINT
-  events.emit(
-    'project_update',
-    ['delete'],
-    false,
-    false,
-    active_doc,
-    project_object
+export function listenProjectInfo(
+  project_id: ProjectID,
+  listener: () => unknown | Promise<void>,
+  error: (err: any) => void
+): () => void {
+  return listenProject(
+    project_id,
+    (value, throw_error) => {
+      const retval = listener();
+      if (DEBUG_APP) {
+        console.log('listenProjectInfo', value, throw_error, retval);
+      }
+      if (typeof retval === 'object' && retval !== null && 'catch' in retval) {
+        (retval as {catch: (err: unknown) => unknown}).catch(throw_error);
+      }
+      return 'noop';
+    },
+    error
   );
 }
 
 /**
- * Creates or updates the local DBs for a project, using the info
- * The databases might already exist in browser local storage, but this
- * creates the corresponding PouchDBs.
+ * Allows you to listen for changes from a Project's Meta DB.
+ * This is a working alternative to getProjectDB.changes
+ * (as getProjectDB.changes that may detach after updates to the owning listing
+ * or the owning active DB, or if the sync is toggled on/off)
  *
- * Sync start/end events are emitted.
- *
- * Guaranteed to emit the project_updated event before first suspend point
- *
- * @param active_doc an ActiveDoc object with project connection info
- * @param project_object Project to update/create local DB
+ * @param active_id Project ID to listen on the DB for.
+ * @param change_opts
+ * @param change_listener
+ * @param error_listener
+ * @returns Detach function: call this to stop all changes
  */
 
-export async function ensure_project_databases(
-  active_doc: ExistingActiveDoc,
-  project_object: ProjectObject
-): Promise<void> {
-  /**
-   * Each project needs to know it's active_id to lookup the local
-   * metadata/data databases.
-   */
-  const active_id = active_doc._id;
-  console.debug('Ensure project databases', active_doc, project_object);
-
-  // get meta and data databases for the active project
-  const [meta_did_change, meta_local] = ensure_local_db(
-    'metadata',
+export function listenProjectDB(
+  active_id: ProjectID,
+  change_opts: PouchDB.Core.ChangesOptions,
+  change_listener: (
+    value: PouchDB.Core.ChangesResponseChange<ProjectMetaObject>
+  ) => any,
+  error_listener: (value: any) => any
+): () => void {
+  return listenProject(
     active_id,
-    active_doc.is_sync,
-    metadata_dbs,
-    true
-  );
-  const [data_did_change, data_local] = ensure_local_db(
-    'data',
-    active_id,
-    active_doc.is_sync,
-    data_dbs,
-    active_doc.is_sync_attachments
-  );
-
-  // These createdProjects objects are created as soon as possible
-  // (As soon as the DBs are available)
-  const old_value = createdProjects?.[active_id];
-  createdProjects[active_id] = {
-    project: project_object,
-    active: active_doc,
-    meta: meta_local,
-    data: data_local,
-  };
-
-  // DON'T MOVE THIS PAST AN AWAIT POINT
-  events.emit(
-    'project_update',
-    old_value === undefined ? ['create'] : ['update', old_value],
-    data_did_change,
-    meta_did_change,
-    active_doc,
-    project_object
-  );
-
-  if (meta_did_change) {
-    events.emit('meta_sync_state', true, active_doc, project_object);
-  }
-
-  if (data_did_change) {
-    events.emit('data_sync_state', true, active_doc, project_object);
-  }
-  const meta_pause = (message?: string) => () => {
-    if (!meta_did_change) return;
-    console.debug(`Metadata settled for ${active_id} (${message})`);
-    events.emit('meta_sync_state', false, active_doc, project_object);
-  };
-
-  const data_pause = (message?: string) => () => {
-    if (!data_did_change) return;
-    console.debug(`Data settled for ${active_id} (${message})`);
-    events.emit('data_sync_state', false, active_doc, project_object);
-  };
-
-  // Connect to remote databases
-  // If we must sync with a remote endpoint immediately,
-  // do it here: (Otherwise, emit 'paused' anyway to allow
-  // other parts of FAIMS to continue)
-  const jwt_token = await getTokenForCluster(active_doc.listing_id);
-
-  // SC: this little dance is because the db_name in PossibleConnectionObject
-  // which is the type of metadata_db in the project object is possibly
-  // undefined.  This should really not be the case.
-  // TODO: make sure that all project objects have a proper db_name
-  let metadata_db_name;
-  if (project_object.metadata_db?.db_name)
-    metadata_db_name = project_object.metadata_db.db_name;
-  else metadata_db_name = 'metadata-' + project_object._id;
-
-  const meta_connection_info: ConnectionInfo = {
-    jwt_token: jwt_token,
-    db_name: metadata_db_name,
-    ...project_object.metadata_db,
-  };
-
-  let data_db_name;
-  if (project_object.data_db?.db_name)
-    data_db_name = project_object.data_db.db_name;
-  else data_db_name = 'data-' + project_object._id;
-
-  const data_connection_info: ConnectionInfo = {
-    jwt_token: jwt_token,
-    db_name: data_db_name,
-    ...project_object.data_db,
-  };
-
-  console.log('update_project data connection', data_connection_info);
-
-  // set up remote sync of metadata database
-  const [, meta_remote] = ensure_synced_db(
-    active_id,
-    meta_connection_info,
-    metadata_dbs
-  );
-
-  if (meta_remote.remote !== null && meta_remote.remote.connection !== null) {
-    meta_remote.remote.connection!.once('paused', meta_pause('Sync'));
-    meta_remote.remote
-      .connection!.on('active', () => {
-        console.debug('Meta sync started up again', active_id);
-        throttled_ping_sync_down();
-      })
-      .on('denied', err => {
-        console.debug('Meta sync denied', active_id, err);
-        ping_sync_denied();
-      })
-      .on('error', (err: any) => {
-        if (err.status === 401) {
-          console.debug('Meta sync waiting on auth', active_id);
-        } else {
-          console.debug('Meta sync error', active_id, err);
-          ping_sync_error();
-        }
-      });
-
-    // set up remote sync for data database
-    const [, data_remote] = ensure_synced_db(
-      active_id,
-      data_connection_info,
-      data_dbs,
-      {
-        push: {},
-        pull: {},
+    (project, throw_error, meta_changed) => {
+      if (meta_changed) {
+        const changes = project.meta.local.changes(change_opts);
+        changes.on('change', change_listener);
+        changes.on('error', throw_error);
+        return changes.cancel.bind(changes);
+      } else {
+        return 'keep';
       }
-    );
-
-    if (data_remote.remote !== null && data_remote.remote.connection !== null) {
-      data_remote.remote.connection!.once('paused', data_pause('Sync'));
-      data_remote.remote
-        .connection!.on('active', () => {
-          console.debug('Data sync started up again', active_id);
-          throttled_ping_sync_down();
-          throttled_ping_sync_up();
-        })
-        .on('denied', err => {
-          console.debug('Data sync denied', active_id, err);
-          ping_sync_denied();
-        })
-        .on('error', (err: any) => {
-          if (err.status === 401) {
-            console.debug('Data sync waiting on auth', active_id);
-          } else {
-            console.debug('Data sync error', active_id, err);
-            ping_sync_error();
-          }
-        });
-    } else {
-      data_pause('No Sync')();
-    }
-  } else {
-    meta_pause('Local-only; No Sync')();
-    data_pause('Local-only; No Sync')();
-  }
+    },
+    error_listener
+  );
 }
 
-/** add a listener for changes on the local project database for a project
- *   listener will be called for any change in the database and passed
- *   the changed document as an argument
- * @param project_id - project id we are listening for
- * @param handler - handler function
+/**
+ * Allows you to listen for changes from a Project's Data DB.
+ * This is a working alternative to getDataDB.changes
+ * (as getDataDB.changes that may detach after updates to the owning listing
+ * or the owning active DB, or if the sync is toggled on/off)
+ *
+ * @param active_id Project ID to listen on the DB for.
+ * @param change_opts
+ * @param change_listener
+ * @param error_listener
+ * @returns Detach function: call this to stop all changes
  */
-export const addProjectListener = (
-  project_id: ProjectID,
-  handler: (doc: any) => Promise<void>
-) => {
-  createdProjects[project_id]!.data.local.changes({
-    since: 'now',
-    live: true,
-    include_docs: true,
-  }).on('change', handler);
-};
+
+export function listenDataDB(
+  active_id: ProjectID,
+  change_opts: PouchDB.Core.ChangesOptions,
+  change_listener: (
+    value: PouchDB.Core.ChangesResponseChange<ProjectDataObject>
+  ) => any,
+  error_listener: (value: any) => any
+): () => void {
+  console.log('listenDataBD starting', active_id);
+  return listenProject(
+    active_id,
+    (project, throw_error, _meta_changed, data_changed) => {
+      if (DEBUG_APP) {
+        console.info(
+          'listenDataDB changed',
+          project,
+          throw_error,
+          _meta_changed,
+          data_changed
+        );
+      }
+      if (data_changed) {
+        const changes = project.data.local.changes(change_opts);
+        changes.on(
+          'change',
+          (value: PouchDB.Core.ChangesResponseChange<ProjectDataObject>) => {
+            if (DEBUG_APP) {
+              console.debug('listenDataDB changes', value);
+            }
+            return change_listener(value);
+          }
+        );
+        changes.on('error', throw_error);
+        return () => {
+          if (DEBUG_APP) {
+            console.info('listenDataDB cleanup called');
+          }
+          changes.cancel();
+        };
+      } else {
+        return 'keep';
+      }
+    },
+    error_listener
+  );
+}

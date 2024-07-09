@@ -36,7 +36,7 @@ import {
   getRecordsWithRegex,
 } from 'faims3-datamodel';
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
-import {listenDataDB} from '../../../sync';
+import { listenDataDB } from '../../../sync/projects';
 import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import getLocalDate from '../../fields/LocalDate';

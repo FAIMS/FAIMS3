@@ -15,7 +15,7 @@
  *
  * Filename: index.ts
  * Description:
- *   TODO
+ *   Code used in the initialisation of the app, getting database and projects etc.
  */
 import {CONDUCTOR_URL} from '../buildconfig';
 import {

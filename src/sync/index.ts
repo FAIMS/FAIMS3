@@ -25,7 +25,6 @@ import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import pouchdbDebug from 'pouchdb-debug';
 import {ProjectID} from 'faims3-datamodel';
-import {DEBUG_APP} from '../buildconfig';
 import {ProjectDataObject, ProjectMetaObject} from 'faims3-datamodel';
 import {
   data_dbs,
@@ -33,8 +32,6 @@ import {
   metadata_dbs,
   directory_db,
 } from './databases';
-import {all_projects_updated} from './state';
-import {listenProject} from './projects';
 
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(pouchdbDebug);
@@ -115,64 +112,6 @@ export async function getDataDB(
 }
 
 /**
- * Allows you to listen for changes from a Project's Data DB.
- * This is a working alternative to getDataDB.changes
- * (as getDataDB.changes that may detach after updates to the owning listing
- * or the owning active DB, or if the sync is toggled on/off)
- *
- * @param active_id Project ID to listen on the DB for.
- * @param change_opts
- * @param change_listener
- * @param error_listener
- * @returns Detach function: call this to stop all changes
- */
-export function listenDataDB(
-  active_id: ProjectID,
-  change_opts: PouchDB.Core.ChangesOptions,
-  change_listener: (
-    value: PouchDB.Core.ChangesResponseChange<ProjectDataObject>
-  ) => any,
-  error_listener: (value: any) => any
-): () => void {
-  return listenProject(
-    active_id,
-    (project, throw_error, _meta_changed, data_changed) => {
-      if (DEBUG_APP) {
-        console.info(
-          'listenDataDB changed',
-          project,
-          throw_error,
-          _meta_changed,
-          data_changed
-        );
-      }
-      if (data_changed) {
-        const changes = project.data.local.changes(change_opts);
-        changes.on(
-          'change',
-          (value: PouchDB.Core.ChangesResponseChange<ProjectDataObject>) => {
-            if (DEBUG_APP) {
-              console.debug('listenDataDB changes', value);
-            }
-            return change_listener(value);
-          }
-        );
-        changes.on('error', throw_error);
-        return () => {
-          if (DEBUG_APP) {
-            console.info('listenDataDB cleanup called');
-          }
-          changes.cancel();
-        };
-      } else {
-        return 'keep';
-      }
-    },
-    error_listener
-  );
-}
-
-/**
  * Returns the current Meta PouchDB of a project. This waits for the initial
  * sync to finish enough to know if the project exists or not before returning
  * (Hence, use this instead of createdProjects)
@@ -193,42 +132,6 @@ export async function getProjectDB(
   } else {
     throw `Project ${active_id} is not known`;
   }
-}
-
-/**
- * Allows you to listen for changes from a Project's Meta DB.
- * This is a working alternative to getProjectDB.changes
- * (as getProjectDB.changes that may detach after updates to the owning listing
- * or the owning active DB, or if the sync is toggled on/off)
- *
- * @param active_id Project ID to listen on the DB for.
- * @param change_opts
- * @param change_listener
- * @param error_listener
- * @returns Detach function: call this to stop all changes
- */
-export function listenProjectDB(
-  active_id: ProjectID,
-  change_opts: PouchDB.Core.ChangesOptions,
-  change_listener: (
-    value: PouchDB.Core.ChangesResponseChange<ProjectMetaObject>
-  ) => any,
-  error_listener: (value: any) => any
-): () => void {
-  return listenProject(
-    active_id,
-    (project, throw_error, meta_changed) => {
-      if (meta_changed) {
-        const changes = project.meta.local.changes(change_opts);
-        changes.on('change', change_listener);
-        changes.on('error', throw_error);
-        return changes.cancel.bind(changes);
-      } else {
-        return 'keep';
-      }
-    },
-    error_listener
-  );
 }
 
 // Get all 'listings' (conductor server links) from the local directory database

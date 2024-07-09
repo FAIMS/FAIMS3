@@ -38,7 +38,8 @@ import TabPanel from '@mui/lab/TabPanel';
 import {ActionType} from '../../context/actions';
 
 import * as ROUTES from '../../constants/routes';
-import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
+import { listenProjectInfo } from '../../sync/projects';
+import {getProjectInfo} from '../../sync/projects';
 import {
   ProjectID,
   RecordID,
@@ -114,6 +115,7 @@ export default function Record() {
 
   const [value, setValue] = React.useState('1');
 
+  // getting project info here but we only really want the name
   let project_info: ProjectInformation | null;
   try {
     project_info = useEventedPromise(
