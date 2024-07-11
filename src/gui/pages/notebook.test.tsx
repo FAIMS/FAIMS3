@@ -61,7 +61,7 @@ vi.mock('react-router-dom', () => {
   };
 });
 
-vi.mock('../../databaseAccess', () => ({
+vi.mock('../../sync/projects', () => ({
   getProjectInfo: mockGetProjectInfo,
 }));
 

@@ -20,29 +20,42 @@
  *
  */
 
-import {EncodedProjectUIModel, ProjectID, ProjectObject} from 'faims3-datamodel';
+import {EncodedProjectUIModel} from 'faims3-datamodel';
 import {getProjectDB} from '.';
 import {getTokenForCluster} from '../users';
-import {createdListingsInterface, getListing} from './state';
-import {ListingsObject} from './databases';
+import {createdListingsInterface} from './state';
 
 export type PropertyMap = {
   [key: string]: unknown;
 };
+
+/**
+ * A subset of createdListingInterface - just the bits we
+ * need to make testing easier
+ */
+type minimalCreatedListing =
+  | createdListingsInterface
+  | {
+      listing: {
+        _id: string;
+        conductor_url: string;
+      };
+    };
+
 /**
  * Fetch project metadata from the server and store it locally for
  * later access.
  *
- * @param project_id project identifier
+ * @param lst a createdListing entry (or subset for testing)
+ * @param project_id short project identifier
  */
 export const fetchProjectMetadata = async (
-  lst: createdListingsInterface,
+  lst: minimalCreatedListing,
   project_id: string
 ) => {
   const url = `${lst.listing.conductor_url}/api/notebooks/${project_id}`;
   const jwt_token = await getTokenForCluster(lst.listing._id);
   const full_project_id = lst.listing._id + '||' + project_id;
-  console.log('requesting', url);
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${jwt_token}`,
@@ -52,11 +65,8 @@ export const fetchProjectMetadata = async (
   const metadata = notebook.metadata;
   const uiSpec = notebook['ui-specification'] as EncodedProjectUIModel;
 
-  console.log('notebook', notebook);
-
   // store them in the local database
   const metaDB = await getProjectDB(full_project_id);
-
   try {
     const existing = await metaDB.get('metadata');
     metadata._rev = existing._rev;
@@ -71,16 +81,22 @@ export const fetchProjectMetadata = async (
     // nop
   }
 
-  // insert the two documents
-  metaDB.put({
-    ...metadata,
-    _id: 'metadata',
-  });
+  console.log('inserting documents');
 
-  metaDB.put({
-    ...uiSpec,
-    _id: 'ui-specification',
-  });
+  try {
+    // insert the two documents
+    metaDB.put({
+      ...metadata,
+      _id: 'metadata',
+    });
+
+    metaDB.put({
+      ...uiSpec,
+      _id: 'ui-specification',
+    });
+  } catch {
+    console.log('something went wrong');
+  }
 };
 
 /**
@@ -118,4 +134,4 @@ export const getAllMetadata = async (project_id: string) => {
   } catch {
     return undefined;
   }
-}
+};

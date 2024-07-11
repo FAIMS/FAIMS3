@@ -39,7 +39,6 @@ it('renders from the uiSpec', async () => {
   };
 
   const {container} = instantiateField(uiSpec, initialValues);
-  console.log('XXXX', container.innerHTML);
   expect(container.innerHTML).toContain('<strong>World</strong>');
 });
 

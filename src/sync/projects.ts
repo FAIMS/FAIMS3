@@ -370,7 +370,7 @@ export async function ensure_project_databases(
   );
 
   if (data_remote.remote !== null && data_remote.remote.connection !== null) {
-    data_remote.remote.connection!.once('paused', data_pause('Sync'));
+    data_remote.remote.connection!.once('paused', data_pause());
     data_remote.remote
       .connection!.on('active', () => {
         console.debug('Data sync started up again', active_id);

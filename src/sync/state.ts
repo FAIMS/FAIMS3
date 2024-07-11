@@ -19,12 +19,8 @@
  */
 
 import {ProjectID} from 'faims3-datamodel';
-import {
-  ProjectObject,
-  ProjectMetaObject,
-  isRecord,
-  mergeHeads,
-} from 'faims3-datamodel';
+import {ProjectObject} from './projects';
+import {ProjectMetaObject, isRecord, mergeHeads} from 'faims3-datamodel';
 
 import {ListingsObject, ActiveDoc, LocalDB} from './databases';
 import {DirectoryEmitter} from './events';
@@ -37,16 +33,54 @@ export type createdListingsInterface = {
 };
 
 /**
- * This is appended to whenever a listing has its
- * projects/people dbs come into existence. (Each individual project
- * isn't guaranteed to be in the createdProjects object. Use the
- * data_sync_state or project_update events to listen for such changes)
+ * An object that holds listings and pointers to the local
+ * projects database for all listings (servers) we know about.
+ * Accessed via the API functions below.
  *
- * This is the way to get ListingsObjects
- *
- * Created/Modified by update_listing in process-initialization.ts
  */
-export const createdListings: {[key: string]: createdListingsInterface} = {};
+const createdListings: {[key: string]: createdListingsInterface} = {};
+
+/**
+ * Add a created listing record
+ * @param listing_id listing identifier
+ * @param listing Listing object to insert
+ */
+export const addOrUpdateListing = (
+  listing_id: string,
+  listing: ListingsObject,
+  project_db: LocalDB<ProjectObject>
+) => {
+  createdListings[listing_id] = {
+    listing: listing,
+    projects: project_db,
+  };
+};
+
+/**
+ * Get the listing record for a listing id
+ * @param listing_id a listing identifier
+ * @returns the listing if present, undefined if not
+ */
+export const getListing = (listing_id: string) => {
+  return createdListings[listing_id];
+};
+
+/**
+ * Delete a listing from the known list
+ * @param listing_id listing identifier
+ */
+export const deleteListing = (listing_id: string) => {
+  if (createdListings[listing_id] !== undefined)
+    delete createdListings[listing_id];
+};
+
+/**
+ * Get all listing ids we know about.
+ * @returns an array of known listing ids
+ */
+export const getAllListingIDs = () => {
+  return Object.getOwnPropertyNames(createdListings);
+};
 
 /**
  * Value:  all listings are reasonably 'known' (i.e. the directory has

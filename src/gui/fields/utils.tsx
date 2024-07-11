@@ -76,6 +76,5 @@ export const instantiateField = (uiSpec: any, initialValues: any) => {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   const element = getComponentFromFieldConfig(uiSpec, 'test', formProps);
-  console.log('ELEMENT', element);
   return renderForm(element, initialValues);
 };
