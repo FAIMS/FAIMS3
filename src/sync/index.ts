@@ -89,48 +89,40 @@ export async function waitForStateOnce(
 }
 
 /**
- * Returns the current Data PouchDB of a project. This waits for the initial
- * sync to finish enough to know if the project exists or not before returning
- * (Hence, use this instead of createdProjects)
+ * Returns the current Data PouchDB of a project.
  *
  * @param active_id Full Project ID to get Pouch data DB of.
- * @returns Pouch Data DB (May become invalid at some point in the future,
- *     If, for example, the project changes remote DB.
- *     Make sure to use listenProject to avoid this)
+ * @returns Pouch Data DB
  */
 export async function getDataDB(
   active_id: ProjectID
 ): Promise<PouchDB.Database<ProjectDataObject>> {
-  // Wait for all_projects_updated to possibly change before returning
-  // error/data DB if it's ready.
-  //await waitForStateOnce(() => all_projects_updated);
   if (active_id in data_dbs) {
     return data_dbs[active_id].local;
   } else {
-    throw `Project ${active_id} is not known`;
+    throw `Data DB of project ${active_id} is not known`;
   }
 }
 
 /**
- * Returns the current Meta PouchDB of a project. This waits for the initial
- * sync to finish enough to know if the project exists or not before returning
- * (Hence, use this instead of createdProjects)
+ * Returns the current Meta PouchDB of a project.
  *
  * @param active_id Full Project ID to get Pouch data DB of.
- * @returns Pouch Data DB (May become invalid at some point in the future,
- *     If, for example, the project changes remote DB.
- *     Make sure to use listenProject to avoid this)
+ * @returns Pouch Data DB
  */
 export async function getProjectDB(
   active_id: ProjectID
 ): Promise<PouchDB.Database<ProjectMetaObject>> {
-  // Wait for all_projects_updated to possibly change before returning
-  // error/data DB if it's ready.
-  //await waitForStateOnce(() => all_projects_updated);
   if (active_id in metadata_dbs) {
     return metadata_dbs[active_id].local;
   } else {
-    throw `Project ${active_id} is not known`;
+    console.log(
+      '%cgetProjectDB',
+      'background-color: green',
+      active_id,
+      metadata_dbs
+    );
+    throw `Meta DB of project ${active_id} is not known`;
   }
 }
 

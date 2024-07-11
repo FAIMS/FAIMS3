@@ -100,8 +100,8 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
       .then(async () => {
         await handleStartSync();
         setIsWorking(false); // unblock the UI
-        console.log('calling handleNotebookActivation', props.handleNotebookActivation);
-        props.handleNotebookActivation !== undefined && props.handleNotebookActivation();
+        props.handleNotebookActivation !== undefined &&
+          props.handleNotebookActivation();
       })
       .catch(e => {
         dispatch({

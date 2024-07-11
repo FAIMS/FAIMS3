@@ -72,7 +72,6 @@ export default function NoteBooks(props: NoteBookListProps) {
 
   const updateProjectList = () => {
     getAllProjectList().then(projectList => {
-      console.log('got projects', projectList);
       setPouchProjectList(projectList);
       setLoading(false);
     });

@@ -19,12 +19,15 @@
  */
 
 import {
-  ProjectObject,
   ProjectMetaObject,
   ProjectDataObject,
   ProjectInformation,
   split_full_project_id,
   ProjectID,
+  PossibleConnectionInfo,
+  NonUniqueProjectID,
+  ListingID,
+  resolve_project_id,
 } from 'faims3-datamodel';
 import {
   ExistingActiveDoc,
@@ -35,8 +38,7 @@ import {
   metadata_dbs,
 } from './databases';
 import {getTokenForCluster, shouldDisplayProject} from '../users';
-import {waitForStateOnce} from '.';
-import {all_projects_updated} from './state';
+import {all_projects_updated, getListing} from './state';
 import {DEBUG_APP} from '../buildconfig';
 import {logError} from '../logging';
 import {events} from './events';
@@ -47,6 +49,24 @@ import {
   ping_sync_error,
   throttled_ping_sync_up,
 } from './connection';
+import {fetchProjectMetadata} from './metadata';
+
+/**
+ * Temporarily override this type from faims3-datamodel to make
+ * a local change (add conductor_url)
+ * TODO: re-merge back to faims3-datamodel once monorepo is in place
+ */
+export interface ProjectObject {
+  _id: NonUniqueProjectID;
+  name: string;
+  description?: string;
+  last_updated?: string;
+  created?: string;
+  status?: string;
+  conductor_url: string;
+  data_db?: PossibleConnectionInfo;
+  metadata_db?: PossibleConnectionInfo;
+}
 
 export type createdProjectsInterface = {
   project: ProjectObject;
@@ -54,6 +74,7 @@ export type createdProjectsInterface = {
   meta: LocalDB<ProjectMetaObject>;
   data: LocalDB<ProjectDataObject>;
 };
+
 /**
  * This is appended to whenever a project has its
  * meta & data local dbs come into existence.
@@ -90,7 +111,7 @@ export const getProject = async (
   if (project_id in data_dbs) {
     return createdProjects[project_id];
   } else {
-    throw `Project ${project_id} is not known`;
+    throw `Active project ${project_id} is not known`;
   }
 };
 
@@ -107,7 +128,7 @@ export async function getProjectInfo(
 ): Promise<ProjectInformation> {
   const proj = await getProject(project_id);
 
-  return formatProjectInformation(project_id, proj);
+  return formatProjectInformation(project_id, proj.project);
 }
 
 /**
@@ -122,12 +143,51 @@ export const getActiveProjectList = async (): Promise<ProjectInformation[]> => {
   for (const project_id in createdProjects) {
     if (await shouldDisplayProject(project_id)) {
       output.push(
-        formatProjectInformation(project_id, createdProjects[project_id])
+        formatProjectInformation(
+          project_id,
+          createdProjects[project_id].project
+        )
       );
     }
   }
   return output;
 };
+
+/**
+ * Get all projects that are available to the current user that
+ * might not yet be activated
+ *
+ * @param listing_id listing identifier
+ * @returns An array of ProjectInformation objects
+ */
+export async function getAvailableProjectsFromListing(
+  listing_id: ListingID
+): Promise<ProjectInformation[]> {
+  const output: ProjectInformation[] = [];
+  const projects: ProjectObject[] = [];
+  const listing = getListing(listing_id);
+  console.log('listing', listing_id, listing);
+  if (listing) {
+    const projects_db = listing.projects.local;
+    const res = await projects_db.allDocs({
+      include_docs: true,
+    });
+    console.log('got project documents', res);
+    res.rows.forEach(e => {
+      if (e.doc !== undefined && !e.id.startsWith('_')) {
+        projects.push(e.doc as ProjectObject);
+      }
+    });
+    for (const project of projects) {
+      const project_id = project._id;
+      const full_project_id = resolve_project_id(listing_id, project_id);
+      if (await shouldDisplayProject(full_project_id)) {
+        output.push(formatProjectInformation(full_project_id, project));
+      }
+    }
+  }
+  return output;
+}
 
 /**
  * Create a project information record in the appropriate format
@@ -136,19 +196,16 @@ export const getActiveProjectList = async (): Promise<ProjectInformation[]> => {
  * @param proj createdProjectInterface record (from createdProjects global)
  * @returns The ProjectInformation record
  */
-function formatProjectInformation(
-  project_id: string,
-  proj: createdProjectsInterface
-) {
+function formatProjectInformation(project_id: string, project: ProjectObject) {
   const split_id = split_full_project_id(project_id);
   return {
     project_id: project_id,
-    name: proj.project.name,
-    description: proj.project.description || 'No description',
-    last_updated: proj.project.last_updated || 'Unknown',
-    created: proj.project.created || 'Unknown',
-    status: proj.project.status || 'Unknown',
-    is_activated: true,
+    name: project.name,
+    description: project.description || 'No description',
+    last_updated: project.last_updated || 'Unknown',
+    created: project.created || 'Unknown',
+    status: project.status || 'Unknown',
+    is_activated: projectIsActivated(project_id),
     listing_id: split_id.listing_id,
     non_unique_project_id: split_id.project_id,
   };
@@ -226,6 +283,15 @@ export async function ensure_project_databases(
     metadata_dbs,
     true
   );
+
+  console.log(
+    '%cmeta database',
+    'background-color: pink',
+    meta_did_change,
+    meta_local,
+    metadata_dbs
+  );
+
   const [data_did_change, data_local] = ensure_local_db(
     'data',
     active_id,
@@ -254,22 +320,20 @@ export async function ensure_project_databases(
     project_object
   );
 
-  if (meta_did_change) {
-    events.emit('meta_sync_state', true, active_doc, project_object);
-  }
-
   if (data_did_change) {
     events.emit('data_sync_state', true, active_doc, project_object);
   }
-  const meta_pause = (_message?: string) => () => {
-    if (!meta_did_change) return;
-    events.emit('meta_sync_state', false, active_doc, project_object);
-  };
 
-  const data_pause = (_message?: string) => () => {
+  const data_pause = () => () => {
     if (!data_did_change) return;
     events.emit('data_sync_state', false, active_doc, project_object);
   };
+
+  console.log('going to get project metadata');
+
+  // get project metadata and UiSpec and store them in the db
+  const listing = getListing(active_doc.listing_id);
+  await fetchProjectMetadata(listing, active_doc.project_id);
 
   // Connect to remote databases
   // If we must sync with a remote endpoint immediately,
@@ -281,17 +345,6 @@ export async function ensure_project_databases(
   // which is the type of metadata_db in the project object is possibly
   // undefined.  This should really not be the case.
   // TODO: make sure that all project objects have a proper db_name
-  let metadata_db_name;
-  if (project_object.metadata_db?.db_name)
-    metadata_db_name = project_object.metadata_db.db_name;
-  else metadata_db_name = 'metadata-' + project_object._id;
-
-  const meta_connection_info: ConnectionInfo = {
-    jwt_token: jwt_token,
-    db_name: metadata_db_name,
-    ...project_object.metadata_db,
-  };
-
   let data_db_name;
   if (project_object.data_db?.db_name)
     data_db_name = project_object.data_db.db_name;
@@ -305,72 +358,42 @@ export async function ensure_project_databases(
 
   console.log('update_project data connection', data_connection_info);
 
-  // set up remote sync of metadata database
-  const [, meta_remote] = ensure_synced_db(
+  // set up remote sync for data database
+  const [, data_remote] = ensure_synced_db(
     active_id,
-    meta_connection_info,
-    metadata_dbs
+    data_connection_info,
+    data_dbs,
+    {
+      push: {},
+      pull: {},
+    }
   );
 
-  if (meta_remote.remote !== null && meta_remote.remote.connection !== null) {
-    meta_remote.remote.connection!.once('paused', meta_pause('Sync'));
-    meta_remote.remote
+  if (data_remote.remote !== null && data_remote.remote.connection !== null) {
+    data_remote.remote.connection!.once('paused', data_pause('Sync'));
+    data_remote.remote
       .connection!.on('active', () => {
-        console.debug('Meta sync started up again', active_id);
+        console.debug('Data sync started up again', active_id);
         throttled_ping_sync_down();
+        throttled_ping_sync_up();
       })
       .on('denied', err => {
-        console.debug('Meta sync denied', active_id, err);
+        console.debug('Data sync denied', active_id, err);
         ping_sync_denied();
       })
       .on('error', (err: any) => {
         if (err.status === 401) {
-          console.debug('Meta sync waiting on auth', active_id);
+          console.debug('Data sync waiting on auth', active_id);
         } else {
-          console.debug('Meta sync error', active_id, err);
+          console.debug('Data sync error', active_id, err);
           ping_sync_error();
         }
       });
-
-    // set up remote sync for data database
-    const [, data_remote] = ensure_synced_db(
-      active_id,
-      data_connection_info,
-      data_dbs,
-      {
-        push: {},
-        pull: {},
-      }
-    );
-
-    if (data_remote.remote !== null && data_remote.remote.connection !== null) {
-      data_remote.remote.connection!.once('paused', data_pause('Sync'));
-      data_remote.remote
-        .connection!.on('active', () => {
-          console.debug('Data sync started up again', active_id);
-          throttled_ping_sync_down();
-          throttled_ping_sync_up();
-        })
-        .on('denied', err => {
-          console.debug('Data sync denied', active_id, err);
-          ping_sync_denied();
-        })
-        .on('error', (err: any) => {
-          if (err.status === 401) {
-            console.debug('Data sync waiting on auth', active_id);
-          } else {
-            console.debug('Data sync error', active_id, err);
-            ping_sync_error();
-          }
-        });
-    } else {
-      data_pause('No Sync')();
-    }
   } else {
-    meta_pause('Local-only; No Sync')();
-    data_pause('Local-only; No Sync')();
+    data_pause()();
   }
 }
+
 /**   Listeners
  *
  * These functions set up listeners on the projects database so that

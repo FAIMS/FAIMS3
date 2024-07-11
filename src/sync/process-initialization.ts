@@ -25,7 +25,7 @@ import {
   NonUniqueProjectID,
   resolve_project_id,
 } from 'faims3-datamodel';
-import {ProjectObject} from 'faims3-datamodel';
+import {ProjectObject} from './projects';
 import {logError} from '../logging';
 import {getTokenForCluster} from '../users';
 
@@ -38,7 +38,7 @@ import {
   projects_dbs,
 } from './databases';
 import {events} from './events';
-import {createdListings} from './state';
+import {addOrUpdateListing, deleteListing, getListing} from './state';
 import {getAllListings} from '.';
 import {ensure_project_databases} from './projects';
 
@@ -51,6 +51,7 @@ export async function update_directory() {
 
     const url = new URL(CONDUCTOR_URL);
 
+    // TODO: the name and description should come from the api
     const listing = {
       _id: url.host.replaceAll('.', '-'),
       conductor_url: CONDUCTOR_URL,
@@ -130,7 +131,7 @@ function delete_listing_by_id(listing_id: ListingID) {
   }
 
   delete projects_dbs[listing_id];
-  delete createdListings[listing_id];
+  deleteListing(listing_id);
 
   // DON'T MOVE THIS PAST AN AWAIT POINT
   events.emit('listing_update', ['delete'], false, false, listing_id);
@@ -155,13 +156,8 @@ async function get_projects_from_conductor(listing: ListingsObject) {
   );
 
   console.log('LOCAL PROJECT', listing._id, projects_local);
-  const old_value = createdListings?.[listing._id];
-  createdListings[listing._id] = {
-    listing: listing,
-    projects: projects_local,
-  };
-
-  console.log('createdListings', createdListings);
+  const previous_listing = getListing(listing._id);
+  addOrUpdateListing(listing._id, listing, projects_local);
 
   if (projects_did_change) {
     console.log('Projects DB has changed...');
@@ -170,7 +166,7 @@ async function get_projects_from_conductor(listing: ListingsObject) {
   // DON'T MOVE THIS PAST AN AWAIT POINT
   events.emit(
     'listing_update',
-    old_value === undefined ? ['create'] : ['update', old_value],
+    previous_listing === undefined ? ['create'] : ['update', previous_listing],
     projects_did_change,
     false,
     listing._id
@@ -215,7 +211,14 @@ async function get_projects_from_conductor(listing: ListingsObject) {
             if (err.name === 'not_found') {
               console.debug('DIR storing', project_doc._id);
               // we don't have this project, so store it
-              return projects_local.local.put(project_doc);
+              // add in the conductor url we got it from
+              // TODO: this should already be there in the API
+              // also that default to CONDUCTOR_URL is because listings
+              // conductor_url is optional, it shouldn't be...
+              return projects_local.local.put({
+                ...project_doc,
+                conductor_url: listing.conductor_url || CONDUCTOR_URL,
+              });
             }
           });
       }

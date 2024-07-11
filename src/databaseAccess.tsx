@@ -29,67 +29,26 @@
  *   (Sync refactor)
  */
 
-import {ListingID, resolve_project_id} from 'faims3-datamodel';
-import {ProjectObject} from 'faims3-datamodel';
+import {getAvailableProjectsFromListing} from './sync/projects';
 import {ProjectInformation, ListingInformation} from 'faims3-datamodel';
-import {createdListings} from './sync/state';
+import {getAllListingIDs} from './sync/state';
 import {events} from './sync/events';
 import {getAllListings} from './sync';
-import {shouldDisplayProject} from './users';
-import {projectIsActivated} from './sync/projects';
-
-async function getAvailableProjectsFromListing(
-  listing_id: ListingID
-): Promise<ProjectInformation[]> {
-  const output: ProjectInformation[] = [];
-  const projects: ProjectObject[] = [];
-  const projects_db = createdListings[listing_id].projects.local;
-  const res = await projects_db.allDocs({
-    include_docs: true,
-  });
-  res.rows.forEach(e => {
-    if (e.doc !== undefined && !e.id.startsWith('_')) {
-      projects.push(e.doc as ProjectObject);
-    }
-  });
-  for (const project of projects) {
-    const project_id = project._id;
-    const full_project_id = resolve_project_id(listing_id, project_id);
-    if (await shouldDisplayProject(full_project_id)) {
-      output.push({
-        name: project.name,
-        description: project.description,
-        last_updated: project.last_updated,
-        created: project.created,
-        status: project.status,
-        project_id: full_project_id,
-        is_activated: projectIsActivated(full_project_id),
-        listing_id: listing_id,
-        non_unique_project_id: project_id,
-      });
-    }
-  }
-  console.log('got these projects from', listing_id, output);
-  return output;
-}
 
 export async function getAllProjectList(): Promise<ProjectInformation[]> {
   /**
-   * Return all projects the user has access to.
+   * Return all projects the user has access to from all servers
    */
 
-  console.log('getAllProjectList', createdListings);
   //await waitForStateOnce(() => all_projects_updated);
 
-  const output: ProjectInformation[] = [];
-  for (const listing_id in createdListings) {
-    console.log('getting for', listing_id);
+  const output: ProjectInformation[] = []; 
+  for (const listing_id of getAllListingIDs()) {
     const projects = await getAvailableProjectsFromListing(listing_id);
     for (const proj of projects) {
       output.push(proj);
     }
   }
-  console.debug('All project list output', output);
   return output;
 }
 

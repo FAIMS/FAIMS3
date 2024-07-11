@@ -27,4 +27,38 @@
 
 import PouchDB from 'pouchdb-browser';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
+import {ProjectID} from 'faims3-datamodel';
+import {vi} from 'vitest';
+import {createdProjectsInterface} from './sync/projects';
 PouchDB.plugin(PouchDBAdaptorMemory);
+
+const projdbs: any = {};
+
+async function mockProjectDB(project_id: ProjectID) {
+  if (projdbs[project_id] === undefined) {
+    const db = new PouchDB(project_id, {adapter: 'memory'});
+    projdbs[project_id] = db;
+  }
+  return projdbs[project_id];
+}
+
+// async function cleanProjectDBS() {
+//   let db;
+//   for (const project_id in projdbs) {
+//     db = projdbs[project_id];
+//     delete projdbs[project_id];
+
+//     if (db !== undefined) {
+//       try {
+//         await db.destroy();
+//         //await db.close();
+//       } catch (err) {
+//         console.error(err);
+//       }
+//     }
+//   }
+// }
+
+vi.mock('./sync/index', () => ({
+  getProjectDB: mockProjectDB,
+}));
