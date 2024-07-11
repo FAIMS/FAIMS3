@@ -29,7 +29,6 @@ import PouchDB from 'pouchdb-browser';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 import {ProjectID} from 'faims3-datamodel';
 import {vi} from 'vitest';
-import {createdProjectsInterface} from './sync/projects';
 PouchDB.plugin(PouchDBAdaptorMemory);
 
 const projdbs: any = {};
@@ -61,4 +60,12 @@ async function mockProjectDB(project_id: ProjectID) {
 
 vi.mock('./sync/index', () => ({
   getProjectDB: mockProjectDB,
+}));
+
+async function mockGetTokenForCluster(listing_id: string) {
+  return 'token-' + listing_id;
+}
+
+vi.mock('./users', () => ({
+  getTokenForCluster: mockGetTokenForCluster,
 }));
