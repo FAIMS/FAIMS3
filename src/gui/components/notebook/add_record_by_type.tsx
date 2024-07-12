@@ -9,7 +9,7 @@ import AddIcon from '@mui/icons-material/Add';
 
 import * as ROUTES from '../../../constants/routes';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import { listenProjectDB } from '../../../sync/projects';
+import {listenProjectDB} from '../../../sync/projects';
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {
@@ -17,8 +17,8 @@ import {
   getRecordsWithRegex,
   RecordMetadata,
 } from 'faims3-datamodel';
-import {getProjectMetadata} from '../../../projectMetadata';
 import {logError} from '../../../logging';
+import {getMetadataValue} from '../../../sync/metadata';
 
 type AddRecordButtonsProps = {
   project: ProjectInformation;
@@ -33,7 +33,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
 
   const [showQRButton, setShowQRButton] = useState(false);
 
-  getProjectMetadata(project_id, 'showQRCodeButton').then(value => {
+  getMetadataValue(project_id, 'showQRCodeButton').then(value => {
     setShowQRButton(value === true || value === 'true');
   });
 

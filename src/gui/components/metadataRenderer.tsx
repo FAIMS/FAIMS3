@@ -21,11 +21,11 @@
 import React from 'react';
 import {CircularProgress, Chip} from '@mui/material';
 
-import {getProjectMetadata} from '../../projectMetadata';
 import {ProjectID} from 'faims3-datamodel';
 import {listenProjectDB} from '../../sync/projects';
 import {useEventedPromise, constantArgsSplit} from '../pouchHook';
 import {DEBUG_APP} from '../../buildconfig';
+import {getMetadataValue} from '../../sync/metadata';
 
 type MetadataProps = {
   project_id: ProjectID;
@@ -43,7 +43,7 @@ export default function MetadataRenderer(props: MetadataProps) {
     'MetadataRenderer component',
     async (project_id: ProjectID, metadata_key: string) => {
       try {
-        return await getProjectMetadata(project_id, metadata_key);
+        return await getMetadataValue(project_id, metadata_key);
       } catch (err) {
         console.warn(
           'Failed to get project metadata with key',
