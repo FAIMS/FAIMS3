@@ -237,7 +237,11 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                     Description
                   </Typography>
                   <Typography variant="body2" color="textPrimary" gutterBottom>
-                    {project.description}
+                    <MetadataRenderer
+                      project_id={project.project_id}
+                      metadata_key={'pre_description'}
+                      chips={false}
+                    />
                   </Typography>
                 </Box>
               </Grid>
