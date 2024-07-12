@@ -38,7 +38,6 @@ import TabPanel from '@mui/lab/TabPanel';
 import {ActionType} from '../../context/actions';
 
 import * as ROUTES from '../../constants/routes';
-import {listenProjectInfo} from '../../sync/projects';
 import {getProjectInfo} from '../../sync/projects';
 import {
   ProjectID,
@@ -61,7 +60,6 @@ import ConflictForm from '../components/record/conflict/conflictform';
 import RecordMeta from '../components/record/meta';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
 import {} from 'faims3-datamodel';
 
@@ -112,25 +110,13 @@ export default function Record() {
   const history = useNavigate();
 
   const [value, setValue] = React.useState('1');
-
-  // getting project info here but we only really want the name
-  let project_info: ProjectInformation | null;
-  try {
-    project_info = useEventedPromise(
-      'Record page',
-      getProjectInfo,
-      constantArgsShared(listenProjectInfo, project_id!),
-      false,
-      [project_id],
-      project_id!
-    ).expect();
-  } catch (err: any) {
-    if (err.message !== 'missing') {
-      throw err;
-    } else {
-      return <Navigate to="/404" />;
-    }
-  }
+  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
+    null
+  );
+  useEffect(() => {
+    if (project_id)
+      getProjectInfo(project_id).then(info => setProjectInfo(info));
+  }, [project_id]);
 
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [revisions, setRevisions] = React.useState([] as string[]);
@@ -188,7 +174,7 @@ export default function Record() {
           {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
           {
             link: ROUTES.NOTEBOOK + project_id,
-            title: project_info !== null ? project_info.name! : project_id!,
+            title: projectInfo !== null ? projectInfo.name! : project_id!,
           },
           {title: hrid ?? record_id},
         ]);
@@ -307,7 +293,7 @@ export default function Record() {
               {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
               {
                 link: ROUTES.NOTEBOOK + project_id,
-                title: project_info !== null ? project_info.name! : project_id!,
+                title: projectInfo !== null ? projectInfo.name! : project_id!,
               },
               {title: hrid! ?? record_id!},
             ];
@@ -322,7 +308,7 @@ export default function Record() {
                 {
                   link: ROUTES.NOTEBOOK + project_id,
                   title:
-                    project_info !== null ? project_info.name! : project_id!,
+                    projectInfo !== null ? projectInfo.name! : project_id!,
                 },
                 {
                   link: newParent[0]['route'],

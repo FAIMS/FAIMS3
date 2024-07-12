@@ -21,7 +21,6 @@
 import React, {useEffect, useState} from 'react';
 import {Chip} from '@mui/material';
 import {ProjectID} from 'faims3-datamodel';
-import {DEBUG_APP} from '../../buildconfig';
 import {getMetadataValue} from '../../sync/metadata';
 
 type MetadataProps = {
@@ -43,11 +42,6 @@ export default function MetadataRenderer(props: MetadataProps) {
       setValue(v as string);
     });
   });
-
-  if (DEBUG_APP) {
-    console.debug('metadata_label', metadata_label);
-    console.debug('metadata_value', value);
-  }
 
   return chips && value !== '' ? (
     <Chip
