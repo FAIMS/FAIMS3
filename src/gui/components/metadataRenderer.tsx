@@ -18,12 +18,9 @@
  *   TODO
  */
 
-import React from 'react';
-import {CircularProgress, Chip} from '@mui/material';
-
+import React, {useEffect, useState} from 'react';
+import {Chip} from '@mui/material';
 import {ProjectID} from 'faims3-datamodel';
-import {listenProjectDB} from '../../sync/projects';
-import {useEventedPromise, constantArgsSplit} from '../pouchHook';
 import {DEBUG_APP} from '../../buildconfig';
 import {getMetadataValue} from '../../sync/metadata';
 
@@ -39,37 +36,20 @@ export default function MetadataRenderer(props: MetadataProps) {
   const chips = props.chips ?? true;
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
-  const metadata_value = useEventedPromise(
-    'MetadataRenderer component',
-    async (project_id: ProjectID, metadata_key: string) => {
-      try {
-        return await getMetadataValue(project_id, metadata_key);
-      } catch (err) {
-        console.warn(
-          'Failed to get project metadata with key',
-          project_id,
-          metadata_key,
-          err
-        );
-        return '';
-      }
-    },
-    constantArgsSplit(
-      listenProjectDB,
-      [project_id, {since: 'now', live: true}],
-      [project_id, metadata_key]
-    ),
-    true,
-    [project_id, metadata_key],
-    project_id,
-    metadata_key
-  );
+  const [value, setValue] = useState('');
+
+  useEffect(() => {
+    getMetadataValue(project_id, metadata_key).then(v => {
+      setValue(v as string);
+    });
+  });
+
   if (DEBUG_APP) {
     console.debug('metadata_label', metadata_label);
-    console.debug('metadata_value', metadata_value);
+    console.debug('metadata_value', value);
   }
 
-  return chips && metadata_value.value !== '' ? (
+  return chips && value !== '' ? (
     <Chip
       size={'small'}
       style={{marginRight: '5px', marginBottom: '5px'}}
@@ -80,17 +60,11 @@ export default function MetadataRenderer(props: MetadataProps) {
           ) : (
             <React.Fragment />
           )}
-          {metadata_value.value && <span>{metadata_value.value}</span>}
-          {metadata_value.loading && (
-            <CircularProgress size={12} thickness={4} />
-          )}
+          <span>{value}</span>
         </React.Fragment>
       }
     />
   ) : (
-    <>
-      {metadata_value.value && <span>{metadata_value.value}</span>}
-      {metadata_value.loading && <CircularProgress size={12} thickness={4} />}
-    </>
+    <span>{value}</span>
   );
 }
