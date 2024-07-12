@@ -38,7 +38,7 @@ import TabPanel from '@mui/lab/TabPanel';
 import {ActionType} from '../../context/actions';
 
 import * as ROUTES from '../../constants/routes';
-import { listenProjectInfo } from '../../sync/projects';
+import {listenProjectInfo} from '../../sync/projects';
 import {getProjectInfo} from '../../sync/projects';
 import {
   ProjectID,
@@ -47,7 +47,6 @@ import {
   RevisionID,
   ProjectUIModel,
   ProjectInformation,
-  SectionMeta,
   listFAIMSRecordRevisions,
   getFullRecordData,
   getHRIDforRecordID,
@@ -63,7 +62,6 @@ import RecordMeta from '../components/record/meta';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import {getProjectMetadata} from '../../projectMetadata';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
 import {} from 'faims3-datamodel';
 
@@ -140,7 +138,6 @@ export default function Record() {
   const [isDraftSaving, setIsDraftSaving] = useState(false);
   const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
   const [draftError, setDraftError] = useState(null as string | null);
-  const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [type, setType] = useState(null as null | string);
   const [hrid, setHrid] = useState(null as null | string);
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null); // this is to check if the project attachment sync
@@ -167,9 +164,6 @@ export default function Record() {
   useEffect(() => {
     getUiSpecForProject(project_id!).then(setUISpec, setError);
     if (project_id !== null) {
-      getProjectMetadata(project_id!, 'sections')
-        .then(res => setMetaSection(res))
-        .catch(logError);
       try {
         setIsSyncing(isSyncingProjectAttachments(project_id!));
       } catch (error) {
@@ -663,7 +657,6 @@ export default function Record() {
                                 revision_id={updatedrevision_id!}
                                 ui_specification={uiSpec}
                                 draft_id={draft_id}
-                                metaSection={metaSection}
                                 conflictfields={conflictfields}
                                 handleChangeTab={handleChange}
                                 isSyncing={isSyncing.toString()}
@@ -692,7 +685,6 @@ export default function Record() {
                           revision_id={updatedrevision_id!}
                           ui_specification={uiSpec}
                           draft_id={draft_id}
-                          metaSection={metaSection}
                           conflictfields={conflictfields}
                           handleChangeTab={handleChange}
                           isDraftSaving={isDraftSaving}
@@ -776,7 +768,6 @@ export default function Record() {
                   record_id={record_id!}
                   revision_id={updatedrevision_id}
                   ui_specification={uiSpec}
-                  metaSection={metaSection}
                   type={type}
                   conflicts={conflicts}
                   setissavedconflict={setissavedconflict}

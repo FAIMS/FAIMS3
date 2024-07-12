@@ -43,14 +43,10 @@ import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {generateFAIMSDataID} from 'faims3-datamodel';
-import { listenProjectInfo } from '../../sync/projects';
-import { getProjectInfo } from '../../sync/projects';
+import {listenProjectInfo} from '../../sync/projects';
+import {getProjectInfo} from '../../sync/projects';
 import {ProjectID, RecordID} from 'faims3-datamodel';
-import {
-  ProjectUIModel,
-  ProjectInformation,
-  SectionMeta,
-} from 'faims3-datamodel';
+import {ProjectUIModel, ProjectInformation} from 'faims3-datamodel';
 import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
@@ -60,7 +56,6 @@ import {newStagedData} from '../../sync/draft-storage';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import {getProjectMetadata} from '../../projectMetadata';
 import UnpublishedWarning from '../components/record/unpublished_warning';
 import DraftSyncStatus from '../components/record/sync_status';
 import {grey} from '@mui/material/colors';
@@ -171,7 +166,6 @@ function DraftEdit(props: DraftEditProps) {
   const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
   const [draftError, setDraftError] = useState(null as string | null);
 
-  const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [value, setValue] = React.useState('1');
   const theme = useTheme();
   const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
@@ -181,11 +175,6 @@ function DraftEdit(props: DraftEditProps) {
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
-    if (project_id !== null) {
-      getProjectMetadata(project_id, 'sections').then(res =>
-        setMetaSection(res)
-      );
-    }
   }, [project_id]);
 
   useEffect(() => {
@@ -308,7 +297,6 @@ function DraftEdit(props: DraftEditProps) {
                       type={type_name}
                       ui_specification={uiSpec}
                       draft_id={draft_id}
-                      metaSection={metaSection}
                       handleSetIsDraftSaving={setIsDraftSaving}
                       handleSetDraftLastSaved={setDraftLastSaved}
                       handleSetDraftError={setDraftError}

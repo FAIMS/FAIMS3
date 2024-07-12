@@ -43,13 +43,6 @@ const testTypeName = 'SurveyAreaForm';
 
 const testDraftId = 'drf-150611c6-f161-4bd3-8733-8fb0e7627313';
 
-const testMetaSection = {
-  SurveyAreaFormSECTION1: {
-    sectiondescriptionSurveyAreaFormSECTION1:
-      'Here you will describe the survey session.',
-  },
-};
-
 const testDraftLastSaved =
   'Thu Jun 29 2023 20:07:13 GMT+0300 (Eastern European Summer Time)';
 
@@ -1331,7 +1324,6 @@ describe('Check form component', () => {
             record_id={testRecordId}
             type={testTypeName}
             draft_id={testDraftId}
-            metaSection={testMetaSection}
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
@@ -1408,7 +1400,6 @@ describe('Check form component', () => {
             record_id={testRecordId}
             type={testTypeName}
             draft_id={testDraftId}
-            metaSection={testMetaSection}
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
@@ -1449,7 +1440,6 @@ describe('Check form component', () => {
             record_id={testRecordId}
             type={testTypeName}
             draft_id={testDraftId}
-            metaSection={testMetaSection}
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
@@ -1487,7 +1477,6 @@ describe('Check form component', () => {
             record_id={testRecordId}
             type={testTypeName}
             draft_id={testDraftId}
-            metaSection={testMetaSection}
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
@@ -1528,7 +1517,6 @@ describe('Check form component', () => {
             record_id={testRecordId}
             type={testTypeName}
             draft_id={testDraftId}
-            metaSection={testMetaSection}
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
@@ -1572,7 +1560,6 @@ describe('Check form component', () => {
             record_id={testRecordId}
             type={testTypeName}
             draft_id={testDraftId}
-            metaSection={testMetaSection}
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
