@@ -53,7 +53,7 @@ export async function update_directory() {
 
     // TODO: the name and description should come from the api
     const listing = {
-      _id: url.host.replaceAll('.', '-'),
+      _id: url.host,
       conductor_url: CONDUCTOR_URL,
       name: 'CONDUCTOR NAME',
       description: 'CONDUCTOR DESCRIPTION',
