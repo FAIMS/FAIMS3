@@ -15,7 +15,7 @@
  *
  * Filename: autoincrement.ts
  * Description:
- *   TODO
+ *   Manage autoincrementer state for a project
  */
 
 // There are two internal IDs for projects, the former is unique to the system
@@ -23,19 +23,18 @@
 // database it came from, for a FAIMS listing
 // (It is this way because the list of projects is decentralised and so we
 // cannot enforce system-wide unique project IDs without a 'namespace' listing id)
-import {getProjectDB} from '../sync';
+
 import {getLocalStateDB} from '../sync/databases';
 import {
   ProjectID,
   LocalAutoIncrementRange,
   LocalAutoIncrementState,
   AutoIncrementReference,
-  AutoIncrementReferenceDoc,
 } from 'faims3-datamodel';
 import {logError} from '../logging';
+import {getUiSpecForProject} from '../uiSpecification';
 
 const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
-const LOCAL_AUTOINCREMENT_NAME = 'local-autoincrementers';
 
 export interface UserFriendlyAutoincrementStatus {
   label: string;
@@ -43,6 +42,14 @@ export interface UserFriendlyAutoincrementStatus {
   end: number | null;
 }
 
+/**
+ * Generate a name to use to store autoincrementer state for this field
+ *
+ * @param project_id project identifier
+ * @param form_id form identifier
+ * @param field_id field identifier
+ * @returns a name for the pouchdb document
+ */
 function get_pouch_id(
   project_id: ProjectID,
   form_id: string,
@@ -59,6 +66,13 @@ function get_pouch_id(
   );
 }
 
+/**
+ * Get the current state of the autoincrementer for this field
+ * @param project_id project identifier
+ * @param form_id form identifier
+ * @param field_id field identifier
+ * @returns current state from the database
+ */
 export async function getLocalAutoincrementStateForField(
   project_id: ProjectID,
   form_id: string,
@@ -85,6 +99,11 @@ export async function getLocalAutoincrementStateForField(
   }
 }
 
+/**
+ * Store a new state document for an autoincrementer
+ * 
+ * @param new_state A state document with updated settings
+ */
 export async function setLocalAutoincrementStateForField(
   new_state: LocalAutoIncrementState
 ) {
@@ -98,6 +117,13 @@ export async function setLocalAutoincrementStateForField(
   }
 }
 
+/**
+ * Create a new autoincrementer range document but do not store it
+ * @param start Start of range
+ * @param stop End of range
+ * @returns The auto incrementer range document
+ * 
+ */
 export function createNewAutoincrementRange(
   start: number,
   stop: number
@@ -111,6 +137,14 @@ export function createNewAutoincrementRange(
   return doc;
 }
 
+/**
+ * Get the range information for a field
+ *
+ * @param project_id project identifier
+ * @param form_id form identifier
+ * @param field_id field identifier
+ * @returns the current range document for this field
+ */
 export async function getLocalAutoincrementRangesForField(
   project_id: ProjectID,
   form_id: string,
@@ -124,6 +158,16 @@ export async function getLocalAutoincrementRangesForField(
   return state.ranges;
 }
 
+/**
+ * Set the range information for a field
+ *
+ * @param project_id project identifier
+ * @param form_id form identifier
+ * @param field_id field identifier
+ * @throws an error if the range has been removed
+ * @throws an error if the range start has changed
+ * @throws an error if the range stop is less than the last used value
+ */
 export async function setLocalAutoincrementRangesForField(
   project_id: ProjectID,
   form_id: string,
@@ -163,97 +207,34 @@ export async function setLocalAutoincrementRangesForField(
   }
 }
 
+/**
+ * Derive an autoincrementers object from a UI Spec
+ *   find all of the autoincrement fields in the UISpec and create an
+ *   entry for each of them.
+ * @param project_id the project identifier
+ * @returns an autoincrementers object suitable for insertion into the db or
+ *          undefined if there are no such fields
+ */
 export async function getAutoincrementReferencesForProject(
   project_id: ProjectID
-): Promise<AutoIncrementReference[]> {
-  const projdb = await getProjectDB(project_id);
-  try {
-    const doc: AutoIncrementReferenceDoc = await projdb.get(
-      LOCAL_AUTOINCREMENT_NAME
-    );
-    return doc.references;
-  } catch (err: any) {
-    if (err.status === 404) {
-      // No autoincrementers
-      return [];
-    }
-    logError(err);
-    throw Error(
-      `Unable to get local autoincrement references for ${project_id}`
-    );
-  }
-}
-
-export async function addAutoincrementReferenceForProject(
-  project_id: ProjectID,
-  form_id: string[],
-  field_id: string[],
-  label: string[]
 ) {
-  const projdb = await getProjectDB(project_id);
-  const refs: Array<AutoIncrementReference> = [];
-  form_id.map((id: string, index: number) =>
-    refs.push({
-      form_id: id,
-      field_id: field_id[index],
-      label: label[index],
-    })
-  );
-  const refs_add: Array<AutoIncrementReference> = [];
-  try {
-    const doc: AutoIncrementReferenceDoc = await projdb.get(
-      LOCAL_AUTOINCREMENT_NAME
-    );
-    refs.map((ref: AutoIncrementReference) => {
-      let found = false;
-      for (const existing_ref of doc.references) {
-        if (ref.toString() === existing_ref.toString()) {
-          found = true;
-        }
-      }
-      if (!found) {
-        refs_add.push(ref);
-      }
-    });
-    doc.references = refs;
+  const uiSpec = await getUiSpecForProject(project_id);
 
-    await projdb.put(doc);
-  } catch (err: any) {
-    if (err.status === 404) {
-      // No autoincrementers currently
-      await projdb.put({
-        _id: LOCAL_AUTOINCREMENT_NAME,
-        references: refs,
+  const references: AutoIncrementReference[] = [];
+
+  const fields = uiSpec.fields as ProjectUIFields;
+  for (const field in fields) {
+    // TODO are there other names?
+    if (fields[field]['component-name'] === 'BasicAutoIncrementer') {
+      references.push({
+        form_id: fields[field]['component-parameters'].form_id,
+        field_id: fields[field]['component-parameters'].name,
+        label: fields[field]['component-parameters'].label,
       });
-    } else {
-      logError(err); // Unable to add local autoincrement reference
     }
   }
-}
 
-export async function removeAutoincrementReferenceForProject(
-  project_id: ProjectID,
-  form_id: string,
-  field_id: string,
-  label: string
-) {
-  const projdb = await getProjectDB(project_id);
-  const ref: AutoIncrementReference = {
-    form_id: form_id,
-    field_id: field_id,
-    label: label,
-  };
-  try {
-    const doc: AutoIncrementReferenceDoc = await projdb.get(
-      LOCAL_AUTOINCREMENT_NAME
-    );
-    const ref_set = new Set(doc.references);
-    ref_set.delete(ref);
-    doc.references = Array.from(ref_set.values());
-    await projdb.put(doc);
-  } catch (err) {
-    logError(err); // Unable to remove local autoincrement reference
-  }
+  return references;
 }
 
 async function getDisplayStatusForField(
