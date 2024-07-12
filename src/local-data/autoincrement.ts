@@ -30,6 +30,7 @@ import {
   LocalAutoIncrementRange,
   LocalAutoIncrementState,
   AutoIncrementReference,
+  ProjectUIFields,
 } from 'faims3-datamodel';
 import {logError} from '../logging';
 import {getUiSpecForProject} from '../uiSpecification';
@@ -101,7 +102,7 @@ export async function getLocalAutoincrementStateForField(
 
 /**
  * Store a new state document for an autoincrementer
- * 
+ *
  * @param new_state A state document with updated settings
  */
 export async function setLocalAutoincrementStateForField(
@@ -122,7 +123,6 @@ export async function setLocalAutoincrementStateForField(
  * @param start Start of range
  * @param stop End of range
  * @returns The auto incrementer range document
- * 
  */
 export function createNewAutoincrementRange(
   start: number,

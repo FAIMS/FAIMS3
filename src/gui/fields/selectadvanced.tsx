@@ -243,15 +243,17 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
     (async () => {
       if (project_id !== undefined && mounted) {
         try {
-          const attachfilenames = await getMetadataValue(
+          const attachfilenames = (await getMetadataValue(
             project_id,
             'attachfilenames'
-          );
+          )) as string[];
           const attachments: {[key: string]: File} = {};
           for (const index in attachfilenames) {
             const key = attachfilenames[index];
-            const file = await getMetadataValue(project_id, key);
-            attachments[key] = file[0];
+            // TODO this almost certainly won't work, need to fix up
+            // metadata attachments
+            const file = (await getMetadataValue(project_id, key)) as File;
+            attachments[key] = file;
           }
           setIsactive(true);
           SetAttachments(attachments);
