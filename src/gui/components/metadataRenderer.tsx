@@ -41,7 +41,7 @@ export default function MetadataRenderer(props: MetadataProps) {
     getMetadataValue(project_id, metadata_key).then(v => {
       setValue(v as string);
     });
-  });
+  }, []);
 
   return chips && value !== '' ? (
     <Chip

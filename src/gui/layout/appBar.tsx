@@ -180,7 +180,7 @@ export default function MainAppBar(props: NavbarProps) {
 
   useEffect(() => {
     getActiveProjectList().then(projects => setProjectList(projects));
-  });
+  }, []);
 
   const topMenuItems: Array<MenuItemProps> = [
     {

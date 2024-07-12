@@ -40,7 +40,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(u => setUiSpec(u));
-  });
+  }, []);
 
   if (uiSpec === undefined) {
     return <CircularProgress thickness={2} size={12} />;
