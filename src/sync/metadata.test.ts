@@ -50,9 +50,6 @@ const restHandlers = [
 
 const server = setupServer(...restHandlers);
 
-server.events.on('request:start', ({request}) => {
-  console.log('MSW intercepted:', request.method, request.url);
-});
 // Start server before all tests
 beforeAll(() => server.listen());
 

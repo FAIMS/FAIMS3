@@ -81,8 +81,6 @@ export const fetchProjectMetadata = async (
     // nop
   }
 
-  console.log('inserting documents');
-
   try {
     // insert the two documents
     metaDB.put({
@@ -95,7 +93,8 @@ export const fetchProjectMetadata = async (
       _id: 'ui-specification',
     });
   } catch {
-    console.log('something went wrong');
+    // what should we do here?
+    console.log('something went wrong inserting metadata documents to pouchdb');
   }
 };
 

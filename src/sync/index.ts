@@ -116,12 +116,6 @@ export async function getProjectDB(
   if (active_id in metadata_dbs) {
     return metadata_dbs[active_id].local;
   } else {
-    console.log(
-      '%cgetProjectDB',
-      'background-color: green',
-      active_id,
-      metadata_dbs
-    );
     throw `Meta DB of project ${active_id} is not known`;
   }
 }

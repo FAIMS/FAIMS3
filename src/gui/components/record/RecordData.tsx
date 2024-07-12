@@ -48,7 +48,6 @@ interface RecordDataTypes {
   ui_specification: ProjectUIModel;
   conflictfields?: string[] | null;
   handleChangeTab: Function;
-  metaSection?: any;
   isSyncing?: string;
   disabled?: boolean;
   isDraftSaving: boolean;
@@ -137,7 +136,6 @@ export default function RecordData(props: RecordDataTypes) {
                         revision_id={props.revision_id}
                         ui_specification={props.ui_specification}
                         draft_id={props.draft_id}
-                        metaSection={props.metaSection}
                         handleChangeTab={props.handleChangeTab}
                         conflictfields={props.conflictfields}
                         isSyncing={props.isSyncing}
@@ -201,7 +199,6 @@ export default function RecordData(props: RecordDataTypes) {
                       revision_id={props.revision_id}
                       ui_specification={props.ui_specification}
                       draft_id={props.draft_id}
-                      metaSection={props.metaSection}
                       disabled={true} // for view of the forms
                       handleSetIsDraftSaving={props.handleSetIsDraftSaving}
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}

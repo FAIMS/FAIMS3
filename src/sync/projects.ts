@@ -166,13 +166,11 @@ export async function getAvailableProjectsFromListing(
   const output: ProjectInformation[] = [];
   const projects: ProjectObject[] = [];
   const listing = getListing(listing_id);
-  console.log('listing', listing_id, listing);
   if (listing) {
     const projects_db = listing.projects.local;
     const res = await projects_db.allDocs({
       include_docs: true,
     });
-    console.log('got project documents', res);
     res.rows.forEach(e => {
       if (e.doc !== undefined && !e.id.startsWith('_')) {
         projects.push(e.doc as ProjectObject);
@@ -223,7 +221,6 @@ export function delete_project(
   active_doc: ExistingActiveDoc,
   project_object: ProjectObject
 ) {
-  console.log('Deleting project', active_doc, project_object);
   // Delete project from memory
   const project_id = active_doc.project_id;
 
@@ -284,14 +281,6 @@ export async function ensure_project_databases(
     true
   );
 
-  console.log(
-    '%cmeta database',
-    'background-color: pink',
-    meta_did_change,
-    meta_local,
-    metadata_dbs
-  );
-
   const [data_did_change, data_local] = ensure_local_db(
     'data',
     active_id,
@@ -329,8 +318,6 @@ export async function ensure_project_databases(
     events.emit('data_sync_state', false, active_doc, project_object);
   };
 
-  console.log('going to get project metadata');
-
   // get project metadata and UiSpec and store them in the db
   const listing = getListing(active_doc.listing_id);
   await fetchProjectMetadata(listing, active_doc.project_id);
@@ -355,8 +342,6 @@ export async function ensure_project_databases(
     db_name: data_db_name,
     ...project_object.data_db,
   };
-
-  console.log('update_project data connection', data_connection_info);
 
   // set up remote sync for data database
   const [, data_remote] = ensure_synced_db(
