@@ -199,7 +199,7 @@ function formatProjectInformation(project_id: string, project: ProjectObject) {
   return {
     project_id: project_id,
     name: project.name,
-    description: project.description || 'No description',
+    description: project.description || '',
     last_updated: project.last_updated || 'Unknown',
     created: project.created || 'Unknown',
     status: project.status || 'Unknown',
