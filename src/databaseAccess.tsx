@@ -29,163 +29,35 @@
  *   (Sync refactor)
  */
 
-import {DEBUG_APP} from './buildconfig';
-import {
-  ProjectID,
-  ListingID,
-  split_full_project_id,
-  resolve_project_id,
-} from 'faims3-datamodel';
-import {ProjectObject} from 'faims3-datamodel';
+import {getAvailableProjectsFromListing} from './sync/projects';
 import {ProjectInformation, ListingInformation} from 'faims3-datamodel';
-import {
-  all_projects_updated,
-  createdProjects,
-  createdListings,
-} from './sync/state';
+import {getAllListingIDs} from './sync/state';
 import {events} from './sync/events';
-import {
-  getProject,
-  listenProject,
-  waitForStateOnce,
-  getAllListings,
-} from './sync';
-import {shouldDisplayProject} from './users';
-
-export async function getActiveProjectList(): Promise<ProjectInformation[]> {
-  /**
-   * Return all active projects the user has access to, including the
-   * top 30 most recently updated records.
-   */
-  // TODO filter by user_id
-  // TODO filter by active projects
-  // TODO filter data by top 30 entries, sorted by most recently updated
-  // TODO decode .data
-  await waitForStateOnce(() => all_projects_updated);
-
-  const output: ProjectInformation[] = [];
-  for (const listing_id_project_id in createdProjects) {
-    if (await shouldDisplayProject(listing_id_project_id)) {
-      const split_id = split_full_project_id(listing_id_project_id);
-      output.push({
-        name: createdProjects[listing_id_project_id].project.name,
-        description: createdProjects[listing_id_project_id].project.description,
-        last_updated:
-          createdProjects[listing_id_project_id].project.last_updated,
-        created: createdProjects[listing_id_project_id].project.created,
-        status: createdProjects[listing_id_project_id].project.status,
-        project_id: listing_id_project_id,
-        is_activated: true,
-        listing_id: split_id.listing_id,
-        non_unique_project_id: split_id.project_id,
-      });
-    }
-  }
-  return output;
-}
-
-async function getAvailableProjectsFromListing(
-  listing_id: ListingID
-): Promise<ProjectInformation[]> {
-  const output: ProjectInformation[] = [];
-  const projects: ProjectObject[] = [];
-  const projects_db = createdListings[listing_id].projects.local;
-  const res = await projects_db.allDocs({
-    include_docs: true,
-  });
-  res.rows.forEach(e => {
-    if (e.doc !== undefined && !e.id.startsWith('_')) {
-      projects.push(e.doc as ProjectObject);
-    }
-  });
-  console.debug('All projects in listing', listing_id, projects);
-  for (const project of projects) {
-    const project_id = project._id;
-    const full_project_id = resolve_project_id(listing_id, project_id);
-    if (await shouldDisplayProject(full_project_id)) {
-      output.push({
-        name: project.name,
-        description: project.description,
-        last_updated: project.last_updated,
-        created: project.created,
-        status: project.status,
-        project_id: full_project_id,
-        is_activated: createdProjects[full_project_id] !== undefined,
-        listing_id: listing_id,
-        non_unique_project_id: project_id,
-      });
-    }
-  }
-  return output;
-}
+import {getAllListings} from './sync';
 
 export async function getAllProjectList(): Promise<ProjectInformation[]> {
   /**
-   * Return all projects the user has access to.
+   * Return all projects the user has access to from all servers
    */
-  await waitForStateOnce(() => all_projects_updated);
 
-  const output: ProjectInformation[] = [];
-  for (const listing_id in createdListings) {
+  //await waitForStateOnce(() => all_projects_updated);
+
+  const output: ProjectInformation[] = []; 
+  for (const listing_id of getAllListingIDs()) {
     const projects = await getAvailableProjectsFromListing(listing_id);
     for (const proj of projects) {
       output.push(proj);
     }
   }
-  console.debug('All project list output', output);
   return output;
 }
 
-export function listenProjectList(
-  listener: () => void,
-  error: (err: any) => void
-): () => void {
+export function listenProjectList(listener: () => void): () => void {
   events.on('project_update', listener);
-  console.warn(`${error} will never be called`);
   return () => {
     // Event remover
     events.removeListener('project_update', listener);
   };
-}
-
-export async function getProjectInfo(
-  project_id: ProjectID
-): Promise<ProjectInformation> {
-  const proj = await getProject(project_id);
-
-  const split_id = split_full_project_id(project_id);
-  return {
-    project_id: project_id,
-    name: proj.project.name,
-    description: proj.project.description || 'No description',
-    last_updated: proj.project.last_updated || 'Unknown',
-    created: proj.project.created || 'Unknown',
-    status: proj.project.status || 'Unknown',
-    is_activated: true,
-    listing_id: split_id.listing_id,
-    non_unique_project_id: split_id.project_id,
-  };
-}
-
-export function listenProjectInfo(
-  project_id: ProjectID,
-  listener: () => unknown | Promise<void>,
-  error: (err: any) => void
-): () => void {
-  return listenProject(
-    project_id,
-    (value, throw_error) => {
-      const retval = listener();
-      if (DEBUG_APP) {
-        console.log('listenProjectInfo', value, throw_error, retval);
-      }
-      if (typeof retval === 'object' && retval !== null && 'catch' in retval) {
-        (retval as {catch: (err: unknown) => unknown}).catch(throw_error);
-      }
-      return 'noop';
-    },
-    error
-  );
 }
 
 export async function getSyncableListingsInfo(): Promise<ListingInformation[]> {

@@ -82,7 +82,6 @@ type RecordFormProps = {
   ui_specification: ProjectUIModel;
   conflictfields?: string[] | null;
   handleChangeTab?: Function;
-  metaSection?: any;
   isSyncing?: string;
   disabled?: boolean;
   handleSetIsDraftSaving: Function;
@@ -702,7 +701,7 @@ class RecordForm extends React.Component<
   }
 
   requireDescription(viewName: string) {
-    if (viewName === null || this.props.metaSection === null) {
+    if (viewName === null) {
       console.warn('The description has not been determined yet');
       return '';
     }
@@ -715,15 +714,6 @@ class RecordForm extends React.Component<
       return this.props.ui_specification.views[viewName].description;
     }
 
-    // backwards compatibility - look in the metadata section
-    if (
-      viewName !== null &&
-      this.props.metaSection !== undefined &&
-      this.props.metaSection[viewName] !== undefined &&
-      this.props.metaSection[viewName]['sectiondescription' + viewName] !==
-        undefined
-    )
-      return this.props.metaSection[viewName]['sectiondescription' + viewName];
     return '';
   }
 

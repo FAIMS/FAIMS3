@@ -20,7 +20,7 @@
 
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Box, Paper, Typography, Alert, Button, Stack} from '@mui/material';
+import {Box, Paper, Typography, Button, Stack} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 
 import {
@@ -31,9 +31,8 @@ import {
 } from '@mui/x-data-grid';
 
 import * as ROUTES from '../../../constants/routes';
-import {getAllProjectList, listenProjectList} from '../../../databaseAccess';
-import {useEventedPromise} from '../../pouchHook';
-import {TokenContents} from 'faims3-datamodel';
+import {getAllProjectList} from '../../../databaseAccess';
+import {ProjectInformation, TokenContents} from 'faims3-datamodel';
 import CircularLoading from '../../components/ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
@@ -55,24 +54,47 @@ type NoteBookListProps = {
 };
 
 export default function NoteBooks(props: NoteBookListProps) {
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [counter, setCounter] = React.useState(5);
-  const [value, setValue] = React.useState('1');
+  const [tabID, setTabID] = React.useState('1');
 
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
-    setValue(newValue);
+    setTabID(newValue);
   };
 
   const history = useNavigate();
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
-  const pouchProjectList = useEventedPromise(
-    'NoteBooks component',
-    getAllProjectList,
-    listenProjectList,
-    true,
-    []
-  ).expect();
+
+  const [pouchProjectList, setPouchProjectList] = useState<
+    ProjectInformation[]
+  >([]);
+
+  const updateProjectList = () => {
+    getAllProjectList().then(projectList => {
+      setPouchProjectList(projectList);
+      setLoading(false);
+    });
+  };
+
+  useEffect(() => {
+    updateProjectList();
+
+    if (counter === 0) {
+      if (pouchProjectList.length === 0) {
+        updateProjectList();
+        // reset counter
+        setCounter(5);
+      }
+    } else if (loading) {
+      setTimeout(() => setCounter(counter - 1), 1000);
+    }
+  }, [counter]);
+
+  const handleNotebookActivation = () => {
+    updateProjectList();
+    setTabID('1'); // select the activated tab
+  };
 
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     if (params.row.is_activated) {
@@ -147,7 +169,7 @@ export default function NoteBooks(props: NoteBookListProps) {
               project={params.row}
               showHelperText={false}
               project_status={params.row.status}
-              handleTabChange={setValue}
+              handleNotebookActivation={handleNotebookActivation}
             />
           ),
         },
@@ -210,26 +232,16 @@ export default function NoteBooks(props: NoteBookListProps) {
               project={params.row}
               showHelperText={false}
               project_status={params.row.status}
-              handleTabChange={setValue}
+              handleNotebookActivation={handleNotebookActivation}
             />
           ),
         },
       ];
 
-  // if the counter changes, add a new timeout, but only if > 0
-  useEffect(() => {
-    counter > 0 && setTimeout(() => setCounter(counter - 1), 1000);
-    counter === 0 && setLoading(false);
-  }, [counter]);
-
   return (
     <Box>
-      {pouchProjectList === null ? (
+      {pouchProjectList.length === 0 ? (
         <CircularLoading label={'Loading notebooks'} />
-      ) : Object.keys(pouchProjectList).length === 0 ? (
-        <Alert severity={'info'}>
-          No notebooks found. Checking again in {counter} seconds.
-        </Alert>
       ) : (
         <Box component={Paper} elevation={0} p={2}>
           <Typography variant={'body1'} gutterBottom>
@@ -243,7 +255,7 @@ export default function NoteBooks(props: NoteBookListProps) {
               variant="text"
               size={'small'}
               onClick={() => {
-                setValue('2');
+                setTabID('2');
               }}
             >
               Available
@@ -254,7 +266,7 @@ export default function NoteBooks(props: NoteBookListProps) {
             value={
               pouchProjectList.filter(r => r.is_activated).length === 0
                 ? '2'
-                : value
+                : tabID
             }
           >
             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
@@ -306,8 +318,8 @@ export default function NoteBooks(props: NoteBookListProps) {
                         },
                       },
                     }}
-                    components={{
-                      NoRowsOverlay: () => (
+                    slots={{
+                      noRowsOverlay: () => (
                         <Stack
                           height="100%"
                           alignItems="center"
@@ -344,8 +356,8 @@ export default function NoteBooks(props: NoteBookListProps) {
                         },
                       },
                     }}
-                    components={{
-                      NoRowsOverlay: () => (
+                    slots={{
+                      noRowsOverlay: () => (
                         <Stack
                           height="100%"
                           alignItems="center"

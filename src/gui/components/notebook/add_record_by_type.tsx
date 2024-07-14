@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Link as RouterLink, Navigate} from 'react-router-dom';
 
 import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
@@ -9,16 +9,14 @@ import AddIcon from '@mui/icons-material/Add';
 
 import * as ROUTES from '../../../constants/routes';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import {listenProjectDB} from '../../../sync';
-import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {
   ProjectInformation,
   getRecordsWithRegex,
   RecordMetadata,
+  ProjectUIModel,
 } from 'faims3-datamodel';
-import {getProjectMetadata} from '../../../projectMetadata';
-import {logError} from '../../../logging';
+import {getMetadataValue} from '../../../sync/metadata';
 
 type AddRecordButtonsProps = {
   project: ProjectInformation;
@@ -30,40 +28,25 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
-
+  const [uiSpec, setUiSpec] = useState<ProjectUIModel | undefined>(undefined);
   const [showQRButton, setShowQRButton] = useState(false);
-
-  getProjectMetadata(project_id, 'showQRCodeButton').then(value => {
-    setShowQRButton(value === true || value === 'true');
-  });
-
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
   >(undefined);
 
-  const ui_spec = useEventedPromise(
-    'AddRecordButtons component',
-    getUiSpecForProject,
-    constantArgsSplit(
-      listenProjectDB,
-      [project_id, {since: 'now', live: true}],
-      [project_id]
-    ),
-    true,
-    [project_id],
-    project_id
-  );
+  getMetadataValue(project_id, 'showQRCodeButton').then(value => {
+    setShowQRButton(value === true || value === 'true');
+  });
 
-  if (ui_spec.error) {
-    logError(ui_spec.error);
-  }
+  useEffect(() => {
+    getUiSpecForProject(project_id).then(u => setUiSpec(u));
+  }, []);
 
-  if (ui_spec.loading || ui_spec.value === undefined) {
-    console.debug('Ui spec for', project_id, ui_spec);
+  if (uiSpec === undefined) {
     return <CircularProgress thickness={2} size={12} />;
   }
-  const viewsets = ui_spec.value.viewsets;
-  const visible_types = ui_spec.value.visible_types;
+  const viewsets = uiSpec.viewsets;
+  const visible_types = uiSpec.visible_types;
 
   const handleScanResult = (value: string) => {
     // find a record with this field value

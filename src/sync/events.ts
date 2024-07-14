@@ -13,18 +13,21 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: index.ts
+ * Filename: events.ts
  * Description:
- *   TODO
+ *   Set up events and event handlers for database sync
+ *   Define the DirectoryEmitter interface and create the exported
+ *   `events` instance for use in the sync module
  */
 
 import {EventEmitter} from 'events';
 
 import {DEBUG_APP} from '../buildconfig';
 import {ListingID} from 'faims3-datamodel';
-import {ProjectObject} from 'faims3-datamodel';
+import {ProjectObject} from './projects';
 import {ListingsObject, ExistingActiveDoc} from './databases';
-import {createdListingsInterface, createdProjectsInterface} from './state';
+import {createdListingsInterface} from './state';
+import {createdProjectsInterface} from './projects';
 
 export class DebugEmitter extends EventEmitter {
   constructor(opts?: {captureRejections?: boolean}) {
@@ -32,7 +35,12 @@ export class DebugEmitter extends EventEmitter {
   }
   emit(event: string | symbol, ...args: unknown[]): boolean {
     if (DEBUG_APP) {
-      console.debug('FAIMS EventEmitter event', event, ...args);
+      console.log(
+        '%cFAIMS EventEmitter event',
+        'background-color: red; color: white;',
+        event,
+        ...args
+      );
     }
     return super.emit(event, ...args);
   }
@@ -41,7 +49,7 @@ export class DebugEmitter extends EventEmitter {
 export const events: DirectoryEmitter = new DebugEmitter();
 events.setMaxListeners(100); // Default is 10, but that is soon exceeded with multiple watchers of a single project
 
-type ProjectEventInfo = [ListingsObject, ExistingActiveDoc, ProjectObject];
+type ProjectEventInfo = [ExistingActiveDoc, ProjectObject];
 
 export interface DirectoryEmitter extends EventEmitter {
   /**
@@ -180,7 +188,6 @@ export interface DirectoryEmitter extends EventEmitter {
   ): boolean;
   emit(
     event: 'project_error',
-    listing: ListingsObject,
     active: ExistingActiveDoc,
     err: unknown
   ): boolean;

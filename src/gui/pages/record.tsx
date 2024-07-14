@@ -38,7 +38,7 @@ import TabPanel from '@mui/lab/TabPanel';
 import {ActionType} from '../../context/actions';
 
 import * as ROUTES from '../../constants/routes';
-import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
+import {getProjectInfo} from '../../sync/projects';
 import {
   ProjectID,
   RecordID,
@@ -46,7 +46,6 @@ import {
   RevisionID,
   ProjectUIModel,
   ProjectInformation,
-  SectionMeta,
   listFAIMSRecordRevisions,
   getFullRecordData,
   getHRIDforRecordID,
@@ -61,8 +60,6 @@ import ConflictForm from '../components/record/conflict/conflictform';
 import RecordMeta from '../components/record/meta';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import {getProjectMetadata} from '../../projectMetadata';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
 import {} from 'faims3-datamodel';
 
@@ -113,24 +110,13 @@ export default function Record() {
   const history = useNavigate();
 
   const [value, setValue] = React.useState('1');
-
-  let project_info: ProjectInformation | null;
-  try {
-    project_info = useEventedPromise(
-      'Record page',
-      getProjectInfo,
-      constantArgsShared(listenProjectInfo, project_id!),
-      false,
-      [project_id],
-      project_id!
-    ).expect();
-  } catch (err: any) {
-    if (err.message !== 'missing') {
-      throw err;
-    } else {
-      return <Navigate to="/404" />;
-    }
-  }
+  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
+    null
+  );
+  useEffect(() => {
+    if (project_id)
+      getProjectInfo(project_id).then(info => setProjectInfo(info));
+  }, [project_id]);
 
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [revisions, setRevisions] = React.useState([] as string[]);
@@ -138,7 +124,6 @@ export default function Record() {
   const [isDraftSaving, setIsDraftSaving] = useState(false);
   const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
   const [draftError, setDraftError] = useState(null as string | null);
-  const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [type, setType] = useState(null as null | string);
   const [hrid, setHrid] = useState(null as null | string);
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null); // this is to check if the project attachment sync
@@ -165,9 +150,6 @@ export default function Record() {
   useEffect(() => {
     getUiSpecForProject(project_id!).then(setUISpec, setError);
     if (project_id !== null) {
-      getProjectMetadata(project_id!, 'sections')
-        .then(res => setMetaSection(res))
-        .catch(logError);
       try {
         setIsSyncing(isSyncingProjectAttachments(project_id!));
       } catch (error) {
@@ -192,7 +174,7 @@ export default function Record() {
           {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
           {
             link: ROUTES.NOTEBOOK + project_id,
-            title: project_info !== null ? project_info.name! : project_id!,
+            title: projectInfo !== null ? projectInfo.name! : project_id!,
           },
           {title: hrid ?? record_id},
         ]);
@@ -311,7 +293,7 @@ export default function Record() {
               {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
               {
                 link: ROUTES.NOTEBOOK + project_id,
-                title: project_info !== null ? project_info.name! : project_id!,
+                title: projectInfo !== null ? projectInfo.name! : project_id!,
               },
               {title: hrid! ?? record_id!},
             ];
@@ -326,7 +308,7 @@ export default function Record() {
                 {
                   link: ROUTES.NOTEBOOK + project_id,
                   title:
-                    project_info !== null ? project_info.name! : project_id!,
+                    projectInfo !== null ? projectInfo.name! : project_id!,
                 },
                 {
                   link: newParent[0]['route'],
@@ -661,7 +643,6 @@ export default function Record() {
                                 revision_id={updatedrevision_id!}
                                 ui_specification={uiSpec}
                                 draft_id={draft_id}
-                                metaSection={metaSection}
                                 conflictfields={conflictfields}
                                 handleChangeTab={handleChange}
                                 isSyncing={isSyncing.toString()}
@@ -690,7 +671,6 @@ export default function Record() {
                           revision_id={updatedrevision_id!}
                           ui_specification={uiSpec}
                           draft_id={draft_id}
-                          metaSection={metaSection}
                           conflictfields={conflictfields}
                           handleChangeTab={handleChange}
                           isDraftSaving={isDraftSaving}
@@ -774,7 +754,6 @@ export default function Record() {
                   record_id={record_id!}
                   revision_id={updatedrevision_id}
                   ui_specification={uiSpec}
-                  metaSection={metaSection}
                   type={type}
                   conflicts={conflicts}
                   setissavedconflict={setissavedconflict}

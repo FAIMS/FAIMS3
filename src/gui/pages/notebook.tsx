@@ -24,7 +24,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
-import {getProjectInfo} from '../../databaseAccess';
+import {getProjectInfo} from '../../sync/projects';
 import {ProjectID} from 'faims3-datamodel';
 import {CircularProgress} from '@mui/material';
 

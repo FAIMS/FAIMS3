@@ -15,11 +15,11 @@
  *
  * Filename: settings.tsx
  * Description:
- *   TODO
+ *   The settings component for a notebook presents user changeable options
  */
 
 import React, {useContext, useEffect, useState} from 'react';
-import {useParams, Navigate} from 'react-router-dom';
+import {useParams} from 'react-router-dom';
 
 import {
   Box,
@@ -31,8 +31,7 @@ import {
   Switch,
 } from '@mui/material';
 
-import {getProjectInfo, listenProjectInfo} from '../../../../databaseAccess';
-import {useEventedPromise, constantArgsShared} from '../../../pouchHook';
+import {getProjectInfo} from '../../../../sync/projects';
 import {ProjectInformation} from 'faims3-datamodel';
 import {ProjectID} from 'faims3-datamodel';
 import {
@@ -64,25 +63,15 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
     return listenSyncingProjectAttachments(project_id!, setIsSyncing);
   }, [project_id]);
 
-  let project_info: ProjectInformation | null;
-  try {
-    project_info = useEventedPromise(
-      'NotebookSettings component project info',
-      getProjectInfo,
-      constantArgsShared(listenProjectInfo, project_id!),
-      false,
-      [project_id],
-      project_id!
-    ).expect();
-  } catch (err: any) {
-    if (err.message === 'missing') {
-      return <Navigate to="/404" />;
-    } else {
-      throw err;
-    }
-  }
+  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
+    null
+  );
+  useEffect(() => {
+    if (project_id)
+      getProjectInfo(project_id).then(info => setProjectInfo(info));
+  }, [project_id]);
 
-  return project_info ? (
+  return projectInfo ? (
     <Box>
       <Grid
         container
@@ -102,9 +91,9 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
               Sync Notebook
             </Typography>
             <NotebookSyncSwitch
-              project={project_info}
+              project={projectInfo}
               showHelperText={true}
-              project_status={project_info?.status}
+              project_status={projectInfo?.status}
             />
           </Box>
 
@@ -154,7 +143,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
         </Grid>
         <Grid item xs={12} sm={12} md={6} lg={8}>
           <AutoIncrementerSettingsList
-            project_info={project_info}
+            project_info={projectInfo}
             uiSpec={props.uiSpec}
           />
         </Grid>

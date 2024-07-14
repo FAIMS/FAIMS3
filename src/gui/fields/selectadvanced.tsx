@@ -29,8 +29,8 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import {createTheme, styled} from '@mui/material/styles';
-import {getProjectMetadata} from '../../projectMetadata';
 import {logError} from '../../logging';
+import {getMetadataValue} from '../../sync/metadata';
 interface RenderTree {
   // id: string;
   name: string;
@@ -243,15 +243,17 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
     (async () => {
       if (project_id !== undefined && mounted) {
         try {
-          const attachfilenames = await getProjectMetadata(
+          const attachfilenames = (await getMetadataValue(
             project_id,
             'attachfilenames'
-          );
+          )) as string[];
           const attachments: {[key: string]: File} = {};
           for (const index in attachfilenames) {
             const key = attachfilenames[index];
-            const file = await getProjectMetadata(project_id, key);
-            attachments[key] = file[0];
+            // TODO this almost certainly won't work, need to fix up
+            // metadata attachments
+            const file = (await getMetadataValue(project_id, key)) as File;
+            attachments[key] = file;
           }
           setIsactive(true);
           SetAttachments(attachments);

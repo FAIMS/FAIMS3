@@ -66,7 +66,6 @@ type ConflictFormProps = {
   record_id: RecordID;
   view_default?: string;
   ui_specification: ProjectUIModel;
-  metaSection?: any;
   revision_id?: null | RevisionID;
   type: string;
   conflicts: InitialMergeDetails;

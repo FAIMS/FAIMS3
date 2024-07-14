@@ -43,13 +43,9 @@ import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {generateFAIMSDataID} from 'faims3-datamodel';
-import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
+import {getProjectInfo} from '../../sync/projects';
 import {ProjectID, RecordID} from 'faims3-datamodel';
-import {
-  ProjectUIModel,
-  ProjectInformation,
-  SectionMeta,
-} from 'faims3-datamodel';
+import {ProjectUIModel, ProjectInformation} from 'faims3-datamodel';
 import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
@@ -58,8 +54,6 @@ import RecordDelete from '../components/notebook/delete';
 import {newStagedData} from '../../sync/draft-storage';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
-import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import {getProjectMetadata} from '../../projectMetadata';
 import UnpublishedWarning from '../components/record/unpublished_warning';
 import DraftSyncStatus from '../components/record/sync_status';
 import {grey} from '@mui/material/colors';
@@ -170,7 +164,6 @@ function DraftEdit(props: DraftEditProps) {
   const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
   const [draftError, setDraftError] = useState(null as string | null);
 
-  const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [value, setValue] = React.useState('1');
   const theme = useTheme();
   const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
@@ -180,11 +173,6 @@ function DraftEdit(props: DraftEditProps) {
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
-    if (project_id !== null) {
-      getProjectMetadata(project_id, 'sections').then(res =>
-        setMetaSection(res)
-      );
-    }
   }, [project_id]);
 
   useEffect(() => {
@@ -307,7 +295,6 @@ function DraftEdit(props: DraftEditProps) {
                       type={type_name}
                       ui_specification={uiSpec}
                       draft_id={draft_id}
-                      metaSection={metaSection}
                       handleSetIsDraftSaving={setIsDraftSaving}
                       handleSetDraftLastSaved={setDraftLastSaved}
                       handleSetDraftError={setDraftError}
@@ -358,30 +345,20 @@ export default function RecordCreate() {
   if (record_id !== undefined) draft_record_id = record_id;
   if (location.state && location.state.child_record_id !== undefined)
     draft_record_id = location.state.child_record_id; //pass record_id from parent
-  let project_info: ProjectInformation | null;
+  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
+    null
+  );
+  useEffect(() => {
+    if (project_id)
+      getProjectInfo(project_id).then(info => setProjectInfo(info));
+  }, [project_id]);
 
-  try {
-    project_info = useEventedPromise(
-      'RecordCreate page',
-      getProjectInfo,
-      constantArgsShared(listenProjectInfo, project_id!),
-      false,
-      [project_id],
-      project_id!
-    ).expect();
-  } catch (err: any) {
-    if (err.message !== 'missing') {
-      throw err;
-    } else {
-      return <Navigate to="/404" />;
-    }
-  }
   let breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
       link: ROUTES.NOTEBOOK + project_id,
-      title: project_info !== null ? project_info.name! : project_id!,
+      title: projectInfo !== null ? projectInfo.name! : project_id!,
     },
     {title: 'Draft'},
   ];
@@ -397,7 +374,7 @@ export default function RecordCreate() {
       {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
       {
         link: ROUTES.NOTEBOOK + project_id,
-        title: project_info !== null ? project_info.name! : project_id!,
+        title: projectInfo !== null ? projectInfo.name! : project_id!,
       },
       {
         link: ROUTES.NOTEBOOK + location.state.parent_link,
@@ -422,7 +399,7 @@ export default function RecordCreate() {
           />
         ) : (
           <DraftEdit
-            project_info={project_info}
+            project_info={projectInfo}
             project_id={project_id!}
             type_name={type_name!}
             draft_id={draft_id}

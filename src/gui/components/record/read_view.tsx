@@ -34,7 +34,6 @@ interface RecordReadViewProps {
   ui_specification: ProjectUIModel;
   conflictfields?: string[] | null;
   handleChangeTab?: any;
-  metaSection?: any;
   draft_id?: string;
   handleSetIsDraftSaving: Function;
   handleSetDraftLastSaved: Function;
@@ -66,7 +65,6 @@ export default function RecordReadView(props: RecordReadViewProps) {
         revision_id={props.revision_id}
         ui_specification={props.ui_specification}
         draft_id={props.draft_id}
-        metaSection={props.metaSection}
         disabled={true}
         handleSetIsDraftSaving={props.handleSetIsDraftSaving}
         handleSetDraftLastSaved={props.handleSetDraftLastSaved}

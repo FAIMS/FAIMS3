@@ -19,7 +19,7 @@
  *   throughout the app.
  */
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Link as RouterLink, NavLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -50,10 +50,9 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
 
 import * as ROUTES from '../../constants/routes';
-import {getActiveProjectList, listenProjectList} from '../../databaseAccess';
+import {getActiveProjectList} from '../../sync/projects';
 import SystemAlert from '../components/alert';
 import {ProjectInformation} from 'faims3-datamodel';
-import {useEventedPromise} from '../pouchHook';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import {TokenContents} from 'faims3-datamodel';
 import {checkToken} from '../../utils/helpers';
@@ -169,7 +168,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
 type NavbarProps = {
   token?: null | undefined | TokenContents;
 };
-export default function AppBar(props: NavbarProps) {
+export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
   // const globalState = useContext(store);
 
@@ -177,13 +176,11 @@ export default function AppBar(props: NavbarProps) {
   const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
 
-  const pouchProjectList = useEventedPromise(
-    'AppBar component',
-    getActiveProjectList,
-    listenProjectList,
-    true,
-    []
-  ).expect();
+  const [projectList, setProjectList] = useState<ProjectInformation[]>([]);
+
+  useEffect(() => {
+    getActiveProjectList().then(projects => setProjectList(projects));
+  }, []);
 
   const topMenuItems: Array<MenuItemProps> = [
     {
@@ -198,7 +195,7 @@ export default function AppBar(props: NavbarProps) {
       to: ROUTES.WORKSPACE,
       disabled: !isAuthenticated,
     },
-    pouchProjectList === null
+    projectList === null
       ? {
           title: 'Loading notebooks...',
           icon: <AccountTree />,
@@ -206,7 +203,7 @@ export default function AppBar(props: NavbarProps) {
           disabled: true,
         }
       : isAuthenticated
-      ? getNestedProjects(pouchProjectList)
+      ? getNestedProjects(projectList)
       : {
           title: 'Notebooks',
           icon: <AccountTree />,

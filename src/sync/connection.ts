@@ -13,9 +13,9 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: index.ts
+ * Filename: connection.ts
  * Description:
- *   TODO
+ *   Utilities for creating database connections
  */
 
 import PouchDB from 'pouchdb-browser';
@@ -24,9 +24,10 @@ import {PossibleConnectionInfo} from 'faims3-datamodel';
 import * as _ from 'lodash';
 
 export interface ConnectionInfo {
-  proto: string;
-  host: string;
-  port: number;
+  proto?: string;
+  host?: string;
+  port?: number;
+  base_url?: string;
   lan?: boolean;
   db_name: string;
   auth?: {
@@ -58,6 +59,7 @@ if (RUNNING_UNDER_TEST) {
   local_pouch_options['adapter'] = 'memory';
 }
 
+// merge one or more overlay structures to get a connection info object
 export function materializeConnectionInfo(
   base_info: ConnectionInfo,
   ...overlays: PossibleConnectionInfo[]
@@ -73,7 +75,7 @@ export function materializeConnectionInfo(
  * The following provide the infrastructure connect up the UI sync notifications
  * with pouchdb's callbacks.
  */
-export let sync_status_callbacks: SyncStatusCallbacks | null = null;
+let sync_status_callbacks: SyncStatusCallbacks | null = null;
 
 export function set_sync_status_callbacks(callbacks: SyncStatusCallbacks) {
   sync_status_callbacks = callbacks;
@@ -146,16 +148,22 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
     //opts.keepalive = true;
     return PouchDB.fetch(url, opts);
   };
-  // these defaults are really just to keep typescript happy since the
-  // connection_info properties might be undefined
-  return new PouchDB(
-    encodeURIComponent(connection_info.proto || 'http') +
+  let db_url: string;
+  // if we have a base_url configured, make the connection url from that
+  if (connection_info.base_url) {
+    if (connection_info.base_url.endsWith('/'))
+      db_url = connection_info.base_url + connection_info.db_name;
+    else db_url = connection_info.base_url + '/' + connection_info.db_name;
+  } else {
+    db_url =
+      encodeURIComponent(connection_info.proto || 'http') +
       '://' +
       encodeURIComponent(connection_info.host || 'localhost') +
       ':' +
       encodeURIComponent(connection_info.port || '5984') +
       '/' +
-      encodeURIComponent(connection_info.db_name),
-    pouch_options
-  );
+      encodeURIComponent(connection_info.db_name);
+  }
+
+  return new PouchDB(db_url, pouch_options);
 }

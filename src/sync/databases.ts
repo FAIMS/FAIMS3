@@ -13,9 +13,9 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: index.ts
+ * Filename: databases.ts
  * Description:
- *   TODO
+ *   Create the main local databases and provide access to them
  */
 
 import PouchDB from 'pouchdb-browser';
@@ -29,12 +29,12 @@ import {
 import {
   ProjectMetaObject,
   ProjectDataObject,
-  ProjectObject,
   ProjectID,
   ListingID,
   NonUniqueProjectID,
   PossibleConnectionInfo,
 } from 'faims3-datamodel';
+import {ProjectObject} from './projects';
 import {logError} from '../logging';
 import {
   ConnectionInfo,
@@ -227,63 +227,6 @@ export async function get_default_instance(): Promise<NonNullListingsObject> {
   return default_instance;
 }
 
-let default_projects_db: null | ConnectionInfo = null;
-
-export async function get_base_connection_info(
-  listing_object: ListingsObject
-): Promise<ConnectionInfo> {
-  if (default_projects_db === null) {
-    try {
-      // Normal case of a single DEFAULT listing in the directory
-      const possibly_corrupted_instance = await directory_db.local.get(
-        DEFAULT_LISTING_ID
-      );
-      return (default_projects_db = materializeConnectionInfo(
-        directory_connection_info,
-        possibly_corrupted_instance.projects_db
-      ));
-    } catch (err: any) {
-      // Missing when directory_db has NOTHING in it
-      // i.e. current FAIMS app doesn't have a directory
-      // this is usually because it's the server, not the app.
-      if (err.message !== 'missing') {
-        // Other DB error
-        throw err;
-      }
-
-      const nullExcept = <T>(val: T | undefined | null, err: any): T => {
-        if (val === null || val === undefined) {
-          throw err;
-        }
-        return val;
-      };
-
-      // If running in server mode
-      // the listings object MUST have all the connection properties
-      return {
-        proto: nullExcept(
-          listing_object.projects_db?.proto,
-          'Server misconfigured: Missing proto'
-        ),
-        host: nullExcept(
-          listing_object.projects_db?.host,
-          'Server misconfigured: Missing host'
-        ),
-        port: nullExcept(
-          listing_object.projects_db?.port,
-          'Server misconfigured: Missing port'
-        ),
-        db_name: nullExcept(
-          listing_object.projects_db?.db_name,
-          'Server misconfigured: Missing db_name'
-        ),
-        auth: listing_object.projects_db?.auth,
-      };
-    }
-  }
-  return default_projects_db;
-}
-
 /**
  * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
@@ -297,10 +240,12 @@ export function ensure_local_db<Content extends {}>(
   global_dbs: LocalDBList<Content>,
   start_sync_attachments: boolean
 ): [boolean, LocalDB<Content>] {
+  console.log('ensure_local_db', prefix, local_db_id, global_dbs);
   if (global_dbs[local_db_id]) {
     global_dbs[local_db_id].is_sync = start_sync;
     return [false, global_dbs[local_db_id]];
   } else {
+    console.log('creating a new db', prefix, local_db_id);
     const db = new PouchDB<Content>(
       prefix + POUCH_SEPARATOR + local_db_id,
       local_pouch_options
@@ -388,7 +333,11 @@ export function setLocalConnection<Content extends {}>(
   db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
 ) {
   const options = db_info.remote.options;
-  console.debug('Setting local connection:', db_info);
+  console.debug(
+    '%cSetting local connection:',
+    'background-color: cyan;',
+    db_info
+  );
 
   if (db_info.is_sync) {
     if (db_info.remote.connection !== null) {
