@@ -140,7 +140,7 @@
     "yup": "1.1.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0",
+    "@capacitor/cli": "^6.1.1",
     "@testing-library/jest-dom": "6.4.6",
     "@vitest/coverage-v8": "^0.34.4",
     "eslint-plugin-prettier": "^4.2.1",
