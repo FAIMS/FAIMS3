@@ -1,0 +1,14 @@
+# curl -u "username:apiKey" -X GET "https://api-cloud.browserstack.com/app-automate/recent_apps"
+GET https://api-cloud.browserstack.com/app-automate/recent_apps
+Authorization: Basic *Your username* *Your apiKey*
+
+
+###
+
+# curl -u "username:apiKey"
+#-X DELETE "https://api-cloud.browserstack.com/app-automate/app/delete/{appId}"
+DELETE https://api-cloud.browserstack.com/app-automate/app/delete/appId
+Authorization: Basic *Your username* *Your apiKey*
+###
+
+

@@ -1,0 +1,18 @@
+{
+  "appId": "org.fedarch.faims3",
+  "appName": "Fieldmark",
+  "npmClient": "npm",
+  "webDir": "build",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  },
+  "server": {
+    "allowNavigation": []
+  },
+  "android": {
+    "webContentsDebuggingEnabled": true
+  },
+  "cordova": {}
+}
