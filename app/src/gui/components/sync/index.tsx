@@ -42,7 +42,7 @@ import CloudQueueIcon from '@mui/icons-material/CloudQueue';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ErrorIcon from '@mui/icons-material/Error';
-import '../../../../node_modules/animate.css/animate.css';
+import 'animate.css';
 
 import {store} from '../../../context/store';
 import {grey} from '@mui/material/colors';
