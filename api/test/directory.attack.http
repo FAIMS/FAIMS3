@@ -1,0 +1,6 @@
+PUT http://localhost:5984/directory/attack
+Content-Type: application/json
+
+{
+    "name": "attack"
+}

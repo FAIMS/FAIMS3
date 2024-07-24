@@ -1,0 +1,52 @@
+.code {
+  width: 90%;
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 1.2rem;
+  background-color: #eee;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.mdxEditor {
+  font-family: 'Open Sans', sans-serif;
+}
+
+.image-dialog>div:first-child[aria-hidden="true"] {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.image-dialog>div:nth-child(2) {
+  box-shadow: 0px 11px 15px -7px rgba(0, 0, 0, 0.2), 0px 24px 38px 3px rgba(0, 0, 0, 0.14), 0px 9px 46px 8px rgba(0, 0, 0, 0.12);
+}
+
+.image-dialog>div:nth-child(2)>form {
+  font-family: 'Open Sans', sans-serif !important;
+}
+
+.image-dialog>div:nth-child(2)>form>div:first-child>label {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 500;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: #263238;
+}
+
+.image-dialog>div:nth-child(2)>form>div:nth-child(5)>button {
+  cursor: pointer;
+  user-select: none;
+  color: #669911;
+  font-family: 'Open Sans',sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.75;
+  text-transform: uppercase;
+  background-color: transparent;
+  border-color: transparent;
+  border-radius: 4px;
+}
+
+.image-dialog>div:nth-child(2)>form>div:nth-child(5)>button:hover {
+  background-color: rgba(102, 153, 17, 0.04);
+}

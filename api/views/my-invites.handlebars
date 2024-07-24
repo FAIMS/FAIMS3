@@ -1,0 +1,51 @@
+  <div class="form-signin w-100 m-auto text-center">
+    <h3 class="h3 mb-3 fw-normal" style="margin-top:50px">Manage Invites </h3>
+    <div class="btn-group mt-2 mb-4" role="group">
+      <a href="/" class="w-100 btn btn-outline-primary">Go Back to User Account<i class="bi bi-arrow-return-left"></i></a>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row gx-3 gy-3">
+      <div class="col-md-3 col-sm-12"></div>
+      <div class="col-md-6 col-sm-12">
+        <div class="card">
+          <div class="card-header">
+            My Invites
+          </div>
+          <div class="card-body">
+            <table class="table">
+              <thead>
+              <tr>
+                <th scope="col">Inviter</th>
+                <th scope="col">Project</th>
+                <th scope="col">Notebook Role</th>
+                <th scope="col">Action</th>
+              </tr>
+              </thead>
+              <tbody>
+              {{#each invites}}
+              <tr>
+                <td>{{ this.requesting_user }}</td>
+                <td>{{ this.project_id }}</td>
+                <td>{{ this.role }}</td>
+                <td>
+                  <div class="btn-group w-100" role="group" aria-label="Basic example">
+                    <a href="/accept-invite/{{ this._id }}" class="w-100 btn btn-outline-success" type="submit">Accept</a>
+                    <a href="/reject-invite/{{ this._id }}" class="w-100 btn btn-outline-danger" type="submit">Reject</a>
+                  </div>
+                </td>
+              </tr>
+              {{/each}}
+              </tbody>
+            </table>
+            <div class="alert alert-warning" role="alert">
+              <i class="bi bi-info-circle"></i>&nbsp;&nbsp; You will need internet access to sign in and accept invites.
+            </div>
+            <div class="alert alert-success" role="alert">
+              <i class="bi bi-check-circle"></i>&nbsp;&nbsp; You're all set! <a href="/send-token/">Return to App <i class="bi bi-arrow-return-left"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

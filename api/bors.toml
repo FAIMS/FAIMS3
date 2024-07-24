@@ -1,0 +1,10 @@
+status = [
+  "build",
+#  "test (lts/*, false)", # commented until we create integration tests
+  "license",
+#  "DCO",
+]
+block_labels = [ "S-do-not-merge-yet" ]
+update_base_for_deletes = true
+cut_body_after = "<details>"
+#timeout_sec = 36000 # ten hours

@@ -1,0 +1,56 @@
+
+<div class="form-signin w-100 m-auto">
+  <div class="form-signin w-100 m-auto text-center">
+    <h3 class="h3 mb-3 fw-normal" style="margin-top:50px">Register</h3>
+    <p class="">You can either register a local account (below) or 
+      use an authentication provide.</p>
+  </div>
+
+  {{#each providers}}
+  <p><a href="/register/{{../invite}}/{{ this.label }}/" class="w-100 btn btn-lg btn-primary"
+          style="background-color:#669911;">{{ this.name }}</a></p>
+  {{/each}}
+
+  {{#if localAuth}}
+  {{#if messages.error.registration}}
+  <div class="alert alert-danger">{{messages.error.registration}}</div>
+  {{/if}}
+  <form method="post" action="/register/local">
+  <fieldset>
+    <legend>Register Local Account</legend>
+    <div class="mb-3">
+      <label for="InputIdentifier" class="form-label">Username</label>
+      <input type="text" name="username" class="form-control" id="InputIdentifier" value="{{messages.username}}">
+    </div>
+    <div class="mb-3">
+      <label for="EmailInput" class="form-label">Email</label>
+      <input type="text" name="email" class="form-control" id="EmailInput" value="{{messages.email}}">
+      {{#if messages.error.email}}
+      <div class="alert alert-danger">{{messages.error.email.msg}}</div>
+      {{/if}}
+    </div>
+    <div class="mb-3">
+      <label for="NameInput" class="form-label">Full Name</label>
+      <input type="text" name="name" class="form-control" id="NameInput" value="{{messages.name}}">
+    </div>
+    <div class="mb-3">
+      <label for="InputPassword" class="form-label">Password</label>
+      <input type="password" name="password" class="form-control" id="InputPassword">
+      {{#if messages.error.password}}
+      <div class="alert alert-danger">{{messages.error.password.msg}}</div>
+      {{/if}}
+    </div>
+    <div class="mb-3">
+      <label for="RepeatPassword" class="form-label">Repeat Password</label>
+      <input type="password" name="repeat" class="form-control" id="RepeatPassword">
+      {{#if messages.error.repeat}}
+      <div class="alert alert-danger">{{messages.error.repeat.msg}}</div>
+      {{/if}}
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+    </fieldset>
+  </form>
+  {{/if}}
+
+</div>
+

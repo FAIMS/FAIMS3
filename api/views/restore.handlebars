@@ -1,0 +1,62 @@
+<div class="container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item" active aria-current="page">Restore</li>
+        </ol>
+    </nav>
+
+    <h1>Restore Database Backup</h1>
+
+    <p>This form allows you to upload a database backup from a 
+      mobile device and will restore the database contents to this
+      server's database.  This is intended only as an emergency 
+      recovery procedure and should not be relied upon as a way 
+      of transferring data.
+    </p>
+
+    <div class="container">
+    <form id="restore-backup-form">
+        <input type="file" name="backup" id="backup">
+        <input type="submit" value="Restore Backup">
+    </form>
+    <div>
+      <div id="spinner"></div>
+      <div id="message"></div>
+    </div>
+    </div>
+
+</div>
+
+<script>
+function formHandler(event) {
+  event.preventDefault();
+  const url = '/api/restore';
+  const form = event.target;
+  const fileInput = form.querySelector('[name="backup"]');
+  if (fileInput) {
+    const formData = new FormData();
+    formData.append('backup', fileInput.files[0]);
+    const message = document.getElementById('message');
+    const spinner = document.getElementById('spinner');
+    message.innerText = 'Restoring backup...';
+    spinner.className = 'spinner-border';
+    fetch(url, {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('response', data);
+      if (data.status === 'success') {
+        message.innerText = 'Backup restored successfully';
+      } else {
+        message.innerText = data.error;
+      }
+      spinner.className = '';
+    });
+  }
+}
+document.getElementById('restore-backup-form').onsubmit = formHandler;
+
+</script>
