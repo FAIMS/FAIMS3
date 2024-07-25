@@ -28,7 +28,7 @@
     "express-handlebars": "7.1.2",
     "express-rate-limit": "^7.1.5",
     "express-validator": "7.0.1",
-    "faims3-datamodel": "github:FAIMS/faims3-data-model#v1.1.6",
+    "faims3-datamodel": "^1.1.6",
     "fast-check": "2.25.0",
     "gts": "3.1.1",
     "handlebars": "4.7.7",
