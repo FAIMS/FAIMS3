@@ -1,0 +1,55 @@
+<script>
+const token_url = new URL('/get-token/', window.location.href);
+console.log("fetching token");
+fetch(
+    token_url
+).then(
+    res => res.json()
+).then(
+    token_json => {
+        const token_str = JSON.stringify({
+            token: token_json.token,
+            pubkey: token_json.pubkey,
+            pubalg: token_json.pubalg,
+            origin: window.location.href,
+        });
+        if (window.cordova_iab !== undefined) {
+            window.cordova_iab.postMessage(token_str);
+            alert("Token sent, hit back button");
+        } else if (
+            window.webkit !== undefined &&
+            window.webkit.messageHandlers !== undefined &&
+            window.webkit.messageHandlers.cordova_iab !== undefined
+        ) {
+            window.webkit.messageHandlers.cordova_iab.postMessage(token_str);
+            alert("Token sent, hit done button");
+        } else {
+            const app_window = window.opener ?? window.parent;
+            if (app_window === null) {
+                alert("Cannot find app");
+            } else {
+                console.error("sending token");
+                app_window.postMessage({
+                  token: token_json.token,
+                  pubkey: token_json.pubkey,
+                  pubalg: token_json.pubalg,
+                  origin: window.location.href,
+                }, "*");
+                window.close();
+            }
+            // use app url
+            const urlenc_token = encodeURIComponent(token_str);
+            window.location = "org.fedarch.faims3://auth/" + urlenc_token;
+        }
+    }
+).catch(console.error);
+</script>
+<div class="form-signin w-100 m-auto">
+<h3 class="h3 mb-3 fw-normal text-center" style="margin-top:50px">Logging you into the app</h3>
+<p>Welcome to Fieldmark</p>
+<ul>
+<li>If you have loaded this page in the app, please choose "Done" to return to Fieldmark.</li>
+<li>If you are using a web browser, close this tab, and reopen this page via the web
+app. The web app is running at <a href="{{ web_url }}">{{ web_url }}</a>.</li>
+</ul>
+</div>

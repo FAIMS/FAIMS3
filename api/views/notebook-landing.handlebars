@@ -1,0 +1,297 @@
+
+<div class="container">
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Home</a></li>
+    <li class="breadcrumb-item"><a href="/notebooks/">Notebooks</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{notebook.name}}</li>
+  </ol>
+</nav>
+
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <h1>{{ notebook.name }}</h1>
+
+      <dl>
+          <dt>Project ID</dt><dd>{{ notebook.project_id}}</dd>
+          <dt>Project Lead</dt><dd>{{ notebook.project_lead}}</dd>
+          <dt>Lead Institution</dt><dd>{{ notebook.lead_institution }}</dd>
+          <dt>Description</dt><dd>{{markdown notebook.pre_description }}</dd>
+          <dt>Records</dt><dd>{{ records }}</dd>
+      </dl>
+    </div>
+
+    <div class="col">
+      <h2>Notebook Actions</h2>
+
+    <ul class="list-group">
+      <li class="list-group-item">
+      <h5>Download Data</h5>
+        <table class="table">
+          <thead>
+            <tr><th>Form</th><th>Data</th><th>Attachments</th></tr>
+          </thead>
+          {{#each views}}
+          <tr>
+            <td>{{this}}</td>
+            <td>
+              <a class="btn btn-primary" href="/api/notebooks/{{../notebook.project_id}}/{{this}}.csv">CSV</a>
+            </td>
+            <td>
+              <a class="btn btn-primary" href="/api/notebooks/{{../notebook.project_id}}/{{this}}.zip">Zip</a>
+            </td>
+          </tr>
+          {{/each}}
+        </table>
+    </li>
+{{#if isAdmin}}
+
+    <li class="list-group-item">
+      <h5>Manage Users</h5>
+      <p><a class="btn btn-primary" href="/notebooks/{{notebook.project_id}}/invite/">Invite</a> 
+      users to register for this notebook.</p>
+    <h6>Existing Invites</h6>
+    <table>
+      {{#each invites}}
+      <tr>
+        {{#if this.invite.unlimited}}
+        <td>Unlimited users for role "{{this.invite.role}}"</td>
+        {{else}}
+        <td>{{this.invite.number}} users for role "{{this.invite.role}}"</td>
+        {{/if}}
+
+        <td>
+          <button class="btn btn-primary" onclick="copyToClipboard('{{this.url}}')">Copy Registration URL</button>
+        </td>
+        <td>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#qrModal{{this.invite._id}}">Show QRCode</button>
+        <div class="modal modal-fade" 
+            id="qrModal{{this.invite._id}}"
+              tabindex="-1" aria-labelledby="qrtitle-{{this.invite._id}}" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="qrtitle-{{this.invite._id}}">
+                Scan to register for role '{{this.invite.role}}' in <br>
+                the {{../notebook.name}} notebook
+              </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <img width="100%" src="{{this.qrcode}}" alt="QRCode for {{this.url}}">
+            </div>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+          </div>
+        </div>
+        </td>
+      </tr>
+      {{/each}}
+    </table>
+
+    <p><a class="btn btn-primary" href="/notebooks/{{notebook.project_id}}/users/">Edit User Roles</a></p>
+    </li>
+
+{{#if developer}}
+<li class="list-group-item">
+  <h5>Developer Actions</h5>
+  <script>
+  const addRecords = (e) => {
+    e.preventDefault();
+    const count = document.querySelector('input[name="number"]').value;
+    console.log('count', count);
+    fetch('/api/notebooks/{{notebook.project_id}}/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({count})
+    });
+  }
+  </script>
+
+  <form>
+    <input type="number" value="10" name="number" id="number">
+    <button onClick="addRecords(event)">Add Random Records</button>
+  </form>
+  </li>
+{{/if}}
+
+<li class="list-group-item">
+  <h5>Unsafe Actions</h5>
+
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#updateNotebookModal">Update Notebook</button>
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-danger" 
+                      data-bs-toggle="modal" data-bs-target="#deleteNotebookModal">Delete Notebok</button>
+      </div>
+    </div>
+  </div>
+    
+  <div id="updateNotebookModal" class="modal fade modal-xl" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Update Notebook</h5>
+        </div>
+
+        <div class="modal-body">
+          <p>Uploading a new version of a notebook can be a risky operation if 
+            there are already records in the notebook.  If fields are added or removed
+            from the notebook, the existing records will be incompatible with the new 
+            notebook and this may cause problems with record display and editing. Export
+            of data with mixed records may also be problematic.  
+            If you are not confident, create a new notebook instead.
+          </p>
+          <form id="upload-notebook-form">
+            <div class="mb-3">
+              <input type="file" class="form-control" name="notebook" id="notebook">
+              <div class="form-text">Select a notebook file in JSON format.</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-warning" onclick="uploadNotebookHandler()">Update Notebook</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal fade" id="deleteNotebookModal" tabindex="-1" aria-labelledby="deleteNotebookModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteNotebookModalLabel">Delete Notebook "{{notebook.name}}"?</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div class="mb-3">
+              <p>Deleting this notebook will remove all records from 
+                the database and cannot be recovered.
+              </p>
+              <label for="confirmationText{{this.non_unique_project_id}}" class="form-label">
+                Type <span class="text-danger">delete {{notebook.name}} and all records</span> to confirm deletion
+              </label>
+              <input class="form-control" 
+                      onkeyup="updateDeleteButton()"
+                      id="confirmationText">
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button"
+                  id="deleteButton"
+                  disabled
+                  class="btn btn-danger" 
+                  onclick="deleteNotebook()">
+                  Confirm Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+      </div>
+    </div>
+  </div>
+</li>
+</ul>
+</div>
+
+{{/if}}
+  
+</div>
+</div>
+</div>
+
+
+
+  <script>
+const copyToClipboard = (text) => {
+    navigator.permissions.query({name: "clipboard-write"}).then((result) => {
+    if (result.state === "granted" || result.state === "prompt") {
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Copied to clipboard.")
+        }, () => {
+                alert("Could not copy text.")
+        });
+    }
+    });
+}
+
+ const updateDeleteButton = (project_id, name) => {
+    const confirmationText = document.getElementById('confirmationText').value;
+    if (confirmationText === 'delete {{notebook.name}} and all records') {
+      document.getElementById('deleteButton').disabled = false;
+    } else {
+      document.getElementById('deleteButton').disabled = true;
+    }
+  }
+
+  const deleteNotebook = () => {
+
+    fetch('/api/notebooks/{{notebook.project_id}}/delete', {
+      method: 'POST',
+    })
+    .then(response => {
+      window.location = '/notebooks/';
+    });
+  }
+
+
+  const uploadNotebookHandler = () => {
+    const url = '/api/notebooks/{{notebook.project_id}}';
+    const form = document.querySelector('#upload-notebook-form');
+    const fileInput = form.querySelector('[name="notebook"]');
+    if (fileInput) {
+      // parse the contents of the uploaded file as JSON
+      const reader = new FileReader();
+      const filename = fileInput.files[0];
+      reader.readAsText(filename);
+      reader.onload = (evt) => {
+        try {
+          const data = JSON.parse(evt.target.result);
+          // a little bit of validation
+          if (!data.metadata || !data['ui-specification']) {
+            alert('Invalid notebook file');
+            return;
+          }
+          if (!data.metadata.name) {
+            alert('Invalid notebook file');
+            return;
+          }
+          const body = {
+            metadata: data.metadata,
+            'ui-specification': data['ui-specification'],
+          }
+          fetch(url, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.notebook) {
+              window.location.reload();
+            } else {
+              alert('Error uploading notebook');
+            }
+          });
+        } catch (e) {
+          alert('Invalid notebook file');
+          return;
+        }
+      }
+
+    }
+  }
+  document.getElementById('upload-notebook-form').onsubmit = uploadNotebookHandler;
+</script>

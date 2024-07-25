@@ -1,0 +1,1286 @@
+{
+    "metadata": {
+        "name": "Blue Mountains Survey",
+        "access": {
+            "accessFORM1": ["admin"],
+            "accessFORM2": ["admin"],
+            "accessFORM3": ["admin"]
+        },
+        "accesses":   ["admin", "moderator", "team"],
+        "filenames": [],
+        "forms": {
+            "FORM1":
+            {
+                "submitActionFORM1": "Save and New",
+                "annotationFORM1": true,
+                "uncertaintyFORM1": false,
+                "formaccessinheritFORM1": false,
+                "visibleFORM1": true
+            },
+            "FORM2":
+            {
+                "submitActionFORM2": "Save and New",
+                "annotationFORM2": true,
+                "uncertaintyFORM2": false,
+                "formaccessinheritFORM2": false,
+                "visibleFORM2": true
+            },
+            "FORM3":
+            {
+                "submitActionFORM3": "Save and New",
+                "annotationFORM3": true,
+                "uncertaintyFORM3": false,
+                "formaccessinheritFORM3": false,
+                "visibleFORM3": true
+            }
+        },
+        "ispublic": false,
+        "isrequest": false,
+        "lead_institution": "Macquarie University",
+        "meta": {},
+        "pre_description": "This notebook was created for the field survey of the Nellies Glen and Ruined Castle areas located in the Blue Mountains National Park as part of the Australian Research Council Linkage project History, heritage and environmental change in a deindustrialised landscape led by Associate Professor Tanya Evans, Macquarie University, Sydney, Australia, in partnership with the Blue Mountains World Heritage Institute, Lantern Heritage and Mountains Heritage. The project investigates a 19th-century shale-mining community in Jamison Valley through archaeological and archival research complemented by oral histories. The notebook has been designed for field survey of the historic mining heritage site in the Jamison Valley, near Katoomba.",
+        "project_lead": "Penny Crook",
+        "project_status": "New",
+        "sections": {}
+    },
+    "ui-specification": {
+        "fields":
+        {
+            "newfieldb66e2b4f":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "TakePhoto",
+                "type-returned": "faims-attachment::Files",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "name": "newfieldb66e2b4f",
+                    "id": "newfieldb66e2b4f",
+                    "helperText": "Take a photo",
+                    "variant": "outlined",
+                    "label": "Take Photo",
+                    "helpertext": "Take an overview photo"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.object"
+                    ],
+                    [
+                        "yup.nullable"
+                    ]
+                ],
+                "initialValue": null,
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield1b5341a3":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "TakePoint",
+                "type-returned": "faims-pos::Location",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "name": "newfield1b5341a3",
+                    "id": "newfield1b5341a3",
+                    "helperText": "Click to save current location",
+                    "variant": "outlined",
+                    "label": "Take GPS Point"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.object"
+                    ],
+                    [
+                        "yup.nullable"
+                    ]
+                ],
+                "initialValue": null,
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield83238a4d":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "Select",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "This is the type of feature",
+                    "variant": "outlined",
+                    "required": false,
+                    "select": true,
+                    "InputProps":
+                    {},
+                    "SelectProps":
+                    {},
+                    "ElementProps":
+                    {
+                        "options":
+                        [
+                            {
+                                "value": "Other ",
+                                "label": "Other "
+                            },
+                            {
+                                "value": "Metal Feature",
+                                "label": "Metal Feature"
+                            },
+                            {
+                                "value": "Masonry",
+                                "label": "Masonry"
+                            },
+                            {
+                                "value": "Rock cutting",
+                                "label": "Rock cutting"
+                            },
+                            {
+                                "value": "Hearth",
+                                "label": "Hearth"
+                            },
+                            {
+                                "value": "",
+                                "label": ""
+                            }
+                        ]
+                    },
+                    "InputLabelProps":
+                    {
+                        "label": "Feature Type"
+                    },
+                    "id": "newfield83238a4d",
+                    "name": "newfield83238a4d"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfieldc25e8929":
+            {
+                "component-namespace": "formik-material-ui",
+                "component-name": "MultipleTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "Enter a detailed description of the feature",
+                    "variant": "outlined",
+                    "required": false,
+                    "multiline": true,
+                    "InputProps":
+                    {
+                        "type": "text",
+                        "rows": 4
+                    },
+                    "SelectProps":
+                    {},
+                    "InputLabelProps":
+                    {
+                        "label": "Feature Description"
+                    },
+                    "FormHelperTextProps":
+                    {},
+                    "id": "newfieldc25e8929",
+                    "name": "newfieldc25e8929"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfieldb22417a4":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "RelatedRecordSelector",
+                "type-returned": "faims-core::Relationship",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "Select or Add new related record",
+                    "variant": "outlined",
+                    "required": false,
+                    "related_type": "FORM2",
+                    "relation_type": "faims-core::Child",
+                    "InputProps":
+                    {
+                        "type": "text"
+                    },
+                    "multiple": true,
+                    "SelectProps":
+                    {},
+                    "InputLabelProps":
+                    {
+                        "label": "Artefacts"
+                    },
+                    "FormHelperTextProps":
+                    {},
+                    "id": "newfieldb22417a4",
+                    "name": "newfieldb22417a4"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue":
+                [],
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield51a822a0":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "RelatedRecordSelector",
+                "type-returned": "faims-core::Relationship",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "Measurements",
+                    "variant": "outlined",
+                    "required": false,
+                    "related_type": "FORM3",
+                    "relation_type": "faims-core::Child",
+                    "InputProps":
+                    {
+                        "type": "text"
+                    },
+                    "multiple": false,
+                    "SelectProps":
+                    {},
+                    "InputLabelProps":
+                    {
+                        "label": "Measurements"
+                    },
+                    "FormHelperTextProps":
+                    {},
+                    "id": "newfield51a822a0",
+                    "name": "newfield51a822a0"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield4bfc3c26":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "Select",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "Select dimension type",
+                    "variant": "outlined",
+                    "required": true,
+                    "select": true,
+                    "InputProps":
+                    {},
+                    "SelectProps":
+                    {},
+                    "ElementProps":
+                    {
+                        "options":
+                        [
+                            {
+                                "value": "Height (m)",
+                                "label": "Height (m)"
+                            },
+                            {
+                                "value": "Length (m)",
+                                "label": "Length (m)"
+                            },
+                            {
+                                "value": "Width (m)",
+                                "label": "Width (m)"
+                            },
+                            {
+                                "value": "Depth (m)",
+                                "label": "Depth (m)"
+                            },
+                            {
+                                "value": "Diameter (m)",
+                                "label": "Diameter (m)"
+                            },
+                            {
+                                "value": "Area sqm",
+                                "label": "Area sqm"
+                            },
+                            {
+                                "value": "Other",
+                                "label": "Other"
+                            },
+                            {
+                                "value": "Max preserved Height (m)",
+                                "label": "Max preserved Height (m)"
+                            },
+                            {
+                                "value": "Exterior Length (m)",
+                                "label": "Exterior Length (m)"
+                            },
+                            {
+                                "value": "Exterior Width (m) ",
+                                "label": "Exterior Width (m) "
+                            }
+                        ]
+                    },
+                    "InputLabelProps":
+                    {
+                        "label": "Dimension"
+                    },
+                    "id": "newfield4bfc3c26",
+                    "name": "newfield4bfc3c26"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ],
+                    [
+                        "yup.required"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": true,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield0b21d3e2":
+            {
+                "component-namespace": "formik-material-ui",
+                "component-name": "TextField",
+                "type-returned": "faims-core::Integer",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "Enter your value here",
+                    "variant": "outlined",
+                    "required": false,
+                    "InputProps":
+                    {
+                        "type": "number"
+                    },
+                    "SelectProps":
+                    {},
+                    "InputLabelProps":
+                    {
+                        "label": "Measurement"
+                    },
+                    "FormHelperTextProps":
+                    {},
+                    "id": "newfield0b21d3e2",
+                    "name": "newfield0b21d3e2"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.number"
+                    ],
+                    [
+                        "yup.min",
+                        1
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield8baedbec":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "Select",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "Select your material here",
+                    "variant": "outlined",
+                    "required": false,
+                    "select": true,
+                    "InputProps":
+                    {},
+                    "SelectProps":
+                    {},
+                    "ElementProps":
+                    {
+                        "options":
+                        [
+                            {
+                                "value": "Ceramic",
+                                "label": "Ceramic"
+                            },
+                            {
+                                "value": "Glass",
+                                "label": "Glass"
+                            },
+                            {
+                                "value": "Metal",
+                                "label": "Metal"
+                            },
+                            {
+                                "value": "Stone",
+                                "label": "Stone"
+                            },
+                            {
+                                "value": "Organic",
+                                "label": "Organic"
+                            },
+                            {
+                                "value": "Other",
+                                "label": "Other"
+                            }
+                        ]
+                    },
+                    "InputLabelProps":
+                    {
+                        "label": "Material"
+                    },
+                    "id": "newfield8baedbec",
+                    "name": "newfield8baedbec"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfieldcce6babf":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "TakePhoto",
+                "type-returned": "faims-attachment::Files",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "name": "newfieldcce6babf",
+                    "id": "newfieldcce6babf",
+                    "helperText": "Take a photo",
+                    "variant": "outlined",
+                    "label": "Take Photo"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.object"
+                    ],
+                    [
+                        "yup.nullable"
+                    ]
+                ],
+                "initialValue": null,
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfieldfa3c1b6b":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "TemplatedStringField",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "name": "newfieldfa3c1b6b",
+                    "id": "newfieldfa3c1b6b",
+                    "helperText": "Human Readable ID",
+                    "variant": "outlined",
+                    "required": true,
+                    "template": "{{newfield4ac4f23b}}-{{newfield4510ea65}}",
+                    "InputProps":
+                    {
+                        "type": "text",
+                        "readOnly": true
+                    },
+                    "InputLabelProps":
+                    {
+                        "label": "ArtefactID"
+                    },
+                    "hrid": true,
+                    "fieldselect10": "newfield4ac4f23b",
+                    "numberfield": 2,
+                    "fieldselect11": "newfield4510ea65"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ],
+                    [
+                        "yup.required"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "hridFORM2":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "TemplatedStringField",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "name": "hridFORM2",
+                    "id": "hridFORM2",
+                    "helperText": "Human Readable ID",
+                    "variant": "outlined",
+                    "required": true,
+                    "template": "{{newfield4ac4f23b}}-{{newfield4510ea65}}",
+                    "InputProps":
+                    {
+                        "type": "text",
+                        "readOnly": true
+                    },
+                    "InputLabelProps":
+                    {
+                        "label": "ArtefactID"
+                    },
+                    "hrid": true,
+                    "linked": "newfieldfa3c1b6b",
+                    "fieldselect10": "newfield4ac4f23b",
+                    "numberfield": 2,
+                    "fieldselect11": "newfield4510ea65"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ],
+                    [
+                        "yup.required"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield5334b903":
+            {
+                "component-namespace": "formik-material-ui",
+                "component-name": "MultipleTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "What do you think this is?",
+                    "variant": "outlined",
+                    "required": true,
+                    "multiline": true,
+                    "InputProps":
+                    {
+                        "type": "text",
+                        "rows": 4
+                    },
+                    "SelectProps":
+                    {},
+                    "InputLabelProps":
+                    {
+                        "label": "Interpretation"
+                    },
+                    "FormHelperTextProps":
+                    {},
+                    "id": "newfield5334b903",
+                    "name": "newfield5334b903"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield813f3aee":
+            {
+                "component-namespace": "formik-material-ui",
+                "component-name": "MultipleTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "Add additional comments about the feature here.",
+                    "variant": "outlined",
+                    "required": false,
+                    "multiline": true,
+                    "InputProps":
+                    {
+                        "type": "text",
+                        "rows": 4
+                    },
+                    "SelectProps":
+                    {},
+                    "InputLabelProps":
+                    {
+                        "label": "Comments"
+                    },
+                    "FormHelperTextProps":
+                    {},
+                    "id": "newfield813f3aee",
+                    "name": "newfield813f3aee"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfielda0f81ae8":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "BasicAutoIncrementer",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "name": "newfielda0f81ae8",
+                    "id": "newfielda0f81ae8",
+                    "variant": "outlined",
+                    "required": false,
+                    "num_digits": 5,
+                    "form_id": "FORM1SECTION1",
+                    "label": "FeatureIDincrementor"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ],
+                    [
+                        "yup.required"
+                    ]
+                ],
+                "initialValue": null,
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield4510ea65":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "BasicAutoIncrementer",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "name": "newfield4510ea65",
+                    "id": "newfield4510ea65",
+                    "variant": "outlined",
+                    "required": false,
+                    "num_digits": 5,
+                    "form_id": "FORM2SECTION1",
+                    "label": "ArtefactID_counter"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ],
+                    [
+                        "yup.required"
+                    ]
+                ],
+                "initialValue": null,
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield020362dc":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "TemplatedStringField",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "name": "newfield020362dc",
+                    "id": "newfield020362dc",
+                    "helperText": "",
+                    "variant": "outlined",
+                    "required": false,
+                    "template": "{{newfield83238a4d}}-{{newfielda0f81ae8}}",
+                    "InputProps":
+                    {
+                        "type": "text",
+                        "readOnly": true
+                    },
+                    "InputLabelProps":
+                    {
+                        "label": "FeatureID"
+                    },
+                    "hrid": true,
+                    "numberfield": 2,
+                    "fieldselect10": "newfield83238a4d",
+                    "fieldselect11": "newfielda0f81ae8"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ],
+                    [
+                        "yup.required"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "hridFORM1":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "TemplatedStringField",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "name": "hridFORM1",
+                    "id": "hridFORM1",
+                    "helperText": "",
+                    "variant": "outlined",
+                    "required": true,
+                    "template": "{{newfield83238a4d}}-{{newfielda0f81ae8}}",
+                    "InputProps":
+                    {
+                        "type": "text",
+                        "readOnly": true
+                    },
+                    "InputLabelProps":
+                    {
+                        "label": "FeatureID"
+                    },
+                    "hrid": true,
+                    "linked": "newfield020362dc",
+                    "numberfield": 2,
+                    "fieldselect10": "newfield83238a4d",
+                    "fieldselect11": "newfielda0f81ae8"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ],
+                    [
+                        "yup.required"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield4ac4f23b":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "RandomStyle",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "",
+                    "variant": "outlined",
+                    "label": "Artefact",
+                    "variant_style": "body1",
+                    "html_tag": "",
+                    "id": "newfield4ac4f23b",
+                    "name": "newfield4ac4f23b"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield44fdbc12":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "TemplatedStringField",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "name": "newfield44fdbc12",
+                    "id": "newfield44fdbc12",
+                    "helperText": "",
+                    "variant": "outlined",
+                    "required": true,
+                    "template": "{{newfield0b21d3e2}}-{{newfield4bfc3c26}}",
+                    "InputProps":
+                    {
+                        "type": "text",
+                        "readOnly": true
+                    },
+                    "InputLabelProps":
+                    {
+                        "label": ""
+                    },
+                    "hrid": true,
+                    "numberfield": 2,
+                    "fieldselect10": "newfield0b21d3e2",
+                    "fieldselect11": "newfield4bfc3c26"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ],
+                    [
+                        "yup.required"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "hridFORM3":
+            {
+                "component-namespace": "faims-custom",
+                "component-name": "TemplatedStringField",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "name": "hridFORM3",
+                    "id": "hridFORM3",
+                    "helperText": "",
+                    "variant": "outlined",
+                    "required": true,
+                    "template": "{{newfield0b21d3e2}}-{{newfield4bfc3c26}}",
+                    "InputProps":
+                    {
+                        "type": "text",
+                        "readOnly": true
+                    },
+                    "InputLabelProps":
+                    {
+                        "label": ""
+                    },
+                    "hrid": true,
+                    "linked": "newfield44fdbc12",
+                    "numberfield": 2,
+                    "fieldselect10": "newfield0b21d3e2",
+                    "fieldselect11": "newfield4bfc3c26"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ],
+                    [
+                        "yup.required"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "newfield8530569f":
+            {
+                "component-namespace": "formik-material-ui",
+                "component-name": "MultipleTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters":
+                {
+                    "fullWidth": true,
+                    "helperText": "Enter additional comments about the artefacts associated with this feature, as needed",
+                    "variant": "outlined",
+                    "required": false,
+                    "multiline": true,
+                    "InputProps":
+                    {
+                        "type": "text",
+                        "rows": 4
+                    },
+                    "SelectProps":
+                    {},
+                    "InputLabelProps":
+                    {
+                        "label": "Artefact Comment"
+                    },
+                    "FormHelperTextProps":
+                    {},
+                    "id": "newfield8530569f",
+                    "name": "newfield8530569f"
+                },
+                "validationSchema":
+                [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "access":
+                [
+                    "admin"
+                ],
+                "meta":
+                {
+                    "annotation_label": "annotation",
+                    "annotation": true,
+                    "uncertainty":
+                    {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            }
+        },
+        "fviews":
+        {
+            "FORM1SECTION1":
+            {
+                "fields":
+                [
+                    "newfielda0f81ae8",
+                    "hridFORM1",
+                    "newfield1b5341a3",
+                    "newfieldb66e2b4f",
+                    "newfield83238a4d",
+                    "newfieldc25e8929",
+                    "newfieldb22417a4",
+                    "newfield51a822a0",
+                    "newfield5334b903",
+                    "newfield813f3aee"
+                ],
+                "uidesign": "form",
+                "label": "SECTION1"
+            },
+            "FORM3SECTION1":
+            {
+                "fields":
+                [
+                    "hridFORM3",
+                    "newfield4bfc3c26",
+                    "newfield0b21d3e2"
+                ],
+                "uidesign": "form",
+                "label": "Dimension"
+            },
+            "FORM2SECTION1":
+            {
+                "fields":
+                [
+                    "newfield4ac4f23b",
+                    "newfield4510ea65",
+                    "hridFORM2",
+                    "newfield8baedbec",
+                    "newfieldcce6babf",
+                    "newfield8530569f"
+                ],
+                "uidesign": "form",
+                "label": "SECTION1"
+            }
+        },
+        "viewsets":
+        {
+            "FORM1":
+            {
+                "views":
+                [
+                    "FORM1SECTION1"
+                ],
+                "label": "Feature"
+            },
+            "FORM2":
+            {
+                "views":
+                [
+                    "FORM2SECTION1"
+                ],
+                "label": "Artefact"
+            },
+            "FORM3":
+            {
+                "views":
+                [
+                    "FORM3SECTION1"
+                ],
+                "label": "Measurements"
+            }
+        },
+        "visible_types":
+        [
+            "FORM1",
+            "FORM2",
+            "FORM3"
+        ]
+    }
+}

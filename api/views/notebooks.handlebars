@@ -1,0 +1,112 @@
+<div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item" active aria-current="page">Notebooks</li>
+      </ol>
+    </nav>
+
+<h1>Notebooks</h1>
+
+  <table class="table">
+      {{#each notebooks}}
+          <tr>
+            <td>
+              <a href="/notebooks/{{this.non_unique_project_id}}">{{this.name}}</a>
+            </td>
+          </tr>
+      {{/each}}
+  </table>
+
+
+  {{#if can_create_notebooks}}
+  <div class="accordion" id="uploadFormContainer">
+    <h2 class="accordion-header" id="headingOne">
+      <button class="accordion-button collapsed" type="button" 
+              data-bs-toggle="collapse" data-bs-target="#collapseOne" 
+              aria-expanded="false" aria-controls="collapseOne">
+        Upload a Notebook
+      </button>
+    </h2>
+
+    <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#uploadFormContainer">
+      <div class="accordion-body">
+        <form id="upload-notebook-form">
+          <div class="mb-3">
+            <label for="notebookName">Notebook Name</label>
+            <input id="notebookName" name="name" class="form-control" placeholder="Notebook Name">
+            <div class="form-text">Optional, if not provided the name property from the file will be used.</div>
+          </div>
+
+          <div class="mb-3">
+            <input type="file" class="form-control" name="notebook" id="notebook">
+            <div class="form-text">Select a notebook file in JSON format.</div>
+          </div>
+
+          <div class="mb-3">
+            <input type="submit" class="form-control" value="Upload Notebook">
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {{/if}}
+
+
+</div>
+
+
+<script>
+  const uploadNotebookHandler = (event) => {
+    event.preventDefault();
+    const url = '/api/notebooks/';
+    const form = event.target;
+    const name = form.querySelector('[name="name"]').value;
+    const fileInput = form.querySelector('[name="notebook"]');
+    if (fileInput) {
+      // parse the contents of the uploaded file as JSON
+      const reader = new FileReader();
+      const filename = fileInput.files[0];
+      reader.readAsText(filename);
+      reader.onload = (evt) => {
+        try {
+          const data = JSON.parse(evt.target.result);
+          // a little bit of validation
+          if (!data.metadata || !data['ui-specification']) {
+            alert('Invalid notebook file');
+            return;
+          }
+          if (!data.metadata.name) {
+            alert('Invalid notebook file');
+            return;
+          }
+          const body = {
+            metadata: data.metadata,
+            'ui-specification': data['ui-specification'],
+            name: name || data.metadata.name,
+          }
+          fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.notebook) {
+              window.location.reload();
+            } else {
+              alert('Error uploading notebook');
+            }
+          });
+        } catch (e) {
+          alert('Invalid notebook file');
+          return;
+        }
+      }
+
+    }
+  }
+  document.getElementById('upload-notebook-form').onsubmit = uploadNotebookHandler;
+</script>

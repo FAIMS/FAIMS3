@@ -1,0 +1,35 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Lint, build, test
+
+on: push
+
+
+jobs:
+  build:
+    # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js lts/*
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+    - name: "Linting and testing"
+      run: |
+        cp .env.dist .env
+        ./keymanagement/makeInstanceKeys.sh
+        npm ci
+        npm run lint
+        npm run compile
+        npm run build --if-present
+        npm run test
+    - name: Generate coverage report
+      run: npm run coverage
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+          token: ${{ secrets.CODECOV_TOKEN }}
