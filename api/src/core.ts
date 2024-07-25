@@ -24,7 +24,8 @@ import cookieSession from 'cookie-session';
 import cors from 'cors';
 import passport from 'passport';
 import morgan from 'morgan';
-import {engine as express_handlebars} from 'express-handlebars';
+import {ExpressHandlebars} from 'express-handlebars';
+import handlebars from 'handlebars';
 import RateLimit from 'express-rate-limit';
 import flash from 'req-flash';
 
@@ -47,6 +48,7 @@ const indexContent = readFileSync(
 
 import {COOKIE_SECRET} from './buildconfig';
 import {api} from './api/routes';
+import markdownit from 'markdown-it';
 
 export const app = express();
 app.use(morgan('combined'));
@@ -90,6 +92,19 @@ app.use((request, response, next) => {
   next();
 });
 
+const handlebarsConfig = {
+  helpers: {
+    markdown: (aString: string) => {
+        let htmlText = markdownit().render(aString);
+        // add the bootstrap table class to any tables
+        htmlText = htmlText.replace(/<table>/g, '<table class="table">');
+        return new handlebars.SafeString(htmlText);
+      },
+  },
+};
+
+const hbs = new ExpressHandlebars(handlebarsConfig);
+
 app.use(express.urlencoded({extended: true}));
 // allow large JSON objects to be posted
 app.use(express.json({limit: '200mb'}));
@@ -97,7 +112,7 @@ app.use(cors());
 app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
-app.engine('handlebars', express_handlebars());
+app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
 app.use(express.static('public'));
 app.use('/api', api);
