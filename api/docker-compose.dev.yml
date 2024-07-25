@@ -19,9 +19,9 @@ services:
   conductor:
     build:
       context: .
-    command: "npm run watch"
+    command: "npm run watch --workspace=api"
     volumes:
-      - .:/app
+      - ..:/usr/src
     ports:
       - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
     networks:

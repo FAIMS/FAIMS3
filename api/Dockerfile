@@ -2,8 +2,15 @@
 
 FROM node:20
 
-WORKDIR /app
+WORKDIR /usr/src
 
-COPY . .
-RUN npm ci 
-CMD ["npm", "start"] 
+COPY ../package.json ./
+COPY ../package-lock.json ./
+
+COPY ./package.json ./api/package.json
+
+RUN npm install
+
+COPY .. .
+
+CMD ["npm", "run", "start"] 
