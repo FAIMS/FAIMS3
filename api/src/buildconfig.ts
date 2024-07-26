@@ -20,6 +20,7 @@
  */
 
 import {v4 as uuidv4} from 'uuid';
+import {getKeyService, IKeyService, KeySource} from './services/keyService';
 import nodemailer from 'nodemailer';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
@@ -278,3 +279,21 @@ export const EMAIL_TRANSPORTER = email_transporter();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
+
+/**
+ * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
+ * FILE.
+ * @returns the KeySource enum to use
+ */
+function getKeySourceConfig(): KeySource {
+  const keySource = process.env.KEY_SOURCE as KeySource;
+  if (keySource === undefined || !(keySource in KeySource)) {
+    console.log('KEY_SOURCE not set or invalid, using default FILE');
+    return KeySource.FILE;
+  }
+  return keySource;
+}
+
+// Dependency injection pattern for key service
+export const KEY_SOURCE: KeySource = getKeySourceConfig();
+export const KEY_SERVICE: IKeyService = getKeyService(KEY_SOURCE);
