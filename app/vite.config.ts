@@ -32,6 +32,9 @@ export default defineConfig({
   build: {
     outDir: 'build',
   },
+  server: {
+    port: 5000,
+  },
   resolve: {
     alias: {
       events: 'rollup-plugin-node-polyfills/polyfills/events',
