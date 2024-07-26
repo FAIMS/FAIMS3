@@ -14,7 +14,7 @@
  * 25-07-2024 | Peter Baker | TODO - use the same LB as the couch DB network to save $$$.
  */
 
-import { RemovalPolicy } from "aws-cdk-lib";
+import { aws_iam, RemovalPolicy } from "aws-cdk-lib";
 import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import {
@@ -179,20 +179,6 @@ export class FaimsConductor extends Construct {
       }
     );
 
-    //couchDbTaskDfn.addVolume({
-    //  name: VOLUME_NAME,
-    //  efsVolumeConfiguration: {
-    //    fileSystemId: efsFileSystem.fileSystemId,
-    //    transitEncryption: "ENABLED",
-    //  },
-    //});
-
-    //couchDbContainerDefinition.addMountPoints({
-    //  sourceVolume: VOLUME_NAME,
-    //  containerPath: "/opt/couchdb/data",
-    //  readOnly: false,
-    //});
-
     const service = new ApplicationLoadBalancedFargateService(
       this,
       "conductor-lb-service",
@@ -244,20 +230,13 @@ export class FaimsConductor extends Construct {
       }
     );
 
-    // Setup network access and permissions for file-mount
-
-    // allow the service to r/w to EFS
-    //efsFileSystem.connections.allowFrom(service.cluster, Port.allTraffic());
-    //efsFileSystem.connections.allowFrom(service.service, Port.allTraffic());
-
-    //// Grant read/write data access at IAM level for both roles as needed
-
-    //// Read-write for the task
-    //efsFileSystem.grantReadWrite(couchDbTaskDfn.taskRole);
-
-    //// Admin for the execution role
-    //couchDbTaskDfn.executionRole &&
-    //  efsFileSystem.grantRootAccess(couchDbTaskDfn.executionRole);
+    // Grant permission to read the private key secret
+    conductorTaskDfn.taskRole.addToPrincipalPolicy(
+      new aws_iam.PolicyStatement({
+        actions: ["secretsmanager:GetSecretValue"],
+        resources: [props.privateKeySecretArn],
+      })
+    );
 
     // inject different health check configuration -> allow redirects
     service.targetGroup.configureHealthCheck({ healthyHttpCodes: "200,302" });
