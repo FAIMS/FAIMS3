@@ -20,25 +20,25 @@
  */
 
 import {SignJWT} from 'jose';
-
-import type {SigningKey} from './types';
+import type {SigningKey} from '../services/keyService';
 
 export async function createAuthKey(
   user: Express.User,
-  signing_key: SigningKey
+  signingKey: SigningKey
 ) {
   const jwt = await new SignJWT({
     '_couchdb.roles': user.roles ?? [],
     name: user.name,
   })
     .setProtectedHeader({
-      alg: signing_key.alg,
-      kid: signing_key.kid,
+      alg: signingKey.alg,
+      kid: signingKey.kid,
     })
     .setSubject(user.user_id)
     .setIssuedAt()
-    .setIssuer(signing_key.instance_name)
+    .setIssuer(signingKey.instanceName)
+    // TODO reinstate expiration time
     //.setExpirationTime('2h')
-    .sign(signing_key.private_key);
+    .sign(signingKey.privateKey);
   return jwt;
 }
