@@ -133,3 +133,10 @@ cdk.out
 temp
 dist
 local
+
+configs/*
+!configs/config_class.ts
+!configs/sample.json
+
+# we shouldn't track this!
+cdk.context.json
