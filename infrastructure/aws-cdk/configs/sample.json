@@ -1,0 +1,18 @@
+{
+  "hostedZone": {
+    "id": "your-hosted-zone-id",
+    "name": "your-zone-name"
+  },
+  "certificates": {
+    "primary": "your-primary-cert-arn",
+    "cloudfront": "your-cloudfront-cert-arn"
+  },
+  "aws": {
+    "account": "your-aws-account-id",
+    "region": "ap-southeast-2"
+  },
+  "secrets": {
+    "privateKey": "your-private-key-secret-arn",
+    "publicKey": "your-public-key-secret-arn"
+  }
+}
