@@ -7,7 +7,8 @@
     "app",
     "designer",
     "library/data-model",
-    "tests"
+    "tests",
+    "infrastructure/aws-cdk"
   ],
   "scripts": {
     "build-app": "npm run build --workspace=app",
