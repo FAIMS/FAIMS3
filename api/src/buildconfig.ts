@@ -294,6 +294,17 @@ function getKeySourceConfig(): KeySource {
   return keySource;
 }
 
+function getAwsSecretKeyArn(): string {
+  const arn = process.env.AWS_SECRET_KEY_ARN;
+  if (!arn) {
+    throw new Error('AWS_SECRET_KEY_ARN is not set but KEY_SOURCE is AWS_SM');
+  }
+  return arn;
+}
+
 // Dependency injection pattern for key service
 export const KEY_SOURCE: KeySource = getKeySourceConfig();
+export const AWS_SECRET_KEY_ARN: string | undefined = KEY_SOURCE === KeySource.AWS_SM ? getAwsSecretKeyArn() : undefined;
+
 export const KEY_SERVICE: IKeyService = getKeyService(KEY_SOURCE);
+
