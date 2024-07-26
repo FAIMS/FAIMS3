@@ -135,7 +135,7 @@ dist
 local
 
 configs/*
-!configs/config_class.ts
+!configs/config-class.ts
 !configs/sample.json
 
 # we shouldn't track this!
