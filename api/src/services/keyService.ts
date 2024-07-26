@@ -5,7 +5,9 @@ import {
   CONDUCTOR_KEY_ID,
   CONDUCTOR_PUBLIC_KEY_PATH,
   CONDUCTOR_PRIVATE_KEY_PATH,
+  AWS_SECRET_KEY_ARN,
 } from '../buildconfig';
+import {SecretsManager} from 'aws-sdk';
 
 // Define an enum for allowable key source values
 export enum KeySource {
@@ -107,13 +109,65 @@ class FileKeyService extends BaseKeyService {
   }
 }
 
+interface AWSKeyServiceConfig {
+  secretArn: string;
+}
+
 /**
- * Placeholder for AWS Secrets Manager key service implementation
+ * AWS Secrets Manager Key service implementation. Uses AWS Secret manager to
+ * store the keys, and pulls at runtime.
  */
 class AWSSecretsManagerKeyService extends BaseKeyService {
+  private awsServiceConfig: AWSKeyServiceConfig;
+  private secretsManager: SecretsManager;
+
+  constructor(config: KeyConfig, awsServiceConfig: AWSKeyServiceConfig) {
+    super(config);
+    this.awsServiceConfig = awsServiceConfig;
+    this.secretsManager = new SecretsManager();
+  }
+
   async getSigningKey(): Promise<SigningKey> {
-    // TODO: Implement AWS Secrets Manager key retrieval
-    throw new Error('AWS Secrets Manager key service not implemented');
+    try {
+      const secretData = await this.secretsManager
+        .getSecretValue({SecretId: this.awsServiceConfig.secretArn})
+        .promise();
+
+      if (!secretData.SecretString) {
+        throw new Error('Secret string is undefined');
+      }
+
+      const secretJson = JSON.parse(secretData.SecretString);
+
+      // This is from the structure expected on the secret in AWS SM
+      const privateKeyString = secretJson.rsa_private_key;
+      const publicKeyString = secretJson.rsa_public_key;
+
+      if (!privateKeyString || !publicKeyString) {
+        throw new Error('Private or public key is missing from the secret');
+      }
+
+      const privateKey = await importPKCS8(
+        privateKeyString,
+        this.config.signingAlgorithm
+      );
+      const publicKey = await importSPKI(
+        publicKeyString,
+        this.config.signingAlgorithm
+      );
+
+      return {
+        privateKey,
+        publicKey,
+        publicKeyString,
+        instanceName: this.config.instanceName,
+        alg: this.config.signingAlgorithm,
+        kid: this.config.keyId,
+      };
+    } catch (error) {
+      console.error('Failed to retrieve key from AWS Secrets Manager:', error);
+      throw error;
+    }
   }
 }
 
@@ -130,13 +184,22 @@ export function createKeyService(
   };
 
   switch (keySource) {
+    // From file
     case KeySource.FILE:
       return new FileKeyService(config, {
         publicKeyFile: CONDUCTOR_PUBLIC_KEY_PATH,
         privateKeyFile: CONDUCTOR_PRIVATE_KEY_PATH,
       });
+    // From AWS Secret manager
     case KeySource.AWS_SM:
-      return new AWSSecretsManagerKeyService(config);
+      if (!AWS_SECRET_KEY_ARN) {
+        throw new Error(
+          'AWS_SECRET_KEY_ARN is not set but KEY_SOURCE is AWS_SM'
+        );
+      }
+      return new AWSSecretsManagerKeyService(config, {
+        secretArn: AWS_SECRET_KEY_ARN,
+      });
     default:
       throw new Error(`Unsupported key source: ${keySource}`);
   }
