@@ -111,9 +111,9 @@ export class FaimsConductor extends Construct {
       {
         // build from the root, but target the api docker file
         image: ContainerImage.fromAsset(getPathToRoot(), {
-            file: "api/Dockerfile",
-            // TODO optimise this - this avoids infinite loops
-            exclude: ["infrastructure"],
+          file: "api/Dockerfile",
+          // TODO optimise this - this avoids infinite loops
+          exclude: ["infrastructure"],
         }),
         portMappings: [
           // Map 8000 internal to 8080 external
@@ -163,10 +163,8 @@ export class FaimsConductor extends Construct {
 
           // The AWS Secret Manager secret ARN for the public/private RSA key
           // pair (not secure value - protected by AWS retrieved at runtime)
+          KEY_SOURCE: "AWS_SM",
           AWS_KEY_SECRET_ARN: props.privateKeySecretArn,
-
-          // TODO 
-          KEY_SOURCE : "AWS_SM"
         },
         secrets: {
           COUCHDB_PASSWORD: ECSSecret.fromSecretsManager(
