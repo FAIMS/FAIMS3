@@ -17,10 +17,7 @@
     "start-api": "npm start --workspace=api",
     "start-app": "npm start --workspace=app",
     "watch-api": "npm run watch --workspace=api",
-    "initdb": "npm run initdb --workspace=api",
-    "load-notebooks": "npm run load-notebooks --workspace=api",
-    "webapp-build": "npm run webapp-build --workspace=app",
-    "webapp-sync": "npm run webapp-sync --workspace=app"
+    "start-designer": "npm run start --workspace=designer"
   },
   "keywords": [],
   "author": "",
