@@ -37,7 +37,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import InheritedDataComponent from './inherited_data';
 import {ParentLinkProps, RecordLinkProps} from './relationships/types';
 import CircularProgress from '@mui/material/CircularProgress';
-import {useNavigate} from 'react-router';
+import {useNavigate} from 'react-router-dom';
 interface RecordDataTypes {
   project_id: ProjectID;
   record_id: RecordID;
