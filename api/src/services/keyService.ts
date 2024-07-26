@@ -11,6 +11,8 @@ import {SecretsManager} from 'aws-sdk';
 import {SecretsManagerCache} from 'aws-secrets-manager-cache';
 import NodeCache from 'node-cache';
 
+const AWS_SM_CACHE_TIMEOUT_S = 300;
+
 // Define an enum for allowable key source values
 export enum KeySource {
   FILE = 'FILE',
@@ -238,7 +240,7 @@ export function createKeyService(
       return new AWSSecretsManagerKeyService(config, {
         secretArn: AWS_SECRET_KEY_ARN,
         // 5 minutes
-        cacheExpirySeconds: 300,
+        cacheExpirySeconds: AWS_SM_CACHE_TIMEOUT_S,
       });
     default:
       throw new Error(`Unsupported key source: ${keySource}`);
