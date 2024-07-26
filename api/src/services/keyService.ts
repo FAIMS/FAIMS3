@@ -8,7 +8,6 @@ import {
   AWS_SECRET_KEY_ARN,
 } from '../buildconfig';
 import {SecretsManager} from 'aws-sdk';
-import {SecretsManagerCache} from 'aws-secrets-manager-cache';
 import NodeCache from 'node-cache';
 
 const AWS_SM_CACHE_TIMEOUT_S = 300;
