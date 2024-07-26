@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "composite": true,
+        "declaration": true,
+        "declarationMap": true,
+        "rootDir": ".",
+        "target": "es6",
+        "module": "commonjs",
+        "strict": true,
+        "outDir": "./dist"
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts",
+        "**/*.d.ts",
+        "src/__tests__/"
+    ]
+}
