@@ -24,16 +24,16 @@ PouchDB.plugin(require('pouchdb-find'));
 
 import {createAuthKey} from '../src/authkeys/create';
 import {validateToken} from '../src/authkeys/read';
-import {getSigningKey} from '../src/authkeys/signing_keys';
 import {addOtherRoleToUser, createUser, saveUser} from '../src/couchdb/users';
 import {expect} from 'chai';
+import { KEY_SERVICE } from '../src/buildconfig';
 
 describe('roundtrip creating and reading token', () => {
   it('create and read token', async () => {
     const username = 'bobalooba';
     const name = 'Bob Bobalooba';
     const roles = ['admin', 'user'];
-    const signing_key = await getSigningKey();
+    const signing_key = await KEY_SERVICE.getSigningKey();
 
     // need to make a user with these details
     const [user, err] = await createUser(username, '');

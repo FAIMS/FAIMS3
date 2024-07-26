@@ -20,7 +20,7 @@
 
 import {jwtVerify} from 'jose';
 import {getUserFromEmailOrUsername} from '../couchdb/users';
-import {getSigningKey} from './signing_keys';
+import { KEY_SERVICE } from '../buildconfig';
 
 /**
  * validateToken
@@ -28,10 +28,10 @@ import {getSigningKey} from './signing_keys';
  * @returns Details of the verified user or undefined
  */
 export const validateToken = async (token: string) => {
-  const signingKey = await getSigningKey();
+  const signingKey = await KEY_SERVICE.getSigningKey();
   //console.log(`verifying token: '${token}'`);
   try {
-    const {payload} = await jwtVerify(token, signingKey.public_key, {
+    const {payload} = await jwtVerify(token, signingKey.publicKey, {
       algorithms: [signingKey.alg],
     });
 
