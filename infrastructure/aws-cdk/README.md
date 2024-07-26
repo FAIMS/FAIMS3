@@ -2,78 +2,181 @@
 
 This CDK project includes AWS infrastructure as code to deploy FAIMS 3 and its associated components.
 
-## TODO fix the below
+## Installation
 
-## How to deploy from scratch
-
-I believe the following steps are required to deploy from scratch
-
-### Setup keys
+With nvm
 
 ```
-# move to conductor
-cd ../FAIMS3-conductor
-# generate public private key pair
-./keymanagement/makeInstanceKeys.sh
+nvm install 20
+nvm use 20
 ```
 
-This will setup the local.ini file which is used to configure CouchDB in the docker build.
-
-Please edit the local.ini file in couchdb folder to remove the admin=... section - this is not necessary given that we include this env variable during database startup in the docker build from an auto-generated AWS secret.
-
-### Deploy CDK infrastructure
-
-You might need to tinker with
-
-- the target environment, see `bin/faims-infra.ts`
-- the domain names, see `lib/faims-infra-stack.ts`
-- the fixed hosted zones and certificate ARNs, see `bin/faims-infra.ts` (these must match the domains to deploy to)
+or if you have it installed already
 
 ```
 npm i aws-cdk -g
 npm i
-cdk deploy
 ```
 
-### Initialise database
+Now follow the below steps to setup your configuration.
 
-Once the deployment is up and going, you need to
+## Configuration Setup
 
-- `cd ../FAIMS3-conductor`
-- copy an example .env file to `.env` and update `CONDUCTOR_PUBLIC_URL` to the deployment URL you have above e.g. `https://conductor.bss.nbic.cloud`
-- `npm i`
-- `npm run init`
+This project uses a JSON-based configuration system to manage different deployment settings. Here's how to set it up and use it:
 
-### Initialise notebooks
+### Creating Your Configuration
 
-If you want to put demo notebooks in:
+1. Navigate to the `configs/` directory in the project.
+2. You'll find a file named `sample-config.json`. This is a template for your configuration.
+3. Copy this file and rename it according to your environment (e.g., `development.json`, `production.json`).
+4. Open your new configuration file and replace the placeholder values with your actual settings.
 
-- go to AWS secret management, get the DB password handy
-- visit the conductor, login using the admin/password above, and then get the token from the copy token button on the home page
-- `cd ../FAIMS3-conductor`
-- update the .env file to specify
-  - CONDUCTOR_PUBLIC_URL (as above)
-  - USER_TOKEN (from what you just copied)
-- `npm i`
-- `npm run load-notebooks`
+Example configuration structure:
 
-## TODOs
+```json
+{
+  "hostedZone": {
+    "id": "your-hosted-zone-id",
+    "name": "your-domain-name"
+  },
+  "certificates": {
+    "primary": "your-primary-certificate-arn",
+    "cloudfront": "your-cloudfront-certificate-arn"
+  },
+  "aws": {
+    "account": "your-aws-account-id",
+    "region": "your-aws-region"
+  },
+  "secrets": {
+    "privateKey": "your-private-key-secret-arn",
+    "publicKey": "your-public-key-secret-arn"
+  }
+}
+```
 
-Variety of improvements to be made - but current deployment okay as a technical demonstrator **with no real data**.
+Note: The values provided above are examples. Replace them with your actual values.
 
-### Reliability / Correctness
+Here's a breakdown of each configuration value and its purpose:
 
-- fix the ECS - EFS mounts so that CouchDB uses persistent storage
-- test ECS CouchDB container recovery from EFS storage
+- hostedZone - used for deploying route 53 routes in AWS
+  - id: The ID of your Route 53 hosted zone
+  - name: The domain name of your hosted zone
+- certificates
+  - primary: ARN of your primary ACM certificate (must support \*.base.domain)
+  - cloudfront: ARN of your CloudFront ACM certificate (must be in us-east-1) (must support \*.base.domain)
+- aws
+  - account: Your AWS account ID
+  - region: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
+- secrets
+  - privateKey: ARN of your private key in Secrets Manager
+  - publicKey: ARN of your public key in Secrets Manager
 
-### Security
+### Using Your Configuration
 
-- fix security of conductor docker build to not include the keys in the docker image layers
+To use a specific configuration when deploying or synthesizing your CDK stack:
 
-### Automation
+1. Open a terminal and navigate to your project directory.
+2. Set the `CONFIG_FILE_NAME` environment variable to the name of your configuration file.
+3. Run your CDK command.
 
-- integrate key generation process into automated deployment - possibly as custom resource - e.g. you could use custom lambda resource which generates - might have issues if the key folder needs to be mounted into the docker build
+For example, to deploy using a `production.json` configuration:
 
-### Cost savings
+```bash
+CONFIG_FILE_NAME=production.json cdk deploy
+```
 
-- re-engineer the ECS load balanced service setup to use the multi target-group version to save costs on load balancer(s)
+Or to synthesize using a `development.json` configuration:
+
+```bash
+CONFIG_FILE_NAME=development.json cdk synth
+```
+
+### Switching Between Configurations
+
+You can easily switch between different configurations by changing the `CONFIG_FILE_NAME`:
+
+- For development: `CONFIG_FILE_NAME=development.json`
+- For production: `CONFIG_FILE_NAME=production.json`
+- For any other environment: `CONFIG_FILE_NAME=your-config-file-name.json`
+
+### Configuration File Location
+
+All configuration files should be placed in the `configs/` directory of the project.
+
+These are automatically git ignored.
+
+### Generating Keys and Setting ARNs
+
+This project includes a script to generate RSA key pairs and store them in AWS Secrets Manager. Follow these steps to generate keys and set the ARNs in your configuration:
+
+1. Locate the script at `scripts/genKeysAWS.sh` in your project directory.
+
+2. Run the script with the following command:
+
+   ```bash
+   ./scripts/genKeysAWS.sh <host_target> [profile_name] [--replace]
+   ```
+
+   - `<host_target>`: The name of the host (e.g., dev, prod).
+   - `[profile_name]`: (Optional) The name of the profile to generate keys. Default is 'default'.
+   - `[--replace]`: (Optional) Flag to replace existing secrets instead of aborting.
+
+3. The script will generate RSA key pairs and store them in AWS Secrets Manager. It will output the ARNs for both the public and private key secrets.
+
+4. Copy the ARNs provided in the script output.
+
+5. Update your configuration file (e.g., `configs/development.json` or `configs/production.json`) with the new ARNs:
+
+   ```json
+   {
+     ...
+     "secrets": {
+       "privateKey": "arn:aws:secretsmanager:region:account-id:secret:dev-keys-host-profile-private-xxxx",
+       "publicKey": "arn:aws:secretsmanager:region:account-id:secret:dev-keys-host-profile-public-xxxx"
+     }
+   }
+   ```
+
+6. Replace the placeholder ARNs with the actual ARNs output by the script.
+
+This process ensures that your CDK stack uses the correct, securely stored keys for JWT signing and validation.
+
+Remember to run this script and update your configuration whenever you need to rotate keys or set up a new environment.
+
+### CDK Context File (cdk.context.json)
+
+**If you have an existing deployment**.
+
+The `cdk.context.json` file is used by CDK to cache context values, which can include information about your AWS environment. This file is automatically generated and updated by CDK.
+
+Important notes about `cdk.context.json`:
+
+1. This file is gitignored to prevent committing potentially sensitive information.
+2. If you have an existing deployment, you should include this file in your work environment.
+3. Do not share this file publicly, as it may contain sensitive information about your AWS resources.
+
+Managing `cdk.context.json`:
+
+- For personal use: Keep the file locally and do not commit it to version control.
+- For team use: Consider storing file in a private repository or a secure shared location.
+
+To use an existing `cdk.context.json`:
+
+1. Obtain the `cdk.context.json` file from your existing deployment or secure storage.
+2. Place it in the root directory of this CDK project.
+3. CDK will automatically use this file for context lookups.
+
+If you need to refresh the context, you can delete the file and run `cdk synth` to regenerate it.
+
+### Security Note
+
+Your configuration files may contain sensitive information. Do not commit these files to version control. They are already added to `.gitignore` for your protection.
+
+### Troubleshooting
+
+- If you encounter an error about missing or invalid configuration, ensure that:
+  1. Your configuration file exists in the `configs/` directory.
+  2. The file name matches what you specified in `CONFIG_FILE_NAME`.
+  3. The JSON in your configuration file is valid and contains all required fields.
+
+By following these steps, you can easily manage different configurations for various deployment environments in this project.
