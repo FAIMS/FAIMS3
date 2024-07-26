@@ -33,6 +33,7 @@ import {
   CONDUCTOR_PUBLIC_URL,
   DEVELOPER_MODE,
   CONDUCTOR_AUTH_PROVIDERS,
+  KEY_SERVICE,
 } from './buildconfig';
 import {
   requireAuthentication,
@@ -54,7 +55,6 @@ import {
   getNotebooks,
   getRolesForNotebook,
 } from './couchdb/notebooks';
-import {getSigningKey} from './authkeys/signing_keys';
 import {createAuthKey} from './authkeys/create';
 import {getPublicUserDbURL} from './couchdb';
 import {add_auth_providers} from './auth_providers';
@@ -199,15 +199,15 @@ app.get('/', async (req, res) => {
     const rendered_project_roles = render_project_roles(req.user.project_roles);
     const provider = Object.keys(req.user.profiles)[0];
     // BBS 20221101 Adding token to here so we can support copy from conductor
-    const signing_key = await getSigningKey();
-    const jwt_token = await createAuthKey(req.user, signing_key);
+    const signingKey = await KEY_SERVICE.getSigningKey();
+    const jwt_token = await createAuthKey(req.user, signingKey);
     const token = {
       jwt_token: jwt_token,
-      public_key: signing_key.public_key_string,
-      alg: signing_key.alg,
+      public_key: signingKey.publicKeyString,
+      alg: signingKey.alg,
       userdb: getPublicUserDbURL(), // query: is this actually needed?
     };
-    if (signing_key === null || signing_key === undefined) {
+    if (signingKey === null || signingKey === undefined) {
       res.status(500).send('Signing key not set up');
     } else {
       res.render('home', {
@@ -217,7 +217,7 @@ app.get('/', async (req, res) => {
         other_roles: req.user.other_roles,
         cluster_admin: userIsClusterAdmin(req.user),
         provider: provider,
-        public_key: signing_key.public_key,
+        public_key: signingKey.publicKey,
         developer: DEVELOPER_MODE,
       });
     }
@@ -252,16 +252,16 @@ app.get('/send-token/', (req, res) => {
 
 app.get('/get-token/', async (req, res) => {
   if (req.user) {
-    const signing_key = await getSigningKey();
-    if (signing_key === null || signing_key === undefined) {
+    const signingKey = await KEY_SERVICE.getSigningKey();
+    if (signingKey === null || signingKey === undefined) {
       res.status(500).send('Signing key not set up');
     } else {
-      const token = await createAuthKey(req.user, signing_key);
+      const token = await createAuthKey(req.user, signingKey);
 
       res.send({
         token: token,
-        pubkey: signing_key.public_key_string,
-        pubalg: signing_key.alg,
+        pubkey: signingKey.publicKeyString,
+        pubalg: signingKey.alg,
       });
     }
   } else {

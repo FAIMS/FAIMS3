@@ -50,7 +50,6 @@
     "qrcode": "^1.5.3",
     "req-flash": "^0.0.3",
     "swagger-ui-dist": "^5.9.1",
-    "typescript": "4.9.5",
     "uuid": "9.0.1"
   },
   "devDependencies": {
@@ -89,6 +88,7 @@
     "pouchdb-adapter-memory": "^8.0.1",
     "sinon": "^17.0.1",
     "supertest": "^6.3.3",
-    "ts-node": "10.9.1"
+    "ts-node": "10.9.1",
+    "typescript": "^5.5.4"
   }
 }
