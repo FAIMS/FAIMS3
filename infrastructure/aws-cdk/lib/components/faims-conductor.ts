@@ -164,7 +164,7 @@ export class FaimsConductor extends Construct {
           // The AWS Secret Manager secret ARN for the public/private RSA key
           // pair (not secure value - protected by AWS retrieved at runtime)
           KEY_SOURCE: "AWS_SM",
-          AWS_KEY_SECRET_ARN: props.privateKeySecretArn,
+          AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         },
         secrets: {
           COUCHDB_PASSWORD: ECSSecret.fromSecretsManager(
