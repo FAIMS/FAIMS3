@@ -2,15 +2,27 @@
 
 FROM node:20
 
-WORKDIR /usr/src
+WORKDIR /usr/src/app
 
-COPY ../package.json ./
-COPY ../package-lock.json ./
+# Copy the entire project
+COPY . .
 
-COPY ./package.json ./api/package.json
+# Install dependencies for all workspaces
+RUN npm ci
 
-RUN npm install
+# Build the data model package which is dependency of conductor
+WORKDIR /usr/src/app/library/data-model
+RUN npm run build
 
-COPY .. .
+# Build the API
+WORKDIR /usr/src/app/api
+RUN npm run compile
 
-CMD ["npm", "run", "start"] 
+# Set the working directory back to the root
+WORKDIR /usr/src/app
+
+# Expose the port the API runs on
+EXPOSE 8000
+
+# Command to run the API
+CMD ["npm", "run", "start-api"]
