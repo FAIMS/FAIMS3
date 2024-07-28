@@ -182,8 +182,12 @@ methods = GET, PUT, POST, HEAD, DELETE
       `cat > /opt/couchdb/etc/local.d/local.ini << EOL
 ${this.couchDbConfig}
 EOL`,
+      // Append admin and password configuration to local.ini -> note this will
+      // be hashed upon couch instance start.
+      `echo "[admins]" >> /opt/couchdb/etc/local.d/local.ini`,
+      `echo "admin = $ADMIN_PASSWORD" >> /opt/couchdb/etc/local.d/local.ini`,
       // Run CouchDB container with mounted configuration
-      "docker run -d --name couchdb -p 5984:5984 -v /opt/couchdb/etc/local.d:/opt/couchdb/etc/local.d -e COUCHDB_USER=admin -e COUCHDB_PASSWORD=$ADMIN_PASSWORD couchdb:latest",
+      "docker run -d --name couchdb -p 5984:5984 -v /opt/couchdb/etc/local.d:/opt/couchdb/etc/local.d couchdb:latest",
       // Register the instance with CloudMap
       // Get token for metadata api
       'TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")',
@@ -195,7 +199,6 @@ EOL`,
       "SERVICE_ID=" + service.serviceId,
       `aws servicediscovery register-instance --service-id $SERVICE_ID --instance-id $INSTANCE_ID --attributes AWS_INSTANCE_IPV4=$PRIVATE_IP,AWS_INSTANCE_PORT=5984`
     );
-
     // Create an Auto Scaling Group with a single EC2 instance
     const asg = new AutoScalingGroup(this, "CouchDBAsg", {
       vpc: props.vpc,
