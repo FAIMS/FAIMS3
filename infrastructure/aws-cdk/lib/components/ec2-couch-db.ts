@@ -176,7 +176,9 @@ methods = GET, PUT, POST, HEAD, DELETE
       // Get the region dynamically
       "REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)",
       "export AWS_DEFAULT_REGION=$REGION",
+      // Get username and password
       "ADMIN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text | jq -r .password)",
+      "ADMIN_USER=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text | jq -r .username)",
       // Create CouchDB configuration file
       "mkdir -p /opt/couchdb/etc/local.d",
       `cat > /opt/couchdb/etc/local.d/local.ini << EOL
@@ -185,7 +187,7 @@ EOL`,
       // Append admin and password configuration to local.ini -> note this will
       // be hashed upon couch instance start.
       `echo "[admins]" >> /opt/couchdb/etc/local.d/local.ini`,
-      `echo "admin = $ADMIN_PASSWORD" >> /opt/couchdb/etc/local.d/local.ini`,
+      `echo "$ADMIN_USER = $ADMIN_PASSWORD" >> /opt/couchdb/etc/local.d/local.ini`,
       // Run CouchDB container with mounted configuration
       "docker run -d --name couchdb -p 5984:5984 -v /opt/couchdb/etc/local.d:/opt/couchdb/etc/local.d couchdb:latest",
       // Register the instance with CloudMap
