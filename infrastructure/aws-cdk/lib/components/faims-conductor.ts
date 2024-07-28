@@ -127,7 +127,6 @@ export class FaimsConductor extends Construct {
         environment: {
           PROFILE_NAME: "local-dev",
           CONDUCTOR_INSTANCE_NAME: "Example AWS FAIMS",
-          COUCHDB_USER: "admin",
           // password is secret
           COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
 
@@ -168,7 +167,14 @@ export class FaimsConductor extends Construct {
         },
         secrets: {
           COUCHDB_PASSWORD: ECSSecret.fromSecretsManager(
-            props.couchDbAdminSecret
+            props.couchDbAdminSecret,
+            // Use the password field
+            "password"
+          ),
+          COUCHDB_USER: ECSSecret.fromSecretsManager(
+            props.couchDbAdminSecret,
+            // Use the password field
+            "username"
           ),
           FAIMS_COOKIE_SECRET: ECSSecret.fromSecretsManager(cookieSecret),
         },
