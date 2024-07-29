@@ -1,0 +1,6 @@
+{
+  "problems.autoReveal": true,
+  "typescript.tsc.autoDetect": "on",
+  "typescript.reportStyleChecksAsWarnings": true,
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true
+}

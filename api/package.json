@@ -20,7 +20,9 @@
   },
   "dependencies": {
     "archiver": "^6.0.1",
+    "aws-sdk": "^2.1664.0",
     "body-parser": "1.20.2",
+    "cache-manager": "^5.7.3",
     "cookie-session": "2.0.0",
     "cors": "2.8.5",
     "csv-stringify": "^6.4.4",
@@ -33,10 +35,11 @@
     "gts": "3.1.1",
     "handlebars": "4.7.7",
     "istanbul": "^0.4.5",
-    "jose": "4.15.5",
+    "jose": "^4.15.5",
     "markdown-it": "^14.0.0",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "node-cache": "^5.1.2",
     "nodemailer": "^6.9.9",
     "nyc": "^15.1.0",
     "oauth": "0.10.0",
@@ -50,7 +53,6 @@
     "qrcode": "^1.5.3",
     "req-flash": "^0.0.3",
     "swagger-ui-dist": "^5.9.1",
-    "typescript": "4.9.5",
     "uuid": "9.0.1"
   },
   "devDependencies": {
@@ -89,6 +91,7 @@
     "pouchdb-adapter-memory": "^8.0.1",
     "sinon": "^17.0.1",
     "supertest": "^6.3.3",
-    "ts-node": "10.9.1"
+    "ts-node": "10.9.1",
+    "typescript": "^5.5.4"
   }
 }

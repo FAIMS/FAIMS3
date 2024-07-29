@@ -71,6 +71,11 @@ services:
       - WEB_APP_PUBLIC_URL
       - ANDROID_APP_PUBLIC_URL
       - IOS_APP_PUBLIC_URL
+
+      # Key setup
+      - KEY_SOURCE=FILE
+      # Optional
+      - AWS_KEY_SECRET_ARN=
 networks:
   conductor-local-dev: {}
 volumes:

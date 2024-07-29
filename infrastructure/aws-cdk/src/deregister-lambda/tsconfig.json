@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "composite": true,
+        "declaration": true,
+        "declarationMap": true,
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "target": "es6",
+        "module": "commonjs",
+        "strict": true,
+        // critical to ensure that only this folder is considered
+        "typeRoots": [
+            "./node_modules/@types"
+        ]
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "name": "cloudmap-deregister-lambda",
+    "version": "1.0.0",
+    "description": "Lambda function to deregister EC2 instances from CloudMap",
+    "main": "dist/index.js",
+    "scripts": {
+        "prebuild": "npm install",
+        "build": "tsc -p tsconfig.json",
+        "package": "npm prune --production && cp -R node_modules dist/node_modules/ && rm -f dist/tsconfig.tsbuildinfo"
+    },
+    "author": "",
+    "dependencies": {
+        "aws-sdk": "^2.1030.0"
+    },
+    "devDependencies": {
+        "@types/aws-lambda": "^8.10.92",
+        "@types/node": "^14.14.31",
+        "typescript": "^4.5.4"
+    }
+}

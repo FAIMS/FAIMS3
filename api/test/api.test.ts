@@ -32,7 +32,6 @@ import {
   userHasProjectRole,
 } from '../src/couchdb/users';
 import {createAuthKey} from '../src/authkeys/create';
-import {getSigningKey} from '../src/authkeys/signing_keys';
 import fs from 'fs';
 import {
   createNotebook,
@@ -43,6 +42,7 @@ import {ProjectUIModel} from 'faims3-datamodel';
 import {
   CLUSTER_ADMIN_GROUP_NAME,
   DEVELOPER_MODE,
+  KEY_SERVICE,
   NOTEBOOK_CREATOR_GROUP_NAME,
 } from '../src/buildconfig';
 import {expect} from 'chai';
@@ -70,10 +70,10 @@ describe('API tests', () => {
   beforeEach(async () => {
     await resetDatabases();
     await cleanDataDBS();
-    const signing_key = await getSigningKey();
+    const signingKey = await KEY_SERVICE.getSigningKey();
     const adminUser = await getUserFromEmailOrUsername('admin');
     if (adminUser) {
-      adminToken = await createAuthKey(adminUser, signing_key);
+      adminToken = await createAuthKey(adminUser, signingKey);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [user, _error] = await createUser('', localUserName);
       if (user) {
@@ -86,7 +86,7 @@ describe('API tests', () => {
     if (localUser) {
       await saveUser(localUser);
       await addLocalPasswordForUser(localUser, localUserPassword); // saves the user
-      localUserToken = await createAuthKey(localUser, signing_key);
+      localUserToken = await createAuthKey(localUser, signingKey);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -94,7 +94,7 @@ describe('API tests', () => {
     if (nbUser) {
       await addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
       await addLocalPasswordForUser(nbUser, notebookPassword); // saves the user
-      notebookUserToken = await createAuthKey(nbUser, signing_key);
+      notebookUserToken = await createAuthKey(nbUser, signingKey);
     }
   });
 
@@ -460,8 +460,8 @@ describe('API tests', () => {
 
       const bobby = await getUserFromEmailOrUsername(localUserName);
       if (bobby) {
-        const signing_key = await getSigningKey();
-        const bobbyToken = await createAuthKey(bobby, signing_key);
+        const signingKey = await KEY_SERVICE.getSigningKey();
+        const bobbyToken = await createAuthKey(bobby, signingKey);
 
         // invalid user name
         await request(app)
