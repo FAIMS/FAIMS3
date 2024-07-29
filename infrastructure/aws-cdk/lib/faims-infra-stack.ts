@@ -1,11 +1,11 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { FaimsConductor } from "./components/faims-conductor";
-import { FaimsFrontEnd } from "./components/faims-front-end";
-import { FaimsNetworking } from "./components/faims-networking";
+import { FaimsConductor } from "./components/conductor";
+import { FaimsFrontEnd } from "./components/front-end";
+import { FaimsNetworking } from "./components/networking";
 import { HostedZone, HostedZoneAttributes } from "aws-cdk-lib/aws-route53";
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
-import { EC2CouchDB } from "./components/ec2-couch-db";
+import { EC2CouchDB } from "./components/couch-db";
 
 export interface FaimsInfraStackProps extends cdk.StackProps {
   hzAttributes: HostedZoneAttributes;
@@ -28,7 +28,9 @@ export class FaimsInfraStack extends cdk.Stack {
       props.hzAttributes
     );
 
-    // Domain setups (TODO parameterise)
+    // Domain setups 
+    
+    // TODO parameterise
 
     const rootDomain = hz.zoneName;
 
@@ -63,20 +65,6 @@ export class FaimsInfraStack extends cdk.Stack {
     // Currently the ini file is setup in docker - this means we need to have the JWT public key setup before hand.
     // Maybe we can do this with a custom resource? not sure - okay for now
     // TODO investigate better key setup process which allows for one click deploy
-
-    // Deploys the CouchDB database as a load balanced ECS service
-
-    /**
-    const couchDb = new FaimsCouchDB(this, "couch-db", {
-      vpc: networking.vpc,
-      // 1 vcpu 2 gb ram
-      cpu: 1024,
-      memory: 2048,
-      certificate: primaryCert,
-      domainName: fullCouchDomain,
-      hz: hz,
-    });
-     */
 
     // Creates a single EC2 cluster which runs CouchDB
     const couchDb = new EC2CouchDB(this, "couch-db", {
