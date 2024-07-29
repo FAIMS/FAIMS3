@@ -10,71 +10,112 @@ import {
 import {SecretsManager} from 'aws-sdk';
 import NodeCache from 'node-cache';
 
+/** The number of seconds to cache AWS Secrets Manager responses */
 const AWS_SM_CACHE_TIMEOUT_S = 300;
 
-// Define an enum for allowable key source values
+/**
+ * Enum representing the possible sources for key retrieval.
+ */
 export enum KeySource {
+  /** Keys are stored in local files */
   FILE = 'FILE',
+  /** Keys are stored in AWS Secrets Manager */
   AWS_SM = 'AWS_SM',
 }
 
 /**
- * Interface for the key service
+ * Interface for the key service.
  */
 export interface IKeyService {
+  /**
+   * Retrieves the signing key.
+   * @returns A Promise resolving to the SigningKey.
+   */
   getSigningKey(): Promise<SigningKey>;
 }
 
 /**
- * SigningKey interface
+ * Interface representing a signing key.
  */
 export interface SigningKey {
+  /** The algorithm used for signing */
   alg: string;
+  /** The key ID */
   kid: string;
+  /** The private key */
   privateKey: KeyLike;
+  /** The public key */
   publicKey: KeyLike;
+  /** The public key as a string */
   publicKeyString: string;
+  /** The name of the instance */
   instanceName: string;
 }
 
 /**
- * KeyConfig interface
+ * Interface for key configuration.
  */
 export interface KeyConfig {
+  /** The algorithm used for signing */
   signingAlgorithm: string;
+  /** The name of the instance */
   instanceName: string;
+  /** The key ID */
   keyId: string;
 }
 
 /**
- * Base class for key services
+ * Abstract base class for key services.
  */
 abstract class BaseKeyService implements IKeyService {
   protected config: KeyConfig;
 
+  /**
+   * Creates an instance of BaseKeyService.
+   * @param config - The key configuration.
+   */
   constructor(config: KeyConfig) {
     this.config = config;
   }
 
+  /**
+   * Abstract method to get the signing key.
+   * @returns A Promise resolving to the SigningKey.
+   */
   abstract getSigningKey(): Promise<SigningKey>;
 }
 
+/**
+ * Interface for file-based key service configuration.
+ */
 interface FileKeyServiceConfig {
+  /** Path to the public key file */
   publicKeyFile: string;
+  /** Path to the private key file */
   privateKeyFile: string;
 }
 
 /**
- * File-based key service implementation
+ * File-based key service implementation.
  */
 class FileKeyService extends BaseKeyService {
-  fileConfig: FileKeyServiceConfig;
+  private fileConfig: FileKeyServiceConfig;
 
+  /**
+   * Creates an instance of FileKeyService.
+   * @param config - The key configuration.
+   * @param fileServiceConfig - The file-specific configuration.
+   */
   constructor(config: KeyConfig, fileServiceConfig: FileKeyServiceConfig) {
     super(config);
     this.fileConfig = fileServiceConfig;
   }
 
+  /**
+   * Retrieves the signing key from files.
+   * @returns A Promise resolving to the SigningKey.
+   * @throws Error if unable to read key files.
+   */
   async getSigningKey(): Promise<SigningKey> {
     let privateKeyString: string;
     let publicKeyString: string;
@@ -112,8 +153,13 @@ class FileKeyService extends BaseKeyService {
   }
 }
 
+/**
+ * Interface for AWS Secrets Manager key service configuration.
+ */
 interface AWSKeyServiceConfig {
+  /** The ARN of the secret in AWS Secrets Manager */
   secretArn: string;
+  /** The number of seconds to cache the secret */
   cacheExpirySeconds: number;
 }
 
@@ -127,7 +173,7 @@ class AWSSecretsManagerKeyService extends BaseKeyService {
   private cache: NodeCache;
 
   /**
-   * Constructs an instance of AWSSecretsManagerKeyService.
+   * Creates an instance of AWSSecretsManagerKeyService.
    * @param config - The key configuration.
    * @param awsServiceConfig - AWS-specific configuration including secret ARN and cache expiry.
    */
@@ -148,19 +194,25 @@ class AWSSecretsManagerKeyService extends BaseKeyService {
   async getSigningKey(): Promise<SigningKey> {
     const cacheKey = `signing-key-${this.awsServiceConfig.secretArn}`;
 
-    // Try to get the signing key from cache
-    const cachedSigningKey = this.cache.get<SigningKey>(cacheKey);
-    if (cachedSigningKey) {
-      // cache hit
+    // Try to get the signing key components from cache
+    const cachedKeyComponents = this.cache.get<{
+      privateKeyString: string;
+      publicKeyString: string;
+    }>(cacheKey);
+
+    if (cachedKeyComponents) {
+      // NOTE: we build the key each time because cache seems to have issues with getting object properties
       console.log('AWS SM Key Cache Hit');
-      return cachedSigningKey;
+      return this.constructSigningKey(
+        cachedKeyComponents.privateKeyString,
+        cachedKeyComponents.publicKeyString
+      );
     }
 
-    // cache miss
     console.log('AWS SM Key Cache miss');
 
+    // Get key from AWS SM
     try {
-      // If not in cache, retrieve from AWS Secrets Manager
       const secretData = await this.secretsManager
         .getSecretValue({SecretId: this.awsServiceConfig.secretArn})
         .promise();
@@ -171,7 +223,6 @@ class AWSSecretsManagerKeyService extends BaseKeyService {
 
       const secretJson = JSON.parse(secretData.SecretString);
 
-      // Extract keys from the secret structure
       const privateKeyString = secretJson.rsa_private_key;
       const publicKeyString = secretJson.rsa_public_key;
 
@@ -179,39 +230,51 @@ class AWSSecretsManagerKeyService extends BaseKeyService {
         throw new Error('Private or public key is missing from the secret');
       }
 
-      // Import the keys
-      const privateKey = await importPKCS8(
-        privateKeyString,
-        this.config.signingAlgorithm
-      );
-      const publicKey = await importSPKI(
-        publicKeyString,
-        this.config.signingAlgorithm
-      );
+      // Cache the key components
+      this.cache.set(cacheKey, {privateKeyString, publicKeyString});
 
-      // Construct the SigningKey
-      const signingKey: SigningKey = {
-        privateKey,
-        publicKey,
-        publicKeyString,
-        instanceName: this.config.instanceName,
-        alg: this.config.signingAlgorithm,
-        kid: this.config.keyId,
-      };
-
-      // Cache the signing key
-      this.cache.set(cacheKey, signingKey);
-
-      return signingKey;
+      return this.constructSigningKey(privateKeyString, publicKeyString);
     } catch (error) {
       console.error('Failed to retrieve key from AWS Secrets Manager:', error);
       throw error;
     }
   }
+
+  /**
+   * Constructs a SigningKey object from private and public key strings.
+   * @param privateKeyString - The private key as a string.
+   * @param publicKeyString - The public key as a string.
+   * @returns A Promise resolving to the constructed SigningKey.
+   */
+  private async constructSigningKey(
+    privateKeyString: string,
+    publicKeyString: string
+  ): Promise<SigningKey> {
+    const privateKey = await importPKCS8(
+      privateKeyString,
+      this.config.signingAlgorithm
+    );
+    const publicKey = await importSPKI(
+      publicKeyString,
+      this.config.signingAlgorithm
+    );
+
+    return {
+      privateKey,
+      publicKey,
+      publicKeyString,
+      instanceName: this.config.instanceName,
+      alg: this.config.signingAlgorithm,
+      kid: this.config.keyId,
+    };
+  }
 }
 
 /**
- * Key service factory
+ * Creates and returns an instance of IKeyService based on the specified key source.
+ * @param keySource - The source of the keys (FILE or AWS_SM).
+ * @returns An instance of IKeyService.
+ * @throws Error if an unsupported key source is specified.
  */
 export function createKeyService(
   keySource: KeySource = KeySource.FILE
@@ -223,13 +286,11 @@ export function createKeyService(
   };
 
   switch (keySource) {
-    // From file
     case KeySource.FILE:
       return new FileKeyService(config, {
         publicKeyFile: CONDUCTOR_PUBLIC_KEY_PATH,
         privateKeyFile: CONDUCTOR_PRIVATE_KEY_PATH,
       });
-    // From AWS Secret manager
     case KeySource.AWS_SM:
       if (!AWS_SECRET_KEY_ARN) {
         throw new Error(
@@ -238,7 +299,6 @@ export function createKeyService(
       }
       return new AWSSecretsManagerKeyService(config, {
         secretArn: AWS_SECRET_KEY_ARN,
-        // 5 minutes
         cacheExpirySeconds: AWS_SM_CACHE_TIMEOUT_S,
       });
     default:
@@ -247,7 +307,9 @@ export function createKeyService(
 }
 
 /**
- * Get the key service based on the KEY_SOURCE environment variable
+ * Gets the key service based on the KEY_SOURCE environment variable.
+ * @param keySource - The source of the keys (FILE or AWS_SM).
+ * @returns An instance of IKeyService.
  */
 export function getKeyService(
   keySource: KeySource = KeySource.FILE
