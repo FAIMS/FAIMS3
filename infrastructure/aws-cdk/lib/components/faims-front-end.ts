@@ -34,6 +34,10 @@ export interface FaimsFrontEndProps {
   couchDbDomainOnly: string;
   // e.g. 443
   couchDbPort: number;
+
+  // conductor e.g. https://api.com
+  conductorUrl: string;
+
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -140,6 +144,9 @@ export class FaimsFrontEnd extends Construct {
       // Couch DB
       VITE_DIRECTORY_HOST: props.couchDbDomainOnly,
       VITE_DIRECTORY_PORT: `${props.couchDbPort}`,
+      
+      // Conductor API URL
+      VITE_CONDUCTOR_URL: props.conductorUrl,
       VITE_PRODUCTION_BUILD: "true",
       VITE_SERVICES: "FAIMSTEXT",
       VITE_TAG: "CDKDeployment",
