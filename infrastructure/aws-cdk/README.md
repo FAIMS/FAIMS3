@@ -20,6 +20,34 @@ npm i
 
 Now follow the below steps to setup your configuration.
 
+## Building artifacts
+
+NPM is used to manage building some utility lambda functions separately to CDK process.
+
+**Note**: These are intended to completely standalone from the monorepo in which this project lives.
+
+To build the project
+
+```
+npm run build
+```
+
+To package for deployment.
+
+```
+npm run package
+```
+
+or just
+
+```
+npm run build && npm run package
+```
+
+This should build all the projects in `src`. If you add a new project, please update the `package.json` build scripts.
+
+Use the existing packages as an example to start from, because the typescript config is very fussy.
+
 ## Configuration Setup
 
 This project uses a JSON-based configuration system to manage different deployment settings. Here's how to set it up and use it:
@@ -180,3 +208,41 @@ Your configuration files may contain sensitive information. Do not commit these 
   3. The JSON in your configuration file is valid and contains all required fields.
 
 By following these steps, you can easily manage different configurations for various deployment environments in this project.
+
+## Deploying CDK app
+
+Ensure you have sufficient permissions for the target account and that they are available to the CLI e.g. `aws sts get-caller-identity`.
+
+Then follow the above steps to
+
+- build the package artifacts `npm run build && npm run package`
+- generate your keys i.e. `./scripts/genKeysAWS.sh <host_target> [profile_name] [--replace]`
+- setup your config
+  - download your config from private repo, put in `configs`, `export CONFIG_FILE_NAME=dev.json` for example
+  - setup your `cdk.context.json` - put in this folder
+- run appropriate cdk command
+  - to synth only `cdk synth`
+  - to diff `cdk diff`
+  - to deploy or update `cdk deploy`
+
+## Initialising DBs on first launch
+
+The DBs are now initialised using a combination of
+
+- EC2 user data on startup
+- Conductor initialise route `/api/initialise`
+
+The first is automatic, the second requires calling this endpoint, simply
+
+```
+curl -X POST https://your-conductor-endpoint.com/api/initialise
+```
+
+will suffice.
+
+This
+
+- establishes databases and configuration for them
+- sets the public key for the database
+
+This operation is a "no-op" if already setup.
