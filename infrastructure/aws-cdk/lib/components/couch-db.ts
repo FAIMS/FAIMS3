@@ -203,11 +203,14 @@ EOL`,
     const asg = new AutoScalingGroup(this, "CouchDBAsg", {
       vpc: props.vpc,
       // T3 Small for now
+      // TODO add instance size to configuration
       instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.SMALL),
+      
       // TODO place into private and have NAT gateway (for setting up instances
       // we need internet connectivity) in future
       vpcSubnets: { subnetType: SubnetType.PUBLIC },
       associatePublicIpAddress: true,
+
       machineImage: new AmazonLinuxImage({
         generation: AmazonLinuxGeneration.AMAZON_LINUX_2,
       }),
@@ -218,6 +221,10 @@ EOL`,
       securityGroup: couchSecurityGroup,
       updatePolicy: UpdatePolicy.rollingUpdate(),
     });
+
+
+    // Grant the EC2 instance permission to read the secret
+    this.passwordSecret.grantRead(asg.role);
 
     // Add lifecycle hook to deregister
     asg.addLifecycleHook("DeregisterFromCloudMap", {
@@ -271,8 +278,6 @@ EOL`,
       })
     );
 
-    // Grant the EC2 instance permission to read the secret
-    this.passwordSecret.grantRead(asg.role);
 
     // Grant necessary permissions
     deregisterLambda.addToRolePolicy(
@@ -323,20 +328,24 @@ EOL`,
       target: aws_route53.RecordTarget.fromAlias(new LoadBalancerTarget(lb)),
     });
 
-    // For debugging TODO remove
-    // Allow inbound traffic for SSM Instance Connect
-    couchSecurityGroup.addIngressRule(
-      Peer.anyIpv4(),
-      Port.tcp(443),
-      "Allow SSM Instance Connect"
-    );
+    // TODO handle this through config
+    const debugInstancePermissions = false;
 
-    // Add SSM Instance Connect permissions to the instance role
-    asg.role.addManagedPolicy(
-      aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
-        "AmazonSSMManagedInstanceCore"
-      )
-    );
+    if (debugInstancePermissions) {
+      // For debugging couch instances - allow inbound traffic for SSM Instance Connect
+      couchSecurityGroup.addIngressRule(
+        Peer.anyIpv4(),
+        Port.tcp(443),
+        "Allow SSM Instance Connect"
+      );
+
+      // Add SSM Instance Connect permissions to the instance role
+      asg.role.addManagedPolicy(
+        aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
+          "AmazonSSMManagedInstanceCore"
+        )
+      );
+    }
 
     this.couchEndpoint = `https://${props.domainName}:${this.exposedPort}`;
   }
