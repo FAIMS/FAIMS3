@@ -13,7 +13,8 @@ export async function initialiseJWTKey(): Promise<void> {
     // Ensure new lines are encoded properly in the config file
     const publicKey = signingKey.publicKeyString.replace(/\n/g, '\\n');
 
-    // _local acts as placeholder for actual node names
+    // _local means referencing the specific node to which this URL references -
+    // if in clustering situation would need to be more careful
     const couchdbConfigUrl = `${COUCHDB_INTERNAL_URL}/_node/_local/_config/jwt_keys/`;
 
     // rsa:kid format
