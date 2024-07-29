@@ -120,6 +120,7 @@ export class FaimsInfraStack extends cdk.Stack {
       designerDomainNames: [fullDesignerDomain],
       designerHz: hz,
       designerUsEast1Certificate: cfnCert,
+      conductorUrl: conductor.conductorEndpoint,
     });
   }
 }
