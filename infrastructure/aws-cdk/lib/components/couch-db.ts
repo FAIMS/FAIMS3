@@ -131,7 +131,6 @@ methods = GET, PUT, POST, HEAD, DELETE
     });
 
     // Create CloudMap service
-    // TODO understand if this should be HTTP namespace or private DNS name space
     const namespace = new PrivateDnsNamespace(this, "CouchDBNamespace", {
       vpc: props.vpc,
       name: "couchdb.local",
@@ -147,7 +146,6 @@ methods = GET, PUT, POST, HEAD, DELETE
 
     // This lambda instance runs on instance termination in the auto scaling
     // group to deregister the instance from the cloudmap service
-    // TODO improve asset hashing here to avoid including stuff we don't need
     const deregisterLambda = new lambda.Function(
       this,
       "DeregisterInstanceLambda",

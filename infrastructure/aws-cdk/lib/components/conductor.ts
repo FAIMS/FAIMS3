@@ -105,7 +105,7 @@ export class FaimsConductor extends Construct {
     this.conductorEndpoint = `https://${props.domainName}:${this.externalPort}`;
 
     // Create the CouchDB container definition within the task dfn
-    // TODO mount keys volume or just copy it
+    // TODO deploy from versioned docker image instead of building using CDK
     const conductorContainerDfn = conductorTaskDfn.addContainer(
       "conductor-container-dfn",
       {
@@ -125,8 +125,8 @@ export class FaimsConductor extends Construct {
         ],
         // Pass in the admin/password combination securely
         environment: {
-          PROFILE_NAME: "local-dev",
-          CONDUCTOR_INSTANCE_NAME: "Example AWS FAIMS",
+          PROFILE_NAME: "default",
+          CONDUCTOR_INSTANCE_NAME: "AWS FAIMS 3 Deployment",
           // password is secret
           COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
 
