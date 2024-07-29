@@ -133,8 +133,7 @@ export class FaimsConductor extends Construct {
           // in our case we use the same internal/external couchDB URL
           COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
 
-          // TODO
-          // improve networking to talk over http inside cluster to avoid
+          // TODO improve networking to talk over http inside cluster to avoid
           // external traffic
           COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
           CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
@@ -195,7 +194,7 @@ export class FaimsConductor extends Construct {
         // to have multiple TG's into the same service saving $$$
         // loadBalancer: props.loadBalancer,
 
-        // need VPC for now TODO remove
+        // need VPC for now
         vpc: props.vpc,
 
         // Public IP needed to allow for ECS to run properly
