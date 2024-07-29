@@ -31,6 +31,7 @@ import {
   initialiseProjectsDB,
   initialiseUserDB,
 } from './initialise';
+import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
@@ -187,6 +188,13 @@ export const initialiseDatabases = async () => {
     await initialiseUserDB(usersDB);
   } catch (error) {
     console.log('something wrong with user db init', error);
+  }
+
+  // Setup keys
+  try {
+    await initialiseJWTKey();
+  } catch (error) {
+    console.log('something wrong PUTing jwt_keys into the db configuration...', error);
   }
 };
 
