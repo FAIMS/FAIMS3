@@ -6,7 +6,7 @@
     "scripts": {
         "prebuild": "npm install",
         "build": "tsc -p tsconfig.json",
-        "package": "npm prune --production && cp -R node_modules dist/node_modules/"
+        "package": "npm prune --production && cp -R node_modules dist/node_modules/ && rm -f dist/tsconfig.tsbuildinfo"
     },
     "author": "",
     "dependencies": {
