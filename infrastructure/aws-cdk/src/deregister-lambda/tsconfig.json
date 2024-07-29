@@ -3,19 +3,14 @@
         "composite": true,
         "declaration": true,
         "declarationMap": true,
-        "rootDir": ".",
+        "rootDir": "./src",
+        "outDir": "./dist",
         "target": "es6",
         "module": "commonjs",
         "strict": true,
-        "outDir": "./dist"
-    },
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules",
-        "**/*.spec.ts",
-        "**/*.d.ts",
-        "src/__tests__/"
-    ]
+        // critical to ensure that only this folder is considered
+        "typeRoots": [
+            "./node_modules/@types"
+        ]
+    }
 }

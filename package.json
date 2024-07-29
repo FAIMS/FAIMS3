@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "build-app": "npm run build --workspace=app",
+    "build-aws": "npm run build --workspace=infrastructure/aws-cdk",
     "test-app": "npm test --workspace=app",
     "serve-app": "npm run serve --workspace=app",
     "start": "npm start --workspace=api --workspace=app",
