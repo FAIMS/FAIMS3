@@ -327,3 +327,69 @@ This
 - sets the public key for the database
 
 This operation is a "no-op" if already setup.
+
+## Recovering couch data volume from EBS Snapshot
+
+The couch data volume is handled separately from the OS data in your instance. This allows the data volume to be backed up regularly without needing to be concerned about producing AMIs which associate the boot volume with EBS snapshots (such as in the AWS Backup for EC2 process). The config contains a flag to recover the EBS data volume from an existing EBS snapshot ID. The process to perform this recovery is explained below.
+
+TODO: Verify and test these instructions with real data.
+
+If you need to recover your CouchDB data from a previously created EBS snapshot, follow these steps:
+
+1. **Locate your EBS snapshot ID**
+
+   - Go to the AWS Management Console
+   - Navigate to EC2 > Snapshots
+   - Find the snapshot you want to use for recovery
+   - Copy the Snapshot ID (it should look like `snap-0123456789abcdef0`)
+
+2. **Update your configuration file**
+
+   - Open your infrastructure configuration file (typically `configs/<stage>.json`)
+   - Locate the `couch` section
+   - Add or update the `ebsRecoverySnapshotId` field with your snapshot ID:
+
+     ```json
+     "couch": {
+       ...
+       "ebsRecoverySnapshotId": "snap-0123456789abcdef0"
+     }
+     ```
+
+   - The `volumeSize` field will be ignored if a snapshot ID is provided
+
+3. **Deploy your updated infrastructure**
+
+   - Run your deployment command, for example:
+     ```
+     export CONFIG_FILE_NAME=<stage>.json
+     cdk deploy
+     ```
+
+4. **Verify the recovery**
+
+   - Once deployment is complete, SSM or SSH connect into your EC2 instance
+     - TODO: verify a process to do this in production context - right now permissions would not allow this connection
+   - Check that the CouchDB data volume is mounted correctly:
+     ```
+     df -h /opt/couchdb/data
+     ```
+   - Verify that CouchDB is running and can access the data:
+     ```
+     curl http://localhost:5984
+     ```
+
+5. **After Recovery**
+   - It's probably safe to continue using
+   - Once recovery is successful and you've verified your data, you may want to remove the `ebsRecoverySnapshotId` from your config to prevent accidental reuse in future deployments.
+   - If you need to change the volume size or create a new volume:
+     1. You'll need to manually delete the existing EBS volume through the AWS console or CLI.
+     2. Remove the `ebsRecoverySnapshotId` from your config.
+     3. Add the desired `volumeSize` to your config.
+     4. Run `cdk deploy` to create a new volume with the specified size.
+
+Remember:
+
+- Always use CDK diff to understand the likely ramifications of your CDK update
+- If you want to keep using the recovered data but need more space, consider using AWS EBS volume modification to increase the size of the existing volume instead of creating a new one.
+- Deleting an EBS volume is irreversible. Always ensure you have backups before making such changes.
