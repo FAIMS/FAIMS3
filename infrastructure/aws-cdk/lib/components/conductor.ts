@@ -5,80 +5,74 @@
  * Last Modified: Thursday July 25th 2024 9:36:03 am
  * Modified By: Peter Baker
  * -----
- * Description: Basic ECS cluster with redundant LB.
+ * Description: Uses shared ALB with http -> https redirect to host ECS cluster for conductor.
  * -----
  * HISTORY:
  * Date      	By	Comments
  * ----------	---	---------------------------------------------------------
  *
- * 25-07-2024 | Peter Baker | TODO - use the same LB as the couch DB network to save $$$.
+ * 25-07-2024 | Peter Baker | use the same LB as the couch DB network to save $$$.
  */
 
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as sm from "aws-cdk-lib/aws-secretsmanager";
 import * as r53Targets from "aws-cdk-lib/aws-route53-targets";
-import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
-import { IVpc, Port, SecurityGroup } from "aws-cdk-lib/aws-ec2";
-import {
-  AppProtocol,
-  Cluster,
-  ContainerImage,
-  Secret as ECSSecret,
-  FargateService,
-  FargateTaskDefinition,
-  LogDriver,
-} from "aws-cdk-lib/aws-ecs";
+import * as acm from "aws-cdk-lib/aws-certificatemanager";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import { RetentionDays } from "aws-cdk-lib/aws-logs";
-import { IHostedZone } from "aws-cdk-lib/aws-route53";
-import { Secret } from "aws-cdk-lib/aws-secretsmanager";
+import * as logs from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import { getPathToRoot } from "../util/mono";
 import { SharedBalancer } from "./networking";
 
+/**
+ * Properties for the FaimsConductor construct
+ */
 export interface FaimsConductorProps {
-  // VPC to produce ECS cluster in
-  vpc: IVpc;
-  // Balancer to use
+  /** VPC to produce ECS cluster in */
+  vpc: ec2.IVpc;
+  /** Shared balancer to use */
   sharedBalancer: SharedBalancer;
-  // The CPU allocation for the service
+  /** The CPU allocation for the service */
   cpu: number;
-  // The memory allocation for the service
+  /** The memory allocation for the service */
   memory: number;
-  // Full domain name for service
+  /** Full domain name for service e.g. website.com */
   domainName: string;
-  // The ARN to secret containing pub/private key in AWS secret manager - see scripts/genKeyAWS.sh
+  /** The ARN to secret containing pub/private key in AWS secret manager */
   privateKeySecretArn: string;
-
-  // The HZ to produce record in
-  hz: IHostedZone;
-  // The DNS cert to use for domain LB
-  certificate: ICertificate;
-
-  // Couch db config
-
-  // admin password secret
-  couchDbAdminSecret: Secret;
-  // couch db port
+  /** The Hosted Zone to produce record in */
+  hz: r53.IHostedZone;
+  /** The DNS certificate to use for Load Balancer */
+  certificate: acm.ICertificate;
+  /** CouchDB admin user/password secret */
+  couchDbAdminSecret: sm.Secret;
+  /** CouchDB port (external) */
   couchDBPort: number;
-  // couch endpoint (format: https://domain:port)
+  /** CouchDB endpoint (format: https://domain:port) */
   couchDBEndpoint: string;
-
-  // What endpoints for web-front ends - used in the conductor response for
-  // token to direct front-end
+  /** Public URL for web app */
   webAppPublicUrl: string;
+  /** Public URL for Android app */
   androidAppPublicUrl: string;
+  /** Public URL for iOS app */
   iosAppPublicUrl: string;
 }
+
+/**
+ * Construct for the FAIMS Conductor service
+ */
 export class FaimsConductor extends Construct {
-  internalPort: number = 8000;
-  // HTTPS port 443
-  externalPort: number = 443;
-  // Endpoint for conductor access (format: https://domain:port)
-  conductorEndpoint: string;
-  // The Fargate Service
-  fargateService: FargateService;
+  /** Internal port for the Conductor service */
+  public readonly internalPort: number = 8000;
+  /** External HTTPS port */
+  public readonly externalPort: number = 443;
+  /** Endpoint for Conductor access (format: https://domain:port) */
+  public readonly conductorEndpoint: string;
+  /** The Fargate Service */
+  public readonly fargateService: ecs.FargateService;
 
   constructor(scope: Construct, id: string, props: FaimsConductorProps) {
     super(scope, id);
@@ -86,8 +80,8 @@ export class FaimsConductor extends Construct {
     // AUXILIARY SETUP
     // ================
 
-    // cookie auth secret gen at deploy time
-    const cookieSecret = new Secret(this, "conductor-cookie-secret", {
+    // Generate cookie auth secret at deploy time
+    const cookieSecret = new sm.Secret(this, "conductor-cookie-secret", {
       description: "Contains a randomly generated string used for cookie auth",
       removalPolicy: RemovalPolicy.DESTROY,
       generateSecretString: {
@@ -100,125 +94,85 @@ export class FaimsConductor extends Construct {
     // CONTAINER SETUP
     // ================
 
-    // Setup container
-    const conductorContainerImage = ContainerImage.fromAsset(getPathToRoot(), {
+    // Setup container image from local Dockerfile
+    const conductorContainerImage = ecs.ContainerImage.fromAsset(getPathToRoot(), {
       file: "api/Dockerfile",
-      // TODO optimise this - this avoids infinite loops
+      // TODO: Optimize this - this avoids infinite loops
       exclude: ["infrastructure"],
     });
 
-    // Create the task definition
-    const conductorTaskDfn = new FargateTaskDefinition(
-      this,
-      "conductor-task-dfn",
-      {
-        // 20GB ephemeral storage (minimum)
-        ephemeralStorageGiB: 21,
-        cpu: props.cpu,
-        memoryLimitMiB: props.memory,
-      }
-    );
+    // Create the Fargate task definition
+    const conductorTaskDfn = new ecs.FargateTaskDefinition(this, "conductor-task-dfn", {
+      ephemeralStorageGiB: 21, // 20GB ephemeral storage (minimum)
+      cpu: props.cpu,
+      memoryLimitMiB: props.memory,
+    });
 
-    // Create the CouchDB container definition within the task dfn
-    // TODO deploy from versioned docker image instead of building using CDK
-    const conductorContainerDfn = conductorTaskDfn.addContainer(
-      "conductor-container-dfn",
-      {
-        // build from the root, but target the api docker file
-        image: conductorContainerImage,
-        portMappings: [
-          // Map 8000 internal to 8080 external
-          {
-            containerPort: this.internalPort,
-            appProtocol: AppProtocol.http,
-            name: "conductor-port",
-          },
-        ],
-        // Pass in the admin/password combination securely
-        environment: {
-          PROFILE_NAME: "default",
-          CONDUCTOR_INSTANCE_NAME: "AWS FAIMS 3 Deployment",
-          // password is secret
-          COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
-
-          // in our case we use the same internal/external couchDB URL
-          COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
-
-          // TODO improve networking to talk over http inside cluster to avoid
-          // external traffic
-          COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
-          CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
-
-          // TODO setup google auth
-          CONDUCTOR_AUTH_PROVIDERS: "google",
-          GOOGLE_CLIENT_ID: "replace-me",
-          GOOGLE_CLIENT_SECRET: "replace-me",
-
-          // URLs
-          WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
-          ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
-          IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
-
-          // TODO setup email
-          // You will need to set up a valid SMTP connection
-          CONDUCTOR_EMAIL_FROM_ADDRESS: "noreply@localhost.test",
-          // Usernames with @ should be escaped %40
-          // Documentation for string is at https://nodemailer.com/smtp/
-          CONDUCTOR_EMAIL_HOST_CONFIG:
-            "smtps://username:password@smtp.example.test",
-
-          // TODO setup git revision properly
-          COMMIT_VERSION: "todo",
-
-          // The AWS Secret Manager secret ARN for the public/private RSA key
-          // pair (not secure value - protected by AWS retrieved at runtime)
-          KEY_SOURCE: "AWS_SM",
-          AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
+    // Add container to the task definition
+    const conductorContainerDfn = conductorTaskDfn.addContainer("conductor-container-dfn", {
+      image: conductorContainerImage,
+      portMappings: [
+        {
+          containerPort: this.internalPort,
+          appProtocol: ecs.AppProtocol.http,
+          name: "conductor-port",
         },
-        secrets: {
-          COUCHDB_PASSWORD: ECSSecret.fromSecretsManager(
-            props.couchDbAdminSecret,
-            // Use the password field
-            "password"
-          ),
-          COUCHDB_USER: ECSSecret.fromSecretsManager(
-            props.couchDbAdminSecret,
-            // Use the password field
-            "username"
-          ),
-          FAIMS_COOKIE_SECRET: ECSSecret.fromSecretsManager(cookieSecret),
-        },
-        logging: LogDriver.awsLogs({
-          streamPrefix: "faims-conductor",
-          logRetention: RetentionDays.ONE_MONTH,
-        }),
-      }
-    );
+      ],
+      environment: {
+        PROFILE_NAME: "default",
+        CONDUCTOR_INSTANCE_NAME: "AWS FAIMS 3 Deployment",
+        COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
+        COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
+        COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
+        CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
+        // TODO Setup Google auth
+        CONDUCTOR_AUTH_PROVIDERS: "google",
+        GOOGLE_CLIENT_ID: "replace-me",
+        GOOGLE_CLIENT_SECRET: "replace-me",
+        WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
+        ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
+        IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
+        // TODO Setup email
+        CONDUCTOR_EMAIL_FROM_ADDRESS: "noreply@localhost.test",
+        CONDUCTOR_EMAIL_HOST_CONFIG: "smtps://username:password@smtp.example.test",
+        // TODO Setup git revision properly
+        COMMIT_VERSION: "todo",
+        KEY_SOURCE: "AWS_SM",
+        AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
+      },
+      secrets: {
+        COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(props.couchDbAdminSecret, "password"),
+        COUCHDB_USER: ecs.Secret.fromSecretsManager(props.couchDbAdminSecret, "username"),
+        FAIMS_COOKIE_SECRET: ecs.Secret.fromSecretsManager(cookieSecret),
+      },
+      logging: ecs.LogDriver.awsLogs({
+        streamPrefix: "faims-conductor",
+        logRetention: logs.RetentionDays.ONE_MONTH,
+      }),
+    });
 
     // CLUSTER AND SERVICE SETUP
     // =========================
 
     // Create the ECS Cluster
-    const cluster = new Cluster(this, "ConductorCluster", {
+    const cluster = new ecs.Cluster(this, "ConductorCluster", {
       vpc: props.vpc,
     });
 
     // Create Security Group for the Fargate service
-    const serviceSecurityGroup = new SecurityGroup(this, "ConductorServiceSG", {
+    const serviceSecurityGroup = new ec2.SecurityGroup(this, "ConductorServiceSG", {
       vpc: props.vpc,
       allowAllOutbound: true,
       description: "Security group for Conductor Fargate service",
     });
 
     // Create Fargate Service
-    this.fargateService = new FargateService(this, "conductor-service", {
+    this.fargateService = new ecs.FargateService(this, "conductor-service", {
       cluster: cluster,
       taskDefinition: conductorTaskDfn,
-      // TODO clustering configuration
       desiredCount: 1,
       securityGroups: [serviceSecurityGroup],
-      // TODO Change this if using private subnets with NAT
-      assignPublicIp: true,
+      assignPublicIp: true, // TODO Change this if using private subnets with NAT
     });
 
     // LOAD BALANCING SETUP
@@ -229,7 +183,6 @@ export class FaimsConductor extends Construct {
       port: this.internalPort,
       protocol: elb.ApplicationProtocol.HTTP,
       targetType: elb.TargetType.IP,
-      // Health check configuration for conductor
       healthCheck: {
         enabled: true,
         healthyHttpCodes: "200,302",
@@ -242,7 +195,7 @@ export class FaimsConductor extends Construct {
       vpc: props.vpc,
     });
 
-    // Add the fargate service to target group
+    // Add the Fargate service to target group
     tg.addTarget(this.fargateService);
 
     // Add HTTP redirected HTTPS service to ALB against target group
@@ -250,8 +203,7 @@ export class FaimsConductor extends Construct {
       "conductor",
       tg,
       [elb.ListenerCondition.hostHeaders([props.domainName])],
-      // TODO understand and consider priorities
-      100,
+      100, // TODO: Understand and consider priorities
       100
     );
 
@@ -274,24 +226,21 @@ export class FaimsConductor extends Construct {
     // DNS ROUTES
     // ===========
 
-    // Route from conductor domain -> ALB
+    // Route from conductor domain to ALB
     new r53.ARecord(this, "conductorRoute", {
       zone: props.hz,
       recordName: props.domainName,
       comment: `Route from ${props.domainName} to Conductor ECS service through ALB`,
       ttl: Duration.minutes(30),
-      target: r53.RecordTarget.fromAlias(r53Targets.LoadBalancerTarget),
+      target: r53.RecordTarget.fromAlias(new r53Targets.LoadBalancerTarget(props.sharedBalancer.alb)),
     });
 
     // PERMISSIONS
     // ==================
 
     // Grant permission to read the private key secret
-    sm.Secret.fromSecretCompleteArn(
-      this,
-      "privateKeySecret",
-      props.privateKeySecretArn
-    ).grantRead(conductorTaskDfn.taskRole);
+    sm.Secret.fromSecretCompleteArn(this, "privateKeySecret", props.privateKeySecretArn)
+      .grantRead(conductorTaskDfn.taskRole);
 
     // NETWORK SECURITY
     // ================
@@ -299,14 +248,14 @@ export class FaimsConductor extends Construct {
     // Allow inbound traffic from the ALB
     serviceSecurityGroup.connections.allowFrom(
       props.sharedBalancer.alb,
-      Port.tcp(this.internalPort),
+      ec2.Port.tcp(this.internalPort),
       "Allow traffic from ALB to Conductor Fargate Service"
     );
 
     // OUTPUTS
     // ================
 
-    // build the public URL and expose
+    // Build the public URL and expose
     this.conductorEndpoint = `https://${props.domainName}:${this.externalPort}`;
   }
 }
