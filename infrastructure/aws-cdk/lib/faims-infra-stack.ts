@@ -178,8 +178,8 @@ export class FaimsInfraStack extends cdk.Stack {
       domainName: domains.couch,
       hz: hz,
       sharedBalancer: networking.sharedBalancer,
-      volumeSize: config.couch.volumeSize,
-      ebsRecoverySnapshotId: config.couch.ebsRecoverySnapshotId,
+      dataVolumeSize: config.couch.volumeSize,
+      dataVolumeSnapshotId: config.couch.ebsRecoverySnapshotId,
     });
 
     // CONDUCTOR
@@ -220,6 +220,6 @@ export class FaimsInfraStack extends cdk.Stack {
     });
 
     // Backup setup
-    backups.registerEbsVolume(couchDb.volume, "couchDbSelection");
+    backups.registerEbsVolume(couchDb.dataVolume, "couchDbDataVolume");
   }
 }
