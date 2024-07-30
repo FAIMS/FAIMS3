@@ -2,7 +2,7 @@ import { Construct } from "constructs";
 import * as backup from "aws-cdk-lib/aws-backup";
 import * as events from "aws-cdk-lib/aws-events";
 import * as iam from "aws-cdk-lib/aws-iam";
-import { Duration, RemovalPolicy } from "aws-cdk-lib";
+import { Duration, RemovalPolicy, Stack } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { BackupConfig } from "../faims-infra-stack";
 
@@ -87,6 +87,20 @@ export class BackupConstruct extends Construct {
     // Add the instance to the backup plan's selection
     this.backupPlan.addSelection(`${label ?? instance.node.id + "Selection"}`, {
       resources: [backup.BackupResource.fromEc2Instance(instance)],
+    });
+  }
+
+  /**
+   * Registers an EBS volume to be backed up by this backup plan
+   * @param volume The EBS volume to register for backups
+   * @param label An optional label for the selection
+   */
+  public registerEbsVolume(volume: ec2.IVolume, label?: string) {
+    // Create the ARN pattern to backup
+    const arnString = `arn:aws:ec2:${Stack.of(this).region}:${Stack.of(this).account}:volume/${volume.volumeId}`;
+    // Add the EBS volume to the backup plan's selection
+    this.backupPlan.addSelection(`${label ?? volume.node.id + "Selection"}`, {
+      resources: [backup.BackupResource.fromArn(arnString)],
     });
   }
 }

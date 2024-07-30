@@ -17,12 +17,9 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as elbTargets from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as r53targets from "aws-cdk-lib/aws-route53-targets";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import * as servicediscovery from "aws-cdk-lib/aws-servicediscovery";
-import * as sqs from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { SharedBalancer } from "./networking";
 
@@ -40,14 +37,20 @@ export interface EC2CouchDBProps {
   hz: route53.IHostedZone;
   /** The SSL/TLS certificate for HTTPS connections */
   certificate: acm.ICertificate;
+  /** The volume size to use for the EC2 instance */
+  volumeSize: number;
+  /** Recover from EBS volume - typically from AWS Backup? */
+  ebsRecoverySnapshotId?: string;
 }
 
 /**
  * A construct that sets up a CouchDB instance on EC2 with auto-scaling and load balancing
  */
 export class EC2CouchDB extends Construct {
-  /** The public endpoint for accessing CouchDB */
+  /** The EC2 instance running couchDB */
   public readonly instance: ec2.Instance;
+  /** The volume which is mounted to the instance */
+  public readonly volume: ec2.Volume;
   /** The public endpoint for accessing CouchDB */
   public readonly couchEndpoint: string;
   /** The exposed HTTPS port */
@@ -109,42 +112,6 @@ methods = GET, PUT, POST, HEAD, DELETE
       }
     );
 
-    // CLOUDMAP SETUP
-    // ================
-
-    // Create CloudMap service for service discovery
-    const namespace = new servicediscovery.PrivateDnsNamespace(
-      this,
-      "CouchDBNamespace",
-      {
-        vpc: props.vpc,
-        name: "couchdb.local",
-      }
-    );
-
-    const service = namespace.createService("CouchDBService", {
-      dnsRecordType: servicediscovery.DnsRecordType.A,
-      dnsTtl: Duration.seconds(60),
-    });
-
-    // Create a dead-letter queue for failed deregistrations
-    const dlq = new sqs.Queue(this, "DeregistrationDLQ");
-
-    // Lambda function to deregister instances from CloudMap on termination
-    const deregisterLambda = new lambda.Function(
-      this,
-      "DeregisterInstanceLambda",
-      {
-        runtime: lambda.Runtime.NODEJS_20_X,
-        handler: "index.handler",
-        code: lambda.Code.fromAsset("src/deregister-lambda/dist"),
-        environment: {
-          SERVICE_ID: service.serviceId,
-        },
-        deadLetterQueue: dlq,
-      }
-    );
-
     // INSTANCE CONFIG
     // ================
 
@@ -174,13 +141,7 @@ EOL`,
       `echo "[admins]" >> /opt/couchdb/etc/local.d/local.ini`,
       `echo "$ADMIN_USER = $ADMIN_PASSWORD" >> /opt/couchdb/etc/local.d/local.ini`,
       // Run CouchDB container with mounted configuration
-      "docker run -d --name couchdb -p 5984:5984 -v /opt/couchdb/etc/local.d:/opt/couchdb/etc/local.d couchdb:latest",
-      // Register the instance with CloudMap
-      'TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")',
-      'INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)',
-      'PRIVATE_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)',
-      "SERVICE_ID=" + service.serviceId,
-      `aws servicediscovery register-instance --service-id $SERVICE_ID --instance-id $INSTANCE_ID --attributes AWS_INSTANCE_IPV4=$PRIVATE_IP,AWS_INSTANCE_PORT=5984`
+      "docker run -d --name couchdb -p 5984:5984 -v /opt/couchdb/etc/local.d:/opt/couchdb/etc/local.d couchdb:latest"
     );
 
     // INSTANCE SETUP
@@ -197,7 +158,29 @@ EOL`,
       }
     );
 
-    const instance = new ec2.Instance(this, "CouchDBInstance", {
+    let blockDevices;
+    if (props.ebsRecoverySnapshotId) {
+      blockDevices = [
+        {
+          deviceName: "/dev/xvda",
+          volume: ec2.BlockDeviceVolume.ebsFromSnapshot(
+            props.ebsRecoverySnapshotId
+          ),
+        },
+      ];
+    } else {
+      blockDevices = [
+        {
+          deviceName: "/dev/xvda",
+          volume: ec2.BlockDeviceVolume.ebs(props.volumeSize, {
+            volumeType: ec2.EbsDeviceVolumeType.GP3,
+          }),
+        },
+      ];
+    }
+
+    // Create the EC2 instance
+    this.instance = new ec2.Instance(this, "CouchDBInstance", {
       vpc: props.vpc,
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T3,
@@ -209,6 +192,7 @@ EOL`,
       userData,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroup: couchSecurityGroup,
+      blockDevices: blockDevices,
     });
 
     // LOAD BALANCING SETUP
@@ -232,7 +216,7 @@ EOL`,
     });
 
     // Add the Auto Scaling Group to the target group
-    tg.addTarget(new elbTargets.InstanceTarget(instance));
+    tg.addTarget(new elbTargets.InstanceTarget(this.instance));
 
     // Add HTTP redirected HTTPS service to ALB against target group
     props.sharedBalancer.addHttpRedirectedConditionalHttpsTarget(
@@ -270,7 +254,7 @@ EOL`,
       );
 
       // Add SSM Instance Connect permissions to the instance role
-      instance.role.addManagedPolicy(
+      this.instance.role.addManagedPolicy(
         iam.ManagedPolicy.fromAwsManagedPolicyName(
           "AmazonSSMManagedInstanceCore"
         )
@@ -281,7 +265,7 @@ EOL`,
     // ==================
 
     // Grant the EC2 instance permission to read the secret
-    this.passwordSecret.grantRead(instance.role);
+    this.passwordSecret.grantRead(this.instance.role);
 
     // NETWORK SECURITY
     // ================
@@ -298,6 +282,5 @@ EOL`,
 
     // Set the public endpoint for CouchDB
     this.couchEndpoint = `https://${props.domainName}:${this.exposedPort}`;
-    this.instance = instance;
   }
 }
