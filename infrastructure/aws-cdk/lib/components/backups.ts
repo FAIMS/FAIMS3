@@ -12,7 +12,7 @@ export interface BackupProps {
   /**
    * The name of the backup vault to create or use
    */
-  backupVaultName: string;
+  backupVaultName?: string;
   /**
    * The number of days to retain backups (default: 30)
    */
