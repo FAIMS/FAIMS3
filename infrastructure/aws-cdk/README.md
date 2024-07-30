@@ -151,7 +151,7 @@ Example configuration structure:
   },
   "couch": {
     "volumeSize": 100,
-    "ebsRecoverySnapshotId": "1234"
+    "ebsRecoverySnapshotId": "snap-0123456789abcdef0"
   }
 }
 ```
@@ -178,7 +178,7 @@ Here's a breakdown of each configuration value and its purpose:
   - scheduleExpression: The cron schedule for running backups (default: daily at 3 AM)
 - couch
   - volumeSize: The size in GB of the EBS volume to mount to the EC2 instance
-  - ebsRecoverySnapshotId: (Optional) The ID of an EBS snapshot to recover from in the root device
+  - ebsRecoverySnapshotId: (Optional) The ID of an EBS snapshot to recover the couch data volume from
 
 ### Using Your Configuration
 
