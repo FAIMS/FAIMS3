@@ -12,12 +12,10 @@
  */
 
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
-import * as autoscaling from "aws-cdk-lib/aws-autoscaling";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import * as events from "aws-cdk-lib/aws-events";
-import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as elbTargets from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as route53 from "aws-cdk-lib/aws-route53";
@@ -48,6 +46,8 @@ export interface EC2CouchDBProps {
  * A construct that sets up a CouchDB instance on EC2 with auto-scaling and load balancing
  */
 export class EC2CouchDB extends Construct {
+  /** The public endpoint for accessing CouchDB */
+  public readonly instance: ec2.Instance;
   /** The public endpoint for accessing CouchDB */
   public readonly couchEndpoint: string;
   /** The exposed HTTPS port */
@@ -183,7 +183,7 @@ EOL`,
       `aws servicediscovery register-instance --service-id $SERVICE_ID --instance-id $INSTANCE_ID --attributes AWS_INSTANCE_IPV4=$PRIVATE_IP,AWS_INSTANCE_PORT=5984`
     );
 
-    // ASG SETUP
+    // INSTANCE SETUP
     // ================
 
     // Create a security group for the EC2 instance
@@ -197,8 +197,7 @@ EOL`,
       }
     );
 
-    // Create an Auto Scaling Group with a single EC2 instance
-    const asg = new autoscaling.AutoScalingGroup(this, "CouchDBAsg", {
+    const instance = new ec2.Instance(this, "CouchDBInstance", {
       vpc: props.vpc,
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T3,
@@ -208,35 +207,8 @@ EOL`,
         generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
       }),
       userData,
-      minCapacity: 1,
-      maxCapacity: 1,
-      desiredCapacity: 1,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-      associatePublicIpAddress: true,
       securityGroup: couchSecurityGroup,
-      updatePolicy: autoscaling.UpdatePolicy.rollingUpdate(),
-    });
-
-    // LIFECYCLE CONFIG
-    // ================
-
-    // Add lifecycle hook to deregister instances from CloudMap on termination
-    asg.addLifecycleHook("DeregisterFromCloudMap", {
-      lifecycleTransition: autoscaling.LifecycleTransition.INSTANCE_TERMINATING,
-      heartbeatTimeout: Duration.seconds(300),
-      defaultResult: autoscaling.DefaultResult.CONTINUE,
-    });
-
-    // Trigger deregister Lambda when instance termination occurs
-    new events.Rule(this, "TerminatingInstanceRule", {
-      eventPattern: {
-        source: ["aws.autoscaling"],
-        detailType: ["EC2 Instance-terminate Lifecycle Action"],
-        detail: {
-          AutoScalingGroupName: [asg.autoScalingGroupName],
-        },
-      },
-      targets: [new targets.LambdaFunction(deregisterLambda)],
     });
 
     // LOAD BALANCING SETUP
@@ -260,7 +232,7 @@ EOL`,
     });
 
     // Add the Auto Scaling Group to the target group
-    tg.addTarget(asg);
+    tg.addTarget(new elbTargets.InstanceTarget(instance));
 
     // Add HTTP redirected HTTPS service to ALB against target group
     props.sharedBalancer.addHttpRedirectedConditionalHttpsTarget(
@@ -298,7 +270,7 @@ EOL`,
       );
 
       // Add SSM Instance Connect permissions to the instance role
-      asg.role.addManagedPolicy(
+      instance.role.addManagedPolicy(
         iam.ManagedPolicy.fromAwsManagedPolicyName(
           "AmazonSSMManagedInstanceCore"
         )
@@ -309,47 +281,7 @@ EOL`,
     // ==================
 
     // Grant the EC2 instance permission to read the secret
-    this.passwordSecret.grantRead(asg.role);
-
-    // Service discovery permissions
-    const permsForServiceDiscovery = [
-      "servicediscovery:DeregisterInstance",
-      "servicediscovery:DiscoverInstances",
-      "servicediscovery:RegisterInstance",
-      "route53:GetHealthCheck",
-      "route53:DeleteHealthCheck",
-      "route53:CreateHealthCheck",
-      "route53:UpdateHealthCheck",
-      "route53:ChangeResourceRecordSets",
-      "ec2:DescribeInstances",
-    ];
-
-    // Grant the EC2 instance permission to register and deregister instances in the service
-    asg.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: permsForServiceDiscovery,
-        resources: ["*"], // TODO: Tighten this and split by service
-      })
-    );
-
-    // Grant the Lambda function permissions for service discovery and lifecycle completion
-    deregisterLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: [
-          ...permsForServiceDiscovery,
-          "autoscaling:CompleteLifecycleAction",
-        ],
-        resources: ["*"], // TODO: Tighten this and split by service
-      })
-    );
-
-    // Grant the Lambda function permission to complete lifecycle actions
-    deregisterLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ["autoscaling:CompleteLifecycleAction"],
-        resources: [asg.autoScalingGroupArn],
-      })
-    );
+    this.passwordSecret.grantRead(instance.role);
 
     // NETWORK SECURITY
     // ================
@@ -366,5 +298,6 @@ EOL`,
 
     // Set the public endpoint for CouchDB
     this.couchEndpoint = `https://${props.domainName}:${this.exposedPort}`;
+    this.instance = instance;
   }
 }
