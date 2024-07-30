@@ -2,6 +2,69 @@
 
 This CDK project includes AWS infrastructure as code to deploy FAIMS 3 and its associated components.
 
+## Architecture overview
+
+### Networking
+
+The `FaimsNetworking` construct sets up the core network infrastructure:
+
+- **VPC**: A custom VPC with a maximum of 2 Availability Zones.
+- **Subnets**: Public subnets only, with no NAT gateways.
+- **Application Load Balancer (ALB)**: A shared, internet-facing ALB in the public subnets.
+  - Supports both HTTP (port 80) and HTTPS (port 443) listeners.
+  - Automatically redirects HTTP traffic to HTTPS.
+  - Uses certificates from AWS Certificate Manager for HTTPS.
+
+### CouchDB (Database)
+
+The `EC2CouchDB` construct deploys CouchDB:
+
+- **EC2 Auto Scaling Group**: Runs a single EC2 instance with CouchDB.
+- **CloudMap**: Registers the CouchDB instance for service discovery.
+- **User Data**: Installs and configures CouchDB using Docker.
+- **Secrets Manager**: Stores CouchDB admin credentials.
+- **Custom Configuration**: Sets up CouchDB with specific settings, including CORS and authentication handlers.
+- **Load Balancer Integration**: Uses the shared ALB with a dedicated target group.
+- **DNS**: Creates a custom domain for CouchDB access.
+
+### Conductor (API Service)
+
+The `FaimsConductor` construct sets up the API service:
+
+- **ECS Fargate**: Runs the Conductor API as a containerized service.
+- **Task Definition**: Configures the container with environment variables and secrets.
+- **Load Balancer Integration**: Uses the shared ALB with a dedicated target group.
+- **Auto Scaling**: Configures service auto-scaling based on request count.
+- **Secrets**: Utilizes AWS Secrets Manager for sensitive data like cookie secrets and database credentials.
+- **DNS**: Creates a custom domain for the Conductor API.
+
+### Frontend
+
+The `FaimsFrontEnd` construct manages the web applications:
+
+#### Main FAIMS Frontend
+- **S3 Bucket**: Hosts the static website files.
+- **CloudFront Distribution**: Serves the website globally with HTTPS.
+- **Custom Error Responses**: Configures 404 and 403 errors to return the index.html for SPA routing.
+- **Build Process**: Uses a custom build script with environment variable injection.
+- **Content Security Policy**: Configures CSP headers for connecting to CouchDB and Conductor.
+
+#### Designer Frontend
+- Similar setup to the main frontend, but with a separate S3 bucket and CloudFront distribution.
+- Uses a different build process tailored for the designer application.
+
+### Auxiliary Components
+
+- **Lambda Function**: A Node.js function to deregister EC2 instances from CloudMap during termination.
+- **EventBridge Rule**: Triggers the deregistration Lambda when an Auto Scaling group terminates an instance.
+
+### Security and Access Management
+
+- **Certificates**: Uses ACM certificates for HTTPS, with separate certs for CloudFront and ALB.
+- **Secrets**: Stores and manages various secrets including database credentials, API keys, and JWT signing keys.
+
+This infrastructure is defined using AWS CDK, allowing for easy replication and modification across different environments.
+
 ## Installation
 
 With nvm
