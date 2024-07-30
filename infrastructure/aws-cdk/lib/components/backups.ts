@@ -4,29 +4,7 @@ import * as events from "aws-cdk-lib/aws-events";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Duration, RemovalPolicy } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-
-/**
- * Properties for the AwsBackupConstruct
- */
-export interface BackupProps {
-  /**
-   * The name of the backup vault to create or use
-   */
-  backupVaultName?: string;
-  /**
-   * The number of days to retain backups (default: 30)
-   */
-  backupRetentionDays?: number;
-  /**
-   * The ARN of an existing backup vault to use (optional)
-   * If provided, a new vault will not be created
-   */
-  existingBackupVaultArn?: string;
-  /**
-   * The cron schedule expression to be used for running the backup e.g. cron(...)
-   */
-  scheduleExpression: events.Schedule;
-}
+import { BackupConfig } from "../faims-infra-stack";
 
 /**
  * A construct that creates an AWS Backup plan and associated resources
@@ -53,21 +31,21 @@ export class BackupConstruct extends Construct {
    * @param id The scoped construct ID
    * @param props Configuration properties for the AwsBackupConstruct
    */
-  constructor(scope: Construct, id: string, props: BackupProps) {
+  constructor(scope: Construct, id: string, props: BackupConfig) {
     super(scope, id);
 
     // Determine whether to create a new vault or use an existing one
-    if (props.existingBackupVaultArn) {
+    if (props.vaultArn) {
       // Use the existing backup vault
       this.backupVault = backup.BackupVault.fromBackupVaultArn(
         this,
         "ExistingBackupVault",
-        props.existingBackupVaultArn
+        props.vaultArn
       );
     } else {
       // Create a new backup vault
       this.backupVault = new backup.BackupVault(this, "BackupVault", {
-        backupVaultName: props.backupVaultName,
+        backupVaultName: props.vaultName,
         removalPolicy: RemovalPolicy.RETAIN, // Retain the vault even if the stack is destroyed
       });
     }
@@ -80,8 +58,10 @@ export class BackupConstruct extends Construct {
       new backup.BackupPlanRule({
         completionWindow: Duration.hours(2), // Time window for backup completion
         startWindow: Duration.hours(1), // Time window for backup to start
-        scheduleExpression: props.scheduleExpression, // Run daily at 3am
-        deleteAfter: Duration.days(props.backupRetentionDays || 30), // Retention period
+        scheduleExpression: events.Schedule.expression(
+          props.scheduleExpression
+        ), // Run daily at 3am
+        deleteAfter: Duration.days(props.retentionDays), // Retention period
         backupVault: this.backupVault,
       })
     );
@@ -105,7 +85,7 @@ export class BackupConstruct extends Construct {
    */
   public registerEc2Instance(instance: ec2.Instance, label?: string) {
     // Add the instance to the backup plan's selection
-    this.backupPlan.addSelection(`${label ?? (instance.node.id + "Selection")}`, {
+    this.backupPlan.addSelection(`${label ?? instance.node.id + "Selection"}`, {
       resources: [backup.BackupResource.fromEc2Instance(instance)],
     });
   }
