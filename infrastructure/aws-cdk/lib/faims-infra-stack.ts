@@ -1,6 +1,8 @@
 import * as cdk from "aws-cdk-lib";
+import * as events from "aws-cdk-lib/aws-events";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
+import { BackupConstruct } from "./components/backups";
 import { Construct } from "constructs";
 import { FaimsConductor } from "./components/conductor";
 import { FaimsFrontEnd } from "./components/front-end";
@@ -21,6 +23,23 @@ export interface FaimsInfraStackProps extends cdk.StackProps {
   publicKeySecretArn: string;
   /** ARN of the private key secret */
   privateKeySecretArn: string;
+  /**
+   * The name of the backup vault to create or use
+   */
+  backupVaultName: string;
+  /**
+   * The number of days to retain backups (default: 30)
+   */
+  backupRetentionDays?: number;
+  /**
+   * The ARN of an existing backup vault to use (optional)
+   * If provided, a new vault will not be created
+   */
+  existingBackupVaultArn?: string;
+  /**
+   * The cron schedule expression to be used for running the backup e.g. cron(...)
+   */
+  scheduleExpression: events.Schedule;
 }
 
 /**
@@ -49,6 +68,20 @@ export class FaimsInfraStack extends cdk.Stack {
       web: `faims.${rootDomain}`,
       designer: `designer.${rootDomain}`,
     };
+
+    // BACKUPS SETUP
+    // =============
+    if (!(props.existingBackupVaultArn || props.backupVaultName)) {
+      throw Error(
+        "Must provide either an existing Backup vault ARN or a vault name to create."
+      );
+    }
+    const backups = new BackupConstruct(this, "backup", {
+      backupVaultName: props.backupVaultName,
+      backupRetentionDays: props.backupRetentionDays,
+      scheduleExpression: props.scheduleExpression,
+      existingBackupVaultArn: props.existingBackupVaultArn,
+    });
 
     // CERTIFICATES
     // ============
@@ -124,5 +157,8 @@ export class FaimsInfraStack extends cdk.Stack {
       designerUsEast1Certificate: cfnCert,
       conductorUrl: conductor.conductorEndpoint,
     });
+
+    // Backup setup 
+    backups.registerEc2Instance(couchDb.instance, "couchDbSelection")
   }
 }
