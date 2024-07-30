@@ -146,6 +146,7 @@ Example configuration structure:
   },
   "backup": {
     "vaultName": "example-backup-vault",
+    "vaultArn": "existing-vault-arn",
     "retentionDays": 30,
     "scheduleExpression": "cron(0 3 * * ? *)"
   },
@@ -393,3 +394,37 @@ Remember:
 - Always use CDK diff to understand the likely ramifications of your CDK update
 - If you want to keep using the recovered data but need more space, consider using AWS EBS volume modification to increase the size of the existing volume instead of creating a new one.
 - Deleting an EBS volume is irreversible. Always ensure you have backups before making such changes.
+
+### Recovery process diagram (proposed)
+
+The below diagram indicates three backup/recovery processes for couch
+
+1. (CouchDB replication - left) Nightly startup of idle couch instance, replicate all databases from live DB, shut down. Run EBS snapshot.
+2. (EBS Snapshots - middle) Nightly snapshots of live db data volume
+3. (Recovery options - right) 
+    1. (Realtime rollover) Try recovering but starting up idle instance, adding to target group for load balancer, and removing unhealthy instance. This could be followed by getting the latest snapshot from the live instance and recovering it, depending on recovery priorities.
+    2. (Recover backup DB from EBS snapshot) If prod continues to operate but data has been lost, could use idle database to recover from an EBS snapshot, and then replicate lost data.
+    3. (Recover live DB from EBS snapshot) If both databases are not operational and require recovery, can directly recover the live DB from the latest EBS snapshot.
+
+```mermaid
+graph TD
+    A[Start] --> B[Nightly Backup Process]
+    B --> C[Start idle instance]
+    C --> D[Replicate all databases]
+    D --> E[Shutdown idle instance]
+    E --> F[Take EBS snapshot of backup instance]
+    
+    G[Regular Process] --> H[Take regular EBS snapshots of live DB]
+    
+    I[Disaster Recovery Situation] --> J{Try immediate recovery}
+    J -->|Yes| K[Start idle instance]
+    K --> L[Point load balancer to idle instance]
+    L --> M{Does it work?}
+    M -->|Yes| N[Recovery complete]
+    M -->|No| O[Use EBS snapshot]
+    J -->|No| O
+    O --> P[Recover data volume of main instance]
+    P --> Q[Restart main instance]
+    Q --> R[Point load balancer to main instance]
+    R --> N
+```

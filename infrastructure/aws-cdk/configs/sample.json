@@ -17,6 +17,7 @@
     },
     "backup": {
         "vaultName": "example-backup-vault",
+        "vaultArn": "existing-vault-arn",
         "retentionDays": 30,
         "scheduleExpression": "cron(0 3 * * ? *)"
     },
