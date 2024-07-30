@@ -43,6 +43,7 @@ The `FaimsConductor` construct sets up the API service:
 The `FaimsFrontEnd` construct manages the web applications:
 
 #### Main FAIMS Frontend
+
 - **S3 Bucket**: Hosts the static website files.
 - **CloudFront Distribution**: Serves the website globally with HTTPS.
 - **Custom Error Responses**: Configures 404 and 403 errors to return the index.html for SPA routing.
@@ -50,6 +51,7 @@ The `FaimsFrontEnd` construct manages the web applications:
 - **Content Security Policy**: Configures CSP headers for connecting to CouchDB and Conductor.
 
 #### Designer Frontend
+
 - Similar setup to the main frontend, but with a separate S3 bucket and CloudFront distribution.
 - Uses a different build process tailored for the designer application.
 
@@ -141,6 +143,15 @@ Example configuration structure:
   "secrets": {
     "privateKey": "your-private-key-secret-arn",
     "publicKey": "your-public-key-secret-arn"
+  },
+  "backup": {
+    "vaultName": "example-backup-vault",
+    "retentionDays": 30,
+    "scheduleExpression": "cron(0 3 * * ? *)"
+  },
+  "couch": {
+    "volumeSize": 100,
+    "ebsRecoverySnapshotId": "1234"
   }
 }
 ```
@@ -161,6 +172,13 @@ Here's a breakdown of each configuration value and its purpose:
 - secrets
   - privateKey: ARN of your private key in Secrets Manager
   - publicKey: ARN of your public key in Secrets Manager
+- backup
+  - vaultName: The name of the AWS Backup vault to create or use
+  - retentionDays: The number of days to retain backups (default: 30)
+  - scheduleExpression: The cron schedule for running backups (default: daily at 3 AM)
+- couch
+  - volumeSize: The size in GB of the EBS volume to mount to the EC2 instance
+  - ebsRecoverySnapshotId: (Optional) The ID of an EBS snapshot to recover from in the root device
 
 ### Using Your Configuration
 

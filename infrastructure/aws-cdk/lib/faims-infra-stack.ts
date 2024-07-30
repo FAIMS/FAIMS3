@@ -64,6 +64,12 @@ const ConfigSchema = z.object({
     /** ARN of the public key secret */
     publicKey: z.string(),
   }),
+  couch: z.object({
+    /** The size in GB of the volume to mount to EC2 */
+    volumeSize: z.number(),
+    /** The ID of EBS snapshot to recover from in the root device (optional) */
+    ebsRecoverySnapshotId: z.string().optional(),
+  }),
   backup: BackupConfigSchema,
 });
 
@@ -172,6 +178,8 @@ export class FaimsInfraStack extends cdk.Stack {
       domainName: domains.couch,
       hz: hz,
       sharedBalancer: networking.sharedBalancer,
+      volumeSize: config.couch.volumeSize,
+      ebsRecoverySnapshotId: config.couch.ebsRecoverySnapshotId,
     });
 
     // CONDUCTOR
@@ -212,6 +220,6 @@ export class FaimsInfraStack extends cdk.Stack {
     });
 
     // Backup setup
-    backups.registerEc2Instance(couchDb.instance, "couchDbSelection");
+    backups.registerEbsVolume(couchDb.volume, "couchDbSelection");
   }
 }

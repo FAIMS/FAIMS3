@@ -19,5 +19,9 @@
         "vaultName": "example-backup-vault",
         "retentionDays": 30,
         "scheduleExpression": "cron(0 3 * * ? *)"
+    },
+    "couch": {
+        "volumeSize": 100,
+        "ebsRecoverySnapshotId": "1234"
     }
 }
