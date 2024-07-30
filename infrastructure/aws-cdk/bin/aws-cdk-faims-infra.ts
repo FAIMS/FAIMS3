@@ -2,8 +2,7 @@
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
 import { HostedZoneAttributes } from "aws-cdk-lib/aws-route53";
-import { FaimsInfraStack } from "../lib/faims-infra-stack";
-import { loadConfig } from "../configs/config-class";
+import { FaimsInfraStack, loadConfig } from "../lib/faims-infra-stack";
 import * as path from "path";
 
 // Read the config file path from the environment variable
@@ -31,13 +30,5 @@ new FaimsInfraStack(app, "FaimsInfraStack", {
     account: config.aws.account,
     region: config.aws.region,
   },
-  hzAttributes: zoneAttributes,
-  primaryCertArn: config.certificates.primary,
-  cloudfrontCertArn: config.certificates.cloudfront,
-  privateKeySecretArn: config.secrets.privateKey,
-  publicKeySecretArn: config.secrets.publicKey,
-  backupVaultName: config.backup.vaultName,
-  existingBackupVaultArn: config.backup.vaultArn,
-  scheduleExpression: config.backup.scheduleExpression,
-  backupRetentionDays: config.backup.retentionDays,
+  config
 });

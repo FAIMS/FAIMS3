@@ -1,5 +1,4 @@
 import * as cdk from "aws-cdk-lib";
-import * as events from "aws-cdk-lib/aws-events";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import { BackupConstruct } from "./components/backups";
@@ -8,38 +7,95 @@ import { FaimsConductor } from "./components/conductor";
 import { FaimsFrontEnd } from "./components/front-end";
 import { FaimsNetworking } from "./components/networking";
 import { EC2CouchDB } from "./components/couch-db";
+import { z } from "zod";
+import * as fs from "fs";
+import * as path from "path";
+
+// Define the schema for the backup configuration
+const BackupConfigSchema = z
+  .object({
+    /**
+     * The name of the backup vault to create or use
+     */
+    vaultName: z.string().optional(),
+    /**
+     * The ARN of an existing backup vault to use (optional)
+     * If provided, a new vault will not be created
+     */
+    vaultArn: z.string().optional(),
+    /**
+     * The number of days to retain backups (default: 30)
+     */
+    retentionDays: z.number().int().min(1).default(30),
+    /**
+     * The cron schedule expression to be used for running the backup e.g. cron(...)
+     */
+    scheduleExpression: z.string().default("cron(0 3 * * ? *)"),
+  })
+  .refine(
+    (data) => (data.vaultName !== undefined) !== (data.vaultArn !== undefined),
+    {
+      message: "Either vaultName or vaultArn must be provided, but not both",
+    }
+  );
+
+// Define the schema
+const ConfigSchema = z.object({
+  /** Attributes of the hosted zone to use */
+  hostedZone: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+  certificates: z.object({
+    /** ARN of the primary SSL/TLS certificate */
+    primary: z.string(),
+    /** ARN of the CloudFront SSL/TLS certificate */
+    cloudfront: z.string(),
+  }),
+  aws: z.object({
+    // AWS Account ID
+    account: z.string(),
+    // AWS Region
+    region: z.string().default("ap-southeast-2"),
+  }),
+  secrets: z.object({
+    /** ARN of the private key secret */
+    privateKey: z.string(),
+    /** ARN of the public key secret */
+    publicKey: z.string(),
+  }),
+  backup: BackupConfigSchema,
+});
+
+// Infer the type from the schema
+export type Config = z.infer<typeof ConfigSchema>;
+export type BackupConfig = z.infer<typeof BackupConfigSchema>;
+
+export const loadConfig = (filePath: string): Config => {
+  // Parse and validate the config
+  try {
+    const absolutePath = path.resolve(process.cwd(), filePath);
+    const fileContents = fs.readFileSync(absolutePath, "utf-8");
+    const jsonData = JSON.parse(fileContents);
+    return ConfigSchema.parse(jsonData);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error("Configuration validation failed:");
+      error.errors.forEach((err) => {
+        console.error(`- ${err.path.join(".")}: ${err.message}`);
+      });
+    } else {
+      console.error("Error loading configuration:", error);
+    }
+  }
+  process.exit(1);
+};
 
 /**
  * Properties for the FaimsInfraStack
  */
 export interface FaimsInfraStackProps extends cdk.StackProps {
-  /** Attributes of the hosted zone to use */
-  hzAttributes: route53.HostedZoneAttributes;
-  /** ARN of the primary SSL/TLS certificate */
-  primaryCertArn: string;
-  /** ARN of the CloudFront SSL/TLS certificate */
-  cloudfrontCertArn: string;
-  /** ARN of the public key secret */
-  publicKeySecretArn: string;
-  /** ARN of the private key secret */
-  privateKeySecretArn: string;
-  /**
-   * The name of the backup vault to create or use
-   */
-  backupVaultName?: string;
-  /**
-   * The number of days to retain backups (default: 30)
-   */
-  backupRetentionDays?: number;
-  /**
-   * The ARN of an existing backup vault to use (optional)
-   * If provided, a new vault will not be created
-   */
-  existingBackupVaultArn?: string;
-  /**
-   * The cron schedule expression to be used for running the backup e.g. cron(...)
-   */
-  scheduleExpression: string;
+  config: Config;
 }
 
 /**
@@ -49,15 +105,17 @@ export class FaimsInfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: FaimsInfraStackProps) {
     super(scope, id, props);
 
+    // Pull out main config
+    const config = props.config;
+
     // DNS SETUP
     // =========
 
     // Setup the hosted zone for domain definitions
-    const hz = route53.HostedZone.fromHostedZoneAttributes(
-      this,
-      "hz",
-      props.hzAttributes
-    );
+    const hz = route53.HostedZone.fromHostedZoneAttributes(this, "hz", {
+      hostedZoneId: config.hostedZone.id,
+      zoneName: config.hostedZone.name,
+    });
 
     // Domain configurations
     // TODO: Parameterize these domain configurations
@@ -71,17 +129,12 @@ export class FaimsInfraStack extends cdk.Stack {
 
     // BACKUPS SETUP
     // =============
-    if (!(props.existingBackupVaultArn || props.backupVaultName)) {
+    if (!(config.backup.vaultArn || config.backup.vaultName)) {
       throw Error(
         "Must provide either an existing Backup vault ARN or a vault name to create."
       );
     }
-    const backups = new BackupConstruct(this, "backup", {
-      backupVaultName: props.backupVaultName,
-      backupRetentionDays: props.backupRetentionDays,
-      scheduleExpression: events.Schedule.expression(props.scheduleExpression),
-      existingBackupVaultArn: props.existingBackupVaultArn,
-    });
+    const backups = new BackupConstruct(this, "backup", config.backup);
 
     // CERTIFICATES
     // ============
@@ -90,14 +143,14 @@ export class FaimsInfraStack extends cdk.Stack {
     const primaryCert = acm.Certificate.fromCertificateArn(
       this,
       "primary-cert",
-      props.primaryCertArn
+      config.certificates.primary
     );
 
     // CloudFront certificate
     const cfnCert = acm.Certificate.fromCertificateArn(
       this,
       "cfn-cert",
-      props.cloudfrontCertArn
+      config.certificates.cloudfront
     );
 
     // NETWORKING
@@ -131,7 +184,7 @@ export class FaimsInfraStack extends cdk.Stack {
       memory: 2048, // 2 GB RAM
       certificate: primaryCert,
       domainName: domains.conductor,
-      privateKeySecretArn: props.privateKeySecretArn,
+      privateKeySecretArn: config.secrets.privateKey,
       hz: hz,
       couchDbAdminSecret: couchDb.passwordSecret,
       couchDBEndpoint: couchDb.couchEndpoint,
@@ -158,7 +211,7 @@ export class FaimsInfraStack extends cdk.Stack {
       conductorUrl: conductor.conductorEndpoint,
     });
 
-    // Backup setup 
-    backups.registerEc2Instance(couchDb.instance, "couchDbSelection")
+    // Backup setup
+    backups.registerEc2Instance(couchDb.instance, "couchDbSelection");
   }
 }
