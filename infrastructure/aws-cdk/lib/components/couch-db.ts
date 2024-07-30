@@ -48,10 +48,13 @@ import { Queue } from "aws-cdk-lib/aws-sqs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Rule } from "aws-cdk-lib/aws-events";
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
+import { SharedALB } from "./networking";
 
 export interface EC2CouchDBProps {
   vpc: IVpc;
   domainName: string;
+  // Balancer to use
+  sharedALB: SharedALB;
   hz: IHostedZone;
   certificate: ICertificate;
 }

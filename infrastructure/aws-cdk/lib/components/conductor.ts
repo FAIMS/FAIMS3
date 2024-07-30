@@ -14,28 +14,34 @@
  * 25-07-2024 | Peter Baker | TODO - use the same LB as the couch DB network to save $$$.
  */
 
-import { aws_iam, RemovalPolicy } from "aws-cdk-lib";
+import { Duration, RemovalPolicy } from "aws-cdk-lib";
+import * as r53 from "aws-cdk-lib/aws-route53";
+import * as sm from "aws-cdk-lib/aws-secretsmanager";
+import * as r53Targets from "aws-cdk-lib/aws-route53-targets";
 import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
-import { IVpc } from "aws-cdk-lib/aws-ec2";
+import { IVpc, Port, SecurityGroup } from "aws-cdk-lib/aws-ec2";
 import {
   AppProtocol,
+  Cluster,
   ContainerImage,
-  FargateTaskDefinition,
-  IFargateService,
-  LogDriver,
   Secret as ECSSecret,
+  FargateService,
+  FargateTaskDefinition,
+  LogDriver,
 } from "aws-cdk-lib/aws-ecs";
-import { ApplicationLoadBalancedFargateService } from "aws-cdk-lib/aws-ecs-patterns";
-import { ApplicationProtocol } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { RetentionDays } from "aws-cdk-lib/aws-logs";
 import { IHostedZone } from "aws-cdk-lib/aws-route53";
 import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { getPathToRoot } from "../util/mono";
+import { SharedBalancer } from "./networking";
 
 export interface FaimsConductorProps {
   // VPC to produce ECS cluster in
   vpc: IVpc;
+  // Balancer to use
+  sharedBalancer: SharedBalancer;
   // The CPU allocation for the service
   cpu: number;
   // The memory allocation for the service
@@ -69,14 +75,37 @@ export class FaimsConductor extends Construct {
   internalPort: number = 8000;
   // HTTPS port 443
   externalPort: number = 443;
-
   // Endpoint for conductor access (format: https://domain:port)
   conductorEndpoint: string;
-
-  fargateService: IFargateService;
+  // The Fargate Service
+  fargateService: FargateService;
 
   constructor(scope: Construct, id: string, props: FaimsConductorProps) {
     super(scope, id);
+
+    // AUXILIARY SETUP
+    // ================
+
+    // cookie auth secret gen at deploy time
+    const cookieSecret = new Secret(this, "conductor-cookie-secret", {
+      description: "Contains a randomly generated string used for cookie auth",
+      removalPolicy: RemovalPolicy.DESTROY,
+      generateSecretString: {
+        includeSpace: false,
+        passwordLength: 25,
+        excludePunctuation: true,
+      },
+    });
+
+    // CONTAINER SETUP
+    // ================
+
+    // Setup container
+    const conductorContainerImage = ContainerImage.fromAsset(getPathToRoot(), {
+      file: "api/Dockerfile",
+      // TODO optimise this - this avoids infinite loops
+      exclude: ["infrastructure"],
+    });
 
     // Create the task definition
     const conductorTaskDfn = new FargateTaskDefinition(
@@ -90,31 +119,13 @@ export class FaimsConductor extends Construct {
       }
     );
 
-    // cookie auth secret gen at deploy time
-    const cookieSecret = new Secret(this, "conductor-cookie-secret", {
-      description: "Contains a randomly generated string used for cookie auth",
-      removalPolicy: RemovalPolicy.DESTROY,
-      generateSecretString: {
-        includeSpace: false,
-        passwordLength: 25,
-        excludePunctuation: true,
-      },
-    });
-
-    // build the public URL
-    this.conductorEndpoint = `https://${props.domainName}:${this.externalPort}`;
-
     // Create the CouchDB container definition within the task dfn
     // TODO deploy from versioned docker image instead of building using CDK
     const conductorContainerDfn = conductorTaskDfn.addContainer(
       "conductor-container-dfn",
       {
         // build from the root, but target the api docker file
-        image: ContainerImage.fromAsset(getPathToRoot(), {
-          file: "api/Dockerfile",
-          // TODO optimise this - this avoids infinite loops
-          exclude: ["infrastructure"],
-        }),
+        image: conductorContainerImage,
         portMappings: [
           // Map 8000 internal to 8080 external
           {
@@ -184,69 +195,118 @@ export class FaimsConductor extends Construct {
       }
     );
 
-    const service = new ApplicationLoadBalancedFargateService(
-      this,
-      "conductor-lb-service",
-      {
-        // reuse the existing cluster and load balancer to save $$$
+    // CLUSTER AND SERVICE SETUP
+    // =========================
 
-        // TODO use this class https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ecs_patterns.ApplicationMultipleTargetGroupsFargateService.html
-        // to have multiple TG's into the same service saving $$$
-        // loadBalancer: props.loadBalancer,
+    // Create the ECS Cluster
+    const cluster = new Cluster(this, "ConductorCluster", {
+      vpc: props.vpc,
+    });
 
-        // need VPC for now
-        vpc: props.vpc,
+    // Create Security Group for the Fargate service
+    const serviceSecurityGroup = new SecurityGroup(this, "ConductorServiceSG", {
+      vpc: props.vpc,
+      allowAllOutbound: true,
+      description: "Security group for Conductor Fargate service",
+    });
 
-        // Public IP needed to allow for ECS to run properly
-        assignPublicIp: true,
+    // Create Fargate Service
+    this.fargateService = new FargateService(this, "conductor-service", {
+      cluster: cluster,
+      taskDefinition: conductorTaskDfn,
+      // TODO clustering configuration
+      desiredCount: 1,
+      securityGroups: [serviceSecurityGroup],
+      // TODO Change this if using private subnets with NAT
+      assignPublicIp: true,
+    });
 
-        // DNS cert + domain name
-        certificate: props.certificate,
-        domainName: props.domainName,
-        domainZone: props.hz,
+    // LOAD BALANCING SETUP
+    // =========================
 
-        // CPU + memory allocations
-        cpu: props.cpu,
-        memoryLimitMiB: props.memory,
+    // Create the target group
+    const tg = new elb.ApplicationTargetGroup(this, "ConductorTG", {
+      port: this.internalPort,
+      protocol: elb.ApplicationProtocol.HTTP,
+      targetType: elb.TargetType.IP,
+      // Health check configuration for conductor
+      healthCheck: {
+        enabled: true,
+        healthyHttpCodes: "200,302",
+        protocol: elb.Protocol.HTTP,
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(5),
+        port: this.internalPort.toString(),
+        path: "/",
+      },
+      vpc: props.vpc,
+    });
 
-        // TODO consider clustering?
-        desiredCount: 1,
+    // Add the fargate service to target group
+    tg.addTarget(this.fargateService);
 
-        // Listen on 8080
-        listenerPort: this.externalPort,
-
-        // Allow LB traffic from any IP due to need for direct access from user devices
-        openListener: true,
-
-        // HTTPS traffic (listener protocol)
-        protocol: ApplicationProtocol.HTTPS,
-
-        // Target protocol
-        targetProtocol: ApplicationProtocol.HTTP,
-
-        // We need public access to LB
-        publicLoadBalancer: true,
-
-        // We don't want any HTTP req's
-        redirectHTTP: true,
-
-        // couch db task definition
-        taskDefinition: conductorTaskDfn,
-      }
+    // Add HTTP redirected HTTPS service to ALB against target group
+    props.sharedBalancer.addHttpRedirectedConditionalHttpsTarget(
+      "conductor",
+      tg,
+      [elb.ListenerCondition.hostHeaders([props.domainName])],
+      // TODO understand and consider priorities
+      100,
+      100
     );
+
+    // AUTO SCALING SETUP
+    // ==================
+
+    // TODO Configure auto scaling properly
+    this.fargateService
+      .autoScaleTaskCount({
+        minCapacity: 1,
+        maxCapacity: 1,
+      })
+      .scaleOnRequestCount("conductorAutoScaling", {
+        targetGroup: tg,
+        requestsPerTarget: 10,
+        scaleInCooldown: Duration.seconds(180),
+        scaleOutCooldown: Duration.seconds(60),
+      });
+
+    // DNS ROUTES
+    // ===========
+
+    // Route from conductor domain -> ALB
+    new r53.ARecord(this, "conductorRoute", {
+      zone: props.hz,
+      recordName: props.domainName,
+      comment: `Route from ${props.domainName} to Conductor ECS service through ALB`,
+      ttl: Duration.minutes(30),
+      target: r53.RecordTarget.fromAlias(r53Targets.LoadBalancerTarget),
+    });
+
+    // PERMISSIONS
+    // ==================
 
     // Grant permission to read the private key secret
-    conductorTaskDfn.taskRole.addToPrincipalPolicy(
-      new aws_iam.PolicyStatement({
-        actions: ["secretsmanager:GetSecretValue"],
-        resources: [props.privateKeySecretArn],
-      })
+    sm.Secret.fromSecretCompleteArn(
+      this,
+      "privateKeySecret",
+      props.privateKeySecretArn
+    ).grantRead(conductorTaskDfn.taskRole);
+
+    // NETWORK SECURITY
+    // ================
+
+    // Allow inbound traffic from the ALB
+    serviceSecurityGroup.connections.allowFrom(
+      props.sharedBalancer.alb,
+      Port.tcp(this.internalPort),
+      "Allow traffic from ALB to Conductor Fargate Service"
     );
 
-    // inject different health check configuration -> allow redirects
-    service.targetGroup.configureHealthCheck({ healthyHttpCodes: "200,302" });
+    // OUTPUTS
+    // ================
 
-    // Expose the fargate service and cluster
-    this.fargateService = service.service;
+    // build the public URL and expose
+    this.conductorEndpoint = `https://${props.domainName}:${this.externalPort}`;
   }
 }
