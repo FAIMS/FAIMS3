@@ -124,7 +124,5 @@ export class FaimsInfraStack extends cdk.Stack {
       designerUsEast1Certificate: cfnCert,
       conductorUrl: conductor.conductorEndpoint,
     });
-
-    // TODO: Add any additional resources or configurations as needed
   }
 }
