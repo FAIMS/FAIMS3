@@ -26,7 +26,7 @@ export interface FaimsInfraStackProps extends cdk.StackProps {
   /**
    * The name of the backup vault to create or use
    */
-  backupVaultName: string;
+  backupVaultName?: string;
   /**
    * The number of days to retain backups (default: 30)
    */
@@ -39,7 +39,7 @@ export interface FaimsInfraStackProps extends cdk.StackProps {
   /**
    * The cron schedule expression to be used for running the backup e.g. cron(...)
    */
-  scheduleExpression: events.Schedule;
+  scheduleExpression: string;
 }
 
 /**
@@ -79,7 +79,7 @@ export class FaimsInfraStack extends cdk.Stack {
     const backups = new BackupConstruct(this, "backup", {
       backupVaultName: props.backupVaultName,
       backupRetentionDays: props.backupRetentionDays,
-      scheduleExpression: props.scheduleExpression,
+      scheduleExpression: events.Schedule.expression(props.scheduleExpression),
       existingBackupVaultArn: props.existingBackupVaultArn,
     });
 

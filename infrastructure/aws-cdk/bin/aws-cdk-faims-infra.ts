@@ -36,4 +36,8 @@ new FaimsInfraStack(app, "FaimsInfraStack", {
   cloudfrontCertArn: config.certificates.cloudfront,
   privateKeySecretArn: config.secrets.privateKey,
   publicKeySecretArn: config.secrets.publicKey,
+  backupVaultName: config.backup.vaultName,
+  existingBackupVaultArn: config.backup.vaultArn,
+  scheduleExpression: config.backup.scheduleExpression,
+  backupRetentionDays: config.backup.retentionDays,
 });
