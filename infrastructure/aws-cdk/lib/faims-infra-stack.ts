@@ -18,9 +18,6 @@ export class FaimsInfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: FaimsInfraStackProps) {
     super(scope, id, props);
 
-    // setup network
-    const networking = new FaimsNetworking(this, "networking", {});
-
     // Setup the hosted zone so we can define domains
     const hz = HostedZone.fromHostedZoneAttributes(
       this,
@@ -28,8 +25,8 @@ export class FaimsInfraStack extends cdk.Stack {
       props.hzAttributes
     );
 
-    // Domain setups 
-    
+    // Domain setups
+
     // TODO parameterise
 
     const rootDomain = hz.zoneName;
@@ -62,6 +59,11 @@ export class FaimsInfraStack extends cdk.Stack {
       props.cloudfrontCertArn
     );
 
+    // setup network
+    const networking = new FaimsNetworking(this, "networking", {
+      certificate: primaryCert,
+    });
+
     // Currently the ini file is setup in docker - this means we need to have the JWT public key setup before hand.
     // Maybe we can do this with a custom resource? not sure - okay for now
     // TODO investigate better key setup process which allows for one click deploy
@@ -72,6 +74,7 @@ export class FaimsInfraStack extends cdk.Stack {
       certificate: primaryCert,
       domainName: fullCouchDomain,
       hz: hz,
+      sharedALB: networking.sharedALB
     });
 
     // Deploys the conductor API as a load balanced ECS service
@@ -91,6 +94,7 @@ export class FaimsInfraStack extends cdk.Stack {
       // TODO
       androidAppPublicUrl: "https://fake.com",
       iosAppPublicUrl: "https://fake.com",
+      sharedALB: networking.sharedALB
     });
 
     // Deploys the FAIMS 3 web front-end as a S3 Cloudfront static website
