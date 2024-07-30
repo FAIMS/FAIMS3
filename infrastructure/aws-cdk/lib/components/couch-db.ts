@@ -11,7 +11,7 @@
  * ----------   --- ---------------------------------------------------------
  */
 
-import { Duration, RemovalPolicy } from "aws-cdk-lib";
+import { Size, Duration, RemovalPolicy } from "aws-cdk-lib";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
@@ -37,20 +37,18 @@ export interface EC2CouchDBProps {
   hz: route53.IHostedZone;
   /** The SSL/TLS certificate for HTTPS connections */
   certificate: acm.ICertificate;
-  /** The volume size to use for the EC2 instance */
-  volumeSize: number;
-  /** Recover from EBS volume - typically from AWS Backup? */
-  ebsRecoverySnapshotId?: string;
+  /** The size of the data volume for CouchDB in GB */
+  dataVolumeSize: number;
+  /** EBS Snapshot ID for recovery of the CouchDB data volume */
+  dataVolumeSnapshotId?: string;
 }
 
 /**
- * A construct that sets up a CouchDB instance on EC2 with auto-scaling and load balancing
+ * A construct that sets up a CouchDB instance on EC2 with a separate data volume
  */
 export class EC2CouchDB extends Construct {
-  /** The EC2 instance running couchDB */
+  /** The EC2 instance running CouchDB */
   public readonly instance: ec2.Instance;
-  /** The volume which is mounted to the instance */
-  public readonly volume: ec2.Volume;
   /** The public endpoint for accessing CouchDB */
   public readonly couchEndpoint: string;
   /** The exposed HTTPS port */
@@ -59,11 +57,21 @@ export class EC2CouchDB extends Construct {
   public readonly passwordSecret: secretsmanager.Secret;
   /** The internal port CouchDB listens on */
   private readonly couchInternalPort: number = 5984;
+  /** The path where CouchDB data will be stored */
+  private readonly couchDataPath: string = "/opt/couchdb/data";
+  /** The device name for the EBS data volume */
+  private readonly ebsDeviceName: string = "/dev/xvdf";
+  /** The Couch DB Docker version tag to use  */
+  private readonly couchVersionTag: string = "latest";
+  /** The device name for the EBS data volume */
+  public readonly dataVolume: ec2.Volume;
 
   /** CouchDB configuration settings */
   private readonly couchDbConfig: string = `
 ; CouchDB Configuration Settings for FAIMS
 [couchdb]
+database_dir = ${this.couchDataPath}
+view_index_dir = ${this.couchDataPath}
 max_document_size = 4294967296 ; bytes
 os_process_timeout = 5000 ; 5 sec
 uuid = adf990d5dd21b735f65d4140ad1f10c2
@@ -118,30 +126,88 @@ methods = GET, PUT, POST, HEAD, DELETE
     // Create user data script to install and configure CouchDB
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
+      "#!/bin/bash",
+      "set -e",
+      "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1",
+
       // Update yum and install dependencies
       "yum update -y",
       "yum install -y docker jq awscli",
+
       // Run CouchDB with docker service
       "systemctl start docker",
       "systemctl enable docker",
       "docker pull couchdb:latest",
-      "SECRET_ARN=" + this.passwordSecret.secretArn,
-      // Get the region dynamically
+
+      // Set environment variables
+      `SECRET_ARN=${this.passwordSecret.secretArn}`,
       "REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)",
       "export AWS_DEFAULT_REGION=$REGION",
+
       // Get username and password from Secrets Manager
       "ADMIN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text | jq -r .password)",
       "ADMIN_USER=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text | jq -r .username)",
+
       // Create CouchDB configuration file
       "mkdir -p /opt/couchdb/etc/local.d",
       `cat > /opt/couchdb/etc/local.d/local.ini << EOL
 ${this.couchDbConfig}
 EOL`,
+
       // Append admin and password configuration to local.ini
       `echo "[admins]" >> /opt/couchdb/etc/local.d/local.ini`,
       `echo "$ADMIN_USER = $ADMIN_PASSWORD" >> /opt/couchdb/etc/local.d/local.ini`,
-      // Run CouchDB container with mounted configuration
-      "docker run -d --name couchdb -p 5984:5984 -v /opt/couchdb/etc/local.d:/opt/couchdb/etc/local.d couchdb:latest"
+
+      // Mount the EBS volume for CouchDB data
+      `DEVICE=${this.ebsDeviceName}`,
+      `DATA_DIR=${this.couchDataPath}`,
+
+      // Check if the volume has a filesystem - in snapshot it already will!
+      "if ! blkid $DEVICE; then",
+      "    # If not, create an ext4 filesystem",
+      "    mkfs -t ext4 $DEVICE",
+      "fi",
+
+      // Create the mount point
+      "mkdir -p $DATA_DIR",
+
+      // Mount the volume
+      "mount $DEVICE $DATA_DIR",
+
+      // Add to fstab for persistence across reboots
+      'echo "$DEVICE $DATA_DIR ext4 defaults,nofail 0 2" >> /etc/fstab',
+
+      // Set appropriate permissions
+      "chown -R 5984:5984 $DATA_DIR",
+
+      // Log the result
+      'echo "CouchDB data volume mounted at $DATA_DIR" >> /var/log/couchdb-setup.log',
+
+      // Create a systemd service file for CouchDB
+      `cat > /etc/systemd/system/couchdb-docker.service << EOL
+[Unit]
+Description=CouchDB Docker Container
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker run --rm --name couchdb -p 5984:5984 -v /opt/couchdb/etc/local.d:/opt/couchdb/etc/local.d -v ${this.couchDataPath}:${this.couchDataPath} couchdb:${this.couchVersionTag}
+ExecStop=/usr/bin/docker stop couchdb
+
+[Install]
+WantedBy=multi-user.target
+EOL`,
+
+      // Reload systemd to recognize the new service
+      "systemctl daemon-reload",
+
+      // Enable and start the CouchDB service
+      "systemctl enable couchdb-docker.service",
+      "systemctl start couchdb-docker.service",
+
+      // Log the result
+      'echo "CouchDB Docker service created and started" >> /var/log/couchdb-setup.log'
     );
 
     // INSTANCE SETUP
@@ -158,27 +224,6 @@ EOL`,
       }
     );
 
-    let blockDevices;
-    if (props.ebsRecoverySnapshotId) {
-      blockDevices = [
-        {
-          deviceName: "/dev/xvda",
-          volume: ec2.BlockDeviceVolume.ebsFromSnapshot(
-            props.ebsRecoverySnapshotId
-          ),
-        },
-      ];
-    } else {
-      blockDevices = [
-        {
-          deviceName: "/dev/xvda",
-          volume: ec2.BlockDeviceVolume.ebs(props.volumeSize, {
-            volumeType: ec2.EbsDeviceVolumeType.GP3,
-          }),
-        },
-      ];
-    }
-
     // Create the EC2 instance
     this.instance = new ec2.Instance(this, "CouchDBInstance", {
       vpc: props.vpc,
@@ -192,7 +237,25 @@ EOL`,
       userData,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroup: couchSecurityGroup,
-      blockDevices: blockDevices,
+    });
+
+    // Create and attach the EBS volume for CouchDB data
+    const dataVolume = new ec2.Volume(this, "CouchDBDataVolume", {
+      volumeType: ec2.EbsDeviceVolumeType.GP3,
+      availabilityZone: this.instance.instanceAvailabilityZone,
+
+      // provide either a size OR a recovery snapshot ID
+      size: props.dataVolumeSnapshotId
+        ? undefined
+        : Size.gibibytes(props.dataVolumeSize),
+      snapshotId: props.dataVolumeSnapshotId,
+    });
+
+    // Attach the EBS data volume for couch to the correct path
+    new ec2.CfnVolumeAttachment(this, "CouchDBVolumeAttachment", {
+      volumeId: dataVolume.volumeId,
+      instanceId: this.instance.instanceId,
+      device: this.ebsDeviceName,
     });
 
     // LOAD BALANCING SETUP
@@ -215,7 +278,7 @@ EOL`,
       vpc: props.vpc,
     });
 
-    // Add the Auto Scaling Group to the target group
+    // Add the EC2 instance to the target group
     tg.addTarget(new elbTargets.InstanceTarget(this.instance));
 
     // Add HTTP redirected HTTPS service to ALB against target group
@@ -282,5 +345,6 @@ EOL`,
 
     // Set the public endpoint for CouchDB
     this.couchEndpoint = `https://${props.domainName}:${this.exposedPort}`;
+    this.dataVolume = dataVolume;
   }
 }
