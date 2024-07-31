@@ -3,7 +3,7 @@
  * -----
  * Last Modified: Thursday July 25th 2024 10:09:45 am Modified By: Peter Baker
  * -----
- * Description: Uses an EC2 Auto Scaling group with some user data to configure
+ * Description: Uses an EC2 instance with some user data to configure
  * a single CouchDB node. Uses a load balancer for TLS. Exposes load balancer to
  * public traffic but not the couchDB directly.
  * -----
@@ -23,10 +23,11 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import * as r53targets from "aws-cdk-lib/aws-route53-targets";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
+import * as subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 
 import { Construct } from "constructs";
-import { SharedBalancer } from "./networking";
 import { MonitoringConfig } from "../faims-infra-stack";
+import { SharedBalancer } from "./networking";
 
 /**
  * Properties for the EC2CouchDB construct
@@ -414,6 +415,15 @@ EOL`,
     this.alarmSNSTopic = new sns.Topic(this, "CouchDBAlarmTopic", {
       displayName: "CouchDB Alarms",
     });
+
+    // If an email is provided, add an email subscription to the SNS topic
+    if (this.monitoringConfig?.alarmTopic?.emailAddress) {
+      this.alarmSNSTopic.addSubscription(
+        new subscriptions.EmailSubscription(
+          this.monitoringConfig.alarmTopic.emailAddress
+        )
+      );
+    }
 
     // Set up monitoring
     this.setupMonitoring();
