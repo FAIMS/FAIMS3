@@ -204,7 +204,7 @@ methods = GET, PUT, POST, HEAD, DELETE
             ],
             "metrics_collection_interval":60,
             "resources":[
-               "*"
+               "/"
             ]
          },
          "diskio":{
@@ -528,7 +528,6 @@ EOL`,
         metricName: "disk_used_percent",
         dimensionsMap: {
           InstanceId: this.instance.instanceId,
-          path: "/",
         },
         statistic: "Average",
         period: Duration.minutes(5),
@@ -696,7 +695,7 @@ EOL`,
           new Metric({
             namespace: "CWAgent",
             metricName: "disk_used_percent",
-            dimensionsMap: { InstanceId: instanceId, path: "/" },
+            dimensionsMap: { InstanceId: instanceId },
             statistic: "Average",
             period: Duration.minutes(5),
           }),
