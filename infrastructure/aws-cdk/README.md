@@ -21,7 +21,7 @@ The `EC2CouchDB` construct deploys CouchDB:
 
 - **EC2 Instance**: Runs a single EC2 instance with CouchDB.
 - **User Data**: Installs and configures CouchDB using Docker. Runs Docker command as systemd service. Mounts EBS for couch data and mounts into docker container.
-- **Cloud Watch**: Includes a set of monitoring alarms triggering SNS topics, subscribed to an email address.
+- **Cloud Watch**: Includes a set of monitoring alarms triggering SNS topics, subscribed to an email address. Cloudwatch agent is installed and configured on instance. Logs collected and reported to /ec2/couchdb log stream.
 - **Secrets Manager**: Stores CouchDB admin credentials.
 - **Custom Configuration**: Sets up CouchDB with specific settings, including CORS and authentication handlers.
 - **Load Balancer Integration**: Uses the shared ALB with a dedicated target group. Will support clustering in the future and performs TLS termination.
