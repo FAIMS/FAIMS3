@@ -85,6 +85,10 @@ export class EC2CouchDB extends Construct {
   /** Path to AWS cloud watch agent config - be sure to prefix with file:*/
   private readonly awsCloudWatchAgentConfigPath =
     "/opt/aws/amazon-cloudwatch-agent/bin/config.json";
+  /** Cloudwatch log group name */
+  private readonly logGroupName = "/ec2/couchdb";
+  /** Postfix on the log stream (prefix is instance ID) */
+  private readonly logStreamPostfix = "_couchdb";
 
   /** CouchDB configuration settings */
   private readonly couchDbConfig: string = `
@@ -106,7 +110,8 @@ authentication_handlers = {chttpd_auth, cookie_authentication_handler}, {chttpd_
 enable_cors = true
 
 [log]
-writer = syslog
+writer = file
+file = ${this.couchDataPath}/couch.log
 level = info
 
 [chttpd_auth]
@@ -121,6 +126,10 @@ methods = GET, PUT, POST, HEAD, DELETE
 
   constructor(scope: Construct, id: string, props: EC2CouchDBProps) {
     super(scope, id);
+
+    // DEBUG: For debugging to quickly force new instance redeployment, change
+    // this ID postfix (forcing replacement)
+    const debugIdPostfix = "";
 
     // Expose variables
     this.sharedBalancer = props.sharedBalancer;
@@ -229,6 +238,20 @@ methods = GET, PUT, POST, HEAD, DELETE
             "metrics_collection_interval":60
          }
       }
+   },
+   "logs":{
+      "logs_collected":{
+         "files":{
+            "collect_list":[
+               {
+                  "file_path":"${this.couchDataPath}/couch.log",
+                  "log_group_name":"${this.logGroupName}",
+                  "log_stream_name":"{instance_id}${this.logStreamPostfix}",
+                  "timezone":"Local"
+               }
+            ]
+         }
+      }
    }
 }
       `,
@@ -289,6 +312,12 @@ EOL`,
       // Log the result
       'echo "CouchDB data volume mounted at $DATA_DIR" >> /var/log/couchdb-setup.log',
 
+      // Ensure the CloudWatch agent can read the log file
+      `touch ${this.couchDataPath}/couch.log`,
+      `chown 5984:5984 ${this.couchDataPath}/couch.log`,
+      `chmod 644 ${this.couchDataPath}/couch.log`,
+      `setfacl -m u:cwagent:r ${this.couchDataPath}/couch.log`,
+
       // Create a systemd service file for CouchDB
       `cat > /etc/systemd/system/couchdb-docker.service << EOL
 [Unit]
@@ -331,7 +360,7 @@ EOL`,
     );
 
     // Create the EC2 instance
-    this.instance = new ec2.Instance(this, "CouchDBInstance", {
+    this.instance = new ec2.Instance(this, "CouchDBInstance" + debugIdPostfix, {
       vpc: props.vpc,
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T3,
@@ -346,7 +375,7 @@ EOL`,
     });
 
     // Create and attach the EBS volume for CouchDB data
-    const dataVolume = new ec2.Volume(this, "CouchDBDataVolume", {
+    const dataVolume = new ec2.Volume(this, "CouchDBDataVolume" + debugIdPostfix, {
       volumeType: ec2.EbsDeviceVolumeType.GP3,
       availabilityZone: this.instance.instanceAvailabilityZone,
 
@@ -358,7 +387,7 @@ EOL`,
     });
 
     // Attach the EBS data volume for couch to the correct path
-    new ec2.CfnVolumeAttachment(this, "CouchDBVolumeAttachment", {
+    new ec2.CfnVolumeAttachment(this, "CouchDBVolumeAttachment" + debugIdPostfix, {
       volumeId: dataVolume.volumeId,
       instanceId: this.instance.instanceId,
       device: this.ebsDeviceName,
