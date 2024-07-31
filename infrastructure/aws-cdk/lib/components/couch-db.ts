@@ -11,8 +11,10 @@
  * ----------   --- ---------------------------------------------------------
  */
 
-import { Size, Duration, RemovalPolicy } from "aws-cdk-lib";
+import { Duration, RemovalPolicy, Size } from "aws-cdk-lib";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as cw_actions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as elbTargets from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
@@ -20,6 +22,8 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as r53targets from "aws-cdk-lib/aws-route53-targets";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+import * as sns from "aws-cdk-lib/aws-sns";
+
 import { Construct } from "constructs";
 import { SharedBalancer } from "./networking";
 
@@ -41,6 +45,8 @@ export interface EC2CouchDBProps {
   dataVolumeSize: number;
   /** EBS Snapshot ID for recovery of the CouchDB data volume */
   dataVolumeSnapshotId?: string;
+  /** The email address to send critical alerts to */
+  criticalAlertsEmail?: string;
 }
 
 /**
@@ -55,6 +61,10 @@ export class EC2CouchDB extends Construct {
   public readonly exposedPort: number = 443;
   /** The secret containing the CouchDB admin user/password */
   public readonly passwordSecret: secretsmanager.Secret;
+  /** Shared ALB */
+  private readonly sharedBalancer: SharedBalancer;
+  /** EC2 Target group */
+  private readonly targetGroup: elb.ApplicationTargetGroup;
   /** The internal port CouchDB listens on */
   private readonly couchInternalPort: number = 5984;
   /** The path where CouchDB data will be stored */
@@ -65,6 +75,8 @@ export class EC2CouchDB extends Construct {
   private readonly couchVersionTag: string = "latest";
   /** The device name for the EBS data volume */
   public readonly dataVolume: ec2.Volume;
+  /** The Alarm SNS topic being published to */
+  private readonly alarmSNSTopic: sns.Topic;
 
   /** CouchDB configuration settings */
   private readonly couchDbConfig: string = `
@@ -102,6 +114,9 @@ methods = GET, PUT, POST, HEAD, DELETE
   constructor(scope: Construct, id: string, props: EC2CouchDBProps) {
     super(scope, id);
 
+    // Expose variables
+    this.sharedBalancer = props.sharedBalancer;
+
     // AUXILIARY SETUP
     // ================
 
@@ -132,7 +147,50 @@ methods = GET, PUT, POST, HEAD, DELETE
 
       // Update yum and install dependencies
       "yum update -y",
-      "yum install -y docker jq awscli",
+      "yum install -y docker jq awscli amazon-cloudwatch-agent",
+
+      // Configure CloudWatch agent to collect disk usage and memory usage -
+      // publish 60 second interval
+      "cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << EOL",
+      JSON.stringify({
+        agent: {
+          metrics_collection_interval: 60,
+          run_as_user: "root",
+        },
+        metrics: {
+          metrics_collected: {
+            disk: {
+              measurement: ["used_percent"],
+              resources: ["/"],
+            },
+            mem: {
+              measurement: ["used_percent"],
+            },
+          },
+        },
+      }),
+      "EOL",
+
+      // Create a systemd service file for CloudWatch agent
+      "cat > /etc/systemd/system/amazon-cloudwatch-agent.service << EOL",
+      "[Unit]",
+      "Description=Amazon CloudWatch Agent",
+      "After=network.target",
+      "",
+      "[Service]",
+      "Type=simple",
+      "ExecStart=/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s",
+      "Restart=on-failure",
+      "RestartSec=60s",
+      "",
+      "[Install]",
+      "WantedBy=multi-user.target",
+      "EOL",
+
+      // Reload systemd, enable and start the CloudWatch agent service
+      "systemctl daemon-reload",
+      "systemctl enable amazon-cloudwatch-agent",
+      "systemctl start amazon-cloudwatch-agent",
 
       // Run CouchDB with docker service
       "systemctl start docker",
@@ -262,7 +320,7 @@ EOL`,
     // =========================
 
     // Create the target group for the CouchDB instances
-    const tg = new elb.ApplicationTargetGroup(this, "CouchTG", {
+    this.targetGroup = new elb.ApplicationTargetGroup(this, "CouchTG", {
       port: this.couchInternalPort,
       protocol: elb.ApplicationProtocol.HTTP,
       targetType: elb.TargetType.INSTANCE,
@@ -279,12 +337,12 @@ EOL`,
     });
 
     // Add the EC2 instance to the target group
-    tg.addTarget(new elbTargets.InstanceTarget(this.instance));
+    this.targetGroup.addTarget(new elbTargets.InstanceTarget(this.instance));
 
     // Add HTTP redirected HTTPS service to ALB against target group
     props.sharedBalancer.addHttpRedirectedConditionalHttpsTarget(
       "couch",
-      tg,
+      this.targetGroup,
       [elb.ListenerCondition.hostHeaders([props.domainName])],
       110, // TODO: Understand and consider priorities
       110
@@ -330,6 +388,11 @@ EOL`,
     // Grant the EC2 instance permission to read the secret
     this.passwordSecret.grantRead(this.instance.role);
 
+    // Add necessary permissions for CloudWatch agent
+    this.instance.role.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName("CloudWatchAgentServerPolicy")
+    );
+
     // NETWORK SECURITY
     // ================
 
@@ -340,11 +403,175 @@ EOL`,
       "Allow traffic from ALB to CouchDB instances"
     );
 
+    // MONITORING
+    // ==========
+
+    // Create an SNS topic for alarms
+    this.alarmSNSTopic = new sns.Topic(this, "CouchDBAlarmTopic", {
+      displayName: "CouchDB Alarms",
+    });
+
     // OUTPUTS
     // ================
 
     // Set the public endpoint for CouchDB
     this.couchEndpoint = `https://${props.domainName}:${this.exposedPort}`;
     this.dataVolume = dataVolume;
+  }
+
+  /**
+   * Sets up a set of reasonable metrics which alarm an SNS topic for which an
+   * email is optionally subscribed.
+   *
+   * TODO: Parameterise key metric thresholds into config
+   */
+  private setupMonitoring() {
+    // CPU Utilization Alarm
+    const cpuAlarm = new cloudwatch.Alarm(this, "CouchDBCPUAlarm", {
+      metric: new cloudwatch.Metric({
+        namespace: "AWS/EC2",
+        metricName: "CPUUtilization",
+        dimensionsMap: {
+          InstanceId: this.instance.instanceId,
+        },
+        statistic: "Average",
+        period: Duration.minutes(5),
+      }),
+      threshold: 80,
+      evaluationPeriods: 3,
+      datapointsToAlarm: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: "CouchDB instance CPU utilization is high",
+    });
+    cpuAlarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
+
+    // Memory Usage Alarm (requires CloudWatch agent setup)
+    const memoryAlarm = new cloudwatch.Alarm(this, "CouchDBMemoryAlarm", {
+      metric: new cloudwatch.Metric({
+        namespace: "CWAgent",
+        metricName: "mem_used_percent",
+        dimensionsMap: {
+          InstanceId: this.instance.instanceId,
+        },
+        statistic: "Average",
+        period: Duration.minutes(5),
+      }),
+      threshold: 80,
+      evaluationPeriods: 3,
+      datapointsToAlarm: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: "CouchDB instance memory usage is high",
+    });
+    memoryAlarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
+
+    // Disk Usage Alarm (requires CloudWatch agent setup)
+    const diskAlarm = new cloudwatch.Alarm(this, "CouchDBDiskAlarm", {
+      metric: new cloudwatch.Metric({
+        namespace: "CWAgent",
+        metricName: "disk_used_percent",
+        dimensionsMap: {
+          InstanceId: this.instance.instanceId,
+          path: "/",
+        },
+        statistic: "Average",
+        period: Duration.minutes(5),
+      }),
+      threshold: 80,
+      evaluationPeriods: 3,
+      datapointsToAlarm: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: "CouchDB instance disk usage is high",
+    });
+    diskAlarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
+
+    // Status Check Failed Alarm
+    const statusCheckAlarm = new cloudwatch.Alarm(
+      this,
+      "CouchDBStatusCheckAlarm",
+      {
+        metric: new cloudwatch.Metric({
+          namespace: "AWS/EC2",
+          metricName: "StatusCheckFailed",
+          dimensionsMap: {
+            InstanceId: this.instance.instanceId,
+          },
+          statistic: "Maximum",
+          period: Duration.minutes(5),
+        }),
+        threshold: 1,
+        evaluationPeriods: 2,
+        datapointsToAlarm: 2,
+        comparisonOperator:
+          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        alarmDescription: "CouchDB instance has failed its status check",
+      }
+    );
+    statusCheckAlarm.addAlarmAction(
+      new cw_actions.SnsAction(this.alarmSNSTopic)
+    );
+
+    // Network In/Out Alarms
+    const networkInAlarm = new cloudwatch.Alarm(this, "CouchDBNetworkInAlarm", {
+      metric: new cloudwatch.Metric({
+        namespace: "AWS/EC2",
+        metricName: "NetworkIn",
+        dimensionsMap: {
+          InstanceId: this.instance.instanceId,
+        },
+        statistic: "Average",
+        period: Duration.minutes(5),
+      }),
+      threshold: 10000000, // 10 MB/s
+      evaluationPeriods: 3,
+      datapointsToAlarm: 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: "CouchDB instance network in is high",
+    });
+    networkInAlarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
+
+    const networkOutAlarm = new cloudwatch.Alarm(
+      this,
+      "CouchDBNetworkOutAlarm",
+      {
+        metric: new cloudwatch.Metric({
+          namespace: "AWS/EC2",
+          metricName: "NetworkOut",
+          dimensionsMap: {
+            InstanceId: this.instance.instanceId,
+          },
+          statistic: "Average",
+          period: Duration.minutes(5),
+        }),
+        threshold: 10000000, // 10 MB/s
+        evaluationPeriods: 3,
+        datapointsToAlarm: 2,
+        comparisonOperator:
+          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        alarmDescription: "CouchDB instance network out is high",
+      }
+    );
+    networkOutAlarm.addAlarmAction(
+      new cw_actions.SnsAction(this.alarmSNSTopic)
+    );
+
+    // Application-specific metric: HTTP 5xx errors
+    const http5xxAlarm = new cloudwatch.Alarm(this, "CouchDBHttp5xxAlarm", {
+      metric: new cloudwatch.Metric({
+        namespace: "AWS/ApplicationELB",
+        metricName: "HTTPCode_Target_5XX_Count",
+        dimensionsMap: {
+          LoadBalancer: this.sharedBalancer.alb.loadBalancerFullName,
+          TargetGroup: this.targetGroup.targetGroupFullName,
+        },
+        statistic: "Sum",
+        period: Duration.minutes(5),
+      }),
+      threshold: 10,
+      evaluationPeriods: 5,
+      datapointsToAlarm: 3,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: "CouchDB is returning a high number of 5xx errors",
+    });
+    http5xxAlarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
   }
 }
