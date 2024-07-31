@@ -82,7 +82,7 @@ export class EC2CouchDB extends Construct {
   private readonly alarmSNSTopic: sns.Topic;
   /** The monitoring config */
   private readonly monitoringConfig?: MonitoringConfig;
-  /** Path to AWS cloud watch agent config */
+  /** Path to AWS cloud watch agent config - be sure to prefix with file:*/
   private readonly awsCloudWatchAgentConfigPath =
     "/opt/aws/amazon-cloudwatch-agent/bin/config.json";
 
@@ -164,7 +164,7 @@ methods = GET, PUT, POST, HEAD, DELETE
 
       // Configure CloudWatch agent to collect disk usage and memory usage -
       // publish 60 second interval
-      `cat > ${this.awsCloudWatchAgentConfigPath} <<EOL`,
+      `cat > ${this.awsCloudWatchAgentConfigPath} <<'EOL'`,
       `
 {
    "agent":{
@@ -235,15 +235,15 @@ methods = GET, PUT, POST, HEAD, DELETE
       "EOL",
 
       // Validate and load config
-      `/opt/aws/amazon-cloudwatch-agent/amazon-cloudwatch-agent-ctl -m ec2 -a fetch-config -c ${this.awsCloudWatchAgentConfigPath}`,
+      `/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a fetch-config -c file:${this.awsCloudWatchAgentConfigPath}`,
 
       // Start the service (this creates auto start systemd service)
-      `/opt/aws/amazon-cloudwatch-agent/amazon-cloudwatch-agent-ctl -m ec2 -a start -c ${this.awsCloudWatchAgentConfigPath}`,
+      `/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a start -c file:${this.awsCloudWatchAgentConfigPath}`,
 
       // Run CouchDB with docker service
       "systemctl start docker",
       "systemctl enable docker",
-      `docker pull ${this.couchVersionTag}`,
+      `docker pull couchdb:${this.couchVersionTag}`,
 
       // Set environment variables
       `SECRET_ARN=${this.passwordSecret.secretArn}`,
