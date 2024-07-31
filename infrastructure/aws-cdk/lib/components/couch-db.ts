@@ -13,7 +13,6 @@
 
 import { Duration, RemovalPolicy, Size } from "aws-cdk-lib";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as cw_actions from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
@@ -24,6 +23,8 @@ import * as r53targets from "aws-cdk-lib/aws-route53-targets";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import { GraphWidget, Metric, TextWidget } from "aws-cdk-lib/aws-cloudwatch";
 
 import { Construct } from "constructs";
 import { MonitoringConfig } from "../faims-infra-stack";
@@ -152,50 +153,89 @@ methods = GET, PUT, POST, HEAD, DELETE
 
       // Update yum and install dependencies
       "yum update -y",
+
+      // Collectd for cloudwatch agent
+      "sudo amazon-linux-extras install collectd",
+
       "yum install -y docker jq awscli amazon-cloudwatch-agent",
 
       // Configure CloudWatch agent to collect disk usage and memory usage -
       // publish 60 second interval
-      "cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << EOL",
-      JSON.stringify({
-        agent: {
-          metrics_collection_interval: 60,
-          run_as_user: "root",
-        },
-        metrics: {
-          metrics_collected: {
-            disk: {
-              measurement: ["used_percent"],
-              resources: ["/"],
-            },
-            mem: {
-              measurement: ["used_percent"],
-            },
-          },
-        },
-      }),
+      "cat > /opt/aws/amazon-cloudwatch-agent/bin/config.json <<EOL",
+      `
+{
+   "agent":{
+      "metrics_collection_interval":60,
+      "run_as_user":"root"
+   },
+   "metrics":{
+      "aggregation_dimensions":[
+         [
+            "InstanceId"
+         ]
+      ],
+      "append_dimensions":{
+         "AutoScalingGroupName":"\${aws:AutoScalingGroupName}",
+         "ImageId":"\${aws:ImageId}",
+         "InstanceId":"\${aws:InstanceId}",
+         "InstanceType":"\${aws:InstanceType}"
+      },
+      "metrics_collected":{
+         "cpu":{
+            "measurement":[
+               "cpu_usage_idle",
+               "cpu_usage_iowait",
+               "cpu_usage_user",
+               "cpu_usage_system"
+            ],
+            "metrics_collection_interval":60,
+            "resources":[
+               "*"
+            ],
+            "totalcpu":false
+         },
+         "disk":{
+            "measurement":[
+               "used_percent",
+               "inodes_free"
+            ],
+            "metrics_collection_interval":60,
+            "resources":[
+               "*"
+            ]
+         },
+         "diskio":{
+            "measurement":[
+               "io_time"
+            ],
+            "metrics_collection_interval":60,
+            "resources":[
+               "*"
+            ]
+         },
+         "mem":{
+            "measurement":[
+               "mem_used_percent"
+            ],
+            "metrics_collection_interval":60
+         },
+         "swap":{
+            "measurement":[
+               "swap_used_percent"
+            ],
+            "metrics_collection_interval":60
+         }
+      }
+   }
+}
+      `,
       "EOL",
 
-      // Create a systemd service file for CloudWatch agent
-      "cat > /etc/systemd/system/amazon-cloudwatch-agent.service << EOL",
-      "[Unit]",
-      "Description=Amazon CloudWatch Agent",
-      "After=network.target",
-      "",
-      "[Service]",
-      "Type=simple",
-      "ExecStart=/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s",
-      "Restart=on-failure",
-      "RestartSec=60s",
-      "",
-      "[Install]",
-      "WantedBy=multi-user.target",
-      "EOL",
+      // Validate and load config
+      "/opt/aws/amazon-cloudwatch-agent/amazon-cloudwatch-agent-ctl -m ec2 -a fetch-config -c /opt/aws/amazon-cloudwatch-agent/bin/config.json",
 
-      // Reload systemd, enable and start the CloudWatch agent service
-      "systemctl daemon-reload",
-      "systemctl enable amazon-cloudwatch-agent",
-      "systemctl start amazon-cloudwatch-agent",
+      // Start the service (this creates auto start systemd service)
+      "/opt/aws/amazon-cloudwatch-agent/amazon-cloudwatch-agent-ctl -m ec2 -a start -c /opt/aws/amazon-cloudwatch-agent/bin/config.json",
 
       // Run CouchDB with docker service
       "systemctl start docker",
@@ -369,7 +409,7 @@ EOL`,
     // ============
 
     // TODO: Handle this through config
-    const debugInstancePermissions = false;
+    const debugInstancePermissions = true;
 
     if (debugInstancePermissions) {
       // For debugging CouchDB instances - allow inbound traffic for SSM Instance Connect
@@ -427,6 +467,9 @@ EOL`,
 
     // Set up monitoring
     this.setupMonitoring();
+
+    // Setup dashboard
+    this.createDashboard();
 
     // OUTPUTS
     // ================
@@ -576,5 +619,196 @@ EOL`,
   private createAlarm(id: string, props: cloudwatch.AlarmProps) {
     const alarm = new cloudwatch.Alarm(this, id, props);
     alarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
+  }
+
+  /**
+   * Build a CloudWatch dashboard with the relevant metrics for couchDB
+   */
+  private createDashboard() {
+    const dashboard = new cloudwatch.Dashboard(this, "CouchDBDashboard", {
+      dashboardName: "CouchDB-Dashboard",
+    });
+
+    const instanceId = this.instance.instanceId;
+    const albFullName = this.sharedBalancer.alb.loadBalancerFullName;
+    const targetGroupFullName = this.targetGroup.targetGroupFullName;
+
+    dashboard.addWidgets(
+      new TextWidget({
+        markdown: "# CouchDB Instance Metrics",
+        width: 24,
+        height: 1,
+      }),
+      new GraphWidget({
+        title: "CPU Utilization",
+        left: [
+          new Metric({
+            namespace: "AWS/EC2",
+            metricName: "CPUUtilization",
+            dimensionsMap: { InstanceId: instanceId },
+            statistic: "Average",
+            period: Duration.minutes(5),
+          }),
+        ],
+        width: 8,
+        height: 6,
+      }),
+      new GraphWidget({
+        title: "Memory Usage",
+        left: [
+          new Metric({
+            namespace: "CWAgent",
+            metricName: "mem_used_percent",
+            dimensionsMap: { InstanceId: instanceId },
+            statistic: "Average",
+            period: Duration.minutes(5),
+          }),
+        ],
+        width: 8,
+        height: 6,
+      }),
+      new GraphWidget({
+        title: "Disk Usage",
+        left: [
+          new Metric({
+            namespace: "CWAgent",
+            metricName: "disk_used_percent",
+            dimensionsMap: { InstanceId: instanceId, path: "/" },
+            statistic: "Average",
+            period: Duration.minutes(5),
+          }),
+        ],
+        width: 8,
+        height: 6,
+      }),
+      new GraphWidget({
+        title: "Network Traffic",
+        left: [
+          new Metric({
+            namespace: "AWS/EC2",
+            metricName: "NetworkIn",
+            dimensionsMap: { InstanceId: instanceId },
+            statistic: "Average",
+            period: Duration.minutes(5),
+          }),
+        ],
+        right: [
+          new Metric({
+            namespace: "AWS/EC2",
+            metricName: "NetworkOut",
+            dimensionsMap: { InstanceId: instanceId },
+            statistic: "Average",
+            period: Duration.minutes(5),
+          }),
+        ],
+        width: 12,
+        height: 6,
+      }),
+      new GraphWidget({
+        title: "Status Check Failed",
+        left: [
+          new Metric({
+            namespace: "AWS/EC2",
+            metricName: "StatusCheckFailed",
+            dimensionsMap: { InstanceId: instanceId },
+            statistic: "Maximum",
+            period: Duration.minutes(5),
+          }),
+        ],
+        width: 12,
+        height: 6,
+      }),
+      new TextWidget({
+        markdown: "# Application Load Balancer Metrics",
+        width: 24,
+        height: 1,
+      }),
+      new GraphWidget({
+        title: "ALB Request Count",
+        left: [
+          new Metric({
+            namespace: "AWS/ApplicationELB",
+            metricName: "RequestCount",
+            dimensionsMap: { LoadBalancer: albFullName },
+            statistic: "Sum",
+            period: Duration.minutes(5),
+          }),
+        ],
+        width: 8,
+        height: 6,
+      }),
+      new GraphWidget({
+        title: "ALB Target Response Time",
+        left: [
+          new Metric({
+            namespace: "AWS/ApplicationELB",
+            metricName: "TargetResponseTime",
+            dimensionsMap: { LoadBalancer: albFullName },
+            statistic: "Average",
+            period: Duration.minutes(5),
+          }),
+        ],
+        width: 8,
+        height: 6,
+      }),
+      new GraphWidget({
+        title: "ALB HTTP Error Codes",
+        left: [
+          new Metric({
+            namespace: "AWS/ApplicationELB",
+            metricName: "HTTPCode_Target_4XX_Count",
+            dimensionsMap: {
+              LoadBalancer: albFullName,
+              TargetGroup: targetGroupFullName,
+            },
+            statistic: "Sum",
+            period: Duration.minutes(5),
+          }),
+          new Metric({
+            namespace: "AWS/ApplicationELB",
+            metricName: "HTTPCode_Target_5XX_Count",
+            dimensionsMap: {
+              LoadBalancer: albFullName,
+              TargetGroup: targetGroupFullName,
+            },
+            statistic: "Sum",
+            period: Duration.minutes(5),
+          }),
+        ],
+        width: 8,
+        height: 6,
+      }),
+      new GraphWidget({
+        title: "ALB Healthy Host Count",
+        left: [
+          new Metric({
+            namespace: "AWS/ApplicationELB",
+            metricName: "HealthyHostCount",
+            dimensionsMap: {
+              LoadBalancer: albFullName,
+              TargetGroup: targetGroupFullName,
+            },
+            statistic: "Average",
+            period: Duration.minutes(5),
+          }),
+        ],
+        width: 12,
+        height: 6,
+      }),
+      new GraphWidget({
+        title: "ALB Processed Bytes",
+        left: [
+          new Metric({
+            namespace: "AWS/ApplicationELB",
+            metricName: "ProcessedBytes",
+            dimensionsMap: { LoadBalancer: albFullName },
+            statistic: "Sum",
+            period: Duration.minutes(5),
+          }),
+        ],
+        width: 12,
+        height: 6,
+      })
+    );
   }
 }
