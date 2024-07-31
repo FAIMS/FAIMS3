@@ -19,12 +19,11 @@ The `FaimsNetworking` construct sets up the core network infrastructure:
 
 The `EC2CouchDB` construct deploys CouchDB:
 
-- **EC2 Auto Scaling Group**: Runs a single EC2 instance with CouchDB.
-- **CloudMap**: Registers the CouchDB instance for service discovery.
-- **User Data**: Installs and configures CouchDB using Docker.
+- **EC2 Instance**: Runs a single EC2 instance with CouchDB.
+- **User Data**: Installs and configures CouchDB using Docker. Runs Docker command as systemd service. Mounts EBS for couch data and mounts into docker container.
 - **Secrets Manager**: Stores CouchDB admin credentials.
 - **Custom Configuration**: Sets up CouchDB with specific settings, including CORS and authentication handlers.
-- **Load Balancer Integration**: Uses the shared ALB with a dedicated target group.
+- **Load Balancer Integration**: Uses the shared ALB with a dedicated target group. Will support clustering in the future and performs TLS termination.
 - **DNS**: Creates a custom domain for CouchDB access.
 
 ### Conductor (API Service)
