@@ -23,6 +23,7 @@
     },
     "couch": {
         "volumeSize": 100,
-        "ebsRecoverySnapshotId": "1234"
+        "ebsRecoverySnapshotId": "1234",
+        "criticalAlertsEmail": "fake@gmail.com"
     }
 }

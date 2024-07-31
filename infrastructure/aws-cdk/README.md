@@ -21,6 +21,7 @@ The `EC2CouchDB` construct deploys CouchDB:
 
 - **EC2 Instance**: Runs a single EC2 instance with CouchDB.
 - **User Data**: Installs and configures CouchDB using Docker. Runs Docker command as systemd service. Mounts EBS for couch data and mounts into docker container.
+- **Cloud Watch**: Includes a set of monitoring alarms triggering SNS topics, subscribed to an email address.
 - **Secrets Manager**: Stores CouchDB admin credentials.
 - **Custom Configuration**: Sets up CouchDB with specific settings, including CORS and authentication handlers.
 - **Load Balancer Integration**: Uses the shared ALB with a dedicated target group. Will support clustering in the future and performs TLS termination.
@@ -119,42 +120,11 @@ This project uses a JSON-based configuration system to manage different deployme
 ### Creating Your Configuration
 
 1. Navigate to the `configs/` directory in the project.
-2. You'll find a file named `sample-config.json`. This is a template for your configuration.
-3. Copy this file and rename it according to your environment (e.g., `development.json`, `production.json`).
+2. You'll find a file named `sample.json`. This is a template for your configuration.
+3. Copy this file and rename it according to your environment (e.g., `dev.json`, `prod.json`).
 4. Open your new configuration file and replace the placeholder values with your actual settings.
 
-Example configuration structure:
-
-```json
-{
-  "hostedZone": {
-    "id": "your-hosted-zone-id",
-    "name": "your-domain-name"
-  },
-  "certificates": {
-    "primary": "your-primary-certificate-arn",
-    "cloudfront": "your-cloudfront-certificate-arn"
-  },
-  "aws": {
-    "account": "your-aws-account-id",
-    "region": "your-aws-region"
-  },
-  "secrets": {
-    "privateKey": "your-private-key-secret-arn",
-    "publicKey": "your-public-key-secret-arn"
-  },
-  "backup": {
-    "vaultName": "example-backup-vault",
-    "vaultArn": "existing-vault-arn",
-    "retentionDays": 30,
-    "scheduleExpression": "cron(0 3 * * ? *)"
-  },
-  "couch": {
-    "volumeSize": 100,
-    "ebsRecoverySnapshotId": "snap-0123456789abcdef0"
-  }
-}
-```
+**For an example JSON structure, see `configs/sample.json`.**
 
 Note: The values provided above are examples. Replace them with your actual values.
 
@@ -179,6 +149,7 @@ Here's a breakdown of each configuration value and its purpose:
 - couch
   - volumeSize: The size in GB of the EBS volume to mount to the EC2 instance
   - ebsRecoverySnapshotId: (Optional) The ID of an EBS snapshot to recover the couch data volume from
+  - criticalAlertsEmail: (Optional) The email address to send couchDB SNS alerts too
 
 ### Using Your Configuration
 
@@ -400,10 +371,10 @@ The below diagram indicates three backup/recovery processes for couch
 
 1. (CouchDB replication - left) Nightly startup of idle couch instance, replicate all databases from live DB, shut down. Run EBS snapshot.
 2. (EBS Snapshots - middle) Nightly snapshots of live db data volume
-3. (Recovery options - right) 
-    1. (Realtime rollover) Try recovering but starting up idle instance, adding to target group for load balancer, and removing unhealthy instance. This could be followed by getting the latest snapshot from the live instance and recovering it, depending on recovery priorities.
-    2. (Recover backup DB from EBS snapshot) If prod continues to operate but data has been lost, could use idle database to recover from an EBS snapshot, and then replicate lost data.
-    3. (Recover live DB from EBS snapshot) If both databases are not operational and require recovery, can directly recover the live DB from the latest EBS snapshot.
+3. (Recovery options - right)
+   1. (Realtime rollover) Try recovering but starting up idle instance, adding to target group for load balancer, and removing unhealthy instance. This could be followed by getting the latest snapshot from the live instance and recovering it, depending on recovery priorities.
+   2. (Recover backup DB from EBS snapshot) If prod continues to operate but data has been lost, could use idle database to recover from an EBS snapshot, and then replicate lost data.
+   3. (Recover live DB from EBS snapshot) If both databases are not operational and require recovery, can directly recover the live DB from the latest EBS snapshot.
 
 ```mermaid
 graph TD
@@ -412,9 +383,9 @@ graph TD
     C --> D[Replicate all databases]
     D --> E[Shutdown idle instance]
     E --> F[Take EBS snapshot of backup instance]
-    
+
     G[Regular Process] --> H[Take regular EBS snapshots of live DB]
-    
+
     I[Disaster Recovery Situation] --> J{Try immediate recovery}
     J -->|Yes| K[Start idle instance]
     K --> L[Point load balancer to idle instance]

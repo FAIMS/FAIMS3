@@ -69,6 +69,8 @@ const ConfigSchema = z.object({
     volumeSize: z.number(),
     /** The ID of EBS snapshot to recover from in the root device (optional) */
     ebsRecoverySnapshotId: z.string().optional(),
+    /** The email address to subscribe alerts SNS topic too */
+    criticalAlertsEmail: z.string().optional(),
   }),
   backup: BackupConfigSchema,
 });
@@ -180,6 +182,7 @@ export class FaimsInfraStack extends cdk.Stack {
       sharedBalancer: networking.sharedBalancer,
       dataVolumeSize: config.couch.volumeSize,
       dataVolumeSnapshotId: config.couch.ebsRecoverySnapshotId,
+      criticalAlertsEmail: config.couch.criticalAlertsEmail
     });
 
     // CONDUCTOR
