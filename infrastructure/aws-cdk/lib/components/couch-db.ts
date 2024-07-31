@@ -26,6 +26,7 @@ import * as sns from "aws-cdk-lib/aws-sns";
 
 import { Construct } from "constructs";
 import { SharedBalancer } from "./networking";
+import { MonitoringConfig } from "../faims-infra-stack";
 
 /**
  * Properties for the EC2CouchDB construct
@@ -45,8 +46,8 @@ export interface EC2CouchDBProps {
   dataVolumeSize: number;
   /** EBS Snapshot ID for recovery of the CouchDB data volume */
   dataVolumeSnapshotId?: string;
-  /** The email address to send critical alerts to */
-  criticalAlertsEmail?: string;
+  /** Monitoring settings */
+  monitoring?: MonitoringConfig;
 }
 
 /**
@@ -77,6 +78,8 @@ export class EC2CouchDB extends Construct {
   public readonly dataVolume: ec2.Volume;
   /** The Alarm SNS topic being published to */
   private readonly alarmSNSTopic: sns.Topic;
+  /** The monitoring config */
+  private readonly monitoringConfig?: MonitoringConfig;
 
   /** CouchDB configuration settings */
   private readonly couchDbConfig: string = `
@@ -116,6 +119,7 @@ methods = GET, PUT, POST, HEAD, DELETE
 
     // Expose variables
     this.sharedBalancer = props.sharedBalancer;
+    this.monitoringConfig = props.monitoring;
 
     // AUXILIARY SETUP
     // ================
@@ -411,6 +415,9 @@ EOL`,
       displayName: "CouchDB Alarms",
     });
 
+    // Set up monitoring
+    this.setupMonitoring();
+
     // OUTPUTS
     // ================
 
@@ -427,136 +434,112 @@ EOL`,
    */
   private setupMonitoring() {
     // CPU Utilization Alarm
-    const cpuAlarm = new cloudwatch.Alarm(this, "CouchDBCPUAlarm", {
+    this.createAlarm("CouchDBCPUAlarm", {
       metric: new cloudwatch.Metric({
         namespace: "AWS/EC2",
         metricName: "CPUUtilization",
-        dimensionsMap: {
-          InstanceId: this.instance.instanceId,
-        },
+        dimensionsMap: { InstanceId: this.instance.instanceId },
         statistic: "Average",
         period: Duration.minutes(5),
       }),
-      threshold: 80,
-      evaluationPeriods: 3,
-      datapointsToAlarm: 2,
+      threshold: this.monitoringConfig?.cpu?.threshold ?? 80,
+      evaluationPeriods: this.monitoringConfig?.cpu?.evaluationPeriods ?? 3,
+      datapointsToAlarm: this.monitoringConfig?.cpu?.datapointsToAlarm ?? 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
       alarmDescription: "CouchDB instance CPU utilization is high",
     });
-    cpuAlarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
 
-    // Memory Usage Alarm (requires CloudWatch agent setup)
-    const memoryAlarm = new cloudwatch.Alarm(this, "CouchDBMemoryAlarm", {
+    // Memory Usage Alarm
+    this.createAlarm("CouchDBMemoryAlarm", {
       metric: new cloudwatch.Metric({
         namespace: "CWAgent",
         metricName: "mem_used_percent",
-        dimensionsMap: {
-          InstanceId: this.instance.instanceId,
-        },
+        dimensionsMap: { InstanceId: this.instance.instanceId },
         statistic: "Average",
         period: Duration.minutes(5),
       }),
-      threshold: 80,
-      evaluationPeriods: 3,
-      datapointsToAlarm: 2,
+      threshold: this.monitoringConfig?.memory?.threshold ?? 80,
+      evaluationPeriods: this.monitoringConfig?.memory?.evaluationPeriods ?? 3,
+      datapointsToAlarm: this.monitoringConfig?.memory?.datapointsToAlarm ?? 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
       alarmDescription: "CouchDB instance memory usage is high",
     });
-    memoryAlarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
 
-    // Disk Usage Alarm (requires CloudWatch agent setup)
-    const diskAlarm = new cloudwatch.Alarm(this, "CouchDBDiskAlarm", {
+    // Disk Usage Alarm
+    this.createAlarm("CouchDBDiskAlarm", {
       metric: new cloudwatch.Metric({
         namespace: "CWAgent",
         metricName: "disk_used_percent",
         dimensionsMap: {
           InstanceId: this.instance.instanceId,
-          // NOTE: It might be worth considering couch DB data volume being reported / alarmed separately
           path: "/",
         },
         statistic: "Average",
         period: Duration.minutes(5),
       }),
-      threshold: 80,
-      evaluationPeriods: 3,
-      datapointsToAlarm: 2,
+      threshold: this.monitoringConfig?.disk?.threshold ?? 80,
+      evaluationPeriods: this.monitoringConfig?.disk?.evaluationPeriods ?? 3,
+      datapointsToAlarm: this.monitoringConfig?.disk?.datapointsToAlarm ?? 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
       alarmDescription: "CouchDB instance disk usage is high",
     });
-    diskAlarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
 
     // Status Check Failed Alarm
-    const statusCheckAlarm = new cloudwatch.Alarm(
-      this,
-      "CouchDBStatusCheckAlarm",
-      {
-        metric: new cloudwatch.Metric({
-          namespace: "AWS/EC2",
-          metricName: "StatusCheckFailed",
-          dimensionsMap: {
-            InstanceId: this.instance.instanceId,
-          },
-          statistic: "Maximum",
-          period: Duration.minutes(5),
-        }),
-        threshold: 1,
-        evaluationPeriods: 2,
-        datapointsToAlarm: 2,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        alarmDescription: "CouchDB instance has failed its status check",
-      }
-    );
-    statusCheckAlarm.addAlarmAction(
-      new cw_actions.SnsAction(this.alarmSNSTopic)
-    );
+    this.createAlarm("CouchDBStatusCheckAlarm", {
+      metric: new cloudwatch.Metric({
+        namespace: "AWS/EC2",
+        metricName: "StatusCheckFailed",
+        dimensionsMap: { InstanceId: this.instance.instanceId },
+        statistic: "Maximum",
+        period: Duration.minutes(5),
+      }),
+      threshold: 1,
+      evaluationPeriods:
+        this.monitoringConfig?.statusCheck?.evaluationPeriods ?? 2,
+      datapointsToAlarm:
+        this.monitoringConfig?.statusCheck?.datapointsToAlarm ?? 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: "CouchDB instance has failed its status check",
+    });
 
-    // Network In/Out Alarms
-    const networkInAlarm = new cloudwatch.Alarm(this, "CouchDBNetworkInAlarm", {
+    // Network In Alarm
+    this.createAlarm("CouchDBNetworkInAlarm", {
       metric: new cloudwatch.Metric({
         namespace: "AWS/EC2",
         metricName: "NetworkIn",
-        dimensionsMap: {
-          InstanceId: this.instance.instanceId,
-        },
+        dimensionsMap: { InstanceId: this.instance.instanceId },
         statistic: "Average",
         period: Duration.minutes(5),
       }),
-      threshold: 10000000, // 10 MB/s
-      evaluationPeriods: 3,
-      datapointsToAlarm: 2,
+      threshold: this.monitoringConfig?.networkIn?.threshold ?? 10000000, // 10 MB/s
+      evaluationPeriods:
+        this.monitoringConfig?.networkIn?.evaluationPeriods ?? 3,
+      datapointsToAlarm:
+        this.monitoringConfig?.networkIn?.datapointsToAlarm ?? 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
       alarmDescription: "CouchDB instance network in is high",
     });
-    networkInAlarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
 
-    const networkOutAlarm = new cloudwatch.Alarm(
-      this,
-      "CouchDBNetworkOutAlarm",
-      {
-        metric: new cloudwatch.Metric({
-          namespace: "AWS/EC2",
-          metricName: "NetworkOut",
-          dimensionsMap: {
-            InstanceId: this.instance.instanceId,
-          },
-          statistic: "Average",
-          period: Duration.minutes(5),
-        }),
-        threshold: 10000000, // 10 MB/s
-        evaluationPeriods: 3,
-        datapointsToAlarm: 2,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        alarmDescription: "CouchDB instance network out is high",
-      }
-    );
-    networkOutAlarm.addAlarmAction(
-      new cw_actions.SnsAction(this.alarmSNSTopic)
-    );
+    // Network Out Alarm
+    this.createAlarm("CouchDBNetworkOutAlarm", {
+      metric: new cloudwatch.Metric({
+        namespace: "AWS/EC2",
+        metricName: "NetworkOut",
+        dimensionsMap: { InstanceId: this.instance.instanceId },
+        statistic: "Average",
+        period: Duration.minutes(5),
+      }),
+      threshold: this.monitoringConfig?.networkOut?.threshold ?? 10000000, // 10 MB/s
+      evaluationPeriods:
+        this.monitoringConfig?.networkOut?.evaluationPeriods ?? 3,
+      datapointsToAlarm:
+        this.monitoringConfig?.networkOut?.datapointsToAlarm ?? 2,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: "CouchDB instance network out is high",
+    });
 
-    // Application-specific metric: HTTP 5xx errors
-    const http5xxAlarm = new cloudwatch.Alarm(this, "CouchDBHttp5xxAlarm", {
+    // HTTP 5xx Errors Alarm
+    this.createAlarm("CouchDBHttp5xxAlarm", {
       metric: new cloudwatch.Metric({
         namespace: "AWS/ApplicationELB",
         metricName: "HTTPCode_Target_5XX_Count",
@@ -567,12 +550,21 @@ EOL`,
         statistic: "Sum",
         period: Duration.minutes(5),
       }),
-      threshold: 10,
-      evaluationPeriods: 5,
-      datapointsToAlarm: 3,
+      threshold: this.monitoringConfig?.http5xx?.threshold ?? 10,
+      evaluationPeriods: this.monitoringConfig?.http5xx?.evaluationPeriods ?? 5,
+      datapointsToAlarm: this.monitoringConfig?.http5xx?.datapointsToAlarm ?? 3,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
       alarmDescription: "CouchDB is returning a high number of 5xx errors",
     });
-    http5xxAlarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
+  }
+
+  /**
+   * Creates a new alarm referring to the configured SNS topic etc
+   * @param id The CDK construct ID
+   * @param props The cloud watch alarm props
+   */
+  private createAlarm(id: string, props: cloudwatch.AlarmProps) {
+    const alarm = new cloudwatch.Alarm(this, id, props);
+    alarm.addAlarmAction(new cw_actions.SnsAction(this.alarmSNSTopic));
   }
 }

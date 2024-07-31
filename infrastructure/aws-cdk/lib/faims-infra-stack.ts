@@ -11,6 +11,67 @@ import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
 
+const MonitoringConfigSchema = z.object({
+  cpu: z.object({
+    /** Percentage threshold for CPU utilization alarm (0-100) */
+    threshold: z.number().min(0).max(100).optional(),
+    /** Number of evaluation periods for CPU alarm */
+    evaluationPeriods: z.number().int().positive().optional(),
+    /** Number of datapoints that must be breaching to trigger CPU alarm */
+    datapointsToAlarm: z.number().int().positive().optional(),
+  }).optional(),
+  memory: z.object({
+    /** Percentage threshold for memory usage alarm (0-100) */
+    threshold: z.number().min(0).max(100).optional(),
+    /** Number of evaluation periods for memory alarm */
+    evaluationPeriods: z.number().int().positive().optional(),
+    /** Number of datapoints that must be breaching to trigger memory alarm */
+    datapointsToAlarm: z.number().int().positive().optional(),
+  }).optional(),
+  disk: z.object({
+    /** Percentage threshold for disk usage alarm (0-100) */
+    threshold: z.number().min(0).max(100).optional(),
+    /** Number of evaluation periods for disk alarm */
+    evaluationPeriods: z.number().int().positive().optional(),
+    /** Number of datapoints that must be breaching to trigger disk alarm */
+    datapointsToAlarm: z.number().int().positive().optional(),
+  }).optional(),
+  statusCheck: z.object({
+    /** Number of evaluation periods for status check alarm */
+    evaluationPeriods: z.number().int().positive().optional(),
+    /** Number of datapoints that must be breaching to trigger status check alarm */
+    datapointsToAlarm: z.number().int().positive().optional(),
+  }).optional(),
+  networkIn: z.object({
+    /** Threshold in bytes for network in alarm */
+    threshold: z.number().positive().optional(),
+    /** Number of evaluation periods for network in alarm */
+    evaluationPeriods: z.number().int().positive().optional(),
+    /** Number of datapoints that must be breaching to trigger network in alarm */
+    datapointsToAlarm: z.number().int().positive().optional(),
+  }).optional(),
+  networkOut: z.object({
+    /** Threshold in bytes for network out alarm */
+    threshold: z.number().positive().optional(),
+    /** Number of evaluation periods for network out alarm */
+    evaluationPeriods: z.number().int().positive().optional(),
+    /** Number of datapoints that must be breaching to trigger network out alarm */
+    datapointsToAlarm: z.number().int().positive().optional(),
+  }).optional(),
+  http5xx: z.object({
+    /** Threshold count for HTTP 5xx errors alarm */
+    threshold: z.number().int().nonnegative().optional(),
+    /** Number of evaluation periods for HTTP 5xx errors alarm */
+    evaluationPeriods: z.number().int().positive().optional(),
+    /** Number of datapoints that must be breaching to trigger HTTP 5xx errors alarm */
+    datapointsToAlarm: z.number().int().positive().optional(),
+  }).optional(),
+  alarmTopic: z.object({
+    /** Email address for alarm notifications */
+    emailAddress: z.string().email().optional(),
+  }).optional(),
+});
+
 // Define the schema for the backup configuration
 const BackupConfigSchema = z
   .object({
@@ -69,15 +130,16 @@ const ConfigSchema = z.object({
     volumeSize: z.number(),
     /** The ID of EBS snapshot to recover from in the root device (optional) */
     ebsRecoverySnapshotId: z.string().optional(),
-    /** The email address to subscribe alerts SNS topic too */
-    criticalAlertsEmail: z.string().optional(),
+    /** Monitoring/alarming configuration */
+    monitoring: MonitoringConfigSchema.optional(),
   }),
   backup: BackupConfigSchema,
 });
 
-// Infer the type from the schema
+// Infer the type from the schemas
 export type Config = z.infer<typeof ConfigSchema>;
 export type BackupConfig = z.infer<typeof BackupConfigSchema>;
+export type MonitoringConfig = z.infer<typeof MonitoringConfigSchema>;
 
 export const loadConfig = (filePath: string): Config => {
   // Parse and validate the config
@@ -182,7 +244,7 @@ export class FaimsInfraStack extends cdk.Stack {
       sharedBalancer: networking.sharedBalancer,
       dataVolumeSize: config.couch.volumeSize,
       dataVolumeSnapshotId: config.couch.ebsRecoverySnapshotId,
-      criticalAlertsEmail: config.couch.criticalAlertsEmail
+      monitoring: config.couch.monitoring
     });
 
     // CONDUCTOR

@@ -130,12 +130,12 @@ Note: The values provided above are examples. Replace them with your actual valu
 
 Here's a breakdown of each configuration value and its purpose:
 
-- hostedZone - used for deploying route 53 routes in AWS
+- hostedZone - used for deploying Route 53 routes in AWS
   - id: The ID of your Route 53 hosted zone
   - name: The domain name of your hosted zone
 - certificates
-  - primary: ARN of your primary ACM certificate (must support \*.base.domain)
-  - cloudfront: ARN of your CloudFront ACM certificate (must be in us-east-1) (must support \*.base.domain)
+  - primary: ARN of your primary ACM certificate (must support *.base.domain)
+  - cloudfront: ARN of your CloudFront ACM certificate (must be in us-east-1) (must support *.base.domain)
 - aws
   - account: Your AWS account ID
   - region: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
@@ -149,7 +149,23 @@ Here's a breakdown of each configuration value and its purpose:
 - couch
   - volumeSize: The size in GB of the EBS volume to mount to the EC2 instance
   - ebsRecoverySnapshotId: (Optional) The ID of an EBS snapshot to recover the couch data volume from
-  - criticalAlertsEmail: (Optional) The email address to send couchDB SNS alerts too
+  - monitoring: (Optional) Configuration for CouchDB monitoring alarms
+    - cpu: (Optional) CPU utilization alarm settings
+      - threshold: Percentage threshold for CPU utilization (0-100)
+      - evaluationPeriods: Number of periods to evaluate before triggering alarm
+      - datapointsToAlarm: Number of datapoints that must be breaching to trigger alarm
+    - memory: (Optional) Memory usage alarm settings (same structure as cpu)
+    - disk: (Optional) Disk usage alarm settings (same structure as cpu)
+    - statusCheck: (Optional) EC2 status check alarm settings
+      - evaluationPeriods: Number of periods to evaluate before triggering alarm
+      - datapointsToAlarm: Number of datapoints that must be breaching to trigger alarm
+    - networkIn: (Optional) Network in alarm settings (same structure as cpu, but threshold in bytes)
+    - networkOut: (Optional) Network out alarm settings (same structure as cpu, but threshold in bytes)
+    - http5xx: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
+    - alarmTopic: (Optional) SNS topic settings for alarms
+      - emailAddress: Email address to send alarm notifications
+
+NOTE: All monitoring settings are optional. If not provided, default values will be used. The alarmTopic emailAddress, if provided, will receive notifications for all configured alarms.
 
 ### Using Your Configuration
 

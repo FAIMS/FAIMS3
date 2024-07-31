@@ -24,6 +24,44 @@
     "couch": {
         "volumeSize": 100,
         "ebsRecoverySnapshotId": "1234",
-        "criticalAlertsEmail": "fake@gmail.com"
+        "monitoring": {
+            "cpu": {
+                "threshold": 80,
+                "evaluationPeriods": 3,
+                "datapointsToAlarm": 2
+            },
+            "memory": {
+                "threshold": 85,
+                "evaluationPeriods": 3,
+                "datapointsToAlarm": 2
+            },
+            "disk": {
+                "threshold": 80,
+                "evaluationPeriods": 3,
+                "datapointsToAlarm": 2
+            },
+            "statusCheck": {
+                "evaluationPeriods": 2,
+                "datapointsToAlarm": 2
+            },
+            "networkIn": {
+                "threshold": 10000000,
+                "evaluationPeriods": 3,
+                "datapointsToAlarm": 2
+            },
+            "networkOut": {
+                "threshold": 10000000,
+                "evaluationPeriods": 3,
+                "datapointsToAlarm": 2
+            },
+            "http5xx": {
+                "threshold": 10,
+                "evaluationPeriods": 5,
+                "datapointsToAlarm": 3
+            },
+            "alarmTopic": {
+                "emailAddress": "fake@gmail.com"
+            }
+        }
     }
 }
