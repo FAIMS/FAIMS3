@@ -471,6 +471,7 @@ EOL`,
         metricName: "disk_used_percent",
         dimensionsMap: {
           InstanceId: this.instance.instanceId,
+          // NOTE: It might be worth considering couch DB data volume being reported / alarmed separately
           path: "/",
         },
         statistic: "Average",
