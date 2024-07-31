@@ -82,6 +82,9 @@ export class EC2CouchDB extends Construct {
   private readonly alarmSNSTopic: sns.Topic;
   /** The monitoring config */
   private readonly monitoringConfig?: MonitoringConfig;
+  /** Path to AWS cloud watch agent config */
+  private readonly awsCloudWatchAgentConfigPath =
+    "/opt/aws/amazon-cloudwatch-agent/bin/config.json";
 
   /** CouchDB configuration settings */
   private readonly couchDbConfig: string = `
@@ -161,7 +164,7 @@ methods = GET, PUT, POST, HEAD, DELETE
 
       // Configure CloudWatch agent to collect disk usage and memory usage -
       // publish 60 second interval
-      "cat > /opt/aws/amazon-cloudwatch-agent/bin/config.json <<EOL",
+      `cat > ${this.awsCloudWatchAgentConfigPath} <<EOL`,
       `
 {
    "agent":{
@@ -232,15 +235,15 @@ methods = GET, PUT, POST, HEAD, DELETE
       "EOL",
 
       // Validate and load config
-      "/opt/aws/amazon-cloudwatch-agent/amazon-cloudwatch-agent-ctl -m ec2 -a fetch-config -c /opt/aws/amazon-cloudwatch-agent/bin/config.json",
+      `/opt/aws/amazon-cloudwatch-agent/amazon-cloudwatch-agent-ctl -m ec2 -a fetch-config -c ${this.awsCloudWatchAgentConfigPath}`,
 
       // Start the service (this creates auto start systemd service)
-      "/opt/aws/amazon-cloudwatch-agent/amazon-cloudwatch-agent-ctl -m ec2 -a start -c /opt/aws/amazon-cloudwatch-agent/bin/config.json",
+      `/opt/aws/amazon-cloudwatch-agent/amazon-cloudwatch-agent-ctl -m ec2 -a start -c ${this.awsCloudWatchAgentConfigPath}`,
 
       // Run CouchDB with docker service
       "systemctl start docker",
       "systemctl enable docker",
-      "docker pull couchdb:latest",
+      `docker pull ${this.couchVersionTag}`,
 
       // Set environment variables
       `SECRET_ARN=${this.passwordSecret.secretArn}`,
@@ -623,6 +626,7 @@ EOL`,
 
   /**
    * Build a CloudWatch dashboard with the relevant metrics for couchDB
+   * Adds left annotations for alarm thresholds to improve visibility
    */
   private createDashboard() {
     const dashboard = new cloudwatch.Dashboard(this, "CouchDBDashboard", {
@@ -632,6 +636,13 @@ EOL`,
     const instanceId = this.instance.instanceId;
     const albFullName = this.sharedBalancer.alb.loadBalancerFullName;
     const targetGroupFullName = this.targetGroup.targetGroupFullName;
+
+    // Helper function to create a left annotation for alarm thresholds
+    const createLeftAnnotation = (value: number, label: string) => ({
+      value,
+      label,
+      color: "#ff0000",
+    });
 
     dashboard.addWidgets(
       new TextWidget({
@@ -650,6 +661,12 @@ EOL`,
             period: Duration.minutes(5),
           }),
         ],
+        leftAnnotations: [
+          createLeftAnnotation(
+            this.monitoringConfig?.cpu?.threshold ?? 80,
+            "CPU Alarm Threshold"
+          ),
+        ],
         width: 8,
         height: 6,
       }),
@@ -663,6 +680,12 @@ EOL`,
             statistic: "Average",
             period: Duration.minutes(5),
           }),
+        ],
+        leftAnnotations: [
+          createLeftAnnotation(
+            this.monitoringConfig?.memory?.threshold ?? 80,
+            "Memory Alarm Threshold"
+          ),
         ],
         width: 8,
         height: 6,
@@ -678,6 +701,12 @@ EOL`,
             period: Duration.minutes(5),
           }),
         ],
+        leftAnnotations: [
+          createLeftAnnotation(
+            this.monitoringConfig?.disk?.threshold ?? 80,
+            "Disk Usage Alarm Threshold"
+          ),
+        ],
         width: 8,
         height: 6,
       }),
@@ -692,6 +721,12 @@ EOL`,
             period: Duration.minutes(5),
           }),
         ],
+        leftAnnotations: [
+          createLeftAnnotation(
+            this.monitoringConfig?.networkIn?.threshold ?? 10000000,
+            "Network In Alarm Threshold"
+          ),
+        ],
         right: [
           new Metric({
             namespace: "AWS/EC2",
@@ -700,6 +735,12 @@ EOL`,
             statistic: "Average",
             period: Duration.minutes(5),
           }),
+        ],
+        rightAnnotations: [
+          createLeftAnnotation(
+            this.monitoringConfig?.networkOut?.threshold ?? 10000000,
+            "Network Out Alarm Threshold"
+          ),
         ],
         width: 12,
         height: 6,
@@ -714,6 +755,9 @@ EOL`,
             statistic: "Maximum",
             period: Duration.minutes(5),
           }),
+        ],
+        leftAnnotations: [
+          createLeftAnnotation(1, "Status Check Failure Threshold"),
         ],
         width: 12,
         height: 6,
@@ -774,6 +818,12 @@ EOL`,
             statistic: "Sum",
             period: Duration.minutes(5),
           }),
+        ],
+        leftAnnotations: [
+          createLeftAnnotation(
+            this.monitoringConfig?.http5xx?.threshold ?? 10,
+            "5XX Error Alarm Threshold"
+          ),
         ],
         width: 8,
         height: 6,
