@@ -65,6 +65,8 @@
         "scheduleExpression": "cron(0 3 * * ? *)"
     },
     "conductor": {
+        "conductorDockerImage": "org/faims3-api",
+        "conductorDockerImageTag": "latest",
         "cpu": 1024,
         "memory": 2048,
         "autoScaling": {

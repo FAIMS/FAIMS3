@@ -7,7 +7,7 @@ import { FaimsConductor } from "./components/conductor";
 import { FaimsFrontEnd } from "./components/front-end";
 import { FaimsNetworking } from "./components/networking";
 import { EC2CouchDB } from "./components/couch-db";
-import { z } from "zod";
+import { string, z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -113,6 +113,10 @@ const DomainsConfigSchema = z.object({
 });
 
 const ConductorConfigSchema = z.object({
+  /** Conductor docker image e.g. org/faims3-api */
+  conductorDockerImage: z.string(),
+  /** Conductor docker image e.g. latest, sha-123456 */
+  conductorDockerImageTag: z.string().default("latest"),
   /** The number of CPU units for the Fargate task */
   cpu: z.number().int().positive(),
   /** The amount of memory (in MiB) for the Fargate task */

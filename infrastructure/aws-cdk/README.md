@@ -372,6 +372,8 @@ NOTE: All monitoring settings are optional. If not provided, default values will
 
 Configuration for the Conductor service.
 
+- `conductorDockerImage`: Conductor docker image name from public registry (dockerhub) e.g. org/faims3-api
+- `conductorDockerImageTag`: (default "latest") Conductor docker image e.g. latest or sha-123456. Composed with `conductorDockerImage` in the format `image`:`tag`.
 - `cpu`: The number of CPU units for the Fargate task
 - `memory`: The amount of memory (in MiB) for the Fargate task
 - `autoScaling`: Auto scaling configuration for the Conductor service
