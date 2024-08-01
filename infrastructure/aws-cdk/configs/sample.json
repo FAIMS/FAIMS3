@@ -1,67 +1,89 @@
 {
-  "hostedZone": {
-    "id": "your-hosted-zone-id",
-    "name": "your-domain.com"
-  },
-  "certificates": {
-    "primary": "arn:aws:acm:region:account-id:certificate/certificate-id",
-    "cloudfront": "arn:aws:acm:us-east-1:account-id:certificate/certificate-id"
-  },
-  "aws": {
-    "account": "your-aws-account-id",
-    "region": "ap-southeast-2"
-  },
-  "secrets": {
-    "privateKey": "arn:aws:secretsmanager:region:account-id:secret:private-key-secret-id",
-    "publicKey": "arn:aws:secretsmanager:region:account-id:secret:public-key-secret-id"
-  },
-  "couch": {
-    "volumeSize": 20,
-    "instanceType": "t3.small",
-    "monitoring": {
-      "cpu": {
-        "threshold": 80,
-        "evaluationPeriods": 3,
-        "datapointsToAlarm": 2
-      },
-      "memory": {
-        "threshold": 80,
-        "evaluationPeriods": 3,
-        "datapointsToAlarm": 2
-      },
-      "disk": {
-        "threshold": 80,
-        "evaluationPeriods": 3,
-        "datapointsToAlarm": 2
-      }
+    "hostedZone": {
+        "id": "your-hosted-zone-id",
+        "name": "your-domain.com"
+    },
+    "certificates": {
+        "primary": "arn:aws:acm:region:account-id:certificate/certificate-id",
+        "cloudfront": "arn:aws:acm:us-east-1:account-id:certificate/certificate-id"
+    },
+    "aws": {
+        "account": "your-aws-account-id",
+        "region": "ap-southeast-2"
+    },
+    "secrets": {
+        "privateKey": "arn:aws:secretsmanager:region:account-id:secret:private-key-secret-id",
+        "publicKey": "arn:aws:secretsmanager:region:account-id:secret:public-key-secret-id"
+    },
+    "couch": {
+        "volumeSize": 20,
+        "instanceType": "t3.small",
+        "monitoring": {
+            "cpu": {
+                "threshold": 80,
+                "evaluationPeriods": 3,
+                "datapointsToAlarm": 2
+            },
+            "memory": {
+                "threshold": 80,
+                "evaluationPeriods": 3,
+                "datapointsToAlarm": 2
+            },
+            "disk": {
+                "threshold": 80,
+                "evaluationPeriods": 3,
+                "datapointsToAlarm": 2
+            },
+            "statusCheck": {
+                "evaluationPeriods": 2,
+                "datapointsToAlarm": 2
+            },
+            "networkIn": {
+                "threshold": 10000000,
+                "evaluationPeriods": 3,
+                "datapointsToAlarm": 2
+            },
+            "networkOut": {
+                "threshold": 10000000,
+                "evaluationPeriods": 3,
+                "datapointsToAlarm": 2
+            },
+            "http5xx": {
+                "threshold": 10,
+                "evaluationPeriods": 5,
+                "datapointsToAlarm": 3
+            },
+            "alarmTopic": {
+                "emailAddress": "fake@gmail.com"
+            }
+        }
+    },
+    "backup": {
+        "vaultName": "faims-backup-vault",
+        "retentionDays": 30,
+        "scheduleExpression": "cron(0 3 * * ? *)"
+    },
+    "conductor": {
+        "cpu": 1024,
+        "memory": 2048,
+        "autoScaling": {
+            "minCapacity": 1,
+            "maxCapacity": 10,
+            "targetCpuUtilization": 70,
+            "targetMemoryUtilization": 70,
+            "scaleInCooldown": 300,
+            "scaleOutCooldown": 60
+        }
+    },
+    "domains": {
+        "baseDomain": "your-domain.com",
+        "designer": "designer",
+        "conductor": "conductor",
+        "couch": "couchdb",
+        "faims": "faims"
+    },
+    "mobileApps": {
+        "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
+        "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
     }
-  },
-  "backup": {
-    "vaultName": "faims-backup-vault",
-    "retentionDays": 30,
-    "scheduleExpression": "cron(0 3 * * ? *)"
-  },
-  "conductor": {
-    "cpu": 1024,
-    "memory": 2048,
-    "autoScaling": {
-      "minCapacity": 1,
-      "maxCapacity": 10,
-      "targetCpuUtilization": 70,
-      "targetMemoryUtilization": 70,
-      "scaleInCooldown": 300,
-      "scaleOutCooldown": 60
-    }
-  },
-  "domains": {
-    "baseDomain": "your-domain.com",
-    "designer": "designer",
-    "conductor": "conductor",
-    "couch": "couchdb",
-    "faims": "faims"
-  },
-  "mobileApps": {
-    "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
-    "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
-  }
 }
