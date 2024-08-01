@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "main": "build/src/index.js",
+  "packageManager": "",
   "scripts": {
     "lint": "gts lint",
     "clean": "gts clean",

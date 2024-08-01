@@ -25,5 +25,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "turbo": "^2.0.11"
+  }
 }
