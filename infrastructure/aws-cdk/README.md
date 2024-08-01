@@ -113,11 +113,11 @@ This should build all the projects in `src`. If you add a new project, please up
 
 Use the existing packages as an example to start from, because the typescript config is very fussy.
 
-## Configuration Setup
+# Configuration Setup
 
 This project uses a JSON-based configuration system to manage different deployment settings. Here's how to set it up and use it:
 
-### Creating Your Configuration
+## Creating Your Configuration
 
 1. Navigate to the `configs/` directory in the project.
 2. You'll find a file named `sample.json`. This is a template for your configuration.
@@ -126,48 +126,280 @@ This project uses a JSON-based configuration system to manage different deployme
 
 **For an example JSON structure, see `configs/sample.json`.**
 
-Note: The values provided above are examples. Replace them with your actual values.
+## Using an existing configuration from conforming config repo
 
-Here's a breakdown of each configuration value and its purpose:
+If you wish to store your configurations in a private repository, you can use our config setup script to easily import these configurations into your project. This section explains how to structure your config repo, use the setup script, and manage multiple environments.
 
-- hostedZone - used for deploying Route 53 routes in AWS
-  - id: The ID of your Route 53 hosted zone
-  - name: The domain name of your hosted zone
-- certificates
-  - primary: ARN of your primary ACM certificate (must support *.base.domain)
-  - cloudfront: ARN of your CloudFront ACM certificate (must be in us-east-1) (must support *.base.domain)
-- aws
-  - account: Your AWS account ID
-  - region: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
-- secrets
-  - privateKey: ARN of your private key in Secrets Manager
-  - publicKey: ARN of your public key in Secrets Manager
-- backup
-  - vaultName: The name of the AWS Backup vault to create or use
-  - retentionDays: The number of days to retain backups (default: 30)
-  - scheduleExpression: The cron schedule for running backups (default: daily at 3 AM)
-- couch
-  - volumeSize: The size in GB of the EBS volume to mount to the EC2 instance
-  - ebsRecoverySnapshotId: (Optional) The ID of an EBS snapshot to recover the couch data volume from
-  - monitoring: (Optional) Configuration for CouchDB monitoring alarms
-    - cpu: (Optional) CPU utilization alarm settings
-      - threshold: Percentage threshold for CPU utilization (0-100)
-      - evaluationPeriods: Number of periods to evaluate before triggering alarm
-      - datapointsToAlarm: Number of datapoints that must be breaching to trigger alarm
-    - memory: (Optional) Memory usage alarm settings (same structure as cpu)
-    - disk: (Optional) Disk usage alarm settings (same structure as cpu)
-    - statusCheck: (Optional) EC2 status check alarm settings
-      - evaluationPeriods: Number of periods to evaluate before triggering alarm
-      - datapointsToAlarm: Number of datapoints that must be breaching to trigger alarm
-    - networkIn: (Optional) Network in alarm settings (same structure as cpu, but threshold in bytes)
-    - networkOut: (Optional) Network out alarm settings (same structure as cpu, but threshold in bytes)
-    - http5xx: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
-    - alarmTopic: (Optional) SNS topic settings for alarms
-      - emailAddress: Email address to send alarm notifications
+### Config Repository Structure
+
+Your configuration repository should follow this structure:
+
+```
+/
+├── infrastructure/
+│   ├── dev/
+│   │   ├── configs/
+│   │   │   └── dev.json
+│   │   ├── cdk.context.json (optional)
+│   │   └── (other environment-specific files)
+│   ├── staging/
+│   │   ├── configs/
+│   │   │   └── staging.json
+│   │   ├── cdk.context.json (optional)
+│   │   └── (other environment-specific files)
+│   └── prod/
+│       ├── configs/
+│       │   └── prod.json
+│       ├── cdk.context.json (optional)
+│       └── (other environment-specific files)
+└── (other repository files)
+```
+
+- The `infrastructure` directory contains subdirectories for each environment (e.g., `dev`, `staging`, `prod`).
+- Each environment directory should contain a `configs` folder with a JSON file named after the environment (e.g., `dev.json`).
+- You can include other environment-specific files in each environment directory as needed.
+
+### Using the Config Setup Script
+
+We provide a script called `fetch-config.sh` to fetch and set up the configuration from your private repository. You can run this script manually or use the npm script we've added to `package.json`.
+
+#### Running the Script Manually
+
+1. Ensure the `setup_config.sh` script is in your project root and is executable:
+
+   ```bash
+   chmod +x setup_config.sh
+   ```
+
+2. Run the script with the following syntax:
+
+   ```bash
+   ./setup_config.sh <clone_string> <environment> [--force]
+   ```
+
+   - `<clone_string>`: The Git clone URL of your private config repository.
+   - `<environment>`: The name of the environment you want to set up (e.g., "dev", "staging", "prod").
+   - `--force` (optional): Use this flag to overwrite existing files without prompting.
+
+   Example:
+
+   ```bash
+   ./setup_config.sh "https://github.com/your-org/your-private-config-repo.git" "dev"
+   ```
+
+#### Running the Script via npm
+
+We've added a `setup-config` script to `package.json` for convenience. You can run it using npm:
+
+```bash
+npm run setup-config -- <clone_string> <environment> [--force]
+```
+
+Example:
+
+```bash
+npm run setup-config -- "https://github.com/your-org/your-private-config-repo.git" "dev"
+```
+
+### Handling Multiple Environments
+
+To switch between different environments:
+
+1. Run the setup script for the desired environment:
+
+   ```bash
+   npm run setup-config -- "https://github.com/your-org/your-private-config-repo.git" "prod"
+   ```
+
+2. The script will copy the environment-specific files into your project and tell you to set the `CONFIG_FILE_NAME` environment variable. Set it like this:
+
+   ```bash
+   export CONFIG_FILE_NAME=prod.json
+   ```
+
+3. Now your project is configured for the "prod" environment. Repeat these steps with a different environment name to switch to another environment.
+
+### Important Notes
+
+- The script will prompt for confirmation before overwriting existing files unless you use the `--force` flag.
+- Make sure your private repository is accessible from the machine where you're running the script.
+- Keep your config repository private and secure, as it may contain sensitive information.
+- After running the script, remember to set the `CONFIG_FILE_NAME` environment variable as instructed.
+- The script cleans up after itself, removing the temporary clone of your config repository.
+
+By following this approach, you can securely manage different configurations for multiple environments while keeping your main project repository clean and your sensitive configuration data separate and private.
+
+### Pushing Configuration Changes Back to the Repository
+
+We provide a script called `push_config.sh` to push local configuration changes back to your private repository. This script allows you to update the configuration files in the repository after making local modifications.
+
+#### Running the Push Config Script
+
+1. Ensure the `push_config.sh` script is in your project root and is executable:
+
+   ```bash
+   chmod +x push_config.sh
+   ```
+
+2. Run the script with the following syntax:
+
+   ```bash
+   ./push_config.sh <clone_string> <environment> [--force] [--branch <branch_name>] [--message <commit_message>]
+   ```
+
+   - `<clone_string>`: The Git clone URL of your private config repository.
+   - `<environment>`: The name of the environment you want to update (e.g., "dev", "staging", "prod").
+   - `--force` (optional): Use this flag to overwrite existing files without prompting.
+   - `--branch <branch_name>` (optional): Specify a branch to push to (default is "main").
+   - `--message <commit_message>` (optional): Specify a custom commit message (default is "configuration update faims3").
+
+   Example:
+
+   ```bash
+   ./push_config.sh "https://github.com/your-org/your-private-config-repo.git" "dev" --branch feature-branch --message "Updated dev configuration"
+   ```
+
+#### Running the Script via npm
+
+We've added a `push-config` script to `package.json` for convenience. You can run it using npm:
+
+```bash
+npm run push-config -- <clone_string> <environment> [--force] [--branch <branch_name>] [--message <commit_message>]
+```
+
+#### What the Push Script Does
+
+1. Clones the specified repository into a temporary directory.
+2. Copies the local `cdk.context.json` and environment-specific config file (e.g., `configs/dev.json`) to the appropriate locations in the cloned repository.
+3. Warns and asks for confirmation if files are missing or being overwritten (unless `--force` is used).
+4. Provides an extra warning if `cdk.context.json` is different from the one in the repository.
+5. Commits the changes and pushes them to the specified branch.
+6. Cleans up the temporary directory.
+
+#### Important Notes
+
+- Review your changes carefully before running this script, especially for production environments.
+- The script will create necessary directories and files if they don't exist in the config repository.
+- Use the `--force` flag with caution, as it will overwrite files without prompting.
+- If cdk.context.json or the environment-specific config file doesn't exist locally, the script will warn you and ask if you want to continue.
+- Always ensure that you're not accidentally pushing sensitive information to the repository.
+
+## Validating Configuration
+
+To ensure your configuration files are correct and complete, we provide a validation script. This script checks your configuration against the defined schema, helping you catch errors before deploying.
+
+Note that this validation is at a schema level, it might not catch improperly formed AWS references, instance sizes, invalid configurations etc. These will either be caught at synth time, or during CloudFormation deployment.
+
+#### Running the Validation Script
+
+1. To target your configuration file, set the `CONFIG_FILE_NAME` environment variable:
+
+   ```bash
+   export CONFIG_FILE_NAME=prod.json
+   ```
+
+   This will target the `prod.json` configuration file.
+
+2. The validation script is already set up in the `package.json`. To run it, use the following command:
+
+   ```bash
+   npm run validate-config
+   ```
+
+   This will validate the configuration file specified by `CONFIG_FILE_NAME`.
+
+#### What the Validation Script Does
+
+- The script reads the specified configuration file from the `configs` directory.
+- It then validates the configuration against the `ConfigSchema` defined in your main stack file.
+- If the configuration is valid, you'll see the message "Configuration is valid."
+- If there are any validation errors, the script will output detailed error messages, indicating which parts of the configuration failed validation.
+
+## Configuration documentation
+
+### hostedZone
+
+Used for deploying Route 53 routes in AWS.
+
+- `id`: The ID of your Route 53 hosted zone
+- `name`: The domain name of your hosted zone
+
+### certificates
+
+- `primary`: ARN of your primary ACM certificate (must support \*.base.domain)
+- `cloudfront`: ARN of your CloudFront ACM certificate (must be in us-east-1 and support \*.base.domain)
+
+### aws
+
+- `account`: Your AWS account ID
+- `region`: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
+
+### secrets
+
+- `privateKey`: ARN of your private key in Secrets Manager
+- `publicKey`: ARN of your public key in Secrets Manager
+
+### backup
+
+- `vaultName`: The name of the AWS Backup vault to create or use
+- `retentionDays`: The number of days to retain backups (default: 30)
+- `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
+
+### couch
+
+- `volumeSize`: The size in GB of the EBS volume to mount to the EC2 instance
+- `instanceType`: The EC2 instance type for CouchDB (e.g., "t3.small")
+- `ebsRecoverySnapshotId`: (Optional) The ID of an EBS snapshot to recover the couch data volume from
+- `monitoring`: (Optional) Configuration for CouchDB monitoring alarms
+  - `cpu`: (Optional) CPU utilization alarm settings
+    - `threshold`: Percentage threshold for CPU utilization (0-100)
+    - `evaluationPeriods`: Number of periods to evaluate before triggering alarm
+    - `datapointsToAlarm`: Number of datapoints that must be breaching to trigger alarm
+  - `memory`: (Optional) Memory usage alarm settings (same structure as cpu)
+  - `disk`: (Optional) Disk usage alarm settings (same structure as cpu)
+  - `statusCheck`: (Optional) EC2 status check alarm settings
+    - `evaluationPeriods`: Number of periods to evaluate before triggering alarm
+    - `datapointsToAlarm`: Number of datapoints that must be breaching to trigger alarm
+  - `networkIn`: (Optional) Network in alarm settings (same structure as cpu, but threshold in bytes)
+  - `networkOut`: (Optional) Network out alarm settings (same structure as cpu, but threshold in bytes)
+  - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
+  - `alarmTopic`: (Optional) SNS topic settings for alarms
+    - `emailAddress`: Email address to send alarm notifications
 
 NOTE: All monitoring settings are optional. If not provided, default values will be used. The alarmTopic emailAddress, if provided, will receive notifications for all configured alarms.
 
-### Using Your Configuration
+### conductor
+
+Configuration for the Conductor service.
+
+- `cpu`: The number of CPU units for the Fargate task
+- `memory`: The amount of memory (in MiB) for the Fargate task
+- `autoScaling`: Auto scaling configuration for the Conductor service
+  - `minCapacity`: The minimum number of tasks to run
+  - `maxCapacity`: The maximum number of tasks that can be run
+  - `targetCpuUtilization`: The target CPU utilization percentage for scaling
+  - `targetMemoryUtilization`: The target memory utilization percentage for scaling
+  - `scaleInCooldown`: The cooldown period (in seconds) before allowing another scale in action
+  - `scaleOutCooldown`: The cooldown period (in seconds) before allowing another scale out action
+
+### domains
+
+Domain configuration for all services. Note: Apex domains are not currently supported.
+
+- `baseDomain`: The base domain for all services
+- `designer`: The subdomain prefix for the designer service
+- `conductor`: The subdomain prefix for the conductor service
+- `couch`: The subdomain prefix for the CouchDB service
+- `faims`: The subdomain prefix for the main FAIMS web application
+
+### mobileApps
+
+Configuration for mobile app URLs.
+
+- `androidAppPublicUrl`: The public URL for the Android application in the Google Play Store
+- `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
+
+## Using Your Configuration
 
 To use a specific configuration when deploying or synthesizing your CDK stack:
 
@@ -187,7 +419,7 @@ Or to synthesize using a `development.json` configuration:
 CONFIG_FILE_NAME=development.json cdk synth
 ```
 
-### Switching Between Configurations
+## Switching Between Configurations
 
 You can easily switch between different configurations by changing the `CONFIG_FILE_NAME`:
 
@@ -195,13 +427,13 @@ You can easily switch between different configurations by changing the `CONFIG_F
 - For production: `CONFIG_FILE_NAME=production.json`
 - For any other environment: `CONFIG_FILE_NAME=your-config-file-name.json`
 
-### Configuration File Location
+## Configuration File Location
 
 All configuration files should be placed in the `configs/` directory of the project.
 
 These are automatically git ignored.
 
-### Generating Keys and Setting ARNs
+## Generating Keys and Setting ARNs
 
 This project includes a script to generate RSA key pairs and store them in AWS Secrets Manager. Follow these steps to generate keys and set the ARNs in your configuration:
 
@@ -239,7 +471,7 @@ This process ensures that your CDK stack uses the correct, securely stored keys 
 
 Remember to run this script and update your configuration whenever you need to rotate keys or set up a new environment.
 
-### CDK Context File (cdk.context.json)
+# CDK Context File (cdk.context.json)
 
 **If you have an existing deployment**.
 
@@ -264,11 +496,11 @@ To use an existing `cdk.context.json`:
 
 If you need to refresh the context, you can delete the file and run `cdk synth` to regenerate it.
 
-### Security Note
+## Security Note
 
 Your configuration files may contain sensitive information. Do not commit these files to version control. They are already added to `.gitignore` for your protection.
 
-### Troubleshooting
+# Config Troubleshooting
 
 - If you encounter an error about missing or invalid configuration, ensure that:
   1. Your configuration file exists in the `configs/` directory.
@@ -277,7 +509,7 @@ Your configuration files may contain sensitive information. Do not commit these 
 
 By following these steps, you can easily manage different configurations for various deployment environments in this project.
 
-## Deploying CDK app
+# Deploying CDK app
 
 Ensure you have sufficient permissions for the target account and that they are available to the CLI e.g. `aws sts get-caller-identity`.
 
@@ -293,7 +525,7 @@ Then follow the above steps to
   - to diff `cdk diff`
   - to deploy or update `cdk deploy`
 
-## Initialising DBs on first launch
+# Initialising DBs on first launch
 
 The DBs are now initialised using a combination of
 
@@ -315,7 +547,7 @@ This
 
 This operation is a "no-op" if already setup.
 
-## Recovering couch data volume from EBS Snapshot
+# Recovering couch data volume from EBS Snapshot
 
 The couch data volume is handled separately from the OS data in your instance. This allows the data volume to be backed up regularly without needing to be concerned about producing AMIs which associate the boot volume with EBS snapshots (such as in the AWS Backup for EC2 process). The config contains a flag to recover the EBS data volume from an existing EBS snapshot ID. The process to perform this recovery is explained below.
 
@@ -381,7 +613,7 @@ Remember:
 - If you want to keep using the recovered data but need more space, consider using AWS EBS volume modification to increase the size of the existing volume instead of creating a new one.
 - Deleting an EBS volume is irreversible. Always ensure you have backups before making such changes.
 
-### Recovery process diagram (proposed)
+## Recovery process diagram (proposed)
 
 The below diagram indicates three backup/recovery processes for couch
 

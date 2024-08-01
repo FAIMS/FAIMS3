@@ -26,6 +26,7 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import { Construct } from "constructs";
 import { getPathToRoot } from "../util/mono";
 import { SharedBalancer } from "./networking";
+import { ConductorConfig } from "../faims-infra-stack";
 
 /**
  * Properties for the FaimsConductor construct
@@ -35,10 +36,6 @@ export interface FaimsConductorProps {
   vpc: ec2.IVpc;
   /** Shared balancer to use */
   sharedBalancer: SharedBalancer;
-  /** The CPU allocation for the service */
-  cpu: number;
-  /** The memory allocation for the service */
-  memory: number;
   /** Full domain name for service e.g. website.com */
   domainName: string;
   /** The ARN to secret containing pub/private key in AWS secret manager */
@@ -59,6 +56,8 @@ export interface FaimsConductorProps {
   androidAppPublicUrl: string;
   /** Public URL for iOS app */
   iosAppPublicUrl: string;
+  /** The configuration object for the Conductor service */
+  config: ConductorConfig;
 }
 
 /**
@@ -95,61 +94,78 @@ export class FaimsConductor extends Construct {
     // ================
 
     // Setup container image from local Dockerfile
-    const conductorContainerImage = ecs.ContainerImage.fromAsset(getPathToRoot(), {
-      file: "api/Dockerfile",
-      // TODO: Optimize this - this avoids infinite loops
-      exclude: ["infrastructure"],
-    });
+    const conductorContainerImage = ecs.ContainerImage.fromAsset(
+      getPathToRoot(),
+      {
+        file: "api/Dockerfile",
+        // TODO: Optimize this - this avoids infinite loops
+        exclude: ["infrastructure"],
+      }
+    );
 
     // Create the Fargate task definition
-    const conductorTaskDfn = new ecs.FargateTaskDefinition(this, "conductor-task-dfn", {
-      ephemeralStorageGiB: 21, // 20GB ephemeral storage (minimum)
-      cpu: props.cpu,
-      memoryLimitMiB: props.memory,
-    });
+    const conductorTaskDfn = new ecs.FargateTaskDefinition(
+      this,
+      "conductor-task-dfn",
+      {
+        ephemeralStorageGiB: 21, // 20GB ephemeral storage (minimum)
+        cpu: props.config.cpu,
+        memoryLimitMiB: props.config.memory,
+      }
+    );
 
     // Add container to the task definition
-    const conductorContainerDfn = conductorTaskDfn.addContainer("conductor-container-dfn", {
-      image: conductorContainerImage,
-      portMappings: [
-        {
-          containerPort: this.internalPort,
-          appProtocol: ecs.AppProtocol.http,
-          name: "conductor-port",
+    const conductorContainerDfn = conductorTaskDfn.addContainer(
+      "conductor-container-dfn",
+      {
+        image: conductorContainerImage,
+        portMappings: [
+          {
+            containerPort: this.internalPort,
+            appProtocol: ecs.AppProtocol.http,
+            name: "conductor-port",
+          },
+        ],
+        environment: {
+          PROFILE_NAME: "default",
+          CONDUCTOR_INSTANCE_NAME: "AWS FAIMS 3 Deployment",
+          COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
+          COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
+          COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
+          CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
+          // TODO Setup Google auth
+          CONDUCTOR_AUTH_PROVIDERS: "google",
+          GOOGLE_CLIENT_ID: "replace-me",
+          GOOGLE_CLIENT_SECRET: "replace-me",
+          WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
+          ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
+          IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
+          // TODO Setup email
+          CONDUCTOR_EMAIL_FROM_ADDRESS: "noreply@localhost.test",
+          CONDUCTOR_EMAIL_HOST_CONFIG:
+            "smtps://username:password@smtp.example.test",
+          // TODO Setup git revision properly
+          COMMIT_VERSION: "todo",
+          KEY_SOURCE: "AWS_SM",
+          AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         },
-      ],
-      environment: {
-        PROFILE_NAME: "default",
-        CONDUCTOR_INSTANCE_NAME: "AWS FAIMS 3 Deployment",
-        COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
-        COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
-        COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
-        CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
-        // TODO Setup Google auth
-        CONDUCTOR_AUTH_PROVIDERS: "google",
-        GOOGLE_CLIENT_ID: "replace-me",
-        GOOGLE_CLIENT_SECRET: "replace-me",
-        WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
-        ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
-        IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
-        // TODO Setup email
-        CONDUCTOR_EMAIL_FROM_ADDRESS: "noreply@localhost.test",
-        CONDUCTOR_EMAIL_HOST_CONFIG: "smtps://username:password@smtp.example.test",
-        // TODO Setup git revision properly
-        COMMIT_VERSION: "todo",
-        KEY_SOURCE: "AWS_SM",
-        AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
-      },
-      secrets: {
-        COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(props.couchDbAdminSecret, "password"),
-        COUCHDB_USER: ecs.Secret.fromSecretsManager(props.couchDbAdminSecret, "username"),
-        FAIMS_COOKIE_SECRET: ecs.Secret.fromSecretsManager(cookieSecret),
-      },
-      logging: ecs.LogDriver.awsLogs({
-        streamPrefix: "faims-conductor",
-        logRetention: logs.RetentionDays.ONE_MONTH,
-      }),
-    });
+        secrets: {
+          COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(
+            props.couchDbAdminSecret,
+            "password"
+          ),
+          COUCHDB_USER: ecs.Secret.fromSecretsManager(
+            props.couchDbAdminSecret,
+            "username"
+          ),
+          FAIMS_COOKIE_SECRET: ecs.Secret.fromSecretsManager(cookieSecret),
+        },
+        logging: ecs.LogDriver.awsLogs({
+          streamPrefix: "faims-conductor",
+          logRetention: logs.RetentionDays.ONE_MONTH,
+        }),
+      }
+    );
 
     // CLUSTER AND SERVICE SETUP
     // =========================
@@ -160,11 +176,15 @@ export class FaimsConductor extends Construct {
     });
 
     // Create Security Group for the Fargate service
-    const serviceSecurityGroup = new ec2.SecurityGroup(this, "ConductorServiceSG", {
-      vpc: props.vpc,
-      allowAllOutbound: true,
-      description: "Security group for Conductor Fargate service",
-    });
+    const serviceSecurityGroup = new ec2.SecurityGroup(
+      this,
+      "ConductorServiceSG",
+      {
+        vpc: props.vpc,
+        allowAllOutbound: true,
+        description: "Security group for Conductor Fargate service",
+      }
+    );
 
     // Create Fargate Service
     this.fargateService = new ecs.FargateService(this, "conductor-service", {
@@ -210,18 +230,34 @@ export class FaimsConductor extends Construct {
     // AUTO SCALING SETUP
     // ==================
 
-    // TODO Configure auto scaling properly
-    this.fargateService
-      .autoScaleTaskCount({
-        minCapacity: 1,
-        maxCapacity: 1,
-      })
-      .scaleOnRequestCount("conductorAutoScaling", {
-        targetGroup: tg,
-        requestsPerTarget: 10,
-        scaleInCooldown: Duration.seconds(180),
-        scaleOutCooldown: Duration.seconds(60),
-      });
+    // ECS Auto Scaling
+    const scaling = this.fargateService.autoScaleTaskCount({
+      minCapacity: props.config.autoScaling.minCapacity,
+      maxCapacity: props.config.autoScaling.maxCapacity,
+    });
+
+    // Configure CPU utilization based auto scaling
+    scaling.scaleOnCpuUtilization("CpuScaling", {
+      targetUtilizationPercent: props.config.autoScaling.targetCpuUtilization,
+      scaleInCooldown: Duration.seconds(
+        props.config.autoScaling.scaleInCooldown
+      ),
+      scaleOutCooldown: Duration.seconds(
+        props.config.autoScaling.scaleOutCooldown
+      ),
+    });
+
+    // Configure memory utilization based auto scaling
+    scaling.scaleOnMemoryUtilization("MemoryScaling", {
+      targetUtilizationPercent:
+        props.config.autoScaling.targetMemoryUtilization,
+      scaleInCooldown: Duration.seconds(
+        props.config.autoScaling.scaleInCooldown
+      ),
+      scaleOutCooldown: Duration.seconds(
+        props.config.autoScaling.scaleOutCooldown
+      ),
+    });
 
     // DNS ROUTES
     // ===========
@@ -232,15 +268,20 @@ export class FaimsConductor extends Construct {
       recordName: props.domainName,
       comment: `Route from ${props.domainName} to Conductor ECS service through ALB`,
       ttl: Duration.minutes(30),
-      target: r53.RecordTarget.fromAlias(new r53Targets.LoadBalancerTarget(props.sharedBalancer.alb)),
+      target: r53.RecordTarget.fromAlias(
+        new r53Targets.LoadBalancerTarget(props.sharedBalancer.alb)
+      ),
     });
 
     // PERMISSIONS
     // ==================
 
     // Grant permission to read the private key secret
-    sm.Secret.fromSecretCompleteArn(this, "privateKeySecret", props.privateKeySecretArn)
-      .grantRead(conductorTaskDfn.taskRole);
+    sm.Secret.fromSecretCompleteArn(
+      this,
+      "privateKeySecret",
+      props.privateKeySecretArn
+    ).grantRead(conductorTaskDfn.taskRole);
 
     // NETWORK SECURITY
     // ================
