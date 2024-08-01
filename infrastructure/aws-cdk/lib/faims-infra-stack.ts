@@ -1,111 +1,125 @@
 import * as cdk from "aws-cdk-lib";
+import * as route53 from "aws-cdk-lib/aws-route53";
+import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import { Construct } from "constructs";
 import { FaimsConductor } from "./components/conductor";
 import { FaimsFrontEnd } from "./components/front-end";
 import { FaimsNetworking } from "./components/networking";
-import { HostedZone, HostedZoneAttributes } from "aws-cdk-lib/aws-route53";
-import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 import { EC2CouchDB } from "./components/couch-db";
 
+/**
+ * Properties for the FaimsInfraStack
+ */
 export interface FaimsInfraStackProps extends cdk.StackProps {
-  hzAttributes: HostedZoneAttributes;
+  /** Attributes of the hosted zone to use */
+  hzAttributes: route53.HostedZoneAttributes;
+  /** ARN of the primary SSL/TLS certificate */
   primaryCertArn: string;
+  /** ARN of the CloudFront SSL/TLS certificate */
   cloudfrontCertArn: string;
+  /** ARN of the public key secret */
   publicKeySecretArn: string;
+  /** ARN of the private key secret */
   privateKeySecretArn: string;
 }
+
+/**
+ * Main infrastructure stack for the FAIMS application
+ */
 export class FaimsInfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: FaimsInfraStackProps) {
     super(scope, id, props);
 
-    // setup network
-    const networking = new FaimsNetworking(this, "networking", {});
+    // DNS SETUP
+    // =========
 
-    // Setup the hosted zone so we can define domains
-    const hz = HostedZone.fromHostedZoneAttributes(
+    // Setup the hosted zone for domain definitions
+    const hz = route53.HostedZone.fromHostedZoneAttributes(
       this,
       "hz",
       props.hzAttributes
     );
 
-    // Domain setups 
-    
-    // TODO parameterise
-
+    // Domain configurations
+    // TODO: Parameterize these domain configurations
     const rootDomain = hz.zoneName;
+    const domains = {
+      couch: `couchdb.${rootDomain}`,
+      conductor: `conductor.${rootDomain}`,
+      web: `faims.${rootDomain}`,
+      designer: `designer.${rootDomain}`,
+    };
 
-    // Couch
-    const couchSubDomain = "couchdb";
-    const fullCouchDomain = `${couchSubDomain}.${rootDomain}`;
+    // CERTIFICATES
+    // ============
 
-    // Conductor
-    const conductorSubDomain = "conductor";
-    const fullConductorDomain = `${conductorSubDomain}.${rootDomain}`;
-
-    // FAIMS web app
-    const webSubDomain = "faims";
-    const fullWebDomain = `${webSubDomain}.${rootDomain}`;
-
-    // FAIMS designer
-    const designerSubDomain = "designer";
-    const fullDesignerDomain = `${designerSubDomain}.${rootDomain}`;
-
-    // Certificate for hz
-    const primaryCert = Certificate.fromCertificateArn(
+    // Primary certificate for the hosted zone
+    const primaryCert = acm.Certificate.fromCertificateArn(
       this,
       "primary-cert",
       props.primaryCertArn
     );
-    const cfnCert = Certificate.fromCertificateArn(
+
+    // CloudFront certificate
+    const cfnCert = acm.Certificate.fromCertificateArn(
       this,
       "cfn-cert",
       props.cloudfrontCertArn
     );
 
-    // Currently the ini file is setup in docker - this means we need to have the JWT public key setup before hand.
-    // Maybe we can do this with a custom resource? not sure - okay for now
-    // TODO investigate better key setup process which allows for one click deploy
+    // NETWORKING
+    // ==========
 
-    // Creates a single EC2 cluster which runs CouchDB
+    // Setup networking infrastructure
+    const networking = new FaimsNetworking(this, "networking", {
+      certificate: primaryCert,
+    });
+
+    // COUCHDB
+    // =======
+
+    // Create a single EC2 cluster which runs CouchDB
+    // TODO: Investigate better key setup process for one-click deploy
     const couchDb = new EC2CouchDB(this, "couch-db", {
       vpc: networking.vpc,
       certificate: primaryCert,
-      domainName: fullCouchDomain,
+      domainName: domains.couch,
       hz: hz,
+      sharedBalancer: networking.sharedBalancer,
     });
 
-    // Deploys the conductor API as a load balanced ECS service
+    // CONDUCTOR
+    // =========
+
+    // Deploy the conductor API as a load balanced ECS service
     const conductor = new FaimsConductor(this, "conductor", {
       vpc: networking.vpc,
-      // 1 vcpu 2 gb ram
-      cpu: 1024,
-      memory: 2048,
+      cpu: 1024, // 1 vCPU
+      memory: 2048, // 2 GB RAM
       certificate: primaryCert,
-      domainName: fullConductorDomain,
+      domainName: domains.conductor,
       privateKeySecretArn: props.privateKeySecretArn,
       hz: hz,
       couchDbAdminSecret: couchDb.passwordSecret,
       couchDBEndpoint: couchDb.couchEndpoint,
       couchDBPort: couchDb.exposedPort,
-      webAppPublicUrl: `https://${fullWebDomain}`,
-      // TODO
-      androidAppPublicUrl: "https://fake.com",
-      iosAppPublicUrl: "https://fake.com",
+      webAppPublicUrl: `https://${domains.web}`,
+      androidAppPublicUrl: "https://fake.com", // TODO: Update with real URL
+      iosAppPublicUrl: "https://fake.com", // TODO: Update with real URL
+      sharedBalancer: networking.sharedBalancer,
     });
 
-    // Deploys the FAIMS 3 web front-end as a S3 Cloudfront static website
-    const frontEnd = new FaimsFrontEnd(this, "frontend", {
-      // CouchDB config
-      couchDbDomainOnly: fullCouchDomain,
-      couchDbPort: couchDb.exposedPort,
+    // FRONT-END
+    // =========
 
-      // Main faims frontend
-      faimsDomainNames: [fullWebDomain],
+    // Deploy the FAIMS 3 web front-end as a S3 CloudFront static website
+    const frontEnd = new FaimsFrontEnd(this, "frontend", {
+      couchDbDomainOnly: domains.couch,
+      couchDbPort: couchDb.exposedPort,
+      faimsDomainNames: [domains.web],
       faimsHz: hz,
       faimsUsEast1Certificate: cfnCert,
-
-      // Designer faims frontend
-      designerDomainNames: [fullDesignerDomain],
+      designerDomainNames: [domains.designer],
       designerHz: hz,
       designerUsEast1Certificate: cfnCert,
       conductorUrl: conductor.conductorEndpoint,
