@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Pushes and commits an environment specific set of configuration files
+# (currently configs/<stage>json and cdk.context.json) into an existing
+# compliant config repo. 
+# ./push_config.sh <clone_string> <environment> [--force] [--branch <branch_name>] [--message <commit_message>]
+
 set -e
 
 # Function to confirm action
