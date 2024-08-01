@@ -12,64 +12,126 @@ import * as fs from "fs";
 import * as path from "path";
 
 const MonitoringConfigSchema = z.object({
-  cpu: z.object({
-    /** Percentage threshold for CPU utilization alarm (0-100) */
-    threshold: z.number().min(0).max(100).optional(),
-    /** Number of evaluation periods for CPU alarm */
-    evaluationPeriods: z.number().int().positive().optional(),
-    /** Number of datapoints that must be breaching to trigger CPU alarm */
-    datapointsToAlarm: z.number().int().positive().optional(),
-  }).optional(),
-  memory: z.object({
-    /** Percentage threshold for memory usage alarm (0-100) */
-    threshold: z.number().min(0).max(100).optional(),
-    /** Number of evaluation periods for memory alarm */
-    evaluationPeriods: z.number().int().positive().optional(),
-    /** Number of datapoints that must be breaching to trigger memory alarm */
-    datapointsToAlarm: z.number().int().positive().optional(),
-  }).optional(),
-  disk: z.object({
-    /** Percentage threshold for disk usage alarm (0-100) */
-    threshold: z.number().min(0).max(100).optional(),
-    /** Number of evaluation periods for disk alarm */
-    evaluationPeriods: z.number().int().positive().optional(),
-    /** Number of datapoints that must be breaching to trigger disk alarm */
-    datapointsToAlarm: z.number().int().positive().optional(),
-  }).optional(),
-  statusCheck: z.object({
-    /** Number of evaluation periods for status check alarm */
-    evaluationPeriods: z.number().int().positive().optional(),
-    /** Number of datapoints that must be breaching to trigger status check alarm */
-    datapointsToAlarm: z.number().int().positive().optional(),
-  }).optional(),
-  networkIn: z.object({
-    /** Threshold in bytes for network in alarm */
-    threshold: z.number().positive().optional(),
-    /** Number of evaluation periods for network in alarm */
-    evaluationPeriods: z.number().int().positive().optional(),
-    /** Number of datapoints that must be breaching to trigger network in alarm */
-    datapointsToAlarm: z.number().int().positive().optional(),
-  }).optional(),
-  networkOut: z.object({
-    /** Threshold in bytes for network out alarm */
-    threshold: z.number().positive().optional(),
-    /** Number of evaluation periods for network out alarm */
-    evaluationPeriods: z.number().int().positive().optional(),
-    /** Number of datapoints that must be breaching to trigger network out alarm */
-    datapointsToAlarm: z.number().int().positive().optional(),
-  }).optional(),
-  http5xx: z.object({
-    /** Threshold count for HTTP 5xx errors alarm */
-    threshold: z.number().int().nonnegative().optional(),
-    /** Number of evaluation periods for HTTP 5xx errors alarm */
-    evaluationPeriods: z.number().int().positive().optional(),
-    /** Number of datapoints that must be breaching to trigger HTTP 5xx errors alarm */
-    datapointsToAlarm: z.number().int().positive().optional(),
-  }).optional(),
-  alarmTopic: z.object({
-    /** Email address for alarm notifications */
-    emailAddress: z.string().email().optional(),
-  }).optional(),
+  cpu: z
+    .object({
+      /** Percentage threshold for CPU utilization alarm (0-100) */
+      threshold: z.number().min(0).max(100).optional(),
+      /** Number of evaluation periods for CPU alarm */
+      evaluationPeriods: z.number().int().positive().optional(),
+      /** Number of datapoints that must be breaching to trigger CPU alarm */
+      datapointsToAlarm: z.number().int().positive().optional(),
+    })
+    .optional(),
+  memory: z
+    .object({
+      /** Percentage threshold for memory usage alarm (0-100) */
+      threshold: z.number().min(0).max(100).optional(),
+      /** Number of evaluation periods for memory alarm */
+      evaluationPeriods: z.number().int().positive().optional(),
+      /** Number of datapoints that must be breaching to trigger memory alarm */
+      datapointsToAlarm: z.number().int().positive().optional(),
+    })
+    .optional(),
+  disk: z
+    .object({
+      /** Percentage threshold for disk usage alarm (0-100) */
+      threshold: z.number().min(0).max(100).optional(),
+      /** Number of evaluation periods for disk alarm */
+      evaluationPeriods: z.number().int().positive().optional(),
+      /** Number of datapoints that must be breaching to trigger disk alarm */
+      datapointsToAlarm: z.number().int().positive().optional(),
+    })
+    .optional(),
+  statusCheck: z
+    .object({
+      /** Number of evaluation periods for status check alarm */
+      evaluationPeriods: z.number().int().positive().optional(),
+      /** Number of datapoints that must be breaching to trigger status check alarm */
+      datapointsToAlarm: z.number().int().positive().optional(),
+    })
+    .optional(),
+  networkIn: z
+    .object({
+      /** Threshold in bytes for network in alarm */
+      threshold: z.number().positive().optional(),
+      /** Number of evaluation periods for network in alarm */
+      evaluationPeriods: z.number().int().positive().optional(),
+      /** Number of datapoints that must be breaching to trigger network in alarm */
+      datapointsToAlarm: z.number().int().positive().optional(),
+    })
+    .optional(),
+  networkOut: z
+    .object({
+      /** Threshold in bytes for network out alarm */
+      threshold: z.number().positive().optional(),
+      /** Number of evaluation periods for network out alarm */
+      evaluationPeriods: z.number().int().positive().optional(),
+      /** Number of datapoints that must be breaching to trigger network out alarm */
+      datapointsToAlarm: z.number().int().positive().optional(),
+    })
+    .optional(),
+  http5xx: z
+    .object({
+      /** Threshold count for HTTP 5xx errors alarm */
+      threshold: z.number().int().nonnegative().optional(),
+      /** Number of evaluation periods for HTTP 5xx errors alarm */
+      evaluationPeriods: z.number().int().positive().optional(),
+      /** Number of datapoints that must be breaching to trigger HTTP 5xx errors alarm */
+      datapointsToAlarm: z.number().int().positive().optional(),
+    })
+    .optional(),
+  alarmTopic: z
+    .object({
+      /** Email address for alarm notifications */
+      emailAddress: z.string().email().optional(),
+    })
+    .optional(),
+});
+
+const CouchConfigSchema = z.object({
+  /** The size in GB of the volume to mount to EC2 */
+  volumeSize: z.number(),
+  /** The ID of EBS snapshot to recover from in the root device (optional) */
+  ebsRecoverySnapshotId: z.string().optional(),
+  /** Monitoring/alarming configuration */
+  monitoring: MonitoringConfigSchema.optional(),
+  /** EC2 instance type for CouchDB */
+  instanceType: z.string(),
+});
+
+const DomainsConfigSchema = z.object({
+  /** The base domain for all services. Note: Apex domains are not currently supported. */
+  baseDomain: z.string(),
+  /** The subdomain prefix for the designer service */
+  designer: z.string().default("designer"),
+  /** The subdomain prefix for the conductor service */
+  conductor: z.string().default("conductor"),
+  /** The subdomain prefix for the CouchDB service */
+  couch: z.string().default("couchdb"),
+  /** The subdomain prefix for the main FAIMS application */
+  faims: z.string().default("faims"),
+});
+
+const ConductorConfigSchema = z.object({
+  /** The number of CPU units for the Fargate task */
+  cpu: z.number().int().positive(),
+  /** The amount of memory (in MiB) for the Fargate task */
+  memory: z.number().int().positive(),
+  /** Auto scaling configuration for the Conductor service */
+  autoScaling: z.object({
+    /** The minimum number of tasks to run */
+    minCapacity: z.number().int().positive(),
+    /** The maximum number of tasks that can be run */
+    maxCapacity: z.number().int().positive(),
+    /** The target CPU utilization percentage for scaling */
+    targetCpuUtilization: z.number().min(0).max(100),
+    /** The target memory utilization percentage for scaling */
+    targetMemoryUtilization: z.number().min(0).max(100),
+    /** The cooldown period (in seconds) before allowing another scale in action */
+    scaleInCooldown: z.number().int().nonnegative(),
+    /** The cooldown period (in seconds) before allowing another scale out action */
+    scaleOutCooldown: z.number().int().nonnegative(),
+  }),
 });
 
 // Define the schema for the backup configuration
@@ -125,21 +187,30 @@ const ConfigSchema = z.object({
     /** ARN of the public key secret */
     publicKey: z.string(),
   }),
-  couch: z.object({
-    /** The size in GB of the volume to mount to EC2 */
-    volumeSize: z.number(),
-    /** The ID of EBS snapshot to recover from in the root device (optional) */
-    ebsRecoverySnapshotId: z.string().optional(),
-    /** Monitoring/alarming configuration */
-    monitoring: MonitoringConfigSchema.optional(),
-  }),
+  /** CouchDB configuration */
+  couch: CouchConfigSchema,
+  /** Backup configuration */
   backup: BackupConfigSchema,
+  /** Conductor service configuration */
+  conductor: ConductorConfigSchema,
+  /** Domain configuration for all services */
+  domains: DomainsConfigSchema,
+  /** Mobile app URLs */
+  mobileApps: z.object({
+    /** The public URL for the Android application */
+    androidAppPublicUrl: z.string(),
+    /** The public URL for the iOS application */
+    iosAppPublicUrl: z.string(),
+  }),
 });
 
-// Infer the type from the schemas
+// Infer the types from the schemas
 export type Config = z.infer<typeof ConfigSchema>;
+export type CouchConfig = z.infer<typeof CouchConfigSchema>;
 export type BackupConfig = z.infer<typeof BackupConfigSchema>;
 export type MonitoringConfig = z.infer<typeof MonitoringConfigSchema>;
+export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
+export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 
 export const loadConfig = (filePath: string): Config => {
   // Parse and validate the config
@@ -188,13 +259,11 @@ export class FaimsInfraStack extends cdk.Stack {
     });
 
     // Domain configurations
-    // TODO: Parameterize these domain configurations
-    const rootDomain = hz.zoneName;
     const domains = {
-      couch: `couchdb.${rootDomain}`,
-      conductor: `conductor.${rootDomain}`,
-      web: `faims.${rootDomain}`,
-      designer: `designer.${rootDomain}`,
+      couch: `${config.domains.couch}.${config.domains.baseDomain}`,
+      conductor: `${config.domains.conductor}.${config.domains.baseDomain}`,
+      faims: `${config.domains.faims}.${config.domains.baseDomain}`,
+      designer: `${config.domains.designer}.${config.domains.baseDomain}`,
     };
 
     // BACKUPS SETUP
@@ -235,16 +304,16 @@ export class FaimsInfraStack extends cdk.Stack {
     // =======
 
     // Create a single EC2 cluster which runs CouchDB
-    // TODO: Investigate better key setup process for one-click deploy
     const couchDb = new EC2CouchDB(this, "couch-db", {
       vpc: networking.vpc,
+      instanceType: config.couch.instanceType,
       certificate: primaryCert,
       domainName: domains.couch,
       hz: hz,
       sharedBalancer: networking.sharedBalancer,
       dataVolumeSize: config.couch.volumeSize,
       dataVolumeSnapshotId: config.couch.ebsRecoverySnapshotId,
-      monitoring: config.couch.monitoring
+      monitoring: config.couch.monitoring,
     });
 
     // CONDUCTOR
@@ -253,8 +322,6 @@ export class FaimsInfraStack extends cdk.Stack {
     // Deploy the conductor API as a load balanced ECS service
     const conductor = new FaimsConductor(this, "conductor", {
       vpc: networking.vpc,
-      cpu: 1024, // 1 vCPU
-      memory: 2048, // 2 GB RAM
       certificate: primaryCert,
       domainName: domains.conductor,
       privateKeySecretArn: config.secrets.privateKey,
@@ -262,10 +329,11 @@ export class FaimsInfraStack extends cdk.Stack {
       couchDbAdminSecret: couchDb.passwordSecret,
       couchDBEndpoint: couchDb.couchEndpoint,
       couchDBPort: couchDb.exposedPort,
-      webAppPublicUrl: `https://${domains.web}`,
-      androidAppPublicUrl: "https://fake.com", // TODO: Update with real URL
-      iosAppPublicUrl: "https://fake.com", // TODO: Update with real URL
+      webAppPublicUrl: `https://${domains.faims}`,
+      androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
+      iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
       sharedBalancer: networking.sharedBalancer,
+      config: config.conductor,
     });
 
     // FRONT-END
@@ -275,7 +343,7 @@ export class FaimsInfraStack extends cdk.Stack {
     const frontEnd = new FaimsFrontEnd(this, "frontend", {
       couchDbDomainOnly: domains.couch,
       couchDbPort: couchDb.exposedPort,
-      faimsDomainNames: [domains.web],
+      faimsDomainNames: [domains.faims],
       faimsHz: hz,
       faimsUsEast1Certificate: cfnCert,
       designerDomainNames: [domains.designer],

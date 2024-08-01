@@ -9,6 +9,8 @@
  * -----
  * HISTORY: Date         By  Comments
  * ----------   --- ---------------------------------------------------------
+ *
+ * TODO: Investigate better key setup process for one-click deploy
  */
 
 import { Duration, RemovalPolicy, Size } from "aws-cdk-lib";
@@ -50,6 +52,8 @@ export interface EC2CouchDBProps {
   dataVolumeSnapshotId?: string;
   /** Monitoring settings */
   monitoring?: MonitoringConfig;
+  /** EC2 instance type for CouchDB */
+  instanceType: string;
 }
 
 /**
@@ -362,36 +366,41 @@ EOL`,
     // Create the EC2 instance
     this.instance = new ec2.Instance(this, "CouchDBInstance" + debugIdPostfix, {
       vpc: props.vpc,
-      instanceType: ec2.InstanceType.of(
-        ec2.InstanceClass.T3,
-        ec2.InstanceSize.SMALL
-      ),
       machineImage: new ec2.AmazonLinuxImage({
         generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
       }),
       userData,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroup: couchSecurityGroup,
+      instanceType: new ec2.InstanceType(props.instanceType),
     });
 
     // Create and attach the EBS volume for CouchDB data
-    const dataVolume = new ec2.Volume(this, "CouchDBDataVolume" + debugIdPostfix, {
-      volumeType: ec2.EbsDeviceVolumeType.GP3,
-      availabilityZone: this.instance.instanceAvailabilityZone,
+    const dataVolume = new ec2.Volume(
+      this,
+      "CouchDBDataVolume" + debugIdPostfix,
+      {
+        volumeType: ec2.EbsDeviceVolumeType.GP3,
+        availabilityZone: this.instance.instanceAvailabilityZone,
 
-      // provide either a size OR a recovery snapshot ID
-      size: props.dataVolumeSnapshotId
-        ? undefined
-        : Size.gibibytes(props.dataVolumeSize),
-      snapshotId: props.dataVolumeSnapshotId,
-    });
+        // provide either a size OR a recovery snapshot ID
+        size: props.dataVolumeSnapshotId
+          ? undefined
+          : Size.gibibytes(props.dataVolumeSize),
+        snapshotId: props.dataVolumeSnapshotId,
+      }
+    );
 
     // Attach the EBS data volume for couch to the correct path
-    new ec2.CfnVolumeAttachment(this, "CouchDBVolumeAttachment" + debugIdPostfix, {
-      volumeId: dataVolume.volumeId,
-      instanceId: this.instance.instanceId,
-      device: this.ebsDeviceName,
-    });
+    new ec2.CfnVolumeAttachment(
+      this,
+      "CouchDBVolumeAttachment" + debugIdPostfix,
+      {
+        volumeId: dataVolume.volumeId,
+        instanceId: this.instance.instanceId,
+        device: this.ebsDeviceName,
+      }
+    );
 
     // LOAD BALANCING SETUP
     // =========================
