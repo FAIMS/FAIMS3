@@ -288,6 +288,8 @@ npm run push-config -- <clone_string> <environment> [--force] [--branch <branch_
 
 To ensure your configuration files are correct and complete, we provide a validation script. This script checks your configuration against the defined schema, helping you catch errors before deploying.
 
+Note that this validation is at a schema level, it might not catch improperly formed AWS references, instance sizes, invalid configurations etc. These will either be caught at synth time, or during CloudFormation deployment.
+
 #### Running the Validation Script
 
 1. To target your configuration file, set the `CONFIG_FILE_NAME` environment variable:
@@ -305,7 +307,6 @@ To ensure your configuration files are correct and complete, we provide a valida
    ```
 
    This will validate the configuration file specified by `CONFIG_FILE_NAME`.
-
 
 #### What the Validation Script Does
 
