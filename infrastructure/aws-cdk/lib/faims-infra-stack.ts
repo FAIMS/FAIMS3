@@ -163,7 +163,7 @@ const BackupConfigSchema = z
   );
 
 // Define the schema
-const ConfigSchema = z.object({
+export const ConfigSchema = z.object({
   /** Attributes of the hosted zone to use */
   hostedZone: z.object({
     id: z.string(),

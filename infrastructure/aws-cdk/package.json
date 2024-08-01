@@ -13,7 +13,8 @@
         "test": "jest",
         "cdk": "cdk",
         "setup-config": "bash ./setup_config.sh",
-        "push-config": "bash ./push_config.sh"
+        "push-config": "bash ./push_config.sh",
+        "validate-config": "ts-node validateConfig.ts"
     },
     "devDependencies": {
         "@types/jest": "^29.5.12",
