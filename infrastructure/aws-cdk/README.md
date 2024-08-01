@@ -284,6 +284,36 @@ npm run push-config -- <clone_string> <environment> [--force] [--branch <branch_
 - If cdk.context.json or the environment-specific config file doesn't exist locally, the script will warn you and ask if you want to continue.
 - Always ensure that you're not accidentally pushing sensitive information to the repository.
 
+## Validating Configuration
+
+To ensure your configuration files are correct and complete, we provide a validation script. This script checks your configuration against the defined schema, helping you catch errors before deploying.
+
+#### Running the Validation Script
+
+1. To target your configuration file, set the `CONFIG_FILE_NAME` environment variable:
+
+   ```bash
+   export CONFIG_FILE_NAME=prod.json
+   ```
+
+   This will target the `prod.json` configuration file.
+
+2. The validation script is already set up in the `package.json`. To run it, use the following command:
+
+   ```bash
+   npm run validate-config
+   ```
+
+   This will validate the configuration file specified by `CONFIG_FILE_NAME`.
+
+
+#### What the Validation Script Does
+
+- The script reads the specified configuration file from the `configs` directory.
+- It then validates the configuration against the `ConfigSchema` defined in your main stack file.
+- If the configuration is valid, you'll see the message "Configuration is valid."
+- If there are any validation errors, the script will output detailed error messages, indicating which parts of the configuration failed validation.
+
 ## Configuration documentation
 
 ### hostedZone
