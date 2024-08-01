@@ -2,9 +2,9 @@
 
 # BASED ON https://turbo.build/repo/docs/guides/tools/docker
 
-FROM node:20-alpine as base
+FROM node:20-alpine AS base
 
-FROM base as builder
+FROM base AS builder
 
 RUN apk update
 RUN apk add --no-cache libc6-compat
@@ -22,7 +22,7 @@ COPY . .
 RUN turbo prune @faims3-project/conductor --docker
 
 # add lockfiles dependencies
-FROM base as installer
+FROM base AS installer
 RUN apk update
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -55,4 +55,4 @@ COPY --from=installer --chown=faims:nodejs /app/api/build ./build
 # Installed node modules
 COPY --from=installer --chown=faims:nodejs /app/node_modules ./node_modules
 
-CMD node ./build/src/index.js
+CMD ["node", "./build/src/index.js"]
