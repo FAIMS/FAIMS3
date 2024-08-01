@@ -16,6 +16,7 @@
         "publicKey": "arn:aws:secretsmanager:region:account-id:secret:public-key-secret-id"
     },
     "couch": {
+        "ebsRecoverySnapshotId": "1234",
         "volumeSize": 20,
         "instanceType": "t3.small",
         "monitoring": {
