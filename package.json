@@ -13,6 +13,7 @@
   "scripts": {
     "build-app": "npm run build --workspace=app",
     "build-api": "npm run build --workspace=api",
+    "docker-build-api": "npm run build --workspace=library/data-model --workspace=api",
     "build-aws": "npm run build --workspace=infrastructure/aws-cdk",
     "package-aws": "npm run package --workspace=infrastructure/aws-cdk",
     "test-app": "npm test --workspace=app",

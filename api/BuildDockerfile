@@ -38,7 +38,7 @@ RUN npm install
 COPY --from=builder /app/out/full/ .
 
 # TODO use turbo build here and filter for app
-RUN npm run build-api
+RUN npm run docker-build-api
  
 FROM base AS runner
 WORKDIR /app
