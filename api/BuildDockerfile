@@ -1,0 +1,58 @@
+# syntax=docker/dockerfile:1
+
+# BASED ON https://turbo.build/repo/docs/guides/tools/docker
+
+FROM node:20-alpine as base
+
+FROM base as builder
+
+RUN apk update
+RUN apk add --no-cache libc6-compat
+
+# work in /app folder
+WORKDIR /app
+
+# install turbo global
+RUN npm install turbo@^2.0.11 -g
+
+# copy everything into builder
+COPY . .
+
+# prune using turbo for only faims3 and it's dependencies
+RUN turbo prune @faims3-project/conductor --docker
+
+# add lockfiles dependencies
+FROM base as installer
+RUN apk update
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install dependencies
+COPY .gitignore .gitignore
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/package-lock.json ./package-lock.json
+# COPY --from=builder /app/out/full/library/data-model/tsconfig.json ./library/data-model/tsconfig.json
+RUN npm install
+
+# Build the project
+COPY --from=builder /app/out/full/ .
+
+# TODO use turbo build here and filter for app
+RUN npm run build-api
+ 
+FROM base AS runner
+WORKDIR /app
+ 
+# Don't run production as root
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 faims
+USER faims
+
+# Need all of these files from the installer step to run 
+
+# The build output
+COPY --from=installer --chown=faims:nodejs /app/api/build ./build
+# Installed node modules
+COPY --from=installer --chown=faims:nodejs /app/node_modules ./node_modules
+
+CMD node ./build/src/index.js
