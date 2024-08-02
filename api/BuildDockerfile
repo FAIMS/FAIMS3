@@ -39,7 +39,7 @@ WORKDIR /app
 # Install dependencies
 COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/package-lock.json ./package-lock.json
+
 # COPY --from=builder /app/out/full/library/data-model/tsconfig.json ./library/data-model/tsconfig.json
 RUN npm install
 
@@ -63,7 +63,29 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 faims
 USER faims
 
-COPY --from=installer /app .
+# NOTE: To run API, we need 
+# 1) all node modules
+# 2) all package*.json 
+# 3) all builds
+
+# NODE MODULES
+
+# Node modules for top level
+COPY --from=installer /app/node_modules ./node_modules
+# Node modules for data model
+COPY --from=installer /app/library/data-model/node_modules ./library/data-model/node_modules
+
+# BUILD FILES
+
+# Build for API
+COPY --from=installer /app/api/build ./api/build
+# Build for data model
+COPY --from=installer /app/library/data-model/build ./library/data-model/build
+
+# PACKAGE*.json FILES
+
+# Copy all package json and package lock info from prune (tells node what to do)
+COPY --from=builder /app/out/json/ .
 
 # Run the node app
 CMD ["node", "api/build/src/index.js"]

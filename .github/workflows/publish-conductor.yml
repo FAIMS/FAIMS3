@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - conductor-docker-publish
   release:
     types: [published]
 
