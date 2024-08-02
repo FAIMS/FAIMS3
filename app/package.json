@@ -40,7 +40,6 @@
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
-    "prepare": "npm run compile",
     "doc": "jsdoc -c ./jsdoc.config.json",
     "set-version": "./bin/setBuildVersion.sh"
   },
