@@ -59,3 +59,4 @@ jobs:
           npm install
           export CONFIG_FILE_NAME=${{ vars.CDK_DEPLOY_ENVIRONMENT }}.json
           npx cdk synth
+          npx cdk diff
