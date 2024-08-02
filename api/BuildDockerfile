@@ -1,9 +1,15 @@
 # syntax=docker/dockerfile:1
 
 # BASED ON https://turbo.build/repo/docs/guides/tools/docker
+# AND https://github.com/ThaddeusJiang/turborepo-starter/blob/main/apps/api/Dockerfile
 
+# Use Node 20 base
 FROM node:20-alpine AS base
 
+# PRUNE TO GET DEPENDENCIES [builder]
+# ===================================
+
+# Use turbo to prune package dependencies
 FROM base AS builder
 
 RUN apk update
@@ -21,6 +27,9 @@ COPY . .
 # prune using turbo for only faims3 and it's dependencies
 RUN turbo prune @faims3-project/conductor --docker
 
+# INSTALL PACKAGES [installer]
+# ============================
+
 # add lockfiles dependencies
 FROM base AS installer
 RUN apk update
@@ -34,25 +43,27 @@ COPY --from=builder /app/out/package-lock.json ./package-lock.json
 # COPY --from=builder /app/out/full/library/data-model/tsconfig.json ./library/data-model/tsconfig.json
 RUN npm install
 
-# Build the project
+# Build the project 
 COPY --from=builder /app/out/full/ .
+
+# build packages
 
 # TODO use turbo build here and filter for app
 RUN npm run docker-build-api
- 
+
+
+# PRODUCTION RUNNER [runner]
+# ==========================
+
 FROM base AS runner
 WORKDIR /app
- 
+
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 faims
 USER faims
 
-# Need all of these files from the installer step to run 
+COPY --from=installer /app .
 
-# The build output
-COPY --from=installer --chown=faims:nodejs /app/api/build ./build
-# Installed node modules
-COPY --from=installer --chown=faims:nodejs /app/node_modules ./node_modules
-
-CMD ["node", "./build/src/index.js"]
+# Run the node app
+CMD ["node", "api/build/src/index.js"]
