@@ -31,8 +31,12 @@ jobs:
           environment: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}
           config-repo-path: config_repo
           branch: main
+      - name: Echo Outputs
+        run: |
+          echo "AWS Region Output: ${{ steps.faims-config-setup.outputs.aws-region }}"
+          echo "AWS Account Output: ${{ steps.faims-config-setup.outputs.aws-account }}"
       - name: Display AWS Target Details
-        env: 
+        env:
           AWS_REGION: ${{ steps.faims-config-setup.outputs.aws-region }}
           AWS_ACCOUNT: ${{ steps.faims-config-setup.outputs.aws-account }}
         run: |
@@ -42,7 +46,7 @@ jobs:
           echo "Environment: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}"
         # You can now use these outputs in subsequent steps for AWS configuration
       - uses: aws-actions/configure-aws-credentials@v2
-        env: 
+        env:
           AWS_REGION: ${{ steps.faims-config-setup.outputs.aws-region }}
           AWS_ACCOUNT: ${{ steps.faims-config-setup.outputs.aws-account }}
         with:
