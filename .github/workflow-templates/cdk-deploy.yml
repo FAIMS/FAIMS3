@@ -2,11 +2,7 @@ name: CDK Deploy FAIMS3 to AWS
 on:
   # Manually run deploy
   workflow_dispatch:
-  # OR on push for debug
-  # TODO remove
-  push:
-    branches:
-      - bss-214-github-action-deploy
+  # TODO add your own here
 
 permissions:
   id-token: write
@@ -14,6 +10,7 @@ permissions:
 
 jobs:
   cdk-deploy:
+    environment: YOUR_ENVIRONMENT
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main code
@@ -58,5 +55,4 @@ jobs:
           cd infrastructure/aws-cdk
           npm install
           export CONFIG_FILE_NAME=${{ vars.CDK_DEPLOY_ENVIRONMENT }}.json
-          npx cdk synth
-          npx cdk diff
+          npx cdk deploy --require-approval never
