@@ -13,8 +13,7 @@
         "watch": "tsc -w",
         "test": "jest",
         "cdk": "cdk",
-        "setup-config": "bash ./setup_config.sh",
-        "push-config": "bash ./push_config.sh",
+        "config": "bash ./config.sh",
         "validate-config": "ts-node validateConfig.ts"
     },
     "devDependencies": {

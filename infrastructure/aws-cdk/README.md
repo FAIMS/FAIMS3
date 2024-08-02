@@ -128,7 +128,7 @@ This project uses a JSON-based configuration system to manage different deployme
 
 ## Using an existing configuration from conforming config repo
 
-If you wish to store your configurations in a private repository, you can use our config setup script to easily import these configurations into your project. This section explains how to structure your config repo, use the setup script, and manage multiple environments.
+If you wish to store your configurations in a private repository, you can use our config script to easily import these configurations into your project or push your local changes back to the repository. This section explains how to structure your config repo, use the config script, and manage multiple environments.
 
 ### Config Repository Structure
 
@@ -159,56 +159,82 @@ Your configuration repository should follow this structure:
 - Each environment directory should contain a `configs` folder with a JSON file named after the environment (e.g., `dev.json`).
 - You can include other environment-specific files in each environment directory as needed.
 
-### Using the Config Setup Script
+### Using the Config Script
 
-We provide a script called `fetch-config.sh` to fetch and set up the configuration from your private repository. You can run this script manually or use the npm script we've added to `package.json`.
+We provide a script called `config.sh` to manage configurations. This script can both fetch configurations from your private repository and push local changes back to the repository.
 
-#### Running the Script Manually
+#### Running the Script
 
-1. Ensure the `setup_config.sh` script is in your project root and is executable:
+1. Ensure the `config.sh` script is in your project root and is executable:
 
    ```bash
-   chmod +x setup_config.sh
+   chmod +x config.sh
    ```
 
 2. Run the script with the following syntax:
 
    ```bash
-   ./setup_config.sh <clone_string> <environment> [--force]
+   ./config.sh <push/pull> <environment> [options]
    ```
 
-   - `<clone_string>`: The Git clone URL of your private config repository.
-   - `<environment>`: The name of the environment you want to set up (e.g., "dev", "staging", "prod").
-   - `--force` (optional): Use this flag to overwrite existing files without prompting.
-
-   Example:
+   or
 
    ```bash
-   ./setup_config.sh "https://github.com/your-org/your-private-config-repo.git" "dev"
+   npm run config -- <push/pull> <environment> [options]
    ```
 
-#### Running the Script via npm
+   - `<push/pull>`: Use `pull` to fetch configurations, `push` to update the repository.
+   - `<environment>`: The name of the environment you want to work with (e.g., "dev", "staging", "prod").
+   - `[options]`: Additional options (see below).
 
-We've added a `setup-config` script to `package.json` for convenience. You can run it using npm:
+   Options:
 
-```bash
-npm run setup-config -- <clone_string> <environment> [--force]
+   - `--force`: Overwrite existing files without confirmation.
+   - `--branch <branch_name>`: Specify a git branch (default: main).
+   - `--message <commit_message>`: Specify a custom commit message (push only).
+   - `--config_repo <url>`: Override the config repository URL.
+
+   Examples:
+
+   ```bash
+   ./config.sh pull dev --config_repo "https://github.com/your-org/your-private-config-repo.git"
+   ./config.sh push prod --branch release --message "Updated prod configuration"
+   ```
+
+### The environments.json File
+
+The `environments.json` file is used to store the mapping between environment names and their corresponding config repository URLs. This file is created or updated automatically when you use the `--config_repo` option with the `config.sh` script.
+
+Structure of `environments.json`:
+
+```json
+{
+  "dev": {
+    "config_repo": "https://github.com/your-org/your-dev-config-repo.git"
+  },
+  "prod": {
+    "config_repo": "https://github.com/your-org/your-prod-config-repo.git"
+  }
+}
 ```
 
-Example:
-
-```bash
-npm run setup-config -- "https://github.com/your-org/your-private-config-repo.git" "dev"
-```
+- If `environments.json` exists and contains an entry for the specified environment, the script will use the stored URL unless overridden by `--config_repo`.
+- If you use `--config_repo` with a new environment, the script will add or update the entry in `environments.json`.
 
 ### Handling Multiple Environments
 
 To switch between different environments:
 
-1. Run the setup script for the desired environment:
+1. Run the config script for the desired environment:
 
    ```bash
-   npm run setup-config -- "https://github.com/your-org/your-private-config-repo.git" "prod"
+   ./config.sh pull prod
+   ```
+
+   or
+
+   ```bash
+   npm run config -- pull prod
    ```
 
 2. The script will copy the environment-specific files into your project and tell you to set the `CONFIG_FILE_NAME` environment variable. Set it like this:
@@ -226,63 +252,12 @@ To switch between different environments:
 - Keep your config repository private and secure, as it may contain sensitive information.
 - After running the script, remember to set the `CONFIG_FILE_NAME` environment variable as instructed.
 - The script cleans up after itself, removing the temporary clone of your config repository.
+- When pushing changes, review your modifications carefully, especially for production environments.
+- The script will create necessary directories and files if they don't exist in the config repository.
+- If `cdk.context.json` or the environment-specific config file doesn't exist locally, the script will warn you and ask if you want to continue.
+- Always ensure that you're not accidentally pushing sensitive information to the repository.
 
 By following this approach, you can securely manage different configurations for multiple environments while keeping your main project repository clean and your sensitive configuration data separate and private.
-
-### Pushing Configuration Changes Back to the Repository
-
-We provide a script called `push_config.sh` to push local configuration changes back to your private repository. This script allows you to update the configuration files in the repository after making local modifications.
-
-#### Running the Push Config Script
-
-1. Ensure the `push_config.sh` script is in your project root and is executable:
-
-   ```bash
-   chmod +x push_config.sh
-   ```
-
-2. Run the script with the following syntax:
-
-   ```bash
-   ./push_config.sh <clone_string> <environment> [--force] [--branch <branch_name>] [--message <commit_message>]
-   ```
-
-   - `<clone_string>`: The Git clone URL of your private config repository.
-   - `<environment>`: The name of the environment you want to update (e.g., "dev", "staging", "prod").
-   - `--force` (optional): Use this flag to overwrite existing files without prompting.
-   - `--branch <branch_name>` (optional): Specify a branch to push to (default is "main").
-   - `--message <commit_message>` (optional): Specify a custom commit message (default is "configuration update faims3").
-
-   Example:
-
-   ```bash
-   ./push_config.sh "https://github.com/your-org/your-private-config-repo.git" "dev" --branch feature-branch --message "Updated dev configuration"
-   ```
-
-#### Running the Script via npm
-
-We've added a `push-config` script to `package.json` for convenience. You can run it using npm:
-
-```bash
-npm run push-config -- <clone_string> <environment> [--force] [--branch <branch_name>] [--message <commit_message>]
-```
-
-#### What the Push Script Does
-
-1. Clones the specified repository into a temporary directory.
-2. Copies the local `cdk.context.json` and environment-specific config file (e.g., `configs/dev.json`) to the appropriate locations in the cloned repository.
-3. Warns and asks for confirmation if files are missing or being overwritten (unless `--force` is used).
-4. Provides an extra warning if `cdk.context.json` is different from the one in the repository.
-5. Commits the changes and pushes them to the specified branch.
-6. Cleans up the temporary directory.
-
-#### Important Notes
-
-- Review your changes carefully before running this script, especially for production environments.
-- The script will create necessary directories and files if they don't exist in the config repository.
-- Use the `--force` flag with caution, as it will overwrite files without prompting.
-- If cdk.context.json or the environment-specific config file doesn't exist locally, the script will warn you and ask if you want to continue.
-- Always ensure that you're not accidentally pushing sensitive information to the repository.
 
 ## Validating Configuration
 
