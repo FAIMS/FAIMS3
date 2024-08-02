@@ -42,6 +42,9 @@ jobs:
           echo "Environment: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}"
         # You can now use these outputs in subsequent steps for AWS configuration
       - uses: aws-actions/configure-aws-credentials@v2
+        env: 
+          AWS_REGION: ${{ steps.faims-config-setup.outputs.aws-region }}
+          AWS_ACCOUNT: ${{ steps.faims-config-setup.outputs.aws-account }}
         with:
           role-to-assume: ${{ vars.CDK_DEPLOY_GA_ROLE_ARN }}
           aws-region: ${{ steps.faims-config-setup.outputs.aws-region }}"
