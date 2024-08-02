@@ -57,5 +57,5 @@ jobs:
         run: |
           cd infrastructure/aws-cdk
           npm install
-          export CONFIG_FILE_NAME=${{ vars.CDK_DEPLOY_ENVIRONMENT }}
+          export CONFIG_FILE_NAME=${{ vars.CDK_DEPLOY_ENVIRONMENT }}.json
           npx cdk synth
