@@ -2,11 +2,6 @@ name: CDK Deploy FAIMS3 to AWS
 on:
   # Manually run deploy
   workflow_dispatch:
-  # OR on push for debug
-  # TODO remove
-  push:
-    branches:
-      - bss-cdk-deploy
 
 permissions:
   id-token: write
