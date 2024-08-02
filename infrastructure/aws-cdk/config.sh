@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script handles both pushing and pulling configuration files for the FAIMS3 aws-cdk infrastructure.
-# It interacts with a private config repository to manage environment-specific configurations.
+# It can interact with a private config repository or use a local path to an already cloned repository.
 # Example usage: ./config.sh <push/pull> <environment> [options]
 
 set -e
@@ -23,15 +23,17 @@ display_help() {
     echo "  --branch <branch_name>     Specify the git branch (default: main, for both push and pull)"
     echo "  --message <commit_message> Specify a custom commit message (push only)"
     echo "  --config_repo <url>        Override the config repository URL"
+    echo "  --repo-path <path>         Path to an already cloned repository (overrides --config_repo and environments.json)"
     echo "  --help                     Display this help message and exit"
     echo
     echo "How it works:"
-    echo "1. The script checks for an 'environments.json' file to get the config repository URL."
-    echo "2. For pull: It clones the repo, checks out the specified branch, and copies environment-specific files to the current workspace."
-    echo "3. For push: It clones the repo, checks out the specified branch, copies files from the workspace to the repo, commits, and pushes."
+    echo "1. The script checks for an 'environments.json' file to get the config repository URL (unless --repo-path is used)."
+    echo "2. For pull: It uses the specified repo path or clones the repo, checks out the specified branch, and copies environment-specific files to the current workspace."
+    echo "3. For push: It uses the specified repo path or clones the repo, checks out the specified branch, copies files from the workspace to the repo, commits, and pushes."
     echo "4. If --force is not used, it will prompt for confirmation before overwriting existing files."
     echo
-    echo "Note: If the environment is not found in environments.json and no --config_repo is provided,"
+    echo "Note: If --repo-path is provided, --config_repo will be ignored and environments.json will not be used."
+    echo "      If the environment is not found in environments.json and no --config_repo or --repo-path is provided,"
     echo "      the script will exit with an error. If --config_repo is provided for a new environment,"
     echo "      it will update or create the environments.json file with the new entry."
 }
@@ -86,35 +88,44 @@ update_environments_json() {
     echo "Updated environments.json with new entry for $env"
 }
 
-# Function to clone repository and checkout branch
-clone_and_checkout() {
-    local repo_url="$1"
+# Function to prepare repository (either use existing path or clone)
+prepare_repository() {
+    local repo="$1"
     local branch="$2"
-    local temp_dir="$3"
-
-    git clone "$repo_url" "$temp_dir"
-    if [ $? -ne 0 ]; then
-        echo "Failed to clone repository"
-        return 1
-    fi
-
-    cd "$temp_dir"
-
-    # Check if the branch exists
-    git ls-remote --exit-code --heads origin "$branch" > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        echo "Branch '$branch' does not exist in the remote repository."
-        echo "Creating new branch '$branch'..."
-        git checkout -b "$branch"
-    else
+    
+    if [ -d "$repo" ]; then
+        # Use existing repo path
+        cd "$repo"
+        git fetch origin
         git checkout "$branch"
+        git pull origin "$branch"
+        TEMP_DIR=""
+    else
+        # Clone the repository
+        TEMP_DIR=$(mktemp -d)
+        git clone "$repo" "$TEMP_DIR"
+        if [ $? -ne 0 ]; then
+            echo "Failed to clone repository"
+            return 1
+        fi
+        cd "$TEMP_DIR"
+        
+        # Check if the branch exists
+        git ls-remote --exit-code --heads origin "$branch" > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo "Branch '$branch' does not exist in the remote repository."
+            echo "Creating new branch '$branch'..."
+            git checkout -b "$branch"
+        else
+            git checkout "$branch"
+        fi
+        
+        if [ $? -ne 0 ]; then
+            echo "Failed to checkout branch: $branch"
+            return 1
+        fi
     fi
-
-    if [ $? -ne 0 ]; then
-        echo "Failed to checkout branch: $branch"
-        return 1
-    fi
-
+    
     return 0
 }
 
@@ -140,32 +151,31 @@ copy_file_with_check() {
 # Function to pull configuration
 pull_config() {
     local env="$1"
-    local repo_url="$2"
+    local repo="$2"
     local force="$3"
     local branch="$4"
 
-    TEMP_DIR=$(mktemp -d)
     CURRENT_DIR=$(pwd)
 
-    if ! clone_and_checkout "$repo_url" "$branch" "$TEMP_DIR"; then
+    if ! prepare_repository "$repo" "$branch"; then
         cd "$CURRENT_DIR"
-        rm -rf "$TEMP_DIR"
+        [ -n "$TEMP_DIR" ] && rm -rf "$TEMP_DIR"
         exit 1
     fi
 
     # Check if the environment folder exists
     ENV_DIR="infrastructure/$env"
     if [ ! -d "$ENV_DIR" ]; then
-        echo "Environment folder '$env' not found in the cloned repository"
+        echo "Environment folder '$env' not found in the repository"
         cd "$CURRENT_DIR"
-        rm -rf "$TEMP_DIR"
+        [ -n "$TEMP_DIR" ] && rm -rf "$TEMP_DIR"
         exit 1
     fi
 
     # Copy files from the environment folder to the current aws-cdk workspace
     cd "$CURRENT_DIR"
-    for file in $(find "$TEMP_DIR/$ENV_DIR" -type f); do
-        relative_path=${file#$TEMP_DIR/$ENV_DIR/}
+    for file in $(find "${TEMP_DIR:-$repo}/$ENV_DIR" -type f); do
+        relative_path=${file#${TEMP_DIR:-$repo}/$ENV_DIR/}
         target_file="$relative_path"
         target_dir=$(dirname "$target_file")
         
@@ -176,9 +186,8 @@ pull_config() {
         copy_file_with_check "$file" "$target_file" "$relative_path"
     done
 
-    # Clean up the cloned repository
-    rm -rf "$TEMP_DIR"
-    echo "Cleaned up temporary files"
+    # Clean up the cloned repository if it was temporary
+    [ -n "$TEMP_DIR" ] && rm -rf "$TEMP_DIR"
     echo "Config setup complete for environment: $env (branch: $branch)"
 
     # Inform about setting the CONFIG_FILE_NAME environment variable
@@ -189,17 +198,16 @@ pull_config() {
 # Function to push configuration
 push_config() {
     local env="$1"
-    local repo_url="$2"
+    local repo="$2"
     local force="$3"
     local branch="$4"
     local commit_msg="$5"
 
-    TEMP_DIR=$(mktemp -d)
     CURRENT_DIR=$(pwd)
 
-    if ! clone_and_checkout "$repo_url" "$branch" "$TEMP_DIR"; then
+    if ! prepare_repository "$repo" "$branch"; then
         cd "$CURRENT_DIR"
-        rm -rf "$TEMP_DIR"
+        [ -n "$TEMP_DIR" ] && rm -rf "$TEMP_DIR"
         exit 1
     fi
 
@@ -232,10 +240,9 @@ push_config() {
     git push origin "$branch"
     echo "Changes have been pushed to the config repository (branch: $branch)."
 
-    # Clean up
+    # Clean up if we created a temporary directory
     cd "$CURRENT_DIR"
-    rm -rf "$TEMP_DIR"
-    echo "Cleaned up temporary files"
+    [ -n "$TEMP_DIR" ] && rm -rf "$TEMP_DIR"
 }
 
 # Parse arguments
@@ -245,6 +252,7 @@ FORCE=false
 BRANCH="main"
 COMMIT_MSG="configuration update faims3"
 CONFIG_REPO=""
+REPO_PATH=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -269,7 +277,15 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --config_repo)
+            if [ -n "$REPO_PATH" ]; then
+                echo "Error: --config_repo cannot be used with --repo-path"
+                exit 1
+            fi
             CONFIG_REPO="$2"
+            shift 2
+            ;;
+        --repo-path)
+            REPO_PATH="$2"
             shift 2
             ;;
         *)
@@ -292,11 +308,17 @@ if [ -z "$COMMAND" ] || [ -z "$ENVIRONMENT" ]; then
     exit 1
 fi
 
-# Determine the config repo URL
-if [ -z "$CONFIG_REPO" ]; then
+# Determine the config repo URL or use the provided repo path
+if [ -n "$REPO_PATH" ]; then
+    if [ ! -d "$REPO_PATH" ]; then
+        echo "Error: Specified repo path does not exist or is not a directory"
+        exit 1
+    fi
+    CONFIG_REPO="$REPO_PATH"
+elif [ -z "$CONFIG_REPO" ]; then
     CONFIG_REPO=$(get_config_repo "$ENVIRONMENT")
     if [ $? -ne 0 ]; then
-        echo "Error: Environment '$ENVIRONMENT' not found in environments.json and no --config_repo provided."
+        echo "Error: Environment '$ENVIRONMENT' not found in environments.json and no --config_repo or --repo-path provided."
         exit 1
     fi
 else

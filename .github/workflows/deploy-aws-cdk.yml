@@ -1,0 +1,47 @@
+name: CDK Deploy FAIMS3 to AWS
+on:
+  # Manually run deploy
+  workflow_dispatch:
+  # OR on push for debug
+  # TODO remove
+  push:
+    branches:
+      - bss-214-github-action-deploy
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main code
+        uses: actions/checkout@v4
+
+      - name: Checkout config code
+        uses: actions/checkout@v4
+        with:
+          # e.g. org/repo-name
+          repository: ${{ vars.CDK_CONFIG_REPO_PATH }}
+          # The OAuth token providing access
+          token: ${{ secrets.CDK_CONFIG_REPO_TOKEN }}
+          # Where to clone the repo to
+          path: ./config_repo
+      - name: Run FAIMS Config Setup Action
+        uses: ./.github/actions/config
+        id: faims-config-setup
+        with:
+          environment: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}
+          config-repo-path: config_repo
+          branch: main
+      - name: Display AWS Target Details
+        run: |
+          echo "Deploying to:"
+          echo "AWS Region: ${{ steps.faims-config.outputs.aws-region }}"
+          echo "AWS Account: ${{ steps.faims-config.outputs.aws-account }}"
+          echo "Environment: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}"
+        # You can now use these outputs in subsequent steps for AWS configuration
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ vars.CDK_DEPLOY_GA_ROLE_ARN }}
+          aws-region: ${{ steps.faims-config.outputs.aws-region }}"
+      - id: install-aws-cli
+        uses: unfor19/install-aws-cli-action@v1
+      - run: aws sts get-caller-credentials
