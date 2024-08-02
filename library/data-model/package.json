@@ -1,5 +1,6 @@
 {
   "name": "faims3-datamodel",
+  "packageManager": "npm@10.7.0",
   "version": "1.1.6",
   "description": "Database access layer for FAIMS3",
   "main": "./build/src/index.js",
@@ -11,7 +12,6 @@
     "build/"
   ],
   "scripts": {
-    "prepare": "npm run build",
     "build": "tsc -p tsconfig.json",
     "test": "NODE_ENV=test jest",
     "test:watch": "NODE_ENV=test jest --watchAll=true",

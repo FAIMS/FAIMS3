@@ -1,0 +1,91 @@
+# syntax=docker/dockerfile:1
+
+# BASED ON https://turbo.build/repo/docs/guides/tools/docker
+# AND https://github.com/ThaddeusJiang/turborepo-starter/blob/main/apps/api/Dockerfile
+
+# Use Node 20 base
+FROM node:20-alpine AS base
+
+# PRUNE TO GET DEPENDENCIES [builder]
+# ===================================
+
+# Use turbo to prune package dependencies
+FROM base AS builder
+
+RUN apk update
+RUN apk add --no-cache libc6-compat
+
+# work in /app folder
+WORKDIR /app
+
+# install turbo global
+RUN npm install turbo@^2.0.11 -g
+
+# copy everything into builder
+COPY . .
+
+# prune using turbo for only faims3 and it's dependencies
+RUN turbo prune @faims-project/conductor --docker
+
+# INSTALL PACKAGES [installer]
+# ============================
+
+# add lockfiles dependencies
+FROM base AS installer
+RUN apk update
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install dependencies
+COPY .gitignore .gitignore
+COPY --from=builder /app/out/json/ .
+
+# COPY --from=builder /app/out/full/library/data-model/tsconfig.json ./library/data-model/tsconfig.json
+RUN npm install
+
+# Build the project 
+COPY --from=builder /app/out/full/ .
+
+# build packages
+
+# TODO use turbo build here and filter for app
+RUN npm run docker-build-api
+
+
+# PRODUCTION RUNNER [runner]
+# ==========================
+
+FROM base AS runner
+WORKDIR /app
+
+# Don't run production as root
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 faims
+USER faims
+
+# NOTE: To run API, we need 
+# 1) all node modules
+# 2) all package*.json 
+# 3) all builds
+
+# NODE MODULES
+
+# Node modules for top level
+COPY --from=installer /app/node_modules ./node_modules
+# Node modules for data model
+COPY --from=installer /app/library/data-model/node_modules ./library/data-model/node_modules
+
+# BUILD FILES
+
+# Build for API
+COPY --from=installer /app/api/build ./api/build
+# Build for data model
+COPY --from=installer /app/library/data-model/build ./library/data-model/build
+
+# PACKAGE*.json FILES
+
+# Copy all package json and package lock info from prune (tells node what to do)
+COPY --from=builder /app/out/json/ .
+
+# Run the node app
+CMD ["node", "api/build/src/index.js"]
