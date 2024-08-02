@@ -50,10 +50,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "20"
-      - name: Install dependencies and run CDK synth
+      - name: Install dependencies and run CDK deploy
         run: |
           cd infrastructure/aws-cdk
           npm install
           export CONFIG_FILE_NAME=${{ vars.CDK_DEPLOY_ENVIRONMENT }}.json
-          npx cdk synth
-          npx cdk diff
+          npx cdk deploy --require-approval never
