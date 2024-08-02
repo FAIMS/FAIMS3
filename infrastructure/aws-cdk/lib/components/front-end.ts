@@ -177,9 +177,8 @@ export class FaimsFrontEnd extends Construct {
               "-c",
               `
             cd /asset-input
-            npm i
+            "npm i && npm run github-build-app",
             cd ${appPath}
-            ./${buildScript}
             cp -R ${outputPath}/* /asset-output
             `,
             ],
@@ -202,9 +201,8 @@ export class FaimsFrontEnd extends Construct {
                   //export environment variables - not included by default
                   envs,
                   `cd ${buildPath}`,
-                  "npm i",
+                  "npm i && npm run github-build-app",
                   `cd ${appPath}`,
-                  `./${buildScript}`,
                   `cp -R ${outputPath}/* ${outputDir}`,
                 ];
                 console.log(commands);
@@ -306,7 +304,6 @@ export class FaimsFrontEnd extends Construct {
               "-c",
               `
             cd /asset-input
-            npm i
             cd ${appPath}
             ./${buildScript}
             cp -R ${outputPath}/* /asset-output
@@ -322,7 +319,6 @@ export class FaimsFrontEnd extends Construct {
                 const exec = require("child_process").execSync;
                 const commands = [
                   `cd ${buildPath}`,
-                  "npm i",
                   `cd ${appPath}`,
                   `./${buildScript}`,
                   `cp -R ${outputPath}/* ${outputDir}`,
