@@ -1,5 +1,5 @@
 {
-  "name": "@faims3-project/conductor",
+  "name": "@faims-project/conductor",
   "version": "0.1.0",
   "private": true,
   "main": "build/src/index.js",
