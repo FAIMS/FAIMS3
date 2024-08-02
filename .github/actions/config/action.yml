@@ -27,6 +27,7 @@ runs:
         cd infrastructure/aws-cdk
         chmod +x config.sh
         ./config.sh pull ${{ inputs.environment }} --repo-path ../../${{ inputs.config-repo-path }} --branch ${{ inputs.branch }}
+
     - name: Parse config and set outputs
       id: parse-config
       shell: bash

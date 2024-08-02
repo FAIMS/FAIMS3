@@ -9,8 +9,8 @@ on:
       - bss-214-github-action-deploy
 
 permissions:
-      id-token: write
-      contents: read
+  id-token: write
+  contents: read
 
 jobs:
   cdk-deploy:
@@ -49,3 +49,13 @@ jobs:
       - id: install-aws-cli
         uses: unfor19/install-aws-cli-action@v1
       - run: aws sts get-caller-identity
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+      - name: Install dependencies and run CDK synth
+        run: |
+          cd infrastructure/aws-cdk
+          npm install
+          export CONFIG_FILE_NAME=${{ vars.CDK_DEPLOY_ENVIRONMENT }}
+          npx cdk synth
