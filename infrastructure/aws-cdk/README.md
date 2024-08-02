@@ -31,10 +31,10 @@ The `EC2CouchDB` construct deploys CouchDB:
 
 The `FaimsConductor` construct sets up the API service:
 
-- **ECS Fargate**: Runs the Conductor API as a containerized service.
+- **ECS Fargate**: Runs the Conductor API as a containerized service. Can either be built using CDK with a debug flag in the code, or preferably use a docker hub image (name and tag).
 - **Task Definition**: Configures the container with environment variables and secrets.
 - **Load Balancer Integration**: Uses the shared ALB with a dedicated target group.
-- **Auto Scaling**: Configures service auto-scaling based on request count.
+- **Auto Scaling**: Configures service auto-scaling based on memory usage and CPU usage.
 - **Secrets**: Utilizes AWS Secrets Manager for sensitive data like cookie secrets and database credentials.
 - **DNS**: Creates a custom domain for the Conductor API.
 
