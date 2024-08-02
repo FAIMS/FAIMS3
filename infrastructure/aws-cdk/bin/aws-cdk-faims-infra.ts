@@ -25,10 +25,10 @@ const zoneAttributes: HostedZoneAttributes = {
 };
 
 // Create the stack
-new FaimsInfraStack(app, "FaimsInfraStack", {
+new FaimsInfraStack(app, config.stackName, {
   env: {
     account: config.aws.account,
     region: config.aws.region,
   },
-  config
+  config,
 });

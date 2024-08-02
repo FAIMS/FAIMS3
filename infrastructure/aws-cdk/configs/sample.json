@@ -1,4 +1,5 @@
 {
+    "stackName": "FaimsInfraStack",
     "hostedZone": {
         "id": "your-hosted-zone-id",
         "name": "your-domain.com"

@@ -292,89 +292,64 @@ Note that this validation is at a schema level, it might not catch improperly fo
 
 ## Configuration documentation
 
-### hostedZone
-
-Used for deploying Route 53 routes in AWS.
-
-- `id`: The ID of your Route 53 hosted zone
-- `name`: The domain name of your hosted zone
-
-### certificates
-
-- `primary`: ARN of your primary ACM certificate (must support \*.base.domain)
-- `cloudfront`: ARN of your CloudFront ACM certificate (must be in us-east-1 and support \*.base.domain)
-
-### aws
-
-- `account`: Your AWS account ID
-- `region`: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
-
-### secrets
-
-- `privateKey`: ARN of your private key in Secrets Manager
-- `publicKey`: ARN of your public key in Secrets Manager
-
-### backup
-
-- `vaultName`: The name of the AWS Backup vault to create or use
-- `retentionDays`: The number of days to retain backups (default: 30)
-- `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
-
-### couch
-
-- `volumeSize`: The size in GB of the EBS volume to mount to the EC2 instance
-- `instanceType`: The EC2 instance type for CouchDB (e.g., "t3.small")
-- `ebsRecoverySnapshotId`: (Optional) The ID of an EBS snapshot to recover the couch data volume from
-- `monitoring`: (Optional) Configuration for CouchDB monitoring alarms
-  - `cpu`: (Optional) CPU utilization alarm settings
-    - `threshold`: Percentage threshold for CPU utilization (0-100)
-    - `evaluationPeriods`: Number of periods to evaluate before triggering alarm
-    - `datapointsToAlarm`: Number of datapoints that must be breaching to trigger alarm
-  - `memory`: (Optional) Memory usage alarm settings (same structure as cpu)
-  - `disk`: (Optional) Disk usage alarm settings (same structure as cpu)
-  - `statusCheck`: (Optional) EC2 status check alarm settings
-    - `evaluationPeriods`: Number of periods to evaluate before triggering alarm
-    - `datapointsToAlarm`: Number of datapoints that must be breaching to trigger alarm
-  - `networkIn`: (Optional) Network in alarm settings (same structure as cpu, but threshold in bytes)
-  - `networkOut`: (Optional) Network out alarm settings (same structure as cpu, but threshold in bytes)
-  - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
-  - `alarmTopic`: (Optional) SNS topic settings for alarms
-    - `emailAddress`: Email address to send alarm notifications
-
-NOTE: All monitoring settings are optional. If not provided, default values will be used. The alarmTopic emailAddress, if provided, will receive notifications for all configured alarms.
-
-### conductor
-
-Configuration for the Conductor service.
-
-- `conductorDockerImage`: Conductor docker image name from public registry (dockerhub) e.g. org/faims3-api
-- `conductorDockerImageTag`: (default "latest") Conductor docker image e.g. latest or sha-123456. Composed with `conductorDockerImage` in the format `image`:`tag`.
-- `cpu`: The number of CPU units for the Fargate task
-- `memory`: The amount of memory (in MiB) for the Fargate task
-- `autoScaling`: Auto scaling configuration for the Conductor service
-  - `minCapacity`: The minimum number of tasks to run
-  - `maxCapacity`: The maximum number of tasks that can be run
-  - `targetCpuUtilization`: The target CPU utilization percentage for scaling
-  - `targetMemoryUtilization`: The target memory utilization percentage for scaling
-  - `scaleInCooldown`: The cooldown period (in seconds) before allowing another scale in action
-  - `scaleOutCooldown`: The cooldown period (in seconds) before allowing another scale out action
-
-### domains
-
-Domain configuration for all services. Note: Apex domains are not currently supported.
-
-- `baseDomain`: The base domain for all services
-- `designer`: The subdomain prefix for the designer service
-- `conductor`: The subdomain prefix for the conductor service
-- `couch`: The subdomain prefix for the CouchDB service
-- `faims`: The subdomain prefix for the main FAIMS web application
-
-### mobileApps
-
-Configuration for mobile app URLs.
-
-- `androidAppPublicUrl`: The public URL for the Android application in the Google Play Store
-- `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
+- `stackName`: The name of the stack to deploy to cloudformation. Note that changing this will completely redeploy your application.
+- `hostedZone`: Used for deploying Route 53 routes in AWS.
+  - `id`: The ID of your Route 53 hosted zone
+  - `name`: The domain name of your hosted zone
+- `certificates`:
+  - `primary`: ARN of your primary ACM certificate (must support \*.base.domain)
+  - `cloudfront`: ARN of your CloudFront ACM certificate (must be in us-east-1 and support \*.base.domain)
+- `aws`:
+  - `account`: Your AWS account ID
+  - `region`: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
+- `secrets`:
+  - `privateKey`: ARN of your private key in Secrets Manager
+  - `publicKey`: ARN of your public key in Secrets Manager
+- `backup`:
+  - `vaultName`: The name of the AWS Backup vault to create or use
+  - `vaultArn`: (Optional) The ARN of an existing backup vault to use. If provided, a new vault will not be created
+  - `retentionDays`: The number of days to retain backups (default: 30)
+  - `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
+- `couch`:
+  - `volumeSize`: The size in GB of the EBS volume to mount to the EC2 instance
+  - `instanceType`: The EC2 instance type for CouchDB (e.g., "t3.small")
+  - `ebsRecoverySnapshotId`: (Optional) The ID of an EBS snapshot to recover the couch data volume from
+  - `monitoring`: (Optional) Configuration for CouchDB monitoring alarms
+    - `cpu`: (Optional) CPU utilization alarm settings
+      - `threshold`: Percentage threshold for CPU utilization (0-100)
+      - `evaluationPeriods`: Number of periods to evaluate before triggering alarm
+      - `datapointsToAlarm`: Number of datapoints that must be breaching to trigger alarm
+    - `memory`: (Optional) Memory usage alarm settings (same structure as cpu)
+    - `disk`: (Optional) Disk usage alarm settings (same structure as cpu)
+    - `statusCheck`: (Optional) EC2 status check alarm settings
+      - `evaluationPeriods`: Number of periods to evaluate before triggering alarm
+      - `datapointsToAlarm`: Number of datapoints that must be breaching to trigger alarm
+    - `networkIn`: (Optional) Network in alarm settings (same structure as cpu, but threshold in bytes)
+    - `networkOut`: (Optional) Network out alarm settings (same structure as cpu, but threshold in bytes)
+    - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
+    - `alarmTopic`: (Optional) SNS topic settings for alarms
+      - `emailAddress`: Email address to send alarm notifications
+- `conductor`: Configuration for the Conductor service.
+  - `conductorDockerImage`: Conductor docker image name from public registry (dockerhub) e.g. org/faims3-api
+  - `conductorDockerImageTag`: (default "latest") Conductor docker image e.g. latest or sha-123456. Composed with `conductorDockerImage` in the format `image`:`tag`.
+  - `cpu`: The number of CPU units for the Fargate task
+  - `memory`: The amount of memory (in MiB) for the Fargate task
+  - `autoScaling`: Auto scaling configuration for the Conductor service
+    - `minCapacity`: The minimum number of tasks to run
+    - `maxCapacity`: The maximum number of tasks that can be run
+    - `targetCpuUtilization`: The target CPU utilization percentage for scaling
+    - `targetMemoryUtilization`: The target memory utilization percentage for scaling
+    - `scaleInCooldown`: The cooldown period (in seconds) before allowing another scale in action
+    - `scaleOutCooldown`: The cooldown period (in seconds) before allowing another scale out action
+- `domains`: Domain configuration for all services. Note: Apex domains are not currently supported.
+  - `baseDomain`: The base domain for all services
+  - `designer`: The subdomain prefix for the designer service
+  - `conductor`: The subdomain prefix for the conductor service
+  - `couch`: The subdomain prefix for the CouchDB service
+  - `faims`: The subdomain prefix for the main FAIMS web application
+- `mobileApps`: Configuration for mobile app URLs.
+  - `androidAppPublicUrl`: The public URL for the Android application in the Google Play Store
+  - `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
 
 ## Using Your Configuration
 
