@@ -1,36 +1,41 @@
 {
-  "name": "faims3",
-  "version": "1.0.0",
-  "main": "index.js",
-  "workspaces": [
-    "api",
-    "app",
-    "designer",
-    "library/data-model",
-    "tests",
-    "infrastructure/aws-cdk"
-  ],
-  "scripts": {
-    "build-app": "npm run build --workspace=app",
-    "build-api": "npm run build --workspace=api",
-    "github-build-app": "npm run build --workspace=library/data-model --workspace=app",
-    "docker-build-api": "npm run build --workspace=library/data-model --workspace=api",
-    "build-aws": "npm run build --workspace=infrastructure/aws-cdk",
-    "package-aws": "npm run package --workspace=infrastructure/aws-cdk",
-    "test-app": "npm test --workspace=app",
-    "serve-app": "npm run serve --workspace=app",
-    "start": "npm start --workspace=api --workspace=app",
-    "start-api": "npm start --workspace=api",
-    "start-app": "npm start --workspace=app",
-    "watch-api": "npm run watch --workspace=api",
-    "start-designer": "npm run start --workspace=designer"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "turbo": "^2.0.11"
-  },
-  "packageManager": "npm@10.7.0"
+    "name": "faims3",
+    "version": "0.0.0",
+    "workspaces": [
+        "api",
+        "app",
+        "designer",
+        "library/data-model",
+        "tests",
+        "infrastructure/aws-cdk",
+        "configs/config-release-it"
+    ],
+    "scripts": {
+        "build-app": "npm run build --workspace=app",
+        "build-api": "npm run build --workspace=api",
+        "github-build-app": "npm run build --workspace=library/data-model --workspace=app",
+        "docker-build-api": "npm run build --workspace=library/data-model --workspace=api",
+        "build-aws": "npm run build --workspace=infrastructure/aws-cdk",
+        "package-aws": "npm run package --workspace=infrastructure/aws-cdk",
+        "test-app": "npm test --workspace=app",
+        "serve-app": "npm run serve --workspace=app",
+        "start": "npm start --workspace=api --workspace=app",
+        "start-api": "npm start --workspace=api",
+        "start-app": "npm start --workspace=app",
+        "watch-api": "npm run watch --workspace=api",
+        "start-designer": "npm run start --workspace=designer",
+        "prepare": "husky install",
+        "release": "turbo release --concurrency=1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "devDependencies": {
+        "@commitlint/cli": "17.6.1",
+        "@commitlint/config-conventional": "17.6.1",
+        "husky": "8.0.3",
+        "turbo": "^2.0.11"
+    },
+    "packageManager": "npm@10.7.0"
 }

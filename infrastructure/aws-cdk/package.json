@@ -1,7 +1,7 @@
 {
-    "name": "aws-cdk-faims-infra",
-  "packageManager": "npm@10.7.0",
-    "version": "0.1.0",
+    "name": "@faims3/cdk-infra",
+    "packageManager": "npm@10.7.0",
+    "version": "0.0.0",
     "bin": {
         "aws-cdk-faims-infra": "bin/aws-cdk-faims-infra.js"
     },
@@ -14,7 +14,8 @@
         "test": "jest",
         "cdk": "cdk",
         "config": "bash ./config.sh",
-        "validate-config": "ts-node validateConfig.ts"
+        "validate-config": "ts-node validateConfig.ts",
+        "release": "release-it --ci"
     },
     "devDependencies": {
         "@types/jest": "^29.5.12",
@@ -23,7 +24,8 @@
         "jest": "^29.7.0",
         "ts-jest": "^29.1.2",
         "ts-node": "^10.9.2",
-        "typescript": "~5.3.3"
+        "typescript": "~5.3.3",
+        "@faims3/config-release-it": "*"
     },
     "dependencies": {
         "@cloudcomponents/cdk-static-website": "^2.0.0",
