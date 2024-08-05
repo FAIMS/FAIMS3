@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@faims3/data-model": "1.2.0"
+  },
+  "devDependencies": {
+    "@faims3/config-release-it": "0.0.1"
+  }
+}
