@@ -12,7 +12,7 @@ on:
 # image that this workflow builds.
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: faims-api
+  IMAGE_NAME: FAIMS/faims3-api
 
 jobs:
   build-and-push:
