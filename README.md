@@ -2,6 +2,10 @@
 
 FAIMS3 is an open-source tool for offline field data-collection brought to you by the FAIMS Project. The FAIMS Project was funded by the ARDC ([https://dx.doi.org/10.47486/PL110]), Macquarie University, and CSIRO along with our other partners. 
 
+## Versioning 
+
+TODO document
+
 ## Directory Structure
 
 The repository contains the following:
