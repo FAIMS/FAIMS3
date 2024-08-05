@@ -16,25 +16,34 @@ jobs:
       pull-requests: write
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
 
-    - name: Install dependencies
-      run: npm i --include dev
+      - name: Setup node cache
+        id: node-cache
+        uses: actions/cache@v3
+        with:
+          path: "**/node_modules"
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
+          restore-keys: npm-
 
-    - name: Configure Git
-      run: |
-        git config user.name "${GITHUB_ACTOR}"
-        git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm i --include dev
 
-    - name: Run release-it
-      run: npm run release
-      env:
-        GITHUB_TOKEN: ${{ secrets.NBIC_BSS_BOT_GITHUB_TOKEN }}
+      - name: Configure Git
+        run: |
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
+      - name: Run release-it
+        run: npm run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

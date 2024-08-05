@@ -4,6 +4,9 @@
         "release": {
             "dependsOn": [
                 "^release"
+            ],
+            "env": [
+                "GITHUB_TOKEN"
             ]
         }
     }
