@@ -1,5 +1,5 @@
 {
   "devDependencies": {
-    "@faims3/config-release-it": "0.0.1"
+    "@faims3/config-release-it": "0.0.3"
   }
 }
