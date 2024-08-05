@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@faims3/data-model": "1.2.0"
+    "@faims3/data-model": "1.6.0"
   },
   "devDependencies": {
     "@faims3/config-release-it": "0.5.1"
