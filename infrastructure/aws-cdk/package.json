@@ -1,7 +1,7 @@
 {
     "name": "@faims3/cdk-infra",
     "packageManager": "npm@10.7.0",
-    "version": "0.1.0",
+    "version": "0.5.0",
     "bin": {
         "aws-cdk-faims-infra": "bin/aws-cdk-faims-infra.js"
     },

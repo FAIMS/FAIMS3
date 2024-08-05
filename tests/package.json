@@ -1,7 +1,7 @@
 {
     "name": "@faims3/tests",
     "packageManager": "npm@10.7.0",
-    "version": "0.1.0",
+    "version": "0.5.0",
     "description": "",
     "main": "index.js",
     "scripts": {
