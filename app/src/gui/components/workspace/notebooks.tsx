@@ -43,6 +43,8 @@ import Tab from '@mui/material/Tab';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
+import SurveyCardList from '../ui/survey-card-list';
+import {surveyListLayout} from '../../themes';
 
 interface sortModel {
   field: string;
@@ -297,77 +299,89 @@ export default function NoteBooks(props: NoteBookListProps) {
             <TabPanel value="1" sx={{px: 0}}>
               <div style={{display: 'flex', height: '100%'}}>
                 <div style={{flexGrow: 1}}>
-                  <DataGrid
-                    key={'notebook_list_datagrid'}
-                    rows={pouchProjectList.filter(r => r.is_activated)}
-                    loading={loading}
-                    columns={columns}
-                    onRowClick={handleRowClick}
-                    autoHeight
-                    sx={{cursor: 'pointer'}}
-                    getRowId={r => r.project_id}
-                    hideFooter={true}
-                    getRowHeight={() => 'auto'}
-                    initialState={{
-                      sorting: {
-                        sortModel: [props.sortModel],
-                      },
-                      pagination: {
-                        paginationModel: {
-                          pageSize: pouchProjectList.length,
+                  {surveyListLayout === 'card-list' ? (
+                    <SurveyCardList
+                      surveys={pouchProjectList.filter(r => r.is_activated)}
+                    />
+                  ) : (
+                    <DataGrid
+                      key={'notebook_list_datagrid'}
+                      rows={pouchProjectList.filter(r => r.is_activated)}
+                      loading={loading}
+                      columns={columns}
+                      onRowClick={handleRowClick}
+                      autoHeight
+                      sx={{cursor: 'pointer'}}
+                      getRowId={r => r.project_id}
+                      hideFooter={true}
+                      getRowHeight={() => 'auto'}
+                      initialState={{
+                        sorting: {
+                          sortModel: [props.sortModel],
                         },
-                      },
-                    }}
-                    slots={{
-                      noRowsOverlay: () => (
-                        <Stack
-                          height="100%"
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          No Notebooks have been activated yet.
-                        </Stack>
-                      ),
-                    }}
-                  />
+                        pagination: {
+                          paginationModel: {
+                            pageSize: pouchProjectList.length,
+                          },
+                        },
+                      }}
+                      slots={{
+                        noRowsOverlay: () => (
+                          <Stack
+                            height="100%"
+                            alignItems="center"
+                            justifyContent="center"
+                          >
+                            No Notebooks have been activated yet.
+                          </Stack>
+                        ),
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             </TabPanel>
             <TabPanel value="2" sx={{px: 0}}>
               <div style={{display: 'flex', height: '100%'}}>
                 <div style={{flexGrow: 1}}>
-                  <DataGrid
-                    key={'notebook_list_datagrid'}
-                    rows={pouchProjectList.filter(r => !r.is_activated)}
-                    loading={loading}
-                    columns={columns}
-                    autoHeight
-                    sx={{cursor: 'pointer'}}
-                    getRowId={r => r.project_id}
-                    hideFooter={true}
-                    getRowHeight={() => 'auto'}
-                    initialState={{
-                      sorting: {
-                        sortModel: [props.sortModel],
-                      },
-                      pagination: {
-                        paginationModel: {
-                          pageSize: pouchProjectList.length,
+                  {surveyListLayout === 'card-list' ? (
+                    <SurveyCardList
+                      surveys={pouchProjectList.filter(r => !r.is_activated)}
+                    />
+                  ) : (
+                    <DataGrid
+                      key={'notebook_list_datagrid'}
+                      rows={pouchProjectList.filter(r => !r.is_activated)}
+                      loading={loading}
+                      columns={columns}
+                      autoHeight
+                      sx={{cursor: 'pointer'}}
+                      getRowId={r => r.project_id}
+                      hideFooter={true}
+                      getRowHeight={() => 'auto'}
+                      initialState={{
+                        sorting: {
+                          sortModel: [props.sortModel],
                         },
-                      },
-                    }}
-                    slots={{
-                      noRowsOverlay: () => (
-                        <Stack
-                          height="100%"
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          You don't have any unactivated notebooks.
-                        </Stack>
-                      ),
-                    }}
-                  />
+                        pagination: {
+                          paginationModel: {
+                            pageSize: pouchProjectList.length,
+                          },
+                        },
+                      }}
+                      slots={{
+                        noRowsOverlay: () => (
+                          <Stack
+                            height="100%"
+                            alignItems="center"
+                            justifyContent="center"
+                          >
+                            You don't have any unactivated notebooks.
+                          </Stack>
+                        ),
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             </TabPanel>

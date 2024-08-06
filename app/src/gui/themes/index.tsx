@@ -8,6 +8,8 @@ import csiroAppBarStyling, {
   Heading as csiroAppBarHeading,
   hideAppBarAuth as csiroHideAppBarAuth,
 } from './csiro/appBar';
+import defaultSurveyListLayout from './default/noteBook';
+import csiroSurveyListLayout from './csiro/noteBook';
 
 const export_theme = () => {
   const theme = import.meta.env.VITE_THEME;
@@ -49,7 +51,18 @@ const export_hideAppBarAuth = () => {
   return defaultHideAppBarAuth;
 };
 
+const export_surveyListLayout = () => {
+  const theme = import.meta.env.VITE_THEME;
+
+  if (theme === 'csiro') {
+    return csiroSurveyListLayout;
+  }
+
+  return defaultSurveyListLayout;
+};
+
 export const theme = export_theme();
 export const appBarStyling = export_appBar_styling();
 export const AppBarHeading = export_appBar_heading();
 export const hideAppBarAuth = export_hideAppBarAuth();
+export const surveyListLayout = export_surveyListLayout();

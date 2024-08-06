@@ -9,6 +9,7 @@ export default makeStyles({
   root: {
     display: 'flex',
     boxShadow: 'none',
+    padding: 12,
   },
   appBar: {
     transition: theme.transitions.create(['margin', 'width'], {
