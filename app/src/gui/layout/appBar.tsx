@@ -189,7 +189,7 @@ export default function MainAppBar(props: NavbarProps) {
             <AppBarHeading link={ROUTES.INDEX} />
             <div>
               {isAuthenticated ? <SyncStatus /> : ''}
-              {!hideAppBarAuth && <AppBarAuth token={props.token} />}
+              <AppBarAuth token={props.token} />
             </div>
           </Toolbar>
         </MuiAppBar>
