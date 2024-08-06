@@ -23,12 +23,7 @@ import {useNavigate} from 'react-router-dom';
 import {Box, Paper, Typography, Button, Stack} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 
-import {
-  DataGrid,
-  GridColDef,
-  GridCellParams,
-  GridEventListener,
-} from '@mui/x-data-grid';
+import {GridColDef, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 
 import * as ROUTES from '../../../constants/routes';
 import {getAllProjectList} from '../../../databaseAccess';
@@ -39,10 +34,9 @@ import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import {grey} from '@mui/material/colors';
-import Tab from '@mui/material/Tab';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
+import Tabs from '../ui/tab-grid';
+import HeadingGrid from '../ui/heading-grid';
+import {NOTEBOOK_LIST_TYPE} from '../../../buildconfig';
 
 interface sortModel {
   field: string;
@@ -262,116 +256,25 @@ export default function NoteBooks(props: NoteBookListProps) {
             </Button>{' '}
             tab and click the activate button.
           </Typography>
-          <TabContext
-            value={
-              pouchProjectList.filter(r => r.is_activated).length === 0
-                ? '2'
-                : tabID
-            }
-          >
-            <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-              <TabList onChange={handleChange} aria-label="tablist">
-                <Tab
-                  label={
-                    'Activated (' +
-                    pouchProjectList.filter(r => r.is_activated).length +
-                    ')'
-                  }
-                  value="1"
-                  disabled={
-                    pouchProjectList.filter(r => r.is_activated).length === 0
-                      ? true
-                      : false
-                  }
-                />
-                <Tab
-                  label={
-                    'Available (' +
-                    pouchProjectList.filter(r => !r.is_activated).length +
-                    ')'
-                  }
-                  value="2"
-                />
-              </TabList>
-            </Box>
-            <TabPanel value="1" sx={{px: 0}}>
-              <div style={{display: 'flex', height: '100%'}}>
-                <div style={{flexGrow: 1}}>
-                  <DataGrid
-                    key={'notebook_list_datagrid'}
-                    rows={pouchProjectList.filter(r => r.is_activated)}
-                    loading={loading}
-                    columns={columns}
-                    onRowClick={handleRowClick}
-                    autoHeight
-                    sx={{cursor: 'pointer'}}
-                    getRowId={r => r.project_id}
-                    hideFooter={true}
-                    getRowHeight={() => 'auto'}
-                    initialState={{
-                      sorting: {
-                        sortModel: [props.sortModel],
-                      },
-                      pagination: {
-                        paginationModel: {
-                          pageSize: pouchProjectList.length,
-                        },
-                      },
-                    }}
-                    slots={{
-                      noRowsOverlay: () => (
-                        <Stack
-                          height="100%"
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          No Notebooks have been activated yet.
-                        </Stack>
-                      ),
-                    }}
-                  />
-                </div>
-              </div>
-            </TabPanel>
-            <TabPanel value="2" sx={{px: 0}}>
-              <div style={{display: 'flex', height: '100%'}}>
-                <div style={{flexGrow: 1}}>
-                  <DataGrid
-                    key={'notebook_list_datagrid'}
-                    rows={pouchProjectList.filter(r => !r.is_activated)}
-                    loading={loading}
-                    columns={columns}
-                    autoHeight
-                    sx={{cursor: 'pointer'}}
-                    getRowId={r => r.project_id}
-                    hideFooter={true}
-                    getRowHeight={() => 'auto'}
-                    initialState={{
-                      sorting: {
-                        sortModel: [props.sortModel],
-                      },
-                      pagination: {
-                        paginationModel: {
-                          pageSize: pouchProjectList.length,
-                        },
-                      },
-                    }}
-                    slots={{
-                      noRowsOverlay: () => (
-                        <Stack
-                          height="100%"
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          You don't have any unactivated notebooks.
-                        </Stack>
-                      ),
-                    }}
-                  />
-                </div>
-              </div>
-            </TabPanel>
-          </TabContext>
+          {NOTEBOOK_LIST_TYPE === 'tabs' ? (
+            <Tabs
+              pouchProjectList={pouchProjectList}
+              tabID={tabID}
+              handleChange={handleChange}
+              handleRowClick={handleRowClick}
+              loading={loading}
+              columns={columns}
+              sortModel={props.sortModel}
+            />
+          ) : (
+            <HeadingGrid
+              pouchProjectList={pouchProjectList}
+              handleRowClick={handleRowClick}
+              loading={loading}
+              columns={columns}
+              sortModel={props.sortModel}
+            />
+          )}
         </Box>
       )}
     </Box>
