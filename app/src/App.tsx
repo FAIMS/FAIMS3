@@ -18,7 +18,6 @@
  *   TODO
  */
 
-import React from 'react';
 import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
@@ -40,7 +39,7 @@ import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 
-import theme from './gui/theme';
+import {theme} from './gui/themes';
 import {getTokenContentsForCurrentUser} from './users';
 
 import {useEffect, useState} from 'react';

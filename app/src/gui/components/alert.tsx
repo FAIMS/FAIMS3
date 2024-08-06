@@ -18,10 +18,10 @@
  *   TODO
  */
 
-import React, {useContext} from 'react';
+import {useContext} from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import {ThemeProvider} from '@mui/material/styles';
-import theme from '../theme';
+import {theme} from '../themes';
 import Alert from '@mui/material/Alert';
 import {createUseStyles} from 'react-jss';
 

@@ -26,11 +26,9 @@ import {
   CircularProgress,
   IconButton,
   Toolbar,
-  createTheme,
   ListItemButton,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import {createUseStyles as makeStyles} from 'react-jss';
 import CssBaseline from '@mui/material/CssBaseline';
 import clsx from 'clsx';
 import Collapse from '@mui/material/Collapse';
@@ -48,7 +46,6 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import AccountTree from '@mui/icons-material/AccountTree';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
-
 import * as ROUTES from '../../constants/routes';
 import {getActiveProjectList} from '../../sync/projects';
 import SystemAlert from '../components/alert';
@@ -56,8 +53,8 @@ import {ProjectInformation} from 'faims3-datamodel';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import {TokenContents} from 'faims3-datamodel';
 import {checkToken} from '../../utils/helpers';
-// import ConnectedStatus from '../components/authentication/connectedStatus';
 import SyncStatus from '../components/sync';
+import {appBarStyling, AppBarHeading, hideAppBarAuth} from '../themes';
 
 type ProjectListItemProps = {
   title: string;
@@ -65,7 +62,6 @@ type ProjectListItemProps = {
   to: string;
   disabled: boolean;
 };
-// in place of deprecated React.ReactChild
 type IconType =
   | undefined
   | string
@@ -79,72 +75,6 @@ type MenuItemProps = {
   disabled: boolean;
   icon: IconType;
 };
-
-const drawerWidth = 240;
-const theme = createTheme();
-
-const useStyles = makeStyles({
-  root: {
-    display: 'flex',
-    boxShadow: 'none',
-  },
-  appBar: {
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    boxShadow: 'none',
-  },
-  appBarShift: {
-    width: `calc(100% - ${drawerWidth}px)`,
-    marginLeft: drawerWidth,
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-  },
-  menuButton: {
-    marginRight: theme.spacing(2),
-  },
-  hide: {
-    display: 'none',
-  },
-  drawer: {
-    width: drawerWidth,
-    flexShrink: 0,
-  },
-  drawerPaper: {
-    width: drawerWidth,
-  },
-  drawerHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: theme.spacing(0, 1),
-    // necessary for content to be below app bar
-    minHeight: '64px',
-    // ...theme.mixins.toolbar,
-    justifyContent: 'flex-end',
-  },
-  content: {
-    flexGrow: 1,
-    padding: theme.spacing(3),
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    marginLeft: -drawerWidth,
-  },
-  contentShift: {
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    marginLeft: 0,
-  },
-  nested: {
-    paddingLeft: theme.spacing(4),
-  },
-});
 
 function getNestedProjects(pouchProjectList: ProjectInformation[]) {
   const projectListItems: ProjectListItemProps[] = [];
@@ -169,9 +99,6 @@ type NavbarProps = {
   token?: null | undefined | TokenContents;
 };
 export default function MainAppBar(props: NavbarProps) {
-  const classes = useStyles();
-  // const globalState = useContext(store);
-
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
@@ -237,6 +164,8 @@ export default function MainAppBar(props: NavbarProps) {
     [key: string]: boolean;
   }>({Projects: false});
 
+  const classes = appBarStyling();
+
   return (
     <React.Fragment>
       <div className={classes.root}>
@@ -254,20 +183,13 @@ export default function MainAppBar(props: NavbarProps) {
               onClick={toggle}
               edge="start"
               className={clsx(classes.menuButton, isOpen && classes.hide)}
-              size="large"
             >
-              <MenuIcon />
+              <MenuIcon className={classes.menuIcon} />
             </IconButton>
-            <NavLink style={{flexGrow: 1}} to={ROUTES.INDEX}>
-              <img
-                src="/static/logo/Fieldmark-Short-Green-NoBorder.png"
-                style={{maxWidth: '140px', flex: 1}}
-              />
-            </NavLink>
+            <AppBarHeading link={ROUTES.INDEX} />
             <div>
-              {/*{isAuthenticated ? <ConnectedStatus token={props.token} /> : ''}*/}
               {isAuthenticated ? <SyncStatus /> : ''}
-              <AppBarAuth token={props.token} />
+              {!hideAppBarAuth && <AppBarAuth token={props.token} />}
             </div>
           </Toolbar>
         </MuiAppBar>
