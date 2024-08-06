@@ -41,8 +41,13 @@ import {ActionType} from '../../context/actions';
 const useStyles = createUseStyles({
   root: {
     width: '100%',
-    '& > * + *': {
-      marginTop: '16px',
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    zIndex: 1200, // Ensure the alert is above other content
+    '& > *': {
+      margin: '0 auto',
+      maxWidth: '90%', // Ensures the alert is not too wide on larger screens
     },
   },
 });
@@ -87,6 +92,11 @@ export default function SystemAlert() {
               onClose={() => handleClose(oldest_alert.key)}
               severity={oldest_alert.severity}
               variant={'filled'}
+              sx={{
+                width: '100%',
+                // @TODO Ranisa - width of the alert to be tested on deployed instance
+                maxWidth: '400px', 
+              }}
             >
               {'message' in oldest_alert
                 ? oldest_alert.message
