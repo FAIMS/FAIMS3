@@ -246,24 +246,26 @@ export default function NoteBooks(props: NoteBookListProps) {
         <CircularLoading label={'Loading notebooks'} />
       ) : (
         <Box component={Paper} elevation={0} p={2}>
-          <Typography variant={'body1'} gutterBottom>
-            You have {pouchProjectList.filter(r => r.is_activated).length}{' '}
-            notebook
-            {pouchProjectList.filter(r => r.is_activated).length !== 1
-              ? 's'
-              : ''}{' '}
-            activated on this device. To start syncing a notebook, visit the{' '}
-            <Button
-              variant="text"
-              size={'small'}
-              onClick={() => {
-                setTabID('2');
-              }}
-            >
-              Available
-            </Button>{' '}
-            tab and click the activate button.
-          </Typography>
+          {import.meta.env.VITE_THEME !== 'csiro' && (
+            <Typography variant={'body1'} gutterBottom>
+              You have {pouchProjectList.filter(r => r.is_activated).length}{' '}
+              notebook
+              {pouchProjectList.filter(r => r.is_activated).length !== 1
+                ? 's'
+                : ''}{' '}
+              activated on this device. To start syncing a notebook, visit the{' '}
+              <Button
+                variant="text"
+                size={'small'}
+                onClick={() => {
+                  setTabID('2');
+                }}
+              >
+                Available
+              </Button>{' '}
+              tab and click the activate button.
+            </Typography>
+          )}
           <TabContext
             value={
               pouchProjectList.filter(r => r.is_activated).length === 0

@@ -31,18 +31,16 @@ export default function Workspace() {
 
   return (
     <React.Fragment>
-      <Breadcrumbs data={breadcrumbs} />
+      {import.meta.env.VITE_THEME !== 'csiro' && (
+        <Breadcrumbs data={breadcrumbs} />
+      )}
       <Grid container spacing={3}>
-        {/*<Grid item xs={12}>*/}
-        {/*  <Typography variant="h5" gutterBottom>*/}
-        {/*    Workspace*/}
-        {/*  </Typography>*/}
-        {/*</Grid>*/}
-
         <Grid item xs={12} md={12} lg={8}>
-          <Typography variant="h6" color="textSecondary">
-            My Notebooks
-          </Typography>
+          {import.meta.env.VITE_THEME !== 'csiro' && (
+            <Typography variant="h6" color="textSecondary">
+              My Notebooks
+            </Typography>
+          )}
           <Notebooks sortModel={{field: 'last_updated', sort: 'desc'}} />
         </Grid>
       </Grid>
