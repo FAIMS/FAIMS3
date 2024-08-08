@@ -2,6 +2,17 @@ import {Stack} from '@mui/material';
 import {DataGrid, GridEventListener} from '@mui/x-data-grid';
 import {ProjectInformation} from 'faims3-datamodel/build/src/types';
 
+/**
+ * Renders a grid with two sections: Active and Not Active.
+ * Each section displays a DataGrid component with the provided data.
+ *
+ * @param pouchProjectList - The list of project information.
+ * @param handleRowClick - The event listener for row click.
+ * @param loading - A boolean indicating if the data is loading.
+ * @param columns - The columns configuration for the DataGrid.
+ * @param sortModel - The sorting configuration for the DataGrid.
+ * @returns The rendered HeadingGrid component.
+ */
 export default function HeadingGrid({
   pouchProjectList,
   handleRowClick,

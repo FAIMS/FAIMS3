@@ -298,6 +298,10 @@ function get_conductor_url(): string {
   }
 }
 
+/**
+ * Retrieves the notebook list type.
+ * @returns The notebook list type, which can be either "tabs" or "headings".
+ */
 function get_notebook_list_type(): "tabs" | "headings" {
   const notebook_list_type = import.meta.env.VITE_NOTEBOOK_LIST_TYPE;
   if (notebook_list_type === 'headings') {

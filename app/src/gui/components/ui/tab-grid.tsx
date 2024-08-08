@@ -5,6 +5,18 @@ import {Box, Stack, Tab} from '@mui/material';
 import {DataGrid, GridEventListener} from '@mui/x-data-grid';
 import {ProjectInformation} from 'faims3-datamodel/build/src/types';
 
+/**
+ * Renders a tabbed grid component.
+ *
+ * @param pouchProjectList - The list of project information.
+ * @param tabID - The ID of the active tab.
+ * @param handleChange - The event handler for tab change.
+ * @param handleRowClick - The event handler for row click.
+ * @param loading - A boolean indicating whether the grid is loading.
+ * @param columns - The columns configuration for the grid.
+ * @param sortModel - The sorting configuration for the grid.
+ * @returns The rendered tabbed grid component.
+ */
 export default function TabGrid({
   pouchProjectList,
   tabID,
