@@ -1,5 +1,3 @@
-# FEAT/FIX: <title>
-
 ## JIRA Ticket
 
 [<JIRA_TICKET>](https://jira.csiro.com/browse/<JIRA_TICKET>)
@@ -16,7 +14,7 @@ List the changes made in this PR.
 
 Explain how to test the changes.
 
-## Additional Information s
+## Additional Information
 
 Add any additional information or context about the pull request here.
 
