@@ -39,6 +39,7 @@ type DiagProps = {
   path?: string | null;
   isSyncing?: string;
 };
+
 export default function FaimsDialog(props: DiagProps) {
   //   const [open, setOpen] = React.useState(props.open??false);
   const {open, setopen, project_id, path, isSyncing} = props;
@@ -49,7 +50,18 @@ export default function FaimsDialog(props: DiagProps) {
       onClose={setopen}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        style: {
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+      }}
     >
+
       <DialogTitle id="alert-dialog-title" style={{minWidth: '300px'}}>
         {path !== null ? '' : 'Download attachments and photos'}
         <IconButton
@@ -64,7 +76,8 @@ export default function FaimsDialog(props: DiagProps) {
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent>
+
+      <DialogContent style={{ textAlign: 'center' }}>
         {path !== null ? (
           <img
             data-testid="dialog-img"
@@ -96,7 +109,7 @@ export default function FaimsDialog(props: DiagProps) {
       {path !== null ? (
         ''
       ) : (
-        <DialogActions>
+        <DialogActions style={{ justifyContent: 'center' }}>
           <Button color="primary" size="large" onClick={setopen}>
             Close
           </Button>
