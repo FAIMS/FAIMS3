@@ -12,6 +12,9 @@
   ],
   "scripts": {
     "build-app": "npm run build --workspace=app",
+    "build-api": "npm run build --workspace=api",
+    "github-build-app": "npm run build --workspace=library/data-model --workspace=app",
+    "docker-build-api": "npm run build --workspace=library/data-model --workspace=api",
     "build-aws": "npm run build --workspace=infrastructure/aws-cdk",
     "package-aws": "npm run package --workspace=infrastructure/aws-cdk",
     "test-app": "npm test --workspace=app",
@@ -25,5 +28,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "turbo": "^2.0.11"
+  },
+  "packageManager": "npm@10.7.0"
 }

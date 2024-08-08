@@ -93,15 +93,22 @@ export class FaimsConductor extends Construct {
     // CONTAINER SETUP
     // ================
 
-    // Setup container image from local Dockerfile
-    const conductorContainerImage = ecs.ContainerImage.fromAsset(
-      getPathToRoot(),
-      {
-        file: "api/Dockerfile",
-        // TODO: Optimize this - this avoids infinite loops
+    // If you want to use a local build for debugging (not recommended for production, set this to false)
+    const useDockerHub = true;
+    let conductorContainerImage: ecs.ContainerImage;
+
+    if (useDockerHub) {
+      // Setup container image from DockerHub image
+      conductorContainerImage = ecs.ContainerImage.fromRegistry(
+        `${props.config.conductorDockerImage}:${props.config.conductorDockerImageTag}`
+      );
+    } else {
+      // Build and bundle with cdk and ECR
+      conductorContainerImage = ecs.ContainerImage.fromAsset(getPathToRoot(), {
+        file: "api/BuildDockerfile",
         exclude: ["infrastructure"],
-      }
-    );
+      });
+    }
 
     // Create the Fargate task definition
     const conductorTaskDfn = new ecs.FargateTaskDefinition(

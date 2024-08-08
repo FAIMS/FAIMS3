@@ -1,5 +1,6 @@
 {
   "name": "FAIMS3-QA",
+  "packageManager": "npm@10.7.0",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

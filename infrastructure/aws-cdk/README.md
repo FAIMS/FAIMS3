@@ -31,10 +31,10 @@ The `EC2CouchDB` construct deploys CouchDB:
 
 The `FaimsConductor` construct sets up the API service:
 
-- **ECS Fargate**: Runs the Conductor API as a containerized service.
+- **ECS Fargate**: Runs the Conductor API as a containerized service. Can either be built using CDK with a debug flag in the code, or preferably use a docker hub image (name and tag).
 - **Task Definition**: Configures the container with environment variables and secrets.
 - **Load Balancer Integration**: Uses the shared ALB with a dedicated target group.
-- **Auto Scaling**: Configures service auto-scaling based on request count.
+- **Auto Scaling**: Configures service auto-scaling based on memory usage and CPU usage.
 - **Secrets**: Utilizes AWS Secrets Manager for sensitive data like cookie secrets and database credentials.
 - **DNS**: Creates a custom domain for the Conductor API.
 
@@ -128,7 +128,7 @@ This project uses a JSON-based configuration system to manage different deployme
 
 ## Using an existing configuration from conforming config repo
 
-If you wish to store your configurations in a private repository, you can use our config setup script to easily import these configurations into your project. This section explains how to structure your config repo, use the setup script, and manage multiple environments.
+If you wish to store your configurations in a private repository, you can use our config script to easily import these configurations into your project or push your local changes back to the repository. This section explains how to structure your config repo, use the config script, and manage multiple environments.
 
 ### Config Repository Structure
 
@@ -159,56 +159,82 @@ Your configuration repository should follow this structure:
 - Each environment directory should contain a `configs` folder with a JSON file named after the environment (e.g., `dev.json`).
 - You can include other environment-specific files in each environment directory as needed.
 
-### Using the Config Setup Script
+### Using the Config Script
 
-We provide a script called `fetch-config.sh` to fetch and set up the configuration from your private repository. You can run this script manually or use the npm script we've added to `package.json`.
+We provide a script called `config.sh` to manage configurations. This script can both fetch configurations from your private repository and push local changes back to the repository.
 
-#### Running the Script Manually
+#### Running the Script
 
-1. Ensure the `setup_config.sh` script is in your project root and is executable:
+1. Ensure the `config.sh` script is in your project root and is executable:
 
    ```bash
-   chmod +x setup_config.sh
+   chmod +x config.sh
    ```
 
 2. Run the script with the following syntax:
 
    ```bash
-   ./setup_config.sh <clone_string> <environment> [--force]
+   ./config.sh <push/pull> <environment> [options]
    ```
 
-   - `<clone_string>`: The Git clone URL of your private config repository.
-   - `<environment>`: The name of the environment you want to set up (e.g., "dev", "staging", "prod").
-   - `--force` (optional): Use this flag to overwrite existing files without prompting.
-
-   Example:
+   or
 
    ```bash
-   ./setup_config.sh "https://github.com/your-org/your-private-config-repo.git" "dev"
+   npm run config -- <push/pull> <environment> [options]
    ```
 
-#### Running the Script via npm
+   - `<push/pull>`: Use `pull` to fetch configurations, `push` to update the repository.
+   - `<environment>`: The name of the environment you want to work with (e.g., "dev", "staging", "prod").
+   - `[options]`: Additional options (see below).
 
-We've added a `setup-config` script to `package.json` for convenience. You can run it using npm:
+   Options:
 
-```bash
-npm run setup-config -- <clone_string> <environment> [--force]
+   - `--force`: Overwrite existing files without confirmation.
+   - `--branch <branch_name>`: Specify a git branch (default: main).
+   - `--message <commit_message>`: Specify a custom commit message (push only).
+   - `--config_repo <url>`: Override the config repository URL.
+
+   Examples:
+
+   ```bash
+   ./config.sh pull dev --config_repo "https://github.com/your-org/your-private-config-repo.git"
+   ./config.sh push prod --branch release --message "Updated prod configuration"
+   ```
+
+### The environments.json File
+
+The `environments.json` file is used to store the mapping between environment names and their corresponding config repository URLs. This file is created or updated automatically when you use the `--config_repo` option with the `config.sh` script.
+
+Structure of `environments.json`:
+
+```json
+{
+  "dev": {
+    "config_repo": "https://github.com/your-org/your-dev-config-repo.git"
+  },
+  "prod": {
+    "config_repo": "https://github.com/your-org/your-prod-config-repo.git"
+  }
+}
 ```
 
-Example:
-
-```bash
-npm run setup-config -- "https://github.com/your-org/your-private-config-repo.git" "dev"
-```
+- If `environments.json` exists and contains an entry for the specified environment, the script will use the stored URL unless overridden by `--config_repo`.
+- If you use `--config_repo` with a new environment, the script will add or update the entry in `environments.json`.
 
 ### Handling Multiple Environments
 
 To switch between different environments:
 
-1. Run the setup script for the desired environment:
+1. Run the config script for the desired environment:
 
    ```bash
-   npm run setup-config -- "https://github.com/your-org/your-private-config-repo.git" "prod"
+   ./config.sh pull prod
+   ```
+
+   or
+
+   ```bash
+   npm run config -- pull prod
    ```
 
 2. The script will copy the environment-specific files into your project and tell you to set the `CONFIG_FILE_NAME` environment variable. Set it like this:
@@ -226,63 +252,12 @@ To switch between different environments:
 - Keep your config repository private and secure, as it may contain sensitive information.
 - After running the script, remember to set the `CONFIG_FILE_NAME` environment variable as instructed.
 - The script cleans up after itself, removing the temporary clone of your config repository.
+- When pushing changes, review your modifications carefully, especially for production environments.
+- The script will create necessary directories and files if they don't exist in the config repository.
+- If `cdk.context.json` or the environment-specific config file doesn't exist locally, the script will warn you and ask if you want to continue.
+- Always ensure that you're not accidentally pushing sensitive information to the repository.
 
 By following this approach, you can securely manage different configurations for multiple environments while keeping your main project repository clean and your sensitive configuration data separate and private.
-
-### Pushing Configuration Changes Back to the Repository
-
-We provide a script called `push_config.sh` to push local configuration changes back to your private repository. This script allows you to update the configuration files in the repository after making local modifications.
-
-#### Running the Push Config Script
-
-1. Ensure the `push_config.sh` script is in your project root and is executable:
-
-   ```bash
-   chmod +x push_config.sh
-   ```
-
-2. Run the script with the following syntax:
-
-   ```bash
-   ./push_config.sh <clone_string> <environment> [--force] [--branch <branch_name>] [--message <commit_message>]
-   ```
-
-   - `<clone_string>`: The Git clone URL of your private config repository.
-   - `<environment>`: The name of the environment you want to update (e.g., "dev", "staging", "prod").
-   - `--force` (optional): Use this flag to overwrite existing files without prompting.
-   - `--branch <branch_name>` (optional): Specify a branch to push to (default is "main").
-   - `--message <commit_message>` (optional): Specify a custom commit message (default is "configuration update faims3").
-
-   Example:
-
-   ```bash
-   ./push_config.sh "https://github.com/your-org/your-private-config-repo.git" "dev" --branch feature-branch --message "Updated dev configuration"
-   ```
-
-#### Running the Script via npm
-
-We've added a `push-config` script to `package.json` for convenience. You can run it using npm:
-
-```bash
-npm run push-config -- <clone_string> <environment> [--force] [--branch <branch_name>] [--message <commit_message>]
-```
-
-#### What the Push Script Does
-
-1. Clones the specified repository into a temporary directory.
-2. Copies the local `cdk.context.json` and environment-specific config file (e.g., `configs/dev.json`) to the appropriate locations in the cloned repository.
-3. Warns and asks for confirmation if files are missing or being overwritten (unless `--force` is used).
-4. Provides an extra warning if `cdk.context.json` is different from the one in the repository.
-5. Commits the changes and pushes them to the specified branch.
-6. Cleans up the temporary directory.
-
-#### Important Notes
-
-- Review your changes carefully before running this script, especially for production environments.
-- The script will create necessary directories and files if they don't exist in the config repository.
-- Use the `--force` flag with caution, as it will overwrite files without prompting.
-- If cdk.context.json or the environment-specific config file doesn't exist locally, the script will warn you and ask if you want to continue.
-- Always ensure that you're not accidentally pushing sensitive information to the repository.
 
 ## Validating Configuration
 
@@ -317,87 +292,64 @@ Note that this validation is at a schema level, it might not catch improperly fo
 
 ## Configuration documentation
 
-### hostedZone
-
-Used for deploying Route 53 routes in AWS.
-
-- `id`: The ID of your Route 53 hosted zone
-- `name`: The domain name of your hosted zone
-
-### certificates
-
-- `primary`: ARN of your primary ACM certificate (must support \*.base.domain)
-- `cloudfront`: ARN of your CloudFront ACM certificate (must be in us-east-1 and support \*.base.domain)
-
-### aws
-
-- `account`: Your AWS account ID
-- `region`: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
-
-### secrets
-
-- `privateKey`: ARN of your private key in Secrets Manager
-- `publicKey`: ARN of your public key in Secrets Manager
-
-### backup
-
-- `vaultName`: The name of the AWS Backup vault to create or use
-- `retentionDays`: The number of days to retain backups (default: 30)
-- `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
-
-### couch
-
-- `volumeSize`: The size in GB of the EBS volume to mount to the EC2 instance
-- `instanceType`: The EC2 instance type for CouchDB (e.g., "t3.small")
-- `ebsRecoverySnapshotId`: (Optional) The ID of an EBS snapshot to recover the couch data volume from
-- `monitoring`: (Optional) Configuration for CouchDB monitoring alarms
-  - `cpu`: (Optional) CPU utilization alarm settings
-    - `threshold`: Percentage threshold for CPU utilization (0-100)
-    - `evaluationPeriods`: Number of periods to evaluate before triggering alarm
-    - `datapointsToAlarm`: Number of datapoints that must be breaching to trigger alarm
-  - `memory`: (Optional) Memory usage alarm settings (same structure as cpu)
-  - `disk`: (Optional) Disk usage alarm settings (same structure as cpu)
-  - `statusCheck`: (Optional) EC2 status check alarm settings
-    - `evaluationPeriods`: Number of periods to evaluate before triggering alarm
-    - `datapointsToAlarm`: Number of datapoints that must be breaching to trigger alarm
-  - `networkIn`: (Optional) Network in alarm settings (same structure as cpu, but threshold in bytes)
-  - `networkOut`: (Optional) Network out alarm settings (same structure as cpu, but threshold in bytes)
-  - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
-  - `alarmTopic`: (Optional) SNS topic settings for alarms
-    - `emailAddress`: Email address to send alarm notifications
-
-NOTE: All monitoring settings are optional. If not provided, default values will be used. The alarmTopic emailAddress, if provided, will receive notifications for all configured alarms.
-
-### conductor
-
-Configuration for the Conductor service.
-
-- `cpu`: The number of CPU units for the Fargate task
-- `memory`: The amount of memory (in MiB) for the Fargate task
-- `autoScaling`: Auto scaling configuration for the Conductor service
-  - `minCapacity`: The minimum number of tasks to run
-  - `maxCapacity`: The maximum number of tasks that can be run
-  - `targetCpuUtilization`: The target CPU utilization percentage for scaling
-  - `targetMemoryUtilization`: The target memory utilization percentage for scaling
-  - `scaleInCooldown`: The cooldown period (in seconds) before allowing another scale in action
-  - `scaleOutCooldown`: The cooldown period (in seconds) before allowing another scale out action
-
-### domains
-
-Domain configuration for all services. Note: Apex domains are not currently supported.
-
-- `baseDomain`: The base domain for all services
-- `designer`: The subdomain prefix for the designer service
-- `conductor`: The subdomain prefix for the conductor service
-- `couch`: The subdomain prefix for the CouchDB service
-- `faims`: The subdomain prefix for the main FAIMS web application
-
-### mobileApps
-
-Configuration for mobile app URLs.
-
-- `androidAppPublicUrl`: The public URL for the Android application in the Google Play Store
-- `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
+- `stackName`: The name of the stack to deploy to cloudformation. Note that changing this will completely redeploy your application.
+- `hostedZone`: Used for deploying Route 53 routes in AWS.
+  - `id`: The ID of your Route 53 hosted zone
+  - `name`: The domain name of your hosted zone
+- `certificates`:
+  - `primary`: ARN of your primary ACM certificate (must support \*.base.domain)
+  - `cloudfront`: ARN of your CloudFront ACM certificate (must be in us-east-1 and support \*.base.domain)
+- `aws`:
+  - `account`: Your AWS account ID
+  - `region`: The AWS region for deployment (e.g., ap-southeast-2 for Sydney) - defaults to ap-southeast-2
+- `secrets`:
+  - `privateKey`: ARN of your private key in Secrets Manager
+  - `publicKey`: ARN of your public key in Secrets Manager
+- `backup`:
+  - `vaultName`: The name of the AWS Backup vault to create or use
+  - `vaultArn`: (Optional) The ARN of an existing backup vault to use. If provided, a new vault will not be created
+  - `retentionDays`: The number of days to retain backups (default: 30)
+  - `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
+- `couch`:
+  - `volumeSize`: The size in GB of the EBS volume to mount to the EC2 instance
+  - `instanceType`: The EC2 instance type for CouchDB (e.g., "t3.small")
+  - `ebsRecoverySnapshotId`: (Optional) The ID of an EBS snapshot to recover the couch data volume from
+  - `monitoring`: (Optional) Configuration for CouchDB monitoring alarms
+    - `cpu`: (Optional) CPU utilization alarm settings
+      - `threshold`: Percentage threshold for CPU utilization (0-100)
+      - `evaluationPeriods`: Number of periods to evaluate before triggering alarm
+      - `datapointsToAlarm`: Number of datapoints that must be breaching to trigger alarm
+    - `memory`: (Optional) Memory usage alarm settings (same structure as cpu)
+    - `disk`: (Optional) Disk usage alarm settings (same structure as cpu)
+    - `statusCheck`: (Optional) EC2 status check alarm settings
+      - `evaluationPeriods`: Number of periods to evaluate before triggering alarm
+      - `datapointsToAlarm`: Number of datapoints that must be breaching to trigger alarm
+    - `networkIn`: (Optional) Network in alarm settings (same structure as cpu, but threshold in bytes)
+    - `networkOut`: (Optional) Network out alarm settings (same structure as cpu, but threshold in bytes)
+    - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
+    - `alarmTopic`: (Optional) SNS topic settings for alarms
+      - `emailAddress`: Email address to send alarm notifications
+- `conductor`: Configuration for the Conductor service.
+  - `conductorDockerImage`: Conductor docker image name from public registry (dockerhub) e.g. org/faims3-api
+  - `conductorDockerImageTag`: (default "latest") Conductor docker image e.g. latest or sha-123456. Composed with `conductorDockerImage` in the format `image`:`tag`.
+  - `cpu`: The number of CPU units for the Fargate task
+  - `memory`: The amount of memory (in MiB) for the Fargate task
+  - `autoScaling`: Auto scaling configuration for the Conductor service
+    - `minCapacity`: The minimum number of tasks to run
+    - `maxCapacity`: The maximum number of tasks that can be run
+    - `targetCpuUtilization`: The target CPU utilization percentage for scaling
+    - `targetMemoryUtilization`: The target memory utilization percentage for scaling
+    - `scaleInCooldown`: The cooldown period (in seconds) before allowing another scale in action
+    - `scaleOutCooldown`: The cooldown period (in seconds) before allowing another scale out action
+- `domains`: Domain configuration for all services. Note: Apex domains are not currently supported.
+  - `baseDomain`: The base domain for all services
+  - `designer`: The subdomain prefix for the designer service
+  - `conductor`: The subdomain prefix for the conductor service
+  - `couch`: The subdomain prefix for the CouchDB service
+  - `faims`: The subdomain prefix for the main FAIMS web application
+- `mobileApps`: Configuration for mobile app URLs.
+  - `androidAppPublicUrl`: The public URL for the Android application in the Google Play Store
+  - `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
 
 ## Using Your Configuration
 
