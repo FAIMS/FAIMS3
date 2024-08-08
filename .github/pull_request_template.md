@@ -1,3 +1,5 @@
+# feat(scope): pr title in semver format
+
 ## JIRA Ticket
 
 [<JIRA_TICKET>](https://jira.csiro.com/browse/<JIRA_TICKET>)
@@ -22,3 +24,4 @@ Add any additional information or context about the pull request here.
 
 - [ ] I have confirmed all commits have been signed.
 - [ ] I have added JSDoc style comments to any new functions or classes.
+- [ ] Relevant documentation such as READMEs, guides, and class comments are updated.
