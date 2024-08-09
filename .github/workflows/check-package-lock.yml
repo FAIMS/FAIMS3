@@ -1,0 +1,37 @@
+name: Check package lock up to date
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  package-lock-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Setup node cache
+        id: node-cache
+        uses: actions/cache@v3
+        with:
+          path: "**/node_modules"
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
+          restore-keys: npm-
+
+      - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm i
+
+      - name: Verify package-lock.json files are up to date
+        run: |
+          if ! git status --porcelain; then
+            echo "::error::Changes detected in git after running 'npm install --package-lock-only'. Please run 'npm install' and commit and push the changes."
+            git status
+            exit 1
+          fi
+          echo "No changes in package-lock detected."

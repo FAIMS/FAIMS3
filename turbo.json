@@ -1,5 +1,13 @@
 {
-  "$schema": "https://turbo.build/schema.json",
-  "tasks": {
-  }
+    "$schema": "https://turbo.build/schema.json",
+    "tasks": {
+        "release": {
+            "dependsOn": [
+                "^release"
+            ],
+            "env": [
+                "GITHUB_TOKEN"
+            ]
+        }
+    }
 }
