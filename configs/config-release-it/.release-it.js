@@ -16,7 +16,6 @@ module.exports = {
   git: {
     push: true,
     tagName: `${packageName}-v${version}`,
-    pushRepo: 'https://github.com/FAIMS/FAIMS3.git',
     commitsPath: '.',
     commitMessage: `feat(${scope}): released version v${version} [no ci]`,
     requireCommits: true,
