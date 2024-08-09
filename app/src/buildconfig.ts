@@ -298,6 +298,19 @@ function get_conductor_url(): string {
   }
 }
 
+/**
+ * Retrieves the notebook list type.
+ * @returns The notebook list type, which can be either "tabs" or "headings".
+ */
+function get_notebook_list_type(): "tabs" | "headings" {
+  const notebook_list_type = import.meta.env.VITE_NOTEBOOK_LIST_TYPE;
+  if (notebook_list_type === 'headings') {
+    return 'headings';
+  } else {
+    return 'tabs';
+  }
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URL = get_conductor_url();
@@ -318,3 +331,4 @@ export const SHOW_NEW_NOTEBOOK = show_new_notebook();
 export const DISABLE_SIGNIN_REDIRECT = disable_signin_redirect();
 export const BUILT_LOGIN_TOKEN = get_login_token();
 export const BUGSNAG_KEY = get_bugsnag_key();
+export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
