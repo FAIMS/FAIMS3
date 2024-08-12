@@ -14,7 +14,8 @@
         "test": "jest",
         "cdk": "cdk",
         "config": "bash ./config.sh",
-        "validate-config": "ts-node validateConfig.ts"
+        "validate-config": "ts-node validateConfig.ts",
+        "lint": "gts lint"
     },
     "devDependencies": {
         "@types/jest": "^29.5.12",

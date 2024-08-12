@@ -23,14 +23,23 @@
     "start-api": "npm start --workspace=api",
     "start-app": "npm start --workspace=app",
     "watch-api": "npm run watch --workspace=api",
-    "start-designer": "npm run start --workspace=designer"
+    "start-designer": "npm run start --workspace=designer",
+    "lint": "turbo lint",
+    "clean": "turbo clean"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "turbo": "^2.0.11"
+    "eslint-plugin-prettier": "^5.2.1",
+    "turbo": "^2.0.11",
+    "gts": "^5.3.1",
+    "typescript": "^5.4.3",
+    "@types/node": "20.12.7"
   },
-  "packageManager": "npm@10.7.0"
+  "packageManager": "npm@10.7.0",
+  "dependencies": {
+    "gts": "^5.3.1"
+  }
 }
