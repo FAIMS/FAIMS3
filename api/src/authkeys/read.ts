@@ -20,7 +20,7 @@
 
 import {jwtVerify} from 'jose';
 import {getUserFromEmailOrUsername} from '../couchdb/users';
-import { KEY_SERVICE } from '../buildconfig';
+import {KEY_SERVICE} from '../buildconfig';
 
 /**
  * validateToken

@@ -194,7 +194,10 @@ export const initialiseDatabases = async () => {
   try {
     await initialiseJWTKey();
   } catch (error) {
-    console.log('something wrong PUTing jwt_keys into the db configuration...', error);
+    console.log(
+      'something wrong PUTing jwt_keys into the db configuration...',
+      error
+    );
   }
 };
 

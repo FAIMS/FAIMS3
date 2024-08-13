@@ -191,7 +191,6 @@ function render_project_roles(roles: AllProjectRoles): handlebars.SafeString {
   return new handlebars.SafeString(all_project_sections.join(''));
 }
 
-
 app.get('/', async (req, res) => {
   if (req.user) {
     // Handlebars is pretty useless at including render logic in templates, just
