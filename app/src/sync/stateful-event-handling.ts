@@ -26,7 +26,7 @@ import {ProjectObject} from './projects';
 export type ProjectMetaList = {
   [active_id in ProjectID]: [
     ProjectObject,
-    PouchDB.Database<ProjectMetaObject>
+    PouchDB.Database<ProjectMetaObject>,
   ];
 };
 

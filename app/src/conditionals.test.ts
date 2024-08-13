@@ -16,7 +16,7 @@
  * Filename: branchingLogic.test.tsx
  */
 
-// eslint-disable-next-line node/no-unpublished-import
+// eslint-disable-next-line n/no-unpublished-import
 import {expect, it, describe} from 'vitest';
 import {compileExpression, getDependantFields} from './conditionals';
 

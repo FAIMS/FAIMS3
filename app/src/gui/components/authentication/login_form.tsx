@@ -1,4 +1,4 @@
-/* eslint-disable node/no-unsupported-features/node-builtins */
+/* eslint-disable n/no-unsupported-features/node-builtins */
 import React from 'react';
 import {Button, ButtonProps} from '@mui/material';
 import {Device} from '@capacitor/device';

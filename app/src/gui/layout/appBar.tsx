@@ -203,13 +203,13 @@ export default function MainAppBar(props: NavbarProps) {
           disabled: true,
         }
       : isAuthenticated
-      ? getNestedProjects(projectList)
-      : {
-          title: 'Notebooks',
-          icon: <AccountTree />,
-          to: '/',
-          disabled: true,
-        },
+        ? getNestedProjects(projectList)
+        : {
+            title: 'Notebooks',
+            icon: <AccountTree />,
+            to: '/',
+            disabled: true,
+          },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
     isAuthenticated

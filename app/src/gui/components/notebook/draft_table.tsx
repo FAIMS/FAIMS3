@@ -101,8 +101,8 @@ function DraftRecord(props: DraftsRecordProps) {
       params.row.type !== null &&
       params.row.type !== undefined &&
       props.viewsets[(params.row.type || '').toString()] !== undefined
-      ? props.viewsets[(params.row.type || '').toString()].label ??
-          params.row.type
+      ? (props.viewsets[(params.row.type || '').toString()].label ??
+          params.row.type)
       : params.row.type;
   }
   const columns: any[] = !mobileView
@@ -265,8 +265,8 @@ function DraftRecord(props: DraftsRecordProps) {
                       ? maxRows
                       : defaultMaxRowsMobile
                     : not_xs
-                    ? 25
-                    : defaultMaxRowsMobile,
+                      ? 25
+                      : defaultMaxRowsMobile,
               },
             },
           }}

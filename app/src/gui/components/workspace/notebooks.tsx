@@ -20,7 +20,7 @@
 
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Box, Paper, Typography, Button, Stack} from '@mui/material';
+import {Box, Paper, Typography, Button} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 
 import {GridColDef, GridCellParams, GridEventListener} from '@mui/x-data-grid';

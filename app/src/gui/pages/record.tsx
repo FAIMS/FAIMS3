@@ -19,7 +19,7 @@
  */
 
 import React, {useContext, useEffect, useState} from 'react';
-import {useParams, Navigate, useNavigate} from 'react-router-dom';
+import {useParams, useNavigate} from 'react-router-dom';
 import {
   AppBar,
   Alert,
@@ -307,8 +307,7 @@ export default function Record() {
                 {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
                 {
                   link: ROUTES.NOTEBOOK + project_id,
-                  title:
-                    projectInfo !== null ? projectInfo.name! : project_id!,
+                  title: projectInfo !== null ? projectInfo.name! : project_id!,
                 },
                 {
                   link: newParent[0]['route'],

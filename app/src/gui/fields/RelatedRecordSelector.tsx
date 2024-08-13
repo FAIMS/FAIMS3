@@ -240,8 +240,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   if (search !== '') search = '&' + search;
   const hrid =
     props.current_form !== undefined
-      ? props.form.values['hrid' + props.current_form] ??
-        props.form.values['_id']
+      ? (props.form.values['hrid' + props.current_form] ??
+        props.form.values['_id'])
       : props.form.values['_id'];
 
   useEffect(() => {

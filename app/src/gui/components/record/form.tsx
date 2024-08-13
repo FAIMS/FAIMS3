@@ -823,8 +823,8 @@ class RecordForm extends React.Component<
                 logError(error);
               }
               return is_close === 'close'
-                ? doc.data['hrid' + this.state.type_cached] ??
-                    this.props.record_id
+                ? (doc.data['hrid' + this.state.type_cached] ??
+                    this.props.record_id)
                 : revision_id; // return revision id for save and continue function
             }
           );

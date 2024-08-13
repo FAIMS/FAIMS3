@@ -42,7 +42,7 @@ export async function getAllProjectList(): Promise<ProjectInformation[]> {
 
   //await waitForStateOnce(() => all_projects_updated);
 
-  const output: ProjectInformation[] = []; 
+  const output: ProjectInformation[] = [];
   for (const listing_id of getAllListingIDs()) {
     const projects = await getAvailableProjectsFromListing(listing_id);
     for (const proj of projects) {
