@@ -9,7 +9,7 @@
     "node": "20.9.0"
   },
   "scripts": {
-    "build": "tsc && npm run build-src",
+    "build": "tsc",
     "build-src": "cd src && npm install && npm run build",
     "package": "cd src && npm run package",
     "init-api": "CONFIG_FILE_NAME=${CONFIG_FILE_NAME:-dev.json} && curl -X POST https://conductor.$(jq -r .hostedZone.name < \"configs/${CONFIG_FILE_NAME}\")/api/initialise",
