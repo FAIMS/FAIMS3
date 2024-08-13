@@ -13,34 +13,36 @@
 // limitations under the License.
 
 import './App.css';
-import { NotebookEditor } from './components/notebook-editor';
-import { store } from './state/store';
-import { Provider } from 'react-redux';
-import { ThemeProvider } from "@mui/material/styles";
-import globalTheme from "./theme/index";
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
-import { InfoPanel } from './components/info-panel';
-import { DesignPanel } from './components/design-panel';
-import { ReviewPanel } from './components/review-panel';
-import { NotebookLoader } from './components/notebook-loader';
+import {NotebookEditor} from './components/notebook-editor';
+import {store} from './state/store';
+import {Provider} from 'react-redux';
+import {ThemeProvider} from '@mui/material/styles';
+import globalTheme from './theme/index';
+import {RouterProvider, createBrowserRouter} from 'react-router-dom';
+import {InfoPanel} from './components/info-panel';
+import {DesignPanel} from './components/design-panel';
+import {ReviewPanel} from './components/review-panel';
+import {NotebookLoader} from './components/notebook-loader';
 
 const router = createBrowserRouter([
-  {path: "/",
-    element:<NotebookEditor />,
+  {
+    path: '/',
+    element: <NotebookEditor />,
     children: [
       {
         index: true,
         element: <NotebookLoader />,
       },
       {
-        path: "info",
+        path: 'info',
         element: <InfoPanel />,
       },
       {
-        path: "design/*", element: <DesignPanel />,
+        path: 'design/*',
+        element: <DesignPanel />,
       },
       {
-        path: "export",
+        path: 'export',
         element: <ReviewPanel />,
       },
     ],
@@ -51,10 +53,10 @@ function App() {
   return (
     <ThemeProvider theme={globalTheme}>
       <Provider store={store}>
-        <RouterProvider router={router}/>
+        <RouterProvider router={router} />
       </Provider>
     </ThemeProvider>
-  )
+  );
 }
 
-export default App
+export default App;

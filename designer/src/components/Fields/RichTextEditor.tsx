@@ -12,56 +12,62 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Grid, FormHelperText } from "@mui/material";
-import { useAppSelector, useAppDispatch } from "../../state/hooks";
-import { useRef } from "react";
-import { MDXEditorMethods } from '@mdxeditor/editor';
-import { FieldType } from "../../state/initial";
-import { MdxEditor } from "../mdx-editor";
+import {Grid, FormHelperText} from '@mui/material';
+import {useAppSelector, useAppDispatch} from '../../state/hooks';
+import {useRef} from 'react';
+import {MDXEditorMethods} from '@mdxeditor/editor';
+import {FieldType} from '../../state/initial';
+import {MdxEditor} from '../mdx-editor';
 
+export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
+  const field = useAppSelector(
+    state => state.notebook['ui-specification'].fields[fieldName]
+  );
+  const dispatch = useAppDispatch();
 
-export const RichTextEditor = ({ fieldName }: { fieldName: string }) => {
+  const initContent = field['component-parameters'].content || '';
+  const ref = useRef<MDXEditorMethods>(null);
 
-    const field = useAppSelector((state) => state.notebook['ui-specification'].fields[fieldName]);
-    const dispatch = useAppDispatch();
+  const updateField = (fieldName: string, newField: FieldType) => {
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+  };
 
-    const initContent = field['component-parameters'].content || "";
-    const ref = useRef<MDXEditorMethods>(null);
+  const state = {
+    content: field['component-parameters'].content || '',
+  };
 
-    const updateField = (fieldName: string, newField: FieldType) => {
-        dispatch({ type: 'ui-specification/fieldUpdated', payload: { fieldName, newField } })
-    }
+  type newState = {
+    content: string;
+  };
 
-    const state = {
-        content: field['component-parameters'].content || "",
-    };
+  const updateFieldFromState = (newState: newState) => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
+    newField['component-parameters'].content = newState.content;
+    updateField(fieldName, newField);
+  };
 
-    type newState = {
-        content: string,
-    }
+  const updateProperty = (prop: string, value: string | undefined) => {
+    const newState = {...state, [prop]: value};
+    updateFieldFromState(newState);
+  };
 
-    const updateFieldFromState = (newState: newState) => {
-        const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-        newField['component-parameters'].content = newState.content;
-        updateField(fieldName, newField);
-    };
-
-    const updateProperty = (prop: string, value: string | undefined) => {
-        const newState = { ...state, [prop]: value };
-        updateFieldFromState(newState);
-    };
-
-
-    return (
-        <Grid container item xs={12} sm={8} sx={{ m: 'auto' }}>
-            <Grid item xs={12}>
-                <MdxEditor
-                    initialMarkdown={initContent}
-                    editorRef={ref}
-                    handleChange={() => updateProperty('content', ref.current?.getMarkdown())} 
-                />
-                <FormHelperText>Use this editor to add rich text to your notebook.</FormHelperText>
-            </Grid>
-        </Grid>
-    )
+  return (
+    <Grid container item xs={12} sm={8} sx={{m: 'auto'}}>
+      <Grid item xs={12}>
+        <MdxEditor
+          initialMarkdown={initContent}
+          editorRef={ref}
+          handleChange={() =>
+            updateProperty('content', ref.current?.getMarkdown())
+          }
+        />
+        <FormHelperText>
+          Use this editor to add rich text to your notebook.
+        </FormHelperText>
+      </Grid>
+    </Grid>
+  );
 };

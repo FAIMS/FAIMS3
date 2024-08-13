@@ -12,35 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { initialState, NotebookMetadata} from "./initial";
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {initialState, NotebookMetadata} from './initial';
 
-const protectedFields = ['meta', 'project_status', 'access', 'accesses', 
-                         'forms', 'filenames', 'ispublic', 'isrequest', 'sections'];
+const protectedFields = [
+  'meta',
+  'project_status',
+  'access',
+  'accesses',
+  'forms',
+  'filenames',
+  'ispublic',
+  'isrequest',
+  'sections',
+];
 
 const metadataReducer = createSlice({
-    name: 'metadata',
-    initialState:  initialState.notebook.metadata,
-    reducers: {
-        loaded: (_state, action: PayloadAction<NotebookMetadata>) => {
-            return action.payload;
-        },
-        propertyUpdated: (state, action: PayloadAction<{property: string, value: string}>) => {
-            const { property, value } = action.payload;
-            if (protectedFields.includes(property)) {
-                throw new Error(`Cannot update protected metadata field ${property} via propertyUpdated action`);
-            } else {
-                state[property] = value;
-            }
-        },
-        rolesUpdated: (state, action: PayloadAction<{roles: string[]}>) => {
-            const { roles } = action.payload;
-            state.accesses = roles;
-        },
-    }
+  name: 'metadata',
+  initialState: initialState.notebook.metadata,
+  reducers: {
+    loaded: (_state, action: PayloadAction<NotebookMetadata>) => {
+      return action.payload;
+    },
+    propertyUpdated: (
+      state,
+      action: PayloadAction<{property: string; value: string}>
+    ) => {
+      const {property, value} = action.payload;
+      if (protectedFields.includes(property)) {
+        throw new Error(
+          `Cannot update protected metadata field ${property} via propertyUpdated action`
+        );
+      } else {
+        state[property] = value;
+      }
+    },
+    rolesUpdated: (state, action: PayloadAction<{roles: string[]}>) => {
+      const {roles} = action.payload;
+      state.accesses = roles;
+    },
+  },
 });
 
-export const { loaded, propertyUpdated, rolesUpdated } = metadataReducer.actions;
+export const {loaded, propertyUpdated, rolesUpdated} = metadataReducer.actions;
 
 export default metadataReducer.reducer;
-

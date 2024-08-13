@@ -12,6 +12,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "gts lint",
+    "fix": "gts fix",
     "test": "vitest"
   },
   "dependencies": {
