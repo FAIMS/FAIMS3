@@ -93,7 +93,7 @@
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
     "clsx": "1.2.1",
-    "faims3-datamodel": "^1.1.6",
+    "faims3-datamodel": "*",
     "fast-json-stable-stringify": "2.1.0",
     "formik": "2.4.6",
     "formik-mui": "4.0.0",
