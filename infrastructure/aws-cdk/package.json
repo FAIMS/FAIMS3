@@ -1,5 +1,5 @@
 {
-    "name": "aws-cdk-faims-infra",
+  "name": "aws-cdk-faims-infra",
   "packageManager": "npm@10.7.0",
     "version": "0.1.0",
     "bin": {
@@ -18,7 +18,8 @@
         "cdk": "cdk",
         "config": "bash ./config.sh",
         "validate-config": "ts-node validateConfig.ts",
-        "lint": "gts lint"
+        "lint": "gts lint",
+        "fix": "gts fix"
     },
     "devDependencies": {
         "@types/jest": "^29.5.12",

@@ -13,24 +13,24 @@
  * TODO: Investigate better key setup process for one-click deploy
  */
 
-import { Duration, RemovalPolicy, Size } from "aws-cdk-lib";
-import * as acm from "aws-cdk-lib/aws-certificatemanager";
-import * as cw_actions from "aws-cdk-lib/aws-cloudwatch-actions";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import * as elbTargets from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
-import * as iam from "aws-cdk-lib/aws-iam";
-import * as route53 from "aws-cdk-lib/aws-route53";
-import * as r53targets from "aws-cdk-lib/aws-route53-targets";
-import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-import * as sns from "aws-cdk-lib/aws-sns";
-import * as subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
-import { GraphWidget, Metric, TextWidget } from "aws-cdk-lib/aws-cloudwatch";
+import {Duration, RemovalPolicy, Size} from 'aws-cdk-lib';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as cw_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as elbTargets from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as r53targets from 'aws-cdk-lib/aws-route53-targets';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import {GraphWidget, Metric, TextWidget} from 'aws-cdk-lib/aws-cloudwatch';
 
-import { Construct } from "constructs";
-import { MonitoringConfig } from "../faims-infra-stack";
-import { SharedBalancer } from "./networking";
+import {Construct} from 'constructs';
+import {MonitoringConfig} from '../faims-infra-stack';
+import {SharedBalancer} from './networking';
 
 /**
  * Properties for the EC2CouchDB construct
@@ -75,11 +75,11 @@ export class EC2CouchDB extends Construct {
   /** The internal port CouchDB listens on */
   private readonly couchInternalPort: number = 5984;
   /** The path where CouchDB data will be stored */
-  private readonly couchDataPath: string = "/opt/couchdb/data";
+  private readonly couchDataPath: string = '/opt/couchdb/data';
   /** The device name for the EBS data volume */
-  private readonly ebsDeviceName: string = "/dev/xvdf";
+  private readonly ebsDeviceName: string = '/dev/xvdf';
   /** The Couch DB Docker version tag to use  */
-  private readonly couchVersionTag: string = "latest";
+  private readonly couchVersionTag: string = 'latest';
   /** The device name for the EBS data volume */
   public readonly dataVolume: ec2.Volume;
   /** The Alarm SNS topic being published to */
@@ -88,11 +88,11 @@ export class EC2CouchDB extends Construct {
   private readonly monitoringConfig?: MonitoringConfig;
   /** Path to AWS cloud watch agent config - be sure to prefix with file:*/
   private readonly awsCloudWatchAgentConfigPath =
-    "/opt/aws/amazon-cloudwatch-agent/bin/config.json";
+    '/opt/aws/amazon-cloudwatch-agent/bin/config.json';
   /** Cloudwatch log group name */
-  private readonly logGroupName = "/ec2/couchdb";
+  private readonly logGroupName = '/ec2/couchdb';
   /** Postfix on the log stream (prefix is instance ID) */
-  private readonly logStreamPostfix = "_couchdb";
+  private readonly logStreamPostfix = '_couchdb';
 
   /** CouchDB configuration settings */
   private readonly couchDbConfig: string = `
@@ -133,7 +133,7 @@ methods = GET, PUT, POST, HEAD, DELETE
 
     // DEBUG: For debugging to quickly force new instance redeployment, change
     // this ID postfix (forcing replacement)
-    const debugIdPostfix = "";
+    const debugIdPostfix = '';
 
     // Expose variables
     this.sharedBalancer = props.sharedBalancer;
@@ -145,13 +145,13 @@ methods = GET, PUT, POST, HEAD, DELETE
     // Create a secret for the CouchDB admin password
     this.passwordSecret = new secretsmanager.Secret(
       this,
-      "CouchDBAdminPassword",
+      'CouchDBAdminPassword',
       {
         generateSecretString: {
           excludeCharacters: '/\\"%@',
-          generateStringKey: "password",
+          generateStringKey: 'password',
           passwordLength: 16,
-          secretStringTemplate: JSON.stringify({ username: "admin" }),
+          secretStringTemplate: JSON.stringify({username: 'admin'}),
         },
         removalPolicy: RemovalPolicy.DESTROY,
       }
@@ -163,17 +163,17 @@ methods = GET, PUT, POST, HEAD, DELETE
     // Create user data script to install and configure CouchDB
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
-      "#!/bin/bash",
-      "set -e",
-      "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1",
+      '#!/bin/bash',
+      'set -e',
+      'exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1',
 
       // Update yum and install dependencies
-      "yum update -y",
+      'yum update -y',
 
       // Collectd for cloudwatch agent
-      "sudo amazon-linux-extras install collectd",
+      'sudo amazon-linux-extras install collectd',
 
-      "yum install -y docker jq awscli amazon-cloudwatch-agent",
+      'yum install -y docker jq awscli amazon-cloudwatch-agent',
 
       // Configure CloudWatch agent to collect disk usage and memory usage -
       // publish 60 second interval
@@ -259,7 +259,7 @@ methods = GET, PUT, POST, HEAD, DELETE
    }
 }
       `,
-      "EOL",
+      'EOL',
 
       // Validate and load config
       `/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a fetch-config -c file:${this.awsCloudWatchAgentConfigPath}`,
@@ -268,50 +268,50 @@ methods = GET, PUT, POST, HEAD, DELETE
       `/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a start -c file:${this.awsCloudWatchAgentConfigPath}`,
 
       // Run CouchDB with docker service
-      "systemctl start docker",
-      "systemctl enable docker",
+      'systemctl start docker',
+      'systemctl enable docker',
       `docker pull couchdb:${this.couchVersionTag}`,
 
       // Set environment variables
       `SECRET_ARN=${this.passwordSecret.secretArn}`,
-      "REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)",
-      "export AWS_DEFAULT_REGION=$REGION",
+      'REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)',
+      'export AWS_DEFAULT_REGION=$REGION',
 
       // Get username and password from Secrets Manager
-      "ADMIN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text | jq -r .password)",
-      "ADMIN_USER=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text | jq -r .username)",
+      'ADMIN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text | jq -r .password)',
+      'ADMIN_USER=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text | jq -r .username)',
 
       // Create CouchDB configuration file
-      "mkdir -p /opt/couchdb/etc/local.d",
+      'mkdir -p /opt/couchdb/etc/local.d',
       `cat > /opt/couchdb/etc/local.d/local.ini << EOL
 ${this.couchDbConfig}
 EOL`,
 
       // Append admin and password configuration to local.ini
-      `echo "[admins]" >> /opt/couchdb/etc/local.d/local.ini`,
-      `echo "$ADMIN_USER = $ADMIN_PASSWORD" >> /opt/couchdb/etc/local.d/local.ini`,
+      'echo "[admins]" >> /opt/couchdb/etc/local.d/local.ini',
+      'echo "$ADMIN_USER = $ADMIN_PASSWORD" >> /opt/couchdb/etc/local.d/local.ini',
 
       // Mount the EBS volume for CouchDB data
       `DEVICE=${this.ebsDeviceName}`,
       `DATA_DIR=${this.couchDataPath}`,
 
       // Check if the volume has a filesystem - in snapshot it already will!
-      "if ! blkid $DEVICE; then",
-      "    # If not, create an ext4 filesystem",
-      "    mkfs -t ext4 $DEVICE",
-      "fi",
+      'if ! blkid $DEVICE; then',
+      '    # If not, create an ext4 filesystem',
+      '    mkfs -t ext4 $DEVICE',
+      'fi',
 
       // Create the mount point
-      "mkdir -p $DATA_DIR",
+      'mkdir -p $DATA_DIR',
 
       // Mount the volume
-      "mount $DEVICE $DATA_DIR",
+      'mount $DEVICE $DATA_DIR',
 
       // Add to fstab for persistence across reboots
       'echo "$DEVICE $DATA_DIR ext4 defaults,nofail 0 2" >> /etc/fstab',
 
       // Set appropriate permissions
-      "chown -R 5984:5984 $DATA_DIR",
+      'chown -R 5984:5984 $DATA_DIR',
 
       // Log the result
       'echo "CouchDB data volume mounted at $DATA_DIR" >> /var/log/couchdb-setup.log',
@@ -339,11 +339,11 @@ WantedBy=multi-user.target
 EOL`,
 
       // Reload systemd to recognize the new service
-      "systemctl daemon-reload",
+      'systemctl daemon-reload',
 
       // Enable and start the CouchDB service
-      "systemctl enable couchdb-docker.service",
-      "systemctl start couchdb-docker.service",
+      'systemctl enable couchdb-docker.service',
+      'systemctl start couchdb-docker.service',
 
       // Log the result
       'echo "CouchDB Docker service created and started" >> /var/log/couchdb-setup.log'
@@ -355,22 +355,22 @@ EOL`,
     // Create a security group for the EC2 instance
     const couchSecurityGroup = new ec2.SecurityGroup(
       this,
-      "CouchDBSecurityGroup",
+      'CouchDBSecurityGroup',
       {
         vpc: props.vpc,
         allowAllOutbound: true,
-        description: "Security group for CouchDB EC2 instances",
+        description: 'Security group for CouchDB EC2 instances',
       }
     );
 
     // Create the EC2 instance
-    this.instance = new ec2.Instance(this, "CouchDBInstance" + debugIdPostfix, {
+    this.instance = new ec2.Instance(this, 'CouchDBInstance' + debugIdPostfix, {
       vpc: props.vpc,
       machineImage: new ec2.AmazonLinuxImage({
         generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
       }),
       userData,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      vpcSubnets: {subnetType: ec2.SubnetType.PUBLIC},
       securityGroup: couchSecurityGroup,
       instanceType: new ec2.InstanceType(props.instanceType),
     });
@@ -378,7 +378,7 @@ EOL`,
     // Create and attach the EBS volume for CouchDB data
     const dataVolume = new ec2.Volume(
       this,
-      "CouchDBDataVolume" + debugIdPostfix,
+      'CouchDBDataVolume' + debugIdPostfix,
       {
         volumeType: ec2.EbsDeviceVolumeType.GP3,
         availabilityZone: this.instance.instanceAvailabilityZone,
@@ -394,7 +394,7 @@ EOL`,
     // Attach the EBS data volume for couch to the correct path
     new ec2.CfnVolumeAttachment(
       this,
-      "CouchDBVolumeAttachment" + debugIdPostfix,
+      'CouchDBVolumeAttachment' + debugIdPostfix,
       {
         volumeId: dataVolume.volumeId,
         instanceId: this.instance.instanceId,
@@ -406,18 +406,18 @@ EOL`,
     // =========================
 
     // Create the target group for the CouchDB instances
-    this.targetGroup = new elb.ApplicationTargetGroup(this, "CouchTG", {
+    this.targetGroup = new elb.ApplicationTargetGroup(this, 'CouchTG', {
       port: this.couchInternalPort,
       protocol: elb.ApplicationProtocol.HTTP,
       targetType: elb.TargetType.INSTANCE,
       healthCheck: {
         enabled: true,
-        healthyHttpCodes: "200",
+        healthyHttpCodes: '200',
         protocol: elb.Protocol.HTTP,
         interval: Duration.seconds(30),
         timeout: Duration.seconds(5),
         port: this.couchInternalPort.toString(),
-        path: "/",
+        path: '/',
       },
       vpc: props.vpc,
     });
@@ -427,7 +427,7 @@ EOL`,
 
     // Add HTTP redirected HTTPS service to ALB against target group
     props.sharedBalancer.addHttpRedirectedConditionalHttpsTarget(
-      "couch",
+      'couch',
       this.targetGroup,
       [elb.ListenerCondition.hostHeaders([props.domainName])],
       110, // TODO: Understand and consider priorities
@@ -438,7 +438,7 @@ EOL`,
     // ===========
 
     // Create a DNS record for the CouchDB endpoint
-    new route53.ARecord(this, "CouchDBAliasRecord", {
+    new route53.ARecord(this, 'CouchDBAliasRecord', {
       zone: props.hz,
       recordName: props.domainName,
       target: route53.RecordTarget.fromAlias(
@@ -457,13 +457,13 @@ EOL`,
       couchSecurityGroup.addIngressRule(
         ec2.Peer.anyIpv4(),
         ec2.Port.tcp(443),
-        "Allow SSM Instance Connect"
+        'Allow SSM Instance Connect'
       );
 
       // Add SSM Instance Connect permissions to the instance role
       this.instance.role.addManagedPolicy(
         iam.ManagedPolicy.fromAwsManagedPolicyName(
-          "AmazonSSMManagedInstanceCore"
+          'AmazonSSMManagedInstanceCore'
         )
       );
     }
@@ -476,7 +476,7 @@ EOL`,
 
     // Add necessary permissions for CloudWatch agent
     this.instance.role.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName("CloudWatchAgentServerPolicy")
+      iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy')
     );
 
     // NETWORK SECURITY
@@ -486,15 +486,15 @@ EOL`,
     couchSecurityGroup.connections.allowFrom(
       props.sharedBalancer.alb,
       ec2.Port.tcp(this.couchInternalPort),
-      "Allow traffic from ALB to CouchDB instances"
+      'Allow traffic from ALB to CouchDB instances'
     );
 
     // MONITORING
     // ==========
 
     // Create an SNS topic for alarms
-    this.alarmSNSTopic = new sns.Topic(this, "CouchDBAlarmTopic", {
-      displayName: "CouchDB Alarms",
+    this.alarmSNSTopic = new sns.Topic(this, 'CouchDBAlarmTopic', {
+      displayName: 'CouchDB Alarms',
     });
 
     // If an email is provided, add an email subscription to the SNS topic
@@ -528,62 +528,62 @@ EOL`,
    */
   private setupMonitoring() {
     // CPU Utilization Alarm
-    this.createAlarm("CouchDBCPUAlarm", {
+    this.createAlarm('CouchDBCPUAlarm', {
       metric: new cloudwatch.Metric({
-        namespace: "AWS/EC2",
-        metricName: "CPUUtilization",
-        dimensionsMap: { InstanceId: this.instance.instanceId },
-        statistic: "Average",
+        namespace: 'AWS/EC2',
+        metricName: 'CPUUtilization',
+        dimensionsMap: {InstanceId: this.instance.instanceId},
+        statistic: 'Average',
         period: Duration.minutes(5),
       }),
       threshold: this.monitoringConfig?.cpu?.threshold ?? 80,
       evaluationPeriods: this.monitoringConfig?.cpu?.evaluationPeriods ?? 3,
       datapointsToAlarm: this.monitoringConfig?.cpu?.datapointsToAlarm ?? 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      alarmDescription: "CouchDB instance CPU utilization is high",
+      alarmDescription: 'CouchDB instance CPU utilization is high',
     });
 
     // Memory Usage Alarm
-    this.createAlarm("CouchDBMemoryAlarm", {
+    this.createAlarm('CouchDBMemoryAlarm', {
       metric: new cloudwatch.Metric({
-        namespace: "CWAgent",
-        metricName: "mem_used_percent",
-        dimensionsMap: { InstanceId: this.instance.instanceId },
-        statistic: "Average",
+        namespace: 'CWAgent',
+        metricName: 'mem_used_percent',
+        dimensionsMap: {InstanceId: this.instance.instanceId},
+        statistic: 'Average',
         period: Duration.minutes(5),
       }),
       threshold: this.monitoringConfig?.memory?.threshold ?? 80,
       evaluationPeriods: this.monitoringConfig?.memory?.evaluationPeriods ?? 3,
       datapointsToAlarm: this.monitoringConfig?.memory?.datapointsToAlarm ?? 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      alarmDescription: "CouchDB instance memory usage is high",
+      alarmDescription: 'CouchDB instance memory usage is high',
     });
 
     // Disk Usage Alarm
-    this.createAlarm("CouchDBDiskAlarm", {
+    this.createAlarm('CouchDBDiskAlarm', {
       metric: new cloudwatch.Metric({
-        namespace: "CWAgent",
-        metricName: "disk_used_percent",
+        namespace: 'CWAgent',
+        metricName: 'disk_used_percent',
         dimensionsMap: {
           InstanceId: this.instance.instanceId,
         },
-        statistic: "Average",
+        statistic: 'Average',
         period: Duration.minutes(5),
       }),
       threshold: this.monitoringConfig?.disk?.threshold ?? 80,
       evaluationPeriods: this.monitoringConfig?.disk?.evaluationPeriods ?? 3,
       datapointsToAlarm: this.monitoringConfig?.disk?.datapointsToAlarm ?? 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      alarmDescription: "CouchDB instance disk usage is high",
+      alarmDescription: 'CouchDB instance disk usage is high',
     });
 
     // Status Check Failed Alarm
-    this.createAlarm("CouchDBStatusCheckAlarm", {
+    this.createAlarm('CouchDBStatusCheckAlarm', {
       metric: new cloudwatch.Metric({
-        namespace: "AWS/EC2",
-        metricName: "StatusCheckFailed",
-        dimensionsMap: { InstanceId: this.instance.instanceId },
-        statistic: "Maximum",
+        namespace: 'AWS/EC2',
+        metricName: 'StatusCheckFailed',
+        dimensionsMap: {InstanceId: this.instance.instanceId},
+        statistic: 'Maximum',
         period: Duration.minutes(5),
       }),
       threshold: 1,
@@ -592,16 +592,16 @@ EOL`,
       datapointsToAlarm:
         this.monitoringConfig?.statusCheck?.datapointsToAlarm ?? 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      alarmDescription: "CouchDB instance has failed its status check",
+      alarmDescription: 'CouchDB instance has failed its status check',
     });
 
     // Network In Alarm
-    this.createAlarm("CouchDBNetworkInAlarm", {
+    this.createAlarm('CouchDBNetworkInAlarm', {
       metric: new cloudwatch.Metric({
-        namespace: "AWS/EC2",
-        metricName: "NetworkIn",
-        dimensionsMap: { InstanceId: this.instance.instanceId },
-        statistic: "Average",
+        namespace: 'AWS/EC2',
+        metricName: 'NetworkIn',
+        dimensionsMap: {InstanceId: this.instance.instanceId},
+        statistic: 'Average',
         period: Duration.minutes(5),
       }),
       threshold: this.monitoringConfig?.networkIn?.threshold ?? 10000000, // 10 MB/s
@@ -610,16 +610,16 @@ EOL`,
       datapointsToAlarm:
         this.monitoringConfig?.networkIn?.datapointsToAlarm ?? 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      alarmDescription: "CouchDB instance network in is high",
+      alarmDescription: 'CouchDB instance network in is high',
     });
 
     // Network Out Alarm
-    this.createAlarm("CouchDBNetworkOutAlarm", {
+    this.createAlarm('CouchDBNetworkOutAlarm', {
       metric: new cloudwatch.Metric({
-        namespace: "AWS/EC2",
-        metricName: "NetworkOut",
-        dimensionsMap: { InstanceId: this.instance.instanceId },
-        statistic: "Average",
+        namespace: 'AWS/EC2',
+        metricName: 'NetworkOut',
+        dimensionsMap: {InstanceId: this.instance.instanceId},
+        statistic: 'Average',
         period: Duration.minutes(5),
       }),
       threshold: this.monitoringConfig?.networkOut?.threshold ?? 10000000, // 10 MB/s
@@ -628,26 +628,26 @@ EOL`,
       datapointsToAlarm:
         this.monitoringConfig?.networkOut?.datapointsToAlarm ?? 2,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      alarmDescription: "CouchDB instance network out is high",
+      alarmDescription: 'CouchDB instance network out is high',
     });
 
     // HTTP 5xx Errors Alarm
-    this.createAlarm("CouchDBHttp5xxAlarm", {
+    this.createAlarm('CouchDBHttp5xxAlarm', {
       metric: new cloudwatch.Metric({
-        namespace: "AWS/ApplicationELB",
-        metricName: "HTTPCode_Target_5XX_Count",
+        namespace: 'AWS/ApplicationELB',
+        metricName: 'HTTPCode_Target_5XX_Count',
         dimensionsMap: {
           LoadBalancer: this.sharedBalancer.alb.loadBalancerFullName,
           TargetGroup: this.targetGroup.targetGroupFullName,
         },
-        statistic: "Sum",
+        statistic: 'Sum',
         period: Duration.minutes(5),
       }),
       threshold: this.monitoringConfig?.http5xx?.threshold ?? 10,
       evaluationPeriods: this.monitoringConfig?.http5xx?.evaluationPeriods ?? 5,
       datapointsToAlarm: this.monitoringConfig?.http5xx?.datapointsToAlarm ?? 3,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      alarmDescription: "CouchDB is returning a high number of 5xx errors",
+      alarmDescription: 'CouchDB is returning a high number of 5xx errors',
     });
   }
 
@@ -666,8 +666,8 @@ EOL`,
    * Adds left annotations for alarm thresholds to improve visibility
    */
   private createDashboard() {
-    const dashboard = new cloudwatch.Dashboard(this, "CouchDBDashboard", {
-      dashboardName: "CouchDB-Dashboard",
+    const dashboard = new cloudwatch.Dashboard(this, 'CouchDBDashboard', {
+      dashboardName: 'CouchDB-Dashboard',
     });
 
     const instanceId = this.instance.instanceId;
@@ -678,140 +678,140 @@ EOL`,
     const createLeftAnnotation = (value: number, label: string) => ({
       value,
       label,
-      color: "#ff0000",
+      color: '#ff0000',
     });
 
     dashboard.addWidgets(
       new TextWidget({
-        markdown: "# CouchDB Instance Metrics",
+        markdown: '# CouchDB Instance Metrics',
         width: 24,
         height: 1,
       }),
       new GraphWidget({
-        title: "CPU Utilization",
+        title: 'CPU Utilization',
         left: [
           new Metric({
-            namespace: "AWS/EC2",
-            metricName: "CPUUtilization",
-            dimensionsMap: { InstanceId: instanceId },
-            statistic: "Average",
+            namespace: 'AWS/EC2',
+            metricName: 'CPUUtilization',
+            dimensionsMap: {InstanceId: instanceId},
+            statistic: 'Average',
             period: Duration.minutes(5),
           }),
         ],
         leftAnnotations: [
           createLeftAnnotation(
             this.monitoringConfig?.cpu?.threshold ?? 80,
-            "CPU Alarm Threshold"
+            'CPU Alarm Threshold'
           ),
         ],
         width: 8,
         height: 6,
       }),
       new GraphWidget({
-        title: "Memory Usage",
+        title: 'Memory Usage',
         left: [
           new Metric({
-            namespace: "CWAgent",
-            metricName: "mem_used_percent",
-            dimensionsMap: { InstanceId: instanceId },
-            statistic: "Average",
+            namespace: 'CWAgent',
+            metricName: 'mem_used_percent',
+            dimensionsMap: {InstanceId: instanceId},
+            statistic: 'Average',
             period: Duration.minutes(5),
           }),
         ],
         leftAnnotations: [
           createLeftAnnotation(
             this.monitoringConfig?.memory?.threshold ?? 80,
-            "Memory Alarm Threshold"
+            'Memory Alarm Threshold'
           ),
         ],
         width: 8,
         height: 6,
       }),
       new GraphWidget({
-        title: "Disk Usage",
+        title: 'Disk Usage',
         left: [
           new Metric({
-            namespace: "CWAgent",
-            metricName: "disk_used_percent",
-            dimensionsMap: { InstanceId: instanceId },
-            statistic: "Average",
+            namespace: 'CWAgent',
+            metricName: 'disk_used_percent',
+            dimensionsMap: {InstanceId: instanceId},
+            statistic: 'Average',
             period: Duration.minutes(5),
           }),
         ],
         leftAnnotations: [
           createLeftAnnotation(
             this.monitoringConfig?.disk?.threshold ?? 80,
-            "Disk Usage Alarm Threshold"
+            'Disk Usage Alarm Threshold'
           ),
         ],
         width: 8,
         height: 6,
       }),
       new GraphWidget({
-        title: "Network Traffic",
+        title: 'Network Traffic',
         left: [
           new Metric({
-            namespace: "AWS/EC2",
-            metricName: "NetworkIn",
-            dimensionsMap: { InstanceId: instanceId },
-            statistic: "Average",
+            namespace: 'AWS/EC2',
+            metricName: 'NetworkIn',
+            dimensionsMap: {InstanceId: instanceId},
+            statistic: 'Average',
             period: Duration.minutes(5),
           }),
         ],
         leftAnnotations: [
           createLeftAnnotation(
             this.monitoringConfig?.networkIn?.threshold ?? 10000000,
-            "Network In Alarm Threshold"
+            'Network In Alarm Threshold'
           ),
         ],
         right: [
           new Metric({
-            namespace: "AWS/EC2",
-            metricName: "NetworkOut",
-            dimensionsMap: { InstanceId: instanceId },
-            statistic: "Average",
+            namespace: 'AWS/EC2',
+            metricName: 'NetworkOut',
+            dimensionsMap: {InstanceId: instanceId},
+            statistic: 'Average',
             period: Duration.minutes(5),
           }),
         ],
         rightAnnotations: [
           createLeftAnnotation(
             this.monitoringConfig?.networkOut?.threshold ?? 10000000,
-            "Network Out Alarm Threshold"
+            'Network Out Alarm Threshold'
           ),
         ],
         width: 12,
         height: 6,
       }),
       new GraphWidget({
-        title: "Status Check Failed",
+        title: 'Status Check Failed',
         left: [
           new Metric({
-            namespace: "AWS/EC2",
-            metricName: "StatusCheckFailed",
-            dimensionsMap: { InstanceId: instanceId },
-            statistic: "Maximum",
+            namespace: 'AWS/EC2',
+            metricName: 'StatusCheckFailed',
+            dimensionsMap: {InstanceId: instanceId},
+            statistic: 'Maximum',
             period: Duration.minutes(5),
           }),
         ],
         leftAnnotations: [
-          createLeftAnnotation(1, "Status Check Failure Threshold"),
+          createLeftAnnotation(1, 'Status Check Failure Threshold'),
         ],
         width: 12,
         height: 6,
       }),
       new TextWidget({
-        markdown: "# Application Load Balancer Metrics",
+        markdown: '# Application Load Balancer Metrics',
         width: 24,
         height: 1,
       }),
       new GraphWidget({
-        title: "ALB Request Count",
+        title: 'ALB Request Count',
         left: [
           new Metric({
-            namespace: "AWS/ApplicationELB",
-            metricName: "RequestCount",
-            dimensionsMap: { LoadBalancer: albFullName },
-            statistic: "Sum",
+            namespace: 'AWS/ApplicationELB',
+            metricName: 'RequestCount',
+            dimensionsMap: {LoadBalancer: albFullName},
+            statistic: 'Sum',
             period: Duration.minutes(5),
           }),
         ],
@@ -819,13 +819,13 @@ EOL`,
         height: 6,
       }),
       new GraphWidget({
-        title: "ALB Target Response Time",
+        title: 'ALB Target Response Time',
         left: [
           new Metric({
-            namespace: "AWS/ApplicationELB",
-            metricName: "TargetResponseTime",
-            dimensionsMap: { LoadBalancer: albFullName },
-            statistic: "Average",
+            namespace: 'AWS/ApplicationELB',
+            metricName: 'TargetResponseTime',
+            dimensionsMap: {LoadBalancer: albFullName},
+            statistic: 'Average',
             period: Duration.minutes(5),
           }),
         ],
@@ -833,49 +833,49 @@ EOL`,
         height: 6,
       }),
       new GraphWidget({
-        title: "ALB HTTP Error Codes",
+        title: 'ALB HTTP Error Codes',
         left: [
           new Metric({
-            namespace: "AWS/ApplicationELB",
-            metricName: "HTTPCode_Target_4XX_Count",
+            namespace: 'AWS/ApplicationELB',
+            metricName: 'HTTPCode_Target_4XX_Count',
             dimensionsMap: {
               LoadBalancer: albFullName,
               TargetGroup: targetGroupFullName,
             },
-            statistic: "Sum",
+            statistic: 'Sum',
             period: Duration.minutes(5),
           }),
           new Metric({
-            namespace: "AWS/ApplicationELB",
-            metricName: "HTTPCode_Target_5XX_Count",
+            namespace: 'AWS/ApplicationELB',
+            metricName: 'HTTPCode_Target_5XX_Count',
             dimensionsMap: {
               LoadBalancer: albFullName,
               TargetGroup: targetGroupFullName,
             },
-            statistic: "Sum",
+            statistic: 'Sum',
             period: Duration.minutes(5),
           }),
         ],
         leftAnnotations: [
           createLeftAnnotation(
             this.monitoringConfig?.http5xx?.threshold ?? 10,
-            "5XX Error Alarm Threshold"
+            '5XX Error Alarm Threshold'
           ),
         ],
         width: 8,
         height: 6,
       }),
       new GraphWidget({
-        title: "ALB Healthy Host Count",
+        title: 'ALB Healthy Host Count',
         left: [
           new Metric({
-            namespace: "AWS/ApplicationELB",
-            metricName: "HealthyHostCount",
+            namespace: 'AWS/ApplicationELB',
+            metricName: 'HealthyHostCount',
             dimensionsMap: {
               LoadBalancer: albFullName,
               TargetGroup: targetGroupFullName,
             },
-            statistic: "Average",
+            statistic: 'Average',
             period: Duration.minutes(5),
           }),
         ],
@@ -883,13 +883,13 @@ EOL`,
         height: 6,
       }),
       new GraphWidget({
-        title: "ALB Processed Bytes",
+        title: 'ALB Processed Bytes',
         left: [
           new Metric({
-            namespace: "AWS/ApplicationELB",
-            metricName: "ProcessedBytes",
-            dimensionsMap: { LoadBalancer: albFullName },
-            statistic: "Sum",
+            namespace: 'AWS/ApplicationELB',
+            metricName: 'ProcessedBytes',
+            dimensionsMap: {LoadBalancer: albFullName},
+            statistic: 'Sum',
             period: Duration.minutes(5),
           }),
         ],
