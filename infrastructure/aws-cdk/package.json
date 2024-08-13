@@ -5,6 +5,9 @@
     "bin": {
         "aws-cdk-faims-infra": "bin/aws-cdk-faims-infra.js"
     },
+    "engines": {
+        "node": "20.9.0"
+    },
     "scripts": {
         "build": "tsc && npm run build-src",
         "build-src": "cd src && npm install && npm run build",
