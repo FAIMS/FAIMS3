@@ -19,7 +19,8 @@
     "test": "NODE_ENV=test jest",
     "test:watch": "NODE_ENV=test jest --watchAll=true",
     "coverage": "NODE_ENV=test jest --coverage --watchAll=false",
-    "lint": "gts lint"
+    "lint": "gts lint",
+    "fix": "gts fix"
   },
   "author": "",
   "license": "Apache",
