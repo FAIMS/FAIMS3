@@ -64,6 +64,7 @@ interface MapProps extends ButtonProps {
 import {AppBar, Dialog, IconButton, Toolbar, Typography} from '@mui/material';
 import Feature from 'ol/Feature';
 import {Geometry} from 'ol/geom';
+import {createCenterControl} from '../../components/map/center-control';
 
 const styles = {
   mapContainer: {
@@ -133,6 +134,8 @@ function MapWrapper(props: MapProps) {
         view: view,
         controls: [],
       });
+
+      theMap.addControl(createCenterControl(theMap.getView(), center));
 
       theMap.getView().setCenter(center);
 
