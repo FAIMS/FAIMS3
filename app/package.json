@@ -14,7 +14,7 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },  
+  },
   "engines": {
     "node": "20.9.0"
   },
@@ -118,8 +118,8 @@
     "react-dropzone": "14.2.3",
     "react-jss": "^10.10.0",
     "react-obfuscate": "^3.6.9",
-    "react-router": "^6.11.1",
-    "react-router-dom": "6.15.0",
+    "react-router": "^6.26.0",
+    "react-router-dom": "^6.26.0",
     "react-router-hash-link": "^2.4.3",
     "rollup-plugin-node-polyfills": "^0.2.1",
     "stream": "^0.0.2",

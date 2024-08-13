@@ -28,7 +28,8 @@
     "watch-api": "npm run watch --workspace=api",
     "start-designer": "npm run start --workspace=designer",
     "lint": "turbo lint",
-    "clean": "turbo clean"
+    "clean": "turbo clean",
+    "build": "turbo build"
   },
   "keywords": [],
   "author": "",
@@ -37,7 +38,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.9.0",
-    "@types/node": "20.12.7",
+    "@types/node": "^22.2.0",
     "eslint-plugin-prettier": "^5.2.1",
     "gts": "^5.3.1",
     "turbo": "^2.0.11",
