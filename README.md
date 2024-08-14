@@ -47,19 +47,19 @@ that contains the public key and other information.
 Build the two docker images:
 
 ```bash
-docker compose -f docker-compose.dev.yml build
+docker compose -f api/docker-compose.dev.yml build
 ```
 
 Then we can startup the servers - if you want to monitor the output use
 
 ```bash
-docker compose -f docker-compose.dev.yml up
+docker compose -f api/docker-compose.dev.yml up
 ```
 
 Or if you'd like to run it in the background
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f api/docker-compose.dev.yml up -d
 ```
 
 will start the couchdb and conductor servers to listen on the configured port.
