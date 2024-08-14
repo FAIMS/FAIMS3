@@ -4,7 +4,7 @@ import {Box, Divider, Grid, Typography} from '@mui/material';
 import Link from '@mui/material/Link';
 import SlimFooter from './slimFooter';
 import SupportEmail from './supportEmail';
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 
 interface FullFooterProps {

@@ -1,6 +1,6 @@
 import {Stack} from '@mui/material';
 import {DataGrid, GridEventListener} from '@mui/x-data-grid';
-import {ProjectInformation} from 'faims3-datamodel/build/src/types';
+import {ProjectInformation} from '@faims3/data-model/build/src/types';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 
 /**

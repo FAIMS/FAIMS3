@@ -25,12 +25,12 @@ import {initialiseDatabases} from '../src/couchdb';
 import {createNotebook} from '../src/couchdb/notebooks';
 import * as fs from 'fs';
 import {createRandomRecord} from '../src/couchdb/devtools';
-import {registerClient} from 'faims3-datamodel';
+import {registerClient} from '@faims3/data-model';
 import {DEVELOPER_MODE} from '../src/buildconfig';
 import {expect} from 'chai';
 import {callbackObject} from './mocks';
 
-// set up the database module faims3-datamodel with our callbacks to get databases
+// set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
 
 if (DEVELOPER_MODE) {

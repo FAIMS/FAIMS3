@@ -15,12 +15,12 @@ import {
 import LoadingButton from '@mui/lab/LoadingButton';
 import {ActionType} from '../../../../../context/actions';
 import {store} from '../../../../../context/store';
-import {RecordReference} from 'faims3-datamodel';
+import {RecordReference} from '@faims3/data-model';
 import {Field} from 'formik';
 import AddIcon from '@mui/icons-material/Add';
 import {CreateRecordLinkProps} from '../types';
 import {useNavigate} from 'react-router-dom';
-import {LocationState} from 'faims3-datamodel';
+import {LocationState} from '@faims3/data-model';
 import * as ROUTES from '../../../../../constants/routes';
 import {logError} from '../../../../../logging';
 import {NOTEBOOK} from '../../../../../constants/routes';

@@ -22,7 +22,7 @@ import handlebars from 'handlebars';
 import {body, validationResult} from 'express-validator';
 import QRCode from 'qrcode';
 import {app} from './core';
-import {NonUniqueProjectID} from 'faims3-datamodel';
+import {NonUniqueProjectID} from '@faims3/data-model';
 import {AllProjectRoles} from './datamodel/users';
 
 // BBS 20221101 Adding this as a proxy for the pouch db url
@@ -190,7 +190,6 @@ function render_project_roles(roles: AllProjectRoles): handlebars.SafeString {
   }
   return new handlebars.SafeString(all_project_sections.join(''));
 }
-
 
 app.get('/', async (req, res) => {
   if (req.user) {

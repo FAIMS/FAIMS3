@@ -304,7 +304,7 @@ function getAwsSecretKeyArn(): string {
 
 // Dependency injection pattern for key service
 export const KEY_SOURCE: KeySource = getKeySourceConfig();
-export const AWS_SECRET_KEY_ARN: string | undefined = KEY_SOURCE === KeySource.AWS_SM ? getAwsSecretKeyArn() : undefined;
+export const AWS_SECRET_KEY_ARN: string | undefined =
+  KEY_SOURCE === KeySource.AWS_SM ? getAwsSecretKeyArn() : undefined;
 
 export const KEY_SERVICE: IKeyService = getKeyService(KEY_SOURCE);
-

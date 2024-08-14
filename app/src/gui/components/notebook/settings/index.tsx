@@ -32,8 +32,8 @@ import {
 } from '@mui/material';
 
 import {getProjectInfo} from '../../../../sync/projects';
-import {ProjectInformation} from 'faims3-datamodel';
-import {ProjectID} from 'faims3-datamodel';
+import {ProjectInformation} from '@faims3/data-model';
+import {ProjectID} from '@faims3/data-model';
 import {
   isSyncingProjectAttachments,
   listenSyncingProjectAttachments,
@@ -43,7 +43,7 @@ import {ActionType} from '../../../../context/actions';
 import {store} from '../../../../context/store';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
-import {ProjectUIModel} from 'faims3-datamodel';
+import {ProjectUIModel} from '@faims3/data-model';
 import {logError} from '../../../../logging';
 import {
   NOTEBOOK_NAME,

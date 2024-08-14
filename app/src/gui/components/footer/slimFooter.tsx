@@ -3,7 +3,7 @@ import {useMediaQuery, Container, Link, Typography, Stack} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 
 import SupportEmail from './supportEmail';
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 
 interface SlimFooterProps {
   token?: null | undefined | TokenContents;

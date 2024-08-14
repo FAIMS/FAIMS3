@@ -24,7 +24,7 @@ import {Box, Grid, Typography} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ClusterCard from '../components/authentication/cluster_card';
 import * as ROUTES from '../../constants/routes';
-import {ListingInformation} from 'faims3-datamodel';
+import {ListingInformation} from '@faims3/data-model';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {logError} from '../../logging';
 import {NOTEBOOK_NAME} from '../../buildconfig';

@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {ProjectID, RecordID, RevisionID} from 'faims3-datamodel';
+import {ProjectID, RecordID, RevisionID} from '@faims3/data-model';
 import {NOTEBOOK_NAME} from '../buildconfig';
 
 export const INDEX = '/';

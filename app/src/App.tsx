@@ -45,7 +45,7 @@ import {getTokenContentsForCurrentUser} from './users';
 
 import {useEffect, useState} from 'react';
 
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 
 // type AppProps = {};
 

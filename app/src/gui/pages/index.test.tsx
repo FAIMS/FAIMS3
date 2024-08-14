@@ -21,7 +21,7 @@
 import {render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import Index from '.';
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 import {expect, describe, vi, it} from 'vitest';
 
 export function mockCheckToken(token: null | undefined | TokenContents) {

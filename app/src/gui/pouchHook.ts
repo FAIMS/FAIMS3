@@ -171,7 +171,7 @@ export function constantArgsShared<FirstArgs extends unknown[]>(
  */
 export function constantArgsSplit<
   AttachArgs extends unknown[],
-  TrigArgs extends unknown[]
+  TrigArgs extends unknown[],
 >(
   attacher: (
     ...args: [...AttachArgs, () => void | (() => void), (err: {}) => void]
@@ -331,12 +331,15 @@ export function useEventedPromise<A extends Array<unknown>, V>(
         if (DEBUG_APP) {
           console.debug('Starting lock wait!', label);
         }
-        setTimeout(() => {
-          if (DEBUG_APP) {
-            console.debug('Running lock wait!', label);
-          }
-          start_waiting_safe(...waiter_args);
-        }, LOCK_WAIT_TIMEOUT + Math.random() * LOCK_WAIT_TIMEOUT);
+        setTimeout(
+          () => {
+            if (DEBUG_APP) {
+              console.debug('Running lock wait!', label);
+            }
+            start_waiting_safe(...waiter_args);
+          },
+          LOCK_WAIT_TIMEOUT + Math.random() * LOCK_WAIT_TIMEOUT
+        );
       } else {
         if (DEBUG_APP) {
           console.debug('Refresh lock still locked!', label);

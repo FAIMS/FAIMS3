@@ -12,49 +12,60 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { TabContext, TabList} from "@mui/lab";
-import { Box, Tab, Typography, AppBar, Toolbar } from "@mui/material";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import {TabContext, TabList} from '@mui/lab';
+import {Box, Tab, Typography, AppBar, Toolbar} from '@mui/material';
+import {Link, Outlet, useLocation} from 'react-router-dom';
 
 export const NotebookEditor = () => {
+  const {pathname} = useLocation();
 
-    const { pathname } = useLocation();
+  const tabIndex = pathname.startsWith('/design/')
+    ? pathname.split('/')[2]
+    : '0';
 
-    const tabIndex = pathname.startsWith('/design/') ? pathname.split('/')[2] : '0';
-    
-    return (
-        <>
-            <Box sx={{ flexGrow: 1 }}>
-                <AppBar position="static">
-                    <Toolbar>
-                        <img
-                            src="/static/Fieldmark-Short-Green-NoBorder.png"
-                            style={{ maxWidth: '140px', flex: 1 }}
-                        />
-                        <Box sx={{ flexGrow: 1 }} />
-                    </Toolbar>
-                </AppBar>
+  return (
+    <>
+      <Box sx={{flexGrow: 1}}>
+        <AppBar position="static">
+          <Toolbar>
+            <img
+              src="/static/Fieldmark-Short-Green-NoBorder.png"
+              style={{maxWidth: '140px', flex: 1}}
+            />
+            <Box sx={{flexGrow: 1}} />
+          </Toolbar>
+        </AppBar>
+      </Box>
+
+      <Box p={3}>
+        <Typography variant="h1">Notebook Editor</Typography>
+
+        <Box pt={2}>
+          <TabContext value={pathname}>
+            <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+              <TabList aria-label="lab API tabs example">
+                <Tab label="Start" component={Link} to="/" value="/" />
+                <Tab label="Info" component={Link} to="/info" value="/info" />
+                <Tab
+                  label="Design"
+                  component={Link}
+                  to={`/design/${tabIndex}`}
+                  value={`/design/${tabIndex}`}
+                />
+                <Tab
+                  label="Export"
+                  component={Link}
+                  to="/export"
+                  value="/export"
+                />
+              </TabList>
             </Box>
-
             <Box p={3}>
-                <Typography variant="h1">Notebook Editor</Typography>
-
-                <Box pt={2}>
-                    <TabContext value={pathname}>
-                        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                            <TabList aria-label="lab API tabs example">
-                                <Tab label="Start" component={Link} to="/" value="/" />
-                                <Tab label="Info" component={Link} to="/info" value="/info" />
-                                <Tab label="Design" component={Link} to={`/design/${tabIndex}`} value={`/design/${tabIndex}`} />
-                                <Tab label="Export" component={Link} to="/export" value="/export" />
-                            </TabList>
-                        </Box>
-                        <Box p={3}>
-                            <Outlet />
-                        </Box>
-                    </TabContext>
-                </Box>
+              <Outlet />
             </Box>
-        </>
-    );
+          </TabContext>
+        </Box>
+      </Box>
+    </>
+  );
 };

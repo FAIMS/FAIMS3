@@ -25,7 +25,7 @@ import {Grid, Typography, Button} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
 import {useTheme} from '@mui/material/styles';
 import {checkToken} from '../../utils/helpers';
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME} from '../../buildconfig';
 type IndexProps = {

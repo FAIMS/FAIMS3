@@ -288,7 +288,6 @@ function get_bugsnag_key(): string | false {
   return bugsnag_key;
 }
 
-
 function get_conductor_url(): string {
   const url = import.meta.env.VITE_CONDUCTOR_URL;
   if (url) {
@@ -302,7 +301,7 @@ function get_conductor_url(): string {
  * Retrieves the notebook list type.
  * @returns The notebook list type, which can be either "tabs" or "headings".
  */
-function get_notebook_list_type(): "tabs" | "headings" {
+function get_notebook_list_type(): 'tabs' | 'headings' {
   const notebook_list_type = import.meta.env.VITE_NOTEBOOK_LIST_TYPE;
   if (notebook_list_type === 'headings') {
     return 'headings';

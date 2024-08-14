@@ -35,7 +35,7 @@ import * as yup from 'yup';
 
 import {ActionType} from '../../../context/actions';
 import {store} from '../../../context/store';
-import {ProjectID, LocalAutoIncrementRange} from 'faims3-datamodel';
+import {ProjectID, LocalAutoIncrementRange} from '@faims3/data-model';
 import {
   getLocalAutoincrementRangesForField,
   setLocalAutoincrementRangesForField,

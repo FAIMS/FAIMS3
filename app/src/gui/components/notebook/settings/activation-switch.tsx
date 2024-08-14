@@ -1,7 +1,7 @@
 import React from 'react';
 import {Alert, Box, AlertTitle, Button} from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
-import {ProjectInformation} from 'faims3-datamodel';
+import {ProjectInformation} from '@faims3/data-model';
 import DialogActions from '@mui/material/DialogActions';
 
 import Dialog from '@mui/material/Dialog';

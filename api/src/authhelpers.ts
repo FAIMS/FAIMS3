@@ -19,7 +19,7 @@
  *   which server to use and whether to include test data
  */
 
-/* eslint-disable node/no-extraneous-import */
+/* eslint-disable n/no-extraneous-import */
 import OAuth2Strategy from 'passport-oauth2';
 
 import {UserProfileCallback, DoneFunction} from './types';

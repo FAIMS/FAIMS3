@@ -20,8 +20,8 @@
  *   projects) at the GUI level should probably go here also.
  */
 
-import {ProjectID} from 'faims3-datamodel';
-import {ProjectDataObject} from 'faims3-datamodel';
+import {ProjectID} from '@faims3/data-model';
+import {ProjectDataObject} from '@faims3/data-model';
 import {logError} from '../logging';
 import {
   active_db,
