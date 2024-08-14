@@ -23,7 +23,7 @@
 import {EventEmitter} from 'events';
 
 import {DEBUG_APP} from '../buildconfig';
-import {ListingID} from 'faims3-datamodel';
+import {ListingID} from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {ListingsObject, ExistingActiveDoc} from './databases';
 import {createdListingsInterface} from './state';

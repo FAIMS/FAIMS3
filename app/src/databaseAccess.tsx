@@ -20,9 +20,9 @@
  *   If you find yourself writing pouchdb.get(), pouchdb.put(), etc.
  *   put that code in a function in this file
  *
- *   See faims3-datamodel for accessors specific to Records
+ *   See @faims3/data-model for accessors specific to Records
  *   In comparison, this file is for metadata, or other data
- *   (faims3-datamodel is called from this file, as faims3-datamodel
+ *   (@faims3/data-model is called from this file, as @faims3/data-model
  *    does encoding/decoding of records)
  *
  *   TODO: Convert *everything* to listeners that can run more than once
@@ -30,7 +30,7 @@
  */
 
 import {getAvailableProjectsFromListing} from './sync/projects';
-import {ProjectInformation, ListingInformation} from 'faims3-datamodel';
+import {ProjectInformation, ListingInformation} from '@faims3/data-model';
 import {getAllListingIDs} from './sync/state';
 import {events} from './sync/events';
 import {getAllListings} from './sync';

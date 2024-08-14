@@ -28,7 +28,7 @@ import {
   resolve_project_id,
   notebookRecordIterator,
   addDesignDocsForNotebook,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {
   ProjectMetadata,
   ProjectUIFields,
@@ -48,7 +48,7 @@ import {
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
   HRID_STRING,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {userHasPermission} from './users';
 PouchDB.plugin(securityPlugin);
 import {Stringifier, stringify} from 'csv-stringify';

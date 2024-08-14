@@ -3,7 +3,7 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {Box, Stack, Tab} from '@mui/material';
 import {DataGrid, GridEventListener} from '@mui/x-data-grid';
-import {ProjectInformation} from 'faims3-datamodel/build/src/types';
+import {ProjectInformation} from '@faims3/data-model/build/src/types';
 
 /**
  * Renders a tabbed grid component.

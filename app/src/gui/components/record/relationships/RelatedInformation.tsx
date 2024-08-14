@@ -26,7 +26,7 @@ import {
   LinkedRelation,
   LocationState,
   Relationship,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
 import getLocalDate from '../../../fields/LocalDate';

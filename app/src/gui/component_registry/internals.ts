@@ -23,7 +23,7 @@ import {
   ComponentRegistryProperties,
   FAIMSFormField,
   FormComponentList,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 
 const componentRegistry: ComponentRegistry = {};
 

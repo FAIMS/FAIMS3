@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {RecordID, RevisionID, AttributeValuePairID} from 'faims3-datamodel';
+import {RecordID, RevisionID, AttributeValuePairID} from '@faims3/data-model';
 
 export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';

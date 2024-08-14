@@ -38,7 +38,7 @@ import {
   getNotebooks,
   getNotebookMetadata,
 } from '../src/couchdb/notebooks';
-import {ProjectUIModel} from 'faims3-datamodel';
+import {ProjectUIModel} from '@faims3/data-model';
 import {
   CLUSTER_ADMIN_GROUP_NAME,
   DEVELOPER_MODE,

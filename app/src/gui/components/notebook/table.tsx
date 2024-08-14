@@ -34,7 +34,7 @@ import {
   RecordMetadata,
   getMetadataForAllRecords,
   getRecordsWithRegex,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {listenDataDB} from '../../../sync/projects';
 import {DEBUG_APP} from '../../../buildconfig';

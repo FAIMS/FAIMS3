@@ -41,12 +41,12 @@ import {
   Annotations,
   Relationship,
   RecordReference,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {
   ProjectUIModel,
   upsertFAIMSData,
   getFullRecordData,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {getValidationSchemaForViewset} from '../validation';
 import {store} from '../../../context/store';
 import RecordDraftState from '../../../sync/draft-state';
@@ -71,7 +71,7 @@ import {
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
-import {generateFAIMSDataID, getFirstRecordHead} from 'faims3-datamodel';
+import {generateFAIMSDataID, getFirstRecordHead} from '@faims3/data-model';
 import {logError} from '../../../logging';
 //import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {

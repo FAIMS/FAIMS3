@@ -32,8 +32,8 @@ import {
   ProjectRole,
   split_full_project_id,
   TokenContents,
-} from 'faims3-datamodel';
-import {RecordMetadata} from 'faims3-datamodel';
+} from '@faims3/data-model';
+import {RecordMetadata} from '@faims3/data-model';
 import {logError} from './logging';
 
 interface SplitCouchDBRole {

@@ -4,7 +4,7 @@ import {Button, ButtonProps} from '@mui/material';
 import {Device} from '@capacitor/device';
 import {Browser} from '@capacitor/browser';
 
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 import {setTokenForCluster, getTokenContentsForCluster} from '../../../users';
 import {reprocess_listing} from '../../../sync/process-initialization';
 import {logError} from '../../../logging';
