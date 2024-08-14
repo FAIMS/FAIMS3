@@ -1,7 +1,7 @@
 import React from 'react';
 import {Box} from '@mui/material';
 import MainAppBar from './appBar';
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 import Footer from '../components/footer';
 import {useTheme} from '@mui/material/styles';
 import {ErrorBoundary, ErrorPage} from '../../logging';

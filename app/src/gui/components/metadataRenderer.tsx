@@ -20,7 +20,7 @@
 
 import React, {useEffect, useState} from 'react';
 import {Chip} from '@mui/material';
-import {ProjectID} from 'faims3-datamodel';
+import {ProjectID} from '@faims3/data-model';
 import {getMetadataValue} from '../../sync/metadata';
 
 type MetadataProps = {

@@ -19,9 +19,8 @@ import * as path from 'path';
  * @returns The path to the monorepo root.
  */
 export const getPathToRoot = (): string => {
-  return "../..";
+  return '../..';
 };
-
 
 /**
  * Traverses a directory / path and returns hash which will change if any file in the directory changes.
@@ -29,39 +28,42 @@ export const getPathToRoot = (): string => {
  * @param excludeDirs An optional array of directory names to exclude from hashing
  * @returns A suitable hash for asset hashing for given directory/file
  */
-export const getPathHash = (pathToHash: string, excludeDirs: string[] = []): string => {
-    const hash = crypto.createHash('sha256');
+export const getPathHash = (
+  pathToHash: string,
+  excludeDirs: string[] = []
+): string => {
+  const hash = crypto.createHash('sha256');
 
-    const processFile = (filePath: string) => {
-        const content = fs.readFileSync(filePath);
-        hash.update(filePath);
-        hash.update(content);
-    };
+  const processFile = (filePath: string) => {
+    const content = fs.readFileSync(filePath);
+    hash.update(filePath);
+    hash.update(content);
+  };
 
-    const processDirectory = (dirPath: string) => {
-        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-        
-        // Sort entries to ensure consistent ordering
-        entries.sort((a, b) => a.name.localeCompare(b.name));
+  const processDirectory = (dirPath: string) => {
+    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
 
-        for (const entry of entries) {
-            const fullPath = path.join(dirPath, entry.name);
-            if (entry.isDirectory()) {
-                // Check if the directory should be excluded
-                if (!excludeDirs.includes(entry.name)) {
-                    processDirectory(fullPath);
-                }
-            } else if (entry.isFile()) {
-                processFile(fullPath);
-            }
+    // Sort entries to ensure consistent ordering
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        // Check if the directory should be excluded
+        if (!excludeDirs.includes(entry.name)) {
+          processDirectory(fullPath);
         }
-    };
-
-    if (fs.statSync(pathToHash).isDirectory()) {
-        processDirectory(pathToHash);
-    } else {
-        processFile(pathToHash);
+      } else if (entry.isFile()) {
+        processFile(fullPath);
+      }
     }
+  };
 
-    return hash.digest('hex');
+  if (fs.statSync(pathToHash).isDirectory()) {
+    processDirectory(pathToHash);
+  } else {
+    processFile(pathToHash);
+  }
+
+  return hash.digest('hex');
 };

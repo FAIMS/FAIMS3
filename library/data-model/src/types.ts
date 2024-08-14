@@ -110,18 +110,20 @@ export interface Relationship {
  * Do not use with UI code; sync code only
  */
 
-export type PossibleConnectionInfo = undefined | {
-  base_url?: string | undefined;
-  proto?: string | undefined;
-  host?: string | undefined;
-  port?: number | undefined;
-  db_name?: string | undefined;
-  auth?: {
-      username: string;
-      password: string;
-  };
-  jwt_token?: string;
-};
+export type PossibleConnectionInfo =
+  | undefined
+  | {
+      base_url?: string | undefined;
+      proto?: string | undefined;
+      host?: string | undefined;
+      port?: number | undefined;
+      db_name?: string | undefined;
+      auth?: {
+        username: string;
+        password: string;
+      };
+      jwt_token?: string;
+    };
 export interface ProjectObject {
   _id: NonUniqueProjectID;
   name: string;
@@ -430,8 +432,8 @@ export interface ProjectUIViews {
     uidesign?: string;
     next_label?: string;
     is_logic?: {[key: string]: string[]}; //add for branching logic
-    condition?: ConditionalExpression;  // new conditional logic
-    conditionFn?: (v: RecordValues) => boolean;   // compiled conditional function
+    condition?: ConditionalExpression; // new conditional logic
+    conditionFn?: (v: RecordValues) => boolean; // compiled conditional function
   };
 }
 

@@ -20,14 +20,14 @@
 
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Box, Paper, Typography, Button, Stack} from '@mui/material';
+import {Box, Paper, Typography, Button} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 
 import {GridColDef, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 
 import * as ROUTES from '../../../constants/routes';
 import {getAllProjectList} from '../../../databaseAccess';
-import {ProjectInformation, TokenContents} from 'faims3-datamodel';
+import {ProjectInformation, TokenContents} from '@faims3/data-model';
 import CircularLoading from '../ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';

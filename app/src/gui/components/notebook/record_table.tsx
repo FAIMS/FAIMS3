@@ -45,7 +45,7 @@ import {
   RecordMetadata,
   getMetadataForAllRecords,
   getRecordsWithRegex,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
@@ -110,7 +110,7 @@ function RecordsTable(props: RecordsTableProps) {
       params.row.type !== null &&
       params.row.type !== undefined &&
       props.viewsets[params.row.type.toString()] !== undefined
-      ? props.viewsets[params.row.type.toString()].label ?? params.row.type
+      ? (props.viewsets[params.row.type.toString()].label ?? params.row.type)
       : params.row.type;
   }
   const columns = !mobileView
@@ -398,8 +398,8 @@ function RecordsTable(props: RecordsTableProps) {
                       ? maxRows
                       : defaultMaxRowsMobile
                     : not_xs
-                    ? 25
-                    : defaultMaxRowsMobile,
+                      ? 25
+                      : defaultMaxRowsMobile,
               },
             },
           }}

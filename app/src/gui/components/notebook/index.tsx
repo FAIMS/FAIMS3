@@ -17,9 +17,9 @@ import {
   Button,
 } from '@mui/material';
 import {useNavigate} from 'react-router-dom';
-import {ProjectUIViewsets} from 'faims3-datamodel';
+import {ProjectUIViewsets} from '@faims3/data-model';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import {ProjectInformation, ProjectUIModel} from 'faims3-datamodel';
+import {ProjectInformation, ProjectUIModel} from '@faims3/data-model';
 import DraftsTable from './draft_table';
 import {RecordsBrowseTable} from './record_table';
 import RangeHeader from './range_header';

@@ -36,10 +36,10 @@ import {useNavigate} from 'react-router-dom';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
-import {ProjectID, DraftMetadata} from 'faims3-datamodel';
+import {ProjectID, DraftMetadata} from '@faims3/data-model';
 import * as ROUTES from '../../../constants/routes';
 import {listenDrafts} from '../../../drafts';
-import {ProjectUIViewsets} from 'faims3-datamodel';
+import {ProjectUIViewsets} from '@faims3/data-model';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 
@@ -101,8 +101,8 @@ function DraftRecord(props: DraftsRecordProps) {
       params.row.type !== null &&
       params.row.type !== undefined &&
       props.viewsets[(params.row.type || '').toString()] !== undefined
-      ? props.viewsets[(params.row.type || '').toString()].label ??
-          params.row.type
+      ? (props.viewsets[(params.row.type || '').toString()].label ??
+          params.row.type)
       : params.row.type;
   }
   const columns: any[] = !mobileView
@@ -265,8 +265,8 @@ function DraftRecord(props: DraftsRecordProps) {
                       ? maxRows
                       : defaultMaxRowsMobile
                     : not_xs
-                    ? 25
-                    : defaultMaxRowsMobile,
+                      ? 25
+                      : defaultMaxRowsMobile,
               },
             },
           }}

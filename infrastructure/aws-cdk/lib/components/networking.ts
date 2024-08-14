@@ -1,8 +1,8 @@
-import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { IVpc, Vpc } from "aws-cdk-lib/aws-ec2";
-import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import { Construct } from "constructs";
+import {ICertificate} from 'aws-cdk-lib/aws-certificatemanager';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import {IVpc, Vpc} from 'aws-cdk-lib/aws-ec2';
+import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import {Construct} from 'constructs';
 
 /**
  * Properties for the SharedBalancers construct
@@ -46,31 +46,31 @@ export class SharedBalancer extends Construct {
     super(scope, id);
 
     // Set up the Application Load Balancer
-    this.alb = new elb.ApplicationLoadBalancer(this, "alb", {
+    this.alb = new elb.ApplicationLoadBalancer(this, 'alb', {
       vpc: props.vpc,
       internetFacing: props.isPublic,
-      vpcSubnets: { subnetType: props.subnetType },
+      vpcSubnets: {subnetType: props.subnetType},
     });
 
     // Set up the HTTPS listener
-    this.httpsListener = new elb.ApplicationListener(this, "https-listener", {
+    this.httpsListener = new elb.ApplicationListener(this, 'https-listener', {
       loadBalancer: this.alb,
       certificates: props.certificates,
       defaultAction: elb.ListenerAction.fixedResponse(404, {
-        contentType: "text/plain",
+        contentType: 'text/plain',
         messageBody:
-          "Service does not exist. Contact administrator if you believe this is an error.",
+          'Service does not exist. Contact administrator if you believe this is an error.',
       }),
       port: this.httpsPort,
     });
 
     // Set up the HTTP listener
-    this.httpListener = new elb.ApplicationListener(this, "http-listener", {
+    this.httpListener = new elb.ApplicationListener(this, 'http-listener', {
       loadBalancer: this.alb,
       defaultAction: elb.ListenerAction.fixedResponse(404, {
-        contentType: "text/plain",
+        contentType: 'text/plain',
         messageBody:
-          "Service does not exist. Contact administrator if you believe this is an error.",
+          'Service does not exist. Contact administrator if you believe this is an error.',
       }),
       port: this.httpPort,
     });
@@ -170,7 +170,7 @@ export class FaimsNetworking extends Construct {
     super(scope, id);
 
     // Setup basic VPC with some public subnet(s) as per default
-    this.vpc = new Vpc(this, "vpc", {
+    this.vpc = new Vpc(this, 'vpc', {
       // At least 2 needed for LB
       maxAzs: 2,
       // No need for nat gateways right now since no private subnet outbound traffic
@@ -178,7 +178,7 @@ export class FaimsNetworking extends Construct {
     });
 
     // Create the shared ALB - public facing
-    this.sharedBalancer = new SharedBalancer(this, "shared-balancer", {
+    this.sharedBalancer = new SharedBalancer(this, 'shared-balancer', {
       vpc: this.vpc,
       certificates: [props.certificate],
       isPublic: true,

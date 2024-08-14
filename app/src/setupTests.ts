@@ -27,7 +27,7 @@
 
 import PouchDB from 'pouchdb-browser';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
-import {ProjectID} from 'faims3-datamodel';
+import {ProjectID} from '@faims3/data-model';
 import {vi} from 'vitest';
 PouchDB.plugin(PouchDBAdaptorMemory);
 

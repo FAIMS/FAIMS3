@@ -18,7 +18,7 @@
  *   Provide an interface for manipulating invites to the system
  */
 
-import {NonUniqueProjectID, ProjectID} from 'faims3-datamodel';
+import {NonUniqueProjectID, ProjectID} from '@faims3/data-model';
 import {getInvitesDB} from '.';
 import {ConductorRole, RoleInvite} from '../datamodel/users';
 import {v4 as uuidv4} from 'uuid';

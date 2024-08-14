@@ -21,7 +21,7 @@
  * is to be shown.  Here we provide functions to return an array of
  * visible fields/views.
  */
-import {ProjectUIModel} from 'faims3-datamodel';
+import {ProjectUIModel} from '@faims3/data-model';
 import {getFieldsForView, getViewsForViewSet} from '../../../uiSpecification';
 
 // Return a list of field or view names that should be shown, taking account

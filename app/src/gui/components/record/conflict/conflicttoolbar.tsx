@@ -23,7 +23,7 @@ import {useState} from 'react';
 import {Grid, Box, Stack} from '@mui/material';
 import {ConflictButton} from './conflictDialog';
 import {ConflictDropSelect} from './conflictdroplist';
-import {InitialMergeRevisionDetailsMap} from 'faims3-datamodel';
+import {InitialMergeRevisionDetailsMap} from '@faims3/data-model';
 type ConflictToolBarProps = {
   headerlist: InitialMergeRevisionDetailsMap;
   revisionlist: Array<string>;

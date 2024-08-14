@@ -22,7 +22,7 @@ import React from 'react';
 import MuiTextField from '@mui/material/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import {MenuItem} from '@mui/material';
-import {ElementOption} from 'faims3-datamodel';
+import {ElementOption} from '@faims3/data-model';
 
 // import TextField from '@mui/material/TextField';
 /* eslint-disable @typescript-eslint/no-unused-vars */

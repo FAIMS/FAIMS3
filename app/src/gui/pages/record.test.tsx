@@ -1224,8 +1224,8 @@ vi.mock('../../uiSpecification', () => ({
   getUiSpecForProject: mockGetUiSpecForProject,
 }));
 
-vi.mock('faims3-datamodel', async importOriginal => {
-  const mod = await importOriginal<typeof import('faims3-datamodel')>();
+vi.mock('@faims3/data-model', async importOriginal => {
+  const mod = await importOriginal<typeof import('@faims3/data-model')>();
   return {
     ...mod,
     listFAIMSRecordRevisions: mockListFAIMSRecordRevisions,
