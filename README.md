@@ -1,6 +1,6 @@
 # FAIMS3
 
-FAIMS3 is an open-source tool for offline field data-collection brought to you by the FAIMS Project. The FAIMS Project was funded by the ARDC ([https://dx.doi.org/10.47486/PL110]), Macquarie University, and CSIRO along with our other partners. 
+FAIMS3 is an open-source tool for offline field data-collection brought to you by the FAIMS Project. The FAIMS Project was funded by the ARDC ([https://dx.doi.org/10.47486/PL110]), Macquarie University, and CSIRO along with our other partners.
 
 ## Directory Structure
 
@@ -25,9 +25,9 @@ npm install
 Create the .env file by copying the .env.dist file and updating the values
 
 ```bash
-cp ./api/.env.dist ./api/.env && 
-cp ./app/.env.dist ./app/.env && 
-code ./api/.env && 
+cp ./api/.env.dist ./api/.env &&
+cp ./app/.env.dist ./app/.env &&
+code ./api/.env &&
 code ./app/.env
 ```
 
@@ -47,13 +47,19 @@ that contains the public key and other information.
 Build the two docker images:
 
 ```bash
-docker compose --env-file api/.env -f docker-compose.dev.yml build
+docker compose -f docker-compose.dev.yml build
 ```
 
-Then we can startup the servers:
+Then we can startup the servers - if you want to monitor the output use
 
 ```bash
-docker compose --env-file api/.env -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml up
+```
+
+Or if you'd like to run it in the background
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
 ```
 
 will start the couchdb and conductor servers to listen on the configured port.
@@ -82,15 +88,15 @@ instead, which will monitor for changes with `nodemon`.
 Once the services are up and running we need to initialise the CouchDB
 database. This is done by sending a request to the API via a short script.
 This operation will create a local user called `admin` with the same password
-as configured for CouchDB (`COUCHDB_PASSWORD` in `.env`).  The script will
-have no effect if the admin user is already set up.  Run the script with:
+as configured for CouchDB (`COUCHDB_PASSWORD` in `.env`). The script will
+have no effect if the admin user is already set up. Run the script with:
 
 ```bash
 npm run initdb
 ```
 
 There is also a script that will populate the database with notebooks that are
-stored in the `notebooks` directory.  There should be two sample notebooks in
+stored in the `notebooks` directory. There should be two sample notebooks in
 there but you can also create new ones.
 
 This script requires authentication, so you need to get a user token for the admin
@@ -150,19 +156,19 @@ Further build/install instructions can be found at
 
 There is an alternate docker compose file for development that mounts the
 current working directory inside the container so that you can work on
-code in real time.  To use this you also need a local `node_modules` folder
-since the current directory will shadow the one inside the container. 
+code in real time. To use this you also need a local `node_modules` folder
+since the current directory will shadow the one inside the container.
 
 To create `node_modules` run `npm ci` inside the container:
 
 ```bash
-docker compose --env-file api/.env -f docker-compose.dev.yml run conductor npm ci
+docker compose -f api/docker-compose.dev.yml run conductor npm ci
 ```
 
 Then start the services:
 
 ```bash
-docker compose --env-file api/.env -f docker-compose.dev.yml up
+docker compose -f api/docker-compose.dev.yml up
 ```
 
 ## API Tests
