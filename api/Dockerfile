@@ -11,15 +11,10 @@ COPY . .
 RUN npm ci
 
 # Build the data model package which is dependency of conductor
-WORKDIR /usr/src/app/library/data-model
-RUN npm run build
+RUN cd library/data-model && npm run build && cd ../..
 
 # Build the API
-WORKDIR /usr/src/app/api
-RUN npm run compile
-
-# Set the working directory back to the root
-WORKDIR /usr/src/app
+RUN cd api && npm run compile && cd ..
 
 # Expose the port the API runs on
 EXPOSE 8000

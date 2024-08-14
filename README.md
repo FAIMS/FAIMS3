@@ -47,13 +47,13 @@ that contains the public key and other information.
 Build the two docker images:
 
 ```bash
-docker compose -f api/docker-compose.dev.yml build
+docker compose --env-file api/.env -f docker-compose.dev.yml build
 ```
 
 Then we can startup the servers:
 
 ```bash
-cd api && docker compose up -d; cd ..
+docker compose --env-file api/.env -f docker-compose.dev.yml up -d
 ```
 
 will start the couchdb and conductor servers to listen on the configured port.
@@ -156,13 +156,13 @@ since the current directory will shadow the one inside the container.
 To create `node_modules` run `npm ci` inside the container:
 
 ```bash
-docker compose -f docker-compose.dev.yml run conductor npm ci
+docker compose --env-file api/.env -f docker-compose.dev.yml run conductor npm ci
 ```
 
 Then start the services:
 
 ```bash
-docker compose -f docker-compose.dev.yml up
+docker compose --env-file api/.env -f docker-compose.dev.yml up
 ```
 
 ## API Tests
