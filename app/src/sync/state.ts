@@ -18,9 +18,9 @@
  *   TODO
  */
 
-import {ProjectID} from 'faims3-datamodel';
+import {ProjectID} from '@faims3/data-model';
 import {ProjectObject} from './projects';
-import {ProjectMetaObject, isRecord, mergeHeads} from 'faims3-datamodel';
+import {ProjectMetaObject, isRecord, mergeHeads} from '@faims3/data-model';
 
 import {ListingsObject, ActiveDoc, LocalDB} from './databases';
 import {DirectoryEmitter} from './events';

@@ -52,7 +52,7 @@ import {
   InitialMergeDetails,
   getInitialMergeDetails,
   findConflictingFields,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {store} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
 
@@ -61,7 +61,7 @@ import RecordMeta from '../components/record/meta';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
-import {} from 'faims3-datamodel';
+import {} from '@faims3/data-model';
 
 import {
   ConflictHelpDialog,

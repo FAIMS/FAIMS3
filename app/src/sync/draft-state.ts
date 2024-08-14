@@ -38,7 +38,7 @@ import {
   Annotations,
   FAIMSTypeName,
   Relationship,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {logError} from '../logging';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;

@@ -27,7 +27,7 @@ import {GridColDef, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 
 import * as ROUTES from '../../../constants/routes';
 import {getAllProjectList} from '../../../databaseAccess';
-import {ProjectInformation, TokenContents} from 'faims3-datamodel';
+import {ProjectInformation, TokenContents} from '@faims3/data-model';
 import CircularLoading from '../ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';

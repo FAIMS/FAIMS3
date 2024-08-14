@@ -24,7 +24,7 @@ import {
   split_full_project_id,
   NonUniqueProjectID,
   resolve_project_id,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {logError} from '../logging';
 import {getTokenForCluster} from '../users';

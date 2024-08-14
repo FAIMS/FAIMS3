@@ -20,7 +20,7 @@
 
 import PouchDB from 'pouchdb-browser';
 import EventEmitter from 'events';
-import {ProjectID, ProjectMetaObject} from 'faims3-datamodel';
+import {ProjectID, ProjectMetaObject} from '@faims3/data-model';
 import {ProjectObject} from './projects';
 
 export type ProjectMetaList = {

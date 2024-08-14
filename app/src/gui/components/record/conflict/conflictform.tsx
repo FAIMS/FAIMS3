@@ -26,12 +26,12 @@ import {
   RecordID,
   RevisionID,
   AttributeValuePairID,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {
   ProjectUIModel,
   RecordMergeInformation,
   UserMergeResult,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
 import {Grid, Box, Switch, FormControlLabel} from '@mui/material';
@@ -40,7 +40,7 @@ import {
   InitialMergeDetails,
   getMergeInformationForHead,
   saveUserMergeResult,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {CircularProgress} from '@mui/material';
 
 import {grey} from '@mui/material/colors';
@@ -50,7 +50,7 @@ import {ConflictResolveIcon} from './conflictfield';
 import {ConflictSaveButton} from './conflictbutton';
 import {store} from '../../../../context/store';
 import {ActionType} from '../../../../context/actions';
-import {isEqualFAIMS} from 'faims3-datamodel';
+import {isEqualFAIMS} from '@faims3/data-model';
 import ConflictLinkBar from './conflictLinkBar';
 import {RecordLinkProps} from '../relationships/types';
 import {

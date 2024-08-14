@@ -33,7 +33,7 @@ import {
   ListingID,
   NonUniqueProjectID,
   PossibleConnectionInfo,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {logError} from '../logging';
 import {
