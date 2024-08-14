@@ -162,7 +162,7 @@ class RecordForm extends React.Component<
   draftState: RecordDraftState | null = null;
 
   // List of timeouts that unmount must cancel
-  timeouts: typeof setTimeout[] = [];
+  timeouts: (typeof setTimeout)[] = [];
 
   async componentDidUpdate(
     prevProps: RecordFormProps,

@@ -33,7 +33,7 @@ import {
 } from './databases';
 import {events} from './events';
 import {getProject} from './projects';
-import { NOTEBOOK_NAME } from '../buildconfig';
+import {NOTEBOOK_NAME} from '../buildconfig';
 
 export function listenSyncingProject(
   active_id: ProjectID,
