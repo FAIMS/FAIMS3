@@ -16,10 +16,10 @@ COPY . .
 RUN npm ci
 
 # Build the data model package which is dependency of conductor
-RUN cd library/data-model && npm run build && cd ../..
+RUN npm run build-data-model
 
 # Build the API
-RUN cd api && npm run compile && cd ..
+RUN npm run build-api
 
 # Command to run the API
 CMD ["npm", "run", "start-api"]

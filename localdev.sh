@@ -6,8 +6,6 @@ wait_for_service() {
     local current_time
     local response
 
-    echo "Waiting for service to become available at http://localhost:8080..."
-
     start_time=$(date +%s)
     end_time=$((start_time + 30))
 
@@ -18,7 +16,7 @@ wait_for_service() {
             return 1
         fi
 
-        if response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:8080); then
+        if response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:8080/auth); then
             if [ "$response" -eq 200 ]; then
                 echo "Service is now available!"
                 return 0
@@ -63,12 +61,12 @@ echo "> npm run generate-local-keys"
 npm run generate-local-keys
 
 echo "Building docker files using docker compose"
-echo "> docker compose -f api/docker-compose.dev.yml build"
-docker compose -f api/docker-compose.dev.yml build
+echo "> ./scripts/devbuild.sh"
+./scripts/devbuild.sh
 
 echo "Starting docker service..."
-echo "> docker compose -f api/docker-compose.dev.yml up -d"
-docker compose -f api/docker-compose.dev.yml up -d
+echo "> ./scripts/devup.sh"
+./scripts/devup.sh
 
 echo "Waiting for service to become available at http://localhost:8080..."
 
@@ -85,6 +83,14 @@ echo "Initialising database"
 echo "> npm run initdb"
 npm run initdb
 
+
+# installing dependencies and building locally to test FAIMS3 app
+echo "installing dependencies and building locally to test FAIMS3 app"
+echo "> npm run build-data-model"
+npm run build-data-model
+echo "> cd app && npm i && cd ../"
+cd app && npm i && cd ../
+
 echo "Service is setup, to load notebooks follow the below steps"
 cat << EOF
 This script requires authentication, so you need to get a user token for the admin
@@ -98,3 +104,5 @@ Then run:
 
 $> npm run load-notebooks
 EOF
+
+echo "To run the FAIMS app locally with live reload, run npm run start-app"
