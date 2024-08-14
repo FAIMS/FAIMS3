@@ -13,6 +13,7 @@
   "scripts": {
     "build-app": "npm run build --workspace=app",
     "build-api": "npm run build --workspace=api",
+    "build-data-model": "npm run build --workspace=library/data-model",
     "github-build-app": "npm run build --workspace=library/data-model --workspace=app",
     "docker-build-api": "npm run build --workspace=library/data-model --workspace=api",
     "build-aws": "npm run build --workspace=infrastructure/aws-cdk",
@@ -23,7 +24,10 @@
     "start-api": "npm start --workspace=api",
     "start-app": "npm start --workspace=app",
     "watch-api": "npm run watch --workspace=api",
-    "start-designer": "npm run start --workspace=designer"
+    "start-designer": "npm run start --workspace=designer",
+    "initdb" : "npm run initdb --workspace=api",
+    "load-notebooks" : "npm run load-notebooks --workspace=api",
+    "generate-local-keys" : "./api/keymanagement/makeInstanceKeys.sh"
   },
   "keywords": [],
   "author": "",
