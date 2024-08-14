@@ -52,9 +52,9 @@ import ListItemText from '@mui/material/ListItemText';
 import * as ROUTES from '../../constants/routes';
 import {getActiveProjectList} from '../../sync/projects';
 import SystemAlert from '../components/alert';
-import {ProjectInformation} from 'faims3-datamodel';
+import {ProjectInformation} from '@faims3/data-model';
 import AppBarAuth from '../components/authentication/appbarAuth';
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../utils/helpers';
 // import ConnectedStatus from '../components/authentication/connectedStatus';
 import SyncStatus from '../components/sync';
@@ -203,13 +203,13 @@ export default function MainAppBar(props: NavbarProps) {
           disabled: true,
         }
       : isAuthenticated
-      ? getNestedProjects(projectList)
-      : {
-          title: 'Notebooks',
-          icon: <AccountTree />,
-          to: '/',
-          disabled: true,
-        },
+        ? getNestedProjects(projectList)
+        : {
+            title: 'Notebooks',
+            icon: <AccountTree />,
+            to: '/',
+            disabled: true,
+          },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
     isAuthenticated

@@ -1,0 +1,18 @@
+{
+    "extends": "./node_modules/gts/",
+    "ignorePatterns": [
+        "*.js",
+        "**/build/",
+        "**/dist/",
+        "**/cdk.out/"
+    ],
+    "rules": {
+        "prettier/prettier": "warn",
+        "no-trailing-spaces": "warn",
+        "@typescript-eslint/no-explicit-any": "off",
+        "no-constant-condition": "off",
+        "@typescript-eslint/no-empty-interface": "off",
+        "n/no-missing-import": "off",
+        "n/no-unpublished-import": "off"
+    }
+}

@@ -1,6 +1,6 @@
 import {ActionType} from '../context/actions';
 import {ContextType} from '../context/store';
-import {SyncStatusCallbacks} from 'faims3-datamodel';
+import {SyncStatusCallbacks} from '@faims3/data-model';
 
 export type SyncActionTypes =
   | ActionType.IS_SYNCING_DOWN

@@ -21,8 +21,8 @@
 import React from 'react';
 import {Box, Paper, Typography} from '@mui/material';
 import RecordForm from './form';
-import {ProjectID, RecordID, RevisionID} from 'faims3-datamodel';
-import {ProjectUIModel} from 'faims3-datamodel';
+import {ProjectID, RecordID, RevisionID} from '@faims3/data-model';
+import {ProjectUIModel} from '@faims3/data-model';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 

@@ -41,7 +41,7 @@ import {
   userHasPermission,
 } from '../src/couchdb/users';
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
-import {ProjectUIModel, getProjectDB} from 'faims3-datamodel';
+import {ProjectUIModel, getProjectDB} from '@faims3/data-model';
 import {expect} from 'chai';
 import {resetDatabases} from './mocks';
 import {fail} from 'assert';

@@ -2,7 +2,12 @@
 
 FROM node:20
 
-WORKDIR /usr/src/app
+# Expose the port the API runs on
+EXPOSE 8000
+
+# primary work directory - mirror of the FAIMS3 monorepo
+# requires that build context is at the proj root
+WORKDIR /usr/src
 
 # Copy the entire project
 COPY . .
@@ -11,18 +16,10 @@ COPY . .
 RUN npm ci
 
 # Build the data model package which is dependency of conductor
-WORKDIR /usr/src/app/library/data-model
-RUN npm run build
+RUN npm run build-data-model
 
 # Build the API
-WORKDIR /usr/src/app/api
-RUN npm run compile
-
-# Set the working directory back to the root
-WORKDIR /usr/src/app
-
-# Expose the port the API runs on
-EXPOSE 8000
+RUN npm run build-api
 
 # Command to run the API
 CMD ["npm", "run", "start-api"]

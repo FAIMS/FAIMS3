@@ -20,7 +20,7 @@
  *
  */
 
-import {EncodedProjectUIModel} from 'faims3-datamodel';
+import {EncodedProjectUIModel} from '@faims3/data-model';
 import {getProjectDB} from '.';
 import {getTokenForCluster} from '../users';
 import {createdListingsInterface} from './state';

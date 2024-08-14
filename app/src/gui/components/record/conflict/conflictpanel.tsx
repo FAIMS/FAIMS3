@@ -20,12 +20,12 @@
 
 import React from 'react';
 import {Grid, Box} from '@mui/material';
-import {ProjectUIModel} from 'faims3-datamodel';
+import {ProjectUIModel} from '@faims3/data-model';
 import {Formik, Form} from 'formik';
 import {FieldWithAnnotation, EmptyField} from './conflictfield';
 import {FieldButtonGroup, FieldEmptyButton} from './conflictbutton';
 import {CircularProgress} from '@mui/material';
-import {ProjectID} from 'faims3-datamodel';
+import {ProjectID} from '@faims3/data-model';
 function getinitial(data: any, fieldslist: Array<string>) {
   const initialvalues: {[key: string]: string} = {};
   fieldslist.map(field =>

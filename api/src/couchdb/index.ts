@@ -25,7 +25,7 @@ import {
   COUCHDB_INTERNAL_URL,
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
-import {ProjectID, ProjectObject} from 'faims3-datamodel';
+import {ProjectID, ProjectObject} from '@faims3/data-model';
 import {
   initialiseDirectoryDB,
   initialiseProjectsDB,
@@ -194,7 +194,10 @@ export const initialiseDatabases = async () => {
   try {
     await initialiseJWTKey();
   } catch (error) {
-    console.log('something wrong PUTing jwt_keys into the db configuration...', error);
+    console.log(
+      'something wrong PUTing jwt_keys into the db configuration...',
+      error
+    );
   }
 };
 

@@ -34,9 +34,9 @@ import {
   RecordMetadata,
   getMetadataForAllRecords,
   getRecordsWithRegex,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
-import { listenDataDB } from '../../../sync/projects';
+import {listenDataDB} from '../../../sync/projects';
 import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import getLocalDate from '../../fields/LocalDate';
@@ -90,7 +90,8 @@ function RecordsTable(props: RecordsTableProps) {
               params.value !== null &&
               params.value !== undefined &&
               props.viewsets[params.value.toString()] !== undefined
-                ? props.viewsets[params.value.toString()].label ?? params.value
+                ? (props.viewsets[params.value.toString()].label ??
+                  params.value)
                 : params.value}
             </>
           ),
@@ -191,8 +192,8 @@ function RecordsTable(props: RecordsTableProps) {
                 params.row.type !== null &&
                 params.row.type !== undefined &&
                 props.viewsets[(params.row.type || '').toString()] !== undefined
-                  ? props.viewsets[(params.row.type || '').toString()].label ??
-                    params.row.type
+                  ? (props.viewsets[(params.row.type || '').toString()].label ??
+                    params.row.type)
                   : params.row.type}
               </Typography>
               <Typography
@@ -272,8 +273,8 @@ function RecordsTable(props: RecordsTableProps) {
                     ? maxRows
                     : defaultMaxRowsMobile
                   : not_xs
-                  ? 25
-                  : defaultMaxRowsMobile,
+                    ? 25
+                    : defaultMaxRowsMobile,
             },
           },
         }}

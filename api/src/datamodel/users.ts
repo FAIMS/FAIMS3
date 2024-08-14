@@ -18,7 +18,7 @@
  *   Data models related to users.
  */
 
-import {NonUniqueProjectID} from 'faims3-datamodel';
+import {NonUniqueProjectID} from '@faims3/data-model';
 /*
  * This represents an arbitrary profile from an arbitrary service that where
  * information must be extracted. Specific services should use this internally,

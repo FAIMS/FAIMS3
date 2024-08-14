@@ -26,11 +26,11 @@ import {CONDUCTOR_INTERNAL_PORT} from './buildconfig';
 
 import {app} from './routes';
 
-import {registerClient} from 'faims3-datamodel';
+import {registerClient} from '@faims3/data-model';
 import {getProjectDataDB, getProjectMetaDB} from './couchdb';
 import {validateDatabases} from './couchdb/notebooks';
 
-// set up the database module faims3-datamodel with our callbacks to get databases
+// set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
   getDataDB: getProjectDataDB,
   getProjectDB: getProjectMetaDB,

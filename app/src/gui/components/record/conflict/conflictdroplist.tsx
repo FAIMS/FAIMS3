@@ -28,7 +28,7 @@ import FormHelperText from '@mui/material/FormHelperText';
 import Select, {SelectChangeEvent} from '@mui/material/Select';
 import {Typography} from '@mui/material';
 import {BasicDialog} from './conflictDialog';
-import {InitialMergeRevisionDetailsMap} from 'faims3-datamodel';
+import {InitialMergeRevisionDetailsMap} from '@faims3/data-model';
 import getLocalDate from '../../../fields/LocalDate';
 type ConflictDropSelectprops = {
   label: string;

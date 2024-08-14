@@ -18,7 +18,7 @@
  *   Tests for invite handling
  */
 
-import {ProjectUIModel} from 'faims3-datamodel';
+import {ProjectUIModel} from '@faims3/data-model';
 import PouchDB from 'pouchdb';
 import {createNotebook} from '../src/couchdb/notebooks';
 import {getUserFromEmailOrUsername} from '../src/couchdb/users';
