@@ -23,7 +23,10 @@
     "start-api": "npm start --workspace=api",
     "start-app": "npm start --workspace=app",
     "watch-api": "npm run watch --workspace=api",
-    "start-designer": "npm run start --workspace=designer"
+    "start-designer": "npm run start --workspace=designer",
+    "initdb" : "npm run initdb --workspace=api",
+    "load-notebooks" : "npm run load-notebooks --workspace=api",
+    "generate-local-keys" : "./api/keymanagement/makeInstanceKeys.sh"
   },
   "keywords": [],
   "author": "",

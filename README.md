@@ -36,11 +36,10 @@ code ./app/.env
 ### Key Generation
 
 ```bash
-./api/keymanagement/makeInstanceKeys.sh ./api/.env
+npm run generate-local-keys
 ```
 
-generates new key pair in the `keys` folder and generates the `local.ini` file for couchdb
-that contains the public key and other information.
+generates new key pair in the `keys` folder in the `api` folder and generates the `local.ini` file for couchdb that contains the public key and other information. This uses the script located at `./api/keymanagement/makeInstanceKeys.sh`.
 
 ### Running with Docker
 
