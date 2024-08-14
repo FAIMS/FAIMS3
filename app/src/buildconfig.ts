@@ -310,6 +310,12 @@ function get_notebook_list_type(): 'tabs' | 'headings' {
   }
 }
 
+/**
+ * Retrieves the name of notebooks from the environment variables.
+ * If the environment variable is not set, it returns a default value 'notebook'.
+ *
+ * @returns {string} - The name of notebooks.
+ */
 function get_notebook_name(): string {
   const notebook_name = import.meta.env.VITE_NOTEBOOK_NAME;
   if (notebook_name) {
@@ -319,6 +325,11 @@ function get_notebook_name(): string {
   }
 }
 
+/**
+ * Retrieves the name of the notebooks and capitalizes the first letter.
+ *
+ * @returns {string} - The capitalized name of notebooks.
+ */
 function get_notebook_name_capitalized(): string {
   const notebook_name = get_notebook_name();
 
