@@ -34,6 +34,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import RefreshNotebook from '../components/notebook/refresh';
 import {ProjectInformation} from 'faims3-datamodel';
 import {logError} from '../../logging';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 export default function Notebook() {
   /**
@@ -64,7 +65,7 @@ export default function Notebook() {
 
   const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
-    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+    {link: ROUTES.NOTEBOOK_LIST, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
       title: !loading ? project_info.name : '',
     },
@@ -73,7 +74,7 @@ export default function Notebook() {
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
 
   if (project_error !== null) {
-    logError(`Failed to load notebook ${project_id}, ${project_error}`);
+    logError(`Failed to load ${NOTEBOOK_NAME} ${project_id}, ${project_error}`);
     return <Navigate to="/404" />;
   }
   const handleRefresh = () => {

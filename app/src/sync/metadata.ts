@@ -24,6 +24,8 @@ import {EncodedProjectUIModel} from 'faims3-datamodel';
 import {getProjectDB} from '.';
 import {getTokenForCluster} from '../users';
 import {createdListingsInterface} from './state';
+import { NOTEBOOK_NAME } from '../buildconfig';
+import { NOTEBOOK } from '../constants/routes';
 
 export type PropertyMap = {
   [key: string]: unknown;
@@ -53,7 +55,7 @@ export const fetchProjectMetadata = async (
   lst: minimalCreatedListing,
   project_id: string
 ) => {
-  const url = `${lst.listing.conductor_url}/api/notebooks/${project_id}`;
+  const url = `${lst.listing.conductor_url}/api${NOTEBOOK}${project_id}`;
   const jwt_token = await getTokenForCluster(lst.listing._id);
   const full_project_id = lst.listing._id + '||' + project_id;
   const response = await fetch(url, {

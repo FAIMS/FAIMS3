@@ -90,6 +90,7 @@ import RecordData from '../components/record/RecordData';
 import getLocalDate from '../fields/LocalDate';
 import RecordDelete from '../components/notebook/delete';
 import {logError} from '../../logging';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -171,7 +172,7 @@ export default function Record() {
         setHrid(hrid);
         setBreadcrumbs([
           // {link: ROUTES.INDEX, title: 'Home'},
-          {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+          {link: ROUTES.NOTEBOOK_LIST, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
           {
             link: ROUTES.NOTEBOOK + project_id,
             title: projectInfo !== null ? projectInfo.name! : project_id!,
@@ -290,7 +291,10 @@ export default function Record() {
             setParentLinks(newParent);
             let newBreadcrumbs = [
               // {link: ROUTES.INDEX, title: 'Home'},
-              {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+              {
+                link: ROUTES.NOTEBOOK_LIST,
+                title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+              },
               {
                 link: ROUTES.NOTEBOOK + project_id,
                 title: projectInfo !== null ? projectInfo.name! : project_id!,
@@ -304,11 +308,13 @@ export default function Record() {
             ) {
               newBreadcrumbs = [
                 // {link: ROUTES.INDEX, title: 'Home'},
-                {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+                {
+                  link: ROUTES.NOTEBOOK_LIST,
+                  title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+                },
                 {
                   link: ROUTES.NOTEBOOK + project_id,
-                  title:
-                    projectInfo !== null ? projectInfo.name! : project_id!,
+                  title: projectInfo !== null ? projectInfo.name! : project_id!,
                 },
                 {
                   link: newParent[0]['route'],

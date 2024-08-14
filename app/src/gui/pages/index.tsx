@@ -27,6 +27,7 @@ import {useTheme} from '@mui/material/styles';
 import {checkToken} from '../../utils/helpers';
 import {TokenContents} from 'faims3-datamodel';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import {NOTEBOOK_NAME} from '../../buildconfig';
 type IndexProps = {
   token?: null | undefined | TokenContents;
 };
@@ -70,7 +71,7 @@ export default function Index(props: IndexProps) {
           >
             Fieldmark™ is an open-source tool for born-digital field data
             collection brought to you by the FAIMS Project. Supporting
-            electronic field notebooks by researchers, for researchers.
+            electronic field {NOTEBOOK_NAME}s by researchers, for researchers.
           </Typography>
           <Typography
             variant={'h4'}

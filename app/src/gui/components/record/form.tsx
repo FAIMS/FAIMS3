@@ -73,6 +73,7 @@ import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
 import {generateFAIMSDataID, getFirstRecordHead} from 'faims3-datamodel';
 import {logError} from '../../../logging';
+import {NOTEBOOK} from '../../../constants/routes';
 //import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -161,7 +162,7 @@ class RecordForm extends React.Component<
   draftState: RecordDraftState | null = null;
 
   // List of timeouts that unmount must cancel
-  timeouts: (typeof setTimeout)[] = [];
+  timeouts: typeof setTimeout[] = [];
 
   async componentDidUpdate(
     prevProps: RecordFormProps,
@@ -953,7 +954,7 @@ class RecordForm extends React.Component<
                                   location_state.parent_record_id || ''
                                 ).toString(),
                                 (new_revision_id || '').toString()
-                              ).replace('/notebooks/', '');
+                              ).replace(NOTEBOOK, '');
                             location_state['child_record_id'] = new_record_id;
                             this.props.navigate(
                               ROUTES.NOTEBOOK +
@@ -1061,7 +1062,7 @@ class RecordForm extends React.Component<
                                   location_state.parent_record_id || ''
                                 ).toString(),
                                 (new_revision_id || '').toString()
-                              ).replace('/notebooks/', '');
+                              ).replace(NOTEBOOK, '');
                             location_state['child_record_id'] = new_record_id;
                             this.props.navigate(
                               ROUTES.NOTEBOOK +

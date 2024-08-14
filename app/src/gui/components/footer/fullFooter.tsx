@@ -5,6 +5,7 @@ import Link from '@mui/material/Link';
 import SlimFooter from './slimFooter';
 import SupportEmail from './supportEmail';
 import {TokenContents} from 'faims3-datamodel';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 
 interface FullFooterProps {
   token?: null | undefined | TokenContents;
@@ -43,9 +44,9 @@ export default function FullFooter(props: FullFooterProps) {
               }}
             />
             <Typography variant="caption" display="block" gutterBottom>
-              Electronic Field Notebooks publishes this app under an Apache 2.0
-              open source license. Researcher data copyright belongs to the
-              researchers.
+              Electronic Field {NOTEBOOK_NAME_CAPITALIZED}s publishes this app
+              under an Apache 2.0 open source license. Researcher data copyright
+              belongs to the researchers.
             </Typography>
           </Box>
         </Grid>
@@ -147,10 +148,11 @@ export default function FullFooter(props: FullFooterProps) {
             </Grid>
             <Grid item sm={8} lg={12}>
               <Typography variant={'caption'}>
-                The FAIMS 3.0 Electronic Field Notebooks project received
-                investment (doi: 10.47486/PL110) from the Australian Research
-                Data Commons (ARDC). The ARDC is funded by the National
-                Collaborative Research Infrastructure Strategy (NCRIS).
+                The FAIMS 3.0 Electronic Field ${NOTEBOOK_NAME_CAPITALIZED}s
+                project received investment (doi: 10.47486/PL110) from the
+                Australian Research Data Commons (ARDC). The ARDC is funded by
+                the National Collaborative Research Infrastructure Strategy
+                (NCRIS).
               </Typography>
             </Grid>
           </Grid>

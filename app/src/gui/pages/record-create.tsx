@@ -62,6 +62,7 @@ import {useTheme} from '@mui/material/styles';
 import {ParentLinkProps} from '../components/record/relationships/types';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import InheritedDataComponent from '../components/record/inherited_data';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 interface DraftCreateProps {
   project_id: ProjectID;
@@ -355,7 +356,7 @@ export default function RecordCreate() {
 
   let breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
-    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+    {link: ROUTES.NOTEBOOK_LIST, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
       link: ROUTES.NOTEBOOK + project_id,
       title: projectInfo !== null ? projectInfo.name! : project_id!,
@@ -371,7 +372,7 @@ export default function RecordCreate() {
         : location.state.relation_type_vocabPair[0];
     breadcrumbs = [
       // {link: ROUTES.INDEX, title: 'Home'},
-      {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+      {link: ROUTES.NOTEBOOK_LIST, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
       {
         link: ROUTES.NOTEBOOK + project_id,
         title: projectInfo !== null ? projectInfo.name! : project_id!,

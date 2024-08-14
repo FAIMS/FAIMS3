@@ -19,6 +19,7 @@
  */
 
 import {ProjectID, RecordID, RevisionID} from 'faims3-datamodel';
+import {NOTEBOOK_NAME} from '../buildconfig';
 
 export const INDEX = '/';
 export const SIGN_IN = '/signin/';
@@ -26,8 +27,8 @@ export const SIGN_IN = '/signin/';
 export const NOT_FOUND = '/not-found';
 export const WORKSPACE = '/workspace';
 
-export const NOTEBOOK = '/notebooks/';
-export const NOTEBOOK_LIST = '/notebooks';
+export const NOTEBOOK = `/${NOTEBOOK_NAME}s/`;
+export const NOTEBOOK_LIST = `/${NOTEBOOK_NAME}s`;
 
 export const RECORD_LIST = '/records';
 export const RECORD_EXISTING = '/records/';

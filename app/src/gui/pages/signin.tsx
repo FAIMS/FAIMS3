@@ -27,6 +27,7 @@ import * as ROUTES from '../../constants/routes';
 import {ListingInformation} from 'faims3-datamodel';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {logError} from '../../logging';
+import {NOTEBOOK_NAME} from '../../buildconfig';
 
 type SignInProps = {
   setToken?: any;
@@ -43,7 +44,7 @@ export function SignIn(props: SignInProps) {
   if (listings === null) {
     return (
       <Box>
-        <Typography>{'Looking for notebooks...'}</Typography>
+        <Typography>{`Looking for ${NOTEBOOK_NAME}s...`}</Typography>
       </Box>
     );
   }
@@ -59,7 +60,7 @@ export function SignIn(props: SignInProps) {
               listing_id={listing_info.id}
               listing_name={listing_info.name}
               listing_description={listing_info.description}
-              conductor_url={listing_info.conductor_url}
+              conductor_url={'localhost:8080'}
               setToken={props.setToken}
             />
           </Grid>
