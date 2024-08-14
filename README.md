@@ -14,7 +14,46 @@ The repository contains the following:
 - /library: shared library for the project
 - /tests: contains the end-to-end tests for the project
 
-## Initial Setup
+
+## Local development quick start
+
+Ensure you have uuid installed e.g. 
+
+```bash
+sudo apt-get install uuid
+```
+
+Also check you have a modern npm installed, ideally v10.x.y.
+
+We recommend using [`nvm`](https://github.com/nvm-sh/nvm) (node version manager). To set this up
+
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+```
+
+You may then need to update your bash profile, for example by either starting another terminal session or running
+
+```bash
+source ~/.bashrc
+```
+
+You can then setup Node v20 and activate it
+
+```bash
+nvm install 20 
+nvm use 20
+```
+
+You will also need docker and docker compose installed rootless.
+
+Now run the script to get a docker service running locally.
+
+```bash
+./localdev.sh
+```
+
+
+## Initial step-by step setup
 
 Clone the repository and install node modules (note this only needs to be run from the parent folder)
 
