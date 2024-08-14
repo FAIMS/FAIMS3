@@ -121,3 +121,6 @@ local_state/
 projects_dummy_listing/
 keys
 couchdb/*.ini
+
+couchdb/local.ini*
+!couchdb/local.ini.dist
