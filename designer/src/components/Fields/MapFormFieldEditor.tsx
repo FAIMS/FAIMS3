@@ -12,80 +12,95 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Grid, TextField, Card, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
-import { useAppSelector, useAppDispatch } from "../../state/hooks";
-import { BaseFieldEditor } from "./BaseFieldEditor";
-import { FieldType } from "../../state/initial";
+import {
+  Grid,
+  TextField,
+  Card,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from '@mui/material';
+import {useAppSelector, useAppDispatch} from '../../state/hooks';
+import {BaseFieldEditor} from './BaseFieldEditor';
+import {FieldType} from '../../state/initial';
 
-export const MapFormFieldEditor = ({ fieldName }: { fieldName: string }) => {
+export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
+  const field = useAppSelector(
+    state => state.notebook['ui-specification'].fields[fieldName]
+  );
+  const dispatch = useAppDispatch();
 
-    const field = useAppSelector((state) => state.notebook['ui-specification'].fields[fieldName]);
-    const dispatch = useAppDispatch();
+  const initZoom = field['component-parameters'].zoom;
+  const initFeatureType = field['component-parameters'].featureType;
 
-    const initZoom = field['component-parameters'].zoom;
-    const initFeatureType = field['component-parameters'].featureType
+  const updateField = (fieldName: string, newField: FieldType) => {
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+  };
 
-    const updateField = (fieldName: string, newField: FieldType) => {
-        dispatch({ type: 'ui-specification/fieldUpdated', payload: { fieldName, newField } })
-    }
+  const state = {
+    featureType: field['component-parameters'].featureType || '',
+    zoom: field['component-parameters'].zoom || 0,
+  };
 
-    const state = {
-        featureType: field['component-parameters'].featureType || "",
-        zoom: field['component-parameters'].zoom || 0,
-    };
+  type newState = {
+    featureType: string;
+    zoom: number;
+  };
 
-    type newState = {
-        featureType: string,
-        zoom: number,
-    }
+  const updateFieldFromState = (newState: newState) => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
+    newField['component-parameters'].featureType = newState.featureType;
+    newField['component-parameters'].zoom = newState.zoom;
+    updateField(fieldName, newField);
+  };
 
-    const updateFieldFromState = (newState: newState) => {
-        const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-        newField['component-parameters'].featureType = newState.featureType;
-        newField['component-parameters'].zoom = newState.zoom;
-        updateField(fieldName, newField);
-    };
+  const updateProperty = (prop: string, value: string | number) => {
+    const newState = {...state, [prop]: value};
+    updateFieldFromState(newState);
+  };
 
-    const updateProperty = (prop: string, value: string | number) => {
-        const newState = { ...state, [prop]: value };
-        updateFieldFromState(newState);
-    };
-
-    return (
-        <BaseFieldEditor fieldName={fieldName}>
-            <Grid item xs={12}>
-                <Card variant="outlined" sx={{ display: 'flex' }}>
-                    <Grid container p={2} rowGap={2}>
-                        <Grid item sm={6} xs={12}>
-                            <TextField
-                                variant="outlined"
-                                label="Zoom Level"
-                                type="number"
-                                value={initZoom}
-                                inputProps={{ min: 0 }}
-                                onChange={(e) => updateProperty('zoom', parseFloat(e.target.value))}
-                            />
-                        </Grid>
-                        <Grid item sm={6} xs={12}>
-                            <FormControl sx={{ minWidth: 150 }}>
-                                <InputLabel id="featureType-label">Select Feature Type</InputLabel>
-                                <Select
-                                    labelId="featureType-label"
-                                    label="Select Feature Type"
-                                    value={initFeatureType}
-                                    onChange={(e) => updateProperty('featureType', e.target.value)}
-                                    required
-                                >
-                                    <MenuItem value="Polygon">Polygon</MenuItem>
-                                    <MenuItem value="Point">Point</MenuItem>
-                                    <MenuItem value="LineString">LineString</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                    </Grid>
-                </Card>
+  return (
+    <BaseFieldEditor fieldName={fieldName}>
+      <Grid item xs={12}>
+        <Card variant="outlined" sx={{display: 'flex'}}>
+          <Grid container p={2} rowGap={2}>
+            <Grid item sm={6} xs={12}>
+              <TextField
+                variant="outlined"
+                label="Zoom Level"
+                type="number"
+                value={initZoom}
+                inputProps={{min: 0}}
+                onChange={e =>
+                  updateProperty('zoom', parseFloat(e.target.value))
+                }
+              />
             </Grid>
-        </BaseFieldEditor>
-    )
-
+            <Grid item sm={6} xs={12}>
+              <FormControl sx={{minWidth: 150}}>
+                <InputLabel id="featureType-label">
+                  Select Feature Type
+                </InputLabel>
+                <Select
+                  labelId="featureType-label"
+                  label="Select Feature Type"
+                  value={initFeatureType}
+                  onChange={e => updateProperty('featureType', e.target.value)}
+                  required
+                >
+                  <MenuItem value="Polygon">Polygon</MenuItem>
+                  <MenuItem value="Point">Point</MenuItem>
+                  <MenuItem value="LineString">LineString</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Card>
+      </Grid>
+    </BaseFieldEditor>
+  );
 };

@@ -1,4 +1,3 @@
-/* eslint-disable node/no-unpublished-import */
 /*
  * Copyright 2021, 2022 Macquarie University
  *

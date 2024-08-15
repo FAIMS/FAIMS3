@@ -23,7 +23,7 @@ import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@mui/material/Button';
 import {Geolocation, Position} from '@capacitor/geolocation';
 import {logError} from '../../logging';
-import {FAIMSPosition} from 'faims3-datamodel';
+import {FAIMSPosition} from '@faims3/data-model';
 
 function capacitor_coordindates_to_faims_pos(
   coordinates: Position

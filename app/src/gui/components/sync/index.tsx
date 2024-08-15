@@ -198,8 +198,8 @@ export default function SyncStatus() {
                         {state.isSyncError
                           ? 'Error'
                           : state.isSyncingUp || state.isSyncingDown
-                          ? 'In Progress'
-                          : 'Idle'}
+                            ? 'In Progress'
+                            : 'Idle'}
                       </Typography>
                       <Typography
                         color="text.secondary"
@@ -209,8 +209,8 @@ export default function SyncStatus() {
                         {state.isSyncError
                           ? 'Cannot sync to server, your device may be offline.'
                           : state.isSyncingUp || state.isSyncingDown
-                          ? 'Sync is underway'
-                          : 'Waiting for changes'}
+                            ? 'Sync is underway'
+                            : 'Waiting for changes'}
                       </Typography>
                     </TableCell>
                   </TableRow>

@@ -33,7 +33,7 @@ import {
   Button,
 } from '@mui/material';
 
-import {ProjectInformation} from 'faims3-datamodel';
+import {ProjectInformation} from '@faims3/data-model';
 import {
   isSyncingProject,
   setSyncingProject,
@@ -45,7 +45,7 @@ import {ActionType} from '../../../../context/actions';
 import {grey} from '@mui/material/colors';
 import NotebookActivationSwitch from './activation-switch';
 import LoadingButton from '@mui/lab/LoadingButton';
-import {ProjectID} from 'faims3-datamodel';
+import {ProjectID} from '@faims3/data-model';
 
 type NotebookSyncSwitchProps = {
   project: ProjectInformation;

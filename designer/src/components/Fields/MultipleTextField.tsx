@@ -12,42 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Grid, Card, TextField } from "@mui/material";
-import { useAppSelector, useAppDispatch } from "../../state/hooks";
-import { BaseFieldEditor } from "./BaseFieldEditor";
-import { FieldType } from "../../state/initial";
+import {Grid, Card, TextField} from '@mui/material';
+import {useAppSelector, useAppDispatch} from '../../state/hooks';
+import {BaseFieldEditor} from './BaseFieldEditor';
+import {FieldType} from '../../state/initial';
 
-export const MultipleTextFieldEditor = ({ fieldName }: { fieldName: string }) => {
+export const MultipleTextFieldEditor = ({fieldName}: {fieldName: string}) => {
+  const field = useAppSelector(
+    state => state.notebook['ui-specification'].fields[fieldName]
+  );
+  const dispatch = useAppDispatch();
 
-    const field = useAppSelector((state) => state.notebook['ui-specification'].fields[fieldName]);
-    const dispatch = useAppDispatch();
+  const rows = field['component-parameters'].InputProps?.rows || 4;
 
-    const rows = field['component-parameters'].InputProps?.rows || 4;
+  const updateRows = (value: number) => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
+    newField['component-parameters'].InputProps = {rows: value};
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+  };
 
-    const updateRows = (value: number) => {
-        const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-        newField['component-parameters'].InputProps = {rows: value};
-        dispatch({ type: 'ui-specification/fieldUpdated', payload: { fieldName, newField } })
-    }
-
-    return (
-        <BaseFieldEditor fieldName={fieldName}>
-            <Grid item sm={6} xs={12}>
-                <Card variant="outlined" sx={{ display: 'flex' }}>
-                    <Grid item xs={12} sx={{ mx: 1.5, my: 2 }}>
-                        <TextField
-                            name="rows"
-                            variant="outlined"
-                            label="Rows to display"
-                            type="number"
-                            value={rows}
-                            helperText="Number of rows in the text field."
-                            onChange={(e) => updateRows(parseInt(e.target.value))}
-                        />
-                    </Grid>
-                </Card>
-            </Grid>
-        </BaseFieldEditor>
-    )
-    
+  return (
+    <BaseFieldEditor fieldName={fieldName}>
+      <Grid item sm={6} xs={12}>
+        <Card variant="outlined" sx={{display: 'flex'}}>
+          <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
+            <TextField
+              name="rows"
+              variant="outlined"
+              label="Rows to display"
+              type="number"
+              value={rows}
+              helperText="Number of rows in the text field."
+              onChange={e => updateRows(parseInt(e.target.value))}
+            />
+          </Grid>
+        </Card>
+      </Grid>
+    </BaseFieldEditor>
+  );
 };

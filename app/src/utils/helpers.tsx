@@ -1,4 +1,4 @@
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 
 export function tokenExists(token: null | undefined | TokenContents) {
   return token !== null && token !== undefined;

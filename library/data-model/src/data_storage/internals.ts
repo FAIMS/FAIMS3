@@ -253,10 +253,9 @@ export async function listRecordMetadata(
         // We don't have that revision, so skip
         continue;
       }
-      const hrid =
-        revision
-          ? (await getHRID(project_id, revision)) ?? record_id
-          : record_id;
+      const hrid = revision
+        ? ((await getHRID(project_id, revision)) ?? record_id)
+        : record_id;
 
       out[record_id] = {
         project_id: project_id,

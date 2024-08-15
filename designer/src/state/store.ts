@@ -12,40 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Middleware, combineReducers, configureStore } from '@reduxjs/toolkit'
-import metadataReducer from './metadata-reducer'
-import uiSpecificationReducer from './uiSpec-reducer'
+import {Middleware, combineReducers, configureStore} from '@reduxjs/toolkit';
+import metadataReducer from './metadata-reducer';
+import uiSpecificationReducer from './uiSpec-reducer';
 import modifiedStatusReducer from './modifiedStatus-reducer';
-import { ToolkitStore } from '@reduxjs/toolkit/dist/configureStore';
-import { AppState, Notebook } from './initial';
-import { loadState, saveState } from './localStorage';
-import { throttle } from 'lodash';
+import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
+import {AppState, Notebook} from './initial';
+import {loadState, saveState} from './localStorage';
+import {throttle} from 'lodash';
 
 const persistedState = loadState();
 
-const loggerMiddleware: Middleware<object, AppState> = storeAPI => next => action => {
-  console.log('dispatching', action);
-  next(action);
-  console.log('next state', storeAPI.getState())
-}
-
+const loggerMiddleware: Middleware<object, AppState> =
+  storeAPI => next => action => {
+    console.log('dispatching', action);
+    next(action);
+    console.log('next state', storeAPI.getState());
+  };
 
 export const store: ToolkitStore<AppState> = configureStore({
   reducer: {
     notebook: combineReducers<Notebook>({
-      metadata: metadataReducer, 
-      "ui-specification": uiSpecificationReducer
+      metadata: metadataReducer,
+      'ui-specification': uiSpecificationReducer,
     }),
     modified: modifiedStatusReducer,
   },
   preloadedState: persistedState,
-  middleware: (getDefaultMiddleware) =>
+  middleware: getDefaultMiddleware =>
     getDefaultMiddleware().concat(loggerMiddleware),
-})
+});
 
 // Write to localStorage at most once per second
-store.subscribe(throttle(() => {
-  saveState(store.getState());
-}, 1000));
+store.subscribe(
+  throttle(() => {
+    saveState(store.getState());
+  }, 1000)
+);
 
-export type AppDispatch = typeof store.dispatch
+export type AppDispatch = typeof store.dispatch;

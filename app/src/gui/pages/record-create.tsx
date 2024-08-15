@@ -42,10 +42,10 @@ import {store} from '../../context/store';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import {generateFAIMSDataID} from 'faims3-datamodel';
+import {generateFAIMSDataID} from '@faims3/data-model';
 import {getProjectInfo} from '../../sync/projects';
-import {ProjectID, RecordID} from 'faims3-datamodel';
-import {ProjectUIModel, ProjectInformation} from 'faims3-datamodel';
+import {ProjectID, RecordID} from '@faims3/data-model';
+import {ProjectUIModel, ProjectInformation} from '@faims3/data-model';
 import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,

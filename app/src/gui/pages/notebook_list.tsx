@@ -24,7 +24,7 @@ import {Box} from '@mui/material';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import NoteBooks from '../components/workspace/notebooks';
-// import {TokenContents} from 'faims3-datamodel';
+// import {TokenContents} from '@faims3/data-model';
 // type NoteBookListProps = {
 //   token?: null | undefined | TokenContents;
 // };
