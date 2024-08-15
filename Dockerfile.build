@@ -6,12 +6,6 @@
 # Use Node 20 base
 FROM node:20-alpine AS alpine
 
-# install some dependencies
-RUN apk update && apk add --no-cache libc6-compat
-
-# create this layer to use to avoid repeatedly installing
-FROM alpine as base
-
 # What is the @faims3/... name of the package to build
 ARG PACKAGE_NAME
 ENV PACKAGE_NAME=${PACKAGE_NAME}
@@ -20,6 +14,12 @@ ENV PACKAGE_NAME=${PACKAGE_NAME}
 # index.js be built to. For example API -> api/build/src
 ARG NODE_RUN_DIR
 ENV NODE_RUN_DIR=${NODE_RUN_DIR}
+
+# install some dependencies
+RUN apk update && apk add --no-cache libc6-compat
+
+# create this layer to use to avoid repeatedly installing
+FROM alpine AS base
 
 # PRUNE TO GET DEPENDENCIES [pruner]
 # ===================================
@@ -85,7 +85,6 @@ USER faims
 COPY --from=builder /app/out .
 
 # Run the node app
-ENV NODE_RUN_DIR=${NODE_RUN_DIR}
 WORKDIR /app/${NODE_RUN_DIR}
 
 CMD ["node", "index.js"]
