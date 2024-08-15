@@ -54,13 +54,13 @@ jobs:
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
-        env:
-          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_API_URL: ${{ vars.TURBO_API_URL }}
         with:
           context: .
           file: ./api/BuildDockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            TURBO_TEAM=${{ vars.TURBO_TEAM }}
+            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            TURBO_API_URL=${{ vars.TURBO_API_URL }}

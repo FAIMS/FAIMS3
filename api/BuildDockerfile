@@ -6,6 +6,17 @@
 # Use Node 20 base
 FROM node:20-alpine AS base
 
+# Declare build arguments with default empty values
+ARG TURBO_TEAM=""
+ARG TURBO_TOKEN=""
+ARG TURBO_API_URL=""
+
+# Set environment variables using the build arguments, with fallback to empty string
+ENV TURBO_TEAM=${TURBO_TEAM}
+ENV TURBO_TOKEN=${TURBO_TOKEN}
+ENV TURBO_API_URL=${TURBO_API_URL}
+
+
 # PRUNE TO GET DEPENDENCIES [builder]
 # ===================================
 
