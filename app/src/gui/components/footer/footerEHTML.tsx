@@ -21,7 +21,6 @@ import React from 'react';
 // Brian,please replace below html here and in environment file VITE_SERVICES=XXX
 import {Container, Typography, Link, Box} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 
 // const html = `
 // <hr/>
@@ -50,7 +49,7 @@ export function EHTML() {
           <Typography variant={'caption'}>
             The{' '}
             <Link href="https://faims.edu.au/">
-              FAIMS 3.0 Electronic Field {NOTEBOOK_NAME_CAPITALIZED}s project
+              FAIMS 3.0 Electronic Field Notebooks project
             </Link>{' '}
             received investment (
             <Link href="https://dx.doi.org/10.47486/PL110">

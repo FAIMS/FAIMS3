@@ -23,7 +23,7 @@ import {expect, vi, test, afterEach} from 'vitest';
 
 import RecordCreate from './record-create';
 import React from 'react';
-import {NOTEBOOK} from '../../constants/routes';
+import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../constants/routes';
 
 const testProjectInfo = {
   created: 'Unknown',
@@ -273,7 +273,7 @@ vi.mock('react-router-dom', async () => {
       type_name: 'SurveyAreaForm',
     }),
     useLocation: () => ({
-      pathname: `${NOTEBOOK}default%7C%7C1685527104147-campus-survey-demo/new/SurveyAreaForm`,
+      pathname: `${INDIVIDUAL_NOTEBOOK_ROUTE}default%7C%7C1685527104147-campus-survey-demo/new/SurveyAreaForm`,
       search: '',
       hash: '',
       state: null,

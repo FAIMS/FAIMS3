@@ -60,7 +60,7 @@ export function SignIn(props: SignInProps) {
               listing_id={listing_info.id}
               listing_name={listing_info.name}
               listing_description={listing_info.description}
-              conductor_url={'localhost:8080'}
+              conductor_url={listing_info.conductor_url}
               setToken={props.setToken}
             />
           </Grid>

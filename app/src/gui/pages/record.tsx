@@ -172,9 +172,12 @@ export default function Record() {
         setHrid(hrid);
         setBreadcrumbs([
           // {link: ROUTES.INDEX, title: 'Home'},
-          {link: ROUTES.NOTEBOOK_LIST, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
           {
-            link: ROUTES.NOTEBOOK + project_id,
+            link: ROUTES.NOTEBOOK_LIST_ROUTE,
+            title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+          },
+          {
+            link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
             title: projectInfo !== null ? projectInfo.name! : project_id!,
           },
           {title: hrid ?? record_id},
@@ -269,7 +272,7 @@ export default function Record() {
                 },
               });
               history({
-                pathname: ROUTES.NOTEBOOK + project_id,
+                pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
               });
             }
             const newRelationship = await getDetailRelatedInformation(
@@ -292,11 +295,11 @@ export default function Record() {
             let newBreadcrumbs = [
               // {link: ROUTES.INDEX, title: 'Home'},
               {
-                link: ROUTES.NOTEBOOK_LIST,
+                link: ROUTES.NOTEBOOK_LIST_ROUTE,
                 title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
               },
               {
-                link: ROUTES.NOTEBOOK + project_id,
+                link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
                 title: projectInfo !== null ? projectInfo.name! : project_id!,
               },
               {title: hrid! ?? record_id!},
@@ -309,11 +312,11 @@ export default function Record() {
               newBreadcrumbs = [
                 // {link: ROUTES.INDEX, title: 'Home'},
                 {
-                  link: ROUTES.NOTEBOOK_LIST,
+                  link: ROUTES.NOTEBOOK_LIST_ROUTE,
                   title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
                 },
                 {
-                  link: ROUTES.NOTEBOOK + project_id,
+                  link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
                   title: projectInfo !== null ? projectInfo.name! : project_id!,
                 },
                 {
@@ -425,7 +428,7 @@ export default function Record() {
     return new Promise(resolve => {
       resolve(() => {
         history({
-          pathname: ROUTES.NOTEBOOK + project_id,
+          pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
         });
       });
     });

@@ -45,10 +45,7 @@ import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
 import {ProjectUIModel} from '@faims3/data-model';
 import {logError} from '../../../../logging';
-import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-} from '../../../../buildconfig';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -130,14 +127,14 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                   label={<Typography>{isSyncing ? 'On' : 'Off'}</Typography>}
                 />
                 <Typography variant={'body2'}>
-                  This control is {NOTEBOOK_NAME} and device specific. If this
-                  option is enabled, Fieldmark™ will automatically download and
-                  show images and attachments created by other devices. Be aware
-                  that this may be resource intensive and use your mobile data
-                  plan. Disable this setting to minimise network usage. This
-                  setting will not affect uploading of your data from this
-                  device to the central server. Attachments are always uploaded
-                  to the server regardless of this setting.
+                  This control is the app and device specific. If this option is
+                  enabled, Fieldmark™ will automatically download and show
+                  images and attachments created by other devices. Be aware that
+                  this may be resource intensive and use your mobile data plan.
+                  Disable this setting to minimise network usage. This setting
+                  will not affect uploading of your data from this device to the
+                  central server. Attachments are always uploaded to the server
+                  regardless of this setting.
                 </Typography>
               </Box>
             ) : (

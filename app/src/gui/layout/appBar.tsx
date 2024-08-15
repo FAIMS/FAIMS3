@@ -153,7 +153,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     projectListItems.push({
       title: project_info.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.NOTEBOOK + project_info.project_id,
+      to: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_info.project_id,
       disabled: false,
     });
   });
@@ -161,7 +161,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
     icon: <AccountTree />,
     nested: projectListItems,
-    to: ROUTES.NOTEBOOK_LIST,
+    to: ROUTES.NOTEBOOK_LIST_ROUTE,
     disabled: false,
   };
 }
@@ -204,13 +204,13 @@ export default function MainAppBar(props: NavbarProps) {
           disabled: true,
         }
       : isAuthenticated
-        ? getNestedProjects(projectList)
-        : {
-            title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-            icon: <AccountTree />,
-            to: '/',
-            disabled: true,
-          },
+      ? getNestedProjects(projectList)
+      : {
+          title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+          icon: <AccountTree />,
+          to: '/',
+          disabled: true,
+        },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
     isAuthenticated

@@ -92,7 +92,7 @@ export default function NoteBooks(props: NoteBookListProps) {
 
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     if (params.row.is_activated) {
-      history(ROUTES.NOTEBOOK + params.row.project_id);
+      history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + params.row.project_id);
     } else {
       // do nothing
     }

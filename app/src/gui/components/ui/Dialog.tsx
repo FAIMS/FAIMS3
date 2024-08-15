@@ -105,7 +105,7 @@ export default function FaimsDialog(props: DiagProps) {
             color="primary"
             size="large"
             component={RouterLink}
-            to={ROUTES.NOTEBOOK + project_id}
+            to={ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id}
           >
             CHANGE SETTINGS
           </Button>
