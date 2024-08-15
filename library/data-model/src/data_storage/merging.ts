@@ -24,7 +24,6 @@ import {getDataDB} from '../index';
 
 import {
   AttributeValuePairIDMap,
-  FAIMSTypeName,
   InitialMergeDetails,
   InitialMergeRevisionDetailsMap,
   LinkedRelation,

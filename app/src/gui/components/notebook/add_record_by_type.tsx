@@ -15,7 +15,7 @@ import {
   getRecordsWithRegex,
   RecordMetadata,
   ProjectUIModel,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {getMetadataValue} from '../../../sync/metadata';
 
 type AddRecordButtonsProps = {

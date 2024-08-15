@@ -48,7 +48,7 @@ import {
   setAttachmentDumperForType,
   file_data_to_attachments,
   file_attachments_to_data,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {QRCodeFormField} from '../fields/qrcode';
 import {RichTextField} from '../fields/RichText';
 

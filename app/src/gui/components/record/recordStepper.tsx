@@ -28,7 +28,7 @@ import {
   StepButton,
   MobileStepper,
 } from '@mui/material';
-import {ProjectUIModel} from 'faims3-datamodel';
+import {ProjectUIModel} from '@faims3/data-model';
 // import makeStyles from '@mui/styles/makeStyles';
 import {createUseStyles} from 'react-jss';
 type RecordStepperProps = {

@@ -20,7 +20,7 @@
 
 import {transformAll} from '@demvsystems/yup-ast';
 
-import {ProjectUIModel} from 'faims3-datamodel';
+import {ProjectUIModel} from '@faims3/data-model';
 import {
   getFieldsForViewSet,
   getFieldNamesFromFields,

@@ -14,8 +14,8 @@
 
 import {FieldType} from './state/initial';
 
-const fields: {[key: string]: FieldType } = {
-  'TextField': {
+const fields: {[key: string]: FieldType} = {
+  TextField: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::String',
@@ -32,7 +32,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  'Email': {
+  Email: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Email',
@@ -41,7 +41,7 @@ const fields: {[key: string]: FieldType } = {
       fullWidth: true,
       helperText: 'Enter a valid email address',
       variant: 'outlined',
-      required: false,    
+      required: false,
       InputProps: {
         type: 'email',
       },
@@ -49,7 +49,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string'], ['yup.email', 'Enter a valid email']],
     initialValue: '',
   },
-  'Number': {
+  Number: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Integer',
@@ -66,7 +66,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.number']],
     initialValue: '',
   },
-  'ControlledNumber': {
+  ControlledNumber: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Integer',
@@ -80,10 +80,14 @@ const fields: {[key: string]: FieldType } = {
         type: 'number',
       },
     },
-    validationSchema: [['yup.number'], ['yup.min', 10, 'Must be 10 or more'], ['yup.max', 20, 'Must be 20 or less'],],
+    validationSchema: [
+      ['yup.number'],
+      ['yup.min', 10, 'Must be 10 or more'],
+      ['yup.max', 20, 'Must be 20 or less'],
+    ],
     initialValue: '',
   },
-  'BasicAutoIncrementer': {
+  BasicAutoIncrementer: {
     'component-namespace': 'faims-custom',
     'component-name': 'BasicAutoIncrementer',
     'type-returned': 'faims-core::String',
@@ -99,7 +103,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',
   },
-  'MultipleTextField': {
+  MultipleTextField: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'MultipleTextField',
     'type-returned': 'faims-core::String',
@@ -118,7 +122,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  'Checkbox': {
+  Checkbox: {
     'component-namespace': 'faims-custom',
     'component-name': 'Checkbox',
     'type-returned': 'faims-core::Bool',
@@ -130,12 +134,10 @@ const fields: {[key: string]: FieldType } = {
       type: 'checkbox',
       helperText: 'Checkbox help.',
     },
-    validationSchema: [
-      ['yup.bool'],
-    ],
+    validationSchema: [['yup.bool']],
     initialValue: false,
   },
-  'DateTimeNow': {
+  DateTimeNow: {
     'component-namespace': 'faims-custom',
     'component-name': 'DateTimeNow',
     'type-returned': 'faims-core::String',
@@ -151,7 +153,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  'DatePicker': {
+  DatePicker: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Date',
@@ -168,7 +170,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  'DateTimePicker': {
+  DateTimePicker: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Datetime',
@@ -185,7 +187,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  'MonthPicker': {
+  MonthPicker: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Date',
@@ -202,12 +204,12 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  'FileUploader': {
+  FileUploader: {
     'component-namespace': 'faims-custom',
     'component-name': 'FileUploader',
     'type-returned': 'faims-attachment::Files',
     'component-parameters': {
-      label: "Upload a File",
+      label: 'Upload a File',
       name: 'file-upload-field',
       id: 'file-upload-field',
       helperText: 'Choose a file',
@@ -215,7 +217,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.mixed']],
     initialValue: null,
   },
-  'MapFormField': {
+  MapFormField: {
     'component-namespace': 'mapping-plugin',
     'component-name': 'MapFormField',
     'type-returned': 'faims-core::JSON',
@@ -232,10 +234,10 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '1',
   },
-  'MultiSelect': {
-    'component-namespace': 'faims-custom', 
+  MultiSelect: {
+    'component-namespace': 'faims-custom',
     'component-name': 'MultiSelect',
-    'type-returned': 'faims-core::Array', 
+    'type-returned': 'faims-core::Array',
     'component-parameters': {
       label: 'Select Multiple',
       fullWidth: true,
@@ -262,7 +264,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.array']],
     initialValue: [],
   },
-  'RadioGroup': {
+  RadioGroup: {
     'component-namespace': 'faims-custom',
     'component-name': 'RadioGroup',
     'type-returned': 'faims-core::String',
@@ -288,7 +290,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '1',
   },
-  'RandomStyle': {
+  RandomStyle: {
     'component-namespace': 'faims-custom',
     'component-name': 'RandomStyle',
     'type-returned': 'faims-core::String',
@@ -303,16 +305,16 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  'RichText': {
+  RichText: {
     'component-namespace': 'faims-custom',
     'component-name': 'RichText',
     'type-returned': 'faims-core::String',
     'component-parameters': {
       label: 'Unused',
       content: 'Hello __World__',
-    }
+    },
   },
-  'RelatedRecordSelector': {
+  RelatedRecordSelector: {
     'component-namespace': 'faims-custom',
     'component-name': 'RelatedRecordSelector',
     'type-returned': 'faims-core::Relationship',
@@ -328,7 +330,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  'Select': {
+  Select: {
     'component-namespace': 'faims-custom',
     'component-name': 'Select',
     'type-returned': 'faims-core::String',
@@ -344,7 +346,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  'AdvancedSelect': {
+  AdvancedSelect: {
     'component-namespace': 'faims-custom',
     'component-name': 'AdvancedSelect',
     'type-returned': 'faims-core::String',
@@ -354,17 +356,19 @@ const fields: {[key: string]: FieldType } = {
       helperText: 'Select from list',
       required: false,
       ElementProps: {
-        optiontree: [{
-          name: 'Default',
-          children: [],
-        }],
+        optiontree: [
+          {
+            name: 'Default',
+            children: [],
+          },
+        ],
       },
       valuetype: 'full',
     },
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  'TakePhoto': {
+  TakePhoto: {
     'component-namespace': 'faims-custom',
     'component-name': 'TakePhoto',
     'type-returned': 'faims-attachment::Files',
@@ -374,13 +378,13 @@ const fields: {[key: string]: FieldType } = {
       label: 'Take Photo',
     },
     validationSchema: [
-      ["yup.array"],
-      ["yup.of", [["yup.object"], ["yup.nullable"]]],
-      ["yup.nullable"]
+      ['yup.array'],
+      ['yup.of', [['yup.object'], ['yup.nullable']]],
+      ['yup.nullable'],
     ],
     initialValue: null,
   },
-  'TakePoint': {
+  TakePoint: {
     'component-namespace': 'faims-custom',
     'component-name': 'TakePoint',
     'type-returned': 'faims-pos::Location',
@@ -394,7 +398,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.object'], ['yup.nullable']],
     initialValue: null,
   },
-  'TemplatedStringField': {
+  TemplatedStringField: {
     'component-namespace': 'faims-custom',
     'component-name': 'TemplatedStringField',
     'type-returned': 'faims-core::String',
@@ -413,7 +417,7 @@ const fields: {[key: string]: FieldType } = {
     validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',
   },
-  'QRCodeFormField': {
+  QRCodeFormField: {
     'component-namespace': 'qrcode',
     'component-name': 'QRCodeFormField',
     'type-returned': 'faims-core::String',
@@ -421,18 +425,18 @@ const fields: {[key: string]: FieldType } = {
       name: 'qr-code-field',
       required: false,
       label: 'Scan QR Code',
-      helperText: 'Scan QR Code on the sample'
+      helperText: 'Scan QR Code on the sample',
     },
     validationSchema: [['yup.string']],
     initialValue: '1',
   },
-}
+};
 
 export const getFieldNames = () => {
   return Object.keys(fields);
-}
+};
 
 // Return a copy of the spec for this field type
 export const getFieldSpec = (fieldType: string) => {
   return JSON.parse(JSON.stringify(fields[fieldType])) as FieldType;
-}
+};

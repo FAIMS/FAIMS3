@@ -33,7 +33,7 @@ import {
   ProjectID,
   RecordID,
   RevisionID,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 
 type RecordMetaProps = {
   project_id: ProjectID;

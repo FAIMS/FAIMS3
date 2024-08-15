@@ -28,7 +28,7 @@ import {
   NonUniqueProjectID,
   ListingID,
   resolve_project_id,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {
   ExistingActiveDoc,
   LocalDB,
@@ -52,9 +52,9 @@ import {
 import {fetchProjectMetadata} from './metadata';
 
 /**
- * Temporarily override this type from faims3-datamodel to make
+ * Temporarily override this type from @faims3/data-model to make
  * a local change (add conductor_url)
- * TODO: re-merge back to faims3-datamodel once monorepo is in place
+ * TODO: re-merge back to @faims3/data-model once monorepo is in place
  */
 export interface ProjectObject {
   _id: NonUniqueProjectID;

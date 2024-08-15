@@ -23,7 +23,7 @@ import {
   addDesignDocsForNotebook,
   getDataDB,
   getProjectDB,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file

@@ -25,7 +25,7 @@ RUN npm install turbo@^2.0.11 -g
 COPY . .
 
 # prune using turbo for only faims3 and it's dependencies
-RUN turbo prune @faims-project/conductor --docker
+RUN turbo prune @faims3/api --docker
 
 # INSTALL PACKAGES [installer]
 # ============================
@@ -79,6 +79,9 @@ COPY --from=installer /app/library/data-model/node_modules ./library/data-model/
 
 # Build for API
 COPY --from=installer /app/api/build ./api/build
+# Copy handle bar views into appropriate build path
+# TODO set the app root directory better and build into build process more nicely
+COPY --from=installer /app/api/views ./views
 # Build for data model
 COPY --from=installer /app/library/data-model/build ./library/data-model/build
 

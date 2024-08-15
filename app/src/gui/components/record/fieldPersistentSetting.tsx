@@ -17,7 +17,7 @@
  * Description:
  *   This is the file is to set the values for persistent state
  */
-import {Annotations, ProjectUIModel} from 'faims3-datamodel';
+import {Annotations, ProjectUIModel} from '@faims3/data-model';
 import {setFieldPersistentData} from '../../../local-data/field-persistent';
 import {logError} from '../../../logging';
 

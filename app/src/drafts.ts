@@ -18,9 +18,9 @@
  *   TODO
  */
 
-import {ProjectID, RecordID} from 'faims3-datamodel';
+import {ProjectID, RecordID} from '@faims3/data-model';
 import {draft_db, listDraftMetadata} from './sync/draft-storage';
-import {DraftMetadataList} from 'faims3-datamodel';
+import {DraftMetadataList} from '@faims3/data-model';
 import {logError} from './logging';
 
 export function listenDrafts(

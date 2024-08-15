@@ -23,7 +23,7 @@
  */
 import {jwtVerify, KeyLike, importSPKI} from 'jose';
 
-import {CLUSTER_ADMIN_GROUP_NAME, BUILT_LOGIN_TOKEN} from './buildconfig';
+import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
 import {LocalAuthDoc, JWTTokenMap, local_auth_db} from './sync/databases';
 import {reprocess_listing} from './sync/process-initialization';
 import {
@@ -32,8 +32,8 @@ import {
   ProjectRole,
   split_full_project_id,
   TokenContents,
-} from 'faims3-datamodel';
-import {RecordMetadata} from 'faims3-datamodel';
+} from '@faims3/data-model';
+import {RecordMetadata} from '@faims3/data-model';
 import {logError} from './logging';
 
 interface SplitCouchDBRole {
