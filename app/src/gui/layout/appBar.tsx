@@ -185,14 +185,8 @@ export default function MainAppBar(props: NavbarProps) {
   const topMenuItems: Array<MenuItemProps> = [
     {
       title: 'Home',
-      icon: <HomeIcon />,
-      to: ROUTES.INDEX,
-      disabled: false,
-    },
-    {
-      title: 'WorkSpace',
       icon: <DashboardIcon />,
-      to: ROUTES.WORKSPACE,
+      to: ROUTES.INDEX,
       disabled: !isAuthenticated,
     },
     projectList === null
@@ -203,13 +197,13 @@ export default function MainAppBar(props: NavbarProps) {
           disabled: true,
         }
       : isAuthenticated
-        ? getNestedProjects(projectList)
-        : {
-            title: 'Notebooks',
-            icon: <AccountTree />,
-            to: '/',
-            disabled: true,
-          },
+      ? getNestedProjects(projectList)
+      : {
+          title: 'Notebooks',
+          icon: <AccountTree />,
+          to: '/',
+          disabled: true,
+        },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
     isAuthenticated

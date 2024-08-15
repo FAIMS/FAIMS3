@@ -24,7 +24,6 @@ export const INDEX = '/';
 export const SIGN_IN = '/signin/';
 
 export const NOT_FOUND = '/not-found';
-export const WORKSPACE = '/workspace';
 
 export const NOTEBOOK = '/notebooks/';
 export const NOTEBOOK_LIST = '/notebooks';
