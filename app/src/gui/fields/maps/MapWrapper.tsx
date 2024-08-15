@@ -36,6 +36,7 @@ import {register} from 'ol/proj/proj4';
 import Button, {ButtonProps} from '@mui/material/Button';
 import CloseIcon from '@mui/icons-material/Close';
 import GeoJSON from 'ol/format/GeoJSON';
+import Zoom from 'ol/control/Zoom';
 
 // define some EPSG codes - these are for two sample images
 // TODO: we need to have a better way to include a useful set or allow
@@ -132,7 +133,7 @@ function MapWrapper(props: MapProps) {
         target: element,
         layers: [tileLayer],
         view: view,
-        controls: [],
+        controls: [new Zoom()],
       });
 
       theMap.addControl(createCenterControl(theMap.getView(), center));
