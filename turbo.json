@@ -2,9 +2,11 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "lint": {},
+    "fix": {},
     "clean": {},
     "build": {
-      "dependsOn": ["^build"] 
+      "dependsOn": ["^build"],
+      "outputs": ["build", "dist"]
     }
   }
 }
