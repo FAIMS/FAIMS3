@@ -58,17 +58,11 @@ COPY --from=pruner /app/out/json/ .
 RUN npm install turbo@^2.0.11 -g
 RUN npm install
 
-
 # Build the project 
 COPY --from=pruner /app/out/full/ .
-COPY --from=pruner /app/out/json/ json
 
 # build packages using turbo
 RUN turbo run build --filter=${PACKAGE_NAME}
-
-# Package all necessary files to run app into pruner out
-COPY bundle.sh .
-RUN sh bundle.sh json . out && cp -R json/* /app/out/
 
 # PRODUCTION RUNNER [runner]
 # ==========================
@@ -82,12 +76,12 @@ RUN adduser --system --uid 1001 faims
 USER faims
 
 # Copy all files which are required to run the app
-COPY --from=builder /app/out .
+COPY --from=builder /app/api/build .
 
 # Run the node app
-WORKDIR /app/${NODE_RUN_DIR}
+WORKDIR /app/src
 
-CMD ["node", "index.js"]
+CMD ["node", "bundle.js"]
 
 
 
