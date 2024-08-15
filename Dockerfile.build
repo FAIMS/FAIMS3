@@ -1,0 +1,87 @@
+# syntax=docker/dockerfile:1
+
+# BASED ON https://turbo.build/repo/docs/guides/tools/docker
+# AND https://github.com/ThaddeusJiang/turborepo-starter/blob/main/apps/api/Dockerfile
+
+# Use Node 20 base
+FROM node:20-alpine AS base
+
+ARG PACKAGE_NAME
+ENV PACKAGE_NAME=${PACKAGE_NAME}
+ARG NODE_RUN_PATH
+ENV NODE_RUN_PATH=${NODE_RUN_PATH}
+
+# PRUNE TO GET DEPENDENCIES [builder]
+# ===================================
+
+# Use turbo to prune package dependencies
+FROM base AS builder
+
+
+RUN apk update && apk add --no-cache libc6-compat
+
+# work in /app folder
+WORKDIR /app
+
+# install turbo global
+RUN npm install turbo@^2.0.11 -g
+
+# copy everything into builder
+COPY . .
+
+# prune using turbo for only faims3 and it's dependencies
+RUN turbo prune ${PACKAGE_NAME} --docker
+
+# INSTALL PACKAGES [installer]
+# ============================
+
+# add lockfiles dependencies
+FROM base AS installer
+
+RUN apk update && apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install dependencies
+COPY .gitignore .gitignore
+COPY --from=builder /app/out/json/ .
+
+# install turbo global
+RUN npm install turbo@^2.0.11 -g
+RUN npm install
+
+
+# Build the project 
+COPY --from=builder /app/out/full/ .
+COPY --from=builder /app/out/json/ json
+
+# build packages using turbo
+RUN turbo run build --filter=${PACKAGE_NAME}
+
+# Package all necessary files to run app into builder out
+COPY bundle.sh .
+RUN sh bundle.sh json . out && cp -R json/* /app/out/
+
+# PRODUCTION RUNNER [runner]
+# ==========================
+
+FROM base AS runner
+WORKDIR /app
+
+# Don't run production as root
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 faims
+USER faims
+
+# Copy all files which are required to run the app
+COPY --from=installer /app/out .
+
+# Run the node app
+ENV NODE_RUN_DIR=${NODE_RUN_DIR}
+
+#CMD node ${NODE_RUN_PATH}
+#CMD ["sh", "-c", "node $NODE_RUN_PATH"]
+WORKDIR /app/${NODE_RUN_DIR}
+CMD ["node", "index.js"]
+
+
+
