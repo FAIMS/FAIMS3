@@ -24,12 +24,37 @@ jobs:
           node-version: 20.9.0
           cache: 'npm'
  
-      - name: Install dependencies
-        run: npm install
+      - name: Setup node cache
+        id: node-cache
+        uses: actions/cache@v3
+        with:
+          path: "**/node_modules"
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
+          restore-keys: npm-
 
+      - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm i
+
+      - name: Configure Turborepo Remote Cache
+        env:
+          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+        run: |
+          mkdir -p .turbo
+          echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
+          echo "TURBO_TEAM and TURBO_TOKEN environment variables set"
+          echo "Temporary turborepo config file created at .turbo/config.json"
+      
       - name: Lint
+        env:
+          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
         run: npm run lint
         
       - name: Build
+        env:
+          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
         run: npm run build
  
