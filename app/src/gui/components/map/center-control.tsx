@@ -1,7 +1,8 @@
 import {Control} from 'ol/control';
 import {Coordinate} from 'ol/coordinate';
 import {View} from 'ol';
-import {CenterControlIcon} from './center-control-icon';
+import {CreateDomIcon} from './dom-icon';
+import src from '../../../target.svg';
 
 /**
  * Creates a custom control button that centers the map view to a specified coordinate.
@@ -17,7 +18,14 @@ export const createCenterControl = (
   const button = document.createElement('button');
   button.className = 'ol-center-button';
 
-  button.appendChild(CenterControlIcon());
+  button.appendChild(
+    CreateDomIcon({
+      src,
+      width: 24,
+      height: 24,
+      alt: 'Center map',
+    })
+  );
 
   const handleClick = () => {
     view.setCenter(center);
