@@ -43,14 +43,23 @@ COPY --from=builder /app/out/json/ .
 # COPY --from=builder /app/out/full/library/data-model/tsconfig.json ./library/data-model/tsconfig.json
 RUN npm install
 
+# install turbo global
+RUN npm install turbo@^2.0.11 -g
+
+# Configure Turbo cache if TURBO_API_URL is set
+RUN mkdir -p .turbo && \
+    if [ -n "$TURBO_API_URL" ]; then \
+    echo '{"apiurl": "'${TURBO_API_URL}'"}' > .turbo/config.json && \
+    echo "Turborepo config file created at .turbo/config.json"; \
+    else \
+    echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."; \
+    fi
+
 # Build the project 
 COPY --from=builder /app/out/full/ .
 
-# build packages
-
-# TODO use turbo build here and filter for app
-RUN npm run docker-build-api
-
+# build packages using turbo
+RUN turbo run build --filter=@faims3/api
 
 # PRODUCTION RUNNER [runner]
 # ==========================

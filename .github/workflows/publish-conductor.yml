@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - chore/add-build-outputs-to-turbo
   release:
     types: [published]
 
@@ -51,9 +52,12 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}},enable=${{ github.event_name == 'release' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
 
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
+        env:
+          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_API_URL: ${{ vars.TURBO_API_URL }}
         with:
           context: .
           file: ./api/BuildDockerfile
