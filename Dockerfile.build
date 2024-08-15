@@ -8,8 +8,8 @@ FROM node:20-alpine AS base
 
 ARG PACKAGE_NAME
 ENV PACKAGE_NAME=${PACKAGE_NAME}
-ARG NODE_RUN_PATH
-ENV NODE_RUN_PATH=${NODE_RUN_PATH}
+ARG NODE_RUN_DIR
+ENV NODE_RUN_DIR=${NODE_RUN_DIR}
 
 # PRUNE TO GET DEPENDENCIES [builder]
 # ===================================
@@ -77,10 +77,8 @@ COPY --from=installer /app/out .
 
 # Run the node app
 ENV NODE_RUN_DIR=${NODE_RUN_DIR}
-
-#CMD node ${NODE_RUN_PATH}
-#CMD ["sh", "-c", "node $NODE_RUN_PATH"]
 WORKDIR /app/${NODE_RUN_DIR}
+
 CMD ["node", "index.js"]
 
 
