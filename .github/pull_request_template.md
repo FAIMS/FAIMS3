@@ -1,4 +1,4 @@
-# feat(scope): pr title in semver format
+# feat/fix/chore: pr title
 
 ## JIRA Ticket
 
