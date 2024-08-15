@@ -6,17 +6,6 @@
 # Use Node 20 base
 FROM node:20-alpine AS base
 
-# Declare build arguments with default empty values
-ARG TURBO_TEAM=""
-ARG TURBO_TOKEN=""
-ARG TURBO_API_URL=""
-
-# Set environment variables using the build arguments, with fallback to empty string
-ENV TURBO_TEAM=${TURBO_TEAM}
-ENV TURBO_TOKEN=${TURBO_TOKEN}
-ENV TURBO_API_URL=${TURBO_API_URL}
-
-
 # PRUNE TO GET DEPENDENCIES [builder]
 # ===================================
 
@@ -56,15 +45,6 @@ RUN npm install
 
 # install turbo global
 RUN npm install turbo@^2.0.11 -g
-
-# Configure Turbo cache if TURBO_API_URL is set
-RUN mkdir -p .turbo && \
-    if [ -n "$TURBO_API_URL" ]; then \
-    echo '{"apiurl": "'${TURBO_API_URL}'"}' > .turbo/config.json && \
-    echo "Turborepo config file created at .turbo/config.json"; \
-    else \
-    echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."; \
-    fi
 
 # Build the project 
 COPY --from=builder /app/out/full/ .
