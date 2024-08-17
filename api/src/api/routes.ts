@@ -49,6 +49,9 @@ import {
 } from '../couchdb/users';
 import {
   CLUSTER_ADMIN_GROUP_NAME,
+  CONDUCTOR_DESCRIPTION,
+  CONDUCTOR_INSTANCE_NAME,
+  CONDUCTOR_PUBLIC_URL,
   DEVELOPER_MODE,
   NOTEBOOK_CREATOR_GROUP_NAME,
 } from '../buildconfig';
@@ -73,6 +76,18 @@ api.get('/hello/', requireAuthenticationAPI, (_req: any, res: any) => {
 api.post('/initialise/', async (req, res) => {
   initialiseDatabases();
   res.json({success: true});
+});
+
+/**
+ * Handle info requests, basic identifying information for this server
+ */
+api.get('/info', async (req, res) => {
+  const info = {
+    name: CONDUCTOR_INSTANCE_NAME,
+    url: CONDUCTOR_PUBLIC_URL,
+    description: CONDUCTOR_DESCRIPTION,
+  };
+  res.json(info);
 });
 
 api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
