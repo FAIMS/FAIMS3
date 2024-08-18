@@ -32,7 +32,7 @@ export default function HeadingGrid({
         Active
       </div>
       <DataGrid
-        key={'notebook_list_datagrid'}
+        key={'active_notebook_list_datagrid'}
         rows={pouchProjectList.filter(r => r.is_activated)}
         loading={loading}
         columns={columns}
@@ -65,7 +65,7 @@ export default function HeadingGrid({
         Not active
       </div>
       <DataGrid
-        key={'notebook_list_datagrid'}
+        key={'not_active_notebook_list_datagrid'}
         rows={pouchProjectList.filter(r => !r.is_activated)}
         loading={loading}
         columns={columns}
