@@ -247,10 +247,14 @@ function get_bugsnag_key(): string | false {
 }
 
 function get_conductor_urls(): string[] {
-  const urls = import.meta.env.VITE_CONDUCTOR_URL;
-  if (urls) {
-    return urls.split(' ');
+  const config = import.meta.env.VITE_CONDUCTOR_URL;
+  if (config) {
+    const urls = config.split(',');
+    return urls.map((url: string) => url.trim());
   } else {
+    console.error(
+      'No CONDUCTOR URL configured, using default development server'
+    );
     return ['http://localhost:8154'];
   }
 }
