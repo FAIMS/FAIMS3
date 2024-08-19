@@ -288,12 +288,12 @@ function get_bugsnag_key(): string | false {
   return bugsnag_key;
 }
 
-function get_conductor_url(): string {
-  const url = import.meta.env.VITE_CONDUCTOR_URL;
-  if (url) {
-    return url;
+function get_conductor_urls(): string[] {
+  const urls = import.meta.env.VITE_CONDUCTOR_URL;
+  if (urls) {
+    return urls.split(',');
   } else {
-    return 'http://localhost:8154';
+    return ['http://localhost:8154'];
   }
 }
 
@@ -312,7 +312,7 @@ function get_notebook_list_type(): 'tabs' | 'headings' {
 
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
-export const CONDUCTOR_URL = get_conductor_url();
+export const CONDUCTOR_URLS = get_conductor_urls();
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
 export const DEBUG_APP = include_app_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();

@@ -17,7 +17,7 @@
  * Description:
  *   Code used in the initialisation of the app, getting database and projects etc.
  */
-import {CONDUCTOR_URL} from '../buildconfig';
+import {CONDUCTOR_URLS} from '../buildconfig';
 import {
   ProjectID,
   ListingID,
@@ -44,29 +44,48 @@ import {ensure_project_databases} from './projects';
 
 // called on startup to get the initial set of projects
 export async function update_directory() {
-  let listings = await getAllListings();
+  const listings = await getAllListings();
 
   if (listings.length === 0) {
-    // add a document to the directory database
-
-    const url = new URL(CONDUCTOR_URL);
-
-    // TODO: the name and description should come from the api
-    const listing = {
-      _id: url.host,
-      conductor_url: CONDUCTOR_URL,
-      name: 'CONDUCTOR NAME',
-      description: 'CONDUCTOR DESCRIPTION',
-    };
-
-    directory_db.local.put(listing);
-    listings = [listing];
+    for (let i = 0; i < CONDUCTOR_URLS.length; i++) {
+      const listing = await generate_listing(CONDUCTOR_URLS[i]);
+      listings.push(listing);
+    }
   }
 
   for (let i = 0; i < listings.length; i++)
     get_projects_from_conductor(listings[i]);
 
   ensureActiveProjects();
+}
+
+/**
+ * Create and store a listings object for this conductor instance
+ *
+ * @param url - URL of the Conductor instance
+ * @returns A Listings object
+ */
+async function generate_listing(url: string) {
+  const url_object = new URL(url);
+  const listing: ListingsObject = {
+    _id: url_object.host,
+    conductor_url: url,
+    name: url_object.host, // default name 
+    description: '',
+  };
+
+  await fetch(url + '/api/info')
+    .then(response => response.json())
+    .then(data => {
+      listing.name = data.name;
+      listing.description = data.description;
+    })
+    .catch(() => {
+      listing.description = 'No Description';
+    });
+
+  directory_db.local.put(listing);
+  return listing;
 }
 
 /**
@@ -175,7 +194,9 @@ async function get_projects_from_conductor(listing: ListingsObject) {
   // get the remote data
   const jwt_token = await getTokenForCluster(listing._id);
 
-  console.debug('FETCH', listing.conductor_url);
+  if (!jwt_token) return;
+
+  console.debug('FETCH', listing.conductor_url, jwt_token);
   fetch(`${listing.conductor_url}/api/directory`, {
     headers: {
       Authorization: `Bearer ${jwt_token}`,
@@ -217,7 +238,7 @@ async function get_projects_from_conductor(listing: ListingsObject) {
               // conductor_url is optional, it shouldn't be...
               return projects_local.local.put({
                 ...project_doc,
-                conductor_url: listing.conductor_url || CONDUCTOR_URL,
+                conductor_url: listing.conductor_url || CONDUCTOR_URLS,
               });
             }
           });
