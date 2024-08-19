@@ -48,7 +48,6 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import AccountTree from '@mui/icons-material/AccountTree';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
-
 import * as ROUTES from '../../constants/routes';
 import {getActiveProjectList} from '../../sync/projects';
 import SystemAlert from '../components/alert';
@@ -56,8 +55,10 @@ import {ProjectInformation} from '@faims3/data-model';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../utils/helpers';
-// import ConnectedStatus from '../components/authentication/connectedStatus';
 import SyncStatus from '../components/sync';
+import HelpIcon from '@mui/icons-material/Help';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz'; 
+import { now } from 'lodash';
 
 type ProjectListItemProps = {
   title: string;
@@ -115,14 +116,15 @@ const useStyles = makeStyles({
   },
   drawerPaper: {
     width: drawerWidth,
+    height: '100vh',
+    boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
+    borderRight: '1px solid rgba(0, 0, 0, 0.1)',
   },
   drawerHeader: {
     display: 'flex',
     alignItems: 'center',
     padding: theme.spacing(0, 1),
-    // necessary for content to be below app bar
     minHeight: '64px',
-    // ...theme.mixins.toolbar,
     justifyContent: 'flex-end',
   },
   content: {
@@ -144,7 +146,20 @@ const useStyles = makeStyles({
   nested: {
     paddingLeft: theme.spacing(4),
   },
+  listItemText: {
+    fontSize: '1.1rem',
+    fontWeight: 'bold',
+    color: 'rgba(0, 0, 0, 0.54)', // Use the same gray color as the icons (this is a common MUI icon color)
+  },
+  bottomOptions: {
+    borderTop: `1px solid ${theme.palette.divider}`,
+    padding: theme.spacing(2, 0),
+  },
+  bottomSection: {
+    marginTop: 'auto',
+  },
 });
+
 
 function getNestedProjects(pouchProjectList: ProjectInformation[]) {
   const projectListItems: ProjectListItemProps[] = [];
@@ -170,13 +185,14 @@ type NavbarProps = {
 };
 export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
-  // const globalState = useContext(store);
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
 
   const [projectList, setProjectList] = useState<ProjectInformation[]>([]);
+
+  console.log("projectlist in appBar", projectList);
 
   useEffect(() => {
     getActiveProjectList().then(projects => setProjectList(projects));
@@ -198,7 +214,7 @@ export default function MainAppBar(props: NavbarProps) {
     projectList === null
       ? {
           title: 'Loading notebooks...',
-          icon: <AccountTree />,
+          icon: <DescriptionIcon  />,
           to: '/',
           disabled: true,
         }
@@ -206,31 +222,50 @@ export default function MainAppBar(props: NavbarProps) {
         ? getNestedProjects(projectList)
         : {
             title: 'Notebooks',
-            icon: <AccountTree />,
+            icon: <DescriptionIcon  />,
             to: '/',
             disabled: true,
           },
   ];
+
   const bottomMenuItems: Array<MenuItemProps> = [
+
+  // @TODO Ranisa: Commented this for now, to be discussed if needed to display this nav item
+  // {
+  //   title: 'About Build',
+  //   icon: <SettingsIcon />,
+  //   to: ROUTES.ABOUT_BUILD,
+  //   disabled: false,
+  // },
+
+    {
+      title: 'Help',
+      icon: <HelpIcon />,
+      to: ROUTES.HELP,
+      disabled: false,
+    },
+
+    {
+      title: 'Switch org',
+      icon: <SwapHorizIcon />,
+      to: ROUTES.SWITCH_ORG,
+      disabled: false,
+    },
+
     isAuthenticated
       ? {
-          title: 'User',
+          title: 'Sign out',
           icon: <AccountCircleIcon />,
           to: ROUTES.SIGN_IN,
           disabled: false,
         }
       : {
-          title: 'User',
+          title: 'Sign out',
           icon: <AccountCircleIcon />,
           to: '/',
           disabled: true,
         },
-    {
-      title: 'About Build',
-      icon: <SettingsIcon />,
-      to: ROUTES.ABOUT_BUILD,
-      disabled: false,
-    },
+   
   ];
 
   const [nestedMenuOpen, setNestedMenuOpen] = useState<{
@@ -302,7 +337,7 @@ export default function MainAppBar(props: NavbarProps) {
                     disabled={item.disabled}
                   >
                     <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText>{item.title} </ListItemText>
+                    <ListItemText classes={{ primary: classes.listItemText }} >{item.title}  </ListItemText>
                     {item.nested.length === 0 ? (
                       <CircularProgress size={12} thickness={4} />
                     ) : nestedMenuOpen[item.title] ? (
@@ -335,7 +370,7 @@ export default function MainAppBar(props: NavbarProps) {
                             onClick={toggle}
                           >
                             <ListItemIcon>{nestedItem.icon}</ListItemIcon>
-                            <ListItemText primary={nestedItem.title} />
+                            <ListItemText primary={nestedItem.title} classes={{ primary: classes.listItemText }} />
                           </ListItemButton>
                         )
                       )}
@@ -351,13 +386,14 @@ export default function MainAppBar(props: NavbarProps) {
                   onClick={toggle}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.title} />
+                  <ListItemText primary={item.title} classes={{ primary: classes.listItemText }} />
                 </ListItemButton>
               );
             })}
           </List>
-          <Divider />
-          <List>
+          <div className={classes.bottomSection}>
+            <Divider />
+            <List className={classes.bottomOptions}>
             {bottomMenuItems.map(
               (item: {
                 title: string;
@@ -373,11 +409,12 @@ export default function MainAppBar(props: NavbarProps) {
                   onClick={toggle}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.title} />
+                  <ListItemText primary={item.title} classes={{ primary: classes.listItemText }} />
                 </ListItemButton>
               )
             )}
           </List>
+          </div>
         </Drawer>
       </div>
       <SystemAlert />
