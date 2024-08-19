@@ -14,10 +14,9 @@ The repository contains the following:
 - /library: shared library for the project
 - /tests: contains the end-to-end tests for the project
 
-
 ## Local development quick start
 
-Ensure you have uuid installed e.g. 
+Ensure you have uuid installed e.g.
 
 ```bash
 sudo apt-get install uuid
@@ -27,7 +26,7 @@ Also check you have a modern npm installed, ideally v10.x.y.
 
 We recommend using [`nvm`](https://github.com/nvm-sh/nvm) (node version manager). To set this up
 
-```
+```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
 ```
 
@@ -51,7 +50,6 @@ Now run the script to get a docker service running locally.
 ```bash
 ./localdev.sh
 ```
-
 
 ## Initial step-by step setup
 
