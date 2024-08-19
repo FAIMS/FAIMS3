@@ -70,7 +70,7 @@ async function generate_listing(url: string) {
   const listing: ListingsObject = {
     _id: url_object.host,
     conductor_url: url,
-    name: url_object.host, // default name 
+    name: url_object.host, // default name from hostname
     description: '',
   };
 
