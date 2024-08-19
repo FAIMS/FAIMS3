@@ -447,11 +447,14 @@ export interface ElementOption {
 
 // types from datamodel/ui.ts --------------------------------
 
-export interface ListingInformation {
-  id: ListingID;
+export interface ApiListingInformation {
   name: string;
   description: string;
   conductor_url: string;
+}
+
+export interface ListingInformation extends ApiListingInformation {
+  id: ListingID;
 }
 
 export interface ProjectInformation {

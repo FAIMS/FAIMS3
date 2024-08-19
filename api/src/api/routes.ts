@@ -57,6 +57,7 @@ import {
 } from '../buildconfig';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {restoreFromBackup} from '../couchdb/backupRestore';
+import { ApiListingInformation } from '@faims3/data-model';
 
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
@@ -81,10 +82,10 @@ api.post('/initialise/', async (req, res) => {
 /**
  * Handle info requests, basic identifying information for this server
  */
-api.get('/info', async (req, res) => {
+api.get('/info', async (req, res : express.Response<ApiListingInformation>) => {
   const info = {
     name: CONDUCTOR_INSTANCE_NAME,
-    url: CONDUCTOR_PUBLIC_URL,
+    conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
   };
   res.json(info);
