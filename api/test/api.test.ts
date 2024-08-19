@@ -108,7 +108,7 @@ describe('API tests', () => {
       .expect(response => {
         expect(response.body.name).to.equal(CONDUCTOR_INSTANCE_NAME);
         expect(response.body.description).to.equal(CONDUCTOR_DESCRIPTION);
-        expect(response.body.url).to.equal(CONDUCTOR_PUBLIC_URL);
+        expect(response.body.conductor_url).to.equal(CONDUCTOR_PUBLIC_URL);
       });
   });
 

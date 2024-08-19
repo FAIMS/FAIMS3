@@ -32,6 +32,7 @@ import {
   streamNotebookRecordsAsCSV,
   streamNotebookFilesAsZip,
   getProjects,
+  slugify,
 } from '../couchdb/notebooks';
 import {requireAuthenticationAPI} from '../middleware';
 import {initialiseDatabases} from '../couchdb';
@@ -57,6 +58,7 @@ import {
 } from '../buildconfig';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {restoreFromBackup} from '../couchdb/backupRestore';
+import {ListingInformation} from '@faims3/data-model';
 
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
@@ -82,9 +84,10 @@ api.post('/initialise/', async (req, res) => {
  * Handle info requests, basic identifying information for this server
  */
 api.get('/info', async (req, res) => {
-  const info = {
+  const info: ListingInformation = {
+    id: slugify(CONDUCTOR_INSTANCE_NAME),
     name: CONDUCTOR_INSTANCE_NAME,
-    url: CONDUCTOR_PUBLIC_URL,
+    conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
   };
   res.json(info);
