@@ -38,6 +38,8 @@ export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 export const AUTOINCREMENT = '/autoincrements/';
 export const PROJECT_ATTACHMENT = '/attachment/';
+export const SWITCH_ORG = '/switch-organisation';
+export const HELP = '/help';
 
 export function getRecordRoute(
   project_id: ProjectID,
