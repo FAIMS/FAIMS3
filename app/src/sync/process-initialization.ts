@@ -75,7 +75,7 @@ export async function update_directory() {
  * @param url - URL of the Conductor instance
  * @returns A Listings object
  */
-async function generate_listing(url: string) {
+async function generate_listing(url: string): Promise<ListingsObject> {
   const url_object = new URL(url);
   const listing: ListingsObject = {
     _id: url_object.host,
