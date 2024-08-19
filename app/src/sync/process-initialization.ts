@@ -234,11 +234,11 @@ async function get_projects_from_conductor(listing: ListingsObject) {
               // we don't have this project, so store it
               // add in the conductor url we got it from
               // TODO: this should already be there in the API
-              // also that default to CONDUCTOR_URL is because listings
+              // also that default to CONDUCTOR_URLS[0] is because listings
               // conductor_url is optional, it shouldn't be...
               return projects_local.local.put({
                 ...project_doc,
-                conductor_url: listing.conductor_url || CONDUCTOR_URLS,
+                conductor_url: listing.conductor_url || CONDUCTOR_URLS[0],
               });
             }
           });
