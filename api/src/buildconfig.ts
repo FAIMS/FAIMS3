@@ -182,6 +182,15 @@ function instance_name(): string {
   }
 }
 
+function instance_description(): string {
+  const name = process.env.CONDUCTOR_DESCRIPTION;
+  if (name === '' || name === undefined) {
+    return 'Fieldmark Conductor Server';
+  } else {
+    return name;
+  }
+}
+
 function cookie_secret(): string {
   const cookie = process.env.FAIMS_COOKIE_SECRET;
   if (cookie === '' || cookie === undefined) {
@@ -270,6 +279,7 @@ export const CONDUCTOR_KEY_ID = signing_key_id();
 export const CONDUCTOR_PRIVATE_KEY_PATH = private_key_path();
 export const CONDUCTOR_PUBLIC_KEY_PATH = public_key_path();
 export const CONDUCTOR_INSTANCE_NAME = instance_name();
+export const CONDUCTOR_DESCRIPTION = instance_description();
 export const COOKIE_SECRET = cookie_secret();
 export const GOOGLE_CLIENT_ID = google_client_id();
 export const GOOGLE_CLIENT_SECRET = google_client_secret();

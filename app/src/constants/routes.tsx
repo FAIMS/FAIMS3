@@ -19,15 +19,15 @@
  */
 
 import {ProjectID, RecordID, RevisionID} from '@faims3/data-model';
+import {NOTEBOOK_NAME} from '../buildconfig';
 
 export const INDEX = '/';
 export const SIGN_IN = '/signin/';
 
 export const NOT_FOUND = '/not-found';
-export const WORKSPACE = '/workspace';
 
-export const NOTEBOOK = '/notebooks/';
-export const NOTEBOOK_LIST = '/notebooks';
+export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${NOTEBOOK_NAME}s/`;
+export const NOTEBOOK_LIST_ROUTE = `/${NOTEBOOK_NAME}s`;
 
 export const RECORD_LIST = '/records';
 export const RECORD_EXISTING = '/records/';
@@ -48,7 +48,7 @@ export function getRecordRoute(
 ) {
   if (!!project_id && !!record_id && !!revision_id) {
     return (
-      NOTEBOOK +
+      INDIVIDUAL_NOTEBOOK_ROUTE +
       project_id +
       RECORD_EXISTING +
       record_id +
@@ -71,7 +71,7 @@ export function getDraftRoute(
 ) {
   if (existing !== null)
     return (
-      NOTEBOOK +
+      INDIVIDUAL_NOTEBOOK_ROUTE +
       project_id +
       RECORD_EXISTING +
       // existing+
@@ -83,7 +83,7 @@ export function getDraftRoute(
     );
   else {
     return (
-      NOTEBOOK +
+      INDIVIDUAL_NOTEBOOK_ROUTE +
       project_id +
       RECORD_CREATE +
       type_name +

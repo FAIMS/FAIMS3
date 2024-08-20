@@ -87,7 +87,7 @@ export default function AppBarAuth(props: AppBarAuthProps) {
           open={Boolean(anchorEl)}
           onClose={handleClose}
         >
-          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.WORKSPACE)}>
+          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.INDEX)}>
             <ListItemIcon>
               <DashboardIcon fontSize="small" />
             </ListItemIcon>

@@ -105,7 +105,7 @@ export class FaimsConductor extends Construct {
     } else {
       // Build and bundle with cdk and ECR
       conductorContainerImage = ecs.ContainerImage.fromAsset(getPathToRoot(), {
-        file: 'api/BuildDockerfile',
+        file: 'Dockerfile.build',
         exclude: ['infrastructure'],
       });
     }

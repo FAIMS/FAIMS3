@@ -41,11 +41,12 @@ import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {progressiveSaveFiles} from '../../sync/data-dump';
 import {
-  DIRECTORY_HOST,
   RUNNING_UNDER_TEST,
   COMMIT_VERSION,
   SHOW_MINIFAUXTON,
   SHOW_WIPE,
+  NOTEBOOK_NAME,
+  CONDUCTOR_URLS,
 } from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {wipe_all_pouch_databases} from '../../sync/databases';
@@ -115,8 +116,8 @@ export default function AboutBuild() {
           <table>
             <tbody>
               <tr>
-                <td>Directory Server:</td>
-                <td>{DIRECTORY_HOST}</td>
+                <td>{CONDUCTOR_URLS.length > 1 ? 'Servers' : 'Server'}:</td>
+                <td>{CONDUCTOR_URLS.join(', ')}</td>
               </tr>
               <tr>
                 <td>Version:</td>
@@ -177,9 +178,9 @@ export default function AboutBuild() {
             </Typography>
 
             <Typography variant={'body2'}>
-              Share or save a file containing all notebooks and records stored
-              on this device. Data download functionality is not well-supported
-              by all device+browser combinations.
+              Share or save a file containing all {NOTEBOOK_NAME}s and records
+              stored on this device. Data download functionality is not
+              well-supported by all device+browser combinations.
             </Typography>
           </Grid>
           <Grid item md={8} sm={6} xs={12}>

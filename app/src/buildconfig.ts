@@ -148,48 +148,6 @@ function show_new_notebook(): boolean {
   }
 }
 
-function directory_protocol(): string {
-  const useHTTPS = import.meta.env.VITE_USE_HTTPS;
-  if (PROD_BUILD) {
-    return 'https';
-  } else if (
-    useHTTPS === '' ||
-    useHTTPS === undefined ||
-    FALSEY_STRINGS.includes(useHTTPS.toLowerCase())
-  ) {
-    return 'http';
-  } else if (TRUTHY_STRINGS.includes(useHTTPS.toLowerCase())) {
-    return 'https';
-  } else {
-    logError('VITE_USE_HTTPS badly defined, assuming false');
-    return 'http';
-  }
-}
-
-function directory_host(): string {
-  const host = import.meta.env.VITE_DIRECTORY_HOST;
-  if (host === '' || host === undefined) {
-    return 'dev.db.faims.edu.au';
-  }
-  return host;
-}
-
-function directory_port(): number {
-  const port = import.meta.env.VITE_DIRECTORY_PORT;
-  if (port === '' || port === undefined) {
-    if (PROD_BUILD) {
-      return 443;
-    }
-    return 5984;
-  }
-  try {
-    return parseInt(port);
-  } catch (err) {
-    logError(err);
-    return 5984;
-  }
-}
-
 /*
  * See batch_size in https://pouchdb.com/api.html#replication
  */
@@ -288,12 +246,16 @@ function get_bugsnag_key(): string | false {
   return bugsnag_key;
 }
 
-function get_conductor_url(): string {
-  const url = import.meta.env.VITE_CONDUCTOR_URL;
-  if (url) {
-    return url;
+function get_conductor_urls(): string[] {
+  const config = import.meta.env.VITE_CONDUCTOR_URL;
+  if (config) {
+    const urls = config.split(',');
+    return urls.map((url: string) => url.trim());
   } else {
-    return 'http://localhost:8154';
+    console.error(
+      'No CONDUCTOR URL configured, using default development server'
+    );
+    return ['http://localhost:8154'];
   }
 }
 
@@ -310,14 +272,37 @@ function get_notebook_list_type(): 'tabs' | 'headings' {
   }
 }
 
+/**
+ * Retrieves the name of notebooks from the environment variables.
+ * If the environment variable is not set, it returns a default value 'notebook'.
+ *
+ * @returns {string} - The name of notebooks.
+ */
+function get_notebook_name(): string {
+  const notebook_name = import.meta.env.VITE_NOTEBOOK_NAME;
+  if (notebook_name) {
+    return notebook_name;
+  } else {
+    return 'notebook';
+  }
+}
+
+/**
+ * Retrieves the name of the notebooks and capitalizes the first letter.
+ *
+ * @returns {string} - The capitalized name of notebooks.
+ */
+function get_notebook_name_capitalized(): string {
+  const notebook_name = get_notebook_name();
+
+  return notebook_name.charAt(0).toUpperCase() + notebook_name.slice(1);
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
-export const CONDUCTOR_URL = get_conductor_url();
+export const CONDUCTOR_URLS = get_conductor_urls();
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
 export const DEBUG_APP = include_app_debugging();
-export const DIRECTORY_PROTOCOL = directory_protocol();
-export const DIRECTORY_HOST = directory_host();
-export const DIRECTORY_PORT = directory_port();
 export const DIRECTORY_AUTH = directory_auth();
 export const RUNNING_UNDER_TEST = is_testing();
 export const COMMIT_VERSION = commit_version();
@@ -331,3 +316,5 @@ export const DISABLE_SIGNIN_REDIRECT = disable_signin_redirect();
 export const BUILT_LOGIN_TOKEN = get_login_token();
 export const BUGSNAG_KEY = get_bugsnag_key();
 export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
+export const NOTEBOOK_NAME = get_notebook_name();
+export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();

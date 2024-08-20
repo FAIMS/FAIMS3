@@ -1,6 +1,7 @@
 import {Stack} from '@mui/material';
 import {DataGrid, GridEventListener} from '@mui/x-data-grid';
 import {ProjectInformation} from '@faims3/data-model/build/src/types';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -32,7 +33,7 @@ export default function HeadingGrid({
         Active
       </div>
       <DataGrid
-        key={'notebook_list_datagrid'}
+        key={'active_notebook_list_datagrid'}
         rows={pouchProjectList.filter(r => r.is_activated)}
         loading={loading}
         columns={columns}
@@ -55,7 +56,7 @@ export default function HeadingGrid({
         slots={{
           noRowsOverlay: () => (
             <Stack height="100%" alignItems="center" justifyContent="center">
-              No Notebooks have been activated yet.
+              No {NOTEBOOK_NAME_CAPITALIZED}s have been activated yet.
             </Stack>
           ),
         }}
@@ -65,7 +66,7 @@ export default function HeadingGrid({
         Not active
       </div>
       <DataGrid
-        key={'notebook_list_datagrid'}
+        key={'not_active_notebook_list_datagrid'}
         rows={pouchProjectList.filter(r => !r.is_activated)}
         loading={loading}
         columns={columns}
@@ -87,7 +88,7 @@ export default function HeadingGrid({
         slots={{
           noRowsOverlay: () => (
             <Stack height="100%" alignItems="center" justifyContent="center">
-              You don't have any unactivated notebooks.
+              You don't have any unactivated {NOTEBOOK_NAME}s.
             </Stack>
           ),
         }}

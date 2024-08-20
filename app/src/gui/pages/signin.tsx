@@ -27,6 +27,7 @@ import * as ROUTES from '../../constants/routes';
 import {ListingInformation} from '@faims3/data-model';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {logError} from '../../logging';
+import {NOTEBOOK_NAME} from '../../buildconfig';
 
 type SignInProps = {
   setToken?: any;
@@ -43,7 +44,7 @@ export function SignIn(props: SignInProps) {
   if (listings === null) {
     return (
       <Box>
-        <Typography>{'Looking for notebooks...'}</Typography>
+        <Typography>{`Looking for ${NOTEBOOK_NAME}s...`}</Typography>
       </Box>
     );
   }

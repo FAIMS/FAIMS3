@@ -37,7 +37,6 @@ import Collapse from '@mui/material/Collapse';
 import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
-import HomeIcon from '@mui/icons-material/Home';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -56,6 +55,7 @@ import AppBarAuth from '../components/authentication/appbarAuth';
 import { TokenContents } from '@faims3/data-model';
 import { checkToken } from '../../utils/helpers';
 import SyncStatus from '../components/sync';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import HelpIcon from '@mui/icons-material/Help';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { now } from 'lodash';
@@ -198,15 +198,15 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     projectListItems.push({
       title: project_info.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.NOTEBOOK + project_info.project_id,
+      to: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_info.project_id,
       disabled: false,
     });
   });
   return {
-    title: 'Notebooks',
+    title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
     icon: <AccountTree />,
     nested: projectListItems,
-    to: ROUTES.NOTEBOOK_LIST,
+    to: ROUTES.NOTEBOOK_LIST_ROUTE,
     disabled: false,
   };
 }
@@ -239,31 +239,25 @@ export default function MainAppBar(props: NavbarProps) {
   const topMenuItems: Array<MenuItemProps> = [
     {
       title: 'Home',
-      icon: <HomeIcon />,
-      to: ROUTES.INDEX,
-      disabled: false,
-    },
-    {
-      title: 'WorkSpace',
       icon: <DashboardIcon />,
-      to: ROUTES.WORKSPACE,
+      to: ROUTES.INDEX,
       disabled: !isAuthenticated,
     },
     projectList === null
       ? {
-        title: 'Loading notebooks...',
-        icon: <DescriptionIcon />,
-        to: '/',
-        disabled: true,
-      }
+          title: `Loading ${NOTEBOOK_NAME}s...`,
+          icon: <AccountTree />,
+          to: '/',
+          disabled: true,
+        }
       : isAuthenticated
         ? getNestedProjects(projectList)
         : {
-          title: 'Notebooks',
-          icon: <DescriptionIcon />,
-          to: '/',
-          disabled: true,
-        },
+            title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+            icon: <AccountTree />,
+            to: '/',
+            disabled: true,
+          },
   ];
 
   const bottomMenuItems: Array<MenuItemProps> = [

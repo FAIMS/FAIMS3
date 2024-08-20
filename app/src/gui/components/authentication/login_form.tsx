@@ -57,6 +57,8 @@ export function LoginButton(props: LoginButtonProps) {
                 console.debug('token is', token);
                 props.setToken(token);
                 reprocess_listing(props.listing_id);
+
+                window.location.href = '/';
               })
               .catch(() => {
                 props.setToken(undefined);
