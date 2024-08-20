@@ -215,7 +215,7 @@ export default function ClusterCard(props: ClusterCardProps) {
         <Button
           color="primary"
           variant="text"
-          onClick={() => history(ROUTES.WORKSPACE)}
+          onClick={() => history(ROUTES.INDEX)}
           startIcon={<DashboardIcon />}
           sx={{ml: 2}}
         >

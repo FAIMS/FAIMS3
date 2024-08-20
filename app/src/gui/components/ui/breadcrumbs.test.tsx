@@ -22,9 +22,10 @@ import {render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import Breadcrumbs from './breadcrumbs';
 import {describe, it, expect} from 'vitest';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 
 const testData1 = [{title: 'Workspace'}];
-const testData2 = [{title: 'Workspace'}, {title: 'Notebook'}];
+const testData2 = [{title: 'Workspace'}, {title: NOTEBOOK_NAME_CAPITALIZED}];
 
 describe('Check breadcrumbs component', () => {
   it('Check with one element in array', async () => {

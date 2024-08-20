@@ -89,7 +89,7 @@ export default function Index(props: IndexProps) {
                 disableElevation
                 sx={{mr: 1}}
                 component={NavLink}
-                to={ROUTES.WORKSPACE}
+                to={ROUTES.INDEX}
                 startIcon={<DashboardIcon />}
               >
                 Workspace

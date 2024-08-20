@@ -32,6 +32,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -127,7 +128,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
         <Alert severity="error">
           <AlertTitle>
             {' '}
-            {props.project.name} notebook cannot sync right now.
+            {props.project.name} {NOTEBOOK_NAME} cannot sync right now.
           </AlertTitle>
           Your device may be offline.
           <br />
@@ -138,14 +139,14 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           <Button
             variant="text"
             size={'small'}
-            onClick={() => history(ROUTES.WORKSPACE)}
+            onClick={() => history(ROUTES.INDEX)}
             startIcon={<DashboardIcon />}
           >
             Workspace
           </Button>
         </Alert>
       ) : loading ? (
-        <CircularLoading label={'Notebook is loading'} />
+        <CircularLoading label={`${NOTEBOOK_NAME_CAPITALIZED} is loading`} />
       ) : (
         <Box>
           <Box
@@ -166,16 +167,16 @@ export default function NotebookComponent(props: NotebookComponentProps) {
               <Tabs
                 value={notebookTabValue}
                 onChange={handleNotebookTabChange}
-                aria-label="notebook tabs"
+                aria-label={`${NOTEBOOK_NAME} tabs`}
                 indicatorColor="secondary"
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
                 // centered={mq_above_md ? false : true}
               >
-                <Tab label="Records" {...a11yProps(0, 'notebook')} />
-                <Tab label="Info" {...a11yProps(1, 'notebook')} />
-                <Tab label="Settings" {...a11yProps(2, 'notebook')} />
+                <Tab label="Records" {...a11yProps(0, NOTEBOOK_NAME)} />
+                <Tab label="Info" {...a11yProps(1, NOTEBOOK_NAME)} />
+                <Tab label="Settings" {...a11yProps(2, NOTEBOOK_NAME)} />
               </Tabs>
             </AppBar>
           </Box>
@@ -193,12 +194,15 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 <Tabs
                   value={recordDraftTabValue}
                   onChange={handleRecordDraftTabChange}
-                  aria-label="notebook-records"
+                  aria-label={`${NOTEBOOK_NAME}-records`}
                 >
-                  <Tab label="Records" {...a11yProps(0, 'notebook-records')} />
+                  <Tab
+                    label="Records"
+                    {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
+                  />
                   <Tab
                     label={<DraftTabBadge project_id={project.project_id} />}
-                    {...a11yProps(1, 'notebook-records')}
+                    {...a11yProps(1, `${NOTEBOOK_NAME}-records`)}
                   />
                 </Tabs>
               </Box>
