@@ -23,6 +23,7 @@ import {useNavigate} from 'react-router-dom';
 import {LocationState} from '@faims3/data-model';
 import * as ROUTES from '../../../../../constants/routes';
 import {logError} from '../../../../../logging';
+import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../../../constants/routes';
 
 export function AddNewRecordButton(props: {
   is_enabled: boolean;
@@ -48,7 +49,7 @@ export function AddNewRecordButton(props: {
             props.project_id,
             (props.state.parent_record_id || '').toString(),
             (result || '').toString()
-          ).replace('/notebooks/', '');
+          ).replace(INDIVIDUAL_NOTEBOOK_ROUTE, '');
           newState['child_record_id'] = new_child_id;
           setTimeout(() => {
             // reset local state of component
