@@ -11,6 +11,9 @@ jobs:
     name: Build and Test
     timeout-minutes: 15
     runs-on: ubuntu-latest
+    env:
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
  
     steps:
       - name: Check out code
@@ -24,9 +27,33 @@ jobs:
           node-version: 20.9.0
           cache: 'npm'
  
-      - name: Install dependencies
-        run: npm install
+      - name: Setup node cache
+        id: node-cache
+        uses: actions/cache@v3
+        with:
+          path: "**/node_modules"
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
+          restore-keys: npm-
 
+      - name: Install dependencies
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm i
+
+      - name: Configure Turborepo Remote Cache
+        run: |
+          mkdir -p .turbo
+          if [ -n "${{ vars.TURBO_API_URL }}" ]; then
+            echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
+            echo "Turborepo config file created at .turbo/config.json"
+          else
+            echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."
+          fi
+          if [ -n "$TURBO_TEAM" ] && [ -n "$TURBO_TOKEN" ]; then
+            echo "TURBO_TEAM and TURBO_TOKEN environment variables set"
+          else
+            echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
+          fi
+      
       - name: Lint
         run: npm run lint
         

@@ -37,6 +37,7 @@ import {grey} from '@mui/material/colors';
 import Tabs from '../ui/tab-grid';
 import HeadingGrid from '../ui/heading-grid';
 import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
+import {getListing} from '../../../sync/state';
 import {surveyListVerbose} from '../../themes';
 
 interface sortModel {
@@ -129,6 +130,7 @@ export default function NoteBooks(props: NoteBookListProps) {
                 </Typography>
               </span>
               <Typography variant={'caption'}>
+                {getListing(params.row.listing_id).listing.name}
                 {params.row.description}
               </Typography>
             </Box>
@@ -199,6 +201,7 @@ export default function NoteBooks(props: NoteBookListProps) {
                 </Typography>
               </span>
               <Typography variant={'caption'}>
+                {getListing(params.row.listing_id).listing.name}
                 {params.row.description}
               </Typography>
               <Box my={1}>

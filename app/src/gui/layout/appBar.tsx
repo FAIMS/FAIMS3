@@ -35,7 +35,6 @@ import Collapse from '@mui/material/Collapse';
 import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
-import HomeIcon from '@mui/icons-material/Home';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -126,13 +125,13 @@ export default function MainAppBar(props: NavbarProps) {
           disabled: true,
         }
       : isAuthenticated
-      ? getNestedProjects(projectList)
-      : {
-          title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-          icon: <AccountTree />,
-          to: '/',
-          disabled: true,
-        },
+        ? getNestedProjects(projectList)
+        : {
+            title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+            icon: <AccountTree />,
+            to: '/',
+            disabled: true,
+          },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
     isAuthenticated

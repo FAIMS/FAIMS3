@@ -162,7 +162,7 @@ class RecordForm extends React.Component<
   draftState: RecordDraftState | null = null;
 
   // List of timeouts that unmount must cancel
-  timeouts: typeof setTimeout[] = [];
+  timeouts: (typeof setTimeout)[] = [];
 
   async componentDidUpdate(
     prevProps: RecordFormProps,
@@ -824,8 +824,8 @@ class RecordForm extends React.Component<
                 logError(error);
               }
               return is_close === 'close'
-                ? doc.data['hrid' + this.state.type_cached] ??
-                    this.props.record_id
+                ? (doc.data['hrid' + this.state.type_cached] ??
+                    this.props.record_id)
                 : revision_id; // return revision id for save and continue function
             }
           );

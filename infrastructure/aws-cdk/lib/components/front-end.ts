@@ -135,14 +135,9 @@ export class FaimsFrontEnd extends Construct {
       VITE_COMMIT_VERSION: 'unknown TBD',
       VITE_DEBUG_APP: 'true',
       VITE_DEBUG_POUCHDB: 'true',
-      VITE_USE_HTTPS: 'true',
       VITE_SHOW_WIPE: 'true',
       VITE_SHOW_NEW_NOTEBOOK: 'true',
       VITE_SHOW_MINIFAUXTON: 'true',
-
-      // Couch DB
-      VITE_DIRECTORY_HOST: props.couchDbDomainOnly,
-      VITE_DIRECTORY_PORT: `${props.couchDbPort}`,
 
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
