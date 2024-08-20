@@ -115,7 +115,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
           },
         });
         handleClose();
-        history(ROUTES.NOTEBOOK + project_id);
+        history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
       })
       .catch(err => {
         console.log('Failed to delete', record_id, draft_id, err);

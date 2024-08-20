@@ -46,6 +46,7 @@ import {grey} from '@mui/material/colors';
 import NotebookActivationSwitch from './activation-switch';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {ProjectID} from '@faims3/data-model';
+import {NOTEBOOK_NAME} from '../../../../buildconfig';
 
 type NotebookSyncSwitchProps = {
   project: ProjectInformation;
@@ -144,7 +145,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
           {isWorking ? <FormHelperText>Working...</FormHelperText> : ''}
           {props.showHelperText ? (
             <FormHelperText>
-              Toggle syncing this notebook to the server.
+              Toggle syncing this {NOTEBOOK_NAME} to the server.
             </FormHelperText>
           ) : (
             ''
@@ -158,7 +159,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
             <Alert severity={isSyncing ? 'warning' : 'info'}>
               <AlertTitle>Are you sure?</AlertTitle>
               Do you want to {isSyncing ? 'stop' : 'start'} syncing the{' '}
-              {props.project.name} notebook to your device?
+              {props.project.name} {NOTEBOOK_NAME} to your device?
             </Alert>
             <DialogActions style={{justifyContent: 'space-between'}}>
               <Button onClick={handleClose} autoFocus>
@@ -183,7 +184,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
                           payload: {
                             message: `${
                               !isSyncing ? 'Enabling ' : 'Disabling '
-                            } data sync for notebook  ${project.name}`,
+                            } data sync for ${NOTEBOOK_NAME}  ${project.name}`,
                             severity: 'success',
                           },
                         });
@@ -235,7 +236,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
         variant={'caption'}
         elevation={0}
       >
-        Only published or archived notebooks can be synced.
+        Only published or archived ${NOTEBOOK_NAME}s can be synced.
       </Typography>
     </Box>
   );

@@ -272,6 +272,32 @@ function get_notebook_list_type(): 'tabs' | 'headings' {
   }
 }
 
+/**
+ * Retrieves the name of notebooks from the environment variables.
+ * If the environment variable is not set, it returns a default value 'notebook'.
+ *
+ * @returns {string} - The name of notebooks.
+ */
+function get_notebook_name(): string {
+  const notebook_name = import.meta.env.VITE_NOTEBOOK_NAME;
+  if (notebook_name) {
+    return notebook_name;
+  } else {
+    return 'notebook';
+  }
+}
+
+/**
+ * Retrieves the name of the notebooks and capitalizes the first letter.
+ *
+ * @returns {string} - The capitalized name of notebooks.
+ */
+function get_notebook_name_capitalized(): string {
+  const notebook_name = get_notebook_name();
+
+  return notebook_name.charAt(0).toUpperCase() + notebook_name.slice(1);
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -290,3 +316,5 @@ export const DISABLE_SIGNIN_REDIRECT = disable_signin_redirect();
 export const BUILT_LOGIN_TOKEN = get_login_token();
 export const BUGSNAG_KEY = get_bugsnag_key();
 export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
+export const NOTEBOOK_NAME = get_notebook_name();
+export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();

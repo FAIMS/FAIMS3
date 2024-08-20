@@ -52,7 +52,6 @@ export default function Footer(props: FooterProps) {
   const location = useLocation().pathname;
   const showFullFooter = [
     ROUTES.INDEX,
-    ROUTES.WORKSPACE,
     // ROUTES.SIGN_IN,
   ].includes(location);
   return (
