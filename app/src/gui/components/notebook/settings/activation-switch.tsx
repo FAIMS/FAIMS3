@@ -1,76 +1,60 @@
-import React from 'react';
-import {Alert, Box, AlertTitle, Button} from '@mui/material';
+import React, { useState } from 'react';
+import { Button, Box, Typography } from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
-import {ProjectInformation} from '@faims3/data-model';
-import DialogActions from '@mui/material/DialogActions';
-
-import Dialog from '@mui/material/Dialog';
-import {NOTEBOOK_NAME} from '../../../../buildconfig';
+import InfoIcon from '@mui/icons-material/Info';
+import { ProjectInformation } from '@faims3/data-model';
+import { NOTEBOOK_NAME } from '../../../../buildconfig';
+import ReusableDialog from '../../ui/Reusable_Dialog';
 
 type NotebookActivationSwitchProps = {
   project: ProjectInformation;
   project_status: string | undefined;
-  handleActivation: Function;
+  handleActivation: () => void;
   isWorking: boolean;
 };
 
-export default function NotebookActivationSwitch(
-  props: NotebookActivationSwitchProps
-) {
-  const [open, setOpen] = React.useState(false);
-  const handleOpen = () => {
-    setOpen(true);
+export default function NotebookActivationSwitch({
+  project,
+  handleActivation,
+  isWorking,
+}: NotebookActivationSwitchProps) {
+  const [open, setOpen] = useState(false);
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const handleActivationClick = () => {
+    handleActivation(); // Trigger the activation process
+    handleClose();      // Close the dialog
   };
 
-  const handleClose = () => {
-    setOpen(false);
-  };
   return (
     <Box my={1}>
       <Button
         onClick={handleOpen}
-        color={'primary'}
-        size={'small'}
-        variant={'outlined'}
-        disableElevation={true}
+        color="primary"
+        size="small"
+        variant="outlined"
+        disableElevation
       >
         Activate
       </Button>
-      <Dialog
+      <ReusableDialog
         open={open}
+        title="Are you sure?"
+        icon={<InfoIcon style={{ fontSize: 40, color: '#1976d2' }} />}
         onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+        onPrimaryAction={handleActivationClick}
+        primaryActionText="Activate"
+        primaryActionLoading={isWorking}
+        cancelButtonText="Cancel"
       >
-        <Alert severity={'info'}>
-          <AlertTitle>Are you sure?</AlertTitle>
-          Do you want to start syncing the {props.project.name} {NOTEBOOK_NAME}{' '}
-          to your device?
-        </Alert>
-        <DialogActions style={{justifyContent: 'space-between'}}>
-          <Button onClick={handleClose} autoFocus color={'primary'}>
-            Cancel
-          </Button>
-
-          {props.isWorking ? (
-            <LoadingButton loading variant="outlined" size={'small'}>
-              Activating...
-            </LoadingButton>
-          ) : (
-            <Button
-              size={'small'}
-              variant="contained"
-              disableElevation
-              color={'primary'}
-              onClick={() => {
-                props.handleActivation();
-              }}
-            >
-              Activate
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
+        <Box mb={2}>
+          <Typography variant="body2">
+            Do you want to start syncing the {project.name} {NOTEBOOK_NAME} to your device?
+          </Typography>
+        </Box>
+      </ReusableDialog>
     </Box>
   );
 }
