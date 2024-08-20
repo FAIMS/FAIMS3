@@ -37,12 +37,12 @@ export default function CircularLoading(props: { label: string }) {
       </Grid>
       <Grid item>
         <Typography
-          variant="h6" // Slightly larger text for better readability
+          variant="h6"
           color="text.secondary"
           sx={{
-            fontWeight: 600, // Bolder text for better emphasis
+            fontWeight: 600,
             display: 'block',
-            mt: { xs: 2, sm: 0 }, // Add margin-top on small screens to separate from spinner
+            mt: { xs: 2, sm: 0 },
           }}
         >
           {props.label}
