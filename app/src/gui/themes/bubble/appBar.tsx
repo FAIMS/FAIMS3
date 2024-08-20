@@ -67,18 +67,3 @@ export default makeStyles({
     paddingLeft: theme.spacing(4),
   },
 });
-
-export const hideAppBarAuth = true;
-
-export const Heading = ({link}: {link: string}) => (
-  <div
-    style={{
-      flexGrow: 1,
-      fontSize: 32,
-      fontWeight: 600,
-      textAlign: 'center',
-    }}
-  >
-    Surveys
-  </div>
-);

@@ -20,7 +20,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Link as RouterLink, NavLink} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
   CircularProgress,
@@ -55,7 +55,8 @@ import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../utils/helpers';
 import SyncStatus from '../components/sync';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import {appBarStyling, AppBarHeading, hideAppBarAuth} from '../themes';
+import {appBarStyling} from '../themes';
+import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 
 type ProjectListItemProps = {
   title: string;

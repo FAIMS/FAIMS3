@@ -1,68 +1,57 @@
 import defaultTheme from './default';
-import csiroTheme from './csiro';
-import defaultAppBarStyling, {
-  Heading as defaultAppBarHeading,
-  hideAppBarAuth as defaultHideAppBarAuth,
-} from './default/appBar';
-import csiroAppBarStyling, {
-  Heading as csiroAppBarHeading,
-  hideAppBarAuth as csiroHideAppBarAuth,
-} from './csiro/appBar';
+import bubbleTheme from './bubble';
+import defaultAppBarStyling from './default/appBar';
+import bubbleAppBarStyling from './bubble/appBar';
 import defaultSurveyListLayout from './default/noteBook';
-import csiroSurveyListLayout from './csiro/noteBook';
+import bubbleSurveyListLayout from './bubble/noteBook';
 
-const export_theme = () => {
-  const theme = import.meta.env.VITE_THEME;
-
-  if (theme === 'csiro') {
-    return csiroTheme;
+const exportTheme = () => {
+  switch (import.meta.env.VITE_THEME) {
+    case 'bubble':
+      return bubbleTheme;
+    default:
+      return defaultTheme;
   }
-
-  return defaultTheme;
 };
 
-const export_appBar_styling = () => {
-  const theme = import.meta.env.VITE_THEME;
-
-  if (theme === 'csiro') {
-    return csiroAppBarStyling;
+const exportAppBarStyling = () => {
+  switch (import.meta.env.VITE_THEME) {
+    case 'bubble':
+      return bubbleAppBarStyling;
+    default:
+      return defaultAppBarStyling;
   }
-
-  return defaultAppBarStyling;
 };
 
-const export_appBar_heading = () => {
-  const theme = import.meta.env.VITE_THEME;
-
-  if (theme === 'csiro') {
-    return csiroAppBarHeading;
+const exportSurveyListLayout = () => {
+  switch (import.meta.env.VITE_THEME) {
+    case 'bubble':
+      return bubbleSurveyListLayout;
+    default:
+      return defaultSurveyListLayout;
   }
-
-  return defaultAppBarHeading;
 };
 
-const export_hideAppBarAuth = () => {
-  const theme = import.meta.env.VITE_THEME;
-
-  if (theme === 'csiro') {
-    return csiroHideAppBarAuth;
+const exportSurveyListVerbose = () => {
+  switch (import.meta.env.VITE_THEME) {
+    case 'bubble':
+      return false;
+    default:
+      return true;
   }
-
-  return defaultHideAppBarAuth;
 };
 
-const export_surveyListLayout = () => {
-  const theme = import.meta.env.VITE_THEME;
-
-  if (theme === 'csiro') {
-    return csiroSurveyListLayout;
+const exportAppBarHeading = () => {
+  switch (import.meta.env.VITE_THEME) {
+    case 'bubble':
+      return 'bubble';
+    default:
+      return 'default';
   }
-
-  return defaultSurveyListLayout;
 };
 
-export const theme = export_theme();
-export const appBarStyling = export_appBar_styling();
-export const AppBarHeading = export_appBar_heading();
-export const hideAppBarAuth = export_hideAppBarAuth();
-export const surveyListLayout = export_surveyListLayout();
+export const theme = exportTheme();
+export const appBarStyling = exportAppBarStyling();
+export const surveyListLayout = exportSurveyListLayout();
+export const surveyListVerbose = exportSurveyListVerbose();
+export const appBarHeading = exportAppBarHeading();

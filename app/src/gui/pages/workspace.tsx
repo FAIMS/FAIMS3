@@ -23,21 +23,17 @@ import {Typography, Grid} from '@mui/material';
 import Notebooks from '../components/workspace/notebooks';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {surveyListVerbose} from '../themes';
 
 export default function Workspace() {
-  const breadcrumbs = [
-    // {link: ROUTES.INDEX, title: 'Home'},
-    {title: 'Workspace'},
-  ];
+  const breadcrumbs = [{title: 'Workspace'}];
 
   return (
     <React.Fragment>
-      {import.meta.env.VITE_THEME !== 'csiro' && (
-        <Breadcrumbs data={breadcrumbs} />
-      )}
+      {surveyListVerbose && <Breadcrumbs data={breadcrumbs} />}
       <Grid container spacing={3}>
         <Grid item xs={12} md={12} lg={8}>
-          {import.meta.env.VITE_THEME !== 'csiro' && (
+          {surveyListVerbose && (
             <Typography variant="h6" color="textSecondary">
               My {NOTEBOOK_NAME_CAPITALIZED}s
             </Typography>

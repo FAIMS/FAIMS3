@@ -1,4 +1,4 @@
-import {ProjectInformation} from 'faims3-datamodel/build/src/types';
+import {ProjectInformation} from '@faims3/data-model';
 import tick from '../../../tick.svg';
 import cross from '../../../cross.svg';
 

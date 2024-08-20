@@ -67,14 +67,3 @@ export default makeStyles({
     paddingLeft: theme.spacing(4),
   },
 });
-
-export const hideAppBarAuth = false;
-
-export const Heading = ({link}: {link: string}) => (
-  <NavLink style={{flexGrow: 1}} to={link}>
-    <img
-      src="/static/logo/Fieldmark-Short-Green-NoBorder.png"
-      style={{maxWidth: '140px', flex: 1}}
-    />
-  </NavLink>
-);
