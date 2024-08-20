@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - chore/add-build-outputs-to-turbo
   release:
     types: [published]
 
