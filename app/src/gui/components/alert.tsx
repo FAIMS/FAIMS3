@@ -14,29 +14,18 @@
  * limitations under the License.
  *
  * Filename: alert.tsx
- * Description:
- *   TODO
+ * Description: The SystemAlert component displays alert messages in the form of snackbars at the bottom-center of the screen.
+ *   Alerts are shown one at a time with configurable durations and severity levels.
  */
 
-import React, {useContext} from 'react';
+import React, { useContext } from 'react';
 import Snackbar from '@mui/material/Snackbar';
-import {ThemeProvider} from '@mui/material/styles';
-import theme from '../theme';
+import { ThemeProvider } from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
-import {createUseStyles} from 'react-jss';
-
-import {store} from '../../context/store';
-import {ActionType} from '../../context/actions';
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// const useStyles = makeStyles((theme: any) => ({
-//   root: {
-//     width: '100%',
-//     '& > * + *': {
-//       marginTop: '16px',
-//     },
-//   },
-// }));
+import { createUseStyles } from 'react-jss';
+import theme from '../theme';
+import { store } from '../../context/store';
+import { ActionType } from '../../context/actions';
 
 const useStyles = createUseStyles({
   root: {
@@ -47,54 +36,64 @@ const useStyles = createUseStyles({
   },
 });
 
+/**
+ * SystemAlert component is responsible for rendering alerts in the form of snackbars at the bottom-center of the screen.
+ * Alerts are shown one at a time, with different durations based on their severity level.
+ * 
+ * @component
+ * @example
+ * return (
+ *   <SystemAlert />
+ * )
+ */
+
 export default function SystemAlert() {
   const classes = useStyles();
   const globalState = useContext(store);
-  const {dispatch} = globalState;
+  const { dispatch } = globalState;
   const alerts = globalState.state.alerts;
 
-  if (alerts.length === 0) return <></>;
-
-  const oldest_alert = alerts[alerts.length - 1]; // adjust the sequence to display the latest alert on the top, instead of bottom
-
+  /**
+  * Handles the closing of the current alert.
+  *
+  * @param {string} key - The unique key identifying the alert to be closed.
+  */
   const handleClose = (key: string) => {
     dispatch({
       type: ActionType.DELETE_ALERT,
-      payload: {
-        key: key,
-      },
+      payload: { key },
     });
   };
-  // this code is to move the successful message after 2 second, need to be updated in the next stage
-  setTimeout(() => {
-    if (
-      oldest_alert !== undefined &&
-      ['success', 'info'].includes(oldest_alert.severity)
-    )
-      handleClose(oldest_alert.key);
-  }, 3000);
-  // if (alerts.length > 0) console.log(oldest_alert.severity);
+
+  const currentAlert = alerts.length > 0 ? alerts[alerts.length - 1] : null;
+
   return (
     <ThemeProvider theme={theme}>
       <div className={classes.root}>
-        {alerts.length > 0 ? (
+        {currentAlert && (
           <Snackbar
+            key={currentAlert.key}
             open={true}
-            autoHideDuration={6000}
-            anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
+            autoHideDuration={currentAlert.severity === 'error' ? 10000 : 6000}
+            onClose={() => handleClose(currentAlert.key)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
           >
             <Alert
-              onClose={() => handleClose(oldest_alert.key)}
-              severity={oldest_alert.severity}
-              variant={'filled'}
+              onClose={() => handleClose(currentAlert.key)}
+              severity={currentAlert.severity}
+              variant="filled"
+              sx={{
+                minWidth: '300px',
+                boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.3)', // Subtle shadow
+                opacity: 0.5, // Slightly hazy effect
+                animation: 'fadeIn 0.3s ease-out', // Fade-in animation
+                transition: 'transform 0.3s ease-out', // Smooth transition for showing the alert
+                transform: 'scale(1)', // Ensures the alert scales nicely
+              }}
             >
-              {'message' in oldest_alert
-                ? oldest_alert.message
-                : oldest_alert.element}
+              {'message' in currentAlert ? currentAlert.message : currentAlert.element}
             </Alert>
           </Snackbar>
-        ) : (
-          ''
         )}
       </div>
     </ThemeProvider>
