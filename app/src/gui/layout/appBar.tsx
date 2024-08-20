@@ -186,14 +186,8 @@ export default function MainAppBar(props: NavbarProps) {
   const topMenuItems: Array<MenuItemProps> = [
     {
       title: 'Home',
-      icon: <HomeIcon />,
-      to: ROUTES.INDEX,
-      disabled: false,
-    },
-    {
-      title: 'WorkSpace',
       icon: <DashboardIcon />,
-      to: ROUTES.WORKSPACE,
+      to: ROUTES.INDEX,
       disabled: !isAuthenticated,
     },
     projectList === null

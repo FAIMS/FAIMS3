@@ -25,7 +25,6 @@ export const INDEX = '/';
 export const SIGN_IN = '/signin/';
 
 export const NOT_FOUND = '/not-found';
-export const WORKSPACE = '/workspace';
 
 export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${NOTEBOOK_NAME}s/`;
 export const NOTEBOOK_LIST_ROUTE = `/${NOTEBOOK_NAME}s`;

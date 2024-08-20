@@ -139,7 +139,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           <Button
             variant="text"
             size={'small'}
-            onClick={() => history(ROUTES.WORKSPACE)}
+            onClick={() => history(ROUTES.INDEX)}
             startIcon={<DashboardIcon />}
           >
             Workspace

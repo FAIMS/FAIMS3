@@ -23,7 +23,6 @@ import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import {PrivateRoute} from './constants/privateRouter';
-import Index from './gui/pages';
 import {SignIn} from './gui/pages/signin';
 import AboutBuild from './gui/pages/about-build';
 import Workspace from './gui/pages/workspace';
@@ -85,7 +84,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path={ROUTES.WORKSPACE}
+                  path={ROUTES.INDEX}
                   element={
                     <PrivateRoute allowed={Boolean(token)}>
                       <Workspace />
@@ -182,15 +181,6 @@ export default function App() {
                     </PrivateRoute>
                   }
                 />
-                <Route
-                  path={'/'}
-                  element={
-                    <PrivateRoute allowed>
-                      <Index token={token} />
-                    </PrivateRoute>
-                  }
-                />
-
                 <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
                 <Route Component={NotFound404} />
               </Routes>
