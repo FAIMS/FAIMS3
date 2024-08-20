@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Button, Box, Typography } from '@mui/material';
-import LoadingButton from '@mui/lab/LoadingButton';
 import InfoIcon from '@mui/icons-material/Info';
 import { ProjectInformation } from '@faims3/data-model';
 import { NOTEBOOK_NAME } from '../../../../buildconfig';
@@ -41,17 +40,31 @@ export default function NotebookActivationSwitch({
       </Button>
       <ReusableDialog
         open={open}
-        title="Are you sure?"
+        title="Activating / Deactivating surveys"
         icon={<InfoIcon style={{ fontSize: 40, color: '#1976d2' }} />}
         onClose={handleClose}
         onPrimaryAction={handleActivationClick}
         primaryActionText="Activate"
         primaryActionLoading={isWorking}
+        primaryActionColor="primary"
+        primaryActionVariant="contained"
         cancelButtonText="Cancel"
       >
         <Box mb={2}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Activating a survey:
+          </Typography>
+          <Typography variant="body2" paragraph>
+            • When a survey is “Active” you are safe to work offline at any point because all the data is saved to your device.
+          </Typography>
+          <Typography variant="body2" paragraph>
+            • Before going out in the field you must ‘Activate’ your survey by pressing the  button “Activate" and selecting which survey(s) you want to be available while out in the field.
+          </Typography>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Deactivating a survey:
+          </Typography>
           <Typography variant="body2">
-            Do you want to start syncing the {project.name} {NOTEBOOK_NAME} to your device?
+            • This can be helpful when you need to free up space on your device and when you no longer need access to surveys or survey data offline.
           </Typography>
         </Box>
       </ReusableDialog>
