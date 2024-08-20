@@ -4,6 +4,7 @@ import moment from 'moment/moment';
 import {ActionType} from '../../../context/actions';
 import {store} from '../../../context/store';
 import {useInterval} from '../../../utils/useInterval';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 
 interface RefreshNotebookProps {
   handleRefresh: Function;
@@ -39,7 +40,7 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: `${props.project_name} Notebook refreshed`,
+            message: `${props.project_name} ${NOTEBOOK_NAME_CAPITALIZED} refreshed`,
             severity: 'success',
           },
         });

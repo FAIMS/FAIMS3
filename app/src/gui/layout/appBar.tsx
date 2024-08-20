@@ -58,6 +58,7 @@ import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../utils/helpers';
 // import ConnectedStatus from '../components/authentication/connectedStatus';
 import SyncStatus from '../components/sync';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 type ProjectListItemProps = {
   title: string;
@@ -152,15 +153,15 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     projectListItems.push({
       title: project_info.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.NOTEBOOK + project_info.project_id,
+      to: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_info.project_id,
       disabled: false,
     });
   });
   return {
-    title: 'Notebooks',
+    title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
     icon: <AccountTree />,
     nested: projectListItems,
-    to: ROUTES.NOTEBOOK_LIST,
+    to: ROUTES.NOTEBOOK_LIST_ROUTE,
     disabled: false,
   };
 }
@@ -191,7 +192,7 @@ export default function MainAppBar(props: NavbarProps) {
     },
     projectList === null
       ? {
-          title: 'Loading notebooks...',
+          title: `Loading ${NOTEBOOK_NAME}s...`,
           icon: <AccountTree />,
           to: '/',
           disabled: true,
@@ -199,7 +200,7 @@ export default function MainAppBar(props: NavbarProps) {
       : isAuthenticated
       ? getNestedProjects(projectList)
       : {
-          title: 'Notebooks',
+          title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
           icon: <AccountTree />,
           to: '/',
           disabled: true,

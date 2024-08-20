@@ -92,7 +92,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path={ROUTES.NOTEBOOK_LIST}
+                  path={ROUTES.NOTEBOOK_LIST_ROUTE}
                   element={
                     <PrivateRoute allowed={Boolean(token)}>
                       <NoteBookList />
@@ -100,7 +100,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path={ROUTES.NOTEBOOK + ':project_id'}
+                  path={ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + ':project_id'}
                   element={
                     <PrivateRoute allowed={Boolean(token)}>
                       <Notebook />
@@ -113,7 +113,7 @@ export default function App() {
                   without one, it immediately mints a UUID and redirects to it */}
                 <Route
                   path={
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                     ':project_id' +
                     ROUTES.RECORD_CREATE +
                     ':type_name' +
@@ -130,7 +130,7 @@ export default function App() {
                 />
                 <Route
                   path={
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                     ':project_id' +
                     ROUTES.RECORD_CREATE +
                     ':type_name'
@@ -151,7 +151,7 @@ export default function App() {
                   record/form.tsx*/}
                 <Route
                   path={
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                     ':project_id' +
                     ROUTES.RECORD_EXISTING +
                     ':record_id' +
@@ -166,7 +166,7 @@ export default function App() {
                 />
                 <Route
                   path={
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                     ':project_id' +
                     ROUTES.RECORD_EXISTING +
                     ':record_id' +

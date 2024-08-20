@@ -5,6 +5,7 @@ import {ProjectInformation} from '@faims3/data-model';
 import DialogActions from '@mui/material/DialogActions';
 
 import Dialog from '@mui/material/Dialog';
+import {NOTEBOOK_NAME} from '../../../../buildconfig';
 
 type NotebookActivationSwitchProps = {
   project: ProjectInformation;
@@ -43,8 +44,8 @@ export default function NotebookActivationSwitch(
       >
         <Alert severity={'info'}>
           <AlertTitle>Are you sure?</AlertTitle>
-          Do you want to start syncing the {props.project.name} notebook to your
-          device?
+          Do you want to start syncing the {props.project.name} {NOTEBOOK_NAME}{' '}
+          to your device?
         </Alert>
         <DialogActions style={{justifyContent: 'space-between'}}>
           <Button onClick={handleClose} autoFocus color={'primary'}>
