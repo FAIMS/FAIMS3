@@ -173,7 +173,6 @@ export async function getTokenForCluster(
     const doc = await local_auth_db.get(cluster_id);
     return doc.available_tokens[doc.current_username].token;
   } catch (err) {
-    console.warn('Token not found for:', cluster_id, err);
     return undefined;
   }
 }
@@ -263,7 +262,6 @@ async function getTokenInfoForCluster(
       pubkey: pubkey,
     };
   } catch (err) {
-    console.warn('Token not found for:', cluster_id, err);
     return undefined;
   }
 }
