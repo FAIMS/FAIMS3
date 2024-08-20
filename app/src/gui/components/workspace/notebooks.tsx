@@ -36,7 +36,8 @@ import {useTheme} from '@mui/material/styles';
 import {grey} from '@mui/material/colors';
 import Tabs from '../ui/tab-grid';
 import HeadingGrid from '../ui/heading-grid';
-import {NOTEBOOK_LIST_TYPE} from '../../../buildconfig';
+import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
+import {getListing} from '../../../sync/state';
 
 interface sortModel {
   field: string;
@@ -92,7 +93,7 @@ export default function NoteBooks(props: NoteBookListProps) {
 
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     if (params.row.is_activated) {
-      history(ROUTES.NOTEBOOK + params.row.project_id);
+      history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + params.row.project_id);
     } else {
       // do nothing
     }
@@ -128,6 +129,7 @@ export default function NoteBooks(props: NoteBookListProps) {
                 </Typography>
               </span>
               <Typography variant={'caption'}>
+                {getListing(params.row.listing_id).listing.name}
                 {params.row.description}
               </Typography>
             </Box>
@@ -157,7 +159,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           flex: 0.2,
           minWidth: 160,
           headerName: 'Sync',
-          description: 'Toggle syncing this notebook to the server',
+          description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
           renderCell: (params: GridCellParams) => (
             <NotebookSyncSwitch
               project={params.row}
@@ -198,6 +200,7 @@ export default function NoteBooks(props: NoteBookListProps) {
                 </Typography>
               </span>
               <Typography variant={'caption'}>
+                {getListing(params.row.listing_id).listing.name}
                 {params.row.description}
               </Typography>
               <Box my={1}>
@@ -220,7 +223,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           flex: 0.3,
           minWidth: 80,
           headerName: 'Sync',
-          description: 'Toggle syncing this notebook to the server',
+          description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
           renderCell: (params: GridCellParams) => (
             <NotebookSyncSwitch
               project={params.row}
@@ -235,16 +238,17 @@ export default function NoteBooks(props: NoteBookListProps) {
   return (
     <Box>
       {pouchProjectList.length === 0 ? (
-        <CircularLoading label={'Loading notebooks'} />
+        <CircularLoading label={`Loading ${NOTEBOOK_NAME}s`} />
       ) : (
         <Box component={Paper} elevation={0} p={2}>
           <Typography variant={'body1'} gutterBottom>
             You have {pouchProjectList.filter(r => r.is_activated).length}{' '}
-            notebook
+            {NOTEBOOK_NAME}
             {pouchProjectList.filter(r => r.is_activated).length !== 1
               ? 's'
               : ''}{' '}
-            activated on this device. To start syncing a notebook, visit the{' '}
+            activated on this device. To start syncing a {NOTEBOOK_NAME}, visit
+            the{' '}
             <Button
               variant="text"
               size={'small'}

@@ -22,6 +22,7 @@ import {act, render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import Workspace from './workspace';
 import {test, expect} from 'vitest';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 test('Check workspace component', async () => {
   act(() => {
@@ -31,5 +32,5 @@ test('Check workspace component', async () => {
       </Router>
     );
   });
-  expect(screen.getByText('My Notebooks')).toBeTruthy();
+  expect(screen.getByText(`My ${NOTEBOOK_NAME_CAPITALIZED}s`)).toBeTruthy();
 });

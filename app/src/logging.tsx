@@ -74,7 +74,7 @@ export const ErrorPage = () => {
   // Do a full page reload of the workspace to ensure we get out of
   // any bogus state...may not be the right way to respond
   const navigateWS = () => {
-    window.location.href = ROUTES.WORKSPACE;
+    window.location.href = ROUTES.INDEX;
   };
 
   return (

@@ -40,6 +40,7 @@ services:
 
       - PROFILE_NAME
       - CONDUCTOR_INSTANCE_NAME
+      - CONDUCTOR_DESCRIPTION
       
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD

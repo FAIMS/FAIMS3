@@ -37,6 +37,7 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 interface Props {
   num_digits: number;
   // This could be dropped depending on how multi-stage forms are configured
@@ -71,9 +72,7 @@ function AddRangeDialog() {
         <DialogTitle id="alert-dialog-title">Information</DialogTitle>
         <DialogContent style={{width: '600px', height: '100px'}}>
           <DialogContentText id="alert-dialog-description">
-            {
-              'Go to Notebook > Settings Tab > Edit Allocations to Add New Range'
-            }{' '}
+            {`Go to ${NOTEBOOK_NAME_CAPITALIZED} > Settings Tab > Edit Allocations to Add New Range`}{' '}
             <br />
           </DialogContentText>
         </DialogContent>
@@ -123,8 +122,7 @@ export class BasicAutoIncrementer extends React.Component<
       (this.context as any).dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message:
-            'No ranges exist for this notebook yet. Go to the notebook Settings tab to add/edit ranges.',
+          message: `No ranges exist for this ${NOTEBOOK_NAME} yet. Go to the ${NOTEBOOK_NAME} Settings tab to add/edit ranges.`,
           severity: 'error',
         },
       });

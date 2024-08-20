@@ -3,9 +3,12 @@ import {
   COUCHDB_INTERNAL_URL,
   KEY_SERVICE,
   LOCAL_COUCHDB_AUTH,
+  RUNNING_UNDER_TEST,
 } from '../buildconfig';
 
 export async function initialiseJWTKey(): Promise<void> {
+  // don't try to do this if we're testing
+  if (RUNNING_UNDER_TEST) return;
   try {
     // Get current public key
     const signingKey = await KEY_SERVICE.getSigningKey();
@@ -31,7 +34,6 @@ export async function initialiseJWTKey(): Promise<void> {
     );
     console.log('JWT public key configured in CouchDB');
   } catch (error) {
-    console.error('Error configuring JWT public key in CouchDB:', error);
     throw new Error('Failed to configure JWT public key in CouchDB');
   }
 }
