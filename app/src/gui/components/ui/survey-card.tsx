@@ -2,12 +2,21 @@ import {ProjectInformation} from '@faims3/data-model';
 import tick from '../../../tick.svg';
 import cross from '../../../cross.svg';
 
-interface SurveyCardProps {
+/**
+ * SurveyCard component that displays information about a single survey.
+ *
+ * @param {SurveyCardProps} props - The properties for the SurveyCard component.
+ * @param {ProjectInformation} props.survey - The survey object containing details to be displayed in the card.
+ * @param {(project_id: string, activated: boolean) => void} props.onClick - Function to handle click events on the survey card.
+ * @returns {JSX.Element} - The rendered SurveyCard component.
+ */
+export default function SurveyCard({
+  survey,
+  onClick,
+}: {
   survey: ProjectInformation;
   onClick: (project_id: string, activated: boolean) => void;
-}
-
-export default function SurveyCard({survey, onClick}: SurveyCardProps) {
+}): JSX.Element {
   return (
     <div
       style={{

@@ -3,12 +3,22 @@ import SurveyCard from './survey-card';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 
-interface SurveyCardListProps {
+/**
+ * SurveyCardList component that displays a list of SurveyCard components.
+ *
+ * @param {SurveyCardListProps} props - The properties for the SurveyCardList component.
+ * @param {ProjectInformation[]} props.surveys - An array of survey objects containing details to be displayed in the list.
+ * @returns {JSX.Element} - The rendered SurveyCardList component.
+ */
+export default function SurveyCardList({
+  surveys,
+}: {
   surveys: ProjectInformation[];
-}
-
-export default function SurveyCardList({surveys}: SurveyCardListProps) {
+}) {
   const navigate = useNavigate();
+
+  const onClick = (project_id: string, activated: boolean) =>
+    activated && navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
 
   return (
     <div
@@ -19,13 +29,7 @@ export default function SurveyCardList({surveys}: SurveyCardListProps) {
       }}
     >
       {surveys.map(survey => (
-        <SurveyCard
-          key={survey.project_id}
-          survey={survey}
-          onClick={(project_id: string, activated: boolean) =>
-            activated && navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id)
-          }
-        />
+        <SurveyCard key={survey.project_id} survey={survey} onClick={onClick} />
       ))}
     </div>
   );
