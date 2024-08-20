@@ -268,7 +268,7 @@ export default function MainAppBar(props: NavbarProps) {
 
   const bottomMenuItems: Array<MenuItemProps> = [
 
-    // @TODO Ranisa: Commented this for now, to be discussed if needed to display this nav item
+    // @TODO Ranisa: Commented this for now, to be discussed if needed to display this menu item
     // {
     //   title: 'About Build',
     //   icon: <SettingsIcon />,
@@ -283,6 +283,7 @@ export default function MainAppBar(props: NavbarProps) {
       disabled: false,
     },
 
+    //@TODO: Conditionally render the "Switch org" option if user is part of multi organisations
     {
       title: 'Switch org',
       icon: <SwapHorizIcon />,
