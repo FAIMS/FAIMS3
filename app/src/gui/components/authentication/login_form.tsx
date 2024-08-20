@@ -1,10 +1,10 @@
-/* eslint-disable node/no-unsupported-features/node-builtins */
+/* eslint-disable n/no-unsupported-features/node-builtins */
 import React from 'react';
 import {Button, ButtonProps} from '@mui/material';
 import {Device} from '@capacitor/device';
 import {Browser} from '@capacitor/browser';
 
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 import {setTokenForCluster, getTokenContentsForCluster} from '../../../users';
 import {reprocess_listing} from '../../../sync/process-initialization';
 import {logError} from '../../../logging';
@@ -57,6 +57,8 @@ export function LoginButton(props: LoginButtonProps) {
                 console.debug('token is', token);
                 props.setToken(token);
                 reprocess_listing(props.listing_id);
+
+                window.location.href = '/';
               })
               .catch(() => {
                 props.setToken(undefined);

@@ -288,7 +288,6 @@ function get_bugsnag_key(): string | false {
   return bugsnag_key;
 }
 
-
 function get_conductor_url(): string {
   const url = import.meta.env.VITE_CONDUCTOR_URL;
   if (url) {
@@ -296,6 +295,45 @@ function get_conductor_url(): string {
   } else {
     return 'http://localhost:8154';
   }
+}
+
+/**
+ * Retrieves the notebook list type.
+ * @returns The notebook list type, which can be either "tabs" or "headings".
+ */
+function get_notebook_list_type(): 'tabs' | 'headings' {
+  const notebook_list_type = import.meta.env.VITE_NOTEBOOK_LIST_TYPE;
+  if (notebook_list_type === 'headings') {
+    return 'headings';
+  } else {
+    return 'tabs';
+  }
+}
+
+/**
+ * Retrieves the name of notebooks from the environment variables.
+ * If the environment variable is not set, it returns a default value 'notebook'.
+ *
+ * @returns {string} - The name of notebooks.
+ */
+function get_notebook_name(): string {
+  const notebook_name = import.meta.env.VITE_NOTEBOOK_NAME;
+  if (notebook_name) {
+    return notebook_name;
+  } else {
+    return 'notebook';
+  }
+}
+
+/**
+ * Retrieves the name of the notebooks and capitalizes the first letter.
+ *
+ * @returns {string} - The capitalized name of notebooks.
+ */
+function get_notebook_name_capitalized(): string {
+  const notebook_name = get_notebook_name();
+
+  return notebook_name.charAt(0).toUpperCase() + notebook_name.slice(1);
 }
 
 // this should disappear once we have listing activation set up
@@ -318,3 +356,6 @@ export const SHOW_NEW_NOTEBOOK = show_new_notebook();
 export const DISABLE_SIGNIN_REDIRECT = disable_signin_redirect();
 export const BUILT_LOGIN_TOKEN = get_login_token();
 export const BUGSNAG_KEY = get_bugsnag_key();
+export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
+export const NOTEBOOK_NAME = get_notebook_name();
+export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();

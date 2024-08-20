@@ -12,44 +12,56 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Grid, Card, FormHelperText, FormControlLabel, Checkbox } from "@mui/material";
-import { useAppSelector, useAppDispatch } from "../../state/hooks";
-import { BaseFieldEditor } from "./BaseFieldEditor";
-import { FieldType } from "../../state/initial";
+import {
+  Grid,
+  Card,
+  FormHelperText,
+  FormControlLabel,
+  Checkbox,
+} from '@mui/material';
+import {useAppSelector, useAppDispatch} from '../../state/hooks';
+import {BaseFieldEditor} from './BaseFieldEditor';
+import {FieldType} from '../../state/initial';
 
-export const DateTimeNowEditor = ({ fieldName }: {fieldName: string}) => {
+export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
+  const field = useAppSelector(
+    state => state.notebook['ui-specification'].fields[fieldName]
+  );
+  const dispatch = useAppDispatch();
 
-    const field = useAppSelector((state) => state.notebook['ui-specification'].fields[fieldName]);
-    const dispatch = useAppDispatch();
+  const updateIsAutoPick = (value: boolean) => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    newField['component-parameters'].is_auto_pick = value;
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+  };
 
-    const updateIsAutoPick = (value: boolean) => {
-        const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-        newField['component-parameters'].is_auto_pick = value;
-        dispatch({ type: 'ui-specification/fieldUpdated', payload: { fieldName, newField } })
-    }
-
-    return (
-        <BaseFieldEditor fieldName={fieldName}>
-            <Grid item sm={6} xs={12}>
-                <Card variant="outlined" sx={{ display: 'flex' }}>
-                    <Grid item xs={12} sx={{ mx: 1.5, my: 2 }}>
-                        <FormControlLabel
-                            required
-                            control={
-                                <Checkbox
-                                    checked={field['component-parameters'].is_auto_pick}
-                                    onChange={(e) => { updateIsAutoPick(e.target.checked) }}
-                                />
-                            }
-                            label="Time pre-populated"
-                        />
-                        <FormHelperText>
-                            When the record is first created, populate this field with the current datetime.
-                        </FormHelperText>
-                    </Grid>
-                </Card>
-            </Grid>
-        </BaseFieldEditor>
-    )
-
+  return (
+    <BaseFieldEditor fieldName={fieldName}>
+      <Grid item sm={6} xs={12}>
+        <Card variant="outlined" sx={{display: 'flex'}}>
+          <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
+            <FormControlLabel
+              required
+              control={
+                <Checkbox
+                  checked={field['component-parameters'].is_auto_pick}
+                  onChange={e => {
+                    updateIsAutoPick(e.target.checked);
+                  }}
+                />
+              }
+              label="Time pre-populated"
+            />
+            <FormHelperText>
+              When the record is first created, populate this field with the
+              current datetime.
+            </FormHelperText>
+          </Grid>
+        </Card>
+      </Grid>
+    </BaseFieldEditor>
+  );
 };

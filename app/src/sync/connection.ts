@@ -19,8 +19,8 @@
  */
 
 import PouchDB from 'pouchdb-browser';
-import {SyncStatusCallbacks} from 'faims3-datamodel';
-import {PossibleConnectionInfo} from 'faims3-datamodel';
+import {SyncStatusCallbacks} from '@faims3/data-model';
+import {PossibleConnectionInfo} from '@faims3/data-model';
 import * as _ from 'lodash';
 
 export interface ConnectionInfo {

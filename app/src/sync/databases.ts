@@ -33,7 +33,7 @@ import {
   ListingID,
   NonUniqueProjectID,
   PossibleConnectionInfo,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {logError} from '../logging';
 import {
@@ -211,9 +211,8 @@ let default_instance: null | NonNullListingsObject = null; //Set to directory_db
 
 export async function get_default_instance(): Promise<NonNullListingsObject> {
   if (default_instance === null) {
-    const possibly_corrupted_instance = await directory_db.local.get(
-      DEFAULT_LISTING_ID
-    );
+    const possibly_corrupted_instance =
+      await directory_db.local.get(DEFAULT_LISTING_ID);
     default_instance = {
       _id: possibly_corrupted_instance._id,
       name: possibly_corrupted_instance.name,

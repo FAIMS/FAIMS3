@@ -29,7 +29,7 @@ import {
   upsertFAIMSConstant,
   clearAllCaches,
 } from './projectSpecification';
-import {ProjectID} from 'faims3-datamodel';
+import {ProjectID} from '@faims3/data-model';
 import {equals} from './utils/eqTestSupport';
 
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing

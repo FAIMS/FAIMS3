@@ -41,12 +41,12 @@ import {
   Annotations,
   Relationship,
   RecordReference,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {
   ProjectUIModel,
   upsertFAIMSData,
   getFullRecordData,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {getValidationSchemaForViewset} from '../validation';
 import {store} from '../../../context/store';
 import RecordDraftState from '../../../sync/draft-state';
@@ -71,8 +71,9 @@ import {
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
-import {generateFAIMSDataID, getFirstRecordHead} from 'faims3-datamodel';
+import {generateFAIMSDataID, getFirstRecordHead} from '@faims3/data-model';
 import {logError} from '../../../logging';
+import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
 //import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -161,7 +162,7 @@ class RecordForm extends React.Component<
   draftState: RecordDraftState | null = null;
 
   // List of timeouts that unmount must cancel
-  timeouts: (typeof setTimeout)[] = [];
+  timeouts: typeof setTimeout[] = [];
 
   async componentDidUpdate(
     prevProps: RecordFormProps,
@@ -876,7 +877,9 @@ class RecordForm extends React.Component<
               if (is_direct === false) {
                 // publish and close
                 if (is_close === 'close') {
-                  this.props.navigate(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
+                  this.props.navigate(
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + this.props.project_id
+                  ); //update for save and close button
                   window.scrollTo(0, 0);
                   return hrid;
                   // publish and new record
@@ -884,7 +887,7 @@ class RecordForm extends React.Component<
                   //not child record
                   setSubmitting(false);
                   this.props.navigate(
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached
@@ -896,7 +899,7 @@ class RecordForm extends React.Component<
                 // or we're dealing with a child record
                 if (is_close === 'close') {
                   this.props.navigate(
-                    ROUTES.NOTEBOOK + state_parent.parent_link,
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + state_parent.parent_link,
                     {state: state_parent}
                   );
                   window.scrollTo(0, 0);
@@ -906,7 +909,7 @@ class RecordForm extends React.Component<
                   const locationState: any = this.props.location.state;
                   setSubmitting(false);
                   this.props.navigate(
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached,
@@ -953,10 +956,10 @@ class RecordForm extends React.Component<
                                   location_state.parent_record_id || ''
                                 ).toString(),
                                 (new_revision_id || '').toString()
-                              ).replace('/notebooks/', '');
+                              ).replace(INDIVIDUAL_NOTEBOOK_ROUTE, '');
                             location_state['child_record_id'] = new_record_id;
                             this.props.navigate(
-                              ROUTES.NOTEBOOK +
+                              ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                                 this.props.project_id +
                                 ROUTES.RECORD_CREATE +
                                 this.state.type_cached,
@@ -972,7 +975,7 @@ class RecordForm extends React.Component<
                           'Error saving the parent record, latest record is null'
                         );
                         this.props.navigate(
-                          ROUTES.NOTEBOOK +
+                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                             this.props.project_id +
                             ROUTES.RECORD_CREATE +
                             this.state.type_cached,
@@ -996,14 +999,16 @@ class RecordForm extends React.Component<
                 relationship.parent === null
               ) {
                 if (is_close === 'close') {
-                  this.props.navigate(ROUTES.NOTEBOOK + this.props.project_id);
+                  this.props.navigate(
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + this.props.project_id
+                  );
                   window.scrollTo(0, 0);
                   return hrid;
                 } else if (is_close === 'new') {
                   //not child record
                   setSubmitting(false);
                   this.props.navigate(
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached
@@ -1061,10 +1066,10 @@ class RecordForm extends React.Component<
                                   location_state.parent_record_id || ''
                                 ).toString(),
                                 (new_revision_id || '').toString()
-                              ).replace('/notebooks/', '');
+                              ).replace(INDIVIDUAL_NOTEBOOK_ROUTE, '');
                             location_state['child_record_id'] = new_record_id;
                             this.props.navigate(
-                              ROUTES.NOTEBOOK +
+                              ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                                 this.props.project_id +
                                 ROUTES.RECORD_CREATE +
                                 this.state.type_cached,
@@ -1080,7 +1085,7 @@ class RecordForm extends React.Component<
                           'Error to save the parent record from child relationship, latest record is null'
                         );
                         this.props.navigate(
-                          ROUTES.NOTEBOOK +
+                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                             this.props.project_id +
                             ROUTES.RECORD_CREATE +
                             this.state.type_cached,

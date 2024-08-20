@@ -1,6 +1,7 @@
 version: "3.9"
 services:
   couchdb:
+    env_file: .env
     build:
       context: couchdb
       dockerfile: Dockerfile
@@ -17,11 +18,17 @@ services:
     networks:
       - conductor-local-dev
   conductor:
+    env_file: .env
     build:
-      context: .
-    command: "npm run watch --workspace=api"
+      context: ../
+      dockerfile: api/Dockerfile
+    command: "npm run watch-api"
     volumes:
-      - ..:/usr/src
+      - ./src:/usr/src/api/src
+      - ./views:/usr/src/api/views
+      - ./keys:/usr/src/api/keys
+      - ./public:/usr/src/api/public
+      - ./test:/usr/src/api/test
     ports:
       - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
     networks:

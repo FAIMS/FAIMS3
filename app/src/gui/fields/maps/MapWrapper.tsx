@@ -36,6 +36,7 @@ import {register} from 'ol/proj/proj4';
 import Button, {ButtonProps} from '@mui/material/Button';
 import CloseIcon from '@mui/icons-material/Close';
 import GeoJSON from 'ol/format/GeoJSON';
+import Zoom from 'ol/control/Zoom';
 
 // define some EPSG codes - these are for two sample images
 // TODO: we need to have a better way to include a useful set or allow
@@ -64,6 +65,7 @@ interface MapProps extends ButtonProps {
 import {AppBar, Dialog, IconButton, Toolbar, Typography} from '@mui/material';
 import Feature from 'ol/Feature';
 import {Geometry} from 'ol/geom';
+import {createCenterControl} from '../../components/map/center-control';
 
 const styles = {
   mapContainer: {
@@ -131,8 +133,10 @@ function MapWrapper(props: MapProps) {
         target: element,
         layers: [tileLayer],
         view: view,
-        controls: [],
+        controls: [new Zoom()],
       });
+
+      theMap.addControl(createCenterControl(theMap.getView(), center));
 
       theMap.getView().setCenter(center);
 

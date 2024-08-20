@@ -1,0 +1,11 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "lint": {},
+    "fix": {},
+    "clean": {},
+    "build": {
+      "dependsOn": ["^build"] 
+    }
+  }
+}

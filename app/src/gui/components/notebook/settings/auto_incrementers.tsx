@@ -1,8 +1,8 @@
 import React, {useEffect} from 'react';
 import {Box, Grid, Typography, Paper, Alert} from '@mui/material';
-import {ProjectInformation, ProjectUIModel} from 'faims3-datamodel';
+import {ProjectInformation, ProjectUIModel} from '@faims3/data-model';
 import {getAutoincrementReferencesForProject} from '../../../../local-data/autoincrement';
-import {AutoIncrementReference} from 'faims3-datamodel';
+import {AutoIncrementReference} from '@faims3/data-model';
 import AutoIncrementEditForm from '../../autoincrement/edit-form';
 import {logError} from '../../../../logging';
 
@@ -54,7 +54,7 @@ export default function AutoIncrementerSettingsList(
         // display form section label for user to fill Auto correctly
         const section =
           props.uiSpec['views'][ai.form_id] !== undefined
-            ? props.uiSpec['views'][ai.form_id]['label'] ?? ai.form_id
+            ? (props.uiSpec['views'][ai.form_id]['label'] ?? ai.form_id)
             : ai.form_id;
         const label =
           get_form(ai.form_id, props.uiSpec) +

@@ -31,7 +31,7 @@ import {
   EncodedDraft,
   DraftMetadataList,
   attachment_to_file,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {DEBUG_APP} from '../buildconfig';
 import {local_pouch_options} from './connection';
 import {logError} from '../logging';
@@ -43,7 +43,7 @@ export const draft_db: DraftDB = new PouchDB(
   local_pouch_options
 );
 
-// Note: duplicated from faims3-datamodel as it doesn't do anything important
+// Note: duplicated from @faims3/data-model as it doesn't do anything important
 export function generate_file_name(): string {
   return 'file-' + uuidv4();
 }

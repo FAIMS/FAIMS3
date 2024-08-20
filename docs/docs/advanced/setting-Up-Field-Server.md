@@ -1,7 +1,6 @@
 (advanced/server)=
+
 # Setting up a server for field work
-
-
 
 :::{warning}
 This is a provisional document and is incomplete. This setup has not been fully tested. The original version of this document can be found [here](FAIMS3-SettingUpAServerForFieldWork-v195-20230209_132119.docx).
@@ -19,15 +18,15 @@ the process required to set up a central server.
 
 The expected physical environment for a field server is one with no or
 limited access to the wider internet, likely a group of field workers
-operating on a site.   There may be limited power available (generator
-or limited solar or batteries charged overnight).  The field workers
+operating on a site. There may be limited power available (generator
+or limited solar or batteries charged overnight). The field workers
 will want to sync data from their personal devices
 (phones/tablets/laptops) and ensure it is saved on a second machine and
 to share the date between the field workers.
 
 These instructions are intended for someone who is comfortable with
 executing commands in a Linux terminal window - has a basic knowledge of
-how to log into a Linux computer and operate at a shell prompt.  They
+how to log into a Linux computer and operate at a shell prompt. They
 (or someone they get assistance from) will need to be able to access
 which hardware to buy against the actual requirements of the field
 location
@@ -36,42 +35,42 @@ location
 Please contact info@fieldmark.au if you would like to rent a server or offline server from us instead.
 :::
 
-
 The procedure to work through is:
 
-1.  [Server Hardware Selection](<server/field-server-hardware-selection>)
+1.  [Server Hardware Selection](server/field-server-hardware-selection)
 
-2.  [Wifi and Host name setup](<server/wifi-router-setup-and-machine-host-name>)
+2.  [Wifi and Host name setup](server/wifi-router-setup-and-machine-host-name)
 
 3.  Setting up the machine -
-    [requirements](<server/operating-system-and-package-installations>) and
-    [example installation](<server/raspberry-pi-set-up>).
+    [requirements](server/operating-system-and-package-installations) and
+    [example installation](server/raspberry-pi-set-up).
 
-4.  [Installing FAIMS software](<server/installing-faims>)
+4.  [Installing FAIMS software](server/installing-faims)
 
-5.  [Configuring the machine](<server/configuring-the-machine>)
+5.  [Configuring the machine](server/configuring-the-machine)
 
-6.  [Initial sync of data with the main database](<server/initialising-your-database-from-a-central-server>)
+6.  [Initial sync of data with the main database](server/initialising-your-database-from-a-central-server)
 
-7.  [Connecting the iOS/Android Applications](<server/connecting-the-iosandroid-apps-to-use-this-server>)
+7.  [Connecting the iOS/Android Applications](server/connecting-the-iosandroid-apps-to-use-this-server)
 
-8.  [Testing for field operations](<server/putting-it-all-together>).
+8.  [Testing for field operations](server/putting-it-all-together).
 
-9.  [Determining and testing backup procedures.](<server/backups-in-the-field>).
+9.  [Determining and testing backup procedures.](server/backups-in-the-field).
 
-10. [Syncing back to the main database](<server/syncing-back-to-the-main-database>).
+10. [Syncing back to the main database](server/syncing-back-to-the-main-database).
 
 (server/field-server-hardware-selection)=
+
 ## Field Server Hardware Selection
 
 In most cases, it will be necessary to put some thought into what is
-actually needed from the server hardware for the particular trip.  There
+actually needed from the server hardware for the particular trip. There
 are many possible machines which could be used - a laptop may suffice if
-there is one available.  If new hardware needs to be bought then
+there is one available. If new hardware needs to be bought then
 something as simple as a "Raspberry Pi" may be sufficient for a small
-environment.  The next step up might be one of the many small Intel PCs
+environment. The next step up might be one of the many small Intel PCs
 which are available (E.g. MeLE Quieter, but these do have power
-potential supply issues).  Do note that the later will often come with
+potential supply issues). Do note that the later will often come with
 Windows and the initial Linux installation may be tricky (which also
 applies to Laptops).
 
@@ -123,7 +122,6 @@ applies to Laptops).
 :height: 1.56in
 :::
 
-
 <p>And there are many other possibilities, some of which are likely to be more powerful (longer WiFi range) since they are meant for environments like conferences, but they will then need more power.</p></td>
 </tr>
 <tr class="odd">
@@ -164,37 +162,39 @@ applies to Laptops).
 </table>
 
 (server/wifi-router-setup-and-machine-host-name)=
+
 ## WiFi Router setup and machine host name.
 
 It is recommended that you set up your WiFi router to allocate IP
 addresses via DHCP, BUT, for the server machine, you should arrange to
-"reserve" an IP address, known as "DHCP Address Reservation".  This will
+"reserve" an IP address, known as "DHCP Address Reservation". This will
 also the server to leave its WiFi configuration in DHCP mode but ensure
 when connected to your router, that it always has the same IP number.
 
 ### Hostname
 
-You will need a hostname for your machine.  Whilst this field server
+You will need a hostname for your machine. Whilst this field server
 machine is NOT expected to be on the public internet, you will need to
 be able generate an SSL certificate using a public machine with that
 name. As a result, the name of your host should reflect what your
-network people can achieve.  In the example, for the Raspberry Pi
+network people can achieve. In the example, for the Raspberry Pi
 example described below, the name is
-"[faimsrp1.site.org.au](http://faimsrp1.site.org.au)".  We (AAO MQ) are
+"[faimsrp1.site.org.au](http://faimsrp1.site.org.au)". We (AAO MQ) are
 owners of the domain "[site.org.au](http://site.org.au)", so we were
-able to work with this name.   
+able to work with this name.
 
 When connected to your router, can take advantage of ".local" addresses
-to access the machine, e.g.  "faims\_rpi1.local".  ".local" addresses
+to access the machine, e.g. "faims_rpi1.local". ".local" addresses
 are always resolved within your local router's address space (may not
-work for Android devices).  But this won't work for FAIMS itself - you
-will need to use a full domain name - see [SSL certificate details below](<server/ssl-certificate>)
+work for Android devices). But this won't work for FAIMS itself - you
+will need to use a full domain name - see [SSL certificate details below](server/ssl-certificate)
 
 You will later need a local DNS on your machine containing that full
 name and to set up your router/device to use this DNS as your primary
-DNS.  This is described in the section on[testing](<server/putting-it-all-together>). below.
+DNS. This is described in the section on[testing](server/putting-it-all-together). below.
 
 (server/operating-system-and-package-installations)=
+
 ## Operating System and Package Installations
 
 As we strongly recommend Ubuntu/Debian (Raspberry Pi OS is a Debian
@@ -275,10 +275,11 @@ untested.
 </tbody>
 </table>
 
-See [Raspberry Pi installation instructions](<server/raspberry-pi-set-up>) below
+See [Raspberry Pi installation instructions](server/raspberry-pi-set-up) below
 for full details for the example install on that machine.
 
 (server/installing-faims)=
+
 ## Installing FAIMS
 
 Once you have set up the required OS packages, you can start cloning the
@@ -289,14 +290,14 @@ follow will allow you to confirm that each component is running and
 ensure a working system at the end.
 
 Note that FAIMS is run in "[Docker](https://www.docker.com)" containers.
- Notes on the design are available
-[below](<server/design>) and a list of notable [docker commands](<server/docker-commands>) are available.
+Notes on the design are available
+[below](server/design) and a list of notable [docker commands](server/docker-commands) are available.
 
 Each repository should be cloned into its own directory. The path where
 you clone the git repositories to does not matter, but the user you are
 running as must be able to run docker, either via calling sudo (easiest
 option), or by being able to access the docker socket (see the docker
-documentation or your OS  for how to do this).
+documentation or your OS for how to do this).
 
 ### Installing the FAIMS3 conductor/database
 
@@ -304,7 +305,7 @@ The conductor program handles authentication and authorisation for the
 FAIMS 3 system. To download it, clone
 <https://github.com/FAIMS/FAIMS3-conductor>. Feel free to read the
 README included in the repository for more details about the conductor.
- The building of the package also adds the
+The building of the package also adds the
 [CouchDB](https://couchdb.apache.org) database
 
 <table>
@@ -338,19 +339,19 @@ Next, edit the .env (Example used on Raspberry Pi)
 file based on your desired settings. The .env.dist file should
 provide enough guidance and defaults for some initial experimentation. A
 list of the changes made in the example are [available
-below](<server/conductor-env>).
- You will need to set hostnames/ports for the services  (these will
+below](server/conductor-env).
+You will need to set hostnames/ports for the services (these will
 need to match the configuration you use for HAProxy later on), which
 SMTP server to send emails through (can be ignored if there is no
 internet and hence no way for users to receive emails), and set some
 secrets/passwords used to communicate with services.
 
-(The FAIMS\_COOKIE\_SECRET  value can be set to the value of the uuidgen
+(The FAIMS_COOKIE_SECRET value can be set to the value of the uuidgen
 command on a Mac (and probably many Linux machines, not apparently
 available on Raspberry Pi) or from <https://www.uuidgen.org/v/4>)
 
 To ensure the FAIMS Database is saved across rebuilds of the container,
-you must locate it outside the container.  Do do this,  add the
+you must locate it outside the container. Do do this, add the
 following to docker-compose.yml (the ports: specification is for
 content, it is the "volumes" specification you need)
 
@@ -367,13 +368,13 @@ content, it is the "volumes" specification you need)
 </table>
 
 Then create a directory, e.g. $HOME/couchdb, where the database will be
-saved. Specify that value as the value of the COUCHDB\_DATA\_DIR
+saved. Specify that value as the value of the COUCHDB_DATA_DIR
 variable in .env.
 
 :::{note}
 if you have previously built on this machine with that
 database directory, the values won't be updated to reflect any changes
-here.  You can just delete the contents using "rm", but then you will
+here. You can just delete the contents using "rm", but then you will
 lose everything.
 :::
 
@@ -382,17 +383,17 @@ This generates the signing keys used to allow users to log into CouchDB,
 and configures the CouchDB instance to use those keys.
 
 Then run "sudo docker-compose up -d" which will build and start the
-docker containers running the conductor and CouchDB.  Note that this
+docker containers running the conductor and CouchDB. Note that this
 process will take some minutes to complete (but there is caching
-involved, so subsequent builds will be quicker).  I have timed it at
+involved, so subsequent builds will be quicker). I have timed it at
 more then 7 minutes on a RaspberryPI, and it does spend a lot of time on
 the part of the build involving "npm" packaging.
 
-Then you must create the database in the running system.  Execute: "sudo
+Then you must create the database in the running system. Execute: "sudo
 docker-compose exec conductor npm run initdb"
 
 To check if the docker containers are running - execute "sudo docker
-ps".  E.g (for a running system)
+ps". E.g (for a running system)
 
 <table>
 <tbody>
@@ -415,25 +416,26 @@ conductor should be asking you to log in, whilst the CouchDB container
 should return a welcome message encoded in JSON. By adding /\_utils/ to
 the URL that CouchDB is running at, you should see its interface, named
 Fauxton, and be able to log in with the credentials you provided in the
-.env file.  You can also directly access the couch directory database
+.env file. You can also directly access the couch directory database
 used by the system to find conductor - and this should contains the
 public address for conductor
 
-Using an  .env file based on the attached file, these are the addresses
+Using an .env file based on the attached file, these are the addresses
 to check
 
-> localhost:8080  → For conductor
+> localhost:8080 → For conductor
 >
 > localhost:5984 → For CouchDB
 >
 > localhost:5984/\_utils → For CouchDB for Fauxton (Page title says
 > "Project Fauxton - login"
 >
-> localhost:5984/directory/\_all\_docs?conflicts=true\&include\_docs=true
->  → Checks the database details used by Web-App to find Conductor.
+> localhost:5984/directory/\_all_docs?conflicts=true\&include_docs=true
+> → Checks the database details used by Web-App to find Conductor.
 > Results should include the external address of conductor.
 
 (server/conductor-env)=
+
 #### Conductor/Couch Db Environment suggested variables to change
 
 These are the variables in the Conductor .env file which were set in the
@@ -560,8 +562,8 @@ example.
 #### Restarting if required
 
 There are instructions
-[below](<server/enable-docker>) for how to
-automatically restart these services after a reboot.  If you need to do
+[below](server/enable-docker) for how to
+automatically restart these services after a reboot. If you need to do
 so manually, then go to the directory with the container git repo and
 invoke
 
@@ -581,7 +583,7 @@ invoke
 
 If conductor quickly fails (within a minute of so) of being brought up,
 then it is likely that you have not run "makeInstanceKeys.sh" after
-changing .env.    Resolve by executing "sudo docker down --rmi all" and
+changing .env. Resolve by executing "sudo docker down --rmi all" and
 then restarting the process from the point of running
 "makeInstanceKeys.sh" .
 
@@ -589,9 +591,9 @@ then restarting the process from the point of running
 
 On doing the database check above, you get this page:
 
-{"error":"not\_found","reason":"Database does not exist."}
+{"error":"not_found","reason":"Database does not exist."}
 
-This likely indicates you have not initialised the database.  You can
+This likely indicates you have not initialised the database. You can
 (must) do that on the running system,
 
 #### Conductor/Couch Db Configuration/Build Sequence Summary
@@ -612,14 +614,14 @@ git checkout &lt;tagname&gt;cp .env-dist .env# Edit .env - make required changes
 </table>
 
 Also see the details on auto-restart after boot
-[below](<server/enable-docker>).
+[below](server/enable-docker).
 
 ### Installing the FAIMS3 web application
 
 The FAIMS3 web application is not a required component of FAIMS3 (as it
 is possible to solely work with mobile clients when collecting data),
 however it is **strongly** recommended that you run it so that
-laptops/desktops can see and edit data.  It also helps a lot with
+laptops/desktops can see and edit data. It also helps a lot with
 testing as you set things up.
 
 The web app setup follows a similar process to the conductor.
@@ -650,9 +652,9 @@ this point to force a complete rebuild.
 :::
 
 Edit the .env file to your desired settings
-—these should be consistent with those given in the .env  file you
-specified for the conductor above.  A list of the changes made in the
-example are [available below](<server/conductor-env>).
+—these should be consistent with those given in the .env file you
+specified for the conductor above. A list of the changes made in the
+example are [available below](server/conductor-env).
 
 Finally, run "sudo docker-compose up -d" which will build and start the
 docker container running the web app. Note that this process will take
@@ -665,8 +667,8 @@ when creating the optimised build
 #### Restarting if required
 
 There are instructions
-[below](<server/enable-docker>) for how to
-automatically restarted these services after a reboot.  If you need to
+[below](server/enable-docker) for how to
+automatically restarted these services after a reboot. If you need to
 do so manually, then go to the directory with the container git repo and
 invoke
 
@@ -688,7 +690,7 @@ number of times
 These appear to be intermittent and possibly due to issues with fetching
 one particular package.
 
-You just need to try again with this.  If the same package always fails,
+You just need to try again with this. If the same package always fails,
 it may be some issue with the remote archive that is being used and you
 may need to try again tomorrow.
 
@@ -700,7 +702,7 @@ Next got a failure with the react-scripts build
 <tbody>
 <tr class="odd">
 <td><blockquote>
-<p>&gt; @faims-project/faims3@0.1.0 build<br />
+<p>&gt; @faims3/app@0.1.0 build<br />
 <br />
 &gt; react-scripts --max-old-space-size=4096 build<br />
 <br />
@@ -717,8 +719,8 @@ ERROR: Service 'faims3-web-app' failed to build : The command '/bin/sh -c npm ru
 This was within "Step 26/30 : RUN npm run-script build"
 
 This was resolved by increasing the swap space (See [RPi swap space
-instructions](<server/add-swap>) below, probably similar in other
-modern Linux machines.).  
+instructions](server/add-swap) below, probably similar in other
+modern Linux machines.).
 
 ##### No space left on device
 
@@ -757,7 +759,7 @@ To see see the usage by docker.
 
 Then confirm that the container is correctly serving the web app by
 accessing it at the port you have chosen in a web browser (e.g
-localhost:3000 for the example port allocations).  You should get the
+localhost:3000 for the example port allocations). You should get the
 FAIMS front page.
 
 You will find that the web app cannot find the conductor (sign-in won't
@@ -818,14 +820,15 @@ git checkout &lt;tagname&gt;cp .env-dist .env# Edit .env - make required changes
 </table>
 
 Also see the details on auto-restart after boot
-[below](<server/enable-docker>).
+[below](server/enable-docker).
 
 (server/enable-docker)=
+
 ### Enabling docker image startup after reboot.
 
 To enable the docker images to restart when the machine reboots, you
-need to use the "docker --restart=always \<container\>" command.  You
-can get the container names with the "docker ps" command.  For example:
+need to use the "docker --restart=always \<container\>" command. You
+can get the container names with the "docker ps" command. For example:
 
 <table>
 <tbody>
@@ -852,7 +855,7 @@ result is a new container and the ID changes
 :::
 
 This requires that docker itself is being restarted on system reboot.
- This should be done by default, but if not, then use
+This should be done by default, but if not, then use
 
 <table>
 <tbody>
@@ -877,39 +880,41 @@ The status of the service can be fetched with
 </table>
 
 (server/configuring-the-machine)=
+
 ## Configuring the machine
 
 This section covers the rest of the process in configuring the machine
-to run FAIMS.  You will need to obtain an SSL certificate and set up HA
+to run FAIMS. You will need to obtain an SSL certificate and set up HA
 Proxy.
 
 (server/ssl-certificate)=
+
 ### SSL Certificate.
 
-You will need an SSL Certificate for your installation.  A Self Signed
+You will need an SSL Certificate for your installation. A Self Signed
 certificate does not work.
 
 To get a certificate, you must have a public web-site with a DNS entry
 that the certificate service can access. Once we have the certificate,
-you are right until it expires. (90 days for one from LetsEncrypt).  To
+you are right until it expires. (90 days for one from LetsEncrypt). To
 get a certificate, you will need a temporary public web site (say
-running on a VM) on a domain you control.  You then create a DNS entry
+running on a VM) on a domain you control. You then create a DNS entry
 for the machine you are setting up (e.g.
 [faimsrpi1.site.org.au](http://faimsrpi1.site.org.au)) and point it to
 the basic web site, where you can do what we need to for the certificate
 creation service to work.
 
 Then you can use a certificate creation service such as
-[LetsEncript](https://letsencrypt.org) to create your certificate.  Tar
+[LetsEncript](https://letsencrypt.org) to create your certificate. Tar
 these up and save them
 
 > Do be wary that some (all) services (e.g. LetsEncripts) install these
 > in the live directory as symbolic links and by default tar will not
-> grab the actual files.   You may want to use the "-h" option (to
+> grab the actual files. You may want to use the "-h" option (to
 > follow links) when taring them up.
 
 Then once you have the certificate, you can save it and shut down the
-machine with the temporary web site.  You could of course do this on the
+machine with the temporary web site. You could of course do this on the
 actual machine you are setting up, but then you would need to install a
 web server on it and make it publicly available.
 
@@ -925,7 +930,7 @@ out of date.**
 ### Configuring HAProxy to talk to the containers
 
 [HAProxy](https://www.haproxy.org) is being used to implement the
-reverse proxy needed by FAIMS.  It is in front of back-end applications
+reverse proxy needed by FAIMS. It is in front of back-end applications
 and forwards client (e.g. browser) requests to those applications.
 
 See [HAProxy Docs
@@ -933,58 +938,59 @@ section 3.3](http://docs.haproxy.org/2.4/intro.html#3.3) for details on
 what HAProxy can do.
 
 For FAIMS, the browser needs to talk to three applications on the server
-- The WebApp, Conductor and CouchDB.  The job of HAProxy is to convert
-from SSL (https) protocol to http and forward requests to the WebApp,
-Conductor and CouchDB applications, each of which are running in
-separate Docker images.  HAProxy is also involved in allowing Conductor
-and CouchDB to return data to the WebApp.
+
+- The WebApp, Conductor and CouchDB. The job of HAProxy is to convert
+  from SSL (https) protocol to http and forward requests to the WebApp,
+  Conductor and CouchDB applications, each of which are running in
+  separate Docker images. HAProxy is also involved in allowing Conductor
+  and CouchDB to return data to the WebApp.
 
 #### Field System HAProxy config vs main system config.
 
 The main purpose (in FAIMS) of HAProxy is to connect the public
 interfaces ("frontend") of FAIMS to the "backend" services running in
-docker images in  the machine.
+docker images in the machine.
 
 In the main FAIMS system HAProxy
 configuration,
-each of  WebApp, Conductor and CouchDB have their own DNS entries all of
-which point to machine running FAIMS.  The HAProxy "frontend"
-configuration provides a "use\_backend" specification to select the
-backend based on the DNS name.  The "backend" name (with the HAProxy
-configuration) will be the DNS name of the component.  For example, in
+each of WebApp, Conductor and CouchDB have their own DNS entries all of
+which point to machine running FAIMS. The HAProxy "frontend"
+configuration provides a "use_backend" specification to select the
+backend based on the DNS name. The "backend" name (with the HAProxy
+configuration) will be the DNS name of the component. For example, in
 the FAIMS 3 testing configuration, the CouchDB address is
 testing.db.faims.edu.au, as a result, there is a back-end named
-testing.db.faims.edu.au.  (Note that the attached example is very
+testing.db.faims.edu.au. (Note that the attached example is very
 complicated, there is a lot running on that machine including various
 versions of FAIMS).
 
 In a field system HAProxy
 configuration
-we don't want (need) multiple DNS names (*we don't really want any DNS
-name but SSL Certificates\!\!\!\!*).  Instead we will select the backend
-via a port number.  The HAProxy configuration specifies three separate
+we don't want (need) multiple DNS names (_we don't really want any DNS
+name but SSL Certificates\!\!\!\!_). Instead we will select the backend
+via a port number. The HAProxy configuration specifies three separate
 frontends - one for the default SSL port (443) which is where the WebApp
-will connect.  And one each for the Conductor (port 1001) and CouchDB
-(port 1002) public address port numbers.  Each of those connect to a
-their own backend using a default\_backend specification.
+will connect. And one each for the Conductor (port 1001) and CouchDB
+(port 1002) public address port numbers. Each of those connect to a
+their own backend using a default_backend specification.
 
 #### HAProxy CORS
 
 To prevent security issues, web applications will normally prevent data
-from one system being passed to another system.  For example, in FAIMS,
+from one system being passed to another system. For example, in FAIMS,
 the Web Application (in the example, at <https://faimsrp1.site.org.au> )
 will make a call to the couchDB (at
-<https://faimsrp1.site.org.au:1002).>  By default, the web application
-would not be able to access the couchDB data.   This is known as
+<https://faimsrp1.site.org.au:1002).> By default, the web application
+would not be able to access the couchDB data. This is known as
 "Cross-Origin Resource Sharing" and is potentially dangerous (security
-wise).  The lock is within the code running in the browser (E.g. the
+wise). The lock is within the code running in the browser (E.g. the
 FAIMS Web Application)
 
-But, it is often necessary to allow this and is in the FAIMS case.  As
+But, it is often necessary to allow this and is in the FAIMS case. As
 implementers of the system, we know that it is acceptable for
 <https://faimsrp1.site.org.au> to access data from
-[https://faimsrp1.site.org.au:1002](https://faimsrp1.site.org.au:1002\).).
- The way around this is to put various items in the headers of the
+[https://faimsrp1.site.org.au:1002](<https://faimsrp1.site.org.au:1002).>).
+The way around this is to put various items in the headers of the
 messages from couchDB, these items allow the Web Application to access
 the data.
 
@@ -1024,9 +1030,10 @@ add the following lines to each of the Conductor and couchDB frontends
 
 Note that the machine name is specified in the
 "Access-Control-Allow-Origin" line. The web-app frontend specification
-can be simplified compared to  Conductor and couchDB.
+can be simplified compared to Conductor and couchDB.
 
 (server/installing-certs)=
+
 #### Installing the SSL Certificate for use by HAProxy
 
 First create the directory to place it in:
@@ -1059,21 +1066,22 @@ specifications)
 Code Block 1 SSL specification in haproxy.cfg
 
 In particular, it is the "crt" setting here you are interested in.
- Details are available
+Details are available
 at <https://www.haproxy.com/documentation/hapee/latest/onepage/#5.1-crt>
 
 (server/install-cert)=
+
 ##### Installing the certificate files
 
 LetsEncript created the following files
 
-> cert1.pem  chain1.pem  fullchain1.pem  privkey1.pem
+> cert1.pem chain1.pem fullchain1.pem privkey1.pem
 
 See <https://certbot.eff.org/docs/using.html#where-are-my-certificates> for
 details on these.
 
 Concatenate fullchain1.pem and privkey1.pem into the one file, name of
-your chosing but with filetype .pem.  E.g.
+your chosing but with filetype .pem. E.g.
 
 <table>
 <tbody>
@@ -1085,7 +1093,7 @@ your chosing but with filetype .pem.  E.g.
 </tbody>
 </table>
 
- Place the resulting file in /etc/haproxy/ssl
+Place the resulting file in /etc/haproxy/ssl
 
 :::{warning}
 The computer's host name (in **/etc/hosts**) must match the
@@ -1102,19 +1110,18 @@ machine in **/etc/hosts**. E.g.
 </tbody>
 </table>
 
-(Why 127.0.1.1 instead of 127.0.1?  Web stuff pages on this does
-indicate it should be .1.1.  You will eventually need the actual IP
+(Why 127.0.1.1 instead of 127.0.1? Web stuff pages on this does
+indicate it should be .1.1. You will eventually need the actual IP
 address of the machine there.)
 :::
-
 
 #### HAProxy config file
 
 Copy the attached file haproxy.cfg
-to your home directory.   If you have changed the port numbers used
+to your home directory. If you have changed the port numbers used
 internally or to be used externally, then you will need to update this
-file.  The table below gives the defaut values in that file and which
-were used in the example Field Server implementation.  
+file. The table below gives the defaut values in that file and which
+were used in the example Field Server implementation.
 
 <table>
 <thead>
@@ -1164,38 +1171,39 @@ Having created the above files, execute the following commands.
 </table>
 
 If you get an error when starting, then you probably want to have a look
-at the file "/var/log/haproxy.log"  (The suggested commands for looking
-at the error - "systemctl status haproxy.service" and  "journalctl -xe"
+at the file "/var/log/haproxy.log" (The suggested commands for looking
+at the error - "systemctl status haproxy.service" and "journalctl -xe"
 normally don't provide much information of use, at least in the examples
-the author dealt with).  You could also use  "haproxy -c -f
+the author dealt with). You could also use "haproxy -c -f
 /etc/haproxy/haproxy.cfg" to check the config file without trying to
 start the server.
 
-### Configuring DNSMASQ  to provide DNS.
+### Configuring DNSMASQ to provide DNS.
 
 We must have a local DNS (Domain Name Server) so that field devices can
 find the components of FAIMS using the name associated with the SSL
-Certificate.  The "dnsmasq" application is probably the best approach
+Certificate. The "dnsmasq" application is probably the best approach
 for this.
 
 Dnsmasq is a lightweight, easy to configure, DNS forwarder and DHCP
 server. It is designed to provide DNS and optionally, DHCP, to a [small
 network](https://www.howtogeek.com/devops/how-to-run-your-own-dns-server-on-your-local-network/).
 It can serve the names of local machines which are not in the global
-DNS.  We will not be using the DHCP side of it - since the WiFi router
+DNS. We will not be using the DHCP side of it - since the WiFi router
 will provides that.
 
 For an example installation - see [RPi dnsmasq
-installation](<server/dns-server>).
+installation](server/dns-server).
 
 (server/dns-server)=
+
 #### DNSMASQ configuration
 
 First you need to make some modifications to the default dnsmasq
 configuration
 
 Dnsmasq’s config file is usually located at /etc/dnsmasq.conf. This is
-pre-populated with initial settings.  Find and uncomment the following
+pre-populated with initial settings. Find and uncomment the following
 lines:
 
 <table>
@@ -1211,17 +1219,17 @@ lines:
 
 Here’s what these settings are enabling:
 
-  - domain-needed – This stops Dnsmasq from forwarding local names
-    without a domain part to the upstream DNS server. In our
-    installation, it means example.com will be eligible for resolution
-    via Google but example or web-server will not. It reserves dot-less
-    names for your local network.
+- domain-needed – This stops Dnsmasq from forwarding local names
+  without a domain part to the upstream DNS server. In our
+  installation, it means example.com will be eligible for resolution
+  via Google but example or web-server will not. It reserves dot-less
+  names for your local network.
 
-  - bogus-priv – Prevents forwarding DNS reverse-lookup queries to the
-    upstream DNS server. It means internal IPs like 192.168.0.101 will
-    never be exposed to Google. Not enabling this could unintentionally
-    leak the architecture of your internal network to your upstream
-    provider.
+- bogus-priv – Prevents forwarding DNS reverse-lookup queries to the
+  upstream DNS server. It means internal IPs like 192.168.0.101 will
+  never be exposed to Google. Not enabling this could unintentionally
+  leak the architecture of your internal network to your upstream
+  provider.
 
 Then restart the service using
 
@@ -1238,26 +1246,27 @@ Then restart the service using
 #### Configuring Devices/Router.
 
 You now need to ensure each device which will access the field server or
-field server WiFi router knows the DNS to use.  This is device/router
-specific and  [this
+field server WiFi router knows the DNS to use. This is device/router
+specific and [this
 page](https://www.howtogeek.com/167533/the-ultimate-guide-to-changing-your-dns-server/)
 provides details on how to change which DNS server your device/router is
-using.  Do note that the Author had issues when he did this in the WiFi
+using. Do note that the Author had issues when he did this in the WiFi
 router, but it worked ok when done at the device level.
 
 (server/initialising-your-database-from-a-central-server)=
+
 ## Syncing data with a central server
 
 ### Initialising your database from a central server
 
 In the example below, I am using my example Raspberry PI field server
-(faimsrp1.site.org.au), and the database csiro\_geochemistry which is
+(faimsrp1.site.org.au), and the database csiro_geochemistry which is
 present on the main system.
 
-As per the example above, couchDB is running locallyon port 5984.  Log
+As per the example above, couchDB is running locallyon port 5984. Log
 into the CouchDB "Fauxton" interface from a browser local to the field
 server (i.e. run the browser on the machine, this won't work if you
-connect remotely (HAPROXY SSL validation error)).  In this example, it
+connect remotely (HAPROXY SSL validation error)). In this example, it
 can be found at
 
 <table>
@@ -1272,16 +1281,16 @@ can be found at
 
 NOTE, "http", NOT "https"
 
-The user name and password are from the variables COUCHDB\_USER
-and COUCHDB\_PASSWORD in your conductor .env file
+The user name and password are from the variables COUCHDB_USER
+and COUCHDB_PASSWORD in your conductor .env file
 
 ### Creating the databases
 
 Use the "Create Database" button in the top right to create two empty
-databases.  One will be named "data-\<source-db\>" and the other
+databases. One will be named "data-\<source-db\>" and the other
 "metadata-\<source-db\>", with \<source-db\> matching the main system
-database you will be using. E.g. databases data-csiro\_geochemistry and
-metadata-csiro\_geochemistry. In both cases, go back immediately to the
+database you will be using. E.g. databases data-csiro_geochemistry and
+metadata-csiro_geochemistry. In both cases, go back immediately to the
 main window. You should see something like this image:
 
 ![](server-images/image5.jpeg)
@@ -1290,11 +1299,12 @@ main window. You should see something like this image:
 left, to return to this display.
 
 (server/copy-databases)=
+
 ### Copying the databases from the main server
 
 1.  Then for each database, you will need to replicate it from the main
     system. The ![](server-images/image6.jpeg) button to the left is the
-    replication button.  Invoke that and then "New replication".  Set it
+    replication button. Invoke that and then "New replication". Set it
     up as follows:
 
 2.  The "Source Type" should be "Remote database"
@@ -1310,8 +1320,8 @@ left, to return to this display.
 
 6.  The "Target Type" should be "Existing local database"
 
-7.  The name should be the appropriate local name (E.g.  databases
-    data-csiro\_geochemistry and metadata-csiro\_geochemistry)
+7.  The name should be the appropriate local name (E.g. databases
+    data-csiro_geochemistry and metadata-csiro_geochemistry)
 
 8.  "Authentication" should be "Username and Password"
 
@@ -1319,12 +1329,12 @@ left, to return to this display.
 
 10. Options can be left at the default (or continuous - but you won't
     want continuous when you go in the field - it will cause a hang when
-    the field device connects.  Continuous will ensure the DB is
+    the field device connects. Continuous will ensure the DB is
     updated regularly, e.g. every 5 minutes.)
 
 11. Invoke "Start Replication"
 
-Then repeat for the other database.  The Replication screen should
+Then repeat for the other database. The Replication screen should
 (after a refresh - button towards the top right) show something like
 this:
 
@@ -1344,8 +1354,8 @@ I'm not certain, but you may need to run a browser on the machine rather
 then using a browser on an alterative machine to talk to the field
 server Faulxton.
 
-To debug this ,it was useful to connect to  view the logs of the
-container.  E.g.
+To debug this ,it was useful to connect to view the logs of the
+container. E.g.
 
 <table>
 <tbody>
@@ -1363,9 +1373,9 @@ container.  E.g.
 ### Adding the FAIMS database to the projects data
 
 At this point, you need to add this database to the projects database by
-adding a new document.  You can fetch the foundations of this document
+adding a new document. You can fetch the foundations of this document
 from the main database. In this example, we want the document
-"csiro\_geochemistry". Fetch it using:
+"csiro_geochemistry". Fetch it using:
 
 <table>
 <tbody>
@@ -1378,8 +1388,8 @@ from the main database. In this example, we want the document
 </table>
 
 Back on the field server Fauxton interface, open the "projects"
-database.  Invoke "Create Document".  Replace the template with the
-contents of the file BUT WITHOUT the "\_rev" item.  
+database. Invoke "Create Document". Replace the template with the
+contents of the file BUT WITHOUT the "\_rev" item.
 
 If you open the created document, its structure will be like this:
 
@@ -1408,21 +1418,21 @@ If you open the created document, its structure will be like this:
 
 ### Setting up permissions
 
-The various Admin and User permissions must be set up.  These need to be
+The various Admin and User permissions must be set up. These need to be
 set up for both the data\_\* and metadata\_\* databases.
 
-First open up Fauxton on the main system.  For one of the two databases,
-select the "Set Permissions for" button ![](server-images/image8.jpeg).   This
+First open up Fauxton on the main system. For one of the two databases,
+select the "Set Permissions for" button ![](server-images/image8.jpeg). This
 will open the "Set Permissions" screen, as per below
 
 ![](server-images/image9.jpeg)
 
 You can see that there are "Roles" listed for each of "Admins" and
-Members".  A role is in effect, a permissions group (associated with
-your login account at the Authentication Server).  So in this example,
-users with admin privileges are put in the "cluster-admin" role.  Uses
+Members". A role is in effect, a permissions group (associated with
+your login account at the Authentication Server). So in this example,
+users with admin privileges are put in the "cluster-admin" role. Uses
 who have normal "Member" roles are put in one of the
-"csiro\_geochemistry||team" or "csiro\_geochemistry||admin" groups.  The
+"csiro_geochemistry||team" or "csiro_geochemistry||admin" groups. The
 groups are user is in are set up in the authorisation server.
 
 So having worked out which Users/Roles require access - open Fauxton in
@@ -1433,15 +1443,16 @@ You should now be able to access field server from a remote device
 (which otherwise knows the field server name).
 
 (server/syncing-back-to-the-main-database)=
+
 ## Syncing back to the main database
 
 The process is essentially the same as the process above for copying the
-data across from the main server.  The exception is that you reverse the
+data across from the main server. The exception is that you reverse the
 directions (Target is the remote machine, Source is the local machine).
 
 Do remember to log into the CouchDB "Fauxton" interface from a browser
 local to the field server (i.e. run the browser on the machine, this
-won't work if you connect remotely (HAPROXY SSL validation error)).  In
+won't work if you connect remotely (HAPROXY SSL validation error)). In
 this example, it can be found at
 
 <http://localhost:5984/_utils/#login>
@@ -1458,13 +1469,14 @@ back to continuous when the system is back on-line.
 :::
 
 (server/connecting-the-iosandroid-apps-to-use-this-server)=
+
 ## Connecting the iOS/Android Apps to use this server
 
 The Apps as built talk to a particular machine to find out which
-"Workspaces" they will make available.  You need to ask support for that
+"Workspaces" they will make available. You need to ask support for that
 system to add an appropriate entry into the "directory" database on the
-main server.  They will need the IP address and the relevant port
-numbers for Conductor and CouchDB.  For the example, the entry will look
+main server. They will need the IP address and the relevant port
+numbers for Conductor and CouchDB. For the example, the entry will look
 like this:
 
 <table>
@@ -1489,7 +1501,7 @@ like this:
 </table>
 
 Note that the WebApp address (plain "faimsrp1.site.org.au" is not listed
-as the Apps don't need access that.  Here is the description of each
+as the Apps don't need access that. Here is the description of each
 entry:
 
 <table>
@@ -1514,39 +1526,40 @@ entry:
 </table>
 
 (server/putting-it-all-together)=
+
 ## Putting it all together.
 
-1.  I turned on my portable router/WiFi system.  Connected to the wider
-    network.  In my case I was able to plug it in via Ethernet, which
-    makes it easy to then disconnect later.  
+1.  I turned on my portable router/WiFi system. Connected to the wider
+    network. In my case I was able to plug it in via Ethernet, which
+    makes it easy to then disconnect later.
 
 2.  I connected the Field Server to the portable router system (WiFi
     connection)
 
 3.  I confirmed the Field Server had Internet Access.
 
-4.  Determined the IP address of the Machine (e.g.  "ip -br addr",
-    looking for the wireless interface, often something like "wlan0".  )
+4.  Determined the IP address of the Machine (e.g. "ip -br addr",
+    looking for the wireless interface, often something like "wlan0". )
 
 5.  Logged into the WiFi router admin page
 
 6.  In the Router Admin interface - enable DHCP Address reservation for
     the machine. Normally you can find it via its IP address. If you
     need its "MAC" address, then the "ip addr" command can be used -
-    look for the "link/ether" value.  (The exact approach depends on
-    your Router.  You probably need to go into advanced settings)
+    look for the "link/ether" value. (The exact approach depends on
+    your Router. You probably need to go into advanced settings)
 
 7.  In your field server - make the IP address the address for your
     machine in /etc/hosts.
 
-    1.  Looks like this caused problems.  I had to remove this and then
+    1.  Looks like this caused problems. I had to remove this and then
         add it after restarting and connecting to the wireless and then
         doing "sudo service dnsmasq stop; sudo service dnsmasq start"
 
 8.  In the Router Admin interface - make the field server IP address a
     DNS server address for the router.
 
-    1.  This seems to cause problems in my example,  Only got it working
+    1.  This seems to cause problems in my example, Only got it working
         by modifying DNS on the device, not the router. See [this
         page](https://www.howtogeek.com/167533/the-ultimate-guide-to-changing-your-dns-server/)
         on how to do this.
@@ -1555,52 +1568,52 @@ entry:
     address (Note - ensure it connects to the correct WiFi router if you
     had previously been using another one - if knows about another local
     WiFi router that has internet access it might connect to that first,
-    you might need to forget that one.)  It could take a minute or two
+    you might need to forget that one.) It could take a minute or two
     for the server to fully reboot.
 
 Note - if you have issues you might need to put /etc/hosts hosts back to
 the way it was, reconnect to the WiFi and then change /etc/hosts again.
- If you do, then you will need to execute "sudo service dnsmasq
+If you do, then you will need to execute "sudo service dnsmasq
 restart" to restart the DNS.
 
 At this point, using a user device, connect to the portable WiFi router
 (whilst the portable WiFi device is connected to the wider internet).
- Try connecting to the FAIMS  front page (In this example
-<https://faimsrp1.site.gov.au> .  Note that you may need to specify with
+Try connecting to the FAIMS front page (In this example
+<https://faimsrp1.site.gov.au> . Note that you may need to specify with
 https:// prefix, e.g. https://faimsrp1.site.gov.au rather then just
-faimsrp1.site.gov.au.   Login and add the Database.  
+faimsrp1.site.gov.au. Login and add the Database.
 
 If using an iOS/Android App, you will need to use the "User" window
-(select from the menu on the left).  If the details have been refreshed
-correctly, the machine will appear and you can invoke SignIn.  E.g the
+(select from the menu on the left). If the details have been refreshed
+correctly, the machine will appear and you can invoke SignIn. E.g the
 "SIGN IN" button to the right of the following image. (Update for latest
 changes)
 
 ![](server-images/image11.jpeg)
 
- Login and add the Database.  
+Login and add the Database.
 
-Now disconnect the portable WiFi from the wider internet.   Attempt to
-refresh on your portable device  (From the FAIMS "About Build" window,
-reset the DB and then refresh the application.  Sign back in (you should
+Now disconnect the portable WiFi from the wider internet. Attempt to
+refresh on your portable device (From the FAIMS "About Build" window,
+reset the DB and then refresh the application. Sign back in (you should
 **not** need to sign back into Data Central, if you do, then things are
-wrong.   Activate your notebook.  It should re-sync at this point  (If
+wrong. Activate your notebook. It should re-sync at this point (If
 not - one possible cause is that the Fauxton DB interface has
 replications set up in continuous mode, change it to single mode -
-see [above](<server/copy-databases>) for more
-information).  
+see [above](server/copy-databases) for more
+information).
 
 If using the App, it can take a long time to complete, you will need to
-use the above Sign In screen again  (Why?) but it doesn't need access to
-the Authentication Server.   AND IT DOESN'T ALWAYS WORK\!\!  I THINK
+use the above Sign In screen again (Why?) but it doesn't need access to
+the Authentication Server. AND IT DOESN'T ALWAYS WORK\!\! I THINK
 THAT IS MOSTLY AFTER A REBOOT OF THE FIELD SERVER\!\!)Needed to rename
 database,
 
-Now add a entry to your notebook and publish it.  Connect another
+Now add a entry to your notebook and publish it. Connect another
 device/browser and confirm the new entry is available.
 
-After ensuring the docker images will restart when the [machine restarts](<server/enable-docker>) , shutdown your
-server, disconnect its display and then reboot.  Give it a few minutes
+After ensuring the docker images will restart when the [machine restarts](server/enable-docker) , shutdown your
+server, disconnect its display and then reboot. Give it a few minutes
 to settle down and then try go to your device and invoke the "refresh"
 button - check the refresh succeeds (it quickly completes).
 
@@ -1609,21 +1622,21 @@ in-field packaging, including checking the WiFi range is sufficient.
 
 Check with both browsers and iOS/Android Apps.
 
-Finally check your [backup procedures](<server/backups-in-the-field>) work and
+Finally check your [backup procedures](server/backups-in-the-field) work and
 backup the machine.
 
 Done!server-images/image12.pn
 But you are going to recheck all of this a few times\!
 
-Note - the [Docker Commands](<server/docker-commands>) and [System Design](<server/design>) sections below are all of
+Note - the [Docker Commands](server/docker-commands) and [System Design](server/design) sections below are all of
 potential use if things are not working.
 
 :::{danger}
 **Beware
-of the expiry date of your SSL Certificate.  It may only be 90 days, so
-you need to arrange for it to be [renewed](<server/ssl-certificate>) and at the
-right time, [installed](<server/installing-certs>) and tested.
- The author suggests arranging renewal as close as possible before
+of the expiry date of your SSL Certificate. It may only be 90 days, so
+you need to arrange for it to be [renewed](server/ssl-certificate) and at the
+right time, [installed](server/installing-certs) and tested.
+The author suggests arranging renewal as close as possible before
 going to the field and doing a final check after installing the updated
 version.**
 :::
@@ -1633,36 +1646,38 @@ All users must login to FAIMS before offline use
 :::
 
 That is, they must login to the server from the device they intend to
-use it from, for the first time, whilst the  WiFi router is still
-connected to the wider internet.  Please ensure this is part of the
+use it from, for the first time, whilst the WiFi router is still
+connected to the wider internet. Please ensure this is part of the
 pre-departure (to field) project procedures.
 
 **It is possible use the Field Server to sign into the App itself, but
-not the authentication server.  But once you sign-in to the
+not the authentication server. But once you sign-in to the
 authentication server, you will remain signed into it as long as you
-don't explicitly log out of it or clear your browser cache .   The
+don't explicitly log out of it or clear your browser cache . The
 following screenshot shows the screen from which you could log out of
-the authentication server.  DON'T invoke the "sig out here first" link
-if the WiFi router is not connected to the internet.   Normally if you
+the authentication server. DON'T invoke the "sig out here first" link
+if the WiFi router is not connected to the internet. Normally if you
 end up with this screen, you just invoked "Return to App".**
 
 ![](server-images/image14.jpeg)
 
 (server/backups-in-the-field)=
+
 ## Backups in the field.
 
 It is recommended the you make regular bask ups of your machine and in
-particular, the data.  
+particular, the data.
 
 Consider backing up field collected data every day significant work has
 been done.
 
 (server/backups)=
+
 ### FAIMS data backups
 
 The easiest approach in the field will be to back up the docker
-containers.  Additionally, this allows for quick recovery if something
-goes wrong.  Alternatively you can also backup the FAIMS databases
+containers. Additionally, this allows for quick recovery if something
+goes wrong. Alternatively you can also backup the FAIMS databases
 
 #### Mounting and location of flash drives.
 
@@ -1670,7 +1685,7 @@ A typical USB Flash Drive can be used.
 
 If you are logged into a console graphical environment, most modern
 linux installations will automatically connect any USB Drive connected
-to the machine.  It is common (e.g. Raspberry PI, likely most Debian)
+to the machine. It is common (e.g. Raspberry PI, likely most Debian)
 for the device to appear in the directory
 /media/\<user-name\>/\<device-id\>
 
@@ -1680,7 +1695,7 @@ command.
 ##### Mounting when not using the console
 
 Create a directory where you want the device to appear, e.g.
- $HOME/mymount
+$HOME/mymount
 
 Execute :
 
@@ -1731,11 +1746,11 @@ First list the containers
 </table>
 
 There should be three FAIMS containers, names
-like faims3\_faims3-web-app\_1,  faims3-conductor\_conductor\_1
-and faims3-conductor\_couchdb\_1
+like faims3_faims3-web-app_1, faims3-conductor_conductor_1
+and faims3-conductor_couchdb_1
 
 You need the container id associated with each one, the first column.
- You then create a commit, which will contain the current status and
+You then create a commit, which will contain the current status and
 give it a name.
 
 <table>
@@ -1751,7 +1766,7 @@ give it a name.
 </table>
 
 You can not copy them to a tar file, but this will take a while (15
-minutes on a RPI).  Here I copy them to the tail file docker\_backup.tar
+minutes on a RPI). Here I copy them to the tail file docker_backup.tar
 in my home directory.
 
 <table>
@@ -1767,7 +1782,7 @@ in my home directory.
 Note that contents of the resulting tar file is not simple, but you
 could have a look at the repositories for details of what is contained
 in the tar file. Also note that in this example, it is created root only
-access permissions.  So to look at it I had to do
+access permissions. So to look at it I had to do
 
 <table>
 <tbody>
@@ -1782,7 +1797,7 @@ access permissions.  So to look at it I had to do
 </tbody>
 </table>
 
-You probably want to gzip the tar file to save space.  I would suggest
+You probably want to gzip the tar file to save space. I would suggest
 gzipping directly to your backup flash drive
 
 <table>
@@ -1796,7 +1811,7 @@ gzipping directly to your backup flash drive
 </table>
 
 **You also need to tar up and copy to the device the contents of the
-directory you specified with** COUCHDB\_DATA\_DIR** in the**
+directory you specified with** COUCHDB_DATA_DIR** in the**
 FAIMS3-conductor/.env **file.**
 
 ##### Restoring from a backup
@@ -1817,7 +1832,7 @@ The command "sudo docker images" will allow you to see what images you
 have.
 
 Also restore the tar file with the contents of the
-COUCHDB\_DATA\_DIR directory.
+COUCHDB_DATA_DIR directory.
 
 :::
 TBD how to move committed image to looking like the original image
@@ -1827,34 +1842,34 @@ TBD how to move committed image to looking like the original image
 #### FAIMS DB backups
 
 Please ensure you have synced ("refresh" button when you have the
-notebook open) to the field server first.   You will likely need expert
+notebook open) to the field server first. You will likely need expert
 help to recover from these.
 
 ### Full Machine Backups
 
-Google searches will find many possible approaches to backing up  your
+Google searches will find many possible approaches to backing up your
 machine. If using something like a Raspberry PI, you can just clone your
 SD card - see RPI backup details below.
 
-Probably one of the best approaches is the "rsync" approach.  [This
+Probably one of the best approaches is the "rsync" approach. [This
 page](https://www.howtogeek.com/427480/how-to-back-up-your-linux-system/)
-describes this how to do this (and there are many other pages).  You
+describes this how to do this (and there are many other pages). You
 will need a (or a set of) backup devices (e.g. USB flash drives/disks of
-sufficient size).  One particular benefit of the rsync approach is that
+sufficient size). One particular benefit of the rsync approach is that
 when doing a subsequent backup to the same device, it doesn't copy
 things that already exist.
 
 As with all backup techniques, you should test this in advance,
 **including recovering from the backup.** The later is very easy in
 something like a Raspberry PI where you can just swap SD card for a new
-on, create a new build and then recover from the backup.  
+on, create a new build and then recover from the backup.
 
 #### Disk Formating
 
 For a full machine backup (rsync approach) you need the format of your
-backup disk to in a suitable format, one of "ext3" or ext4".   Many off
+backup disk to in a suitable format, one of "ext3" or ext4". Many off
 the shelf devices use the "FAT32" format, won't be reliable (they are ok
-for the container backups above).  [This
+for the container backups above). [This
 page](https://raspberrytips.com/format-mount-usb-drive/)
 is for a RaspberryPI, but the basic approach will be similar for othger
 Linux distributions
@@ -1863,7 +1878,7 @@ Linux distributions
 
 If you are logged into a console graphical environment, most modern
 linux installations will automatically connect any USB Drive connected
-to the machine.  It is common (e.g. Raspberry PI, likely most Debian)
+to the machine. It is common (e.g. Raspberry PI, likely most Debian)
 for the device to appear in the directory /media/faims
 
 To eject them, use the graphical interface (if available) or the "eject"
@@ -1872,7 +1887,7 @@ command.
 ##### Mounting when not using the console
 
 Create a directory where you want the device to appear, e.g.
- $HOME/mymount
+$HOME/mymount
 
 Execute :
 
@@ -1905,42 +1920,43 @@ Unmount it with
 ### Backup Schedules
 
 You should ensure you have some schedule of backups to multiple
-locations, optimised to the environment you are in.  The example below
+locations, optimised to the environment you are in. The example below
 might be appropriate for a location where work is being undertaken
 during the day in a field location back staff are staying in a town
 overnight but a town with very poor internet connectivity. In this case,
 it might be that the data collected would be very hard to recover if
 lost.
 
-  - Before Travel →  Determine your full disk backup approach.  Create a
-    full backup and ensure you can recover using it.  If not, adjust
-    your approach until you have a documented approach to back up and
-    recover.
+- Before Travel → Determine your full disk backup approach. Create a
+  full backup and ensure you can recover using it. If not, adjust
+  your approach until you have a documented approach to back up and
+  recover.
 
-  - Before Travel → Ensure you have the backup devices required below
-    (in this case, two/three USB flash drives for data only backups, and
-    three devices for full backups of a type dependent on the size of
-    disk in your machine)
+- Before Travel → Ensure you have the backup devices required below
+  (in this case, two/three USB flash drives for data only backups, and
+  three devices for full backups of a type dependent on the size of
+  disk in your machine)
 
-  - Immediately Before Travel → Create three full backups of the
-    machine.  One to be left in the home location and two to be taken.
+- Immediately Before Travel → Create three full backups of the
+  machine. One to be left in the home location and two to be taken.
 
-  - Every day → Backup FAIMES data to a USB Flash drive.   At least two
-    flash drives of the appropriate size will be used and will be
-    rotated.
+- Every day → Backup FAIMES data to a USB Flash drive. At least two
+  flash drives of the appropriate size will be used and will be
+  rotated.
 
-  - Every week → Full backup of the machine to a drive of the correct
-    size.  Again at least two drives of the appropriate size will be
-    used and rotated.
+- Every week → Full backup of the machine to a drive of the correct
+  size. Again at least two drives of the appropriate size will be
+  used and rotated.
 
-  - Every week if possible (e.g. sufficient internet service available)
-     → Copy XXX back to your home location
+- Every week if possible (e.g. sufficient internet service available)
+  → Copy XXX back to your home location
 
-Of course, this is just an example.  Please adapt to your situation -
+Of course, this is just an example. Please adapt to your situation -
 but please be very certain (before you travel) that you can recover the
 data using the approach you have taken.
 
 (server/docker-commands)=
+
 ## Docker commands of note
 
 This is a summary of the docker commands used above. There may be better
@@ -2031,6 +2047,7 @@ options and certainly are alternatives, but these are what was used.
 </table>
 
 (server/design)=
+
 ## Design of FAIMS system (outline)
 
 This is not meant to be a full description of the FAIMS design - it is a
@@ -2038,7 +2055,7 @@ reference for setting up a field server only.
 
 FAIMS has three components :
 
-1.  The Web Application (WebApp).  This is a program which runs in your
+1.  The Web Application (WebApp). This is a program which runs in your
     browser (or within the FAIMS Application on iOS or Android).
 
 2.  Conductor - which details with authorisation
@@ -2046,11 +2063,11 @@ FAIMS has three components :
 3.  CouchDB - the database on the server.
 
 When you connect to the FAIMS front page - it downloads the Web
-Application to your device.  If you are using the iOS or Android
+Application to your device. If you are using the iOS or Android
 application, the application is just packaging up the Web Application.
 
 The WebApp knows the location (Public host name and port number) of the
-CouchDB implementation.  It first connects to CouchDB with the
+CouchDB implementation. It first connects to CouchDB with the
 information and is given the location (Public host name and port
 number) of Conductor.
 
@@ -2059,7 +2076,7 @@ process, using a OAuth 2.0 Authorisation Server (Data Central or
 Google).
 
 Once authorised, the WebApp can duplicate relevant bits of the CouchDB
-database into its own database - Pouch DB.  It will allow you to select
+database into its own database - Pouch DB. It will allow you to select
 the FAIMS DBs you need to use and will synchronise them to Pouch DB.
 
 The image below shows this data flow.
@@ -2071,10 +2088,10 @@ interfaces to the three components to be distributed to their
 implementation Docker containers. The HAProxy implements a frontend
 which can work out to which backend (Front End Web
 Page/Conductor/CouchDB) a message should be sent based on the DNS name
-and/or the port number of the incoming message.  In the main FAIMS
+and/or the port number of the incoming message. In the main FAIMS
 server, each of the Web App, Conductor and CouchDB have their own DNS
 entry and the HAProxy configuration uses that to work out the backend to
-use.  In the example field server implementation, the same DNS entry
+use. In the example field server implementation, the same DNS entry
 (hostname) is used for all three, the incoming message port number
 determines which backend is to be used.
 
@@ -2085,6 +2102,7 @@ configured.
 ![](server-images/image16.jpeg)
 
 (server/raspberry-pi-set-up)=
+
 ## Raspberry Pi Set up
 
 We used a "Raspberry Pi" as an example install and this section explains
@@ -2092,15 +2110,15 @@ what was done. What was done here should in many ways be close to what
 is needed for any field server.
 
 This was done with a Raspberry Pi 400 kit (A kit which has the computer
-built into a Keyboard).  The kit included an initial boot micro SD card
+built into a Keyboard). The kit included an initial boot micro SD card
 but this was only 16Gb and the version of the OS was well out of date.
- I bought a 32Gb micro SD card and ensured I had the ability to
-read/write this with my laptop.  (I don't believe a "Raspberry Pi"  can
-use an SD card larger then this ).  I was using a Mac Laptop so the
+I bought a 32Gb micro SD card and ensured I had the ability to
+read/write this with my laptop. (I don't believe a "Raspberry Pi" can
+use an SD card larger then this ). I was using a Mac Laptop so the
 process might be a bit different on a PC, but should be close.
 
 I downloaded the "Raspberry Pi Imager" app from
-<https://www.raspberrypi.com/software/> .  This app will write the OS to
+<https://www.raspberrypi.com/software/> . This app will write the OS to
 the micro SD card
 
 1.  Insert the micro SD card into you computer's reader/write
@@ -2110,23 +2128,23 @@ the micro SD card
 3.  Choose the OS → "Raspberry Pi OS (other)" → "Raspberry Pi OS
     (64-bit)"
 
-4.  Choose the Storage.  It will offer you various things your machine
+4.  Choose the Storage. It will offer you various things your machine
     might see - look for the 32Gb item.
 
-5.  Invoke the "Gear" button (lower right).  This will allow you to make
+5.  Invoke the "Gear" button (lower right). This will allow you to make
     some default settings, e.g
 
-      - Hostname.
+    - Hostname.
 
-      - Enable SSH
+    - Enable SSH
 
-      - Set the user name
+    - Set the user name
 
-      - WiFi network to connect to
+    - WiFi network to connect to
 
-      - Locale Settings
+    - Locale Settings
 
-6.  Invoke "Write".  This will write the disk and verify the results.  I
+6.  Invoke "Write". This will write the disk and verify the results. I
     have at least once seen a verification failure, I just repeated the
     operation.
 
@@ -2134,19 +2152,19 @@ the micro SD card
 
 7.  Remove the disk (it does not need to be ejected, at least, on a Mac)
 
-8.  Insert the disk in the  "Raspberry Pi" and power on. For the process
+8.  Insert the disk in the "Raspberry Pi" and power on. For the process
     from here you will want a monitor connected to the "Raspberry Pi".
 
     1.  It will spend a bit of time sorting itself out, screen going
         blank a number of times.
 
-    2.  Eventually you will get a desktop.  Hopefully already connected
+    2.  Eventually you will get a desktop. Hopefully already connected
         to your local network.
 
     3.  The time should be set correctly
 
 9.  Try "ssh-ing" into the machine, e.g. using "ssh \<name\>.local"
-     where \<name\> is the host name you choose.  
+    where \<name\> is the host name you choose.
 
     1.  This ensures it is on the network correctly and that you have
         the password is correct.
@@ -2163,21 +2181,21 @@ the micro SD card
 
 1.  1.  In the "System" tab
 
-          - Change the Hostname if required.  
+        - Change the Hostname if required.
 
-          - Consider "Boot" and "Auto Login" options.  You will probably
-            want to change them to "To CLI" and "Disabled"  (but could
-            leave them as is whilst setting up)
+        - Consider "Boot" and "Auto Login" options. You will probably
+          want to change them to "To CLI" and "Disabled" (but could
+          leave them as is whilst setting up)
 
-          - Invoke Ok.
+        - Invoke Ok.
 
-    2.  In the "Interfaces" tab, you probably want to enable "SSH"  if
-        you hadn't already done this.  This will also remote logins
-        using the "ssh" command.  Reboot when it prompts.  Check the
+    2.  In the "Interfaces" tab, you probably want to enable "SSH" if
+        you hadn't already done this. This will also remote logins
+        using the "ssh" command. Reboot when it prompts. Check the
         settings are correct on reboot.
 
-Now increase the swap space on the RPI  (to 4096) - [See
-below](<server/add-swap>).
+Now increase the swap space on the RPI (to 4096) - [See
+below](server/add-swap).
 
 Then work through the installations,
 
@@ -2188,17 +2206,17 @@ you have finished installing things.
 
 I worked through [this
 process](https://appcodelabs.com/how-to-backup-clone-a-raspberry-pi-sd-card-on-macos-the-easy-way).
- I then compressed this (before compression - was about 31Gb)
+I then compressed this (before compression - was about 31Gb)
 
 The writing of this takes a long time - check the file size to see it
 growing.
 
-Command used - sudo dd bs=32m if=/dev/rdisk4 of=raspberry\_pi.dmg
+Command used - sudo dd bs=32m if=/dev/rdisk4 of=raspberry_pi.dmg
 
 > But do beware the the 4 is likely to change and you will want to
 > change the filename
 >
-> This took 20 minutes.  And then compression took another 12.
+> This took 20 minutes. And then compression took another 12.
 
 **And remember** - at some point you need to test that you can restore.
 Grab another SD card and try resorting to it and confirm the result
@@ -2207,7 +2225,7 @@ works as expected.
 ### Installations
 
 First - you need to add support for backports to the package manager.
- From, add
+From, add
 
 <table>
 <tbody>
@@ -2308,7 +2326,7 @@ And then reboot to be sure everything workw.
 You can now start working through the FAIMS installation above.
 
 Set /etc/hosts entry for machine. This must be consistent with the SSL
-Certificate to be used - [see above](<server/install-cert>)
+Certificate to be used - [see above](server/install-cert)
 
 ### DNSMasq - DNS server installation
 
@@ -2319,7 +2337,7 @@ WiFi system which is connecting devices to the Field Server.
 Dnsmasq is a lightweight, easy to configure, DNS forwarder and DHCP
 server. It is designed to provide DNS and optionally, DHCP, to a small
 network. It can serve the names of local machines which are not in the
-global DNS.  We will not be using the DHCP side of it - since our WiFi
+global DNS. We will not be using the DHCP side of it - since our WiFi
 router provides that.
 
 AFter installing DNSMasq, ensure /etc/hosts has the IP address of the
@@ -2331,17 +2349,18 @@ You will probably need to restart the service after changing /etc/hosts,
 do that by executing "sudo service dnsmasq restart".
 
 (server/add-swap)=
+
 ### Adding Swap space
 
 The Raspberry PI conmes with 4Gb of memory and by default is configured
-for only 100Kb of swap space.  Thi may not be/is not enough.   Presuming
+for only 100Kb of swap space. Thi may not be/is not enough. Presuming
 you have moved to a 32Gb SD card, you can expand Swap space say to 4Gb
-of swap.  
+of swap.
 
 The approach is described
 [here](https://pimylifeup.com/raspberry-pi-swap-file/)
-(but is very much a Debian approach).    Note that the value you set in
- CONF\_SWAPSIZE cannot exceed the value in  CONF\_MAXSWAP, but you can
+(but is very much a Debian approach). Note that the value you set in
+CONF_SWAPSIZE cannot exceed the value in CONF_MAXSWAP, but you can
 update both.
 
 Note - the "free" command is probably the easiest way to see what memory
@@ -2350,10 +2369,10 @@ you have available.
 ### Require SUDO to ask for a password
 
 By default, it seems the "Raspberry PI" sudo command is configured to
-not require a password.  This is ok when playing and initially setting
+not require a password. This is ok when playing and initially setting
 up, but it NOT OK in a deployed system\!
 
-This is set in the file  "/etc/sudoers.d/010\_pi-nopasswd" , which you
+This is set in the file "/etc/sudoers.d/010_pi-nopasswd" , which you
 should only edit using the "visudo" command.
 
 so you can edit it by:
@@ -2407,38 +2426,38 @@ PRESS q\!\!\!
 
 Testing on the iOS App shows problems.
 
-  - After adding the directory entry - you see a new entry in "Users" on
-    the App.  
+- After adding the directory entry - you see a new entry in "Users" on
+  the App.
 
-  - When there was some flaw (unclear) in the entry, it appears with a
-    "Sign-In" button. I was able to sign in (using my existing
-    credentials) and it works.  But if I invoke the "Done" button, I
-    then can't sign in again until connected to the wider network.
+- When there was some flaw (unclear) in the entry, it appears with a
+  "Sign-In" button. I was able to sign in (using my existing
+  credentials) and it works. But if I invoke the "Done" button, I
+  then can't sign in again until connected to the wider network.
 
-      - James thought this we because conductor specification was wrong
-        in the main DB entry.
+  - James thought this we because conductor specification was wrong
+    in the main DB entry.
 
-      - But this entry had disappeared
+  - But this entry had disappeared
 
-  - With the revised specification, you get a different layout, no
-    sign-in button, just a basic clone of the main sign-in area but
-    mentioning the RPi database
+- With the revised specification, you get a different layout, no
+  sign-in button, just a basic clone of the main sign-in area but
+  mentioning the RPi database
 
-      - James explained that we should now see a merged set of databases
-        in the workspace
+  - James explained that we should now see a merged set of databases
+    in the workspace
 
-          - This required that I rename the RPi database to make it
-            distinct (replicate it and change the configuration DB
-            entries).
+    - This required that I rename the RPi database to make it
+      distinct (replicate it and change the configuration DB
+      entries).
 
-  - **But - whilst I am clearly setting the new RPi database entries, I
-    don't see the underlying DB in my workspace.**
+- **But - whilst I am clearly setting the new RPi database entries, I
+  don't see the underlying DB in my workspace.**
 
-  - **Additionally - back on the main server, the additional DB entry
-    has now disappeared\!\!\!**
+- **Additionally - back on the main server, the additional DB entry
+  has now disappeared\!\!\!**
 
-  -  The Safari browser on the iPad works correctly thought all of this,
-    the problems are in the App only.
+- The Safari browser on the iPad works correctly thought all of this,
+  the problems are in the App only.
 
 ### Issue Summary:
 
@@ -2448,14 +2467,14 @@ Testing on the iOS App shows problems.
 2.  The Android App has not tested.
 
 3.  The required entry in the main FAIMS "directory" testing DB was
-    disappearing (happened twice).   We do not know why, it may have
+    disappearing (happened twice). We do not know why, it may have
     been due people restoring the database from a backup during other
     testing.
 
 :::{warning}
 The documents above need
 modification such that when we replicate the DB, we rename it in the
-process.  But this is only relevant once the iOS App issues are
+process. But this is only relevant once the iOS App issues are
 resolved.
 :::
 
@@ -2469,9 +2488,9 @@ Under development (13-Jan-2023)
 
 cors.lua claims
 to implement "Cross-origin Request Sharing (CORS) implementation for
-HAProxy Lua host".   
+HAProxy Lua host".
 
-   Source [at
+Source [at
 GitHub](https://github.com/haproxytech/haproxy-lua-cors/blob/master/lib/cors.lua)
 
 From the [GitHub
@@ -2533,18 +2552,18 @@ the http-request line.
 
 From the GitHub page:
 
-  - "GET,HEAD,PUT,PATCH,POST,DELETE" →  comma-delimited list of HTTP
-    methods that can be used. This is used to set the
-    *Access-Control-Allow-Methods* header.
+- "GET,HEAD,PUT,PATCH,POST,DELETE" → comma-delimited list of HTTP
+  methods that can be used. This is used to set the
+  _Access-Control-Allow-Methods_ header.
 
-  - "webapp.test,localhost,localhost:3000,localhost:3333,localhost:8080"
-     → comma-delimited list of origins that are permitted to call your
-    service. This is used to set the *Access-Control-Allow-Origin*
-    header.
+- "webapp.test,localhost,localhost:3000,localhost:3333,localhost:8080"
+  → comma-delimited list of origins that are permitted to call your
+  service. This is used to set the _Access-Control-Allow-Origin_
+  header.
 
-  - "Content-Type, Accept, X-Frame-Options, Authorization" →
-    comma-delimited list of custom headers that can be used. This is
-    used to set the *Access-Control-Allow-Headers* header.
+- "Content-Type, Accept, X-Frame-Options, Authorization" →
+  comma-delimited list of custom headers that can be used. This is
+  used to set the _Access-Control-Allow-Headers_ header.
 
 Again in the frontend action, need to add this line, which attaches CORS
 headers to responses from backend servers.
@@ -2598,7 +2617,7 @@ backend db.test<br />
 Each of the back-ends are running (assuming the three docker images are
 up)
 
-#### use\_backend
+#### use_backend
 
 <table>
 <tbody>
@@ -2613,7 +2632,7 @@ up)
 Note - the 503 error we are seeing is a specified response to occur if
 the backend is not found.
 
-Take out the "backend-certbot" related lines.  We don't have the
+Take out the "backend-certbot" related lines. We don't have the
 underlying files.
 
 #### Fetches
@@ -2640,14 +2659,14 @@ req.hdr →This returns the last comma-separated value of the header
 
 <http://docs.haproxy.org/2.4/configuration.html#req.hdr>
 
-We then convert it to lower case and extract the first word.  
+We then convert it to lower case and extract the first word.
 
 #### Summary at this point
 
-It looks like the use\_backend specification is switching to a backend
+It looks like the use_backend specification is switching to a backend
 based on the incoming host name
 
-> Yes that it what is happening.  On the main running system, we have
+> Yes that it what is happening. On the main running system, we have
 > for example
 
 <table>
@@ -2669,9 +2688,9 @@ based on the incoming host name
 </tbody>
 </table>
 
-And the address we use for faims3 testing is testing.3.faims.edu.au.  So
+And the address we use for faims3 testing is testing.3.faims.edu.au. So
 when that is invoked on this HA Proxy, it will call the first backend
-specified there.   The other addresses all exist and can be invoked.  
+specified there. The other addresses all exist and can be invoked.
 
 So:
 
@@ -2683,6 +2702,7 @@ So:
 ### Log format
 
     log-format frontend:%f/%H/%fi:%fp\\ client:%ci:%cp\\ GMT:%T\\
+
 body:%\[capture.req.hdr(0)\]\\ request:%r
 
 See <http://docs.haproxy.org/2.4/configuration.html#8.2.4>

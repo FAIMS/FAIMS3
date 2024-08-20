@@ -31,7 +31,7 @@ import {
 import RecordForm from './form';
 import {BrowserRouter} from 'react-router-dom';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
-import {getFullRecordData} from 'faims3-datamodel';
+import {getFullRecordData} from '@faims3/data-model';
 import {compileUiSpecConditionals} from '../../../uiSpecification';
 import {expect, vi, afterEach, describe, it} from 'vitest';
 
@@ -1271,7 +1271,7 @@ afterEach(() => {
   cleanup();
 });
 
-vi.mock('faims3-datamodel', () => ({
+vi.mock('@faims3/data-model', () => ({
   getFirstRecordHead: mockGetFirstRecordHead,
   getRecordsByType: mockGetRecordsByType,
   getFullRecordData: vi.fn(() => {}).mockReturnValue(undefined),

@@ -22,7 +22,6 @@ import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import {PrivateRoute} from './constants/privateRouter';
-import Index from './gui/pages';
 import {SignIn} from './gui/pages/signin';
 import AboutBuild from './gui/pages/about-build';
 import Workspace from './gui/pages/workspace';
@@ -44,7 +43,7 @@ import {getTokenContentsForCurrentUser} from './users';
 
 import {useEffect, useState} from 'react';
 
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 
 // type AppProps = {};
 
@@ -84,7 +83,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path={ROUTES.WORKSPACE}
+                  path={ROUTES.INDEX}
                   element={
                     <PrivateRoute allowed={Boolean(token)}>
                       <Workspace />
@@ -92,7 +91,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path={ROUTES.NOTEBOOK_LIST}
+                  path={ROUTES.NOTEBOOK_LIST_ROUTE}
                   element={
                     <PrivateRoute allowed={Boolean(token)}>
                       <NoteBookList />
@@ -100,7 +99,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path={ROUTES.NOTEBOOK + ':project_id'}
+                  path={ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + ':project_id'}
                   element={
                     <PrivateRoute allowed={Boolean(token)}>
                       <Notebook />
@@ -113,7 +112,7 @@ export default function App() {
                   without one, it immediately mints a UUID and redirects to it */}
                 <Route
                   path={
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                     ':project_id' +
                     ROUTES.RECORD_CREATE +
                     ':type_name' +
@@ -130,7 +129,7 @@ export default function App() {
                 />
                 <Route
                   path={
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                     ':project_id' +
                     ROUTES.RECORD_CREATE +
                     ':type_name'
@@ -151,7 +150,7 @@ export default function App() {
                   record/form.tsx*/}
                 <Route
                   path={
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                     ':project_id' +
                     ROUTES.RECORD_EXISTING +
                     ':record_id' +
@@ -166,7 +165,7 @@ export default function App() {
                 />
                 <Route
                   path={
-                    ROUTES.NOTEBOOK +
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                     ':project_id' +
                     ROUTES.RECORD_EXISTING +
                     ':record_id' +
@@ -181,15 +180,6 @@ export default function App() {
                     </PrivateRoute>
                   }
                 />
-                <Route
-                  path={'/'}
-                  element={
-                    <PrivateRoute allowed>
-                      <Index token={token} />
-                    </PrivateRoute>
-                  }
-                />
-
                 <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
                 <Route Component={NotFound404} />
               </Routes>

@@ -23,7 +23,7 @@ import React from 'react';
 import {ParentLinkProps} from './types';
 import {Formik, Form} from 'formik';
 import {ViewComponent} from '../view';
-import {ProjectUIModel} from 'faims3-datamodel';
+import {ProjectUIModel} from '@faims3/data-model';
 
 export type ParentFormProps = {
   parentRecords: Array<ParentLinkProps> | null;

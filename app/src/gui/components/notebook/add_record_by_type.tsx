@@ -15,7 +15,7 @@ import {
   getRecordsWithRegex,
   RecordMetadata,
   ProjectUIModel,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {getMetadataValue} from '../../../sync/metadata';
 
 type AddRecordButtonsProps = {
@@ -88,7 +88,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
               component={RouterLink}
               key="newRecord"
               to={
-                ROUTES.NOTEBOOK +
+                ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                 project_id +
                 ROUTES.RECORD_CREATE +
                 visible_types
@@ -103,7 +103,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
                   <Button
                     component={RouterLink}
                     to={
-                      ROUTES.NOTEBOOK +
+                      ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
                       project.project_id +
                       ROUTES.RECORD_CREATE +
                       viewset_name

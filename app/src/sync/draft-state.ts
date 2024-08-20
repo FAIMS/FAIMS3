@@ -38,7 +38,7 @@ import {
   Annotations,
   FAIMSTypeName,
   Relationship,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {logError} from '../logging';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
@@ -156,7 +156,7 @@ class RecordDraftState {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (data: [StagedData, StagedData]) => unknown,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    (err: unknown) => unknown
+    (err: unknown) => unknown,
   ][] = [];
 
   /**

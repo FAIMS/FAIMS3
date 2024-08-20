@@ -138,11 +138,13 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
     fieldConfig['component-parameters']['InputLabelProps'] !== undefined
       ? fieldConfig['component-parameters']['InputLabelProps']['label']
       : fieldConfig['component-parameters']['FormLabelProps'] !== undefined
-      ? fieldConfig['component-parameters']['FormLabelProps']['children']
-      : fieldConfig['component-parameters']['FormControlLabelProps'] !==
-        undefined
-      ? fieldConfig['component-parameters']['FormControlLabelProps']['children']
-      : fieldName;
+        ? fieldConfig['component-parameters']['FormLabelProps']['children']
+        : fieldConfig['component-parameters']['FormControlLabelProps'] !==
+            undefined
+          ? fieldConfig['component-parameters']['FormControlLabelProps'][
+              'children'
+            ]
+          : fieldName;
 
   const cardstyle: cardstyletype = card_styles[styletype];
   const annotation =

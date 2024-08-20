@@ -26,7 +26,7 @@ import {createAuthKey} from '../src/authkeys/create';
 import {validateToken} from '../src/authkeys/read';
 import {addOtherRoleToUser, createUser, saveUser} from '../src/couchdb/users';
 import {expect} from 'chai';
-import { KEY_SERVICE } from '../src/buildconfig';
+import {KEY_SERVICE} from '../src/buildconfig';
 
 describe('roundtrip creating and reading token', () => {
   it('create and read token', async () => {

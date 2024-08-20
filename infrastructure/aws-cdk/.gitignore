@@ -141,3 +141,4 @@ configs/*
 # we shouldn't track this!
 cdk.context.json
 flat.sh
+environments.json

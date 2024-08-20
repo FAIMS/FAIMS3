@@ -1,15 +1,15 @@
-import * as cdk from "aws-cdk-lib";
-import * as route53 from "aws-cdk-lib/aws-route53";
-import * as acm from "aws-cdk-lib/aws-certificatemanager";
-import { BackupConstruct } from "./components/backups";
-import { Construct } from "constructs";
-import { FaimsConductor } from "./components/conductor";
-import { FaimsFrontEnd } from "./components/front-end";
-import { FaimsNetworking } from "./components/networking";
-import { EC2CouchDB } from "./components/couch-db";
-import { z } from "zod";
-import * as fs from "fs";
-import * as path from "path";
+import * as cdk from 'aws-cdk-lib';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import {BackupConstruct} from './components/backups';
+import {Construct} from 'constructs';
+import {FaimsConductor} from './components/conductor';
+import {FaimsFrontEnd} from './components/front-end';
+import {FaimsNetworking} from './components/networking';
+import {EC2CouchDB} from './components/couch-db';
+import {z} from 'zod';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const MonitoringConfigSchema = z.object({
   cpu: z
@@ -103,16 +103,20 @@ const DomainsConfigSchema = z.object({
   /** The base domain for all services. Note: Apex domains are not currently supported. */
   baseDomain: z.string(),
   /** The subdomain prefix for the designer service */
-  designer: z.string().default("designer"),
+  designer: z.string().default('designer'),
   /** The subdomain prefix for the conductor service */
-  conductor: z.string().default("conductor"),
+  conductor: z.string().default('conductor'),
   /** The subdomain prefix for the CouchDB service */
-  couch: z.string().default("couchdb"),
+  couch: z.string().default('couchdb'),
   /** The subdomain prefix for the main FAIMS application */
-  faims: z.string().default("faims"),
+  faims: z.string().default('faims'),
 });
 
 const ConductorConfigSchema = z.object({
+  /** Conductor docker image e.g. org/faims3-api */
+  conductorDockerImage: z.string(),
+  /** Conductor docker image e.g. latest, sha-123456 */
+  conductorDockerImageTag: z.string().default('latest'),
   /** The number of CPU units for the Fargate task */
   cpu: z.number().int().positive(),
   /** The amount of memory (in MiB) for the Fargate task */
@@ -153,17 +157,20 @@ const BackupConfigSchema = z
     /**
      * The cron schedule expression to be used for running the backup e.g. cron(...)
      */
-    scheduleExpression: z.string().default("cron(0 3 * * ? *)"),
+    scheduleExpression: z.string().default('cron(0 3 * * ? *)'),
   })
   .refine(
-    (data) => (data.vaultName !== undefined) !== (data.vaultArn !== undefined),
+    data => (data.vaultName !== undefined) !== (data.vaultArn !== undefined),
     {
-      message: "Either vaultName or vaultArn must be provided, but not both",
+      message: 'Either vaultName or vaultArn must be provided, but not both',
     }
   );
 
 // Define the schema
 export const ConfigSchema = z.object({
+  /** The name of the stack to deploy to cloudformation. Note that changing
+   * this will completely redeploy your application. */
+  stackName: z.string(),
   /** Attributes of the hosted zone to use */
   hostedZone: z.object({
     id: z.string(),
@@ -179,7 +186,7 @@ export const ConfigSchema = z.object({
     // AWS Account ID
     account: z.string(),
     // AWS Region
-    region: z.string().default("ap-southeast-2"),
+    region: z.string().default('ap-southeast-2'),
   }),
   secrets: z.object({
     /** ARN of the private key secret */
@@ -216,20 +223,22 @@ export const loadConfig = (filePath: string): Config => {
   // Parse and validate the config
   try {
     const absolutePath = path.resolve(process.cwd(), filePath);
-    const fileContents = fs.readFileSync(absolutePath, "utf-8");
+    const fileContents = fs.readFileSync(absolutePath, 'utf-8');
     const jsonData = JSON.parse(fileContents);
     return ConfigSchema.parse(jsonData);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error("Configuration validation failed:");
-      error.errors.forEach((err) => {
-        console.error(`- ${err.path.join(".")}: ${err.message}`);
+      console.error('Configuration validation failed:');
+      error.errors.forEach(err => {
+        console.error(`- ${err.path.join('.')}: ${err.message}`);
       });
     } else {
-      console.error("Error loading configuration:", error);
+      console.error('Error loading configuration:', error);
     }
   }
-  process.exit(1);
+  //process.exit(1);
+  process.exitCode = 1;
+  throw new Error('Error loading configuration');
 };
 
 /**
@@ -253,7 +262,7 @@ export class FaimsInfraStack extends cdk.Stack {
     // =========
 
     // Setup the hosted zone for domain definitions
-    const hz = route53.HostedZone.fromHostedZoneAttributes(this, "hz", {
+    const hz = route53.HostedZone.fromHostedZoneAttributes(this, 'hz', {
       hostedZoneId: config.hostedZone.id,
       zoneName: config.hostedZone.name,
     });
@@ -270,10 +279,10 @@ export class FaimsInfraStack extends cdk.Stack {
     // =============
     if (!(config.backup.vaultArn || config.backup.vaultName)) {
       throw Error(
-        "Must provide either an existing Backup vault ARN or a vault name to create."
+        'Must provide either an existing Backup vault ARN or a vault name to create.'
       );
     }
-    const backups = new BackupConstruct(this, "backup", config.backup);
+    const backups = new BackupConstruct(this, 'backup', config.backup);
 
     // CERTIFICATES
     // ============
@@ -281,14 +290,14 @@ export class FaimsInfraStack extends cdk.Stack {
     // Primary certificate for the hosted zone
     const primaryCert = acm.Certificate.fromCertificateArn(
       this,
-      "primary-cert",
+      'primary-cert',
       config.certificates.primary
     );
 
     // CloudFront certificate
     const cfnCert = acm.Certificate.fromCertificateArn(
       this,
-      "cfn-cert",
+      'cfn-cert',
       config.certificates.cloudfront
     );
 
@@ -296,7 +305,7 @@ export class FaimsInfraStack extends cdk.Stack {
     // ==========
 
     // Setup networking infrastructure
-    const networking = new FaimsNetworking(this, "networking", {
+    const networking = new FaimsNetworking(this, 'networking', {
       certificate: primaryCert,
     });
 
@@ -304,7 +313,7 @@ export class FaimsInfraStack extends cdk.Stack {
     // =======
 
     // Create a single EC2 cluster which runs CouchDB
-    const couchDb = new EC2CouchDB(this, "couch-db", {
+    const couchDb = new EC2CouchDB(this, 'couch-db', {
       vpc: networking.vpc,
       instanceType: config.couch.instanceType,
       certificate: primaryCert,
@@ -320,7 +329,7 @@ export class FaimsInfraStack extends cdk.Stack {
     // =========
 
     // Deploy the conductor API as a load balanced ECS service
-    const conductor = new FaimsConductor(this, "conductor", {
+    const conductor = new FaimsConductor(this, 'conductor', {
       vpc: networking.vpc,
       certificate: primaryCert,
       domainName: domains.conductor,
@@ -340,7 +349,8 @@ export class FaimsInfraStack extends cdk.Stack {
     // =========
 
     // Deploy the FAIMS 3 web front-end as a S3 CloudFront static website
-    const frontEnd = new FaimsFrontEnd(this, "frontend", {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const frontEnd = new FaimsFrontEnd(this, 'frontend', {
       couchDbDomainOnly: domains.couch,
       couchDbPort: couchDb.exposedPort,
       faimsDomainNames: [domains.faims],
@@ -353,6 +363,6 @@ export class FaimsInfraStack extends cdk.Stack {
     });
 
     // Backup setup
-    backups.registerEbsVolume(couchDb.dataVolume, "couchDbDataVolume");
+    backups.registerEbsVolume(couchDb.dataVolume, 'couchDbDataVolume');
   }
 }

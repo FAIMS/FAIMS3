@@ -42,10 +42,10 @@ import {store} from '../../context/store';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import {generateFAIMSDataID} from 'faims3-datamodel';
+import {generateFAIMSDataID} from '@faims3/data-model';
 import {getProjectInfo} from '../../sync/projects';
-import {ProjectID, RecordID} from 'faims3-datamodel';
-import {ProjectUIModel, ProjectInformation} from 'faims3-datamodel';
+import {ProjectID, RecordID} from '@faims3/data-model';
+import {ProjectUIModel, ProjectInformation} from '@faims3/data-model';
 import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
@@ -62,6 +62,7 @@ import {useTheme} from '@mui/material/styles';
 import {ParentLinkProps} from '../components/record/relationships/types';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import InheritedDataComponent from '../components/record/inherited_data';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 interface DraftCreateProps {
   project_id: ProjectID;
@@ -128,7 +129,7 @@ function DraftCreate(props: DraftCreateProps) {
     return (
       <Navigate
         to={
-          ROUTES.NOTEBOOK +
+          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
           project_id +
           ROUTES.RECORD_CREATE +
           type_name +
@@ -218,7 +219,7 @@ function DraftEdit(props: DraftEditProps) {
     return new Promise(resolve => {
       resolve(() => {
         navigate({
-          pathname: ROUTES.NOTEBOOK + project_id,
+          pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
         });
       });
     });
@@ -355,9 +356,9 @@ export default function RecordCreate() {
 
   let breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
-    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+    {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
-      link: ROUTES.NOTEBOOK + project_id,
+      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
       title: projectInfo !== null ? projectInfo.name! : project_id!,
     },
     {title: 'Draft'},
@@ -371,13 +372,16 @@ export default function RecordCreate() {
         : location.state.relation_type_vocabPair[0];
     breadcrumbs = [
       // {link: ROUTES.INDEX, title: 'Home'},
-      {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
       {
-        link: ROUTES.NOTEBOOK + project_id,
+        link: ROUTES.NOTEBOOK_LIST_ROUTE,
+        title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+      },
+      {
+        link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
         title: projectInfo !== null ? projectInfo.name! : project_id!,
       },
       {
-        link: ROUTES.NOTEBOOK + location.state.parent_link,
+        link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + location.state.parent_link,
         title:
           type! + ':' + location.state.parent_hrid! ??
           location.state.parent_record_id!,

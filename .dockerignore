@@ -2,3 +2,5 @@ infrastructure/
 docs/
 node_modules/
 tests/
+.env
+out

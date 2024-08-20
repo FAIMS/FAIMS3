@@ -1,7 +1,7 @@
 import PouchDB from 'pouchdb';
-// eslint-disable-next-line node/no-unpublished-require
+// eslint-disable-next-line n/no-unpublished-require
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-import {ProjectID, DBCallbackObject} from 'faims3-datamodel';
+import {ProjectID, DBCallbackObject} from '@faims3/data-model';
 import {getProjectsDB, getUsersDB, initialiseDatabases} from '../src/couchdb';
 import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 

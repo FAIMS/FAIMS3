@@ -2,6 +2,9 @@
   "name": "faims3",
   "version": "1.0.0",
   "main": "index.js",
+  "engines": {
+    "node": "20.9.0"
+  },
   "workspaces": [
     "api",
     "app",
@@ -12,6 +15,10 @@
   ],
   "scripts": {
     "build-app": "npm run build --workspace=app",
+    "build-api": "npm run build --workspace=api",
+    "build-data-model": "npm run build --workspace=library/data-model",
+    "github-build-app": "npm run build --workspace=library/data-model --workspace=app",
+    "docker-build-api": "npm run build --workspace=library/data-model --workspace=api",
     "build-aws": "npm run build --workspace=infrastructure/aws-cdk",
     "package-aws": "npm run package --workspace=infrastructure/aws-cdk",
     "test-app": "npm test --workspace=app",
@@ -20,10 +27,32 @@
     "start-api": "npm start --workspace=api",
     "start-app": "npm start --workspace=app",
     "watch-api": "npm run watch --workspace=api",
-    "start-designer": "npm run start --workspace=designer"
+    "start-designer": "npm run start --workspace=designer",
+    "initdb" : "npm run initdb --workspace=api",
+    "load-notebooks" : "npm run load-notebooks --workspace=api",
+    "generate-local-keys" : "./api/keymanagement/makeInstanceKeys.sh",
+    "lint": "turbo lint",
+    "clean": "turbo clean",
+    "build": "turbo build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.1.0",
+    "@eslint/js": "^9.9.0",
+    "@types/node": "^22.2.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "gts": "^5.3.1",
+    "turbo": "^2.0.11",
+    "typescript": "^5.5.4"
+  },
+  "packageManager": "npm@10.7.0",
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
+    "eslint": "^8.57.0",
+    "gts": "^5.3.1"
+  }
 }
