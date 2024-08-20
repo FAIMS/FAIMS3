@@ -198,7 +198,7 @@ export default function MainAppBar(props: NavbarProps) {
     },
     projectList === null
       ? {
-          title: `Loading ${NOTEBOOK_NAME}...`,
+          title: `Loading ${NOTEBOOK_NAME}s...`,
           icon: <AccountTree />,
           to: '/',
           disabled: true,
