@@ -39,7 +39,7 @@ source ~/.bashrc
 You can then setup Node v20 and activate it
 
 ```bash
-nvm install 20 
+nvm install 20
 nvm use 20
 ```
 
@@ -214,4 +214,53 @@ Run tests inside the conductor instance:
 ```bash
 
 docker compose exec conductor npm run test
+```
+
+## Production docker builds
+
+This repo contains a `Dockerfile.build` which is designed to build and package a Node.js application in a multi-stage process, optimized for monorepo structures using Turborepo.
+
+### Stages:
+
+1. **Base**: Sets up the Alpine Node.js 20 environment with necessary dependencies.
+2. **Pruner**: Uses Turborepo to prune the monorepo, isolating the specified package and its dependencies.
+3. **Builder**: Installs dependencies, builds the project, and bundles necessary files.
+4. **Runner**: Creates a minimal production image to run the built application.
+
+### Usage:
+
+To build a package (e.g., `@faims3/api`) with the build output in a specific directory (e.g., `/api/build/src`):
+
+```bash
+docker build -f Dockerfile.build \
+             --build-arg PACKAGE_NAME=@faims3/api \
+             --build-arg NODE_RUN_DIR=api/build/src \
+             -t your-image-name .
+```
+
+### bundle.sh
+
+`bundle.sh` is a script which utilises the output of the `turbo prune <target> --docker` command. It leverages the existence of `package.json` files at directories to determine necessary build paths to copy when bundling a Node based Dockerimage. It currently copies the following folder
+
+- node_modules
+- build
+- dist
+- views (for the API specifically)
+
+`realpath` could not be used because `alpine` images do not support `--relative-to` meaning a custom function is included which finds relative paths.
+
+I would not recommend using this script for local work, it is predominately to help the Docker build be able to resolve dependencies without any manual intervention while still building a pruned output image.
+
+```bash
+# Helper script used for docker builds.
+
+# bundle.sh: A script to copy specific directories from a source to an output location
+# based on the presence of package.json files in a JSON dump directory.
+
+# Usage: ./bundle.sh <json_dump_path> <source_path> <output_path>
+#
+# Arguments:
+#   json_dump_path: Path to the directory containing package.json files
+#   source_path: Path to the source directory containing files to be copied
+#   output_path: Path to the output directory where files will be copied
 ```

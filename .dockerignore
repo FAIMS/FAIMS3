@@ -3,4 +3,5 @@ docs/
 node_modules/
 tests/
 .env
+Dockerfile.build
 out
