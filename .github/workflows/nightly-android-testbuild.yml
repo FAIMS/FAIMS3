@@ -43,6 +43,20 @@ jobs:
     outputs:
       prnum: ${{ steps.prnum.outputs.value }}
     steps:
+      - name: Configure Turborepo Remote Cache
+        run: |
+          mkdir -p .turbo
+          if [ -n "${{ vars.TURBO_API_URL }}" ]; then
+            echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
+            echo "Turborepo config file created at .turbo/config.json"
+          else
+            echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."
+          fi
+          if [ -n "$TURBO_TEAM" ] && [ -n "$TURBO_TOKEN" ]; then
+            echo "TURBO_TEAM and TURBO_TOKEN environment variables set"
+          else
+            echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
+          fi
       - uses: actions/checkout@v4
       - name: Cache node modules
         uses: actions/cache@v3
