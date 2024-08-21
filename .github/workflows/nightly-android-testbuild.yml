@@ -132,7 +132,7 @@ jobs:
           export VITE_COMMIT_VERSION=${{env.version_string}}
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_MINIFAUXTON=true
-          export VITE_CONDUCTOR_URL=https://conductor.testing.fieldmark.app
+          export VITE_CONDUCTOR_URL=${{env.NIGHTLY_CONDUCTOR_URL}}
           export VITE_PRODUCTION_BUILD=true          
           export VITE_SERVICES=FAIMSTEXT
           export VITE_PROD_BUILD=true 
