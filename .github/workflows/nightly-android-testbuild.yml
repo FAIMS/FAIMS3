@@ -117,7 +117,7 @@ jobs:
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
           git clean -xfd
           npm ci
-          npm run build-app
+          npm run build
       # https://capacitorjs.com/docs/android
       # The bundle install shouldn't be necessary, but given we've got ios and android in...      
       - run: npm run app-update android
