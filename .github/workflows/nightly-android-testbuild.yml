@@ -121,7 +121,7 @@ jobs:
       # https://capacitorjs.com/docs/android
       # The bundle install shouldn't be necessary, but given we've got ios and android in...      
       - run: npm run app-update android --workspace=@faims3/app
-      - run: npm run webapp-sync -- --deployment android --workspace=@faims3/app
+      - run: npm run webapp-sync --workspace=@faims3/app -- --deployment android 
       - name: Fastlane
         run: |
           cd app/android
