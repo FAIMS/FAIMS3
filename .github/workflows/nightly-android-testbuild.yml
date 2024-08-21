@@ -18,12 +18,12 @@ jobs:
     outputs:
       should_run: ${{ steps.commitswithintime.outputs.has-new-commits-within-time }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Run CommitsWithinTime script
-        uses: AlexHolderDeveloper/CommitsWithinTime@v1.1.11
+        uses: AlexHolderDeveloper/CommitsWithinTime@v1.1.12
         id: commitswithintime
         with:
           days: 1
