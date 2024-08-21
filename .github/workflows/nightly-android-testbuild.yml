@@ -60,7 +60,7 @@ jobs:
           fi
       - uses: actions/checkout@v4
       - name: Cache node modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-node-modules
         with:
@@ -160,7 +160,7 @@ jobs:
           prnum: ${{env.version_string}}
       # - run: cd android && ./gradlew assembleDebug
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: assets
           path: |
