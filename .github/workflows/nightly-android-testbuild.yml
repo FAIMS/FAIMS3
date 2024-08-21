@@ -40,8 +40,6 @@ jobs:
     strategy:
       matrix:
         node-version: ['20']
-    outputs:
-      prnum: ${{ steps.prnum.outputs.value }}
     steps:
       - name: Configure Turborepo Remote Cache
         run: |
@@ -69,11 +67,12 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - name: Get PR Number
-        id: prnum
+      - name: Declare some variables
+        shell: bash
         run: |
-          echo -n "value=$(app/bin/getDescribeString.sh gh-play)" >> "$GITHUB_OUTPUT"        
-        shell: bash  
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "app_version=$(npm pkg get version --workspace=@faims3/app | head -1 | sed -e's/\"//g')" >> "$GITHUB_ENV"
+          echo "version_string=v${{env.app_version}}-android-#${{env.sha_short}}" >> "$GITHUB_ENV"        
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Cache Gradle packages
         uses: actions/cache@v3
@@ -120,7 +119,7 @@ jobs:
           export platform="github-actions-play"
           export serverprefix="testing"
           export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
-          export VITE_COMMIT_VERSION=$(app/bin/getDescribeString.sh android)
+          export VITE_COMMIT_VERSION=${{env.version_string}}
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_MINIFAUXTON=true
           export VITE_CONDUCTOR_URL=https://conductor.testing.fieldmark.app
@@ -148,7 +147,7 @@ jobs:
           JAVA_KEY_PASSWORD: ${{ secrets.JAVA_KEY_PASSWORD }}
           ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
           serverprefix: "testing"
-          prnum: ${{steps.prnum.outputs.value}}
+          prnum: ${{env.version_string}}
       # - run: cd android && ./gradlew assembleDebug
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
