@@ -17,17 +17,15 @@
  * Description:
  *   TODO
  */
-import React, {useState, useEffect} from 'react';
+import {useState, useEffect, useContext} from 'react';
 import {useParams, Navigate} from 'react-router-dom';
 import {Box, Grid, Typography} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
-
 import {getProjectInfo} from '../../sync/projects';
 import {ProjectID} from '@faims3/data-model';
 import {CircularProgress} from '@mui/material';
-
 import NotebookComponent from '../components/notebook';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -35,11 +33,11 @@ import RefreshNotebook from '../components/notebook/refresh';
 import {ProjectInformation} from '@faims3/data-model';
 import {logError} from '../../logging';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {ProjectsContext} from '../../context/projects';
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export default function Notebook() {
-  /**
-   *
-   */
   const {project_id} = useParams<{project_id: ProjectID}>();
   const [project_info, setProjectInfo] = useState(
     undefined as ProjectInformation | undefined
@@ -48,6 +46,8 @@ export default function Notebook() {
   const loading = project_info === undefined;
 
   const getInfoWrapper = async () => {
+    await sleep(100);
+
     try {
       const info = await getProjectInfo(project_id!);
       setProjectInfo(info);
@@ -64,7 +64,6 @@ export default function Notebook() {
   }, [project_id]);
 
   const breadcrumbs = [
-    // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
       title: !loading ? project_info.name : '',
@@ -78,11 +77,12 @@ export default function Notebook() {
     return <Navigate to="/404" />;
   }
   const handleRefresh = () => {
-    /**
-     * Handler for Refreshing project
-     */
     return getInfoWrapper();
   };
+
+  const projects = useContext(ProjectsContext);
+
+  console.log('projects:', projects);
 
   return !loading ? (
     <Box>

@@ -103,7 +103,7 @@ export const default_changes_opts: PouchDB.Core.ChangesOptions &
   attachments: true,
 };
 
-const directory_db_pouch = new PouchDB<ListingsObject>(
+export const directory_db_pouch = new PouchDB<ListingsObject>(
   'directory',
   local_pouch_options
 );

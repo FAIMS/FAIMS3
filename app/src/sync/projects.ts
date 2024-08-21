@@ -105,9 +105,6 @@ export const projectIsActivated = (project_id: string) => {
 export const getProject = async (
   project_id: ProjectID
 ): Promise<createdProjectsInterface> => {
-  // Wait for all_projects_updated to possibly change before returning
-  // error/data DB if it's ready.
-  //  await waitForStateOnce(() => all_projects_updated);
   if (project_id in data_dbs) {
     return createdProjects[project_id];
   } else {
