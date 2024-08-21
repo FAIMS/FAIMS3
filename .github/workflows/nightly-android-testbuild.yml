@@ -84,7 +84,7 @@ jobs:
         with:
           ruby-version: 3.3.1
           bundler-cache: true
-          working-directory: android
+          working-directory: app/android
       - name: Decode Service Account Key JSON File
         uses: timheuer/base64-to-file@v1
         id: service_account_json_file
@@ -105,28 +105,25 @@ jobs:
           export platform="github-actions-play"
           export serverprefix="testing"
           export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
-          export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh android)
+          export VITE_COMMIT_VERSION=$(app/bin/getDescribeString.sh android)
           export VITE_SHOW_WIPE=true
-          export VITE_SHOW_NEW_NOTEBOOK=true
           export VITE_SHOW_MINIFAUXTON=true
-          export VITE_DIRECTORY_HOST=db.testing.fieldmark.app
-          export VITE_DIRECTORY_PORT=443
+          export VITE_CONDUCTOR_URL=https://conductor.testing.fieldmark.app
           export VITE_PRODUCTION_BUILD=true          
           export VITE_SERVICES=FAIMSTEXT
-          export VITE_USE_REAL_DATA=true
-          export VITE_PROD_BUILD=true          
-          export VITE_TAG=prodAndroid          
+          export VITE_PROD_BUILD=true 
+          export VITE_TAG=prodAndroid       
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
           git clean -xfd
           npm ci
-          npm run build
+          npm run build-app
       # https://capacitorjs.com/docs/android
       # The bundle install shouldn't be necessary, but given we've got ios and android in...      
-      - run: npx cap update android
-      - run: npx cap sync --deployment android
+      - run: npm run app-update android
+      - run: npm run webapp-sync -- --deployment android
       - name: Fastlane
         run: |
-          cd android
+          cd app/android
           bundle install
           bundle exec fastlane deploy_fieldmark_closed_track
         env:
@@ -143,14 +140,4 @@ jobs:
         with:
           name: assets
           path: |
-            ${{ github.workspace }}/android/app/build/outputs/bundle/release
-      # - uses: "marvinpinto/action-automatic-releases@latest"
-      #   with:
-      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
-      #     automatic_release_tag: "latest-android"
-      #     prerelease: true
-      #     title: "Android APK Development Build"
-      #     files: |
-      #       LICENSE
-      #       *.apk            
-  
+            ${{ github.workspace }}app/android/app/build/outputs/bundle/release
