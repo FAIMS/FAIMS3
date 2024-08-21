@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run CommitsWithinTime script
-        uses: AlexHolderDeveloper/CommitsWithinTime@v1.1.12
+        uses: AlexStormwood/CommitsWithinTime@v1.1.12
         id: commitswithintime
         with:
           days: 1
