@@ -37,6 +37,9 @@ jobs:
     # needs: check_date
     # if: ${{ needs.check_date.outputs.should_run == 'true' }}
     continue-on-error: false
+    env:
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     strategy:
       matrix:
         node-version: ['20']
@@ -67,11 +70,15 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
       - name: Declare some variables
         shell: bash
         run: |
           echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
-          echo "app_version=$(npm pkg get version --workspace=@faims3/app | head -1 | sed -e's/\"//g')" >> "$GITHUB_ENV"
+          echo "app_version=$(jq -r '.version' app/package.json)" >> "$GITHUB_ENV"
       - name: Create version string
         shell: bash
         run: |
