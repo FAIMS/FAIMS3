@@ -18,8 +18,12 @@
  *   TODO
  */
 
-import React from 'react';
-import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import {PrivateRoute} from './constants/privateRouter';
@@ -30,7 +34,6 @@ import NoteBookList from './gui/pages/notebook_list';
 import Notebook from './gui/pages/notebook';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
-import NotFound404 from './gui/pages/404';
 import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';
 import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
@@ -182,7 +185,7 @@ export default function App() {
                   }
                 />
                 <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
-                <Route Component={NotFound404} />
+                <Route path="*" element={<Navigate to={ROUTES.INDEX} />} />
               </Routes>
             </MainLayout>
           </Router>
