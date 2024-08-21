@@ -141,4 +141,4 @@ jobs:
         with:
           name: assets
           path: |
-            ${{ github.workspace }}app/android/app/build/outputs/bundle/release
+            ${{ github.workspace }}/app/android/app/build/outputs/bundle/release
