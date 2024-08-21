@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - build/nightly-android-test-deploy
 
   workflow_dispatch:
 
