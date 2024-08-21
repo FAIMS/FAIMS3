@@ -72,6 +72,9 @@ jobs:
         run: |
           echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
           echo "app_version=$(npm pkg get version --workspace=@faims3/app | head -1 | sed -e's/\"//g')" >> "$GITHUB_ENV"
+      - name: Create version string
+        shell: bash
+        run: |
           echo "version_string=v${{env.app_version}}-android-#${{env.sha_short}}" >> "$GITHUB_ENV"        
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Cache Gradle packages
