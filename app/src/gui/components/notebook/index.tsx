@@ -304,7 +304,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 onClick={() => {
                   console.log('Edit Survey Details clicked');
                 }}
-                sx={{display: 'flex', alignItems: 'center'}} 
+                sx={{display: 'flex', alignItems: 'center'}}
               >
                 <EditIcon />
                 <Typography
