@@ -48,6 +48,7 @@ import {getTokenContentsForCurrentUser} from './users';
 import {useEffect, useState} from 'react';
 
 import {TokenContents} from '@faims3/data-model';
+import NotFound404 from './gui/pages/404';
 
 // type AppProps = {};
 
@@ -185,7 +186,7 @@ export default function App() {
                   }
                 />
                 <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
-                <Route path="*" element={<Navigate to={ROUTES.INDEX} />} />
+                <Route path="*" Component={NotFound404} />
               </Routes>
             </MainLayout>
           </Router>
