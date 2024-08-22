@@ -12,30 +12,23 @@ on:
   #   - cron: '39 20 * * 1-5'
 
 jobs:
-  # check_date:
-  #   runs-on: ubuntu-latest
-  #   name: Check latest commit
-  #   outputs:
-  #     should_run: ${{ steps.commitswithintime.outputs.has-new-commits-within-time }}
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-
-      # - name: Run CommitsWithinTime script
-      #   uses: AlexStormwood/CommitsWithinTime@v1.1.12
-      #   id: commitswithintime
-      #   with:
-      #     days: 1
-      # - name: Get the output from CommitsWithinTime
-      #   run: |
-      #     echo "The 'has-new-commits-within-time' value is ${{ steps.commitswithintime.outputs.has-new-commits-within-time }}"
-      #     echo "The 'number-of-commits-within-time' value is ${{ steps.commitswithintime.outputs.number-of-commits-within-time }}"
-      #     echo "The 'total-commits' value is ${{ steps.commitswithintime.outputs.total-commits }}"
-  node-deb-gh-build-play:
+  check_date:
     runs-on: ubuntu-latest
-    # needs: check_date
-    # if: ${{ needs.check_date.outputs.should_run == 'true' }}
+    name: Check latest commit
+    outputs:
+      should_run: ${{ steps.commitswithintime.outputs.has-new-commits-within-time }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for changes
+        id: check
+        run: |
+          git diff --quiet @{yesterday}.. || echo "changed=true" >> $GITHUB_OUTPUT
+   node-deb-gh-build-play:
+    runs-on: ubuntu-latest
+    needs: check_date
+    if: ${{ needs.check_date.outputs.changed == 'true' }}
     continue-on-error: false
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
@@ -85,7 +78,7 @@ jobs:
           echo "version_string=v${{env.app_version}}-android-#${{env.sha_short}}" >> "$GITHUB_ENV"        
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Cache Gradle packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
