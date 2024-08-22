@@ -15,8 +15,6 @@ jobs:
   check_date:
     runs-on: ubuntu-latest
     name: Check latest commit
-    outputs:
-      should_run: ${{ steps.commitswithintime.outputs.has-new-commits-within-time }}
     steps:
       - uses: actions/checkout@v4
         with:
