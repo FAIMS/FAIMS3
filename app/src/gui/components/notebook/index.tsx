@@ -5,13 +5,7 @@ import {
   Typography,
   Box,
   Paper,
-  Grid,
-  Table,
-  TableBody,
-  TableRow,
-  TableCell,
   AppBar,
-  TableContainer,
   Alert,
   AlertTitle,
   Button,
@@ -23,7 +17,6 @@ import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectInformation, ProjectUIModel} from '@faims3/data-model';
 import DraftsTable from './draft_table';
 import {RecordsBrowseTable} from './record_table';
-import RangeHeader from './range_header';
 import MetadataRenderer from '../metadataRenderer';
 import AddRecordButtons from './add_record_by_type';
 import NotebookSettings from './settings';
@@ -381,11 +374,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 />
               </Typography>
 
-              <ArchiveSurvey
-                onArchive={function (): void {
-                  throw new Error('Function not implemented.');
-                }}
-              />
+              <ArchiveSurvey />
             </Box>
           </TabPanel>
 

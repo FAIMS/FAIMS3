@@ -1,5 +1,5 @@
 import React, {useContext} from 'react';
-import {Alert, Box, Button, Typography} from '@mui/material';
+import {Box, Button, Typography} from '@mui/material';
 import moment from 'moment/moment';
 import {ActionType} from '../../../context/actions';
 import {store} from '../../../context/store';

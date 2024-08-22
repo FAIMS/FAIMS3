@@ -1,16 +1,21 @@
 import React from 'react';
-import { Box, Typography, Breadcrumbs as MuiBreadcrumbs, IconButton } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import {
+  Box,
+  Typography,
+  Breadcrumbs as MuiBreadcrumbs,
+  IconButton,
+} from '@mui/material';
+import {Link as RouterLink} from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
-import { useTheme } from '@mui/material/styles';
+import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
 type BreadcrumbProps = {
-  data: Array<{ title: string; link?: string }>;
+  data: Array<{title: string; link?: string}>;
 };
 
 export default function Breadcrumbs(props: BreadcrumbProps) {
-  const { data } = props;
+  const {data} = props;
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
@@ -23,7 +28,7 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
   };
 
   return (
-    <Box display="flex" flexDirection="row-reverse" sx={{ p: 1, m: 1 }}>
+    <Box display="flex" flexDirection="row-reverse" sx={{p: 1, m: 1}}>
       <MuiBreadcrumbs
         aria-label="breadcrumb"
         maxItems={not_xs ? 4 : 2}

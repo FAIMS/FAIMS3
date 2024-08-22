@@ -38,7 +38,9 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 export default function Notebook() {
   const {project_id} = useParams<{project_id: ProjectID}>();
-  const [project_info, setProjectInfo] = useState(undefined as ProjectInformation | undefined);
+  const [project_info, setProjectInfo] = useState(
+    undefined as ProjectInformation | undefined
+  );
   const [project_error, setProjectError] = useState(null as any);
   const loading = project_info === undefined;
 
@@ -84,11 +86,7 @@ export default function Notebook() {
           backgroundColor: '#f5f5f5',
         }}
       >
-        <Grid
-          container
-          direction="column"
-          alignItems="center"
-        >
+        <Grid container direction="column" alignItems="center">
           <Grid item>
             <MenuBookIcon
               color={'secondary'}
@@ -96,23 +94,30 @@ export default function Notebook() {
             />
           </Grid>
           <Grid item>
-            <Typography variant={mq_above_md ? 'h3' : 'h4'} component={'div'} sx={{ fontWeight: 'bold' }}>
+            <Typography
+              variant={mq_above_md ? 'h3' : 'h4'}
+              component={'div'}
+              sx={{fontWeight: 'bold'}}
+            >
               {project_info.name}
             </Typography>
           </Grid>
         </Grid>
       </Box>
 
-      <Box sx={{ paddingLeft: '16px', marginTop: '8px' }}>
+      <Box sx={{paddingLeft: '16px', marginTop: '8px'}}>
         <Breadcrumbs data={breadcrumbs} />
       </Box>
 
-      <Box sx={{ paddingTop: '16px' }}>
+      <Box sx={{paddingTop: '16px'}}>
         <RefreshNotebook
           handleRefresh={handleRefresh}
           project_name={project_info.name}
         />
-        <NotebookComponent project={project_info} handleRefresh={handleRefresh} />
+        <NotebookComponent
+          project={project_info}
+          handleRefresh={handleRefresh}
+        />
       </Box>
     </Box>
   ) : (
