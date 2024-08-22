@@ -7,17 +7,31 @@ import {useInterval} from '../../../utils/useInterval';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
-
 interface RefreshNotebookProps {
   handleRefresh: Function;
   project_name: string;
 }
+
+/**
+ * RefreshNotebook component displays the last refresh time of the notebook
+ * and allows users to refresh the notebook's data. The component updates
+ * the time since the last refresh every second and shows a warning color
+ * if the data has not been refreshed for a certain period.
+ *
+ * @param {RefreshNotebookProps} props - The properties for the RefreshNotebook component.
+ * @param {Function} props.handleRefresh - Function to refresh the notebook's data.
+ * @param {string} props.project_name - The name of the project associated with the notebook.
+ * @returns {JSX.Element} - The JSX element for the RefreshNotebook component.
+ */
 export default function RefreshNotebook(props: RefreshNotebookProps) {
   /**
-   * Refresh alert will change to warning after TIME_LAPSED seconds.
-   *
+   * LAST_REFRESH_FORMAT defines the date format for displaying the last refresh time.
    */
   const LAST_REFRESH_FORMAT = 'MMMM Do YYYY, LTS';
+
+  /**
+   * TIME_LAPSED defines the threshold time in seconds after which the refresh alert changes to a warning.
+   */
   const TIME_LAPSED = 600; //s
 
   const [lastRefresh, setLastRefresh] = React.useState(
@@ -32,6 +46,10 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
   const globalState = useContext(store);
   const {dispatch} = globalState;
 
+  /**
+   * handleRefresh triggers the refresh process for the notebook data.
+   * It updates the last refresh time and shows a success or error alert based on the outcome.
+   */
   const handleRefresh = () => {
     props
       .handleRefresh()
@@ -58,6 +76,10 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
       });
   };
 
+  /**
+   * useInterval is a custom hook that increments the counter every second
+   * and updates the time since the last refresh.
+   */
   useInterval(() => {
     setCounter(counter => counter + 1);
     setFromNow(moment(lastRefresh, LAST_REFRESH_FORMAT).fromNow());
@@ -76,25 +98,27 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
         marginBottom: '12px',
       }}
     >
-      <Box sx={{ textAlign: 'left' }}> {/* Left-aligned text */}
+      <Box sx={{textAlign: 'left'}}>
+        {' '}
+        {/* Left-aligned text */}
         <Typography
           variant="body2"
           color="textPrimary"
-          sx={{ fontWeight: 'bold', fontSize: '0.85rem', lineHeight: 1.2 }}
+          sx={{fontWeight: 'bold', fontSize: '0.85rem', lineHeight: 1.2}}
         >
           Last refresh
         </Typography>
         <Typography
           variant="body2"
           color="textPrimary"
-          sx={{ fontSize: '0.85rem', lineHeight: 1.2 }}
+          sx={{fontSize: '0.85rem', lineHeight: 1.2}}
         >
           {lastRefresh}
         </Typography>
         <Typography
           variant="body2"
           color="textSecondary"
-          sx={{ fontSize: '0.75rem' }}
+          sx={{fontSize: '0.75rem'}}
         >
           {fromNow}
         </Typography>
@@ -104,7 +128,7 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
         startIcon={<RefreshIcon />}
         onClick={handleRefresh}
         variant="contained"
-        sx={{ marginLeft: '12px', padding: '4px 8px', fontSize: '0.75rem' }}  // Smaller button for compactness
+        sx={{marginLeft: '12px', padding: '4px 8px', fontSize: '0.75rem'}}
       >
         Refresh
       </Button>
