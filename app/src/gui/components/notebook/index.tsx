@@ -331,7 +331,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 <MetadataRenderer
                   project_id={project.project_id}
                   metadata_key={'pre_description'}
-                  chips={false} // Set to false to enable Markdown rendering
+                  chips={false}
                 />
               </Typography>
 
