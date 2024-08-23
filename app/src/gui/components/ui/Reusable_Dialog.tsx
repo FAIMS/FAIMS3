@@ -76,30 +76,33 @@ export default function ReusableDialog({
 }: ReusableDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle style={{ textAlign: 'center', paddingBottom: 0 }}>
-        <Box display="flex" justifyContent="center">
-          {icon && (
-            <Box mb={2}>
-              {icon}
-            </Box>
-          )}
+      <DialogTitle style={{textAlign: 'center', paddingBottom: 0}}>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          flexDirection="column"
+          mb={2}
+        >
+          {icon && <Box mb={1}>{icon}</Box>}
+          <Typography
+            variant="h4"
+            style={{fontWeight: 'bold', textAlign: 'center'}}
+          >
+            {title}
+          </Typography>
         </Box>
-        <Typography variant="h6" style={{ fontWeight: 'bold' }}>
-          {title}
-        </Typography>
         <IconButton
           aria-label="close"
           onClick={onClose}
-          style={{ position: 'absolute', top: 8, right: 8 }}
+          style={{position: 'absolute', top: 8, right: 8}}
         >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
       <Divider />
-      <DialogContent>
-        {children}
-      </DialogContent>
-      <DialogActions style={{ justifyContent: 'space-between', padding: '8px' }}>
+      <DialogContent>{children}</DialogContent>
+      <DialogActions style={{justifyContent: 'space-between', padding: '8px'}}>
         <Button onClick={onClose} color="primary">
           {cancelButtonText}
         </Button>
