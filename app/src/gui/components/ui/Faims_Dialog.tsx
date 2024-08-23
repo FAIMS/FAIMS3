@@ -13,8 +13,8 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: Reusable_Dialog.tsx
- * Description: ReusableDialog is a customizable dialog component that provides
+ * Filename: FaimsDialog.tsx
+ * Description: FaimsDialog is a customizable dialog component that provides
  * a consistent layout for dialogs/popus across the application.
  */
 import React from 'react';
@@ -31,7 +31,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
-type ReusableDialogProps = {
+type FaimsDialogProps = {
   open: boolean;
   title: string;
   icon?: React.ReactNode;
@@ -61,7 +61,7 @@ type ReusableDialogProps = {
  * @param {string} [cancelButtonText='Cancel'] - The text displayed on the cancel button.
  */
 
-export default function ReusableDialog({
+export default function FaimsDialog({
   open,
   title,
   icon,
@@ -73,7 +73,7 @@ export default function ReusableDialog({
   primaryActionColor = 'primary',
   primaryActionVariant = 'contained',
   cancelButtonText = 'Cancel',
-}: ReusableDialogProps) {
+}: FaimsDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle style={{textAlign: 'center', paddingBottom: 0}}>
