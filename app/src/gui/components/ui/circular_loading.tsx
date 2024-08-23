@@ -1,8 +1,8 @@
-import { CircularProgress, Grid, Typography } from '@mui/material';
+import {CircularProgress, Grid, Typography} from '@mui/material';
 import React from 'react';
 
 /**
- * CircularLoading component displays a loading spinner with a label, 
+ * CircularLoading component displays a loading spinner with a label,
  * designed to be responsive and centered on different screen sizes.
  *
  * @param {Object} props - The component props
@@ -10,19 +10,19 @@ import React from 'react';
  * @returns {JSX.Element} The rendered CircularLoading component
  */
 
-export default function CircularLoading(props: { label: string }) {
+export default function CircularLoading(props: {label: string}) {
   return (
     <Grid
       container
-      direction={{ xs: 'column', sm: 'row' }}
+      direction={{xs: 'column', sm: 'row'}}
       alignItems="center"
-      justifyContent="center" 
+      justifyContent="center"
       spacing={2}
       sx={{
         padding: 3,
         maxWidth: '100%',
         width: '100%',
-        minHeight: { xs: '60vh', sm: 'auto' },
+        minHeight: {xs: '60vh', sm: 'auto'},
         textAlign: 'center',
       }}
     >
@@ -42,7 +42,7 @@ export default function CircularLoading(props: { label: string }) {
           sx={{
             fontWeight: 600,
             display: 'block',
-            mt: { xs: 2, sm: 0 },
+            mt: {xs: 2, sm: 0},
           }}
         >
           {props.label}
