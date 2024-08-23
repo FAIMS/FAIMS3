@@ -67,36 +67,36 @@ export default function SystemAlert() {
 
   const currentAlert = alerts.length > 0 ? alerts[alerts.length - 1] : null;
 
+  if (!currentAlert) {
+    return null;
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <div className={classes.root}>
-        {currentAlert && (
-          <Snackbar
-            key={currentAlert.key}
-            open={true}
-            autoHideDuration={currentAlert.severity === 'error' ? 10000 : 6000}
-            onClose={() => handleClose(currentAlert.key)}
-            anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
+        <Snackbar
+          key={currentAlert.key || 'default-snackbar-key'}
+          open={!!currentAlert}
+          autoHideDuration={currentAlert.severity === 'error' ? 10000 : 6000}
+          onClose={() => handleClose(currentAlert.key)}
+          anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
+        >
+          <Alert
+            severity={currentAlert.severity}
+            variant="filled"
+            sx={{
+              minWidth: '300px',
+              boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.3)',
+              opacity: 0.5,
+              transition: 'transform 0.3s ease-out',
+              transform: 'scale(1)',
+            }}
           >
-            <Alert
-              onClose={() => handleClose(currentAlert.key)}
-              severity={currentAlert.severity}
-              variant="filled"
-              sx={{
-                minWidth: '300px',
-                boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.3)',
-                opacity: 0.5,
-                animation: 'fadeIn 0.3s ease-out',
-                transition: 'transform 0.3s ease-out',
-                transform: 'scale(1)',
-              }}
-            >
-              {'message' in currentAlert
-                ? currentAlert.message
-                : currentAlert.element}
-            </Alert>
-          </Snackbar>
-        )}
+            {'message' in currentAlert
+              ? currentAlert.message
+              : currentAlert.element}
+          </Alert>
+        </Snackbar>
       </div>
     </ThemeProvider>
   );
