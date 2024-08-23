@@ -40,8 +40,7 @@ type DiagProps = {
   path?: string | null;
   isSyncing?: string;
 };
-export default function FaimsDialog(props: DiagProps) {
-  //   const [open, setOpen] = React.useState(props.open??false);
+export default function FaimsAttachmentManagerDialog(props: DiagProps) {
   const {open, setopen, project_id, path, isSyncing} = props;
 
   return (
