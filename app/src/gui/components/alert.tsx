@@ -18,14 +18,14 @@
  *   Alerts are shown one at a time with configurable durations and severity levels.
  */
 
-import React, { useContext } from 'react';
+import React, {useContext} from 'react';
 import Snackbar from '@mui/material/Snackbar';
-import { ThemeProvider } from '@mui/material/styles';
+import {ThemeProvider} from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
-import { createUseStyles } from 'react-jss';
+import {createUseStyles} from 'react-jss';
 import theme from '../theme';
-import { store } from '../../context/store';
-import { ActionType } from '../../context/actions';
+import {store} from '../../context/store';
+import {ActionType} from '../../context/actions';
 
 const useStyles = createUseStyles({
   root: {
@@ -39,7 +39,7 @@ const useStyles = createUseStyles({
 /**
  * SystemAlert component is responsible for rendering alerts in the form of snackbars at the bottom-center of the screen.
  * Alerts are shown one at a time, with different durations based on their severity level.
- * 
+ *
  * @component
  * @example
  * return (
@@ -50,18 +50,18 @@ const useStyles = createUseStyles({
 export default function SystemAlert() {
   const classes = useStyles();
   const globalState = useContext(store);
-  const { dispatch } = globalState;
+  const {dispatch} = globalState;
   const alerts = globalState.state.alerts;
 
   /**
-  * Handles the closing of the current alert.
-  *
-  * @param {string} key - The unique key identifying the alert to be closed.
-  */
+   * Handles the closing of the current alert.
+   *
+   * @param {string} key - The unique key identifying the alert to be closed.
+   */
   const handleClose = (key: string) => {
     dispatch({
       type: ActionType.DELETE_ALERT,
-      payload: { key },
+      payload: {key},
     });
   };
 
@@ -76,7 +76,7 @@ export default function SystemAlert() {
             open={true}
             autoHideDuration={currentAlert.severity === 'error' ? 10000 : 6000}
             onClose={() => handleClose(currentAlert.key)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
           >
             <Alert
               onClose={() => handleClose(currentAlert.key)}
@@ -84,14 +84,16 @@ export default function SystemAlert() {
               variant="filled"
               sx={{
                 minWidth: '300px',
-                boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.3)', // Subtle shadow
-                opacity: 0.5, // Slightly hazy effect
-                animation: 'fadeIn 0.3s ease-out', // Fade-in animation
-                transition: 'transform 0.3s ease-out', // Smooth transition for showing the alert
-                transform: 'scale(1)', // Ensures the alert scales nicely
+                boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.3)',
+                opacity: 0.5,
+                animation: 'fadeIn 0.3s ease-out',
+                transition: 'transform 0.3s ease-out',
+                transform: 'scale(1)',
               }}
             >
-              {'message' in currentAlert ? currentAlert.message : currentAlert.element}
+              {'message' in currentAlert
+                ? currentAlert.message
+                : currentAlert.element}
             </Alert>
           </Snackbar>
         )}
