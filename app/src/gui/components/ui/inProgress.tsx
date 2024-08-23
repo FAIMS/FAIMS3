@@ -50,7 +50,7 @@ export default function InProgress() {
         textAlign: 'center',
       }}
     >
-      <TimelapseIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
+      <TimelapseIcon color="primary" sx={{fontSize: 40, mr: 2}} />
       <Typography variant="h6" component="span">
         Feature in progress
       </Typography>
