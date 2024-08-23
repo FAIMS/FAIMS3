@@ -22,6 +22,7 @@ import React, {useEffect, useState} from 'react';
 import {Chip} from '@mui/material';
 import {ProjectID} from '@faims3/data-model';
 import {getMetadataValue} from '../../sync/metadata';
+import {RichTextField} from '../fields/RichText';
 
 type MetadataProps = {
   project_id: ProjectID;
@@ -31,34 +32,32 @@ type MetadataProps = {
 };
 
 export default function MetadataRenderer(props: MetadataProps) {
-  const project_id = props.project_id;
-  const chips = props.chips ?? true;
-  const metadata_key = props.metadata_key;
-  const metadata_label = props.metadata_label;
+  const {project_id, metadata_key, metadata_label, chips = true} = props;
   const [value, setValue] = useState('');
 
   useEffect(() => {
     getMetadataValue(project_id, metadata_key).then(v => {
       setValue(v as string);
     });
-  }, []);
+  }, [project_id, metadata_key]);
 
-  return chips && value !== '' ? (
-    <Chip
-      size={'small'}
-      style={{marginRight: '5px', marginBottom: '5px'}}
-      label={
-        <React.Fragment>
-          {metadata_label ? (
-            <span>{metadata_label}: </span>
-          ) : (
-            <React.Fragment />
-          )}
-          <span>{value}</span>
-        </React.Fragment>
-      }
-    />
-  ) : (
-    <span>{value}</span>
-  );
+  if (chips && value !== '') {
+    return (
+      <Chip
+        size={'small'}
+        style={{marginRight: '5px', marginBottom: '5px'}}
+        label={
+          <>
+            {metadata_label && <span>{metadata_label}: </span>}
+            <span>{value}</span>
+          </>
+        }
+      />
+    );
+  } else if (value !== '') {
+    // Use RichTextField to render markdown if chips is false
+    return <RichTextField content={value} />;
+  } else {
+    return <span>No data available</span>;
+  }
 }

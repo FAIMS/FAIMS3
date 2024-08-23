@@ -27,8 +27,7 @@ import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import ArchiveSurvey from './archive_survey';
-import EditIcon from '@mui/icons-material/Edit';
+import {RichTextField} from '../../fields/RichText';
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
@@ -211,9 +210,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
               >
                 <Tab label="Records" {...a11yProps(0, NOTEBOOK_NAME)} />
                 <Tab label="Details" {...a11yProps(1, NOTEBOOK_NAME)} />
-                <Tab label="Access" {...a11yProps(2, NOTEBOOK_NAME)} />
-                <Tab label="Layers" {...a11yProps(3, NOTEBOOK_NAME)} />
-                <Tab label="Settings" {...a11yProps(4, NOTEBOOK_NAME)} />
+                <Tab label="Settings" {...a11yProps(2, NOTEBOOK_NAME)} />
               </Tabs>
             </AppBar>
           </Box>
@@ -283,15 +280,17 @@ export default function NotebookComponent(props: NotebookComponentProps) {
               <Typography
                 variant="h5"
                 sx={{
-                  textAlign: 'left',
-                  fontSize: '1rem',
+                  textAlign: 'center',
+                  fontSize: '1.75rem',
                   fontWeight: 'bold',
                   flexGrow: 1,
                 }}
               >
                 Survey Details
               </Typography>
-              <IconButton
+
+              {/* Unhide the edit button when the notebook cna be edited */}
+              {/* <IconButton
                 color="primary"
                 aria-label="edit"
                 onClick={() => {
@@ -307,7 +306,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 >
                   Edit
                 </Typography>
-              </IconButton>
+              </IconButton> */}
             </Box>
 
             <Box sx={{p: 2}}>
@@ -332,20 +331,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 <MetadataRenderer
                   project_id={project.project_id}
                   metadata_key={'pre_description'}
-                  chips={false}
-                />
-              </Typography>
-
-              <Typography
-                variant="body1"
-                gutterBottom
-                sx={{marginBottom: '16px'}}
-              >
-                <strong>Status:</strong>{' '}
-                <MetadataRenderer
-                  project_id={project.project_id}
-                  metadata_key={'project_status'}
-                  chips={true}
+                  chips={false} // Set to false to enable Markdown rendering
                 />
               </Typography>
 
@@ -373,12 +359,10 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   chips={false}
                 />
               </Typography>
-
-              <ArchiveSurvey />
             </Box>
           </TabPanel>
 
-          <TabPanel value={notebookTabValue} index={4} id={'notebook'}>
+          <TabPanel value={notebookTabValue} index={2} id={'notebook'}>
             {uiSpec !== null && <NotebookSettings uiSpec={uiSpec} />}
           </TabPanel>
         </Box>
