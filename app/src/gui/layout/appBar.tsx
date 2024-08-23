@@ -19,8 +19,8 @@
  *   throughout the app.
  */
 
-import React, { useEffect, useState } from 'react';
-import { Link as RouterLink, NavLink } from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {Link as RouterLink, NavLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
   CircularProgress,
@@ -30,7 +30,7 @@ import {
   ListItemButton,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { createUseStyles as makeStyles } from 'react-jss';
+import {createUseStyles as makeStyles} from 'react-jss';
 import CssBaseline from '@mui/material/CssBaseline';
 import clsx from 'clsx';
 import Collapse from '@mui/material/Collapse';
@@ -48,17 +48,17 @@ import AccountTree from '@mui/icons-material/AccountTree';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import { getActiveProjectList } from '../../sync/projects';
+import {getActiveProjectList} from '../../sync/projects';
 import SystemAlert from '../components/alert';
-import { ProjectInformation } from '@faims3/data-model';
+import {ProjectInformation} from '@faims3/data-model';
 import AppBarAuth from '../components/authentication/appbarAuth';
-import { TokenContents } from '@faims3/data-model';
-import { checkToken } from '../../utils/helpers';
+import {TokenContents} from '@faims3/data-model';
+import {checkToken} from '../../utils/helpers';
 import SyncStatus from '../components/sync';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import HelpIcon from '@mui/icons-material/Help';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import { now } from 'lodash';
+import {now} from 'lodash';
 
 /**
  * Represents the properties for a menu list item.
@@ -79,7 +79,7 @@ type ProjectListItemProps = {
 /**
  * Represents the type of icon used in the navigation menu.
  * @typedef {React.ReactElement | string | number | undefined} IconType
- */type IconType =
+ */ type IconType =
   | undefined
   | string
   | number
@@ -231,7 +231,6 @@ export default function MainAppBar(props: NavbarProps) {
 
   const [projectList, setProjectList] = useState<ProjectInformation[]>([]);
 
-
   useEffect(() => {
     getActiveProjectList().then(projects => setProjectList(projects));
   }, []);
@@ -261,49 +260,31 @@ export default function MainAppBar(props: NavbarProps) {
   ];
 
   const bottomMenuItems: Array<MenuItemProps> = [
-
-    // @TODO Ranisa: Commented this for now, to be discussed if needed to display this menu item
-    // {
-    //   title: 'About Build',
-    //   icon: <SettingsIcon />,
-    //   to: ROUTES.ABOUT_BUILD,
-    //   disabled: false,
-    // },
-
     {
-      title: 'Help',
-      icon: <HelpIcon />,
-      to: ROUTES.HELP,
-      disabled: false,
-    },
-
-    //@TODO: Conditionally render the "Switch org" option if user is part of multi organisations
-    {
-      title: 'Switch org',
-      icon: <SwapHorizIcon />,
-      to: ROUTES.SWITCH_ORG,
+      title: 'About Build',
+      icon: <SettingsIcon />,
+      to: ROUTES.ABOUT_BUILD,
       disabled: false,
     },
 
     isAuthenticated
       ? {
-        title: 'Sign out',
-        icon: <AccountCircleIcon />,
-        to: ROUTES.SIGN_IN,
-        disabled: false,
-      }
+          title: 'Sign out',
+          icon: <AccountCircleIcon />,
+          to: ROUTES.SIGN_IN,
+          disabled: false,
+        }
       : {
-        title: 'Sign out',
-        icon: <AccountCircleIcon />,
-        to: '/',
-        disabled: true,
-      },
-
+          title: 'Sign out',
+          icon: <AccountCircleIcon />,
+          to: '/',
+          disabled: true,
+        },
   ];
 
   const [nestedMenuOpen, setNestedMenuOpen] = useState<{
     [key: string]: boolean;
-  }>({ Projects: false });
+  }>({Projects: false});
 
   return (
     <React.Fragment>
@@ -326,10 +307,10 @@ export default function MainAppBar(props: NavbarProps) {
             >
               <MenuIcon />
             </IconButton>
-            <NavLink style={{ flexGrow: 1 }} to={ROUTES.INDEX}>
+            <NavLink style={{flexGrow: 1}} to={ROUTES.INDEX}>
               <img
                 src="/static/logo/Fieldmark-Short-Green-NoBorder.png"
-                style={{ maxWidth: '140px', flex: 1 }}
+                style={{maxWidth: '140px', flex: 1}}
               />
             </NavLink>
             <div>
@@ -344,7 +325,7 @@ export default function MainAppBar(props: NavbarProps) {
           variant="temporary"
           anchor="left"
           open={isOpen}
-          ModalProps={{ onBackdropClick: toggle }}
+          ModalProps={{onBackdropClick: toggle}}
           classes={{
             paper: classes.drawerPaper,
           }}
@@ -370,7 +351,9 @@ export default function MainAppBar(props: NavbarProps) {
                     disabled={item.disabled}
                   >
                     <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText classes={{ primary: classes.listItemText }} >{item.title}  </ListItemText>
+                    <ListItemText classes={{primary: classes.listItemText}}>
+                      {item.title}{' '}
+                    </ListItemText>
                     {item.nested.length === 0 ? (
                       <CircularProgress size={12} thickness={4} />
                     ) : nestedMenuOpen[item.title] ? (
@@ -403,7 +386,10 @@ export default function MainAppBar(props: NavbarProps) {
                             onClick={toggle}
                           >
                             <ListItemIcon>{nestedItem.icon}</ListItemIcon>
-                            <ListItemText primary={nestedItem.title} classes={{ primary: classes.listItemText }} />
+                            <ListItemText
+                              primary={nestedItem.title}
+                              classes={{primary: classes.listItemText}}
+                            />
                           </ListItemButton>
                         )
                       )}
@@ -419,7 +405,10 @@ export default function MainAppBar(props: NavbarProps) {
                   onClick={toggle}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.title} classes={{ primary: classes.listItemText }} />
+                  <ListItemText
+                    primary={item.title}
+                    classes={{primary: classes.listItemText}}
+                  />
                 </ListItemButton>
               );
             })}
@@ -442,7 +431,10 @@ export default function MainAppBar(props: NavbarProps) {
                     onClick={toggle}
                   >
                     <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText primary={item.title} classes={{ primary: classes.listItemText }} />
+                    <ListItemText
+                      primary={item.title}
+                      classes={{primary: classes.listItemText}}
+                    />
                   </ListItemButton>
                 )
               )}
