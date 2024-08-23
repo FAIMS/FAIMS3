@@ -9,7 +9,6 @@ import {
   Alert,
   AlertTitle,
   Button,
-  IconButton,
 } from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {ProjectUIViewsets} from '@faims3/data-model';
@@ -27,7 +26,6 @@ import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import {RichTextField} from '../../fields/RichText';
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
