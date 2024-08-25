@@ -18,9 +18,19 @@
  *   Implements an address field
  */
 
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {FieldProps} from 'formik';
-import {Stack, TextField} from '@mui/material';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Collapse,
+  IconButton,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import _ from 'lodash';
 
 interface Props {
@@ -37,7 +47,7 @@ interface AddressType {
   state?: string;
   postcode?: string;
   country?: string;
-  country_code?: 'au';
+  country_code?: string;
 }
 
 export const AddressField = (props: FieldProps & Props) => {
@@ -47,9 +57,10 @@ export const AddressField = (props: FieldProps & Props) => {
   const [displayName, setDisplayName] = useState(
     props.field.value.display_name || ''
   );
+  const [collapsed, setCollapsed] = useState(displayName === '');
 
   const setFieldValue = (a: AddressType) => {
-    const dn = `${a.house_number || ''} ${a.road || ''}, ${a.suburb || ''}, ${a.postcode || ''}`;
+    const dn = `${a.house_number || ''} ${a.road || ''}, ${a.suburb || ''}, ${a.state || ''} ${a.postcode || ''}`;
     setDisplayName(dn);
     setAddress(a);
     props.form.setFieldValue(props.field.name, {
@@ -68,40 +79,56 @@ export const AddressField = (props: FieldProps & Props) => {
     };
   };
 
+  const handleEdit = () => {
+    setCollapsed(!collapsed);
+  };
+
   return (
     <div>
-      <Stack spacing={2}>
-        <div>{props.label}</div>
-        <div>{props.helperText}</div>
+      <Typography variant="h4">
+        {displayName}
+        <IconButton onClick={handleEdit} size={'small'}>
+          <EditIcon />
+        </IconButton>
+      </Typography>
 
-        <TextField value={displayName} label="Address" fullWidth disabled />
+      <Collapse in={collapsed}>
+        <Stack spacing={2}>
+          <div>{props.label}</div>
+          <div>{props.helperText}</div>
 
-        <TextField
-          label="House Number"
-          value={address.house_number}
-          fullWidth
-          onChange={updateProperty('house_number')}
-        />
-        <TextField
-          label="Street Name"
-          value={address.road}
-          fullWidth
-          onChange={updateProperty('road')}
-        />
-        <TextField
-          label="Suburb"
-          value={address.suburb}
-          fullWidth
-          onChange={updateProperty('suburb')}
-        />
-        <TextField
-          label="Postcode"
-          value={address.postcode}
-          fullWidth
-          onChange={updateProperty('postcode')}
-        />
-
-      </Stack>
+          <TextField
+            label="House Number"
+            value={address.house_number}
+            fullWidth
+            onChange={updateProperty('house_number')}
+          />
+          <TextField
+            label="Street Name"
+            value={address.road}
+            fullWidth
+            onChange={updateProperty('road')}
+          />
+          <TextField
+            label="Suburb"
+            value={address.suburb}
+            fullWidth
+            onChange={updateProperty('suburb')}
+          />
+          <TextField
+            label="State"
+            value={address.state}
+            fullWidth
+            onChange={updateProperty('state')}
+          />
+          <TextField
+            label="Postcode"
+            value={address.postcode}
+            fullWidth
+            onChange={updateProperty('postcode')}
+          />
+        </Stack>
+      </Collapse>
     </div>
   );
 };
