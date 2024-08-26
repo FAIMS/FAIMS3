@@ -18,12 +18,9 @@
  *   Implements an address field
  */
 
-import React, {useRef, useState} from 'react';
+import React, {useState} from 'react';
 import {FieldProps} from 'formik';
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Collapse,
   IconButton,
   Stack,
@@ -38,6 +35,12 @@ interface Props {
   label?: string;
 }
 
+/**
+ * AddressType is based on GeocodeJSON an extension to GeoJSON for storing
+ * address data.  https://github.com/geocoders/geocodejson-spec/blob/master/draft/README.md
+ * This format is returned by some reverse geocoding APIs so should facilitate integration
+ * with them.
+ */
 interface AddressType {
   house_number?: string;
   road?: string;
@@ -50,12 +53,23 @@ interface AddressType {
   country_code?: string;
 }
 
+/**
+ * AddressField - an address field for FAIMS
+ * Initial version supports manual input of addresses and provides
+ * a summary of the entered value.
+ * Tuned for Australian addresses initially.
+ * TODO: internationalise, use eg. https://www.npmjs.com/package/react-country-state-city to
+ * generate drop-down menus for eg. state and maybe city names
+ * TODO: use a geocoding API to do address lookup
+ *
+ * @param props Component properties
+ */
 export const AddressField = (props: FieldProps & Props) => {
   const [address, setAddress] = useState<AddressType>(
-    props.field.value.address || {}
+    props.field.value?.address || {}
   );
   const [displayName, setDisplayName] = useState(
-    props.field.value.display_name || ''
+    props.field.value?.display_name || ''
   );
   const [collapsed, setCollapsed] = useState(displayName === '');
 
@@ -85,7 +99,8 @@ export const AddressField = (props: FieldProps & Props) => {
 
   return (
     <div>
-      <Typography variant="h4">
+      <Typography variant="h5">{props.label}</Typography>
+      <Typography variant="h5">
         {displayName}
         <IconButton onClick={handleEdit} size={'small'}>
           <EditIcon />
@@ -94,7 +109,6 @@ export const AddressField = (props: FieldProps & Props) => {
 
       <Collapse in={collapsed}>
         <Stack spacing={2}>
-          <div>{props.label}</div>
           <div>{props.helperText}</div>
 
           <TextField
