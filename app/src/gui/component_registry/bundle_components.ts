@@ -211,7 +211,7 @@ registerField(
 
 registerField(
   'faims-custom',
-  'Address',
+  'AddressField',
   'Address Field',
   'Enter a valid street address',
   'Geo',
