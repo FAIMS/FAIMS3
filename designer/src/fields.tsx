@@ -430,6 +430,18 @@ const fields: {[key: string]: FieldType} = {
     validationSchema: [['yup.string']],
     initialValue: '1',
   },
+  AddressField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'Address',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      helperText: 'Enter your address',
+      required: false,
+      name: 'Address',
+      label: 'Address',
+    },
+    validationSchema: [['yup.object'], ['yup.nullable']],
+  },
 };
 
 export const getFieldNames = () => {
