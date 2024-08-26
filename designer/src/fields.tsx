@@ -433,7 +433,7 @@ const fields: {[key: string]: FieldType} = {
   AddressField: {
     'component-namespace': 'faims-custom',
     'component-name': 'AddressField',
-    'type-returned': 'faims-core::String',
+    'type-returned': 'faims-core::JSON',
     'component-parameters': {
       helperText: 'Enter your address',
       required: false,
