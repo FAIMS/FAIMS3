@@ -39,9 +39,9 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export default function Notebook() {
   const {project_id} = useParams<{project_id: ProjectID}>();
-  const [project_info, setProjectInfo] = useState(
-    undefined as ProjectInformation | undefined
-  );
+  const [project_info, setProjectInfo] = useState<
+    ProjectInformation | undefined
+  >(undefined);
   const [project_error, setProjectError] = useState(null as any);
   const loading = project_info === undefined;
 
@@ -50,6 +50,9 @@ export default function Notebook() {
 
     try {
       const info = await getProjectInfo(project_id!);
+
+      console.log('DEBUG: CURRENT', info);
+
       setProjectInfo(info);
     } catch (err) {
       setProjectError(err);
@@ -81,8 +84,6 @@ export default function Notebook() {
   };
 
   const projects = useContext(ProjectsContext);
-
-  console.log('projects:', projects);
 
   return !loading ? (
     <Box>

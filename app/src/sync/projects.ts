@@ -173,6 +173,7 @@ export async function getAvailableProjectsFromListing(
         projects.push(e.doc as ProjectObject);
       }
     });
+    
     for (const project of projects) {
       const project_id = project._id;
       const full_project_id = resolve_project_id(listing_id, project_id);
@@ -181,6 +182,7 @@ export async function getAvailableProjectsFromListing(
       }
     }
   }
+
   return output;
 }
 
