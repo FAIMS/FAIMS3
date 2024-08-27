@@ -38,12 +38,24 @@ export default function SurveyCard({
       >
         <div
           style={{
-            fontWeight: 'bold',
-            fontSize: 22,
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingRight: 16,
           }}
         >
-          {survey.name}
+          <div
+            style={{
+              fontWeight: 'bold',
+              fontSize: 22,
+            }}
+          >
+            {survey.name}
+          </div>
+          <button style={{}}>Activate</button>
         </div>
+
         <div
           style={{
             display: 'flex',
