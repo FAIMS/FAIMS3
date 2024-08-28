@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - build/fixing-missing-views
   release:
     types: [published]
 
