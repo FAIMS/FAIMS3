@@ -24,6 +24,11 @@ import {BUILD_VERSION, BUILD_VERSION_DEFAULT} from './version';
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
 
+// Constants
+
+// Default conductor URL
+const DEFAULT_CONDUCTOR_URL = 'http://localhost:8154';
+
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
@@ -246,16 +251,43 @@ function get_bugsnag_key(): string | false {
   return bugsnag_key;
 }
 
+/**
+ * Splits the CONDUCTOR_URL env variable, trimming for whitespace and filtering
+ * empty strings. Handles cases including an empty resulting list, and warns on
+ * empty strings being contained. Falls through to the DEFAULT_CONDUCTOR_URL
+ * where needed.
+ * @returns A list of conductor URLs which can act as servers.
+ */
 function get_conductor_urls(): string[] {
-  const config = import.meta.env.VITE_CONDUCTOR_URL;
-  if (config) {
-    const urls = config.split(',');
-    return urls.map((url: string) => url.trim());
+  const conductor_urls: string = import.meta.env.VITE_CONDUCTOR_URL;
+  if (conductor_urls) {
+    const urls = conductor_urls.split(',');
+    // Provide a warning if the split results in any empty strings
+    if (urls.some((url: string) => url.length === 0)) {
+      console.warn(
+        `CONDUCTOR_URL value was provided, but when split, contained entries which were empty. Value: ${conductor_urls}. After split: ${urls}.`
+      );
+    }
+    // return URLs without trailing whitespace and excluding any values which are empty e.g. due to a trailing comma
+
+    const filteredUrls = urls
+      .map((url: string) => url.trim())
+      .filter((url: string) => url.length > 0);
+
+    // Provide a warning if the split results in an empty list
+    if (!(filteredUrls.length > 0)) {
+      console.error(
+        `CONDUCTOR_URL value was provided, but when split, trimmed, and empty strings removed, had a length of zero. Value: ${conductor_urls}. After split: ${urls}. After filter: ${filteredUrls}. Returning default [${DEFAULT_CONDUCTOR_URL}]`
+      );
+      return [DEFAULT_CONDUCTOR_URL];
+    }
+
+    return filteredUrls;
   } else {
-    console.error(
-      'No CONDUCTOR URL configured, using default development server'
+    console.warn(
+      `No CONDUCTOR URL configured, using default development server at ${DEFAULT_CONDUCTOR_URL}.`
     );
-    return ['http://localhost:8154'];
+    return [DEFAULT_CONDUCTOR_URL];
   }
 }
 
