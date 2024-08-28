@@ -11,7 +11,7 @@
         "lint": "gts lint",
         "clean": "gts clean",
         "compile": "tsc",
-        "build": "tsc && copyfiles views/* build/src",
+        "build": "tsc && copyfiles views/* views/**/* build/src",
         "fix": "gts fix",
         "prestart": "npm run-script compile",
         "start": "node .",
