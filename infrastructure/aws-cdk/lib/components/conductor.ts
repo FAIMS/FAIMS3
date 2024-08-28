@@ -76,6 +76,12 @@ export class FaimsConductor extends Construct {
   constructor(scope: Construct, id: string, props: FaimsConductorProps) {
     super(scope, id);
 
+    // OUTPUTS
+    // ================
+
+    // Build the public URL and expose
+    this.conductorEndpoint = `https://${props.domainName}:${this.externalPort}`;
+
     // AUXILIARY SETUP
     // ================
 
@@ -302,11 +308,5 @@ export class FaimsConductor extends Construct {
       ec2.Port.tcp(this.internalPort),
       'Allow traffic from ALB to Conductor Fargate Service'
     );
-
-    // OUTPUTS
-    // ================
-
-    // Build the public URL and expose
-    this.conductorEndpoint = `https://${props.domainName}:${this.externalPort}`;
   }
 }
