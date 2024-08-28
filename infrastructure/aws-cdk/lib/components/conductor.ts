@@ -140,7 +140,9 @@ export class FaimsConductor extends Construct {
           COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
           COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
           COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
+          // Conductor API URLs
           CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
+          CONDUCTOR_URL: this.conductorEndpoint,
           // TODO Setup Google auth
           CONDUCTOR_AUTH_PROVIDERS: 'google',
           GOOGLE_CLIENT_ID: 'replace-me',
