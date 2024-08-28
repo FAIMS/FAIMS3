@@ -23,9 +23,9 @@ import React, {useEffect} from 'react';
 import {FieldProps} from 'formik';
 
 import * as ROUTES from '../../constants/routes';
-import {FAIMSTypeName, LocationState} from 'faims3-datamodel';
-import {RecordReference} from 'faims3-datamodel';
-import {getRecordsByType} from 'faims3-datamodel';
+import {FAIMSTypeName, LocationState} from '@faims3/data-model';
+import {RecordReference} from '@faims3/data-model';
+import {getRecordsByType} from '@faims3/data-model';
 import {useLocation} from 'react-router-dom';
 import {Grid, Typography} from '@mui/material';
 import {
@@ -39,7 +39,7 @@ import DataGridFieldLinksComponent, {
 import {RecordLinkProps} from '../components/record/relationships/types';
 import {SelectChangeEvent} from '@mui/material';
 import CreateLinkComponent from '../components/record/relationships/create_links';
-import {generateFAIMSDataID} from 'faims3-datamodel';
+import {generateFAIMSDataID} from '@faims3/data-model';
 import {logError} from '../../logging';
 
 interface Props {
@@ -240,8 +240,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   if (search !== '') search = '&' + search;
   const hrid =
     props.current_form !== undefined
-      ? props.form.values['hrid' + props.current_form] ??
-        props.form.values['_id']
+      ? (props.form.values['hrid' + props.current_form] ??
+        props.form.values['_id'])
       : props.form.values['_id'];
 
   useEffect(() => {
@@ -363,7 +363,10 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     parent_hrid: hrid,
     field_id: props.field.name, // the field identifier
     type: type, //type of this relation
-    parent_link: location.pathname.replace('/notebooks/', ''), // current form link
+    parent_link: location.pathname.replace(
+      ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE,
+      ''
+    ), // current form link
     parent: {},
     relation_type_vocabPair: relationshipPair, //pass the value of vocalPair
   };
@@ -605,7 +608,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             add_related_child={add_related_child}
             field_label={field_label}
             pathname={
-              ROUTES.NOTEBOOK +
+              ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
               project_id +
               ROUTES.RECORD_CREATE +
               props.related_type

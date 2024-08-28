@@ -1,5 +1,5 @@
-import { Construct } from "constructs";
-import { StaticWebsite } from "@cloudcomponents/cdk-static-website";
+import {Construct} from 'constructs';
+import {StaticWebsite} from '@cloudcomponents/cdk-static-website';
 import {
   AssetHashType,
   CfnOutput,
@@ -8,12 +8,12 @@ import {
   aws_lambda,
   aws_s3,
   aws_s3_deployment,
-} from "aws-cdk-lib";
-import { Source } from "aws-cdk-lib/aws-s3-deployment";
-import { IDistribution } from "aws-cdk-lib/aws-cloudfront";
-import { IHostedZone } from "aws-cdk-lib/aws-route53";
-import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
-import { getPathHash, getPathToRoot } from "../util/mono";
+} from 'aws-cdk-lib';
+import {Source} from 'aws-cdk-lib/aws-s3-deployment';
+import {IDistribution} from 'aws-cdk-lib/aws-cloudfront';
+import {IHostedZone} from 'aws-cdk-lib/aws-route53';
+import {ICertificate} from 'aws-cdk-lib/aws-certificatemanager';
+import {getPathHash, getPathToRoot} from '../util/mono';
 
 export interface FaimsFrontEndProps {
   // FAIMS main website
@@ -68,22 +68,22 @@ export class FaimsFrontEnd extends Construct {
     this.setupFaimsBundling(props);
 
     // Bucket arn
-    this.faimsBucketArnCfnOutput = new CfnOutput(this, "FaimsBucketArn", {
+    this.faimsBucketArnCfnOutput = new CfnOutput(this, 'FaimsBucketArn', {
       value: this.faimsBucket.bucketArn,
       description:
-        "The ARN of S3 bucket used to deploy the website static contents.",
+        'The ARN of S3 bucket used to deploy the website static contents.',
     });
 
     // Bucket name
-    this.faimsBucketNameCfnOutput = new CfnOutput(this, "FaimsBucketName", {
+    this.faimsBucketNameCfnOutput = new CfnOutput(this, 'FaimsBucketName', {
       value: this.faimsBucket.bucketName,
       description:
-        "The name of S3 bucket used to deploy the website static contents.",
+        'The name of S3 bucket used to deploy the website static contents.',
     });
   }
 
   setupFaimsDistribution(props: FaimsFrontEndProps) {
-    const website = new StaticWebsite(this, "faims-website", {
+    const website = new StaticWebsite(this, 'faims-website', {
       hostedZone: props.faimsHz,
       domainNames: props.faimsDomainNames,
       removalPolicy: RemovalPolicy.DESTROY,
@@ -92,14 +92,14 @@ export class FaimsFrontEnd extends Construct {
           httpStatus: 404,
           responseHttpStatus: 200,
           ttl: Duration.seconds(300),
-          responsePagePath: "/index.html",
+          responsePagePath: '/index.html',
         },
         // 403 should go 200 to index.html so that react router can work!
         {
           httpStatus: 403,
           responseHttpStatus: 200,
           ttl: Duration.seconds(300),
-          responsePagePath: "/index.html",
+          responsePagePath: '/index.html',
         },
       ],
       certificate: props.faimsUsEast1Certificate,
@@ -119,49 +119,44 @@ export class FaimsFrontEnd extends Construct {
   }
 
   setupFaimsBundling(props: FaimsFrontEndProps) {
-    const buildScript = "build.sh";
+    // const buildScript = 'build.sh';
     // need to build from root because requires context in docker bundling from
     // monorepo root
     // TODO consider approaches here to improve build time and
     // hashing
     const buildPath = getPathToRoot();
-    const appPath = "app";
-    const outputPath = "build";
+    const appPath = 'app';
+    const outputPath = 'build';
 
-    const environment: { [key: string]: string } = {
-      platform: "web",
-      serverprefix: "fieldmark",
-      VITE_CLUSTER_ADMIN_GROUP_NAME: "cluster-admin",
-      VITE_COMMIT_VERSION: "unknown TBD",
-      VITE_DEBUG_APP: "true",
-      VITE_DEBUG_POUCHDB: "true",
-      VITE_USE_HTTPS: "true",
-      VITE_SHOW_WIPE: "true",
-      VITE_SHOW_NEW_NOTEBOOK: "true",
-      VITE_SHOW_MINIFAUXTON: "true",
-
-      // Couch DB
-      VITE_DIRECTORY_HOST: props.couchDbDomainOnly,
-      VITE_DIRECTORY_PORT: `${props.couchDbPort}`,
+    const environment: {[key: string]: string} = {
+      platform: 'web',
+      serverprefix: 'fieldmark',
+      VITE_CLUSTER_ADMIN_GROUP_NAME: 'cluster-admin',
+      VITE_COMMIT_VERSION: 'unknown TBD',
+      VITE_DEBUG_APP: 'true',
+      VITE_DEBUG_POUCHDB: 'true',
+      VITE_SHOW_WIPE: 'true',
+      VITE_SHOW_NEW_NOTEBOOK: 'true',
+      VITE_SHOW_MINIFAUXTON: 'true',
 
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
-      VITE_PRODUCTION_BUILD: "true",
-      VITE_SERVICES: "FAIMSTEXT",
-      VITE_TAG: "CDKDeployment",
+      VITE_PRODUCTION_BUILD: 'true',
+      VITE_SERVICES: 'FAIMSTEXT',
+      VITE_TAG: 'CDKDeployment',
     };
 
     // Setup a deployment into this bucket with static files
-    new aws_s3_deployment.BucketDeployment(this, "deploy", {
+    new aws_s3_deployment.BucketDeployment(this, 'deploy', {
       destinationBucket: this.faimsBucket,
       // Setup with distribution so that the deployment will invalidate
       // distribution cache when the files are redeployed
       distribution: this.faimsDistribution,
-      distributionPaths: ["/*"],
+      distributionPaths: ['/*'],
       sources: [
         Source.asset(buildPath, {
           // TODO optimise
-          exclude: ["infrastructure"],
+          exclude: ['infrastructure'],
           // Hash the app folder source files only
           assetHash: getPathHash(`${getPathToRoot()}/${appPath}`, [outputPath]),
           assetHashType: AssetHashType.CUSTOM,
@@ -173,8 +168,8 @@ export class FaimsFrontEnd extends Construct {
             image: aws_lambda.Runtime.NODEJS_20_X.bundlingImage,
             // Docker build expects input/output of asset-input/output
             command: [
-              "bash",
-              "-c",
+              'bash',
+              '-c',
               `
             cd /asset-input
             "npm i && npm run github-build-app",
@@ -186,27 +181,27 @@ export class FaimsFrontEnd extends Construct {
             local: {
               tryBundle(outputDir: string) {
                 // Implement the logic to check if Docker is available
-                console.log("Trying local bundling of build files.");
+                console.log('Trying local bundling of build files.');
 
                 // Build list of export commands
                 const envs = Object.keys(environment)
-                  .map((key) => {
+                  .map(key => {
                     return `export ${key}=${environment[key] as string}`;
                   })
-                  .join(" && ");
+                  .join(' && ');
 
                 // Perform the same bundling operations performed in the Docker container
-                const exec = require("child_process").execSync;
+                const exec = require('child_process').execSync;
                 const commands = [
                   //export environment variables - not included by default
                   envs,
                   `cd ${buildPath}`,
-                  "npm i && npm run github-build-app",
+                  'npm i && npm run github-build-app',
                   `cd ${appPath}`,
                   `cp -R ${outputPath}/* ${outputDir}`,
                 ];
                 console.log(commands);
-                exec(commands.join("&& "), { stdio: "inherit" });
+                exec(commands.join('&& '), {stdio: 'inherit'});
                 // Return true because bundling is complete
                 return true;
               },
@@ -225,26 +220,26 @@ export class FaimsFrontEnd extends Construct {
     this.setupDesignerBundling(props);
 
     // Bucket arn
-    this.designerBucketArnCfnOutput = new CfnOutput(this, "DesignerBucketArn", {
+    this.designerBucketArnCfnOutput = new CfnOutput(this, 'DesignerBucketArn', {
       value: this.designerBucket.bucketArn,
       description:
-        "The ARN of S3 bucket used to deploy the website static contents.",
+        'The ARN of S3 bucket used to deploy the website static contents.',
     });
 
     // Bucket name
     this.designerBucketNameCfnOutput = new CfnOutput(
       this,
-      "DesignerBucketName",
+      'DesignerBucketName',
       {
         value: this.designerBucket.bucketName,
         description:
-          "The name of S3 bucket used to deploy the website static contents.",
+          'The name of S3 bucket used to deploy the website static contents.',
       }
     );
   }
 
   setupDesignerDistribution(props: FaimsFrontEndProps) {
-    const website = new StaticWebsite(this, "faims-designer", {
+    const website = new StaticWebsite(this, 'faims-designer', {
       hostedZone: props.designerHz,
       domainNames: props.designerDomainNames,
       removalPolicy: RemovalPolicy.DESTROY,
@@ -253,14 +248,14 @@ export class FaimsFrontEnd extends Construct {
           httpStatus: 404,
           responseHttpStatus: 200,
           ttl: Duration.seconds(300),
-          responsePagePath: "/index.html",
+          responsePagePath: '/index.html',
         },
         // 403 should go 200 to index.html so that react router can work!
         {
           httpStatus: 403,
           responseHttpStatus: 200,
           ttl: Duration.seconds(300),
-          responsePagePath: "/index.html",
+          responsePagePath: '/index.html',
         },
       ],
       certificate: props.designerUsEast1Certificate,
@@ -270,27 +265,28 @@ export class FaimsFrontEnd extends Construct {
     this.designerDistribution = website.distribution;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setupDesignerBundling(props: FaimsFrontEndProps) {
-    const buildScript = "build.sh";
+    const buildScript = 'build.sh';
     // need to build from root because requires context in docker bundling from
     // monorepo root
     // TODO consider approaches here to improve build time and
     // hashing
     const buildPath = getPathToRoot();
-    const appPath = "designer";
-    const outputPath = "build";
+    const appPath = 'designer';
+    const outputPath = 'build';
 
     // Setup a deployment into this bucket with static files
-    new aws_s3_deployment.BucketDeployment(this, "designer-deploy", {
+    new aws_s3_deployment.BucketDeployment(this, 'designer-deploy', {
       destinationBucket: this.designerBucket,
       // Setup with distribution so that the deployment will invalidate
       // distribution cache when the files are redeployed
       distribution: this.designerDistribution,
-      distributionPaths: ["/*"],
+      distributionPaths: ['/*'],
       sources: [
         Source.asset(buildPath, {
           // TODO optimise
-          exclude: ["infrastructure"],
+          exclude: ['infrastructure'],
           // Hash the app folder source files only
           assetHash: getPathHash(`${getPathToRoot()}/${appPath}`, [outputPath]),
           assetHashType: AssetHashType.CUSTOM,
@@ -300,8 +296,8 @@ export class FaimsFrontEnd extends Construct {
             image: aws_lambda.Runtime.NODEJS_20_X.bundlingImage,
             // Docker build expects input/output of asset-input/output
             command: [
-              "bash",
-              "-c",
+              'bash',
+              '-c',
               `
             cd /asset-input
             cd ${appPath}
@@ -313,10 +309,10 @@ export class FaimsFrontEnd extends Construct {
             local: {
               tryBundle(outputDir: string) {
                 // Implement the logic to check if Docker is available
-                console.log("Trying local bundling of build files.");
+                console.log('Trying local bundling of build files.');
 
                 // Perform the same bundling operations performed in the Docker container
-                const exec = require("child_process").execSync;
+                const exec = require('child_process').execSync;
                 const commands = [
                   `cd ${buildPath}`,
                   `cd ${appPath}`,
@@ -324,7 +320,7 @@ export class FaimsFrontEnd extends Construct {
                   `cp -R ${outputPath}/* ${outputDir}`,
                 ];
                 console.log(commands);
-                exec(commands.join("&& "), { stdio: "inherit" });
+                exec(commands.join('&& '), {stdio: 'inherit'});
                 // Return true because bundling is complete
                 return true;
               },

@@ -23,7 +23,7 @@
  */
 
 import {getLocalStateDB} from '../sync/databases';
-import {Annotations, FAIMSTypeName, ProjectID} from 'faims3-datamodel';
+import {Annotations, FAIMSTypeName, ProjectID} from '@faims3/data-model';
 import stable_stringify from 'fast-json-stable-stringify';
 import {logError} from '../logging';
 

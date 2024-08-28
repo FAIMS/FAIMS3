@@ -32,7 +32,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import GroupIcon from '@mui/icons-material/Group';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../../utils/helpers';
 
 interface AppBarAuthProps {
@@ -87,7 +87,7 @@ export default function AppBarAuth(props: AppBarAuthProps) {
           open={Boolean(anchorEl)}
           onClose={handleClose}
         >
-          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.WORKSPACE)}>
+          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.INDEX)}>
             <ListItemIcon>
               <DashboardIcon fontSize="small" />
             </ListItemIcon>

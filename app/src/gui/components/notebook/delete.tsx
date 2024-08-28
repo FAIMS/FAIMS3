@@ -39,7 +39,7 @@ import {
   RecordID,
   RevisionID,
   setRecordAsDeleted,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {getCurrentUserId} from '../../../users';
 import {deleteStagedData} from '../../../sync/draft-storage';
 import {deleteDraftsForRecord} from '../../../drafts';
@@ -115,7 +115,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
           },
         });
         handleClose();
-        history(ROUTES.NOTEBOOK + project_id);
+        history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
       })
       .catch(err => {
         console.log('Failed to delete', record_id, draft_id, err);

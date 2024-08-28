@@ -31,7 +31,7 @@ import {
   LocalAutoIncrementState,
   AutoIncrementReference,
   ProjectUIFields,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {logError} from '../logging';
 import {getUiSpecForProject} from '../uiSpecification';
 

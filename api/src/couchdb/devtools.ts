@@ -23,7 +23,7 @@ import {
   upsertFAIMSData,
   Record,
   generateFAIMSDataID,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {getNotebookUISpec} from './notebooks';
 import {randomInt} from 'crypto';
 import {readFileSync} from 'node:fs';

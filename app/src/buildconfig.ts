@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: reportWebVitals.ts
+ * Filename: buildconfig.ts
  * Description:
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data
@@ -23,6 +23,11 @@ import {BUILD_VERSION, BUILD_VERSION_DEFAULT} from './version';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
+
+// Constants
+
+// Default conductor URL
+export const DEFAULT_CONDUCTOR_URL = 'http://localhost:8154';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
@@ -148,48 +153,6 @@ function show_new_notebook(): boolean {
   }
 }
 
-function directory_protocol(): string {
-  const useHTTPS = import.meta.env.VITE_USE_HTTPS;
-  if (PROD_BUILD) {
-    return 'https';
-  } else if (
-    useHTTPS === '' ||
-    useHTTPS === undefined ||
-    FALSEY_STRINGS.includes(useHTTPS.toLowerCase())
-  ) {
-    return 'http';
-  } else if (TRUTHY_STRINGS.includes(useHTTPS.toLowerCase())) {
-    return 'https';
-  } else {
-    logError('VITE_USE_HTTPS badly defined, assuming false');
-    return 'http';
-  }
-}
-
-function directory_host(): string {
-  const host = import.meta.env.VITE_DIRECTORY_HOST;
-  if (host === '' || host === undefined) {
-    return 'dev.db.faims.edu.au';
-  }
-  return host;
-}
-
-function directory_port(): number {
-  const port = import.meta.env.VITE_DIRECTORY_PORT;
-  if (port === '' || port === undefined) {
-    if (PROD_BUILD) {
-      return 443;
-    }
-    return 5984;
-  }
-  try {
-    return parseInt(port);
-  } catch (err) {
-    logError(err);
-    return 5984;
-  }
-}
-
 /*
  * See batch_size in https://pouchdb.com/api.html#replication
  */
@@ -288,24 +251,97 @@ function get_bugsnag_key(): string | false {
   return bugsnag_key;
 }
 
-
-function get_conductor_url(): string {
-  const url = import.meta.env.VITE_CONDUCTOR_URL;
-  if (url) {
-    return url;
-  } else {
-    return 'http://localhost:8154';
+/**
+ * Splits the input, trimming for whitespace and filtering empty strings.
+ * Handles cases including an empty resulting list, and warns on empty strings
+ * being contained. Falls through to the DEFAULT_CONDUCTOR_URL where needed.
+ * @returns A list of conductor URLs which can act as servers.
+ */
+export function parseConductorUrls(conductorUrls: string): string[] {
+  const urls = conductorUrls.split(',');
+  // Provide a warning if the split results in any empty strings
+  if (urls.some((url: string) => url.length === 0)) {
+    console.warn(
+      `CONDUCTOR_URL value was provided, but when split, contained entries which were empty. Value: ${conductorUrls}. After split: ${urls}.`
+    );
   }
+  // return URLs without trailing whitespace and excluding any values which are empty e.g. due to a trailing comma
+
+  const filteredUrls = urls
+    .map((url: string) => url.trim())
+    .filter((url: string) => url.length > 0);
+
+  // Provide a warning if the split results in an empty list
+  if (!(filteredUrls.length > 0)) {
+    console.error(
+      `CONDUCTOR_URL value was provided, but when split, trimmed, and empty strings removed, had a length of zero. Value: ${conductorUrls}. After split: ${urls}. After filter: ${filteredUrls}. Returning default [${DEFAULT_CONDUCTOR_URL}]`
+    );
+    return [DEFAULT_CONDUCTOR_URL];
+  }
+
+  return filteredUrls;
+}
+/**
+ * Hands the VITE_CONDUCTOR_URL input to the parse conductor urls method,
+ * returning a safely handled list of conductor URLs.
+ * @returns A list of conductor URLs which can act as servers.
+ */
+function get_conductor_urls(): string[] {
+  const conductorUrls: string = import.meta.env.VITE_CONDUCTOR_URL;
+  if (conductorUrls) {
+    return parseConductorUrls(conductorUrls);
+  } else {
+    console.warn(
+      `No CONDUCTOR URL configured, using default development server at ${DEFAULT_CONDUCTOR_URL}.`
+    );
+    return [DEFAULT_CONDUCTOR_URL];
+  }
+}
+
+/**
+ * Retrieves the notebook list type.
+ * @returns The notebook list type, which can be either "tabs" or "headings".
+ */
+function get_notebook_list_type(): 'tabs' | 'headings' {
+  const notebook_list_type = import.meta.env.VITE_NOTEBOOK_LIST_TYPE;
+  if (notebook_list_type === 'headings') {
+    return 'headings';
+  } else {
+    return 'tabs';
+  }
+}
+
+/**
+ * Retrieves the name of notebooks from the environment variables.
+ * If the environment variable is not set, it returns a default value 'notebook'.
+ *
+ * @returns {string} - The name of notebooks.
+ */
+function get_notebook_name(): string {
+  const notebook_name = import.meta.env.VITE_NOTEBOOK_NAME;
+  if (notebook_name) {
+    return notebook_name;
+  } else {
+    return 'notebook';
+  }
+}
+
+/**
+ * Retrieves the name of the notebooks and capitalizes the first letter.
+ *
+ * @returns {string} - The capitalized name of notebooks.
+ */
+function get_notebook_name_capitalized(): string {
+  const notebook_name = get_notebook_name();
+
+  return notebook_name.charAt(0).toUpperCase() + notebook_name.slice(1);
 }
 
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
-export const CONDUCTOR_URL = get_conductor_url();
+export const CONDUCTOR_URLS = get_conductor_urls();
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
 export const DEBUG_APP = include_app_debugging();
-export const DIRECTORY_PROTOCOL = directory_protocol();
-export const DIRECTORY_HOST = directory_host();
-export const DIRECTORY_PORT = directory_port();
 export const DIRECTORY_AUTH = directory_auth();
 export const RUNNING_UNDER_TEST = is_testing();
 export const COMMIT_VERSION = commit_version();
@@ -318,3 +354,6 @@ export const SHOW_NEW_NOTEBOOK = show_new_notebook();
 export const DISABLE_SIGNIN_REDIRECT = disable_signin_redirect();
 export const BUILT_LOGIN_TOKEN = get_login_token();
 export const BUGSNAG_KEY = get_bugsnag_key();
+export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
+export const NOTEBOOK_NAME = get_notebook_name();
+export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();

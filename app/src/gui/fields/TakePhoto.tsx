@@ -28,12 +28,12 @@ import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 import IconButton from '@mui/material/IconButton';
 import ImageIcon from '@mui/icons-material/Image';
-import FaimsDialog from '../components/ui/Dialog';
 import {Typography} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {createTheme, styled} from '@mui/material/styles';
 import {List, ListItem} from '@mui/material';
 import {logError} from '../../logging';
+import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 
 function base64image_to_blob(image: Photo): Blob {
   if (image.base64String === undefined) {
@@ -317,7 +317,7 @@ export class TakePhoto extends React.Component<
         <Typography variant="caption" color="textSecondary">
           {error_text}{' '}
         </Typography>
-        <FaimsDialog
+        <FaimsAttachmentManagerDialog
           project_id={this.props.form.values['_project_id']}
           open={this.state.open}
           setopen={() => this.setState({open: false})}

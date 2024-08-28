@@ -39,9 +39,9 @@ import {
 import {DataGridLinksComponentProps} from '../types';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
-import {RecordID} from 'faims3-datamodel';
+import {RecordID} from '@faims3/data-model';
 import RecordRouteDisplay from '../../../ui/record_link';
-import {RecordReference} from 'faims3-datamodel';
+import {RecordReference} from '@faims3/data-model';
 import Checkbox from '@mui/material/Checkbox';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {gridParamsDataType} from '../record_links';

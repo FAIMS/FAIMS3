@@ -24,7 +24,8 @@ import {Box} from '@mui/material';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import NoteBooks from '../components/workspace/notebooks';
-// import {TokenContents} from 'faims3-datamodel';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+// import {TokenContents} from '@faims3/data-model';
 // type NoteBookListProps = {
 //   token?: null | undefined | TokenContents;
 // };
@@ -32,7 +33,7 @@ import NoteBooks from '../components/workspace/notebooks';
 export default function NoteBookList() {
   const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
-    {title: 'Notebooks'},
+    {title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
   ];
 
   return (

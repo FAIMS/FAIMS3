@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {RecordID} from 'faims3-datamodel';
+import {RecordID} from '@faims3/data-model';
 export interface TabPanelProps {
   children?: React.ReactNode;
   index: number;

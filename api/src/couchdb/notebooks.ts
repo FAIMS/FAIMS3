@@ -28,7 +28,7 @@ import {
   resolve_project_id,
   notebookRecordIterator,
   addDesignDocsForNotebook,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {
   ProjectMetadata,
   ProjectUIFields,
@@ -48,7 +48,7 @@ import {
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
   HRID_STRING,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {userHasPermission} from './users';
 PouchDB.plugin(securityPlugin);
 import {Stringifier, stringify} from 'csv-stringify';
@@ -135,7 +135,7 @@ export const getNotebooks = async (user: Express.User): Promise<any[]> => {
  * @returns url safe version of the string
  * https://ourcodeworld.com/articles/read/255/creating-url-slugs-properly-in-javascript-including-transliteration-for-utf-8
  */
-const slugify = (str: string) => {
+export const slugify = (str: string) => {
   str = str.trim();
   str = str.toLowerCase();
 

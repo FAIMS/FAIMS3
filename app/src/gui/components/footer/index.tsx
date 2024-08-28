@@ -33,7 +33,7 @@ import SlimFooter from './slimFooter';
 
 import {grey} from '@mui/material/colors';
 import * as ROUTES from '../../../constants/routes';
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 interface FooterProps {
   token?: null | undefined | TokenContents;
 }
@@ -52,7 +52,6 @@ export default function Footer(props: FooterProps) {
   const location = useLocation().pathname;
   const showFullFooter = [
     ROUTES.INDEX,
-    ROUTES.WORKSPACE,
     // ROUTES.SIGN_IN,
   ].includes(location);
   return (

@@ -20,8 +20,8 @@
  *   projects) at the GUI level should probably go here also.
  */
 
-import {ProjectID} from 'faims3-datamodel';
-import {ProjectDataObject} from 'faims3-datamodel';
+import {ProjectID} from '@faims3/data-model';
+import {ProjectDataObject} from '@faims3/data-model';
 import {logError} from '../logging';
 import {
   active_db,
@@ -33,6 +33,7 @@ import {
 } from './databases';
 import {events} from './events';
 import {getProject} from './projects';
+import {NOTEBOOK_NAME} from '../buildconfig';
 
 export function listenSyncingProject(
   active_id: ProjectID,
@@ -93,7 +94,7 @@ export async function setSyncingProject(
   } catch (err) {
     logError(err);
     throw Error(
-      `Could not change sync for this notebook (${active_id}). Contact Support.`
+      `Could not change sync for this ${NOTEBOOK_NAME} (${active_id}). Contact Support.`
     );
   }
 

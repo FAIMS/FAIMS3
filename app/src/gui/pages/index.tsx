@@ -25,7 +25,7 @@ import {Grid, Typography, Button} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
 import {useTheme} from '@mui/material/styles';
 import {checkToken} from '../../utils/helpers';
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 type IndexProps = {
   token?: null | undefined | TokenContents;
@@ -89,7 +89,7 @@ export default function Index(props: IndexProps) {
                 disableElevation
                 sx={{mr: 1}}
                 component={NavLink}
-                to={ROUTES.WORKSPACE}
+                to={ROUTES.INDEX}
                 startIcon={<DashboardIcon />}
               >
                 Workspace

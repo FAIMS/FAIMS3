@@ -37,7 +37,6 @@ import Collapse from '@mui/material/Collapse';
 import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
-import HomeIcon from '@mui/icons-material/Home';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -48,16 +47,31 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import AccountTree from '@mui/icons-material/AccountTree';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
-
 import * as ROUTES from '../../constants/routes';
 import {getActiveProjectList} from '../../sync/projects';
 import SystemAlert from '../components/alert';
-import {ProjectInformation} from 'faims3-datamodel';
+import {ProjectInformation} from '@faims3/data-model';
 import AppBarAuth from '../components/authentication/appbarAuth';
-import {TokenContents} from 'faims3-datamodel';
+import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../utils/helpers';
-// import ConnectedStatus from '../components/authentication/connectedStatus';
 import SyncStatus from '../components/sync';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import HelpIcon from '@mui/icons-material/Help';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import {now} from 'lodash';
+
+/**
+ * Represents the properties for a menu list item.
+ * @typedef {Object} ProjectListItemProps
+ * @property {string} title - The title of the menuitem.
+ * @property {React.ReactElement} icon - The icon associated with the menuitem.
+ * @property {string} to - The path to navigate to for this menuitem.
+ * @property {boolean} disabled - Whether the menuitem is disabled in the list.
+ */
 
 type ProjectListItemProps = {
   title: string;
@@ -65,8 +79,11 @@ type ProjectListItemProps = {
   to: string;
   disabled: boolean;
 };
-// in place of deprecated React.ReactChild
-type IconType =
+
+/**
+ * Represents the type of icon used in the navigation menu.
+ * @typedef {React.ReactElement | string | number | undefined} IconType
+ */ type IconType =
   | undefined
   | string
   | number
@@ -115,14 +132,15 @@ const useStyles = makeStyles({
   },
   drawerPaper: {
     width: drawerWidth,
+    height: '100vh',
+    boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
+    borderRight: '1px solid rgba(0, 0, 0, 0.1)',
   },
   drawerHeader: {
     display: 'flex',
     alignItems: 'center',
     padding: theme.spacing(0, 1),
-    // necessary for content to be below app bar
     minHeight: '64px',
-    // ...theme.mixins.toolbar,
     justifyContent: 'flex-end',
   },
   content: {
@@ -144,7 +162,39 @@ const useStyles = makeStyles({
   nested: {
     paddingLeft: theme.spacing(4),
   },
+  /**
+   * Styles for the ListItemText component in the navigation items.
+   * @type {Object}
+   */
+  listItemText: {
+    fontSize: '1.1rem',
+    fontWeight: 'bold',
+    color: 'rgba(0, 0, 0, 0.54)', // Use the same gray color as the icons (this is a common MUI icon color)
+  },
+  /**
+   * Styles for the bottom section options in the drawer.
+   * Includes padding and a border at the top.
+   * @type {Object}
+   */
+  bottomOptions: {
+    borderTop: `1px solid ${theme.palette.divider}`,
+    padding: theme.spacing(2, 0),
+  },
+  /**
+   * Ensures that the bottom section of the drawer is positioned at the bottom of the viewport.
+   * @type {Object}
+   */
+  bottomSection: {
+    marginTop: 'auto',
+  },
 });
+
+/**
+ * Retrieves a list of nested menu items to be displayed in the navigation menu.
+ * @function
+ * @param {ProjectInformation[]} pouchProjectList - List of project information.
+ * @returns {MenuItemProps} - The item for nested menu.
+ */
 
 function getNestedProjects(pouchProjectList: ProjectInformation[]) {
   const projectListItems: ProjectListItemProps[] = [];
@@ -152,15 +202,15 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     projectListItems.push({
       title: project_info.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.NOTEBOOK + project_info.project_id,
+      to: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_info.project_id,
       disabled: false,
     });
   });
   return {
-    title: 'Notebooks',
+    title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
     icon: <AccountTree />,
     nested: projectListItems,
-    to: ROUTES.NOTEBOOK_LIST,
+    to: ROUTES.NOTEBOOK_LIST_ROUTE,
     disabled: false,
   };
 }
@@ -168,9 +218,16 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
 type NavbarProps = {
   token?: null | undefined | TokenContents;
 };
+/**
+ * MainAppBar component handles the display of the navigation drawer and the app bar.
+ * It includes top menu items, bottom menu items, and conditional rendering based on authentication status.
+ *
+ * @component
+ * @param {NavbarProps} props - Props passed to the component.
+ * @returns {JSX.Element} - The rendered MainAppBar component.
+ */
 export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
-  // const globalState = useContext(store);
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const isAuthenticated = checkToken(props.token);
@@ -185,52 +242,48 @@ export default function MainAppBar(props: NavbarProps) {
   const topMenuItems: Array<MenuItemProps> = [
     {
       title: 'Home',
-      icon: <HomeIcon />,
-      to: ROUTES.INDEX,
-      disabled: false,
-    },
-    {
-      title: 'WorkSpace',
       icon: <DashboardIcon />,
-      to: ROUTES.WORKSPACE,
+      to: ROUTES.INDEX,
       disabled: !isAuthenticated,
     },
     projectList === null
       ? {
-          title: 'Loading notebooks...',
+          title: `Loading ${NOTEBOOK_NAME}s...`,
           icon: <AccountTree />,
           to: '/',
           disabled: true,
         }
       : isAuthenticated
-      ? getNestedProjects(projectList)
-      : {
-          title: 'Notebooks',
-          icon: <AccountTree />,
-          to: '/',
-          disabled: true,
-        },
+        ? getNestedProjects(projectList)
+        : {
+            title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+            icon: <AccountTree />,
+            to: '/',
+            disabled: true,
+          },
   ];
+
   const bottomMenuItems: Array<MenuItemProps> = [
-    isAuthenticated
-      ? {
-          title: 'User',
-          icon: <AccountCircleIcon />,
-          to: ROUTES.SIGN_IN,
-          disabled: false,
-        }
-      : {
-          title: 'User',
-          icon: <AccountCircleIcon />,
-          to: '/',
-          disabled: true,
-        },
     {
       title: 'About Build',
       icon: <SettingsIcon />,
       to: ROUTES.ABOUT_BUILD,
       disabled: false,
     },
+
+    isAuthenticated
+      ? {
+          title: 'Sign out',
+          icon: <AccountCircleIcon />,
+          to: ROUTES.SIGN_IN,
+          disabled: false,
+        }
+      : {
+          title: 'Sign out',
+          icon: <AccountCircleIcon />,
+          to: '/',
+          disabled: true,
+        },
   ];
 
   const [nestedMenuOpen, setNestedMenuOpen] = useState<{
@@ -302,7 +355,9 @@ export default function MainAppBar(props: NavbarProps) {
                     disabled={item.disabled}
                   >
                     <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText>{item.title} </ListItemText>
+                    <ListItemText classes={{primary: classes.listItemText}}>
+                      {item.title}{' '}
+                    </ListItemText>
                     {item.nested.length === 0 ? (
                       <CircularProgress size={12} thickness={4} />
                     ) : nestedMenuOpen[item.title] ? (
@@ -335,7 +390,10 @@ export default function MainAppBar(props: NavbarProps) {
                             onClick={toggle}
                           >
                             <ListItemIcon>{nestedItem.icon}</ListItemIcon>
-                            <ListItemText primary={nestedItem.title} />
+                            <ListItemText
+                              primary={nestedItem.title}
+                              classes={{primary: classes.listItemText}}
+                            />
                           </ListItemButton>
                         )
                       )}
@@ -351,33 +409,41 @@ export default function MainAppBar(props: NavbarProps) {
                   onClick={toggle}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.title} />
+                  <ListItemText
+                    primary={item.title}
+                    classes={{primary: classes.listItemText}}
+                  />
                 </ListItemButton>
               );
             })}
           </List>
-          <Divider />
-          <List>
-            {bottomMenuItems.map(
-              (item: {
-                title: string;
-                icon: IconType;
-                disabled: boolean;
-                to: any;
-              }) => (
-                <ListItemButton
-                  key={item.title}
-                  disabled={item.disabled}
-                  to={item.to}
-                  component={RouterLink}
-                  onClick={toggle}
-                >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.title} />
-                </ListItemButton>
-              )
-            )}
-          </List>
+          <div className={classes.bottomSection}>
+            <Divider />
+            <List className={classes.bottomOptions}>
+              {bottomMenuItems.map(
+                (item: {
+                  title: string;
+                  icon: IconType;
+                  disabled: boolean;
+                  to: any;
+                }) => (
+                  <ListItemButton
+                    key={item.title}
+                    disabled={item.disabled}
+                    to={item.to}
+                    component={RouterLink}
+                    onClick={toggle}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText
+                      primary={item.title}
+                      classes={{primary: classes.listItemText}}
+                    />
+                  </ListItemButton>
+                )
+              )}
+            </List>
+          </div>
         </Drawer>
       </div>
       <SystemAlert />

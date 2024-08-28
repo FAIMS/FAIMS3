@@ -19,13 +19,7 @@
  */
 
 import PouchDB from 'pouchdb-browser';
-import {
-  DIRECTORY_PROTOCOL,
-  DIRECTORY_HOST,
-  DIRECTORY_PORT,
-  POUCH_BATCH_SIZE,
-  POUCH_BATCHES_LIMIT,
-} from '../buildconfig';
+import {POUCH_BATCH_SIZE, POUCH_BATCHES_LIMIT} from '../buildconfig';
 import {
   ProjectMetaObject,
   ProjectDataObject,
@@ -33,26 +27,19 @@ import {
   ListingID,
   NonUniqueProjectID,
   PossibleConnectionInfo,
-} from 'faims3-datamodel';
+} from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {logError} from '../logging';
 import {
   ConnectionInfo,
   ConnectionInfo_create_pouch,
   local_pouch_options,
-  materializeConnectionInfo,
 } from './connection';
 import {draft_db} from './draft-storage';
 
 export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
-export const directory_connection_info: ConnectionInfo = {
-  proto: DIRECTORY_PROTOCOL,
-  host: DIRECTORY_HOST,
-  port: DIRECTORY_PORT,
-  db_name: 'directory',
-};
 
 export interface ListingsObject {
   _id: ListingID;
@@ -206,26 +193,6 @@ export const data_dbs: LocalDBList<ProjectDataObject> = {};
  * GUI Models, and a People database.
  */
 export const metadata_dbs: LocalDBList<ProjectMetaObject> = {};
-
-let default_instance: null | NonNullListingsObject = null; //Set to directory_db.get(DEFAULT_LISTING_ID) by get_default_instance
-
-export async function get_default_instance(): Promise<NonNullListingsObject> {
-  if (default_instance === null) {
-    const possibly_corrupted_instance = await directory_db.local.get(
-      DEFAULT_LISTING_ID
-    );
-    default_instance = {
-      _id: possibly_corrupted_instance._id,
-      name: possibly_corrupted_instance.name,
-      description: possibly_corrupted_instance.description,
-      projects_db: materializeConnectionInfo(
-        directory_connection_info,
-        possibly_corrupted_instance.projects_db
-      ),
-    };
-  }
-  return default_instance;
-}
 
 /**
  * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix

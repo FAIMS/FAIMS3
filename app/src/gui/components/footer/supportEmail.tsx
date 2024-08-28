@@ -1,13 +1,8 @@
 import {Typography} from '@mui/material';
 import Obfuscate from 'react-obfuscate';
 import React from 'react';
-import {
-  COMMIT_VERSION,
-  DIRECTORY_HOST,
-  DIRECTORY_PORT,
-  DIRECTORY_PROTOCOL,
-} from '../../../buildconfig';
-import {TokenContents} from 'faims3-datamodel';
+import {COMMIT_VERSION, CONDUCTOR_URLS} from '../../../buildconfig';
+import {TokenContents} from '@faims3/data-model';
 import {useTheme} from '@mui/material/styles';
 
 interface SupportEmailProps {
@@ -24,7 +19,7 @@ export default function SupportEmail(props: SupportEmailProps) {
     supportEmail = 'support@fieldmark.au';
   }
   const bodyContent =
-    `Directory Server: ${DIRECTORY_PROTOCOL}://${DIRECTORY_HOST}:${DIRECTORY_PORT}/ \r` +
+    `Server: ${CONDUCTOR_URLS.join(', ')} \r` +
     `Commit Version: ${COMMIT_VERSION} \r` +
     `Username: ${
       props.token?.username ? props.token.username : 'Unauthenticated'

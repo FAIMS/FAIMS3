@@ -30,6 +30,11 @@ const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 export const CLUSTER_ADMIN_GROUP_NAME = 'cluster-admin';
 export const NOTEBOOK_CREATOR_GROUP_NAME = 'notebook-creator';
 
+// Constants
+
+// If a URL for the conductor instance is not provided this will be used as a fall-through
+const DEFAULT_CONDUCTOR_URL = 'http://localhost:8080';
+
 /*
  * This is designed to get useful commit information data from
  * environment variables for the testing server. While more sophisticated
@@ -56,9 +61,13 @@ function commit_version(): string {
 function conductor_url(): string {
   const url = process.env.CONDUCTOR_PUBLIC_URL;
   if (url === '' || url === undefined) {
-    return 'http://localhost:8080';
+    console.warn(
+      `No value for CONDUCTOR_PUBLIC_URL was provided in the environment. Defaulting to ${DEFAULT_CONDUCTOR_URL}.`
+    );
+    return DEFAULT_CONDUCTOR_URL;
+  } else {
+    return url;
   }
-  return url;
 }
 
 function app_url(): string {
@@ -182,6 +191,15 @@ function instance_name(): string {
   }
 }
 
+function instance_description(): string {
+  const name = process.env.CONDUCTOR_DESCRIPTION;
+  if (name === '' || name === undefined) {
+    return 'Fieldmark Conductor Server';
+  } else {
+    return name;
+  }
+}
+
 function cookie_secret(): string {
   const cookie = process.env.FAIMS_COOKIE_SECRET;
   if (cookie === '' || cookie === undefined) {
@@ -270,6 +288,7 @@ export const CONDUCTOR_KEY_ID = signing_key_id();
 export const CONDUCTOR_PRIVATE_KEY_PATH = private_key_path();
 export const CONDUCTOR_PUBLIC_KEY_PATH = public_key_path();
 export const CONDUCTOR_INSTANCE_NAME = instance_name();
+export const CONDUCTOR_DESCRIPTION = instance_description();
 export const COOKIE_SECRET = cookie_secret();
 export const GOOGLE_CLIENT_ID = google_client_id();
 export const GOOGLE_CLIENT_SECRET = google_client_secret();
@@ -304,7 +323,7 @@ function getAwsSecretKeyArn(): string {
 
 // Dependency injection pattern for key service
 export const KEY_SOURCE: KeySource = getKeySourceConfig();
-export const AWS_SECRET_KEY_ARN: string | undefined = KEY_SOURCE === KeySource.AWS_SM ? getAwsSecretKeyArn() : undefined;
+export const AWS_SECRET_KEY_ARN: string | undefined =
+  KEY_SOURCE === KeySource.AWS_SM ? getAwsSecretKeyArn() : undefined;
 
 export const KEY_SERVICE: IKeyService = getKeyService(KEY_SOURCE);
-

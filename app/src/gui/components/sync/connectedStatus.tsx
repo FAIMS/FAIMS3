@@ -21,7 +21,7 @@ import React from 'react';
 import {IconButton} from '@mui/material';
 import WifiIcon from '@mui/icons-material/Wifi';
 // import WifiOffIcon from '@mui/icons-material/WifiOff';
-// import {TokenContents} from 'faims3-datamodel';
+// import {TokenContents} from '@faims3/data-model';
 
 // interface ConnectedStatusProps {
 //   token?: null | undefined | TokenContents;

@@ -18,12 +18,12 @@
  *   TODO
  */
 import {getProjectDB} from './sync/index';
-import {ProjectID} from 'faims3-datamodel';
+import {ProjectID} from '@faims3/data-model';
 import {
   PROJECT_METADATA_PREFIX,
   EncodedProjectMetadata,
-} from 'faims3-datamodel';
-import {attachments_to_files, files_to_attachments} from 'faims3-datamodel';
+} from '@faims3/data-model';
+import {attachments_to_files, files_to_attachments} from '@faims3/data-model';
 import {logError} from './logging';
 
 export async function getProjectMetadata(

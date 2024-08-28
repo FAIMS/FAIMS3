@@ -38,9 +38,12 @@ import {
   getNotebooks,
   getNotebookMetadata,
 } from '../src/couchdb/notebooks';
-import {ProjectUIModel} from 'faims3-datamodel';
+import {ProjectUIModel} from '@faims3/data-model';
 import {
   CLUSTER_ADMIN_GROUP_NAME,
+  CONDUCTOR_DESCRIPTION,
+  CONDUCTOR_INSTANCE_NAME,
+  CONDUCTOR_PUBLIC_URL,
   DEVELOPER_MODE,
   KEY_SERVICE,
   NOTEBOOK_CREATOR_GROUP_NAME,
@@ -96,6 +99,17 @@ describe('API tests', () => {
       await addLocalPasswordForUser(nbUser, notebookPassword); // saves the user
       notebookUserToken = await createAuthKey(nbUser, signingKey);
     }
+  });
+
+  it('responds to /info', async () => {
+    return request(app)
+      .get('/api/info')
+      .expect(200)
+      .expect(response => {
+        expect(response.body.name).to.equal(CONDUCTOR_INSTANCE_NAME);
+        expect(response.body.description).to.equal(CONDUCTOR_DESCRIPTION);
+        expect(response.body.conductor_url).to.equal(CONDUCTOR_PUBLIC_URL);
+      });
   });
 
   it('check is up - not authenticated', async () => {

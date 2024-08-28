@@ -20,29 +20,24 @@
 
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Box, Paper, Typography, Button, Stack} from '@mui/material';
+import {Box, Paper, Typography, Button} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 
-import {
-  DataGrid,
-  GridColDef,
-  GridCellParams,
-  GridEventListener,
-} from '@mui/x-data-grid';
+import {GridColDef, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 
 import * as ROUTES from '../../../constants/routes';
 import {getAllProjectList} from '../../../databaseAccess';
-import {ProjectInformation, TokenContents} from 'faims3-datamodel';
+import {ProjectInformation, TokenContents} from '@faims3/data-model';
 import CircularLoading from '../ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import {grey} from '@mui/material/colors';
-import Tab from '@mui/material/Tab';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
+import Tabs from '../ui/tab-grid';
+import HeadingGrid from '../ui/heading-grid';
+import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
+import {getListing} from '../../../sync/state';
 
 interface sortModel {
   field: string;
@@ -98,7 +93,7 @@ export default function NoteBooks(props: NoteBookListProps) {
 
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     if (params.row.is_activated) {
-      history(ROUTES.NOTEBOOK + params.row.project_id);
+      history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + params.row.project_id);
     } else {
       // do nothing
     }
@@ -134,6 +129,7 @@ export default function NoteBooks(props: NoteBookListProps) {
                 </Typography>
               </span>
               <Typography variant={'caption'}>
+                {getListing(params.row.listing_id).listing.name}
                 {params.row.description}
               </Typography>
             </Box>
@@ -163,7 +159,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           flex: 0.2,
           minWidth: 160,
           headerName: 'Sync',
-          description: 'Toggle syncing this notebook to the server',
+          description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
           renderCell: (params: GridCellParams) => (
             <NotebookSyncSwitch
               project={params.row}
@@ -204,6 +200,7 @@ export default function NoteBooks(props: NoteBookListProps) {
                 </Typography>
               </span>
               <Typography variant={'caption'}>
+                {getListing(params.row.listing_id).listing.name}
                 {params.row.description}
               </Typography>
               <Box my={1}>
@@ -226,7 +223,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           flex: 0.3,
           minWidth: 80,
           headerName: 'Sync',
-          description: 'Toggle syncing this notebook to the server',
+          description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
           renderCell: (params: GridCellParams) => (
             <NotebookSyncSwitch
               project={params.row}
@@ -241,16 +238,17 @@ export default function NoteBooks(props: NoteBookListProps) {
   return (
     <Box>
       {pouchProjectList.length === 0 ? (
-        <CircularLoading label={'Loading notebooks'} />
+        <CircularLoading label={`Loading ${NOTEBOOK_NAME}s`} />
       ) : (
         <Box component={Paper} elevation={0} p={2}>
           <Typography variant={'body1'} gutterBottom>
             You have {pouchProjectList.filter(r => r.is_activated).length}{' '}
-            notebook
+            {NOTEBOOK_NAME}
             {pouchProjectList.filter(r => r.is_activated).length !== 1
               ? 's'
               : ''}{' '}
-            activated on this device. To start syncing a notebook, visit the{' '}
+            activated on this device. To start syncing a {NOTEBOOK_NAME}, visit
+            the{' '}
             <Button
               variant="text"
               size={'small'}
@@ -262,116 +260,25 @@ export default function NoteBooks(props: NoteBookListProps) {
             </Button>{' '}
             tab and click the activate button.
           </Typography>
-          <TabContext
-            value={
-              pouchProjectList.filter(r => r.is_activated).length === 0
-                ? '2'
-                : tabID
-            }
-          >
-            <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-              <TabList onChange={handleChange} aria-label="tablist">
-                <Tab
-                  label={
-                    'Activated (' +
-                    pouchProjectList.filter(r => r.is_activated).length +
-                    ')'
-                  }
-                  value="1"
-                  disabled={
-                    pouchProjectList.filter(r => r.is_activated).length === 0
-                      ? true
-                      : false
-                  }
-                />
-                <Tab
-                  label={
-                    'Available (' +
-                    pouchProjectList.filter(r => !r.is_activated).length +
-                    ')'
-                  }
-                  value="2"
-                />
-              </TabList>
-            </Box>
-            <TabPanel value="1" sx={{px: 0}}>
-              <div style={{display: 'flex', height: '100%'}}>
-                <div style={{flexGrow: 1}}>
-                  <DataGrid
-                    key={'notebook_list_datagrid'}
-                    rows={pouchProjectList.filter(r => r.is_activated)}
-                    loading={loading}
-                    columns={columns}
-                    onRowClick={handleRowClick}
-                    autoHeight
-                    sx={{cursor: 'pointer'}}
-                    getRowId={r => r.project_id}
-                    hideFooter={true}
-                    getRowHeight={() => 'auto'}
-                    initialState={{
-                      sorting: {
-                        sortModel: [props.sortModel],
-                      },
-                      pagination: {
-                        paginationModel: {
-                          pageSize: pouchProjectList.length,
-                        },
-                      },
-                    }}
-                    slots={{
-                      noRowsOverlay: () => (
-                        <Stack
-                          height="100%"
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          No Notebooks have been activated yet.
-                        </Stack>
-                      ),
-                    }}
-                  />
-                </div>
-              </div>
-            </TabPanel>
-            <TabPanel value="2" sx={{px: 0}}>
-              <div style={{display: 'flex', height: '100%'}}>
-                <div style={{flexGrow: 1}}>
-                  <DataGrid
-                    key={'notebook_list_datagrid'}
-                    rows={pouchProjectList.filter(r => !r.is_activated)}
-                    loading={loading}
-                    columns={columns}
-                    autoHeight
-                    sx={{cursor: 'pointer'}}
-                    getRowId={r => r.project_id}
-                    hideFooter={true}
-                    getRowHeight={() => 'auto'}
-                    initialState={{
-                      sorting: {
-                        sortModel: [props.sortModel],
-                      },
-                      pagination: {
-                        paginationModel: {
-                          pageSize: pouchProjectList.length,
-                        },
-                      },
-                    }}
-                    slots={{
-                      noRowsOverlay: () => (
-                        <Stack
-                          height="100%"
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          You don't have any unactivated notebooks.
-                        </Stack>
-                      ),
-                    }}
-                  />
-                </div>
-              </div>
-            </TabPanel>
-          </TabContext>
+          {NOTEBOOK_LIST_TYPE === 'tabs' ? (
+            <Tabs
+              pouchProjectList={pouchProjectList}
+              tabID={tabID}
+              handleChange={handleChange}
+              handleRowClick={handleRowClick}
+              loading={loading}
+              columns={columns}
+              sortModel={props.sortModel}
+            />
+          ) : (
+            <HeadingGrid
+              pouchProjectList={pouchProjectList}
+              handleRowClick={handleRowClick}
+              loading={loading}
+              columns={columns}
+              sortModel={props.sortModel}
+            />
+          )}
         </Box>
       )}
     </Box>

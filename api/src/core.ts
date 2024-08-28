@@ -95,11 +95,11 @@ app.use((request, response, next) => {
 const handlebarsConfig = {
   helpers: {
     markdown: (aString: string) => {
-        let htmlText = markdownit().render(aString);
-        // add the bootstrap table class to any tables
-        htmlText = htmlText.replace(/<table>/g, '<table class="table">');
-        return new handlebars.SafeString(htmlText);
-      },
+      let htmlText = markdownit().render(aString);
+      // add the bootstrap table class to any tables
+      htmlText = htmlText.replace(/<table>/g, '<table class="table">');
+      return new handlebars.SafeString(htmlText);
+    },
   },
 };
 

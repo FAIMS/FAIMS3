@@ -30,6 +30,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import * as ROUTES from '../../../constants/routes';
 import {Link as RouterLink} from 'react-router-dom';
 import CircularProgress from '@mui/material/CircularProgress';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 
 type DiagProps = {
   open?: boolean;
@@ -39,8 +40,7 @@ type DiagProps = {
   path?: string | null;
   isSyncing?: string;
 };
-export default function FaimsDialog(props: DiagProps) {
-  //   const [open, setOpen] = React.useState(props.open??false);
+export default function FaimsAttachmentManagerDialog(props: DiagProps) {
   const {open, setopen, project_id, path, isSyncing} = props;
 
   return (
@@ -88,8 +88,8 @@ export default function FaimsDialog(props: DiagProps) {
           </DialogContentText>
         ) : (
           <DialogContentText id="alert-dialog-description">
-            To download attachments and photos, please go to Notebook / Settings
-            Tab and enable it.
+            To download attachments and photos, please go to{' '}
+            {NOTEBOOK_NAME_CAPITALIZED} / Settings Tab and enable it.
           </DialogContentText>
         )}
       </DialogContent>
@@ -104,7 +104,7 @@ export default function FaimsDialog(props: DiagProps) {
             color="primary"
             size="large"
             component={RouterLink}
-            to={ROUTES.NOTEBOOK + project_id}
+            to={ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id}
           >
             CHANGE SETTINGS
           </Button>

@@ -17,14 +17,15 @@
  * Description:
  *   Code used in the initialisation of the app, getting database and projects etc.
  */
-import {CONDUCTOR_URL} from '../buildconfig';
+import {CONDUCTOR_URLS} from '../buildconfig';
 import {
   ProjectID,
   ListingID,
   split_full_project_id,
   NonUniqueProjectID,
   resolve_project_id,
-} from 'faims3-datamodel';
+  ListingInformation,
+} from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {logError} from '../logging';
 import {getTokenForCluster} from '../users';
@@ -42,31 +43,61 @@ import {addOrUpdateListing, deleteListing, getListing} from './state';
 import {getAllListings} from '.';
 import {ensure_project_databases} from './projects';
 
-// called on startup to get the initial set of projects
+/**
+ * update_directory - make sure we have listings for each
+ * configured server and update the list of projects if we
+ * are logged in.
+ * Called on startup or page/app refresh.
+ */
 export async function update_directory() {
-  let listings = await getAllListings();
+  // get existing stored listings from the local db
+  const listings = await getAllListings();
 
+  // if there are none, we'll create them from the configured URLS
   if (listings.length === 0) {
-    // add a document to the directory database
-
-    const url = new URL(CONDUCTOR_URL);
-
-    // TODO: the name and description should come from the api
-    const listing = {
-      _id: url.host,
-      conductor_url: CONDUCTOR_URL,
-      name: 'CONDUCTOR NAME',
-      description: 'CONDUCTOR DESCRIPTION',
-    };
-
-    directory_db.local.put(listing);
-    listings = [listing];
+    for (let i = 0; i < CONDUCTOR_URLS.length; i++) {
+      const listing = await generate_listing(CONDUCTOR_URLS[i]);
+      listings.push(listing);
+    }
   }
 
+  // now get projects for each listing
   for (let i = 0; i < listings.length; i++)
     get_projects_from_conductor(listings[i]);
 
+  // and make sure all activated projects have the required databases
   ensureActiveProjects();
+}
+
+/**
+ * Create and store a listings object for this conductor instance
+ *
+ * @param url - URL of the Conductor instance
+ * @returns A Listings object
+ */
+async function generate_listing(url: string): Promise<ListingsObject> {
+  const url_object = new URL(url);
+  const listing: ListingsObject = {
+    _id: url_object.host,
+    conductor_url: url,
+    name: url_object.host, // default name from hostname
+    description: '',
+  };
+
+  await fetch(url + '/api/info')
+    .then(response => response.json() as unknown as ListingInformation)
+    .then(data => {
+      listing._id = data.id;
+      listing.conductor_url = data.conductor_url;
+      listing.name = data.name;
+      listing.description = data.description;
+    })
+    .catch(() => {
+      listing.description = 'No Description';
+    });
+
+  directory_db.local.put(listing);
+  return listing;
 }
 
 /**
@@ -144,7 +175,7 @@ function delete_listing_by_id(listing_id: ListingID) {
  */
 async function get_projects_from_conductor(listing: ListingsObject) {
   if (!listing.conductor_url) return;
-  console.log('get_projects_from_conductor', listing);
+
   // make sure there is a local projects database
   // projects_did_change is true if this made a new database
   const [projects_did_change, projects_local] = ensure_local_db(
@@ -155,13 +186,8 @@ async function get_projects_from_conductor(listing: ListingsObject) {
     true
   );
 
-  console.log('LOCAL PROJECT', listing._id, projects_local);
   const previous_listing = getListing(listing._id);
   addOrUpdateListing(listing._id, listing, projects_local);
-
-  if (projects_did_change) {
-    console.log('Projects DB has changed...');
-  }
 
   // DON'T MOVE THIS PAST AN AWAIT POINT
   events.emit(
@@ -174,8 +200,9 @@ async function get_projects_from_conductor(listing: ListingsObject) {
 
   // get the remote data
   const jwt_token = await getTokenForCluster(listing._id);
+  // if we have no token, then don't try to fetch
+  if (!jwt_token) return;
 
-  console.debug('FETCH', listing.conductor_url);
   fetch(`${listing.conductor_url}/api/directory`, {
     headers: {
       Authorization: `Bearer ${jwt_token}`,
@@ -183,11 +210,9 @@ async function get_projects_from_conductor(listing: ListingsObject) {
   })
     .then(response => response.json())
     .then(directory => {
-      console.log('going to look at the directory', directory);
       // make sure every project in the directory is stored in projects_local
       for (let i = 0; i < directory.length; i++) {
         const project_doc: ProjectObject = directory[i];
-        console.debug('DIR inspecting', project_doc._id);
         // is this project already in projects_local?
         projects_local.local
           .get(project_doc._id)
@@ -197,27 +222,23 @@ async function get_projects_from_conductor(listing: ListingsObject) {
               existing_project.name !== project_doc.name ||
               existing_project.status !== project_doc.status
             ) {
-              console.log('DIR updating', project_doc._id);
               projects_local.local.post({
                 ...existing_project,
                 name: project_doc.name,
                 status: project_doc.status,
               });
-            } else {
-              console.log('DIR already present', project_doc._id);
             }
           })
           .catch(err => {
             if (err.name === 'not_found') {
-              console.debug('DIR storing', project_doc._id);
               // we don't have this project, so store it
               // add in the conductor url we got it from
               // TODO: this should already be there in the API
-              // also that default to CONDUCTOR_URL is because listings
+              // also that default to CONDUCTOR_URLS[0] is because listings
               // conductor_url is optional, it shouldn't be...
               return projects_local.local.put({
                 ...project_doc,
-                conductor_url: listing.conductor_url || CONDUCTOR_URL,
+                conductor_url: listing.conductor_url || CONDUCTOR_URLS[0],
               });
             }
           });

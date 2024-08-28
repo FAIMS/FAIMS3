@@ -19,5 +19,5 @@
  * can override environment settings if present
  */
 
-export const BUILD_VERSION_DEFAULT: string = 'not-set';
-export const BUILD_VERSION: string = `${BUILD_VERSION_DEFAULT}`;
+export const BUILD_VERSION_DEFAULT = 'not-set';
+export const BUILD_VERSION = `${BUILD_VERSION_DEFAULT}`;
