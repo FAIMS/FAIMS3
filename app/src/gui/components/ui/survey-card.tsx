@@ -1,6 +1,24 @@
 import {ProjectInformation} from '@faims3/data-model';
 import tick from '../../../tick.svg';
 import cross from '../../../cross.svg';
+import {activate_project} from '../../../sync/process-initialization';
+
+/**
+ * Function to handle the click event on the activate button.
+ *
+ * @param {ProjectInformation} survey - The survey object containing details to be displayed in the card.
+ * @returns {void}
+ */
+const onActivate = async ({
+  listing_id,
+  non_unique_project_id,
+}: ProjectInformation) => {
+  const projectID = await activate_project(listing_id, non_unique_project_id);
+
+  console.log('DEBUG_projectID: ', projectID);
+
+  if (projectID) window.location.reload();
+};
 
 /**
  * SurveyCard component that displays information about a single survey.
@@ -53,7 +71,18 @@ export default function SurveyCard({
           >
             {survey.name}
           </div>
-          <button style={{}}>Activate</button>
+          {!survey.is_activated && (
+            <button
+              style={{
+                padding: '6px 10px',
+                fontSize: 16,
+                borderRadius: 10,
+              }}
+              onClick={() => onActivate(survey)}
+            >
+              Activate
+            </button>
+          )}
         </div>
 
         <div
