@@ -11,7 +11,7 @@
         "lint": "gts lint",
         "clean": "gts clean",
         "compile": "tsc",
-        "build": "tsc",
+        "build": "tsc && copyfiles views/* views/**/* public/* public/**/* build/src",
         "fix": "gts fix",
         "prestart": "npm run-script compile",
         "start": "node .",
@@ -25,6 +25,7 @@
         "coverage": "nyc --reporter=html --reporter=lcov env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha"
     },
     "dependencies": {
+        "@faims3/data-model": "*",
         "archiver": "^6.0.1",
         "aws-sdk": "^2.1664.0",
         "axios": "^1.7.3",
@@ -37,7 +38,6 @@
         "express-handlebars": "7.1.2",
         "express-rate-limit": "^7.1.5",
         "express-validator": "7.0.1",
-        "@faims3/data-model": "*",
         "fast-check": "2.25.0",
         "gts": "^5.3.1",
         "handlebars": "4.7.7",
@@ -87,6 +87,7 @@
         "@types/swagger-ui-dist": "^3.30.3",
         "@types/uuid": "9.0.7",
         "chai": "^4.3.10",
+        "copyfiles": "^2.4.1",
         "cross-env": "^7.0.3",
         "dotenv": "^16.3.1",
         "env-cmd": "^10.1.0",

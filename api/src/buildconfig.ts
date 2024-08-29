@@ -30,6 +30,11 @@ const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 export const CLUSTER_ADMIN_GROUP_NAME = 'cluster-admin';
 export const NOTEBOOK_CREATOR_GROUP_NAME = 'notebook-creator';
 
+// Constants
+
+// If a URL for the conductor instance is not provided this will be used as a fall-through
+const DEFAULT_CONDUCTOR_URL = 'http://localhost:8080';
+
 /*
  * This is designed to get useful commit information data from
  * environment variables for the testing server. While more sophisticated
@@ -56,9 +61,13 @@ function commit_version(): string {
 function conductor_url(): string {
   const url = process.env.CONDUCTOR_PUBLIC_URL;
   if (url === '' || url === undefined) {
-    return 'http://localhost:8080';
+    console.warn(
+      `No value for CONDUCTOR_PUBLIC_URL was provided in the environment. Defaulting to ${DEFAULT_CONDUCTOR_URL}.`
+    );
+    return DEFAULT_CONDUCTOR_URL;
+  } else {
+    return url;
   }
-  return url;
 }
 
 function app_url(): string {
