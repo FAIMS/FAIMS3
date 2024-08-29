@@ -74,6 +74,7 @@ export default function SurveyCard({
           {!survey.is_activated && (
             <button
               style={{
+                cursor: 'pointer',
                 padding: '6px 10px',
                 fontSize: 16,
                 borderRadius: 10,
