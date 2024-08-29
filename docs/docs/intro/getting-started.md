@@ -1,4 +1,3 @@
-(intro/getting-started)=
 # Getting Started
 
 This guide is for new users working in a small team with an existing Notebook. If you are an Administrator setting up your Fieldmark™ environment for the first time, see [Getting Started as an Admin](advanced/getting-started-admin).  If you are using an Enterprise Notebook, speak to your organisation's Enterprise Administrator.
@@ -9,10 +8,6 @@ This guide is for new users working in a small team with an existing Notebook. I
 
 Talk to the Administrator of the Notebook you are planning to use to discover their preferred method of authentication (see [Logging In](intro/logging-in)). You may need to create an account before they can give you permission to see the Notebook.
 
-#### Looking for a trial account?
-
-Sign up for a trial account at [here](https://forms.gle/ruaPVhDmEoyizHfr7).
-
 ### 2) Check your compatibility
 
 For details of supported *operating systems* and recommendations for *hardware* see [Hardware](intro/hardware).
@@ -20,10 +15,12 @@ For details of supported *operating systems* and recommendations for *hardware* 
 ### 3) Download the App
 
 While you still have an internet connection, download the Fieldmark™ App from the Android or iOS app stores:
+
 - [Google Play](https://play.google.com/store/apps/details?id=au.edu.faims.fieldmark&hl=en&gl=US)
 - [Apple App store](https://apps.apple.com/au/app/fieldmark/id1592632372)
 
 Or open the Fieldmark™ App on a web browser on your desktop, or on a mobile device, at one of the following addresses:
+
 - [Fieldmark™ Demonstration Server](https://fieldmark.app/)
 - the server nominated by your organisation (see your Administrator for details)
 - your organisation's server (for Enterprise users, see your Administrator for details)
@@ -52,7 +49,7 @@ If your account is recognised, you will be successfully signed in and see your l
 
 ![sign in screen](/common-images/userscreen.png)
 
-For more information on logging in, see [Logging In](intro/logging-in).   
+For more information on logging in, see [Logging In](intro/logging-in).
 
 ### 5) Get to the know the Fieldmark™ Workspace
 
@@ -80,8 +77,7 @@ We have a number of demonstration notebooks available for all users to showcase 
 
 ### 7) Still need help?
 
-For [Troubleshooting](advanced/troubleshooting) for more information or contact us at support@fieldmark.au.
-
+For [Troubleshooting](advanced/troubleshooting) for more information or contact us at <support@fieldmark.au>.
 
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet">

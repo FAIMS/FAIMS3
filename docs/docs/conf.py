@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Fieldmark"
-copyright = "2023, Electronic Field Notebooks Pty Ltd"
+copyright = "2024, Electronic Field Notebooks Pty Ltd"
 author = "Electronic Field Notebooks Pty Ltd"
 release = "0.7.940"
 
