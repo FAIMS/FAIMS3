@@ -18,16 +18,18 @@
  *   Implements an address field
  */
 
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {FieldProps} from 'formik';
 import {
   Collapse,
   IconButton,
   Stack,
+  Grid,
   TextField,
   Typography,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import _ from 'lodash';
 
 interface Props {
@@ -73,8 +75,18 @@ export const AddressField = (props: FieldProps & Props) => {
   );
   const [collapsed, setCollapsed] = useState(displayName === '');
 
+  const iconRef = useRef(null);
+
+
   const setFieldValue = (a: AddressType) => {
-    const dn = `${a.house_number || ''} ${a.road || ''}, ${a.suburb || ''}, ${a.state || ''} ${a.postcode || ''}`;
+    const parts = [
+      a.house_number,
+      a.road,
+      a.suburb,
+      a.state,
+      a.postcode,
+    ].filter(p => p); // remove undefined elements
+    const dn = parts.join(', ');
     setDisplayName(dn);
     setAddress(a);
     props.form.setFieldValue(props.field.name, {
@@ -100,12 +112,17 @@ export const AddressField = (props: FieldProps & Props) => {
   return (
     <div>
       <Typography variant="h5">{props.label}</Typography>
-      <Typography variant="h5">
-        {displayName}
-        <IconButton onClick={handleEdit} size={'small'}>
-          <EditIcon />
-        </IconButton>
-      </Typography>
+      <Grid container spacing={2}>
+        <Grid item xs={11}>
+          <Typography variant="h5">{displayName}</Typography>
+        </Grid>
+
+        <Grid item xs={1}>
+          <IconButton ref={iconRef} onClick={handleEdit} size={'small'}>
+            {collapsed ? <ExpandLessIcon /> : <EditIcon />}
+          </IconButton>
+        </Grid>
+      </Grid>
 
       <Collapse in={collapsed}>
         <Stack spacing={2}>
