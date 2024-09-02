@@ -77,7 +77,6 @@ export const AddressField = (props: FieldProps & Props) => {
 
   const iconRef = useRef(null);
 
-
   const setFieldValue = (a: AddressType) => {
     const parts = [
       a.house_number,
