@@ -1,5 +1,5 @@
 {
-    "app": "npx ts-node --prefer-ts-exts bin/@faims3/infra-aws-cdk.ts",
+    "app": "npx ts-node --prefer-ts-exts bin/aws-cdk-faims-infra.ts",
     "watch": {
         "include": [
             "**"

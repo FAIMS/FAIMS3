@@ -51,6 +51,7 @@ import {
 } from '@faims3/data-model';
 import {QRCodeFormField} from '../fields/qrcode';
 import {RichTextField} from '../fields/RichText';
+import {AddressField} from '../fields/Address';
 
 const bundle = null;
 export default bundle;
@@ -206,6 +207,15 @@ registerField(
   'Add relations between records',
   'Special',
   RelatedRecordSelector
+);
+
+registerField(
+  'faims-custom',
+  'AddressField',
+  'Address Field',
+  'Enter a valid street address',
+  'Geo',
+  AddressField
 );
 
 registerField(
