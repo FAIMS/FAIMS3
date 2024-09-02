@@ -41,23 +41,27 @@ export default function MetadataRenderer(props: MetadataProps) {
     });
   }, [project_id, metadata_key]);
 
-  if (chips && value !== '') {
-    return (
-      <Chip
-        size={'small'}
-        style={{marginRight: '5px', marginBottom: '5px'}}
-        label={
-          <>
-            {metadata_label && <span>{metadata_label}: </span>}
-            <span>{value}</span>
-          </>
-        }
-      />
-    );
-  } else if (value !== '') {
-    // Use RichTextField to render markdown if chips is false
+  // Use RichTextField for 'pre_description' field
+  if (metadata_key === 'pre_description' && value !== '') {
     return <RichTextField content={value} />;
-  } else {
-    return <span>No data available</span>;
   }
+
+  // For other fields, use original rendering logic
+  return chips && value !== '' ? (
+    <Chip
+      size={'small'}
+      style={{marginRight: '5px', marginBottom: '5px'}}
+      label={
+        <>
+          {metadata_label && <span>{metadata_label}: </span>}
+          <span>{value}</span>
+        </>
+      }
+    />
+  ) : (
+    <span>
+      {metadata_label && <span>{metadata_label}: </span>}
+      <span>{value}</span>
+    </span>
+  );
 }

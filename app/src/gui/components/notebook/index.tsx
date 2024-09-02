@@ -275,11 +275,22 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 px: 2,
               }}
             >
+              {/* <Box
+                component="h2"
+                sx={{
+                  textAlign: 'left',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  marginBottom: '16px',
+                }}
+              >
+                Survey Details
+              </Box> */}
               <Typography
-                variant="h5"
+                variant="body1"
                 sx={{
                   textAlign: 'center',
-                  fontSize: '1.75rem',
+                  fontSize: '18px',
                   fontWeight: 'bold',
                   flexGrow: 1,
                 }}

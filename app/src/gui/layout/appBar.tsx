@@ -56,10 +56,6 @@ import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../utils/helpers';
 import SyncStatus from '../components/sync';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import HelpIcon from '@mui/icons-material/Help';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import {now} from 'lodash';
-
 /**
  * Represents the properties for a menu list item.
  * @typedef {Object} ProjectListItemProps
