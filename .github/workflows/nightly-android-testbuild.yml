@@ -4,12 +4,11 @@ on:
   push:
     branches:
       - main
-      - build/nightly-android-test-deploy
 
   workflow_dispatch:
 
-  # schedule:
-  #   - cron: '39 20 * * 1-5'
+  schedule:
+    - cron: '39 20 * * 1-5'
 
 jobs:
   check_date:
