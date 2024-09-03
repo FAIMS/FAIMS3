@@ -1,6 +1,11 @@
 import {createContext, ReactNode, useEffect} from 'react';
 import {Project} from '../types/project';
-import {directory_db_pouch, local_auth_db, data_dbs} from '../sync/databases';
+import {
+  directory_db_pouch,
+  local_auth_db,
+  data_dbs,
+  metadata_dbs,
+} from '../sync/databases';
 import {ProjectInformation, ProjectObject} from '@faims3/data-model';
 
 export const ProjectsContext = createContext<Project[] | null>(null);
@@ -32,9 +37,9 @@ const getDirectory = async (url: string, token: string) => {
   return (await response.json()) as ProjectObject[];
 };
 
-const getDocs = async (conductorURL: string, directoryID: string) => {
+const getMetaData = async (conductorURL: string, directoryID: string) => {
   const {local} =
-    data_dbs[`${conductorURL.replace('http://', '')}||${directoryID}`];
+    metadata_dbs[`${conductorURL.replace('http://', '')}||${directoryID}`];
 
   return await local.allDocs();
 };
@@ -60,16 +65,25 @@ const directoryToProject = (
 
 export function ProjectsProvider({children}: {children: ReactNode}) {
   useEffect(() => {
+    console.log('DEBUG: data_dbs', data_dbs);
+    console.log('DEBUG: metadata_dbs', metadata_dbs);
+  }, []);
+
+  useEffect(() => {
     const getProjects = async () => {
       const listings = await getListings();
 
-      for (const listing of listings) {
-        if (!listing.conductor_url) continue;
+      for (const {_id, conductor_url} of listings) {
+        if (!_id || !conductor_url) continue;
 
-        const token = await getToken(listing._id);
-        const directories = await getDirectory(listing.conductor_url, token);
+        const token = await getToken(_id);
+        const directories = await getDirectory(conductor_url, token);
 
-        console.log('DEBUG: NEW', directories);
+        console.log('DEBUG: directories', directories);
+
+        const dataDocs = await getMetaData(conductor_url, directories[0]._id);
+
+        console.log('DEBUG: data_docs', dataDocs);
       }
     };
     getProjects();
