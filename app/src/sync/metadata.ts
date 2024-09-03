@@ -54,7 +54,7 @@ export const fetchProjectMetadata = async (
   lst: minimalCreatedListing,
   project_id: string
 ) => {
-  const url = `${lst.listing.conductor_url}/api${INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`;
+  const url = `${lst.listing.conductor_url}/api/notebooks/${project_id}`;
   const jwt_token = await getTokenForCluster(lst.listing._id);
   const full_project_id = lst.listing._id + '||' + project_id;
   const response = await fetch(url, {
