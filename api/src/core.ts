@@ -53,16 +53,16 @@ import markdownit from 'markdown-it';
 export const app = express();
 app.use(morgan('combined'));
 
-if (process.env.NODE_ENV !== 'test') {
-  // set up rate limiter: maximum of 30 requests per minute
-  const limiter = RateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 30,
-    validate: true,
-  });
-  app.use(limiter);
-  console.log('Rate limiter enabled');
-}
+// if (process.env.NODE_ENV !== 'test') {
+//   // set up rate limiter: maximum of 30 requests per minute
+//   const limiter = RateLimit({
+//     windowMs: 1 * 60 * 1000, // 1 minute
+//     max: 30,
+//     validate: true,
+//   });
+//   app.use(limiter);
+//   console.log('Rate limiter enabled');
+// }
 
 // Only parse query parameters into strings, not objects
 app.set('query parser', 'simple');

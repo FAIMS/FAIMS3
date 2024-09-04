@@ -21,12 +21,7 @@
 import {createTheme, colors} from '@mui/material';
 import typography from './typography';
 
-// declare module '@mui/styles/defaultTheme' {
-//   interface DefaultTheme extends Theme {}
-// }
-
 const theme = createTheme({
-  // spacing: 2,
   palette: {
     background: {
       default: '#FAFAFB',
@@ -36,31 +31,16 @@ const theme = createTheme({
       light: '#a7e938',
       dark: '#141E03',
     },
-    // secondary: {
-    //   100: colors.grey[100],
-    //   200: colors.grey[200],
-    //   light: colors.grey[300],
-    //   400: colors.grey[400],
-    //   main: colors.grey[500],
-    //   600: colors.grey[600],
-    //   dark: colors.grey[700],
-    //   800: colors.grey[800],
-    // },
     secondary: {
-      main: '#E18200', //'#FFA000',
+      main: '#E18200',
       contrastText: '#fff',
     },
     text: {
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
     },
-    // error: {
-    //   main: colors.red[500],
-    // },
   },
-  // shadows: Shadows,
   typography,
-  // shadows: Array(25).fill('none') as Shadows,
   components: {
     MuiAppBar: {
       styleOverrides: {
