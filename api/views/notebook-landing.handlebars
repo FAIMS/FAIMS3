@@ -210,18 +210,12 @@
 </div>
 </div>
 
-
-
   <script>
 const copyToClipboard = (text) => {
-    navigator.permissions.query({name: "clipboard-write"}).then((result) => {
-    if (result.state === "granted" || result.state === "prompt") {
-        navigator.clipboard.writeText(text).then(() => {
-            alert("Copied to clipboard.")
-        }, () => {
-                alert("Could not copy text.")
-        });
-    }
+    navigator.clipboard.writeText(text).then(() => {
+        alert("URL copied to clipboard.")
+    }, () => {
+            alert("Could not copy URL to clipboard.")
     });
 }
 

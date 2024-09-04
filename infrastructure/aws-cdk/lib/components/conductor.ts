@@ -76,6 +76,12 @@ export class FaimsConductor extends Construct {
   constructor(scope: Construct, id: string, props: FaimsConductorProps) {
     super(scope, id);
 
+    // OUTPUTS
+    // ================
+
+    // Build the public URL and expose
+    this.conductorEndpoint = `https://${props.domainName}:${this.externalPort}`;
+
     // AUXILIARY SETUP
     // ================
 
@@ -140,7 +146,9 @@ export class FaimsConductor extends Construct {
           COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
           COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
           COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
+          // Conductor API URLs
           CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
+          CONDUCTOR_URL: this.conductorEndpoint,
           // TODO Setup Google auth
           CONDUCTOR_AUTH_PROVIDERS: 'google',
           GOOGLE_CLIENT_ID: 'replace-me',
@@ -300,11 +308,5 @@ export class FaimsConductor extends Construct {
       ec2.Port.tcp(this.internalPort),
       'Allow traffic from ALB to Conductor Fargate Service'
     );
-
-    // OUTPUTS
-    // ================
-
-    // Build the public URL and expose
-    this.conductorEndpoint = `https://${props.domainName}:${this.externalPort}`;
   }
 }

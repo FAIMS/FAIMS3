@@ -56,11 +56,7 @@ import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../utils/helpers';
 import SyncStatus from '../components/sync';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import {appBarStyling} from '../themes';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
-import HelpIcon from '@mui/icons-material/Help';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import {now} from 'lodash';
 
 /**
  * Represents the properties for a menu list item.

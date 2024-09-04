@@ -88,14 +88,12 @@
 
   <script>
 const copyTokenToClipboard = () => {
-    navigator.permissions.query({name: "clipboard-write"}).then((result) => {
-    if (result.state === "granted" || result.state === "prompt") {
-        navigator.clipboard.writeText("{{{token}}}").then(() => {
-            alert("Bearer token copied to clipboard.")
-        }, () => {
-                alert("Could not copy token.")
-        });
-    }
+
+    navigator.clipboard.writeText("{{{token}}}").then(() => {
+        alert("Bearer token copied to clipboard.")
+    }, () => {
+            alert("Could not copy token.")
     });
 }
+
 </script>
