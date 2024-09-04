@@ -5,8 +5,8 @@ import {Box, Stack, Tab} from '@mui/material';
 import {DataGrid, GridEventListener} from '@mui/x-data-grid';
 import {ProjectInformation} from '@faims3/data-model/build/src/types';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import SurveyCardList from '../ui/survey-card-list';
-import {surveyListLayout} from '../../themes';
+import ProjectCardList from './project-card-list';
+import {projectListLayout} from '../../themes';
 
 /**
  * Renders a tabbed grid component.
@@ -71,9 +71,9 @@ export default function TabGrid({
       <TabPanel value="1" sx={{px: 0}}>
         <div style={{display: 'flex', height: '100%'}}>
           <div style={{flexGrow: 1}}>
-            {surveyListLayout === 'card-list' ? (
-              <SurveyCardList
-                surveys={pouchProjectList.filter(r => r.is_activated)}
+            {projectListLayout === 'card-list' ? (
+              <ProjectCardList
+                projects={pouchProjectList.filter(r => r.is_activated)}
               />
             ) : (
               <DataGrid
@@ -116,9 +116,9 @@ export default function TabGrid({
       <TabPanel value="2" sx={{px: 0}}>
         <div style={{display: 'flex', height: '100%'}}>
           <div style={{flexGrow: 1}}>
-            {surveyListLayout === 'card-list' ? (
-              <SurveyCardList
-                surveys={pouchProjectList.filter(r => !r.is_activated)}
+            {projectListLayout === 'card-list' ? (
+              <ProjectCardList
+                projects={pouchProjectList.filter(r => !r.is_activated)}
               />
             ) : (
               <DataGrid

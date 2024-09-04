@@ -2,8 +2,8 @@ import defaultTheme from './default';
 import bubbleTheme from './bubble';
 import defaultAppBarStyling from './default/appBar';
 import bubbleAppBarStyling from './bubble/appBar';
-import defaultSurveyListLayout from './default/noteBook';
-import bubbleSurveyListLayout from './bubble/noteBook';
+import defaultProjectListLayout from './default/noteBook';
+import bubbleProjectListLayout from './bubble/noteBook';
 
 /**
  * Exports the theme based on the environment variable VITE_THEME.
@@ -34,25 +34,25 @@ const exportAppBarStyling = () => {
 };
 
 /**
- * Exports the survey list layout based on the environment variable VITE_THEME.
+ * Exports the project list layout based on the environment variable VITE_THEME.
  *
- * @returns {object} The survey list layout object. Returns `bubbleSurveyListLayout` if VITE_THEME is 'bubble', otherwise returns `defaultSurveyListLayout`.
+ * @returns {object} The project list layout object. Returns `bubbleProjectListLayout` if VITE_THEME is 'bubble', otherwise returns `defaultProjectListLayout`.
  */
-const exportSurveyListLayout = () => {
+const exportProjectListLayout = () => {
   switch (import.meta.env.VITE_THEME) {
     case 'bubble':
-      return bubbleSurveyListLayout;
+      return bubbleProjectListLayout;
     default:
-      return defaultSurveyListLayout;
+      return defaultProjectListLayout;
   }
 };
 
 /**
- * Exports whether the survey list should be verbose based on the environment variable VITE_THEME.
+ * Exports whether the project list should be verbose based on the environment variable VITE_THEME.
  *
  * @returns {boolean} `false` if VITE_THEME is 'bubble', otherwise `true`.
  */
-const exportSurveyListVerbose = () => {
+const exportProjectListVerbose = () => {
   switch (import.meta.env.VITE_THEME) {
     case 'bubble':
       return false;
@@ -77,6 +77,6 @@ const exportAppBarHeading = () => {
 
 export const theme = exportTheme();
 export const appBarStyling = exportAppBarStyling();
-export const surveyListLayout = exportSurveyListLayout();
-export const surveyListVerbose = exportSurveyListVerbose();
+export const projectListLayout = exportProjectListLayout();
+export const projectListVerbose = exportProjectListVerbose();
 export const appBarHeading = exportAppBarHeading();

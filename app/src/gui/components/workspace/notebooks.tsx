@@ -38,7 +38,7 @@ import Tabs from '../ui/tab-grid';
 import HeadingGrid from '../ui/heading-grid';
 import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import {getListing} from '../../../sync/state';
-import {surveyListVerbose} from '../../themes';
+import {projectListVerbose} from '../../themes';
 
 interface sortModel {
   field: string;
@@ -242,7 +242,7 @@ export default function NoteBooks(props: NoteBookListProps) {
         <CircularLoading label={`Loading ${NOTEBOOK_NAME}s`} />
       ) : (
         <Box component={Paper} elevation={0} p={2}>
-          {surveyListVerbose && (
+          {projectListVerbose && (
             <Typography variant={'body1'} gutterBottom>
               You have {pouchProjectList.filter(r => r.is_activated).length}{' '}
               {NOTEBOOK_NAME}

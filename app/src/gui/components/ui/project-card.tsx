@@ -6,7 +6,7 @@ import {activate_project} from '../../../sync/process-initialization';
 /**
  * Function to handle the click event on the activate button.
  *
- * @param {ProjectInformation} survey - The survey object containing details to be displayed in the card.
+ * @param {ProjectInformation} project - The project object containing details to be displayed in the card.
  * @returns {void}
  */
 const onActivate = async ({
@@ -21,18 +21,18 @@ const onActivate = async ({
 };
 
 /**
- * SurveyCard component that displays information about a single survey.
+ * ProjectCard component that displays information about a single project.
  *
- * @param {SurveyCardProps} props - The properties for the SurveyCard component.
- * @param {ProjectInformation} props.survey - The survey object containing details to be displayed in the card.
- * @param {(project_id: string, activated: boolean) => void} props.onClick - Function to handle click events on the survey card.
- * @returns {JSX.Element} - The rendered SurveyCard component.
+ * @param {ProjectCardProps} props - The properties for the ProjectCard component.
+ * @param {ProjectInformation} props.project - The project object containing details to be displayed in the card.
+ * @param {(project_id: string, activated: boolean) => void} props.onClick - Function to handle click events on the project card.
+ * @returns {JSX.Element} - The rendered ProjectCard component.
  */
-export default function SurveyCard({
-  survey,
+export default function ProjectCard({
+  project,
   onClick,
 }: {
-  survey: ProjectInformation;
+  project: ProjectInformation;
   onClick: (project_id: string, activated: boolean) => void;
 }): JSX.Element {
   return (
@@ -45,7 +45,7 @@ export default function SurveyCard({
         paddingTop: 16,
         paddingLeft: 16,
       }}
-      onClick={() => onClick(survey.project_id, survey.is_activated)}
+      onClick={() => onClick(project.project_id, project.is_activated)}
     >
       <div
         style={{
@@ -69,9 +69,9 @@ export default function SurveyCard({
               fontSize: 22,
             }}
           >
-            {survey.name}
+            {project.name}
           </div>
-          {!survey.is_activated && (
+          {!project.is_activated && (
             <button
               style={{
                 cursor: 'pointer',
@@ -79,7 +79,7 @@ export default function SurveyCard({
                 fontSize: 16,
                 borderRadius: 10,
               }}
-              onClick={() => onActivate(survey)}
+              onClick={() => onActivate(project)}
             >
               Activate
             </button>
@@ -99,7 +99,7 @@ export default function SurveyCard({
               paddingBottom: 16,
             }}
           >
-            {survey.is_activated ? (
+            {project.is_activated ? (
               <div
                 style={{
                   display: 'flex',
@@ -156,11 +156,11 @@ export default function SurveyCard({
                 fontWeight: '550',
                 borderRadius: 20,
                 backgroundColor:
-                  survey.status === 'published' ? '#007435' : '#F44336',
+                  project.status === 'published' ? '#007435' : '#F44336',
               }}
             >
-              {survey.status &&
-                survey.status[0].toUpperCase() + survey.status.slice(1)}
+              {project.status &&
+                project.status[0].toUpperCase() + project.status.slice(1)}
             </div>
           </div>
         </div>
