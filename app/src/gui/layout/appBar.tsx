@@ -27,8 +27,10 @@ import {
   IconButton,
   Toolbar,
   ListItemButton,
+  createTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import {createUseStyles as makeStyles} from 'react-jss';
 import CssBaseline from '@mui/material/CssBaseline';
 import clsx from 'clsx';
 import Collapse from '@mui/material/Collapse';
@@ -56,6 +58,18 @@ import SyncStatus from '../components/sync';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {appBarStyling} from '../themes';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
+import HelpIcon from '@mui/icons-material/Help';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import {now} from 'lodash';
+
+/**
+ * Represents the properties for a menu list item.
+ * @typedef {Object} ProjectListItemProps
+ * @property {string} title - The title of the menuitem.
+ * @property {React.ReactElement} icon - The icon associated with the menuitem.
+ * @property {string} to - The path to navigate to for this menuitem.
+ * @property {boolean} disabled - Whether the menuitem is disabled in the list.
+ */
 
 type ProjectListItemProps = {
   title: string;
@@ -63,7 +77,11 @@ type ProjectListItemProps = {
   to: string;
   disabled: boolean;
 };
-type IconType =
+
+/**
+ * Represents the type of icon used in the navigation menu.
+ * @typedef {React.ReactElement | string | number | undefined} IconType
+ */ type IconType =
   | undefined
   | string
   | number
@@ -76,6 +94,105 @@ type MenuItemProps = {
   disabled: boolean;
   icon: IconType;
 };
+
+const drawerWidth = 240;
+const theme = createTheme();
+
+const useStyles = makeStyles({
+  root: {
+    display: 'flex',
+    boxShadow: 'none',
+  },
+  appBar: {
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+    boxShadow: 'none',
+  },
+  appBarShift: {
+    width: `calc(100% - ${drawerWidth}px)`,
+    marginLeft: drawerWidth,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+  },
+  menuButton: {
+    marginRight: theme.spacing(2),
+  },
+  hide: {
+    display: 'none',
+  },
+  drawer: {
+    width: drawerWidth,
+    flexShrink: 0,
+  },
+  drawerPaper: {
+    width: drawerWidth,
+    height: '100vh',
+    boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
+    borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+  },
+  drawerHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: theme.spacing(0, 1),
+    minHeight: '64px',
+    justifyContent: 'flex-end',
+  },
+  content: {
+    flexGrow: 1,
+    padding: theme.spacing(3),
+    transition: theme.transitions.create('margin', {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+    marginLeft: -drawerWidth,
+  },
+  contentShift: {
+    transition: theme.transitions.create('margin', {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+    marginLeft: 0,
+  },
+  nested: {
+    paddingLeft: theme.spacing(4),
+  },
+  /**
+   * Styles for the ListItemText component in the navigation items.
+   * @type {Object}
+   */
+  listItemText: {
+    fontSize: '1.1rem',
+    fontWeight: 'bold',
+    color: 'rgba(0, 0, 0, 0.54)', // Use the same gray color as the icons (this is a common MUI icon color)
+  },
+  /**
+   * Styles for the bottom section options in the drawer.
+   * Includes padding and a border at the top.
+   * @type {Object}
+   */
+  bottomOptions: {
+    borderTop: `1px solid ${theme.palette.divider}`,
+    padding: theme.spacing(2, 0),
+  },
+  /**
+   * Ensures that the bottom section of the drawer is positioned at the bottom of the viewport.
+   * @type {Object}
+   */
+  bottomSection: {
+    marginTop: 'auto',
+  },
+});
+
+/**
+ * Retrieves a list of nested menu items to be displayed in the navigation menu.
+ * @function
+ * @param {ProjectInformation[]} pouchProjectList - List of project information.
+ * @returns {MenuItemProps} - The item for nested menu.
+ */
 
 function getNestedProjects(pouchProjectList: ProjectInformation[]) {
   const projectListItems: ProjectListItemProps[] = [];
@@ -99,7 +216,17 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
 type NavbarProps = {
   token?: null | undefined | TokenContents;
 };
+/**
+ * MainAppBar component handles the display of the navigation drawer and the app bar.
+ * It includes top menu items, bottom menu items, and conditional rendering based on authentication status.
+ *
+ * @component
+ * @param {NavbarProps} props - Props passed to the component.
+ * @returns {JSX.Element} - The rendered MainAppBar component.
+ */
 export default function MainAppBar(props: NavbarProps) {
+  const classes = useStyles();
+
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
@@ -133,33 +260,33 @@ export default function MainAppBar(props: NavbarProps) {
             disabled: true,
           },
   ];
+
   const bottomMenuItems: Array<MenuItemProps> = [
-    isAuthenticated
-      ? {
-          title: 'User',
-          icon: <AccountCircleIcon />,
-          to: ROUTES.SIGN_IN,
-          disabled: false,
-        }
-      : {
-          title: 'User',
-          icon: <AccountCircleIcon />,
-          to: '/',
-          disabled: true,
-        },
     {
       title: 'About Build',
       icon: <SettingsIcon />,
       to: ROUTES.ABOUT_BUILD,
       disabled: false,
     },
+
+    isAuthenticated
+      ? {
+          title: 'Sign out',
+          icon: <AccountCircleIcon />,
+          to: ROUTES.SIGN_IN,
+          disabled: false,
+        }
+      : {
+          title: 'Sign out',
+          icon: <AccountCircleIcon />,
+          to: '/',
+          disabled: true,
+        },
   ];
 
   const [nestedMenuOpen, setNestedMenuOpen] = useState<{
     [key: string]: boolean;
   }>({Projects: false});
-
-  const classes = appBarStyling();
 
   return (
     <React.Fragment>
@@ -179,7 +306,7 @@ export default function MainAppBar(props: NavbarProps) {
               edge="start"
               className={clsx(classes.menuButton, isOpen && classes.hide)}
             >
-              <MenuIcon className={classes.menuIcon} />
+              <MenuIcon />
             </IconButton>
             <AppBarHeading link={ROUTES.INDEX} />
             <div>
@@ -219,7 +346,9 @@ export default function MainAppBar(props: NavbarProps) {
                     disabled={item.disabled}
                   >
                     <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText>{item.title} </ListItemText>
+                    <ListItemText classes={{primary: classes.listItemText}}>
+                      {item.title}{' '}
+                    </ListItemText>
                     {item.nested.length === 0 ? (
                       <CircularProgress size={12} thickness={4} />
                     ) : nestedMenuOpen[item.title] ? (
@@ -252,7 +381,10 @@ export default function MainAppBar(props: NavbarProps) {
                             onClick={toggle}
                           >
                             <ListItemIcon>{nestedItem.icon}</ListItemIcon>
-                            <ListItemText primary={nestedItem.title} />
+                            <ListItemText
+                              primary={nestedItem.title}
+                              classes={{primary: classes.listItemText}}
+                            />
                           </ListItemButton>
                         )
                       )}
@@ -268,33 +400,41 @@ export default function MainAppBar(props: NavbarProps) {
                   onClick={toggle}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.title} />
+                  <ListItemText
+                    primary={item.title}
+                    classes={{primary: classes.listItemText}}
+                  />
                 </ListItemButton>
               );
             })}
           </List>
-          <Divider />
-          <List>
-            {bottomMenuItems.map(
-              (item: {
-                title: string;
-                icon: IconType;
-                disabled: boolean;
-                to: any;
-              }) => (
-                <ListItemButton
-                  key={item.title}
-                  disabled={item.disabled}
-                  to={item.to}
-                  component={RouterLink}
-                  onClick={toggle}
-                >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.title} />
-                </ListItemButton>
-              )
-            )}
-          </List>
+          <div className={classes.bottomSection}>
+            <Divider />
+            <List className={classes.bottomOptions}>
+              {bottomMenuItems.map(
+                (item: {
+                  title: string;
+                  icon: IconType;
+                  disabled: boolean;
+                  to: any;
+                }) => (
+                  <ListItemButton
+                    key={item.title}
+                    disabled={item.disabled}
+                    to={item.to}
+                    component={RouterLink}
+                    onClick={toggle}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText
+                      primary={item.title}
+                      classes={{primary: classes.listItemText}}
+                    />
+                  </ListItemButton>
+                )
+              )}
+            </List>
+          </div>
         </Drawer>
       </div>
       <SystemAlert />

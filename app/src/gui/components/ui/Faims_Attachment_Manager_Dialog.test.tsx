@@ -17,7 +17,7 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import FaimsDialog from './Dialog';
+import FaimsAttachmentManagerDialog from './Faims_Attachment_Manager_Dialog';
 import {expect, vi, describe, it} from 'vitest';
 
 const testData = {
@@ -30,7 +30,7 @@ const testData = {
 
 describe('Check dialog component', () => {
   it('Check with path', () => {
-    render(<FaimsDialog {...testData} path={'test-path'} />);
+    render(<FaimsAttachmentManagerDialog {...testData} path={'test-path'} />);
 
     expect(screen.getByTestId('dialog-img')).toBeTruthy();
   });

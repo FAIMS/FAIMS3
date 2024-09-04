@@ -29,7 +29,6 @@ import NoteBookList from './gui/pages/notebook_list';
 import Notebook from './gui/pages/notebook';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
-import NotFound404 from './gui/pages/404';
 import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';
 import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
@@ -44,6 +43,7 @@ import {getTokenContentsForCurrentUser} from './users';
 import {useEffect, useState} from 'react';
 
 import {TokenContents} from '@faims3/data-model';
+import NotFound404 from './gui/pages/404';
 
 // type AppProps = {};
 
@@ -181,7 +181,7 @@ export default function App() {
                   }
                 />
                 <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
-                <Route Component={NotFound404} />
+                <Route path="*" Component={NotFound404} />
               </Routes>
             </MainLayout>
           </Router>
