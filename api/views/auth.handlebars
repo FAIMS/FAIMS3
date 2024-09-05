@@ -9,11 +9,13 @@
      <h3 class="h3 mb-3 fw-normal" style="margin-top:50px">Sign In</h3>
     <p class="">Please select an authentication provider</p>
     </div>
+    
+    <p>Will redirect to: {{redirect}}</p>
 
     <form>
 
     {{#each providers}}
-    <a href="/auth/{{ this.label }}/?redirect={{redirect}}" class="w-100 btn btn-lg btn-primary"
+    <a href="/auth/{{ this.label }}/?redirect={{../redirect}}" class="w-100 btn btn-lg btn-primary"
             style="background-color:#669911;">{{ this.name }}</a>
     {{/each}}
  

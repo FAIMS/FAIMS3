@@ -108,9 +108,13 @@ export function add_auth_routes(app: any, handlers: any) {
   //   })(req, res, next);
   // });
 
-  app.post('/auth/local', (req: any, res: any, next: any) => {
-    const redirect = validateRedirect(req.query?.redirect || '/');
-    passport.authenticate('local', (err: any, user: any, info: any) => {
+  const authenticate_return = (
+    req: any,
+    res: any,
+    next: any,
+    redirect: string
+  ) => {
+    return (err: any, user: any, info: any) => {
       if (err) {
         return next(err);
       }
@@ -122,17 +126,23 @@ export function add_auth_routes(app: any, handlers: any) {
         if (loginErr) {
           return next(loginErr);
         }
-        console.log('user', user);
         // Generate a token
         const token = await generateUserToken(user);
-        console.log('token', token);
         // Append the token to the redirect URL
         const redirectUrlWithToken = `${redirect}?token=${token.token}`;
 
         // Redirect to the app with the token
         return res.redirect(redirectUrlWithToken);
       });
-    })(req, res, next);
+    };
+  };
+
+  app.post('/auth/local', (req: any, res: any, next: any) => {
+    const redirect = validateRedirect(req.query?.redirect || '/');
+    passport.authenticate(
+      'local',
+      authenticate_return(req, res, next, redirect)
+    )(req, res, next);
   });
 
   // accept an invite, auth not required, we invite them to
@@ -237,22 +247,17 @@ export function add_auth_routes(app: any, handlers: any) {
 
   // set up handlers for OAuth providers
   for (const handler of handlers) {
-    app.get(`/auth/${handler}/`, (req: any, res: any) => {
+    app.get(`/auth/${handler}/`, (req: any, res: any, next: any) => {
+      const redirect = validateRedirect(req.query?.redirect || '/');
       if (
         typeof req.query?.state === 'string' ||
         typeof req.query?.state === 'undefined'
       ) {
-        passport.authenticate(handler + '-validate', HANDLER_OPTIONS[handler])(
-          req,
-          res,
-          (err?: {}) => {
-            // Hack to avoid users getting caught when they're not in the right
-            // groups.
-            console.error('Authentication Error', err);
-            // res.redirect('https://auth.datacentral.org.au/cas/logout');
-            //throw err ?? Error('Authentication failed (next, no error)');
-          }
-        );
+        passport.authenticate(
+          handler + '-validate',
+          authenticate_return(req, res, next, redirect)
+          //          HANDLER_OPTIONS[handler]
+        )(req, res, next);
       } else {
         throw Error(
           `state must be a string, or not set, not ${typeof req.query?.state}`
