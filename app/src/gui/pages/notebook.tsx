@@ -20,7 +20,7 @@
 import React, {useState, useEffect} from 'react';
 import {useParams, Navigate} from 'react-router-dom';
 import {Box, Grid, Typography} from '@mui/material';
-import FolderIcon from '@mui/icons-material/Folder';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
@@ -37,9 +37,6 @@ import {logError} from '../../logging';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 export default function Notebook() {
-  /**
-   *
-   */
   const {project_id} = useParams<{project_id: ProjectID}>();
   const [project_info, setProjectInfo] = useState(
     undefined as ProjectInformation | undefined
@@ -64,7 +61,6 @@ export default function Notebook() {
   }, [project_id]);
 
   const breadcrumbs = [
-    // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
       title: !loading ? project_info.name : '',
@@ -78,50 +74,51 @@ export default function Notebook() {
     return <Navigate to="/404" />;
   }
   const handleRefresh = () => {
-    /**
-     * Handler for Refreshing project
-     */
     return getInfoWrapper();
   };
 
   return !loading ? (
     <Box>
-      <Grid
-        container
-        direction="row"
-        justifyContent="flex-start"
-        alignItems="center"
-        spacing={2}
+      <Box
+        sx={{
+          textAlign: 'center',
+          padding: '8px 0',
+          backgroundColor: '#f5f5f5',
+        }}
       >
-        <Grid item xs={'auto'}>
-          <Typography variant={mq_above_md ? 'h3' : 'h4'} component={'div'}>
-            <Grid
-              container
-              direction="row"
-              justifyContent="flex-start"
-              alignItems="center"
-              spacing={1}
+        <Grid container direction="column" alignItems="center">
+          <Grid item>
+            <MenuBookIcon
+              color={'secondary'}
+              fontSize={mq_above_md ? 'large' : 'medium'}
+            />
+          </Grid>
+          <Grid item>
+            <Typography
+              variant={mq_above_md ? 'h3' : 'h4'}
+              component={'div'}
+              sx={{fontWeight: 'bold'}}
             >
-              <Grid item>
-                <FolderIcon
-                  color={'secondary'}
-                  fontSize={mq_above_md ? 'large' : 'medium'}
-                  style={{verticalAlign: 'middle'}}
-                />
-              </Grid>
-              <Grid item>{project_info.name}</Grid>
-            </Grid>
-          </Typography>
+              {project_info.name}
+            </Typography>
+          </Grid>
         </Grid>
-        <Grid item xs>
-          <Breadcrumbs data={breadcrumbs} />
-        </Grid>
-      </Grid>
-      <RefreshNotebook
-        handleRefresh={handleRefresh}
-        project_name={project_info.name}
-      />
-      <NotebookComponent project={project_info} handleRefresh={handleRefresh} />
+      </Box>
+
+      <Box sx={{paddingLeft: '16px', marginTop: '8px'}}>
+        <Breadcrumbs data={breadcrumbs} />
+      </Box>
+
+      <Box sx={{paddingTop: '16px'}}>
+        <RefreshNotebook
+          handleRefresh={handleRefresh}
+          project_name={project_info.name}
+        />
+        <NotebookComponent
+          project={project_info}
+          handleRefresh={handleRefresh}
+        />
+      </Box>
     </Box>
   ) : (
     <CircularProgress data-testid="progressbar" />

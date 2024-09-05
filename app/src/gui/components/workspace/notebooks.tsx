@@ -38,6 +38,7 @@ import Tabs from '../ui/tab-grid';
 import HeadingGrid from '../ui/heading-grid';
 import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import {getListing} from '../../../sync/state';
+import {projectListVerbose} from '../../themes';
 
 interface sortModel {
   field: string;
@@ -241,25 +242,27 @@ export default function NoteBooks(props: NoteBookListProps) {
         <CircularLoading label={`Loading ${NOTEBOOK_NAME}s`} />
       ) : (
         <Box component={Paper} elevation={0} p={2}>
-          <Typography variant={'body1'} gutterBottom>
-            You have {pouchProjectList.filter(r => r.is_activated).length}{' '}
-            {NOTEBOOK_NAME}
-            {pouchProjectList.filter(r => r.is_activated).length !== 1
-              ? 's'
-              : ''}{' '}
-            activated on this device. To start syncing a {NOTEBOOK_NAME}, visit
-            the{' '}
-            <Button
-              variant="text"
-              size={'small'}
-              onClick={() => {
-                setTabID('2');
-              }}
-            >
-              Available
-            </Button>{' '}
-            tab and click the activate button.
-          </Typography>
+          {projectListVerbose && (
+            <Typography variant={'body1'} gutterBottom>
+              You have {pouchProjectList.filter(r => r.is_activated).length}{' '}
+              {NOTEBOOK_NAME}
+              {pouchProjectList.filter(r => r.is_activated).length !== 1
+                ? 's'
+                : ''}{' '}
+              activated on this device. To start syncing a {NOTEBOOK_NAME},
+              visit the{' '}
+              <Button
+                variant="text"
+                size={'small'}
+                onClick={() => {
+                  setTabID('2');
+                }}
+              >
+                Available
+              </Button>{' '}
+              tab and click the activate button.
+            </Typography>
+          )}
           {NOTEBOOK_LIST_TYPE === 'tabs' ? (
             <Tabs
               pouchProjectList={pouchProjectList}

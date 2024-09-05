@@ -20,14 +20,14 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Link as RouterLink, NavLink} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
   CircularProgress,
   IconButton,
   Toolbar,
-  createTheme,
   ListItemButton,
+  createTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import {createUseStyles as makeStyles} from 'react-jss';
@@ -56,13 +56,7 @@ import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../utils/helpers';
 import SyncStatus from '../components/sync';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import HelpIcon from '@mui/icons-material/Help';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import {now} from 'lodash';
+import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 
 /**
  * Represents the properties for a menu list item.
@@ -307,18 +301,11 @@ export default function MainAppBar(props: NavbarProps) {
               onClick={toggle}
               edge="start"
               className={clsx(classes.menuButton, isOpen && classes.hide)}
-              size="large"
             >
               <MenuIcon />
             </IconButton>
-            <NavLink style={{flexGrow: 1}} to={ROUTES.INDEX}>
-              <img
-                src="/static/logo/Fieldmark-Short-Green-NoBorder.png"
-                style={{maxWidth: '140px', flex: 1}}
-              />
-            </NavLink>
+            <AppBarHeading link={ROUTES.INDEX} />
             <div>
-              {/*{isAuthenticated ? <ConnectedStatus token={props.token} /> : ''}*/}
               {isAuthenticated ? <SyncStatus /> : ''}
               <AppBarAuth token={props.token} />
             </div>
