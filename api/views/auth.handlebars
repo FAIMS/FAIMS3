@@ -9,11 +9,11 @@
      <h3 class="h3 mb-3 fw-normal" style="margin-top:50px">Sign In</h3>
     <p class="">Please select an authentication provider</p>
     </div>
-    
+
     <form>
 
     {{#each providers}}
-    <a href="/auth/{{ this.label }}/" class="w-100 btn btn-lg btn-primary"
+    <a href="/auth/{{ this.label }}/?redirect={{redirect}}" class="w-100 btn btn-lg btn-primary"
             style="background-color:#669911;">{{ this.name }}</a>
     {{/each}}
  
@@ -26,14 +26,14 @@
 
 {{#if localAuth}}
 <h2>Local Login</h2>
-<form method="post" action="/auth/local">
+<form method="post" action="/auth/local?redirect={{redirect}}">
   <div class="mb-3">
     <label for="InputIdentifier" class="form-label">Username or Email address</label>
-    <input type="text" name="username" class="form-control" id="InputIdentifier">
+    <input type="text" name="username" class="form-control" id="InputIdentifier" autocomplete="email">
   </div>
   <div class="mb-3">
     <label for="InputPassword" class="form-label">Password</label>
-    <input type="password" name="password" class="form-control" id="InputPassword">
+    <input type="password" name="password" class="form-control" id="InputPassword" autocomplete="current-password">
   </div>
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>

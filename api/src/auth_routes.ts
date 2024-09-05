@@ -28,6 +28,7 @@ import {registerLocalUser} from './auth_providers/local';
 import {body, validationResult} from 'express-validator';
 import {getInvite} from './couchdb/invites';
 import {acceptInvite} from './registration';
+import {generateUserToken} from './authkeys/create';
 
 const AVAILABLE_AUTH_PROVIDER_DISPLAY_INFO: {[name: string]: any} = {
   google: {
@@ -63,9 +64,27 @@ export function determine_callback_urls(provider_name: string): {
   };
 }
 
+/**
+ * Check that a redirect URL is one that we allow
+ *
+ * @param redirect URL to redirect to
+ * @returns a valid URl to redirect to, default to '/' if
+ *   the one passed in is bad
+ */
+function validateRedirect(redirect: string) {
+  if (redirect.startsWith('http')) {
+    // should match against a whitelist of allowed URLs
+    return redirect;
+  } else if (redirect.startsWith('/')) {
+    return redirect;
+  } else {
+    return '/';
+  }
+}
+
 export function add_auth_routes(app: any, handlers: any) {
   app.get('/auth/', (req: any, res: any) => {
-    // Allow the user to decide what auth mechanism to use
+    const redirect = validateRedirect(req.query?.redirect || '/');
     const available_provider_info = [];
     for (const handler of handlers) {
       available_provider_info.push({
@@ -77,17 +96,44 @@ export function add_auth_routes(app: any, handlers: any) {
       providers: available_provider_info,
       localAuth: true, // maybe make this configurable?
       messages: req.flash(),
+      redirect: redirect,
     });
   });
 
-  // handle local login post request
-  app.post(
-    '/auth/local',
-    passport.authenticate('local', {
-      successRedirect: '/send-token',
-      failureRedirect: '/auth',
-    })
-  );
+  // app.post('/auth/local', (req: any, res: any, next: any) => {
+  //   const redirect = validateRedirect(req.query?.redirect || '/');
+  //   passport.authenticate('local', {
+  //     successRedirect: redirect,
+  //     failureRedirect: `/login?redirect=${redirect}`,
+  //   })(req, res, next);
+  // });
+
+  app.post('/auth/local', (req: any, res: any, next: any) => {
+    const redirect = validateRedirect(req.query?.redirect || '/');
+    passport.authenticate('local', (err: any, user: any, info: any) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        return res.status(401).json({message: 'Authentication failed'});
+      }
+
+      req.login(user, async (loginErr: any) => {
+        if (loginErr) {
+          return next(loginErr);
+        }
+        console.log('user', user);
+        // Generate a token
+        const token = await generateUserToken(user);
+        console.log('token', token);
+        // Append the token to the redirect URL
+        const redirectUrlWithToken = `${redirect}?token=${token.token}`;
+
+        // Redirect to the app with the token
+        return res.redirect(redirectUrlWithToken);
+      });
+    })(req, res, next);
+  });
 
   // accept an invite, auth not required, we invite them to
   // register if they aren't already
