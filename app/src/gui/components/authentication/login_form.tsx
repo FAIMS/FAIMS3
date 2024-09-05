@@ -44,12 +44,7 @@ export function LoginButton(props: LoginButtonProps) {
         window.addEventListener(
           'message',
           async event => {
-            await setTokenForCluster(
-              event.data.token,
-              event.data.pubkey,
-              event.data.pubalg,
-              props.listing_id
-            )
+            await setTokenForCluster(event.data.token, props.listing_id)
               .then(async () => {
                 const token = await getTokenContentsForCluster(
                   props.listing_id

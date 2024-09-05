@@ -119,7 +119,7 @@ export function add_auth_routes(app: any, handlers: any) {
     next: any,
     redirect: string
   ) => {
-    return (err: any, user: any, info: any) => {
+    return (err: any, user: any) => {
       if (err) {
         return next(err);
       }
@@ -136,7 +136,11 @@ export function add_auth_routes(app: any, handlers: any) {
     };
   };
 
-  const redirect_with_token = async (res: any, user: Express.User, redirect: string) => {
+  const redirect_with_token = async (
+    res: any,
+    user: Express.User,
+    redirect: string
+  ) => {
     // Generate a token
     const token = await generateUserToken(user);
     // Append the token to the redirect URL
@@ -144,8 +148,7 @@ export function add_auth_routes(app: any, handlers: any) {
 
     // Redirect to the app with the token
     return res.redirect(redirectUrlWithToken);
-  }
-
+  };
 
   app.post('/auth/local', (req: any, res: any, next: any) => {
     const redirect = validateRedirect(req.query?.redirect || '/');
@@ -268,6 +271,7 @@ export function add_auth_routes(app: any, handlers: any) {
           authenticate_return(req, res, next, redirect)
           //          HANDLER_OPTIONS[handler]
         )(req, res, next);
+        console.log('TODO: may need to insert:', HANDLER_OPTIONS[handler]);
       } else {
         throw Error(
           `state must be a string, or not set, not ${typeof req.query?.state}`

@@ -1,6 +1,5 @@
 import {createTheme} from '@mui/material';
 import {createUseStyles as makeStyles} from 'react-jss';
-import {NavLink} from 'react-router-dom';
 
 const theme = createTheme();
 

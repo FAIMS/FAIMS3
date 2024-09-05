@@ -24,7 +24,7 @@ import {decodeJwt} from 'jose';
 import {useNavigate} from 'react-router';
 import {setTokenForCluster} from '../../../users';
 import {getSyncableListingsInfo} from '../../../databaseAccess';
-import {useEffect} from 'react';
+import {Dispatch, SetStateAction, useEffect} from 'react';
 import {TokenContents} from '@faims3/data-model';
 import {reprocess_listing} from '../../../sync/process-initialization';
 
@@ -41,7 +41,7 @@ async function getListingForConductorUrl(conductor_url: string) {
 }
 
 interface AuthReturnProps {
-  setToken: (token: TokenContents) => {};
+  setToken: Dispatch<SetStateAction<TokenContents | null | undefined>>;
 }
 
 export function AuthReturn(props: AuthReturnProps) {

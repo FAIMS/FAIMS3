@@ -21,7 +21,7 @@
  *   on the happy path of not seeing access denied, or at least in ways the GUI
  *   can meaningfully handle.
  */
-import {jwtVerify, KeyLike, importSPKI, decodeJwt} from 'jose';
+import {decodeJwt} from 'jose';
 
 import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
 import {LocalAuthDoc, JWTTokenMap, local_auth_db} from './sync/databases';
