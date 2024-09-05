@@ -63,12 +63,7 @@ function processUrlPassedToken(token_obj: TokenURLObject) {
   getListingForConductorUrl(token_obj.origin)
     .then(async listing_id => {
       console.log('Received token via url for:', listing_id);
-      await setTokenForCluster(
-        token_obj.token,
-        token_obj.pubkey,
-        token_obj.pubalg,
-        listing_id
-      );
+      await setTokenForCluster(token_obj.token, listing_id);
       return listing_id;
     })
     .then(async listing_id => {
