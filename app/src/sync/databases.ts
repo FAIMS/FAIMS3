@@ -205,12 +205,10 @@ export function ensure_local_db<Content extends {}>(
   global_dbs: LocalDBList<Content>,
   start_sync_attachments: boolean
 ): [boolean, LocalDB<Content>] {
-  console.log('ensure_local_db', prefix, local_db_id, global_dbs);
   if (global_dbs[local_db_id]) {
     global_dbs[local_db_id].is_sync = start_sync;
     return [false, global_dbs[local_db_id]];
   } else {
-    console.log('creating a new db', prefix, local_db_id);
     const db = new PouchDB<Content>(
       prefix + POUCH_SEPARATOR + local_db_id,
       local_pouch_options

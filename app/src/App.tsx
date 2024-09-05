@@ -87,7 +87,7 @@ export default function App() {
                   path={ROUTES.AUTH_RETURN}
                   element={
                     <PrivateRoute allowed>
-                      <AuthReturn />
+                      <AuthReturn setToken={setToken} />
                     </PrivateRoute>
                   }
                 />

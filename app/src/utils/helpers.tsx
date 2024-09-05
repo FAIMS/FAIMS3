@@ -1,10 +1,10 @@
 import {TokenContents} from '@faims3/data-model';
 
-export function tokenExists(token: null | undefined | TokenContents) {
+function tokenExists(token: null | undefined | TokenContents) {
   return token !== null && token !== undefined;
 }
 
-export function tokenValid(token: null | undefined | TokenContents) {
+function tokenValid(token: null | undefined | TokenContents) {
   /**
    * Check for expiry AND validity
    */

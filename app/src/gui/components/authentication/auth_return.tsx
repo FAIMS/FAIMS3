@@ -24,6 +24,9 @@ import {decodeJwt} from 'jose';
 import {useNavigate} from 'react-router';
 import {setTokenForCluster} from '../../../users';
 import {getSyncableListingsInfo} from '../../../databaseAccess';
+import {useEffect} from 'react';
+import {TokenContents} from '@faims3/data-model';
+import {reprocess_listing} from '../../../sync/process-initialization';
 
 async function getListingForConductorUrl(conductor_url: string) {
   const origin = new URL(conductor_url).origin;
@@ -37,40 +40,47 @@ async function getListingForConductorUrl(conductor_url: string) {
   throw Error(`Unknown listing for conductor url ${conductor_url}`);
 }
 
-export function AuthReturn() {
+interface AuthReturnProps {
+  setToken: (token: TokenContents) => {};
+}
+
+export function AuthReturn(props: AuthReturnProps) {
   const navigate = useNavigate();
 
-  const params = new URLSearchParams(window.location.search);
-  if (params.has('token')) {
-    const token = params.get('token');
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('token')) {
+      const token = params.get('token');
 
-    if (token) {
-      const token_obj = decodeJwt(decodeURIComponent(token));
+      if (token) {
+        const token_obj = decodeJwt(decodeURIComponent(token));
 
-      console.log('decoded', token_obj);
-      getListingForConductorUrl(token_obj.server)
-        .then(async listing_id => {
-          console.log('Received token via url for:', listing_id);
-          await setTokenForCluster(token, '', '', listing_id);
-          return listing_id;
-        })
-        .then(async listing_id => {
-          console.log(listing_id);
-          // reprocess_listing(listing_id);
-        })
-        .catch(err => {
-          console.warn('Failed to get token from url', err);
-        });
-      return (
-        <>
-          <h1>Auth Token Returned</h1>
-          <pre>{JSON.stringify(token_obj, null, 2)}</pre>
-        </>
-      );
+        console.log('decoded', token_obj);
+        getListingForConductorUrl(token_obj.server as string)
+          .then(async listing_id => {
+            console.log('Received token via url for:', listing_id);
+            setTokenForCluster(token, listing_id).then(() => {
+              console.log('We have stored the token for ', listing_id);
+              reprocess_listing(listing_id);
+              // generate the TokenContents object like parseToken does
+              const token_content = {
+                username: token_obj.sub as string,
+                roles: (token_obj['_couchdb.roles'] as string[]) || '',
+                name: token_obj.name as string,
+              };
+              console.log('%ctoken content', 'color: red', token_content);
+              props.setToken(token_content);
+              navigate('/');
+            });
+          })
+          .catch(err => {
+            console.warn('Failed to get token from url', err);
+          });
+      }
     } else {
-      return <h1>Wassat?</h1>;
+      navigate('/');
     }
-  } else {
-    navigate('/');
-  }
+  }, []);
+
+  return <h1>Auth Token</h1>;
 }

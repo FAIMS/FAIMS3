@@ -83,8 +83,13 @@ function validateRedirect(redirect: string) {
 }
 
 export function add_auth_routes(app: any, handlers: any) {
-  app.get('/auth/', (req: any, res: any) => {
+  app.get('/auth/', async (req: any, res: any) => {
     const redirect = validateRedirect(req.query?.redirect || '/');
+
+    if (req.user) {
+      await redirect_with_token(res, req.user, redirect);
+    }
+
     const available_provider_info = [];
     for (const handler of handlers) {
       available_provider_info.push({
@@ -126,16 +131,21 @@ export function add_auth_routes(app: any, handlers: any) {
         if (loginErr) {
           return next(loginErr);
         }
-        // Generate a token
-        const token = await generateUserToken(user);
-        // Append the token to the redirect URL
-        const redirectUrlWithToken = `${redirect}?token=${token.token}`;
-
-        // Redirect to the app with the token
-        return res.redirect(redirectUrlWithToken);
+        return redirect_with_token(res, user, redirect);
       });
     };
   };
+
+  const redirect_with_token = async (res: any, user: Express.User, redirect: string) => {
+    // Generate a token
+    const token = await generateUserToken(user);
+    // Append the token to the redirect URL
+    const redirectUrlWithToken = `${redirect}?token=${token.token}`;
+
+    // Redirect to the app with the token
+    return res.redirect(redirectUrlWithToken);
+  }
+
 
   app.post('/auth/local', (req: any, res: any, next: any) => {
     const redirect = validateRedirect(req.query?.redirect || '/');
