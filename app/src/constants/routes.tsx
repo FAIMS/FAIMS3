@@ -23,6 +23,7 @@ import {NOTEBOOK_NAME} from '../buildconfig';
 
 export const INDEX = '/';
 export const SIGN_IN = '/signin/';
+export const AUTH_RETURN = '/auth-return/';
 
 export const NOT_FOUND = '/not-found';
 

@@ -154,8 +154,6 @@ export const getLocalStateDB = () => {
 export type JWTToken = string;
 
 export interface JWTTokenInfo {
-  pubkey: string;
-  pubalg: string;
   token: JWTToken;
 }
 

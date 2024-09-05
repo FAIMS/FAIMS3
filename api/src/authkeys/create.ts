@@ -21,7 +21,7 @@
 
 import {SignJWT} from 'jose';
 import type {SigningKey} from '../services/keyService';
-import {KEY_SERVICE} from '../buildconfig';
+import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
 
 export async function createAuthKey(
   user: Express.User,
@@ -30,6 +30,7 @@ export async function createAuthKey(
   const jwt = await new SignJWT({
     '_couchdb.roles': user.roles ?? [],
     name: user.name,
+    server: CONDUCTOR_PUBLIC_URL,
   })
     .setProtectedHeader({
       alg: signingKey.alg,

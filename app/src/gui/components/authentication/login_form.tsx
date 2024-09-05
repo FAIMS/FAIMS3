@@ -67,6 +67,9 @@ export function LoginButton(props: LoginButtonProps) {
           false
         );
         if (await isWeb()) {
+          const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
+          window.location.href =
+            props.conductor_url + '/auth?redirect=' + redirect;
           // Open a new window/tab on web
           const oauth_window = window.open(props.conductor_url);
           if (oauth_window === null) {

@@ -44,6 +44,7 @@ import {useEffect, useState} from 'react';
 
 import {TokenContents} from '@faims3/data-model';
 import NotFound404 from './gui/pages/404';
+import {AuthReturn} from './gui/components/authentication/auth_return';
 
 // type AppProps = {};
 
@@ -79,6 +80,14 @@ export default function App() {
                   element={
                     <PrivateRoute allowed>
                       <SignIn setToken={setToken} />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path={ROUTES.AUTH_RETURN}
+                  element={
+                    <PrivateRoute allowed>
+                      <AuthReturn />
                     </PrivateRoute>
                   }
                 />
