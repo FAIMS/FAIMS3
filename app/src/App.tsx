@@ -45,6 +45,7 @@ import {useEffect, useState} from 'react';
 import {TokenContents} from '@faims3/data-model';
 import NotFound404 from './gui/pages/404';
 import {AuthReturn} from './gui/components/authentication/auth_return';
+import {AppUrlListener} from './native_hooks';
 
 // type AppProps = {};
 
@@ -73,6 +74,7 @@ export default function App() {
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={theme}>
           <Router>
+            <AppUrlListener></AppUrlListener>
             <MainLayout token={token}>
               <Routes>
                 <Route

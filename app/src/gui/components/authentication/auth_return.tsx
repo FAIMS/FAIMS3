@@ -21,7 +21,7 @@
  */
 
 import {decodeJwt} from 'jose';
-import {useNavigate} from 'react-router';
+import {NavigateFunction, useNavigate} from 'react-router';
 import {setTokenForCluster} from '../../../users';
 import {getSyncableListingsInfo} from '../../../databaseAccess';
 import {Dispatch, SetStateAction, useEffect} from 'react';
@@ -51,7 +51,6 @@ export function AuthReturn(props: AuthReturnProps) {
     const params = new URLSearchParams(window.location.search);
     if (params.has('token')) {
       const token = params.get('token');
-
       if (token) {
         const token_obj = decodeJwt(decodeURIComponent(token));
 
@@ -84,3 +83,4 @@ export function AuthReturn(props: AuthReturnProps) {
 
   return <h1>Auth Token</h1>;
 }
+

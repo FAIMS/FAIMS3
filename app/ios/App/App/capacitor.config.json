@@ -6,10 +6,14 @@
 	"plugins": {
 		"SplashScreen": {
 			"launchShowDuration": 0
+		},
+		"CapacitorHttp": {
+			"enabled": true
 		}
 	},
 	"server": {
-		"allowNavigation": []
+		"allowNavigation": [],
+		"iosScheme": "fieldmark"
 	},
 	"android": {
 		"webContentsDebuggingEnabled": true

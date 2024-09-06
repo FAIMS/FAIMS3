@@ -75,7 +75,10 @@ function validateRedirect(redirect: string) {
   if (redirect.startsWith('http')) {
     // should match against a whitelist of allowed URLs
     return redirect;
-  } else if (redirect.startsWith('/')) {
+  } else if (
+    redirect.startsWith('/') ||
+    redirect.startsWith('org.fedarch.faims3://')
+  ) {
     return redirect;
   } else {
     return '/';
