@@ -296,11 +296,6 @@ export function setLocalConnection<Content extends {}>(
   db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
 ) {
   const options = db_info.remote.options;
-  console.debug(
-    '%cSetting local connection:',
-    'background-color: cyan;',
-    db_info
-  );
 
   if (db_info.is_sync) {
     if (db_info.remote.connection !== null) {

@@ -395,7 +395,6 @@ export async function getTokenContentsForCurrentUser(): Promise<
   TokenContents | undefined
 > {
   const docs = await local_auth_db.allDocs();
-  console.log('GOT DOCS', docs);
   if (docs.total_rows > 0) {
     const cluster_id = docs.rows[0].id;
     return getTokenContentsForCluster(cluster_id);

@@ -22,7 +22,6 @@
 
 import {EventEmitter} from 'events';
 
-import {DEBUG_APP} from '../buildconfig';
 import {ListingID} from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {ListingsObject, ExistingActiveDoc} from './databases';
@@ -34,14 +33,14 @@ export class DebugEmitter extends EventEmitter {
     super(opts);
   }
   emit(event: string | symbol, ...args: unknown[]): boolean {
-    if (DEBUG_APP) {
-      console.log(
-        '%cFAIMS EventEmitter event',
-        'background-color: red; color: white;',
-        event,
-        ...args
-      );
-    }
+    // if (DEBUG_APP) {
+    //   console.log(
+    //     '%cFAIMS EventEmitter event',
+    //     'background-color: red; color: white;',
+    //     event,
+    //     ...args
+    //   );
+    // }
     return super.emit(event, ...args);
   }
 }

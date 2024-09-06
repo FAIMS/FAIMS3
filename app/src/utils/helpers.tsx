@@ -19,6 +19,5 @@ export function checkToken(token: null | undefined | TokenContents) {
   /**
    * Check if the token exists, and whether it's valid
    */
-  console.log('checkToken', token);
   return tokenExists(token) && tokenValid(token);
 }

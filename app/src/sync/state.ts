@@ -157,12 +157,6 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
       all_projects_updated &&
       Array.from(projects_data_synced.values()).every(v => v);
 
-    console.log(
-      'COMMON CHECK',
-      all_projects_updated,
-      !listings_updated,
-      listing_projects_synced
-    );
     initializeEvents.emit('all_state');
   };
 
