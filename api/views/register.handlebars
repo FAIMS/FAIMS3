@@ -16,6 +16,7 @@
   <div class="alert alert-danger">{{messages.error.registration}}</div>
   {{/if}}
   <form method="post" action="/register/local">
+  <input type="hidden" name="redirect" value="{{redirect}}">
   <fieldset>
     <legend>Register Local Account</legend>
     <div class="mb-3">

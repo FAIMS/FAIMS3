@@ -164,6 +164,7 @@ export function add_auth_routes(app: any, handlers: any) {
   // accept an invite, auth not required, we invite them to
   // register if they aren't already
   app.get('/register/:invite_id/', async (req: any, res: any) => {
+    const redirect = validateRedirect(req.query?.redirect || '/');
     const invite_id = req.params.invite_id;
     req.session['invite'] = invite_id;
     const invite = await getInvite(invite_id);
@@ -179,7 +180,7 @@ export function add_auth_routes(app: any, handlers: any) {
         'message',
         'You will now have access to the ${invite.notebook} notebook.'
       );
-      res.redirect('/');
+      redirect_with_token(res, req.user, redirect);
     } else {
       // need to sign up the user, show the registration page
       const available_provider_info = [];
@@ -192,6 +193,7 @@ export function add_auth_routes(app: any, handlers: any) {
       res.render('register', {
         invite: invite_id,
         providers: available_provider_info,
+        redirect: redirect,
         localAuth: true, // maybe make this configurable?
         messages: req.flash(),
       });
@@ -205,13 +207,14 @@ export function add_auth_routes(app: any, handlers: any) {
       .isLength({min: 10})
       .withMessage('Must be at least 10 characters'),
     body('email').isEmail().withMessage('Must be a valid email address'),
-    async (req: any, res: any) => {
+    async (req: any, res: any, next: any) => {
       // create a new local account if we have a valid invite
       const username = req.body.username;
       const password = req.body.password;
       const repeat = req.body.repeat;
       const name = req.body.name;
       const email = req.body.email;
+      const redirect = validateRedirect(req.body.redirect || '/');
 
       const errors = validationResult(req);
 
@@ -221,7 +224,9 @@ export function add_auth_routes(app: any, handlers: any) {
         req.flash('email', email);
         req.flash('name', name);
         res.status(400);
-        res.redirect('/register/' + req.session.invite);
+        res.redirect(
+          '/register/' + req.session.invite + `?redirect=${redirect}`
+        );
         return;
       }
 
@@ -241,14 +246,21 @@ export function add_auth_routes(app: any, handlers: any) {
         if (user) {
           await acceptInvite(user, invite);
           req.flash('message', 'Registration successful. Please login below.');
-          res.redirect('/');
+          req.login(user, (err: any) => {
+            if (err) {
+              return next(err);
+            }
+            return redirect_with_token(res, user, redirect);
+          });
         } else {
           req.flash('error', {registration: error});
           req.flash('username', username);
           req.flash('email', email);
           req.flash('name', name);
           res.status(400);
-          res.redirect('/register/' + req.session.invite);
+          res.redirect(
+            '/register/' + req.session.invite + `?redirect=${redirect}`
+          );
         }
       } else {
         req.flash('error', {repeat: {msg: "Password and repeat don't match."}});
@@ -256,7 +268,9 @@ export function add_auth_routes(app: any, handlers: any) {
         req.flash('email', email);
         req.flash('name', name);
         res.status(400);
-        res.redirect('/register/' + req.session.invite);
+        res.redirect(
+          '/register/' + req.session.invite + `?redirect=${redirect}`
+        );
       }
     }
   );
