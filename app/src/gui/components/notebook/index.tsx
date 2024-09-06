@@ -334,6 +334,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
               <Typography
                 variant="body1"
                 gutterBottom
+                component="div"
                 sx={{marginBottom: '16px'}}
               >
                 <strong>Description:</strong>{' '}
