@@ -3,8 +3,8 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {Box, Stack, Tab} from '@mui/material';
 import {DataGrid, GridEventListener} from '@mui/x-data-grid';
-import {ProjectInformation} from '@faims3/data-model/build/src/types';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {ProjectWithActivation} from '../../../types/project';
 
 /**
  * Renders a tabbed grid component.
@@ -27,7 +27,7 @@ export default function TabGrid({
   columns,
   sortModel,
 }: {
-  pouchProjectList: ProjectInformation[];
+  pouchProjectList: ProjectWithActivation[];
   tabID: string;
   handleChange: (event: React.SyntheticEvent, newValue: string) => void;
   handleRowClick: GridEventListener<'rowClick'>;
@@ -38,7 +38,7 @@ export default function TabGrid({
   return (
     <TabContext
       value={
-        pouchProjectList.filter(r => r.is_activated).length === 0 ? '2' : tabID
+        pouchProjectList.filter(r => r.activated).length === 0 ? '2' : tabID
       }
     >
       <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
@@ -46,12 +46,12 @@ export default function TabGrid({
           <Tab
             label={
               'Activated (' +
-              pouchProjectList.filter(r => r.is_activated).length +
+              pouchProjectList.filter(r => r.activated).length +
               ')'
             }
             value="1"
             disabled={
-              pouchProjectList.filter(r => r.is_activated).length === 0
+              pouchProjectList.filter(r => r.activated).length === 0
                 ? true
                 : false
             }
@@ -59,7 +59,7 @@ export default function TabGrid({
           <Tab
             label={
               'Available (' +
-              pouchProjectList.filter(r => !r.is_activated).length +
+              pouchProjectList.filter(r => !r.activated).length +
               ')'
             }
             value="2"
@@ -71,13 +71,13 @@ export default function TabGrid({
           <div style={{flexGrow: 1}}>
             <DataGrid
               key={'notebook_list_datagrid'}
-              rows={pouchProjectList.filter(r => r.is_activated)}
+              rows={pouchProjectList.filter(r => r.activated)}
               loading={loading}
               columns={columns}
               onRowClick={handleRowClick}
               autoHeight
               sx={{cursor: 'pointer'}}
-              getRowId={r => r.project_id}
+              getRowId={r => r._id}
               hideFooter={true}
               getRowHeight={() => 'auto'}
               initialState={{
@@ -110,12 +110,12 @@ export default function TabGrid({
           <div style={{flexGrow: 1}}>
             <DataGrid
               key={'notebook_list_datagrid'}
-              rows={pouchProjectList.filter(r => !r.is_activated)}
+              rows={pouchProjectList.filter(r => !r.activated)}
               loading={loading}
               columns={columns}
               autoHeight
               sx={{cursor: 'pointer'}}
-              getRowId={r => r.project_id}
+              getRowId={r => r._id}
               hideFooter={true}
               getRowHeight={() => 'auto'}
               initialState={{

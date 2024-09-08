@@ -33,7 +33,7 @@ import RefreshNotebook from '../components/notebook/refresh';
 import {ProjectInformation} from '@faims3/data-model';
 import {logError} from '../../logging';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import {ProjectsContext} from '../../context/projects';
+import {ProjectsContext} from '../../context/projects-context';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 

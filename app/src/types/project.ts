@@ -12,6 +12,10 @@ export interface Project {
     data_db?: PossibleConnectionInfo;
     metadata_db?: PossibleConnectionInfo;
 }
+
+export interface ProjectWithActivation extends Project {
+    activated: boolean;
+}
   
 export interface ProjectInterface {
     project: ProjectObject;
