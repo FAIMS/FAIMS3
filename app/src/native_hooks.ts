@@ -20,6 +20,7 @@
  */
 
 import {App as CapacitorApp, URLOpenListenerEvent} from '@capacitor/app';
+import {Browser} from '@capacitor/browser';
 import React, {useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
 
@@ -31,6 +32,7 @@ export function AppUrlListener() {
       const url = new URL(event.url);
       // remove the first '/' from the pathname
       const redirect = url.pathname.substring(1) + url.search;
+      Browser.close();
       console.log('navigating from app url to', redirect);
       navigate(redirect);
     });

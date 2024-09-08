@@ -21,7 +21,7 @@
  */
 
 import {decodeJwt} from 'jose';
-import {NavigateFunction, useNavigate} from 'react-router';
+import {useNavigate} from 'react-router';
 import {setTokenForCluster} from '../../../users';
 import {getSyncableListingsInfo} from '../../../databaseAccess';
 import {Dispatch, SetStateAction, useEffect} from 'react';

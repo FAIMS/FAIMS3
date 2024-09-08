@@ -8,12 +8,12 @@
 			"launchShowDuration": 0
 		},
 		"CapacitorHttp": {
-			"enabled": true
+			"enabled": false
 		}
 	},
 	"server": {
 		"allowNavigation": [],
-		"iosScheme": "fieldmark"
+		"iosScheme": "org.fedarch.faims3"
 	},
 	"android": {
 		"webContentsDebuggingEnabled": true
