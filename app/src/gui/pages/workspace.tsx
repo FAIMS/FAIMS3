@@ -24,12 +24,14 @@ import Notebooks from '../components/workspace/notebooks';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {projectListVerbose} from '../themes';
+import ExampleOnlineComponent from '../components/ui/exampleOnlineOnlyComponent';
 
 export default function Workspace() {
   const breadcrumbs = [{title: 'Workspace'}];
 
   return (
     <React.Fragment>
+      {<ExampleOnlineComponent />}
       {projectListVerbose && <Breadcrumbs data={breadcrumbs} />}
       <Grid container spacing={3}>
         <Grid item xs={12} md={12} lg={8}>
