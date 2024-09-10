@@ -685,11 +685,13 @@ export interface InitialMergeDetails {
 // Template database item
 
 // These are the fields used to instantiate the item
-type UiSpecificationType = object;
+type UiSpecificationType = {[k: string]: any};
+type NotebookMetadataType = {[k: string]: string};
 
 export interface TemplateDbDocumentDetails {
-  name: string;
+  template_name: string;
   ui_specification: UiSpecificationType;
+  metadata: NotebookMetadataType;
 }
 
 // Once it's in the DB we'll have a _id field as well
@@ -734,10 +736,7 @@ interface GetTemplateByIdResponse extends TemplateDbDocument {}
  * POST to /notebooks/template/:id to create a new notebook from a template ID
  */
 
-type NotebookMetadataType = object;
-
 interface PostCreateNotebookFromTemplate {
   template_id: string;
   project_name: string;
-  metadata: NotebookMetadataType;
 }
