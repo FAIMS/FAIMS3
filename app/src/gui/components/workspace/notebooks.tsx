@@ -21,7 +21,7 @@
 import React, {useContext} from 'react';
 import {Box, Paper, Typography, Button} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
-import {GridColDef, GridCellParams} from '@mui/x-data-grid';
+import {GridColDef, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 import {TokenContents} from '@faims3/data-model';
 import CircularLoading from '../ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
@@ -35,6 +35,8 @@ import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ActivatedContext} from '../../../context/activated-context';
 import {activateProject} from '../../../dbs/activated-db';
+import * as ROUTES from '../../../constants/routes';
+import { useNavigate } from 'react-router-dom';
 
 interface sortModel {
   field: string;
@@ -56,6 +58,9 @@ export default function NoteBooks(props: NoteBookListProps) {
 
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const history = useNavigate();
+
+  const handleRowClick: GridEventListener<'rowClick'> = ({ row: { is_activated, project_id } }) => is_activated && history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
 
   const columns: GridColDef[] = not_xs
     ? [
@@ -123,7 +128,7 @@ export default function NoteBooks(props: NoteBookListProps) {
               project={params.row}
               showHelperText={false}
               project_status={params.row.status}
-              handleNotebookActivation={activateProject}
+              handleActivation={activateProject}
             />
           ),
         },
@@ -186,7 +191,7 @@ export default function NoteBooks(props: NoteBookListProps) {
               project={params.row}
               showHelperText={false}
               project_status={params.row.status}
-              handleNotebookActivation={activateProject}
+              handleActivation={activateProject}
             />
           ),
         },
@@ -222,7 +227,7 @@ export default function NoteBooks(props: NoteBookListProps) {
               pouchProjectList={projects}
               tabID={tabID}
               handleChange={() => {}}
-              handleRowClick={() => {}}
+              handleRowClick={handleRowClick}
               loading={false}
               columns={columns}
               sortModel={props.sortModel}
@@ -230,7 +235,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           ) : (
             <HeadingGrid
               pouchProjectList={projects}
-              handleRowClick={() => {}}
+              handleRowClick={handleRowClick}
               loading={false}
               columns={columns}
               sortModel={props.sortModel}

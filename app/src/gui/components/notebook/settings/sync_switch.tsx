@@ -37,92 +37,35 @@ import {ProjectInformation} from '@faims3/data-model';
 import {
   isSyncingProject,
   setSyncingProject,
-  listenSyncingProject,
 } from '../../../../sync/sync-toggle';
-import {activate_project} from '../../../../sync/process-initialization';
-import {store} from '../../../../context/store';
-import {ActionType} from '../../../../context/actions';
 import {grey} from '@mui/material/colors';
 import NotebookActivationSwitch from './activation-switch';
 import LoadingButton from '@mui/lab/LoadingButton';
-import {ProjectID} from '@faims3/data-model';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
 
 type NotebookSyncSwitchProps = {
   project: ProjectInformation;
   showHelperText: boolean;
   project_status: string | undefined;
-  handleNotebookActivation?: Function;
+  handleActivation: (_id: string) => Promise<PouchDB.Core.Response>
 };
 
-async function listenSync(
-  active_id: ProjectID,
-  callback: (syncing: boolean) => unknown
-): Promise<any> {
-  return listenSyncingProject(active_id, callback); // the callback here will set isSyncing
-}
-
-export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
-  const {project} = props;
-  const {dispatch} = useContext(store);
-  const [open, setOpen] = React.useState(false);
-  const handleOpen = () => {
-    setOpen(true);
-  };
-  const handleClose = () => {
-    setOpen(false);
-  };
-  const [isSyncing, setIsSyncing] = useState(
-    project.is_activated ? isSyncingProject(project.project_id) : false
-  );
+export default function NotebookSyncSwitch({ project, showHelperText, project_status, handleActivation}: NotebookSyncSwitchProps) {
+  const [open, setOpen] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
 
-  const handleStartSync = async () => {
-    /**
-     * Wrapped listenSyncingProject in promise to ensure the setSync
-     * callback has completed before component unmount (whether via the
-     * tab switch, or react re-rendering the entire datagrid because
-     * the project metadata has changed (project.is_activated))
-     */
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+ 
+  const isSyncing = project.is_activated && isSyncingProject(project.project_id);
 
-    return await listenSync(project.project_id, setIsSyncing).then(() => {
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: `Successfully activated ${project.name}.`,
-          severity: 'success',
-        },
-      });
-    });
-  };
-  const handleActivation = async () => {
-    setIsWorking(true); // block the UI
-    await activate_project(project.listing_id, project.non_unique_project_id)
-      .then(async () => {
-        await handleStartSync();
-        setIsWorking(false); // unblock the UI
-        props.handleNotebookActivation !== undefined &&
-          props.handleNotebookActivation();
-      })
-      .catch(e => {
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: e.message,
-            severity: 'error',
-          },
-        });
-      });
-    //.finally(() => location.reload());
-  };
-
-  return ['published', 'archived'].includes(String(props.project_status)) ? (
+  return ['published', 'archived'].includes(String(project_status)) ? (
     <Box>
       {!project.is_activated ? (
         <NotebookActivationSwitch
-          project={props.project}
-          project_status={props.project_status}
-          handleActivation={handleActivation}
+          project={project}
+          project_status={project_status}
+          handleActivation={() => handleActivation(project.project_id)}
           isWorking={isWorking}
         />
       ) : (
@@ -143,7 +86,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
             }
           />
           {isWorking ? <FormHelperText>Working...</FormHelperText> : ''}
-          {props.showHelperText ? (
+          {showHelperText ? (
             <FormHelperText>
               Toggle syncing this {NOTEBOOK_NAME} to the server.
             </FormHelperText>
@@ -159,7 +102,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
             <Alert severity={isSyncing ? 'warning' : 'info'}>
               <AlertTitle>Are you sure?</AlertTitle>
               Do you want to {isSyncing ? 'stop' : 'start'} syncing the{' '}
-              {props.project.name} {NOTEBOOK_NAME} to your device?
+              {project.name} {NOTEBOOK_NAME} to your device?
             </Alert>
             <DialogActions style={{justifyContent: 'space-between'}}>
               <Button onClick={handleClose} autoFocus>
@@ -177,30 +120,9 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
                   disableElevation
                   onClick={async () => {
                     setIsWorking(true);
-                    await setSyncingProject(project.project_id, !isSyncing)
-                      .then(() => {
-                        dispatch({
-                          type: ActionType.ADD_ALERT,
-                          payload: {
-                            message: `${
-                              !isSyncing ? 'Enabling ' : 'Disabling '
-                            } data sync for ${NOTEBOOK_NAME}  ${project.name}`,
-                            severity: 'success',
-                          },
-                        });
-                        setIsSyncing(!isSyncing);
-                        setIsWorking(false);
-                        handleClose();
-                      })
-                      .catch(e => {
-                        dispatch({
-                          type: ActionType.ADD_ALERT,
-                          payload: {
-                            message: e.message,
-                            severity: 'error',
-                          },
-                        });
-                      });
+                    await handleActivation(project.project_id);
+                    setIsWorking(false);
+                    setOpen(false);
                   }}
                 >
                   {isSyncing ? 'Stop ' : 'Start'} sync
@@ -221,7 +143,6 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
         borderLeft: 'solid 3px ' + grey[300],
       }}
       component={Paper}
-      // variant={'outlined'}
       my={1}
       elevation={0}
     >
