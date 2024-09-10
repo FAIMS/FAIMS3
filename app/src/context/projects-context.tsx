@@ -3,7 +3,13 @@ import {Project} from '../types/project';
 import {getRemoteProjects} from './functions';
 import {getLocalProjects, updateLocalProjects} from '../dbs/projects-db';
 
-export const ProjectsContext = createContext<Project[]>([]);
+export const ProjectsContext = createContext<{
+  projects: Project[];
+  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
+}>({
+  projects: [],
+  setProjects: () => {},
+});
 
 export function ProjectsProvider({children}: {children: ReactNode}) {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -25,7 +31,7 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
   }, []);
 
   return (
-    <ProjectsContext.Provider value={projects}>
+    <ProjectsContext.Provider value={{projects, setProjects}}>
       {children}
     </ProjectsContext.Provider>
   );

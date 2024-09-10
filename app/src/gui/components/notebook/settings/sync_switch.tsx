@@ -18,7 +18,7 @@
  * This provides a react component to manage the syncing state of a specific
  * project via a toggle.
  */
-import React, {useContext, useState} from 'react';
+import {useState} from 'react';
 import {
   Box,
   Switch,
@@ -32,40 +32,39 @@ import {
   AlertTitle,
   Button,
 } from '@mui/material';
-
-import {ProjectInformation} from '@faims3/data-model';
-import {
-  isSyncingProject,
-  setSyncingProject,
-} from '../../../../sync/sync-toggle';
 import {grey} from '@mui/material/colors';
 import NotebookActivationSwitch from './activation-switch';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
+import {ProjectWithActivation} from '../../../../types/project';
 
 type NotebookSyncSwitchProps = {
-  project: ProjectInformation;
+  project: ProjectWithActivation;
   showHelperText: boolean;
-  project_status: string | undefined;
-  handleActivation: (_id: string) => Promise<PouchDB.Core.Response>
+  handleActivation: (_id: string) => Promise<PouchDB.Core.Response>;
+  setTabID: Function;
 };
 
-export default function NotebookSyncSwitch({ project, showHelperText, project_status, handleActivation}: NotebookSyncSwitchProps) {
+export default function NotebookSyncSwitch({
+  project,
+  showHelperText,
+  handleActivation,
+  setTabID,
+}: NotebookSyncSwitchProps) {
   const [open, setOpen] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
- 
-  const isSyncing = project.is_activated && isSyncingProject(project.project_id);
 
-  return ['published', 'archived'].includes(String(project_status)) ? (
+  return ['published', 'archived'].includes(String(project.status)) ? (
     <Box>
-      {!project.is_activated ? (
+      {!project.activated ? (
         <NotebookActivationSwitch
           project={project}
-          project_status={project_status}
-          handleActivation={() => handleActivation(project.project_id)}
+          project_status={project.status}
+          handleActivation={() => handleActivation(project._id)}
+          setTabID={setTabID}
           isWorking={isWorking}
         />
       ) : (
@@ -74,14 +73,14 @@ export default function NotebookSyncSwitch({ project, showHelperText, project_st
             sx={{mr: 0}}
             control={
               <Switch
-                checked={isSyncing}
+                checked={project.activated}
                 disabled={isWorking}
                 onClick={handleOpen}
               />
             }
             label={
               <Typography variant={'button'}>
-                {isSyncing ? 'On' : 'Off'}
+                {project.activated ? 'On' : 'Off'}
               </Typography>
             }
           />
@@ -95,13 +94,12 @@ export default function NotebookSyncSwitch({ project, showHelperText, project_st
           )}
           <Dialog
             open={open}
-            onClose={handleClose}
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
           >
-            <Alert severity={isSyncing ? 'warning' : 'info'}>
+            <Alert severity={project.activated ? 'warning' : 'info'}>
               <AlertTitle>Are you sure?</AlertTitle>
-              Do you want to {isSyncing ? 'stop' : 'start'} syncing the{' '}
+              Do you want to {project.activated ? 'stop' : 'start'} syncing the{' '}
               {project.name} {NOTEBOOK_NAME} to your device?
             </Alert>
             <DialogActions style={{justifyContent: 'space-between'}}>
@@ -111,21 +109,16 @@ export default function NotebookSyncSwitch({ project, showHelperText, project_st
 
               {isWorking ? (
                 <LoadingButton loading variant="outlined" size={'small'}>
-                  {isSyncing ? 'Stopping' : 'Starting'} sync
+                  {project.activated ? 'Stopping' : 'Starting'} sync
                 </LoadingButton>
               ) : (
                 <Button
                   size={'small'}
                   variant="contained"
                   disableElevation
-                  onClick={async () => {
-                    setIsWorking(true);
-                    await handleActivation(project.project_id);
-                    setIsWorking(false);
-                    setOpen(false);
-                  }}
+                  onClick={async () => {}}
                 >
-                  {isSyncing ? 'Stop ' : 'Start'} sync
+                  {project.activated ? 'Stop ' : 'Start'} sync
                 </Button>
               )}
             </DialogActions>

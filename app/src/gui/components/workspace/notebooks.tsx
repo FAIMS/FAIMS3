@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useContext} from 'react';
+import {useContext, useState} from 'react';
 import {Box, Paper, Typography, Button} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 import {GridColDef, GridCellParams, GridEventListener} from '@mui/x-data-grid';
@@ -36,7 +36,7 @@ import {ProjectsContext} from '../../../context/projects-context';
 import {ActivatedContext} from '../../../context/activated-context';
 import {activateProject} from '../../../dbs/activated-db';
 import * as ROUTES from '../../../constants/routes';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 
 interface sortModel {
   field: string;
@@ -48,10 +48,10 @@ type NoteBookListProps = {
 };
 
 export default function NoteBooks(props: NoteBookListProps) {
-  const [tabID, setTabID] = React.useState('1');
+  const [tabID, setTabID] = useState('1');
 
   const activated = useContext(ActivatedContext);
-  const projects = useContext(ProjectsContext).map(project => ({
+  const projects = useContext(ProjectsContext).projects.map(project => ({
     activated: !!activated.get(project._id),
     ...project,
   }));
@@ -60,7 +60,9 @@ export default function NoteBooks(props: NoteBookListProps) {
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const history = useNavigate();
 
-  const handleRowClick: GridEventListener<'rowClick'> = ({ row: { is_activated, project_id } }) => is_activated && history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
+  const handleRowClick: GridEventListener<'rowClick'> = ({
+    row: {is_activated, project_id},
+  }) => is_activated && history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
 
   const columns: GridColDef[] = not_xs
     ? [
@@ -127,8 +129,8 @@ export default function NoteBooks(props: NoteBookListProps) {
             <NotebookSyncSwitch
               project={params.row}
               showHelperText={false}
-              project_status={params.row.status}
               handleActivation={activateProject}
+              setTabID={setTabID}
             />
           ),
         },
@@ -190,8 +192,8 @@ export default function NoteBooks(props: NoteBookListProps) {
             <NotebookSyncSwitch
               project={params.row}
               showHelperText={false}
-              project_status={params.row.status}
               handleActivation={activateProject}
+              setTabID={setTabID}
             />
           ),
         },
@@ -211,13 +213,7 @@ export default function NoteBooks(props: NoteBookListProps) {
               : ''}{' '}
             activated on this device. To start syncing a {NOTEBOOK_NAME}, visit
             the{' '}
-            <Button
-              variant="text"
-              size={'small'}
-              onClick={() => {
-                setTabID('2');
-              }}
-            >
+            <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
               Available
             </Button>{' '}
             tab and click the activate button.
@@ -226,7 +222,7 @@ export default function NoteBooks(props: NoteBookListProps) {
             <Tabs
               pouchProjectList={projects}
               tabID={tabID}
-              handleChange={() => {}}
+              handleChange={setTabID}
               handleRowClick={handleRowClick}
               loading={false}
               columns={columns}

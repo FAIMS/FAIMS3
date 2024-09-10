@@ -29,20 +29,19 @@ export default function TabGrid({
 }: {
   pouchProjectList: ProjectWithActivation[];
   tabID: string;
-  handleChange: (event: React.SyntheticEvent, newValue: string) => void;
+  handleChange: React.Dispatch<React.SetStateAction<string>>;
   handleRowClick: GridEventListener<'rowClick'>;
   loading: boolean;
   columns: any;
   sortModel: any;
 }) {
   return (
-    <TabContext
-      value={
-        pouchProjectList.filter(r => r.activated).length === 0 ? '2' : tabID
-      }
-    >
+    <TabContext value={tabID}>
       <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-        <TabList onChange={handleChange} aria-label="tablist">
+        <TabList
+          onChange={(_, value: string) => handleChange(value)}
+          aria-label="tablist"
+        >
           <Tab
             label={
               'Activated (' +

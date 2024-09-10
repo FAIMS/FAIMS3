@@ -1,30 +1,33 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import {Alert, Box, AlertTitle, Button} from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
-import {ProjectInformation} from '@faims3/data-model';
 import DialogActions from '@mui/material/DialogActions';
 
 import Dialog from '@mui/material/Dialog';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
+import {ProjectWithActivation} from '../../../../types/project';
+import {ProjectsContext} from '../../../../context/projects-context';
 
 type NotebookActivationSwitchProps = {
-  project: ProjectInformation;
+  project: ProjectWithActivation;
   project_status: string | undefined;
   handleActivation: Function;
   isWorking: boolean;
+  setTabID: Function;
 };
 
-export default function NotebookActivationSwitch(
-  props: NotebookActivationSwitchProps
-) {
+export default function NotebookActivationSwitch({
+  project,
+  handleActivation,
+  isWorking,
+  setTabID,
+}: NotebookActivationSwitchProps) {
   const [open, setOpen] = React.useState(false);
-  const handleOpen = () => {
-    setOpen(true);
-  };
+  const {setProjects} = useContext(ProjectsContext);
 
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
   return (
     <Box my={1}>
       <Button
@@ -44,15 +47,15 @@ export default function NotebookActivationSwitch(
       >
         <Alert severity={'info'}>
           <AlertTitle>Are you sure?</AlertTitle>
-          Do you want to start syncing the {props.project.name} {NOTEBOOK_NAME}{' '}
-          to your device?
+          Do you want to start syncing the {project.name} {NOTEBOOK_NAME} to
+          your device?
         </Alert>
         <DialogActions style={{justifyContent: 'space-between'}}>
           <Button onClick={handleClose} autoFocus color={'primary'}>
             Cancel
           </Button>
 
-          {props.isWorking ? (
+          {isWorking ? (
             <LoadingButton loading variant="outlined" size={'small'}>
               Activating...
             </LoadingButton>
@@ -63,7 +66,14 @@ export default function NotebookActivationSwitch(
               disableElevation
               color={'primary'}
               onClick={() => {
-                props.handleActivation();
+                setProjects(projects =>
+                  projects.map(p =>
+                    p._id === project._id ? {...p, activated: true} : p
+                  )
+                );
+                handleActivation();
+                setTabID('1');
+                handleClose();
               }}
             >
               Activate
