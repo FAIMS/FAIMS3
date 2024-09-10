@@ -1,4 +1,4 @@
-import {useIsOnline} from '../../../utils/custom_hooks';
+import {useIsOnline} from '../../../utils/customHooks';
 import {Typography, Button, Box} from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 

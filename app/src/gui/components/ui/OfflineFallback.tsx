@@ -4,67 +4,65 @@ import SignalWifiConnectedNoInternet4Icon from '@mui/icons-material/SignalWifiCo
 import {Box, Button, CircularProgress, Typography} from '@mui/material';
 import {useState} from 'react';
 import {createUseStyles as makeStyles} from 'react-jss';
+import {theme} from '../../themes';
 
-const useStyles = makeStyles((theme: any) => {
-  console.log(JSON.stringify(theme));
-  return {
-    root: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      backgroundColor: '#f5f5f5',
+const useStyles = makeStyles({
+root: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    backgroundColor: theme.palette.background.default,
+  },
+  container: {
+    padding: theme.spacing(4),
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: theme.shape.borderRadius,
+    boxShadow: theme.shadows[1],
+    textAlign: 'center',
+  },
+  logo: {
+    width: theme.spacing(12),
+    height: theme.spacing(12),
+    marginBottom: theme.spacing(3),
+    color: theme.palette.text.secondary,
+  },
+  title: {
+    color: theme.palette.text.primary,
+    marginBottom: theme.spacing(1),
+  },
+  subtitle: {
+    color: theme.palette.text.secondary,
+    marginBottom: theme.spacing(3),
+  },
+  buttonContainer: {
+    '& > :not(:last-child)': {
+      marginRight: theme.spacing(2),
     },
-    container: {
-      padding: '32px',
-      backgroundColor: '#ffffff',
-      borderRadius: '8px',
-      boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
-      textAlign: 'center',
+  },
+  primaryButton: {
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+    '&:hover': {
+      backgroundColor: theme.palette.primary.dark,
     },
-    logo: {
-      width: 100,
-      height: 100,
-      marginBottom: '24px',
-      color: '#9E9E9E',
+  },
+  secondaryButton: {
+    color: theme.palette.text.primary,
+    borderColor: theme.palette.text.primary,
+    '&:hover': {
+      backgroundColor: theme.palette.action.hover,
     },
-    title: {
-      color: '#333333',
-      marginBottom: '8px',
-    },
-    subtitle: {
-      color: '#666666',
-      marginBottom: '24px',
-    },
-    buttonContainer: {
-      '& > :not(:last-child)': {
-        marginRight: '16px',
-      },
-    },
-    primaryButton: {
-      backgroundColor: '#4a4a4a',
-      color: '#ffffff',
-      '&:hover': {
-        backgroundColor: '#333333',
-      },
-    },
-    secondaryButton: {
-      color: '#4a4a4a',
-      borderColor: '#4a4a4a',
-      '&:hover': {
-        backgroundColor: 'rgba(74, 74, 74, 0.04)',
-      },
-    },
-    buttonProgress: {
-      color: '#ffffff',
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      marginTop: -12,
-      marginLeft: -12,
-    },
-  };
+  },
+  buttonProgress: {
+    color: theme.palette.primary.contrastText,
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -12,
+    marginLeft: -12,
+  },
 });
 
 export interface OfflineFallbackComponentProps {

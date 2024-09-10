@@ -24,7 +24,7 @@ import Notebooks from '../components/workspace/notebooks';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {projectListVerbose} from '../themes';
-import ExampleOnlineComponent from '../components/ui/exampleOnlineOnlyComponent';
+import ExampleOnlineComponent from '../components/ui/ExampleOnlineOnlyComponent';
 
 export default function Workspace() {
   const breadcrumbs = [{title: 'Workspace'}];
