@@ -685,8 +685,8 @@ export interface InitialMergeDetails {
 // Template database item
 
 // These are the fields used to instantiate the item
-type UiSpecificationType = {[k: string]: any};
-type NotebookMetadataType = {[k: string]: string};
+export type UiSpecificationType = {[k: string]: any};
+export type NotebookMetadataType = {[k: string]: string};
 
 export interface TemplateDbDocumentDetails {
   template_name: string;
@@ -707,25 +707,25 @@ export interface TemplateDbDocument extends TemplateDbDocumentDetails {
 // POST /templates
 
 // Expects JSON Payload
-interface PostCreateTemplateInput extends TemplateDbDocumentDetails {}
-interface PostCreateTemplateResponse extends TemplateDbDocument {}
+export interface PostCreateTemplateInput extends TemplateDbDocumentDetails {}
+export interface PostCreateTemplateResponse extends TemplateDbDocument {}
 
 // To update an existing template
 // POST /templates/:id
 
 // Expects JSON Payload
-interface PostUpdateTemplateInput extends TemplateDbDocumentDetails {}
-interface PostUpdateTemplateResponse extends TemplateDbDocument {}
+export interface PostUpdateTemplateInput extends TemplateDbDocumentDetails {}
+export interface PostUpdateTemplateResponse extends TemplateDbDocument {}
 
 // To get all templates
 // GET /templates'
-interface GetListTemplatesResponse {
+export interface GetListTemplatesResponse {
   templates: Array<TemplateDbDocument>;
 }
 
 // To get a specific template by _id
 // GET /templates/:id'
-interface GetTemplateByIdResponse extends TemplateDbDocument {}
+export interface GetTemplateByIdResponse extends TemplateDbDocument {}
 
 // To delete a specific template by _id
 // POST /templates/:id/delete'
@@ -736,7 +736,7 @@ interface GetTemplateByIdResponse extends TemplateDbDocument {}
  * POST to /notebooks/template/:id to create a new notebook from a template ID
  */
 
-interface PostCreateNotebookFromTemplate {
+export interface PostCreateNotebookFromTemplate {
   template_id: string;
   project_name: string;
 }

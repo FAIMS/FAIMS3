@@ -19,7 +19,7 @@
  */
 
 import PouchDB from 'pouchdb';
-import {getProjectsDB} from '.';
+import {getProjectsDB, getTemplatesDb} from '.';
 import {CLUSTER_ADMIN_GROUP_NAME, COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {
   ProjectID,
@@ -28,6 +28,7 @@ import {
   resolve_project_id,
   notebookRecordIterator,
   addDesignDocsForNotebook,
+  TemplateDbDocument,
 } from '@faims3/data-model';
 import {
   ProjectMetadata,
@@ -52,6 +53,7 @@ import {
 import {userHasPermission} from './users';
 PouchDB.plugin(securityPlugin);
 import {Stringifier, stringify} from 'csv-stringify';
+import {enhanceError} from '../utils';
 
 /**
  * getProjects - get the internal project documents that reference
@@ -127,6 +129,49 @@ export const getNotebooks = async (user: Express.User): Promise<any[]> => {
     }
   }
   return output;
+};
+
+/**
+ * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
+ * validate with Zod.
+ * @returns an array of template objects
+ */
+export const getTemplates = async (): Promise<TemplateDbDocument[]> => {
+  const templatesDb = getTemplatesDb();
+  try {
+    const resultList = await templatesDb.allDocs<TemplateDbDocument>({
+      include_docs: true,
+    });
+    return resultList.rows
+      .filter(document => {
+        return !!document.doc && !document.id.startsWith('_');
+      })
+      .map(document => {
+        return document.doc!;
+      });
+  } catch (error) {
+    throw enhanceError(
+      'An error occurred while reading templates from the Template DB.',
+      error
+    );
+  }
+};
+
+/**
+ * Fetches a template by id
+ * @param id The ID of the template to retrieve
+ * @returns The document if available
+ */
+export const getTemplate = async (id: string): Promise<TemplateDbDocument> => {
+  const templatesDb = getTemplatesDb();
+  try {
+    return await templatesDb.get<TemplateDbDocument>(id);
+  } catch (error) {
+    throw enhanceError(
+      'An error occurred while reading templates from the Template DB. Are you sure the ID is correct?',
+      error
+    );
+  }
 };
 
 /**
