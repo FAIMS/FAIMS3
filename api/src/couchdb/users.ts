@@ -374,6 +374,7 @@ export async function addEmailsToUser(user: Express.User, emails: string[]) {
 }
 
 export type ProjectPermission = 'read' | 'modify';
+export type TemplateAction = 'read' | 'update' | 'remove' | 'create';
 
 /**
  * Determine whether we should return this project
@@ -405,6 +406,39 @@ export function userHasPermission(
       return user.project_roles[project_id].indexOf('admin') >= 0;
     }
   }
+  return false;
+}
+
+/**
+ * Test function to check if a user can/cannot perform a given action on a
+ * template.
+ * @param user The express user
+ * @param templateId The template Id to interact with if this is a modify
+ * operation
+ * @param permission The action to take
+ * @returns True iff the user is authorised to perform this action
+ */
+export function userCanDoWithTemplate(
+  user: Express.User | undefined | null,
+  templateId: string | undefined,
+  permission: TemplateAction
+): boolean {
+  // An undefined user is not allowed
+  if (!user) {
+    return false;
+  }
+
+  // All logged in users can read templates
+  if (permission == 'read') {
+    return true;
+  }
+
+  // cluster admin can do anything
+  if (user.other_roles.indexOf(CLUSTER_ADMIN_GROUP_NAME) >= 0) {
+    return true;
+  }
+
+  // Right now only cluster admins can perform CRUD operations other than read.
   return false;
 }
 

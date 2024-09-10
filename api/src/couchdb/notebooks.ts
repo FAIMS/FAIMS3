@@ -29,6 +29,7 @@ import {
   notebookRecordIterator,
   addDesignDocsForNotebook,
   TemplateDbDocument,
+  TemplateDbDocumentDetails,
 } from '@faims3/data-model';
 import {
   ProjectMetadata,
@@ -208,6 +209,15 @@ const generateProjectID = (projectName: string): ProjectID => {
   return `${Date.now().toFixed()}-${slugify(projectName)}`;
 };
 
+/**
+ * Generate a good project identifier for a new project
+ * @param projectName the project name string
+ * @returns a suitable project identifier
+ */
+const generateTemplateId = (templateName: string): ProjectID => {
+  return `${Date.now().toFixed()}-${slugify(templateName)}`;
+};
+
 type AutoIncReference = {
   form_id: string;
   field_id: string;
@@ -280,6 +290,37 @@ export const validateDatabases = async () => {
     }
   }
   return output;
+};
+
+/**
+ * Sets up and lodges a new template record into the template database. Error is
+ * thrown under failure to lodge.
+ * @param payload The document details for a template
+ * @returns The ID of the minted template
+ */
+export const createTemplate = async (
+  payload: TemplateDbDocumentDetails
+): Promise<TemplateDbDocument> => {
+  // Get a unique id for the template Id
+  const templateId = generateTemplateId(payload.template_name);
+  // Setup the document with id included
+  const templateDoc: TemplateDbDocument = {
+    _id: templateId,
+    ...payload,
+  };
+  // Get the templates DB so we can interact with it
+  const templatesDb = getTemplatesDb();
+
+  // Try putting the new document
+  try {
+    const response = await templatesDb.put<TemplateDbDocument>(templateDoc);
+    return templateDoc;
+  } catch (e) {
+    throw enhanceError(
+      'An error occurred while trying to PUT the new template document into the templates DB.',
+      e
+    );
+  }
 };
 
 /**

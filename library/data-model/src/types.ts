@@ -18,6 +18,8 @@
  *   Types and interfaces that are used by the database module
  */
 
+import { z } from "zod";
+
 // from datamodel/core.ts ---------------------------------------------------
 
 // import type {KeyLike} from 'jose';
@@ -680,52 +682,45 @@ export interface InitialMergeDetails {
 }
 
 // ================== MOCKS FOR NEW SURVEY API ===============
-// TODO cleanup
-
 // Template database item
-
 // These are the fields used to instantiate the item
-export type UiSpecificationType = {[k: string]: any};
-export type NotebookMetadataType = {[k: string]: string};
+const UiSpecificationSchema = z.record(z.any());
+const NotebookMetadataSchema = z.record(z.string());
 
-export interface TemplateDbDocumentDetails {
-  template_name: string;
-  ui_specification: UiSpecificationType;
-  metadata: NotebookMetadataType;
-}
+const TemplateDbDocumentDetailsSchema = z.object({
+  template_name: z.string().trim().min(5, "Please provide a template name of at least 5 character length."),
+  ui_specification: UiSpecificationSchema,
+  metadata: NotebookMetadataSchema,
+});
 
 // Once it's in the DB we'll have a _id field as well
-export interface TemplateDbDocument extends TemplateDbDocumentDetails {
-  _id: string;
-}
+const TemplateDbDocumentSchema = TemplateDbDocumentDetailsSchema.extend({
+  _id: z.string(),
+});
 
 // Conductor CRUD API
-
 // Create new template
-
 // To create a new template
 // POST /templates
-
 // Expects JSON Payload
-export interface PostCreateTemplateInput extends TemplateDbDocumentDetails {}
-export interface PostCreateTemplateResponse extends TemplateDbDocument {}
+const PostCreateTemplateInputSchema = TemplateDbDocumentDetailsSchema;
+const PostCreateTemplateResponseSchema = TemplateDbDocumentSchema;
 
 // To update an existing template
 // POST /templates/:id
-
 // Expects JSON Payload
-export interface PostUpdateTemplateInput extends TemplateDbDocumentDetails {}
-export interface PostUpdateTemplateResponse extends TemplateDbDocument {}
+const PostUpdateTemplateInputSchema = TemplateDbDocumentDetailsSchema;
+const PostUpdateTemplateResponseSchema = TemplateDbDocumentSchema;
 
 // To get all templates
 // GET /templates'
-export interface GetListTemplatesResponse {
-  templates: Array<TemplateDbDocument>;
-}
+const GetListTemplatesResponseSchema = z.object({
+  templates: z.array(TemplateDbDocumentSchema),
+});
 
 // To get a specific template by _id
 // GET /templates/:id'
-export interface GetTemplateByIdResponse extends TemplateDbDocument {}
+const GetTemplateByIdResponseSchema = TemplateDbDocumentSchema;
 
 // To delete a specific template by _id
 // POST /templates/:id/delete'
@@ -735,8 +730,35 @@ export interface GetTemplateByIdResponse extends TemplateDbDocument {}
 /**
  * POST to /notebooks/template/:id to create a new notebook from a template ID
  */
+const PostCreateNotebookFromTemplateSchema = z.object({
+  template_id: z.string(),
+  project_name: z.string(),
+});
 
-export interface PostCreateNotebookFromTemplate {
-  template_id: string;
-  project_name: string;
-}
+// Export inferred types
+export type UiSpecificationType = z.infer<typeof UiSpecificationSchema>;
+export type NotebookMetadataType = z.infer<typeof NotebookMetadataSchema>;
+export type TemplateDbDocumentDetails = z.infer<typeof TemplateDbDocumentDetailsSchema>;
+export type TemplateDbDocument = z.infer<typeof TemplateDbDocumentSchema>;
+export type PostCreateTemplateInput = z.infer<typeof PostCreateTemplateInputSchema>;
+export type PostCreateTemplateResponse = z.infer<typeof PostCreateTemplateResponseSchema>;
+export type PostUpdateTemplateInput = z.infer<typeof PostUpdateTemplateInputSchema>;
+export type PostUpdateTemplateResponse = z.infer<typeof PostUpdateTemplateResponseSchema>;
+export type GetListTemplatesResponse = z.infer<typeof GetListTemplatesResponseSchema>;
+export type GetTemplateByIdResponse = z.infer<typeof GetTemplateByIdResponseSchema>;
+export type PostCreateNotebookFromTemplate = z.infer<typeof PostCreateNotebookFromTemplateSchema>;
+
+// Export schemas
+export {
+  UiSpecificationSchema,
+  NotebookMetadataSchema,
+  TemplateDbDocumentDetailsSchema,
+  TemplateDbDocumentSchema,
+  PostCreateTemplateInputSchema,
+  PostCreateTemplateResponseSchema,
+  PostUpdateTemplateInputSchema,
+  PostUpdateTemplateResponseSchema,
+  GetListTemplatesResponseSchema,
+  GetTemplateByIdResponseSchema,
+  PostCreateNotebookFromTemplateSchema,
+};

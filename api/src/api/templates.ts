@@ -18,15 +18,17 @@
  *   This module contains the template CRUD API routes
  */
 
-import express from 'express';
-import {getTemplate, getTemplates} from '../couchdb/notebooks';
-import {requireAuthenticationAPI} from '../middleware';
 import {
-  GetListTemplatesResponse,
-  GetTemplateByIdResponse,
-  PostCreateTemplateInput,
-  PostCreateTemplateResponse,
+    GetListTemplatesResponse,
+    GetTemplateByIdResponse,
+    PostCreateTemplateInputSchema,
+    PostCreateTemplateResponse,
 } from '@faims3/data-model';
+import express from 'express';
+import { validateRequest } from 'zod-express-middleware';
+import { createTemplate, getTemplate, getTemplates } from '../couchdb/notebooks';
+import { userCanDoWithTemplate } from '../couchdb/users';
+import { requireAuthenticationAPI } from '../middleware';
 
 export const api = express.Router();
 
@@ -55,14 +57,30 @@ api.get<{id: string}, GetTemplateByIdResponse>(
 );
 
 /**
- * Creates a new template.
- * Requires cluster admin privileges.
- * TODO destub
+ * Creates a new template. The payload is validated by Zod before reaching this
+ * function. Expects a document as the response JSON. Requires cluster admin
+ * privileges.
  */
-api.post<{id: string}, PostCreateTemplateResponse, PostCreateTemplateInput>(
+api.post<{}, PostCreateTemplateResponse>(
   '/templates',
+  validateRequest({
+    body: PostCreateTemplateInputSchema,
+  }),
   requireAuthenticationAPI,
   async (req, res) => {
-    // TODO destub
+    // First check the user has permissions to do this action
+    if (!req.user) {
+      res.status(401).end();
+      return;
+    }
+
+    // User is not authorised to create a template
+    if (!userCanDoWithTemplate(req.user, undefined, 'create')) {
+      res.status(401).end();
+      return;
+    }
+
+    // Now we can create the new template and return it
+    return await createTemplate(req.body);
   }
 );
