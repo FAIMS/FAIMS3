@@ -678,3 +678,66 @@ export interface InitialMergeDetails {
   initial_head: RevisionID;
   initial_head_data: RecordMergeInformation;
 }
+
+// ================== MOCKS FOR NEW SURVEY API ===============
+// TODO cleanup
+
+// Template database item
+
+// These are the fields used to instantiate the item
+type UiSpecificationType = object;
+
+export interface TemplateDbDocumentDetails {
+  name: string;
+  ui_specification: UiSpecificationType;
+}
+
+// Once it's in the DB we'll have a _id field as well
+export interface TemplateDbDocument extends TemplateDbDocumentDetails {
+  _id: string;
+}
+
+// Conductor CRUD API
+
+// Create new template
+
+// To create a new template
+// POST /templates
+
+// Expects JSON Payload
+interface PostCreateTemplateInput extends TemplateDbDocumentDetails {}
+interface PostCreateTemplateResponse extends TemplateDbDocument {}
+
+// To update an existing template
+// POST /templates/:id
+
+// Expects JSON Payload
+interface PostUpdateTemplateInput extends TemplateDbDocumentDetails {}
+interface PostUpdateTemplateResponse extends TemplateDbDocument {}
+
+// To get all templates
+// GET /templates'
+interface GetListTemplatesResponse {
+  templates: Array<TemplateDbDocument>;
+}
+
+// To get a specific template by _id
+// GET /templates/:id'
+interface GetTemplateByIdResponse extends TemplateDbDocument {}
+
+// To delete a specific template by _id
+// POST /templates/:id/delete'
+// 200 OK ack
+
+// To create a new survey from a template by ID
+/**
+ * POST to /notebooks/template/:id to create a new notebook from a template ID
+ */
+
+type NotebookMetadataType = object;
+
+interface PostCreateNotebookFromTemplate {
+  template_id: string;
+  project_name: string;
+  metadata: NotebookMetadataType;
+}
