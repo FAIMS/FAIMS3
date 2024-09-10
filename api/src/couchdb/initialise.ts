@@ -66,6 +66,48 @@ export const initialiseProjectsDB = async (
   }
 };
 
+export const initialiseTemplatesDb = async (
+  db: PouchDB.Database | undefined
+) => {
+  // Permissions doc goes into _design/permissions in a project
+  // javascript in here will run inside CouchDB
+  const projectPermissionsDoc = {
+    _id: '_design/permissions',
+    validate_doc_update: `function (newDoc, oldDoc, userCtx) {
+      // Reject update if user does not have an _admin role
+      if (userCtx.roles.indexOf('_admin') < 0) {
+        throw {
+          unauthorized:
+            \`Access denied for \${userCtx.roles}. Only the Fieldmark server may modify templates\`,
+        };
+      }
+    }`,
+  };
+  if (db) {
+    try {
+      await db.get(projectPermissionsDoc._id);
+    } catch {
+      try {
+        await db.put(projectPermissionsDoc);
+      } catch (e) {
+        console.error(
+          'Failed to initialise security document for templates database.'
+        );
+        throw e;
+      }
+    }
+
+    // can't save security on an in-memory database so skip if testing
+    if (process.env.NODE_ENV !== 'test') {
+      const security = db.security();
+      security.admins.roles.add(CLUSTER_ADMIN_GROUP_NAME);
+      security.admins.roles.add('_admin');
+      security.members.roles.removeAll();
+      await security.save();
+    }
+  }
+};
+
 export const initialiseDirectoryDB = async (
   db: PouchDB.Database | undefined
 ) => {

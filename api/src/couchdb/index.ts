@@ -29,17 +29,21 @@ import {ProjectID, ProjectObject} from '@faims3/data-model';
 import {
   initialiseDirectoryDB,
   initialiseProjectsDB,
+  initialiseTemplatesDb,
   initialiseUserDB,
 } from './initialise';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
+import {enhanceError} from '../utils';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
+const TEMPLATES_DB_NAME = 'templates';
 const PEOPLE_DB_NAME = 'people';
 const INVITE_DB_NAME = 'invites';
 
 let _directoryDB: PouchDB.Database | undefined;
 let _projectsDB: PouchDB.Database | undefined;
+let _templatesDb: PouchDB.Database | undefined;
 let _usersDB: PouchDB.Database | undefined;
 let _invitesDB: PouchDB.Database | undefined;
 
@@ -81,9 +85,12 @@ export const getPublicUserDbURL = (): string => {
 export const getUsersDB = (): PouchDB.Database | undefined => {
   if (!_usersDB) {
     const pouch_options = pouchOptions();
-
     const dbName = COUCHDB_INTERNAL_URL + '/' + PEOPLE_DB_NAME;
-    _usersDB = new PouchDB(dbName, pouch_options);
+    try {
+      _usersDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw enhanceError('Error occurred while getting users database.', error);
+    }
   }
 
   return _usersDB;
@@ -96,10 +103,29 @@ export const getProjectsDB = (): PouchDB.Database | undefined => {
     try {
       _projectsDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
-      console.log('bad thing happened', error);
+      throw enhanceError(
+        'Error occurred while getting projects database.',
+        error
+      );
     }
   }
   return _projectsDB;
+};
+
+export const getTemplatesDb = (): PouchDB.Database => {
+  if (!_templatesDb) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;
+    try {
+      _templatesDb = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw enhanceError(
+        'Error occurred while getting templates database.',
+        error
+      );
+    }
+  }
+  return _templatesDb;
 };
 
 export const getInvitesDB = (): PouchDB.Database | undefined => {
@@ -109,7 +135,10 @@ export const getInvitesDB = (): PouchDB.Database | undefined => {
     try {
       _invitesDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
-      console.log('bad thing happened', error);
+      throw enhanceError(
+        'Error occurred while getting invites database.',
+        error
+      );
     }
   }
   return _invitesDB;
@@ -174,6 +203,7 @@ export const initialiseDatabases = async () => {
     await initialiseDirectoryDB(directoryDB);
   } catch (error) {
     console.log('something wrong with directory db init', error);
+    throw error;
   }
 
   const projectsDB = getProjectsDB();
@@ -181,6 +211,23 @@ export const initialiseDatabases = async () => {
     await initialiseProjectsDB(projectsDB);
   } catch (error) {
     console.log('something wrong with projects db init', error);
+    throw error;
+  }
+
+  let templatesDb: PouchDB.Database;
+  try {
+    templatesDb = getTemplatesDb();
+  } catch (error) {
+    throw enhanceError(
+      'An error occurred while instantiating the templates local DB. Aborting operation.',
+      error
+    );
+  }
+
+  try {
+    await initialiseTemplatesDb(templatesDb);
+  } catch (error) {
+    throw enhanceError('Something wrong with templates db init', error);
   }
 
   const usersDB = getUsersDB();
@@ -188,6 +235,7 @@ export const initialiseDatabases = async () => {
     await initialiseUserDB(usersDB);
   } catch (error) {
     console.log('something wrong with user db init', error);
+    throw error;
   }
 
   // Setup keys
@@ -198,6 +246,7 @@ export const initialiseDatabases = async () => {
       'something wrong PUTing jwt_keys into the db configuration...',
       error
     );
+    throw error;
   }
 };
 
