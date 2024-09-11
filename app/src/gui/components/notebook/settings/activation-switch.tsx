@@ -5,20 +5,19 @@ import DialogActions from '@mui/material/DialogActions';
 
 import Dialog from '@mui/material/Dialog';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
-import {ProjectWithActivation} from '../../../../types/project';
+import {ProjectExtended} from '../../../../types/project';
 import {ProjectsContext} from '../../../../context/projects-context';
+import {activateProject} from '../../../../dbs/projects-db';
 
 type NotebookActivationSwitchProps = {
-  project: ProjectWithActivation;
+  project: ProjectExtended;
   project_status: string | undefined;
-  handleActivation: Function;
   isWorking: boolean;
   setTabID: Function;
 };
 
 export default function NotebookActivationSwitch({
-  project,
-  handleActivation,
+  project: {_id, name},
   isWorking,
   setTabID,
 }: NotebookActivationSwitchProps) {
@@ -47,8 +46,8 @@ export default function NotebookActivationSwitch({
       >
         <Alert severity={'info'}>
           <AlertTitle>Are you sure?</AlertTitle>
-          Do you want to start syncing the {project.name} {NOTEBOOK_NAME} to
-          your device?
+          Do you want to start syncing the {name} {NOTEBOOK_NAME} to your
+          device?
         </Alert>
         <DialogActions style={{justifyContent: 'space-between'}}>
           <Button onClick={handleClose} autoFocus color={'primary'}>
@@ -68,10 +67,10 @@ export default function NotebookActivationSwitch({
               onClick={() => {
                 setProjects(projects =>
                   projects.map(p =>
-                    p._id === project._id ? {...p, activated: true} : p
+                    p._id === _id ? {...p, activated: true} : p
                   )
                 );
-                handleActivation();
+                activateProject(_id);
                 setTabID('1');
                 handleClose();
               }}

@@ -36,19 +36,17 @@ import {grey} from '@mui/material/colors';
 import NotebookActivationSwitch from './activation-switch';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
-import {ProjectWithActivation} from '../../../../types/project';
+import {ProjectExtended} from '../../../../types/project';
 
 type NotebookSyncSwitchProps = {
-  project: ProjectWithActivation;
+  project: ProjectExtended;
   showHelperText: boolean;
-  handleActivation: (_id: string) => Promise<PouchDB.Core.Response>;
   setTabID: Function;
 };
 
 export default function NotebookSyncSwitch({
   project,
   showHelperText,
-  handleActivation,
   setTabID,
 }: NotebookSyncSwitchProps) {
   const [open, setOpen] = useState(false);
@@ -63,7 +61,6 @@ export default function NotebookSyncSwitch({
         <NotebookActivationSwitch
           project={project}
           project_status={project.status}
-          handleActivation={() => handleActivation(project._id)}
           setTabID={setTabID}
           isWorking={isWorking}
         />

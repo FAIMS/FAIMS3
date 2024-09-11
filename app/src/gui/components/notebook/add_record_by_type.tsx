@@ -11,20 +11,20 @@ import * as ROUTES from '../../../constants/routes';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {
-  ProjectInformation,
   getRecordsWithRegex,
   RecordMetadata,
   ProjectUIModel,
 } from '@faims3/data-model';
 import {getMetadataValue} from '../../../sync/metadata';
+import {ProjectExtended} from '../../../types/project';
 
 type AddRecordButtonsProps = {
-  project: ProjectInformation;
+  project: ProjectExtended;
 };
 
 export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const {project} = props;
-  const project_id = project.project_id;
+  const project_id = project._id;
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
@@ -104,7 +104,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
                     component={RouterLink}
                     to={
                       ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      project.project_id +
+                      project._id +
                       ROUTES.RECORD_CREATE +
                       viewset_name
                     }

@@ -13,8 +13,9 @@ export interface Project {
     metadata_db?: PossibleConnectionInfo;
 }
 
-export interface ProjectWithActivation extends Project {
+export interface ProjectExtended extends Project {
     activated: boolean;
+    sync: boolean;
 }
   
 export interface ProjectInterface {

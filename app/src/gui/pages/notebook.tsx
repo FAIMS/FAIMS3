@@ -17,75 +17,27 @@
  * Description:
  *   TODO
  */
-import {useState, useEffect, useContext} from 'react';
-import {useParams, Navigate} from 'react-router-dom';
+import {useContext} from 'react';
+import {useParams} from 'react-router-dom';
 import {Box, Grid, Typography} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import * as ROUTES from '../../constants/routes';
-import {getProjectInfo} from '../../sync/projects';
-import {ProjectID} from '@faims3/data-model';
 import {CircularProgress} from '@mui/material';
-import NotebookComponent from '../components/notebook';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import RefreshNotebook from '../components/notebook/refresh';
-import {ProjectInformation} from '@faims3/data-model';
-import {logError} from '../../logging';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {ProjectsContext} from '../../context/projects-context';
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import NotebookComponent from '../components/notebook';
 
 export default function Notebook() {
-  const {project_id} = useParams<{project_id: ProjectID}>();
-  const [project_info, setProjectInfo] = useState<
-    ProjectInformation | undefined
-  >(undefined);
-  const [project_error, setProjectError] = useState(null as any);
-  const loading = project_info === undefined;
+  const {id} = useParams<{id: string}>();
+  const project = useContext(ProjectsContext).projects.find(
+    project => project._id === id
+  );
 
-  const getInfoWrapper = async () => {
-    await sleep(100);
-
-    try {
-      const info = await getProjectInfo(project_id!);
-
-      console.log('DEBUG: CURRENT', info);
-
-      setProjectInfo(info);
-    } catch (err) {
-      setProjectError(err);
-    }
-  };
-
-  useEffect(() => {
-    const getInfo = async () => {
-      await getInfoWrapper();
-    };
-    getInfo();
-  }, [project_id]);
-
-  const breadcrumbs = [
-    {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
-    {
-      title: !loading ? project_info.name : '',
-    },
-  ];
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
 
-  if (project_error !== null) {
-    logError(`Failed to load ${NOTEBOOK_NAME} ${project_id}, ${project_error}`);
-    return <Navigate to="/404" />;
-  }
-  const handleRefresh = () => {
-    return getInfoWrapper();
-  };
-
-  const projects = useContext(ProjectsContext);
-
-  return !loading ? (
+  return project ? (
     <Box>
       <Grid
         container
@@ -110,19 +62,19 @@ export default function Notebook() {
                   style={{verticalAlign: 'middle'}}
                 />
               </Grid>
-              <Grid item>{project_info.name}</Grid>
+              <Grid item>{project.name}</Grid>
             </Grid>
           </Typography>
         </Grid>
         <Grid item xs>
-          <Breadcrumbs data={breadcrumbs} />
+          {/* <Breadcrumbs data={breadcrumbs} /> */}
         </Grid>
       </Grid>
-      <RefreshNotebook
-        handleRefresh={handleRefresh}
-        project_name={project_info.name}
+      <RefreshNotebook handleRefresh={() => {}} project_name={project.name} />
+      <NotebookComponent
+        project={project}
+        handleRefresh={() => new Promise(() => {})}
       />
-      <NotebookComponent project={project_info} handleRefresh={handleRefresh} />
     </Box>
   ) : (
     <CircularProgress data-testid="progressbar" />

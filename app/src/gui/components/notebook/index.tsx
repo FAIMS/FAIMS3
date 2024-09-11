@@ -19,7 +19,7 @@ import {
 import {useNavigate} from 'react-router-dom';
 import {ProjectUIViewsets} from '@faims3/data-model';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import {ProjectInformation, ProjectUIModel} from '@faims3/data-model';
+import {ProjectUIModel} from '@faims3/data-model';
 import DraftsTable from './draft_table';
 import {RecordsBrowseTable} from './record_table';
 import RangeHeader from './range_header';
@@ -33,6 +33,7 @@ import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {ProjectExtended} from '../../../types/project';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -68,7 +69,7 @@ function a11yProps(index: number, id: string) {
 }
 
 type NotebookComponentProps = {
-  project: ProjectInformation;
+  project: ProjectExtended;
   handleRefresh: () => Promise<any>;
 };
 export default function NotebookComponent(props: NotebookComponentProps) {
@@ -101,9 +102,10 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
+
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
-      getUiSpecForProject(project.project_id)
+      getUiSpecForProject(project._id)
         .then(spec => {
           setUiSpec(spec);
           setViewsets(spec.viewsets);
@@ -201,7 +203,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                     {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
                   />
                   <Tab
-                    label={<DraftTabBadge project_id={project.project_id} />}
+                    label={<DraftTabBadge project_id={project._id} />}
                     {...a11yProps(1, `${NOTEBOOK_NAME}-records`)}
                   />
                 </Tabs>
@@ -212,7 +214,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 id={'records-drafts-'}
               >
                 <RecordsBrowseTable
-                  project_id={project.project_id}
+                  project_id={project._id}
                   maxRows={25}
                   viewsets={viewsets}
                   filter_deleted={true}
@@ -225,7 +227,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 id={'records-drafts-'}
               >
                 <DraftsTable
-                  project_id={project.project_id}
+                  project_id={project._id}
                   maxRows={25}
                   viewsets={viewsets}
                   handleRefresh={props.handleRefresh}
@@ -242,7 +244,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   </Typography>
                   <Typography variant="body2" color="textPrimary" gutterBottom>
                     <MetadataRenderer
-                      project_id={project.project_id}
+                      project_id={project._id}
                       metadata_key={'pre_description'}
                       chips={false}
                     />
@@ -266,7 +268,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
-                            project_id={project.project_id}
+                            project_id={project._id}
                             metadata_key={'project_status'}
                             chips={false}
                           />
@@ -280,7 +282,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
-                            project_id={project.project_id}
+                            project_id={project._id}
                             metadata_key={'lead_institution'}
                             chips={false}
                           />
@@ -294,7 +296,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
-                            project_id={project.project_id}
+                            project_id={project._id}
                             metadata_key={'project_lead'}
                             chips={false}
                           />
@@ -308,7 +310,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
-                            project_id={project.project_id}
+                            project_id={project._id}
                             metadata_key={'last_updated'}
                             chips={false}
                           />

@@ -130,7 +130,7 @@ export const logError = (error: any) => {
 
 let bugsnag;
 
-if (BUGSNAG_KEY) {
+if (BUGSNAG_KEY && BUGSNAG_KEY !== '<your bugsnag API key>') {
   Bugsnag.start({
     apiKey: BUGSNAG_KEY,
     plugins: [new BugsnagPluginReact()],

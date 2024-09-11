@@ -1,7 +1,7 @@
 import {Stack} from '@mui/material';
-import {DataGrid, GridEventListener} from '@mui/x-data-grid';
+import {DataGrid} from '@mui/x-data-grid';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import {ProjectWithActivation} from '../../../types/project';
+import {ProjectExtended} from '../../../types/project';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -16,16 +16,12 @@ import {ProjectWithActivation} from '../../../types/project';
  */
 export default function HeadingGrid({
   pouchProjectList,
-  handleRowClick,
   loading,
   columns,
-  sortModel,
 }: {
-  pouchProjectList: ProjectWithActivation[];
-  handleRowClick: GridEventListener<'rowClick'>;
+  pouchProjectList: ProjectExtended[];
   loading: boolean;
   columns: any;
-  sortModel: any;
 }) {
   return (
     <div style={{display: 'flex', flexDirection: 'column'}}>
@@ -37,16 +33,12 @@ export default function HeadingGrid({
         rows={pouchProjectList.filter(r => r.activated)}
         loading={loading}
         columns={columns}
-        onRowClick={handleRowClick}
         autoHeight
         sx={{cursor: 'pointer'}}
         getRowId={r => r._id}
         hideFooter={true}
         getRowHeight={() => 'auto'}
         initialState={{
-          sorting: {
-            sortModel: [sortModel],
-          },
           pagination: {
             paginationModel: {
               pageSize: pouchProjectList.length,
@@ -76,9 +68,6 @@ export default function HeadingGrid({
         hideFooter={true}
         getRowHeight={() => 'auto'}
         initialState={{
-          sorting: {
-            sortModel: [sortModel],
-          },
           pagination: {
             paginationModel: {
               pageSize: pouchProjectList.length,

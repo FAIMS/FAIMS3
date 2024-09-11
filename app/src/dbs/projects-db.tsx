@@ -1,12 +1,26 @@
-import {Project} from '../types/project';
+import {ProjectExtended} from '../types/project';
 import PouchDB from 'pouchdb-browser';
 
+/**
+ * Represents a PouchDB instance for storing projects.
+ *
+ * @remarks
+ * This PouchDB instance is used to store projects locally.
+ *
+ * @typeParam T - The type of the documents stored in the database.
+ */
 const db = new PouchDB<{
   _id: string;
-  project: Project;
+  project: ProjectExtended;
 }>('local-projects');
 
-export const updateLocalProjects = async (projects: Project[]) =>
+/**
+ * Updates the local projects in the database.
+ *
+ * @param projects - An array of ProjectExtended objects representing the projects to be updated.
+ * @returns A promise that resolves when the update is complete.
+ */
+export const updateLocalProjects = async (projects: ProjectExtended[]) =>
   await db.bulkDocs(
     projects.map(project => ({
       _id: project._id,
@@ -14,6 +28,30 @@ export const updateLocalProjects = async (projects: Project[]) =>
     }))
   );
 
+/**
+ * Activates a project.
+ *
+ * @param project - The project to activate.
+ * @returns A promise that resolves when the project is activated.
+ */
+export const activateProject = async (_id: string) => {
+  const doc = await db.get(_id);
+
+  await db.put({
+    _id,
+    _rev: doc._rev,
+    project: {
+      ...doc.project,
+      activated: true,
+    },
+  });
+};
+
+/**
+ * Retrieves the local projects from the database.
+ *
+ * @returns An array of local projects.
+ */
 export const getLocalProjects = async () => {
   const {rows} = await db.allDocs({include_docs: true});
 
