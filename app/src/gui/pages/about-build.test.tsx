@@ -35,7 +35,7 @@ test('Check about-build component', async () => {
       <AboutBuild />
     </Router>
   );
-  expect(screen.getByText('Servers:')).toBeTruthy();
+  expect(screen.getByText('Server:')).toBeTruthy();
 
   expect(screen.getByText('Refresh the app')).toBeTruthy();
 
