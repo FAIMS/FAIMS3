@@ -53,19 +53,22 @@
       users to register for this notebook.</p>
     <h6>Existing Invites</h6>
     <table>
+      <tr>
+        <th>Role</th>
+        <th>Short Code</th>
+        <th></th>
+        <th></th>
+      </tr>
       {{#each invites}}
       <tr>
-        {{#if this.invite.unlimited}}
-        <td>Unlimited users for role "{{this.invite.role}}"</td>
-        {{else}}
-        <td>{{this.invite.number}} users for role "{{this.invite.role}}"</td>
-        {{/if}}
 
+        <td><strong>{{this.invite.role}}</strong></td>
+        <td>{{this.invite._id}}</td>
         <td>
-          <button class="btn btn-primary" onclick="copyToClipboard('{{this.url}}')">Copy Registration URL</button>
+          <button class="btn btn-primary" onclick="copyToClipboard('{{this.url}}')">Copy URL</button>
         </td>
         <td>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#qrModal{{this.invite._id}}">Show QRCode</button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#qrModal{{this.invite._id}}">Show QR</button>
         <div class="modal modal-fade" 
             id="qrModal{{this.invite._id}}"
               tabindex="-1" aria-labelledby="qrtitle-{{this.invite._id}}" aria-hidden="true">

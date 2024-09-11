@@ -21,7 +21,6 @@
 import {ProjectUIModel} from '@faims3/data-model';
 import PouchDB from 'pouchdb';
 import {createNotebook} from '../src/couchdb/notebooks';
-import {getUserFromEmailOrUsername} from '../src/couchdb/users';
 import {
   createInvite,
   deleteInvite,
@@ -45,20 +44,17 @@ describe('Invites', () => {
   beforeEach(initialiseDatabases);
 
   it('create invite', async () => {
-    const adminUser = await getUserFromEmailOrUsername('admin');
     const project_id = await createNotebook('Test Notebook', uispec, {});
     const role = 'user';
-    const number = 10;
 
-    if (adminUser && project_id) {
-      const invite = await createInvite(adminUser, project_id, role, number);
+    if (project_id) {
+      const invite = await createInvite(project_id, role);
 
       // check that it was saved - fetch from db
       const fetched = await getInvite(invite._id);
 
       if (fetched) {
         expect(fetched.project_id).to.equal(project_id);
-        expect(fetched.number).to.equal(number);
 
         // get invites for notebook
         const invites = await getInvitesForNotebook(project_id);
@@ -76,20 +72,17 @@ describe('Invites', () => {
   });
 
   it('create unlimited invite', async () => {
-    const adminUser = await getUserFromEmailOrUsername('admin');
     const project_id = await createNotebook('Test Notebook', uispec, {});
     const role = 'user';
-    const number = 0;
 
-    if (adminUser && project_id) {
-      const invite = await createInvite(adminUser, project_id, role, number);
+    if (project_id) {
+      const invite = await createInvite(project_id, role);
 
       // check that it was saved - fetch from db
       const fetched = await getInvite(invite._id);
 
       if (fetched) {
         expect(fetched.project_id).to.equal(project_id);
-        expect(fetched.unlimited).to.be.true;
       } else {
         assert.fail('could not retrieve newly created invite');
       }
