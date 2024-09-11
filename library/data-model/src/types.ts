@@ -150,20 +150,28 @@ export interface ProjectSchema {
   types: FAIMSTypeCollection;
 }
 
-export interface EncodedProjectUIModel {
-  _id: string; // optional as we may want to include the raw json in places
+export interface ProjectUIModelDetails {
+  fields: ProjectUIFields;
+  views: ProjectUIViews;
+  viewsets: ProjectUIViewsets;
+  visible_types: string[];
+  conditional_sources?: Set<string>;
+}
+
+export interface EncodedCouchRecordFields {
+  _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean;
+}
+
+export interface EncodedProjectUIModel extends EncodedCouchRecordFields {
   fields: ProjectUIFields;
   fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
   viewsets: ProjectUIViewsets;
   visible_types: string[];
 }
 
-export interface EncodedProjectMetadata {
-  _id: string; // optional as we may want to include the raw json in places
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean;
+export interface EncodedProjectMetadata extends EncodedCouchRecordFields{
   _attachments?: PouchDB.Core.Attachments;
   is_attachment: boolean;
   metadata: any;
@@ -171,10 +179,7 @@ export interface EncodedProjectMetadata {
 }
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
-export interface EncodedRecord {
-  _id: string;
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean; // This is for couchdb deletion
+export interface EncodedRecord extends EncodedCouchRecordFields{
   _conflicts?: string[]; // Pouchdb conflicts array
   record_format_version: number;
   created: string;
@@ -468,14 +473,9 @@ export interface ProjectInformation {
   non_unique_project_id: NonUniqueProjectID;
 }
 
-export interface ProjectUIModel {
+export interface ProjectUIModel extends ProjectUIModelDetails{
   _id?: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
-  fields: ProjectUIFields;
-  views: ProjectUIViews;
-  viewsets: ProjectUIViewsets;
-  visible_types: string[];
-  conditional_sources?: Set<string>;
 }
 
 export interface RecordMetadata {
@@ -685,7 +685,7 @@ export interface InitialMergeDetails {
 // Template database item
 // These are the fields used to instantiate the item
 export const UiSpecificationSchema = z.record(z.any());
-export const NotebookMetadataSchema = z.record(z.string());
+export const NotebookMetadataSchema = z.record(z.any());
 
 // The editable properties for a template
 export const TemplateDbDocumentEditablePropertiesSchema = z
@@ -742,7 +742,7 @@ export const GetTemplateByIdResponseSchema = TemplateDbDocumentSchema;
 
 // To create a new survey from a template by ID
 /**
- * POST to /notebooks/template/:id to create a new notebook from a template ID
+ * POST to /notebooks/template to create a new notebook from a template ID
  */
 export const PostCreateNotebookFromTemplateSchema = z.object({
   template_id: z.string(),

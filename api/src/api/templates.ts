@@ -21,6 +21,7 @@
 import {
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
+  PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
   PostUpdateTemplateInputSchema,
@@ -103,7 +104,7 @@ api.get<{id: string}, GetTemplateByIdResponse>(
  * function. Expects a document as the response JSON. Requires cluster admin
  * privileges.
  */
-api.post<{}, PostCreateTemplateResponse>(
+api.post<{},PostCreateTemplateResponse, PostCreateTemplateInput> (
   '/',
   validateRequest({
     body: PostCreateTemplateInputSchema,
