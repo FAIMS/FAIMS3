@@ -71,8 +71,7 @@ api.get<{}, GetListTemplatesResponse>(
  * GET template by id
  * Gets a specific template by ID from the templates DB.
  */
-//api.get<{id: string}, GetTemplateByIdResponse>(
-api.get<{id: string}, any>(
+api.get<{id: string}, GetTemplateByIdResponse>(
   '/:id',
   requireAuthenticationAPI,
   async (req, res, next) => {
