@@ -2,8 +2,9 @@ import {
   ProjectID,
   TemplateDbDocument,
   TemplateDbDocumentDetails,
+  TemplateDbDocumentEditableProperties,
 } from '@faims3/data-model';
-import PouchDB from 'pouchdb';
+import PouchDB, {fetch} from 'pouchdb';
 import securityPlugin from 'pouchdb-security-helper';
 import {getTemplatesDb} from '.';
 import {slugify} from '../utils';
@@ -18,7 +19,7 @@ PouchDB.plugin(securityPlugin);
 export const getTemplates = async (): Promise<TemplateDbDocument[]> => {
   const templatesDb = getTemplatesDb();
   try {
-    const resultList = await templatesDb.allDocs<TemplateDbDocument>({
+    const resultList = await templatesDb.allDocs({
       include_docs: true,
     });
     return resultList.rows
@@ -43,7 +44,7 @@ export const getTemplates = async (): Promise<TemplateDbDocument[]> => {
 export const getTemplate = async (id: string) => {
   const templatesDb = getTemplatesDb();
   try {
-    return await templatesDb.get<TemplateDbDocument>(id);
+    return await templatesDb.get(id);
   } catch (error) {
     throw new Exceptions.ItemNotFoundException(
       'An error occurred while reading templates from the Template DB. Are you sure the ID is correct?'
@@ -67,13 +68,14 @@ const generateTemplateId = (templateName: string): ProjectID => {
  * @returns The ID of the minted template
  */
 export const createTemplate = async (
-  payload: TemplateDbDocumentDetails
+  payload: TemplateDbDocumentEditableProperties
 ): Promise<TemplateDbDocument> => {
   // Get a unique id for the template Id
   const templateId = generateTemplateId(payload.template_name);
   // Setup the document with id included
   const templateDoc: TemplateDbDocument = {
     _id: templateId,
+    version: 1,
     ...payload,
   };
   // Get the templates DB so we can interact with it
@@ -81,7 +83,7 @@ export const createTemplate = async (
 
   // Try putting the new document
   try {
-    const response = await templatesDb.put<TemplateDbDocument>(templateDoc);
+    const response = await templatesDb.put(templateDoc);
     return templateDoc;
   } catch (e) {
     throw new Exceptions.InternalSystemError(
@@ -100,7 +102,7 @@ export const createTemplate = async (
  */
 export const updateExistingTemplate = async (
   templateId: string,
-  payload: TemplateDbDocumentDetails
+  payload: TemplateDbDocumentEditableProperties
 ): Promise<string> => {
   // Now fetch the existing template - this will allow us to get the latest
   // revision etc
@@ -118,13 +120,22 @@ export const updateExistingTemplate = async (
   const newDocument = {
     _id: templateId,
     _rev: existingTemplate._rev,
+    // Increment version by 1 when updated
+    version: existingTemplate.version + 1,
     ...payload,
   };
   try {
-    return (await templateDb.put(newDocument)).rev;
+    await templateDb.put(newDocument);
   } catch (e) {
     throw new Exceptions.InternalSystemError(
       'An unexpected error occurred while trying to update an existing template.'
+    );
+  }
+  try {
+    return await templateDb.get(templateId);
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to fetch the updated template.'
     );
   }
 };

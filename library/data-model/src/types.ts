@@ -18,7 +18,7 @@
  *   Types and interfaces that are used by the database module
  */
 
-import { z } from "zod";
+import {number, z} from 'zod';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -684,17 +684,29 @@ export interface InitialMergeDetails {
 // ================== MOCKS FOR NEW SURVEY API ===============
 // Template database item
 // These are the fields used to instantiate the item
-const UiSpecificationSchema = z.record(z.any());
-const NotebookMetadataSchema = z.record(z.string());
+export const UiSpecificationSchema = z.record(z.any());
+export const NotebookMetadataSchema = z.record(z.string());
 
-const TemplateDbDocumentDetailsSchema = z.object({
-  template_name: z.string().trim().min(5, "Please provide a template name of at least 5 character length."),
-  ui_specification: UiSpecificationSchema,
-  metadata: NotebookMetadataSchema,
-});
+// The editable properties for a template
+export const TemplateDbDocumentEditablePropertiesSchema = z
+  .object({
+    template_name: z
+      .string()
+      .trim()
+      .min(5, 'Please provide a template name of at least 5 character length.'),
+    ui_specification: UiSpecificationSchema,
+    metadata: NotebookMetadataSchema,
+  })
+  .strict();
 
-// Once it's in the DB we'll have a _id field as well
-const TemplateDbDocumentSchema = TemplateDbDocumentDetailsSchema.extend({
+// Full details with derived properties
+export const TemplateDbDocumentDetailsSchema =
+  TemplateDbDocumentEditablePropertiesSchema.extend({
+    version: number().default(1),
+  });
+
+// Once it's in the DB we'll have a _id field as well - possible _rev
+export const TemplateDbDocumentSchema = TemplateDbDocumentDetailsSchema.extend({
   _id: z.string(),
 });
 
@@ -703,24 +715,26 @@ const TemplateDbDocumentSchema = TemplateDbDocumentDetailsSchema.extend({
 // To create a new template
 // POST /templates
 // Expects JSON Payload
-const PostCreateTemplateInputSchema = TemplateDbDocumentDetailsSchema;
-const PostCreateTemplateResponseSchema = TemplateDbDocumentSchema;
+export const PostCreateTemplateInputSchema =
+  TemplateDbDocumentEditablePropertiesSchema;
+export const PostCreateTemplateResponseSchema = TemplateDbDocumentSchema;
 
 // To update an existing template
 // POST /templates/:id
 // Expects JSON Payload
-const PostUpdateTemplateInputSchema = TemplateDbDocumentDetailsSchema;
-const PostUpdateTemplateResponseSchema = TemplateDbDocumentSchema;
+export const PostUpdateTemplateInputSchema =
+  TemplateDbDocumentEditablePropertiesSchema;
+export const PostUpdateTemplateResponseSchema = TemplateDbDocumentSchema;
 
 // To get all templates
 // GET /templates'
-const GetListTemplatesResponseSchema = z.object({
+export const GetListTemplatesResponseSchema = z.object({
   templates: z.array(TemplateDbDocumentSchema),
 });
 
 // To get a specific template by _id
 // GET /templates/:id'
-const GetTemplateByIdResponseSchema = TemplateDbDocumentSchema;
+export const GetTemplateByIdResponseSchema = TemplateDbDocumentSchema;
 
 // To delete a specific template by _id
 // POST /templates/:id/delete'
@@ -730,7 +744,7 @@ const GetTemplateByIdResponseSchema = TemplateDbDocumentSchema;
 /**
  * POST to /notebooks/template/:id to create a new notebook from a template ID
  */
-const PostCreateNotebookFromTemplateSchema = z.object({
+export const PostCreateNotebookFromTemplateSchema = z.object({
   template_id: z.string(),
   project_name: z.string(),
 });
@@ -738,27 +752,31 @@ const PostCreateNotebookFromTemplateSchema = z.object({
 // Export inferred types
 export type UiSpecificationType = z.infer<typeof UiSpecificationSchema>;
 export type NotebookMetadataType = z.infer<typeof NotebookMetadataSchema>;
-export type TemplateDbDocumentDetails = z.infer<typeof TemplateDbDocumentDetailsSchema>;
+export type TemplateDbDocumentEditableProperties = z.infer<
+  typeof TemplateDbDocumentEditablePropertiesSchema
+>;
+export type TemplateDbDocumentDetails = z.infer<
+  typeof TemplateDbDocumentDetailsSchema
+>;
 export type TemplateDbDocument = z.infer<typeof TemplateDbDocumentSchema>;
-export type PostCreateTemplateInput = z.infer<typeof PostCreateTemplateInputSchema>;
-export type PostCreateTemplateResponse = z.infer<typeof PostCreateTemplateResponseSchema>;
-export type PostUpdateTemplateInput = z.infer<typeof PostUpdateTemplateInputSchema>;
-export type PostUpdateTemplateResponse = z.infer<typeof PostUpdateTemplateResponseSchema>;
-export type GetListTemplatesResponse = z.infer<typeof GetListTemplatesResponseSchema>;
-export type GetTemplateByIdResponse = z.infer<typeof GetTemplateByIdResponseSchema>;
-export type PostCreateNotebookFromTemplate = z.infer<typeof PostCreateNotebookFromTemplateSchema>;
-
-// Export schemas
-export {
-  UiSpecificationSchema,
-  NotebookMetadataSchema,
-  TemplateDbDocumentDetailsSchema,
-  TemplateDbDocumentSchema,
-  PostCreateTemplateInputSchema,
-  PostCreateTemplateResponseSchema,
-  PostUpdateTemplateInputSchema,
-  PostUpdateTemplateResponseSchema,
-  GetListTemplatesResponseSchema,
-  GetTemplateByIdResponseSchema,
-  PostCreateNotebookFromTemplateSchema,
-};
+export type PostCreateTemplateInput = z.infer<
+  typeof PostCreateTemplateInputSchema
+>;
+export type PostCreateTemplateResponse = z.infer<
+  typeof PostCreateTemplateResponseSchema
+>;
+export type PostUpdateTemplateInput = z.infer<
+  typeof PostUpdateTemplateInputSchema
+>;
+export type PostUpdateTemplateResponse = z.infer<
+  typeof PostUpdateTemplateResponseSchema
+>;
+export type GetListTemplatesResponse = z.infer<
+  typeof GetListTemplatesResponseSchema
+>;
+export type GetTemplateByIdResponse = z.infer<
+  typeof GetTemplateByIdResponseSchema
+>;
+export type PostCreateNotebookFromTemplate = z.infer<
+  typeof PostCreateNotebookFromTemplateSchema
+>;

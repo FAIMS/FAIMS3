@@ -31,7 +31,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "template_name" : "123456",
+    "template_name" : "1234567",
     "ui_specification": {},
     "metadata" : {}
 }

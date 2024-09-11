@@ -25,7 +25,13 @@ import {
   COUCHDB_INTERNAL_URL,
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
-import {ProjectID, ProjectObject} from '@faims3/data-model';
+import {
+  ProjectID,
+  ProjectObject,
+  TemplateDbDocument,
+  TemplateDbDocumentDetails,
+  TemplateDbDocumentDetailsSchema,
+} from '@faims3/data-model';
 import {
   initialiseDirectoryDB,
   initialiseProjectsDB,
@@ -43,7 +49,7 @@ const INVITE_DB_NAME = 'invites';
 
 let _directoryDB: PouchDB.Database | undefined;
 let _projectsDB: PouchDB.Database | undefined;
-let _templatesDb: PouchDB.Database | undefined;
+let _templatesDb: PouchDB.Database<TemplateDbDocumentDetails> | undefined;
 let _usersDB: PouchDB.Database | undefined;
 let _invitesDB: PouchDB.Database | undefined;
 
@@ -112,21 +118,25 @@ export const getProjectsDB = (): PouchDB.Database | undefined => {
   return _projectsDB;
 };
 
-export const getTemplatesDb = (): PouchDB.Database => {
-  if (!_templatesDb) {
-    const pouch_options = pouchOptions();
-    const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;
-    try {
-      _templatesDb = new PouchDB(dbName, pouch_options);
-    } catch (error) {
-      throw enhanceError(
-        'Error occurred while getting templates database.',
-        error
-      );
+export const getTemplatesDb =
+  (): PouchDB.Database<TemplateDbDocumentDetails> => {
+    if (!_templatesDb) {
+      const pouch_options = pouchOptions();
+      const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;
+      try {
+        _templatesDb = new PouchDB<TemplateDbDocumentDetails>(
+          dbName,
+          pouch_options
+        );
+      } catch (error) {
+        throw enhanceError(
+          'Error occurred while getting templates database.',
+          error
+        );
+      }
     }
-  }
-  return _templatesDb;
-};
+    return _templatesDb;
+  };
 
 export const getInvitesDB = (): PouchDB.Database | undefined => {
   if (!_invitesDB) {
