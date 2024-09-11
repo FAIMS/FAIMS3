@@ -19,27 +19,25 @@
  */
 
 import PouchDB from 'pouchdb';
+import * as Exceptions from '../exceptions';
 
-import {
-  COUCHDB_PUBLIC_URL,
-  COUCHDB_INTERNAL_URL,
-  LOCAL_COUCHDB_AUTH,
-} from '../buildconfig';
 import {
   ProjectID,
   ProjectObject,
-  TemplateDbDocument,
   TemplateDbDocumentDetails,
-  TemplateDbDocumentDetailsSchema,
 } from '@faims3/data-model';
+import {initialiseJWTKey} from '../authkeys/initJWTKeys';
+import {
+  COUCHDB_INTERNAL_URL,
+  COUCHDB_PUBLIC_URL,
+  LOCAL_COUCHDB_AUTH,
+} from '../buildconfig';
 import {
   initialiseDirectoryDB,
   initialiseProjectsDB,
   initialiseTemplatesDb,
   initialiseUserDB,
 } from './initialise';
-import {initialiseJWTKey} from '../authkeys/initJWTKeys';
-import {enhanceError} from '../utils';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
@@ -94,8 +92,10 @@ export const getUsersDB = (): PouchDB.Database | undefined => {
     const dbName = COUCHDB_INTERNAL_URL + '/' + PEOPLE_DB_NAME;
     try {
       _usersDB = new PouchDB(dbName, pouch_options);
-    } catch (error) {
-      throw enhanceError('Error occurred while getting users database.', error);
+    } catch {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting users database.'
+      );
     }
   }
 
@@ -109,9 +109,8 @@ export const getProjectsDB = (): PouchDB.Database | undefined => {
     try {
       _projectsDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
-      throw enhanceError(
-        'Error occurred while getting projects database.',
-        error
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting projects database.'
       );
     }
   }
@@ -124,14 +123,10 @@ export const getTemplatesDb =
       const pouch_options = pouchOptions();
       const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;
       try {
-        _templatesDb = new PouchDB<TemplateDbDocumentDetails>(
-          dbName,
-          pouch_options
-        );
+        _templatesDb = new PouchDB(dbName, pouch_options);
       } catch (error) {
-        throw enhanceError(
-          'Error occurred while getting templates database.',
-          error
+        throw new Exceptions.InternalSystemError(
+          'Error occurred while getting templates database.'
         );
       }
     }
@@ -145,9 +140,8 @@ export const getInvitesDB = (): PouchDB.Database | undefined => {
     try {
       _invitesDB = new PouchDB(dbName, pouch_options);
     } catch (error) {
-      throw enhanceError(
-        'Error occurred while getting invites database.',
-        error
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting invites database.'
       );
     }
   }
@@ -227,17 +221,18 @@ export const initialiseDatabases = async () => {
   let templatesDb: PouchDB.Database;
   try {
     templatesDb = getTemplatesDb();
-  } catch (error) {
-    throw enhanceError(
-      'An error occurred while instantiating the templates local DB. Aborting operation.',
-      error
+  } catch {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while instantiating the templates local DB. Aborting operation.'
     );
   }
 
   try {
     await initialiseTemplatesDb(templatesDb);
-  } catch (error) {
-    throw enhanceError('Something wrong with templates db init', error);
+  } catch {
+    throw new Exceptions.InternalSystemError(
+      'Something wrong during templates db initialisation'
+    );
   }
 
   const usersDB = getUsersDB();
