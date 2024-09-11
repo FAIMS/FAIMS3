@@ -26,7 +26,7 @@ import {setTokenForCluster} from '../../../users';
 import {getSyncableListingsInfo} from '../../../databaseAccess';
 import {Dispatch, SetStateAction, useEffect} from 'react';
 import {TokenContents} from '@faims3/data-model';
-import {reprocess_listing} from '../../../sync/process-initialization';
+import {update_directory} from '../../../sync/process-initialization';
 
 async function getListingForConductorUrl(conductor_url: string) {
   const origin = new URL(conductor_url).origin;
@@ -48,33 +48,38 @@ export function AuthReturn(props: AuthReturnProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const storeToken = async (token: string) => {
+      const token_obj = decodeJwt(decodeURIComponent(token));
+
+      console.log('decoded', token_obj);
+
+      const listing_id = await getListingForConductorUrl(
+        token_obj.server as string
+      );
+
+      console.log('Received token via url for:', listing_id);
+      await setTokenForCluster(token, listing_id);
+      console.log('We have stored the token for ', listing_id);
+      // this requires the token
+      update_directory();
+      // generate the TokenContents object like parseToken does
+      const token_content = {
+        username: token_obj.sub as string,
+        roles: (token_obj['_couchdb.roles'] as string[]) || '',
+        name: token_obj.name as string,
+      };
+      console.log('%cToken content', 'background-color: green', token_content);
+      props.setToken(token_content);
+      navigate('/');
+    };
+
     const params = new URLSearchParams(window.location.search);
     if (params.has('token')) {
       const token = params.get('token');
       if (token) {
-        const token_obj = decodeJwt(decodeURIComponent(token));
-
-        console.log('decoded', token_obj);
-        getListingForConductorUrl(token_obj.server as string)
-          .then(async listing_id => {
-            console.log('Received token via url for:', listing_id);
-            setTokenForCluster(token, listing_id).then(() => {
-              console.log('We have stored the token for ', listing_id);
-              reprocess_listing(listing_id);
-              // generate the TokenContents object like parseToken does
-              const token_content = {
-                username: token_obj.sub as string,
-                roles: (token_obj['_couchdb.roles'] as string[]) || '',
-                name: token_obj.name as string,
-              };
-              console.log('%ctoken content', 'color: red', token_content);
-              props.setToken(token_content);
-              navigate('/');
-            });
-          })
-          .catch(err => {
-            console.warn('Failed to get token from url', err);
-          });
+        storeToken(token).catch(err => {
+          console.error(err);
+        });
       }
     } else {
       navigate('/');
@@ -83,4 +88,3 @@ export function AuthReturn(props: AuthReturnProps) {
 
   return <h1>Auth Token</h1>;
 }
-

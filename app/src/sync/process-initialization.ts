@@ -50,6 +50,7 @@ import {ensure_project_databases} from './projects';
  * Called on startup or page/app refresh.
  */
 export async function update_directory() {
+  console.log('UPDATE DIRECTORY');
   // get existing stored listings from the local db
   const listings = await getAllListings();
 
@@ -198,6 +199,7 @@ async function get_projects_from_conductor(listing: ListingsObject) {
 
   // get the remote data
   const jwt_token = await getTokenForCluster(listing._id);
+  console.log('%cDid we get a token:', 'background-color: red', jwt_token);
   // if we have no token, then don't try to fetch
   if (!jwt_token) return;
 

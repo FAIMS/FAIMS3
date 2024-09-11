@@ -88,7 +88,7 @@ export async function setTokenForCluster(token: string, cluster_id: string) {
       throw Error(`Failed to set token when conflicting for: ${cluster_id}`);
     }
   } catch (err) {
-    console.debug('Failed to get token when setting for', cluster_id, err);
+    console.debug('No existing token for', cluster_id);
     try {
       const doc = await addTokenToDoc(token, cluster_id, null);
       console.debug('Initial token info is:', doc);
