@@ -1,10 +1,9 @@
 import {
   ProjectID,
   TemplateDbDocument,
-  TemplateDbDocumentDetails,
   TemplateDbDocumentEditableProperties,
 } from '@faims3/data-model';
-import PouchDB, {fetch} from 'pouchdb';
+import PouchDB from 'pouchdb';
 import securityPlugin from 'pouchdb-security-helper';
 import {getTemplatesDb} from '.';
 import {slugify} from '../utils';
@@ -83,11 +82,19 @@ export const createTemplate = async (
 
   // Try putting the new document
   try {
-    const response = await templatesDb.put(templateDoc);
-    return templateDoc;
+    await templatesDb.put(templateDoc);
   } catch (e) {
     throw new Exceptions.InternalSystemError(
       'An unexpected error occurred while trying to PUT the new template document into the templates DB.'
+    );
+  }
+
+  // Then return the fetched result
+  try {
+    return await templatesDb.get(templateId);
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to GET the new template document from the templates DB.'
     );
   }
 };

@@ -127,8 +127,10 @@ app.use('/api/templates', templatesApi);
 // TODO specify this interface in data models
 const errorHandler: ErrorRequestHandler = (
   err: Error & {status?: number},
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   req: Request,
   res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   next: NextFunction
 ) => {
   // Set the response status code

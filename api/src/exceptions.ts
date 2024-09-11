@@ -23,19 +23,19 @@ export class ValidationException extends CustomException {
 }
 
 export class UnauthorizedException extends CustomException {
-  constructor(message: string = 'Unauthorized access') {
+  constructor(message = 'Unauthorized access') {
     super(message, 401);
   }
 }
 
 export class ForbiddenException extends CustomException {
-  constructor(message: string = 'Access forbidden') {
+  constructor(message = 'Access forbidden') {
     super(message, 403);
   }
 }
 
 export class InternalSystemError extends CustomException {
-  constructor(message: string = 'Unexpected internal system error occurred.') {
+  constructor(message = 'Unexpected internal system error occurred.') {
     super(message, 403);
   }
 }

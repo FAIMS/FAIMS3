@@ -429,7 +429,7 @@ export function userCanDoWithTemplate(
   }
 
   // All logged in users can read templates including listing all
-  if (permission == 'read' || permission == 'list') {
+  if (permission === 'read' || permission === 'list') {
     return true;
   }
 

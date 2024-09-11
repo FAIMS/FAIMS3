@@ -58,7 +58,7 @@ import {
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {restoreFromBackup} from '../couchdb/backupRestore';
 import {ListingInformation} from '@faims3/data-model';
-import { slugify } from '../utils';
+import {slugify} from '../utils';
 
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
