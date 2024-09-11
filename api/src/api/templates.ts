@@ -41,6 +41,7 @@ import {requireAuthenticationAPI} from '../middleware';
 export const api = express.Router();
 
 /**
+ * GET list templates
  * Gets a list of templates from the templates DB.
  */
 api.get<{}, GetListTemplatesResponse>(
@@ -67,6 +68,7 @@ api.get<{}, GetListTemplatesResponse>(
 );
 
 /**
+ * GET template by id
  * Gets a specific template by ID from the templates DB.
  */
 //api.get<{id: string}, GetTemplateByIdResponse>(
@@ -97,6 +99,7 @@ api.get<{id: string}, any>(
 );
 
 /**
+ * POST create new template
  * Creates a new template. The payload is validated by Zod before reaching this
  * function. Expects a document as the response JSON. Requires cluster admin
  * privileges.
@@ -130,6 +133,7 @@ api.post<{}, PostCreateTemplateResponse>(
 );
 
 /**
+ * PUT update existing template
  * Updates an existing template. The payload is validated by Zod before reaching this
  * function. Expects a document as the response JSON. Requires cluster admin
  * privileges.
@@ -172,6 +176,7 @@ api.put<{id: string}, PostUpdateTemplateResponse>(
 );
 
 /**
+ * POST delete existing template
  * Deletes latest revision of an existing template. Requires cluster admin
  * privileges.
  */
@@ -201,7 +206,7 @@ api.post<{id: string}, PostUpdateTemplateResponse>(
       next(e);
     }
 
-    // Indicate successful deletion
-    res.status(200);
+    // Indicate successful deletion and send
+    res.sendStatus(200);
   }
 );
