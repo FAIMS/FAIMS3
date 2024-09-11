@@ -15,7 +15,7 @@
  *
  * Filename: templates.ts
  * Description:
- *   This module contains the template CRUD API routes
+ *   This module contains the template CRUD API routes at /api/templates
  */
 
 import {

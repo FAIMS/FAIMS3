@@ -15,95 +15,44 @@
  *
  * Filename: routes.ts
  * Description:
- *   This module contains the route definitions for the conductor api
+ *   This module contains notebook related API routes at /api/notebooks
  */
 
 import express from 'express';
 import multer from 'multer';
 import {
-  getNotebooks,
-  createNotebook,
-  getNotebookMetadata,
-  getNotebookUISpec,
-  getNotebookRecords,
-  getRolesForNotebook,
-  deleteNotebook,
-  updateNotebook,
-  streamNotebookRecordsAsCSV,
-  streamNotebookFilesAsZip,
-  getProjects,
-} from '../couchdb/notebooks';
-import {requireAuthenticationAPI} from '../middleware';
-import {initialiseDatabases} from '../couchdb';
-import {
-  addOtherRoleToUser,
-  addProjectRoleToUser,
-  getUserFromEmailOrUsername,
-  getUserInfoForNotebook,
-  removeOtherRoleFromUser,
-  removeProjectRoleFromUser,
-  saveUser,
-  userHasPermission,
-  userIsClusterAdmin,
-  userCanCreateNotebooks,
-} from '../couchdb/users';
-import {
-  CLUSTER_ADMIN_GROUP_NAME,
-  CONDUCTOR_DESCRIPTION,
-  CONDUCTOR_INSTANCE_NAME,
-  CONDUCTOR_PUBLIC_URL,
-  DEVELOPER_MODE,
-  NOTEBOOK_CREATOR_GROUP_NAME,
+    DEVELOPER_MODE
 } from '../buildconfig';
-import {createManyRandomRecords} from '../couchdb/devtools';
-import {restoreFromBackup} from '../couchdb/backupRestore';
-import {ListingInformation} from '@faims3/data-model';
-import {slugify} from '../utils';
+import { createManyRandomRecords } from '../couchdb/devtools';
+import {
+    createNotebook,
+    deleteNotebook,
+    getNotebookMetadata,
+    getNotebookRecords,
+    getNotebooks,
+    getNotebookUISpec,
+    getRolesForNotebook,
+    streamNotebookFilesAsZip,
+    streamNotebookRecordsAsCSV,
+    updateNotebook
+} from '../couchdb/notebooks';
+import {
+    addProjectRoleToUser,
+    getUserFromEmailOrUsername,
+    getUserInfoForNotebook, removeProjectRoleFromUser,
+    saveUser,
+    userCanCreateNotebooks,
+    userHasPermission,
+    userIsClusterAdmin
+} from '../couchdb/users';
+import { requireAuthenticationAPI } from '../middleware';
 
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
 
 export const api = express.Router();
 
-api.get('/hello/', requireAuthenticationAPI, (_req: any, res: any) => {
-  res.send({message: 'hello from the api!'});
-});
-
-/**
- * POST to /api/initialise does initialisation on the databases
- * - this does not have any auth requirement because it should be used
- *   to set up the users database and create the admin user
- *   if databases exist, this is a no-op
- */
-api.post('/initialise/', async (req, res) => {
-  initialiseDatabases();
-  res.json({success: true});
-});
-
-/**
- * Handle info requests, basic identifying information for this server
- */
-api.get('/info', async (req, res) => {
-  const info: ListingInformation = {
-    id: slugify(CONDUCTOR_INSTANCE_NAME),
-    name: CONDUCTOR_INSTANCE_NAME,
-    conductor_url: CONDUCTOR_PUBLIC_URL,
-    description: CONDUCTOR_DESCRIPTION,
-  };
-  res.json(info);
-});
-
-api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
-  // get the directory of notebooks on this server
-  if (req.user) {
-    const projects = await getProjects(req.user);
-    res.json(projects);
-  } else {
-    res.json([]);
-  }
-});
-
-api.get('/notebooks/', requireAuthenticationAPI, async (req, res) => {
+api.get('/', requireAuthenticationAPI, async (req, res) => {
   // get a list of notebooks from the db
   if (req.user) {
     const notebooks = await getNotebooks(req.user);
@@ -116,7 +65,7 @@ api.get('/notebooks/', requireAuthenticationAPI, async (req, res) => {
 /**
  * POST to /notebooks/ to create a new notebook
  */
-api.post('/notebooks/', requireAuthenticationAPI, async (req, res) => {
+api.post('/', requireAuthenticationAPI, async (req, res) => {
   if (req.user && userCanCreateNotebooks(req.user)) {
     const uiSpec = req.body['ui-specification'];
     const projectName = req.body.name;
@@ -145,7 +94,7 @@ api.post('/notebooks/', requireAuthenticationAPI, async (req, res) => {
   }
 });
 
-api.get('/notebooks/:id', requireAuthenticationAPI, async (req, res) => {
+api.get('/:id', requireAuthenticationAPI, async (req, res) => {
   // get full details of a single notebook
   const project_id = req.params.id;
   if (req.user && userHasPermission(req.user, project_id, 'read')) {
@@ -164,7 +113,7 @@ api.get('/notebooks/:id', requireAuthenticationAPI, async (req, res) => {
 });
 
 // PUT a new version of a notebook
-api.put('/notebooks/:id', requireAuthenticationAPI, async (req, res) => {
+api.put('/:id', requireAuthenticationAPI, async (req, res) => {
   // user must have modify permissions on this notebook
   if (userHasPermission(req.user, req.params.id, 'modify')) {
     const uiSpec = req.body['ui-specification'];
@@ -188,7 +137,7 @@ api.put('/notebooks/:id', requireAuthenticationAPI, async (req, res) => {
 
 // export current versions of all records in this notebook
 api.get(
-  '/notebooks/:id/records/',
+  '/:id/records/',
   requireAuthenticationAPI,
   async (req, res) => {
     let records = [];
@@ -206,7 +155,7 @@ api.get(
 
 // export current versions of all records in this notebook as csv
 api.get(
-  '/notebooks/:id/:viewID.csv',
+  '/:id/:viewID.csv',
   requireAuthenticationAPI,
   async (req, res) => {
     if (req.user && userHasPermission(req.user, req.params.id, 'read')) {
@@ -227,7 +176,7 @@ api.get(
 
 // export files for all records in this notebook as zip
 api.get(
-  '/notebooks/:id/:viewid.zip',
+  '/:id/:viewid.zip',
   requireAuthenticationAPI,
   async (req, res) => {
     if (req.user && userHasPermission(req.user, req.params.id, 'read')) {
@@ -240,7 +189,7 @@ api.get(
   }
 );
 
-api.get('/notebooks/:id/users/', requireAuthenticationAPI, async (req, res) => {
+api.get('/:id/users/', requireAuthenticationAPI, async (req, res) => {
   // user must have admin access tot his notebook
 
   if (userHasPermission(req.user, req.params.id, 'modify')) {
@@ -262,7 +211,7 @@ api.get('/notebooks/:id/users/', requireAuthenticationAPI, async (req, res) => {
 //     addrole: boolean, true to add, false to delete
 //   }
 api.post(
-  '/notebooks/:id/users/',
+  '/:id/users/',
   requireAuthenticationAPI,
   async (req, res) => {
     if (userHasPermission(req.user, req.params.id, 'modify')) {
@@ -310,51 +259,8 @@ api.post(
   }
 );
 
-// update a user
-api.post('/users/:id/admin', requireAuthenticationAPI, async (req, res) => {
-  if (userIsClusterAdmin(req.user)) {
-    let error = '';
-    const username = req.params.id;
-    const addrole = req.body.addrole;
-    const role = req.body.role;
-
-    console.log('addrole', addrole, 'role', role, NOTEBOOK_CREATOR_GROUP_NAME);
-    const user = await getUserFromEmailOrUsername(username);
-    if (user) {
-      if (
-        role === CLUSTER_ADMIN_GROUP_NAME ||
-        role === NOTEBOOK_CREATOR_GROUP_NAME
-      ) {
-        if (addrole) {
-          await addOtherRoleToUser(user, role);
-        } else {
-          await removeOtherRoleFromUser(user, role);
-        }
-        await saveUser(user);
-        res.json({status: 'success'});
-        return;
-      } else {
-        error = 'Unknown role';
-      }
-    } else {
-      error = 'Unknown user ' + username;
-    }
-
-    // user or project not found or bad role
-    res.status(404).json({status: 'error', error}).end();
-  } else {
-    res
-      .status(401)
-      .json({
-        error:
-          'you do not have permission to modify user permissions for this server',
-      })
-      .end();
-  }
-});
-
 api.post(
-  '/notebooks/:notebook_id/delete',
+  '/:notebook_id/delete',
   requireAuthenticationAPI,
   async (req, res) => {
     if (userIsClusterAdmin(req.user)) {
@@ -374,21 +280,7 @@ api.post(
 
 if (DEVELOPER_MODE) {
   api.post(
-    '/restore',
-    upload.single('backup'),
-    requireAuthenticationAPI,
-    async (req: any, res) => {
-      if (userIsClusterAdmin(req.user)) {
-        await restoreFromBackup(req.file.path);
-        res.json({status: 'success'});
-      } else {
-        res.status(401).end();
-      }
-    }
-  );
-
-  api.post(
-    '/notebooks/:notebook_id/generate',
+    '/:notebook_id/generate',
     requireAuthenticationAPI,
     async (req, res) => {
       if (userIsClusterAdmin(req.user)) {

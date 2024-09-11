@@ -51,7 +51,9 @@ const indexContent = readFileSync(
 // Workaround done
 
 import markdownit from 'markdown-it';
-import {api as coreApi} from './api/routes';
+import {api as notebookApi} from './api/notebooks';
+import {api as utilityApi} from './api/utilities';
+import {api as usersApi} from './api/users';
 import {api as templatesApi} from './api/templates';
 import {COOKIE_SECRET} from './buildconfig';
 
@@ -120,8 +122,10 @@ app.use(passport.session());
 app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
 app.use(express.static('public'));
-app.use('/api', coreApi);
+app.use('/api/notebooks', notebookApi);
 app.use('/api/templates', templatesApi);
+app.use('/api', utilityApi);
+app.use('/api/users', usersApi);
 
 // Custom error handler with type annotations
 // TODO specify this interface in data models
