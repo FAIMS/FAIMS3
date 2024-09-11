@@ -18,43 +18,41 @@
  *   This module provides functions to access notebooks from the database
  */
 
-import PouchDB from 'pouchdb';
-import {getProjectsDB, getTemplatesDb} from '.';
-import {CLUSTER_ADMIN_GROUP_NAME, COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {
-  ProjectID,
+  addDesignDocsForNotebook,
   getProjectDB,
+  notebookRecordIterator,
+  ProjectID,
   ProjectObject,
   resolve_project_id,
-  notebookRecordIterator,
-  addDesignDocsForNotebook,
-  TemplateDbDocument,
-  TemplateDbDocumentDetails,
 } from '@faims3/data-model';
+import archiver from 'archiver';
+import PouchDB from 'pouchdb';
+import {Stream} from 'stream';
+import {getProjectsDB} from '.';
+import {CLUSTER_ADMIN_GROUP_NAME, COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {
+  PROJECT_METADATA_PREFIX,
   ProjectMetadata,
   ProjectUIFields,
   ProjectUIModel,
-  PROJECT_METADATA_PREFIX,
 } from '../datamodel/database';
-import archiver from 'archiver';
-import {Stream} from 'stream';
 
-import securityPlugin from 'pouchdb-security-helper';
 import {
   file_attachments_to_data,
   file_data_to_attachments,
   getDataDB,
   getFullRecordData,
   getRecordsWithRegex,
+  HRID_STRING,
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
-  HRID_STRING,
 } from '@faims3/data-model';
+import {Stringifier, stringify} from 'csv-stringify';
+import securityPlugin from 'pouchdb-security-helper';
+import {slugify} from '../utils';
 import {userHasPermission} from './users';
 PouchDB.plugin(securityPlugin);
-import {Stringifier, stringify} from 'csv-stringify';
-import {enhanceError} from '../utils';
 
 /**
  * getProjects - get the internal project documents that reference
@@ -133,89 +131,12 @@ export const getNotebooks = async (user: Express.User): Promise<any[]> => {
 };
 
 /**
- * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
- * validate with Zod.
- * @returns an array of template objects
- */
-export const getTemplates = async (): Promise<TemplateDbDocument[]> => {
-  const templatesDb = getTemplatesDb();
-  try {
-    const resultList = await templatesDb.allDocs<TemplateDbDocument>({
-      include_docs: true,
-    });
-    return resultList.rows
-      .filter(document => {
-        return !!document.doc && !document.id.startsWith('_');
-      })
-      .map(document => {
-        return document.doc!;
-      });
-  } catch (error) {
-    throw enhanceError(
-      'An error occurred while reading templates from the Template DB.',
-      error
-    );
-  }
-};
-
-/**
- * Fetches a template by id
- * @param id The ID of the template to retrieve
- * @returns The document if available
- */
-export const getTemplate = async (id: string): Promise<TemplateDbDocument> => {
-  const templatesDb = getTemplatesDb();
-  try {
-    return await templatesDb.get<TemplateDbDocument>(id);
-  } catch (error) {
-    throw enhanceError(
-      'An error occurred while reading templates from the Template DB. Are you sure the ID is correct?',
-      error
-    );
-  }
-};
-
-/**
- * Slugify a string, replacing special characters with less special ones
- * @param str input string
- * @returns url safe version of the string
- * https://ourcodeworld.com/articles/read/255/creating-url-slugs-properly-in-javascript-including-transliteration-for-utf-8
- */
-export const slugify = (str: string) => {
-  str = str.trim();
-  str = str.toLowerCase();
-
-  // remove accents, swap ñ for n, etc
-  const from = 'ãàáäâáº½èéëêìíïîõòóöôùúüûñç·/_,:;';
-  const to = 'aaaaaeeeeeiiiiooooouuuunc------';
-  for (let i = 0, l = from.length; i < l; i++) {
-    str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
-  }
-
-  str = str
-    .replace(/[^a-z0-9 -]/g, '') // remove invalid chars
-    .replace(/\s+/g, '-') // collapse whitespace and replace by -
-    .replace(/-+/g, '-'); // collapse dashes
-
-  return str;
-};
-
-/**
  * Generate a good project identifier for a new project
  * @param projectName the project name string
  * @returns a suitable project identifier
  */
 const generateProjectID = (projectName: string): ProjectID => {
   return `${Date.now().toFixed()}-${slugify(projectName)}`;
-};
-
-/**
- * Generate a good project identifier for a new project
- * @param projectName the project name string
- * @returns a suitable project identifier
- */
-const generateTemplateId = (templateName: string): ProjectID => {
-  return `${Date.now().toFixed()}-${slugify(templateName)}`;
 };
 
 type AutoIncReference = {
@@ -290,37 +211,6 @@ export const validateDatabases = async () => {
     }
   }
   return output;
-};
-
-/**
- * Sets up and lodges a new template record into the template database. Error is
- * thrown under failure to lodge.
- * @param payload The document details for a template
- * @returns The ID of the minted template
- */
-export const createTemplate = async (
-  payload: TemplateDbDocumentDetails
-): Promise<TemplateDbDocument> => {
-  // Get a unique id for the template Id
-  const templateId = generateTemplateId(payload.template_name);
-  // Setup the document with id included
-  const templateDoc: TemplateDbDocument = {
-    _id: templateId,
-    ...payload,
-  };
-  // Get the templates DB so we can interact with it
-  const templatesDb = getTemplatesDb();
-
-  // Try putting the new document
-  try {
-    const response = await templatesDb.put<TemplateDbDocument>(templateDoc);
-    return templateDoc;
-  } catch (e) {
-    throw enhanceError(
-      'An error occurred while trying to PUT the new template document into the templates DB.',
-      e
-    );
-  }
 };
 
 /**

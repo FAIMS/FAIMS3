@@ -1,0 +1,43 @@
+@baseUrl = {{$dotenv BASE_URL}}/api/templates
+@token = {{$dotenv API_TOKEN}}
+
+### List templates
+GET {{baseUrl}}
+Authorization: Bearer {{token}}
+
+### Get by ID
+# @prompt templateId
+
+GET {{baseUrl}}/{{templateId}}
+Authorization: Bearer {{token}}
+
+### Add a template
+
+POST {{baseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "template_name" : "12345",
+    "ui_specification": {},
+    "metadata" : {}
+}
+
+### Update by ID
+# @prompt templateId
+
+PUT {{baseUrl}}/{{templateId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "template_name" : "123456",
+    "ui_specification": {},
+    "metadata" : {}
+}
+
+### Delete by ID
+# @prompt templateId
+
+POST {{baseUrl}}/{{templateId}}/delete
+Authorization: Bearer {{token}}

@@ -19,16 +19,24 @@
  */
 
 import {
-    GetListTemplatesResponse,
-    GetTemplateByIdResponse,
-    PostCreateTemplateInputSchema,
-    PostCreateTemplateResponse,
+  GetListTemplatesResponse,
+  GetTemplateByIdResponse,
+  PostCreateTemplateInputSchema,
+  PostCreateTemplateResponse,
+  PostUpdateTemplateInputSchema,
+  PostUpdateTemplateResponse,
 } from '@faims3/data-model';
 import express from 'express';
-import { validateRequest } from 'zod-express-middleware';
-import { createTemplate, getTemplate, getTemplates } from '../couchdb/notebooks';
-import { userCanDoWithTemplate } from '../couchdb/users';
-import { requireAuthenticationAPI } from '../middleware';
+import {validateRequest} from 'zod-express-middleware';
+import {
+  createTemplate,
+  deleteExistingTemplate,
+  getTemplate,
+  getTemplates,
+  updateExistingTemplate,
+} from '../couchdb/templates';
+import {userCanDoWithTemplate} from '../couchdb/users';
+import {requireAuthenticationAPI} from '../middleware';
 
 export const api = express.Router();
 
@@ -36,23 +44,55 @@ export const api = express.Router();
  * Gets a list of templates from the templates DB.
  */
 api.get<{}, GetListTemplatesResponse>(
-  '/templates',
+  '/',
   requireAuthenticationAPI,
-  async (_, res) => {
-    const templates = await getTemplates();
-    res.json({templates: templates});
+  async (req, res, next) => {
+    if (!req.user) {
+      res.status(401).end();
+      return;
+    }
+
+    // User is not authorised to create a template
+    if (!userCanDoWithTemplate(req.user, undefined, 'list')) {
+      res.status(401).end();
+      return;
+    }
+
+    try {
+      res.json({templates: await getTemplates()});
+    } catch (e) {
+      next(e);
+    }
   }
 );
 
 /**
  * Gets a specific template by ID from the templates DB.
  */
-api.get<{id: string}, GetTemplateByIdResponse>(
-  '/templates/:id',
+//api.get<{id: string}, GetTemplateByIdResponse>(
+api.get<{id: string}, any>(
+  '/:id',
   requireAuthenticationAPI,
-  async (req, res) => {
+  async (req, res, next) => {
     const id = req.params.id;
-    res.json(await getTemplate(id));
+
+    if (!req.user) {
+      res.status(401).end();
+      return;
+    }
+
+    // User is not authorised to create a template
+    if (!userCanDoWithTemplate(req.user, id, 'read')) {
+      res.status(401).end();
+      return;
+    }
+
+    // Try and get the document and pass through to JSON handler if failed
+    try {
+      res.json(await getTemplate(id));
+    } catch (e) {
+      next(e);
+    }
   }
 );
 
@@ -62,12 +102,12 @@ api.get<{id: string}, GetTemplateByIdResponse>(
  * privileges.
  */
 api.post<{}, PostCreateTemplateResponse>(
-  '/templates',
+  '/',
   validateRequest({
     body: PostCreateTemplateInputSchema,
   }),
   requireAuthenticationAPI,
-  async (req, res) => {
+  async (req, res, next) => {
     // First check the user has permissions to do this action
     if (!req.user) {
       res.status(401).end();
@@ -81,6 +121,87 @@ api.post<{}, PostCreateTemplateResponse>(
     }
 
     // Now we can create the new template and return it
-    return await createTemplate(req.body);
+    try {
+      res.json(await createTemplate(req.body));
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/**
+ * Updates an existing template. The payload is validated by Zod before reaching this
+ * function. Expects a document as the response JSON. Requires cluster admin
+ * privileges.
+ */
+api.put<{id: string}, PostUpdateTemplateResponse>(
+  '/:id',
+  validateRequest({
+    body: PostUpdateTemplateInputSchema,
+  }),
+  requireAuthenticationAPI,
+  async (req, res, next) => {
+    // pull out template Id
+    const templateId = req.params.id;
+
+    // First check the user has permissions to do this action
+    if (!req.user) {
+      res.status(401).end();
+      return;
+    }
+
+    // User is not authorised to create a template
+    if (!userCanDoWithTemplate(req.user, templateId, 'update')) {
+      res.status(401).end();
+      return;
+    }
+
+    // Now update the existing document
+    try {
+      await updateExistingTemplate(templateId, req.body);
+    } catch (e) {
+      next(e);
+    }
+
+    // And respond with fulfilled document
+    res.json({
+      _id: templateId,
+      ...req.body,
+    });
+  }
+);
+
+/**
+ * Deletes latest revision of an existing template. Requires cluster admin
+ * privileges.
+ */
+api.post<{id: string}, PostUpdateTemplateResponse>(
+  '/:id/delete',
+  requireAuthenticationAPI,
+  async (req, res, next) => {
+    // pull out template Id
+    const templateId = req.params.id;
+
+    // First check the user has permissions to do this action
+    if (!req.user) {
+      res.status(401).end();
+      return;
+    }
+
+    // User is not authorised to create a template
+    if (!userCanDoWithTemplate(req.user, templateId, 'delete')) {
+      res.status(401).end();
+      return;
+    }
+
+    // Now delete the existing document
+    try {
+      await deleteExistingTemplate(templateId);
+    } catch (e) {
+      next(e);
+    }
+
+    // Indicate successful deletion
+    res.status(200);
   }
 );

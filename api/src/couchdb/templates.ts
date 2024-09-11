@@ -1,0 +1,164 @@
+import {
+  ProjectID,
+  TemplateDbDocument,
+  TemplateDbDocumentDetails,
+} from '@faims3/data-model';
+import PouchDB from 'pouchdb';
+import securityPlugin from 'pouchdb-security-helper';
+import {getTemplatesDb} from '.';
+import {enhanceError, slugify} from '../utils';
+PouchDB.plugin(securityPlugin);
+
+/**
+ * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
+ * validate with Zod.
+ * @returns an array of template objects
+ */
+export const getTemplates = async (): Promise<TemplateDbDocument[]> => {
+  const templatesDb = getTemplatesDb();
+  try {
+    const resultList = await templatesDb.allDocs<TemplateDbDocument>({
+      include_docs: true,
+    });
+    return resultList.rows
+      .filter(document => {
+        return !!document.doc && !document.id.startsWith('_');
+      })
+      .map(document => {
+        return document.doc!;
+      });
+  } catch (error) {
+    throw enhanceError(
+      'An error occurred while reading templates from the Template DB.',
+      error
+    );
+  }
+};
+
+/**
+ * Fetches a template by id
+ * @param id The ID of the template to retrieve
+ * @returns The document if available
+ */
+export const getTemplate = async (id: string) => {
+  const templatesDb = getTemplatesDb();
+  try {
+    return await templatesDb.get<TemplateDbDocument>(id);
+  } catch (error) {
+    throw enhanceError(
+      'An error occurred while reading templates from the Template DB. Are you sure the ID is correct?',
+      error
+    );
+  }
+};
+
+/**
+ * Generate a good project identifier for a new project
+ * @param projectName the project name string
+ * @returns a suitable project identifier
+ */
+const generateTemplateId = (templateName: string): ProjectID => {
+  return `${Date.now().toFixed()}-${slugify(templateName)}`;
+};
+
+/**
+ * Sets up and lodges a new template record into the template database. Error is
+ * thrown under failure to lodge.
+ * @param payload The document details for a template
+ * @returns The ID of the minted template
+ */
+export const createTemplate = async (
+  payload: TemplateDbDocumentDetails
+): Promise<TemplateDbDocument> => {
+  // Get a unique id for the template Id
+  const templateId = generateTemplateId(payload.template_name);
+  // Setup the document with id included
+  const templateDoc: TemplateDbDocument = {
+    _id: templateId,
+    ...payload,
+  };
+  // Get the templates DB so we can interact with it
+  const templatesDb = getTemplatesDb();
+
+  // Try putting the new document
+  try {
+    const response = await templatesDb.put<TemplateDbDocument>(templateDoc);
+    return templateDoc;
+  } catch (e) {
+    throw enhanceError(
+      'An error occurred while trying to PUT the new template document into the templates DB.',
+      e
+    );
+  }
+};
+
+/**
+ * Fetches existing template by ID, replaces the details, and puts back with
+ * latest revision included. Returns the new revision. Throws an exception if
+ * the fetch fails or the update.
+ * @param templateId The existing template Id to update
+ * @param payload The payload to replace it with - details only
+ * @returns The revision ID of the new version of the document
+ */
+export const updateExistingTemplate = async (
+  templateId: string,
+  payload: TemplateDbDocumentDetails
+): Promise<string> => {
+  // Now fetch the existing template - this will allow us to get the latest
+  // revision etc
+  let existingTemplate;
+  try {
+    existingTemplate = await getTemplate(templateId);
+  } catch (e) {
+    throw enhanceError(
+      'An error occurred while trying to fetch an existing template in order to update with new details.',
+      e
+    );
+  }
+
+  // Now on the new put, we make sure to include the _rev of previous document which allows replacement
+  const templateDb = getTemplatesDb();
+  const newDocument = {
+    _id: templateId,
+    _rev: existingTemplate._rev,
+    ...payload,
+  };
+  try {
+    return (await templateDb.put(newDocument)).rev;
+  } catch (e) {
+    throw enhanceError(
+      'An error occurred while trying to update an existing template.',
+      e
+    );
+  }
+};
+
+/**
+ * Removes the latest revision of a template from the templates DB by fetching
+ * it then deleting that document.
+ * @param templateId The ID of the existing template to remove - deletes the
+ * latest revision.
+ */
+export const deleteExistingTemplate = async (templateId: string) => {
+  const templatesDb = getTemplatesDb();
+  // Now fetch the existing template - this will allow us to get the latest
+  // revision etc
+  let existingTemplate;
+  try {
+    existingTemplate = await getTemplate(templateId);
+  } catch (e) {
+    throw enhanceError(
+      'An error occurred while trying to fetch an existing template in order to remove it.',
+      e
+    );
+  }
+
+  try {
+    await templatesDb.remove(existingTemplate);
+  } catch (e) {
+    throw enhanceError(
+      'An error occurred while trying to delete an existing template.',
+      e
+    );
+  }
+};

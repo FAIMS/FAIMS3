@@ -374,7 +374,7 @@ export async function addEmailsToUser(user: Express.User, emails: string[]) {
 }
 
 export type ProjectPermission = 'read' | 'modify';
-export type TemplateAction = 'read' | 'update' | 'remove' | 'create';
+export type TemplateAction = 'read' | 'update' | 'delete' | 'create' | 'list';
 
 /**
  * Determine whether we should return this project
@@ -428,8 +428,8 @@ export function userCanDoWithTemplate(
     return false;
   }
 
-  // All logged in users can read templates
-  if (permission == 'read') {
+  // All logged in users can read templates including listing all
+  if (permission == 'read' || permission == 'list') {
     return true;
   }
 
