@@ -1,7 +1,7 @@
 import {
   ProjectID,
-  TemplateDbDocument,
-  TemplateDbDocumentEditableProperties,
+  TemplateDocument,
+  TemplateEditableDetails,
 } from '@faims3/data-model';
 import PouchDB from 'pouchdb';
 import securityPlugin from 'pouchdb-security-helper';
@@ -15,7 +15,7 @@ PouchDB.plugin(securityPlugin);
  * validate with Zod.
  * @returns an array of template objects
  */
-export const getTemplates = async (): Promise<TemplateDbDocument[]> => {
+export const getTemplates = async (): Promise<TemplateDocument[]> => {
   const templatesDb = getTemplatesDb();
   try {
     const resultList = await templatesDb.allDocs({
@@ -67,18 +67,19 @@ const generateTemplateId = (templateName: string): ProjectID => {
  * @returns The ID of the minted template
  */
 export const createTemplate = async (
-  payload: TemplateDbDocumentEditableProperties
-): Promise<TemplateDbDocument> => {
+  payload: TemplateEditableDetails
+): Promise<TemplateDocument> => {
+  // Get the templates DB so we can interact with it
+  const templatesDb = getTemplatesDb();
+
   // Get a unique id for the template Id
   const templateId = generateTemplateId(payload.template_name);
   // Setup the document with id included
-  const templateDoc: TemplateDbDocument = {
+  const templateDoc: TemplateDocument = {
     _id: templateId,
     version: 1,
     ...payload,
   };
-  // Get the templates DB so we can interact with it
-  const templatesDb = getTemplatesDb();
 
   // Try putting the new document
   try {
@@ -109,7 +110,7 @@ export const createTemplate = async (
  */
 export const updateExistingTemplate = async (
   templateId: string,
-  payload: TemplateDbDocumentEditableProperties
+  payload: TemplateEditableDetails
 ): Promise<string> => {
   // Now fetch the existing template - this will allow us to get the latest
   // revision etc

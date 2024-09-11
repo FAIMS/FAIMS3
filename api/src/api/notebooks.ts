@@ -46,6 +46,7 @@ import {
 import {requireAuthenticationAPI} from '../middleware';
 import {
   PostCreateNotebookFromTemplate,
+  PostCreateNotebookFromTemplateResponse,
   PostCreateNotebookFromTemplateSchema,
   ProjectUIModel,
 } from '@faims3/data-model';
@@ -98,12 +99,15 @@ api.post('/', requireAuthenticationAPI, async (req, res) => {
 });
 
 /**
- * POST create new template
- * Creates a new template. The payload is validated by Zod before reaching this
- * function. Expects a document as the response JSON. Requires cluster admin
- * privileges.
+ * POST create a new notebook from an existing template.
+ *
+ * Requires permission to create notebooks.
  */
-api.post<{}, any, PostCreateNotebookFromTemplate>(
+api.post<
+  {},
+  PostCreateNotebookFromTemplateResponse,
+  PostCreateNotebookFromTemplate
+>(
   '/template',
   validateRequest({
     body: PostCreateNotebookFromTemplateSchema,
@@ -147,13 +151,17 @@ api.post<{}, any, PostCreateNotebookFromTemplate>(
         // allow this user to modify the new notebook
         addProjectRoleToUser(req.user, projectID, 'admin');
         await saveUser(req.user);
+        // TODO specify this return type properly
         res.json({notebook: projectID});
       } else {
-        throw new Exceptions.InternalSystemError('Error occurred during notebook creation.');
+        throw new Exceptions.InternalSystemError(
+          'Error occurred during notebook creation.'
+        );
       }
     } catch (err) {
-      res.json({error: 'there was an error creating the notebook'});
-      res.status(500).end();
+      throw new Exceptions.InternalSystemError(
+        'Error occurred during notebook creation.'
+      );
     }
   }
 );

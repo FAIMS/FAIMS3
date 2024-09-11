@@ -24,7 +24,7 @@ import * as Exceptions from '../exceptions';
 import {
   ProjectID,
   ProjectObject,
-  TemplateDbDocumentDetails,
+  TemplateDetails,
 } from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
@@ -47,7 +47,7 @@ const INVITE_DB_NAME = 'invites';
 
 let _directoryDB: PouchDB.Database | undefined;
 let _projectsDB: PouchDB.Database | undefined;
-let _templatesDb: PouchDB.Database<TemplateDbDocumentDetails> | undefined;
+let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
 let _usersDB: PouchDB.Database | undefined;
 let _invitesDB: PouchDB.Database | undefined;
 
@@ -118,7 +118,7 @@ export const getProjectsDB = (): PouchDB.Database | undefined => {
 };
 
 export const getTemplatesDb =
-  (): PouchDB.Database<TemplateDbDocumentDetails> => {
+  (): PouchDB.Database<TemplateDetails> => {
     if (!_templatesDb) {
       const pouch_options = pouchOptions();
       const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;

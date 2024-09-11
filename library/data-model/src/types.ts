@@ -18,7 +18,7 @@
  *   Types and interfaces that are used by the database module
  */
 
-import {number, z} from 'zod';
+import {z} from 'zod';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -171,7 +171,7 @@ export interface EncodedProjectUIModel extends EncodedCouchRecordFields {
   visible_types: string[];
 }
 
-export interface EncodedProjectMetadata extends EncodedCouchRecordFields{
+export interface EncodedProjectMetadata extends EncodedCouchRecordFields {
   _attachments?: PouchDB.Core.Attachments;
   is_attachment: boolean;
   metadata: any;
@@ -179,7 +179,7 @@ export interface EncodedProjectMetadata extends EncodedCouchRecordFields{
 }
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
-export interface EncodedRecord extends EncodedCouchRecordFields{
+export interface EncodedRecord extends EncodedCouchRecordFields {
   _conflicts?: string[]; // Pouchdb conflicts array
   record_format_version: number;
   created: string;
@@ -473,7 +473,7 @@ export interface ProjectInformation {
   non_unique_project_id: NonUniqueProjectID;
 }
 
-export interface ProjectUIModel extends ProjectUIModelDetails{
+export interface ProjectUIModel extends ProjectUIModelDetails {
   _id?: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
 }
@@ -681,102 +681,74 @@ export interface InitialMergeDetails {
   initial_head_data: RecordMergeInformation;
 }
 
-// ================== MOCKS FOR NEW SURVEY API ===============
-// Template database item
-// These are the fields used to instantiate the item
+// ===============
+// COUCH DB MODELS
+// ===============
+
+// Base properties returned from list, get etc
+export const CouchDocumentFieldsSchema = z.object({
+  _id: z.string().min(1),
+  _rev: z.string().optional(),
+  _deleted: z.boolean().optional(),
+});
+export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
+
+// ========================
+// UI SCHEMA AND METADATA
+// ========================
+// TODO use zod more effectively here to enhance validation
+
+// The UI specification
+// TODO use Zod for existing UI schema models to validate
 export const UiSpecificationSchema = z.record(z.any());
+export type UiSpecification = z.infer<typeof UiSpecificationSchema>;
+
+// Metadata schema
+// TODO use Zod for existing UI schema models to validate
 export const NotebookMetadataSchema = z.record(z.any());
+export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
+
+// ==================
+// TEMPLATE DB MODELS
+// ==================
 
 // The editable properties for a template
-export const TemplateDbDocumentEditablePropertiesSchema = z
+export const TemplateEditableDetailsSchema = z
   .object({
+    // What is the display name of the template?
     template_name: z
       .string()
       .trim()
       .min(5, 'Please provide a template name of at least 5 character length.'),
+    // The UI specification for this template
     ui_specification: UiSpecificationSchema,
+    // The metadata from the designer - copied into new notebooks
     metadata: NotebookMetadataSchema,
   })
   .strict();
+export type TemplateEditableDetails = z.infer<
+  typeof TemplateEditableDetailsSchema
+>;
 
-// Full details with derived properties
-export const TemplateDbDocumentDetailsSchema =
-  TemplateDbDocumentEditablePropertiesSchema.extend({
-    version: number().default(1),
-  });
-
-// Once it's in the DB we'll have a _id field as well - possible _rev
-export const TemplateDbDocumentSchema = TemplateDbDocumentDetailsSchema.extend({
-  _id: z.string(),
+// The system/derived properties for a template
+export const TemplateDerivedDetailsSchema = z.object({
+  // Version identifier for the template
+  version: z.number().default(1),
 });
+export type TemplateDerivedDetails = z.infer<
+  typeof TemplateDerivedDetailsSchema
+>;
 
-// Conductor CRUD API
-// Create new template
-// To create a new template
-// POST /templates
-// Expects JSON Payload
-export const PostCreateTemplateInputSchema =
-  TemplateDbDocumentEditablePropertiesSchema;
-export const PostCreateTemplateResponseSchema = TemplateDbDocumentSchema;
+// The template record is an intersection of the editable/derived fields
+export const TemplateDetailsSchema = z.intersection(
+  TemplateEditableDetailsSchema,
+  TemplateDerivedDetailsSchema
+);
+export type TemplateDetails = z.infer<typeof TemplateDetailsSchema>;
 
-// To update an existing template
-// POST /templates/:id
-// Expects JSON Payload
-export const PostUpdateTemplateInputSchema =
-  TemplateDbDocumentEditablePropertiesSchema;
-export const PostUpdateTemplateResponseSchema = TemplateDbDocumentSchema;
-
-// To get all templates
-// GET /templates'
-export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(TemplateDbDocumentSchema),
-});
-
-// To get a specific template by _id
-// GET /templates/:id'
-export const GetTemplateByIdResponseSchema = TemplateDbDocumentSchema;
-
-// To delete a specific template by _id
-// POST /templates/:id/delete'
-// 200 OK ack
-
-// To create a new survey from a template by ID
-/**
- * POST to /notebooks/template to create a new notebook from a template ID
- */
-export const PostCreateNotebookFromTemplateSchema = z.object({
-  template_id: z.string(),
-  project_name: z.string(),
-});
-
-// Export inferred types
-export type UiSpecificationType = z.infer<typeof UiSpecificationSchema>;
-export type NotebookMetadataType = z.infer<typeof NotebookMetadataSchema>;
-export type TemplateDbDocumentEditableProperties = z.infer<
-  typeof TemplateDbDocumentEditablePropertiesSchema
->;
-export type TemplateDbDocumentDetails = z.infer<
-  typeof TemplateDbDocumentDetailsSchema
->;
-export type TemplateDbDocument = z.infer<typeof TemplateDbDocumentSchema>;
-export type PostCreateTemplateInput = z.infer<
-  typeof PostCreateTemplateInputSchema
->;
-export type PostCreateTemplateResponse = z.infer<
-  typeof PostCreateTemplateResponseSchema
->;
-export type PostUpdateTemplateInput = z.infer<
-  typeof PostUpdateTemplateInputSchema
->;
-export type PostUpdateTemplateResponse = z.infer<
-  typeof PostUpdateTemplateResponseSchema
->;
-export type GetListTemplatesResponse = z.infer<
-  typeof GetListTemplatesResponseSchema
->;
-export type GetTemplateByIdResponse = z.infer<
-  typeof GetTemplateByIdResponseSchema
->;
-export type PostCreateNotebookFromTemplate = z.infer<
-  typeof PostCreateNotebookFromTemplateSchema
->;
+// The full encoded record including _id, extension of Details
+export const TemplateDocumentSchema = z.intersection(
+  TemplateDetailsSchema,
+  CouchDocumentFieldsSchema
+);
+export type TemplateDocument = z.infer<typeof TemplateDocumentSchema>;
