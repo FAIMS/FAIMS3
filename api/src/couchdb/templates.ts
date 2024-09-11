@@ -6,7 +6,8 @@ import {
 import PouchDB from 'pouchdb';
 import securityPlugin from 'pouchdb-security-helper';
 import {getTemplatesDb} from '.';
-import {enhanceError, slugify} from '../utils';
+import {slugify} from '../utils';
+import * as Exceptions from '../exceptions';
 PouchDB.plugin(securityPlugin);
 
 /**
@@ -28,9 +29,8 @@ export const getTemplates = async (): Promise<TemplateDbDocument[]> => {
         return document.doc!;
       });
   } catch (error) {
-    throw enhanceError(
-      'An error occurred while reading templates from the Template DB.',
-      error
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading templates from the Template DB.'
     );
   }
 };
@@ -45,9 +45,8 @@ export const getTemplate = async (id: string) => {
   try {
     return await templatesDb.get<TemplateDbDocument>(id);
   } catch (error) {
-    throw enhanceError(
-      'An error occurred while reading templates from the Template DB. Are you sure the ID is correct?',
-      error
+    throw new Exceptions.ItemNotFoundException(
+      'An error occurred while reading templates from the Template DB. Are you sure the ID is correct?'
     );
   }
 };
@@ -85,9 +84,8 @@ export const createTemplate = async (
     const response = await templatesDb.put<TemplateDbDocument>(templateDoc);
     return templateDoc;
   } catch (e) {
-    throw enhanceError(
-      'An error occurred while trying to PUT the new template document into the templates DB.',
-      e
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to PUT the new template document into the templates DB.'
     );
   }
 };
@@ -110,9 +108,8 @@ export const updateExistingTemplate = async (
   try {
     existingTemplate = await getTemplate(templateId);
   } catch (e) {
-    throw enhanceError(
-      'An error occurred while trying to fetch an existing template in order to update with new details.',
-      e
+    throw new Exceptions.ItemNotFoundException(
+      'An error occurred while trying to fetch an existing template in order to update with new details. Are you sure the ID is correct?'
     );
   }
 
@@ -126,9 +123,8 @@ export const updateExistingTemplate = async (
   try {
     return (await templateDb.put(newDocument)).rev;
   } catch (e) {
-    throw enhanceError(
-      'An error occurred while trying to update an existing template.',
-      e
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to update an existing template.'
     );
   }
 };
@@ -147,18 +143,16 @@ export const deleteExistingTemplate = async (templateId: string) => {
   try {
     existingTemplate = await getTemplate(templateId);
   } catch (e) {
-    throw enhanceError(
-      'An error occurred while trying to fetch an existing template in order to remove it.',
-      e
+    throw new Exceptions.ItemNotFoundException(
+      'An error occurred while trying to fetch an existing template in order to remove it. Are you sure the ID is correct?'
     );
   }
 
   try {
     await templatesDb.remove(existingTemplate);
   } catch (e) {
-    throw enhanceError(
-      'An error occurred while trying to delete an existing template.',
-      e
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to delete an existing template.'
     );
   }
 };

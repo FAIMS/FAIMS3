@@ -204,6 +204,7 @@ api.post<{id: string}, PostUpdateTemplateResponse>(
       await deleteExistingTemplate(templateId);
     } catch (e) {
       next(e);
+      return;
     }
 
     // Indicate successful deletion and send
