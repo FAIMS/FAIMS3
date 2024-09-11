@@ -104,7 +104,7 @@ api.get<{id: string}, GetTemplateByIdResponse>(
  * function. Expects a document as the response JSON. Requires cluster admin
  * privileges.
  */
-api.post<{},PostCreateTemplateResponse, PostCreateTemplateInput> (
+api.post<{}, PostCreateTemplateResponse, PostCreateTemplateInput>(
   '/',
   validateRequest({
     body: PostCreateTemplateInputSchema,

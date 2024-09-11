@@ -21,11 +21,7 @@
 import PouchDB from 'pouchdb';
 import * as Exceptions from '../exceptions';
 
-import {
-  ProjectID,
-  ProjectObject,
-  TemplateDetails,
-} from '@faims3/data-model';
+import {ProjectID, ProjectObject, TemplateDetails} from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
   COUCHDB_INTERNAL_URL,
@@ -117,21 +113,20 @@ export const getProjectsDB = (): PouchDB.Database | undefined => {
   return _projectsDB;
 };
 
-export const getTemplatesDb =
-  (): PouchDB.Database<TemplateDetails> => {
-    if (!_templatesDb) {
-      const pouch_options = pouchOptions();
-      const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;
-      try {
-        _templatesDb = new PouchDB(dbName, pouch_options);
-      } catch (error) {
-        throw new Exceptions.InternalSystemError(
-          'Error occurred while getting templates database.'
-        );
-      }
+export const getTemplatesDb = (): PouchDB.Database<TemplateDetails> => {
+  if (!_templatesDb) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;
+    try {
+      _templatesDb = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting templates database.'
+      );
     }
-    return _templatesDb;
-  };
+  }
+  return _templatesDb;
+};
 
 export const getInvitesDB = (): PouchDB.Database | undefined => {
   if (!_invitesDB) {
