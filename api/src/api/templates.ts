@@ -54,7 +54,7 @@ api.get<{}, GetListTemplatesResponse>(
       return;
     }
 
-    // User is not authorised to create a template
+    // User is not authorised to read the list of templates
     if (!userCanDoWithTemplate(req.user, undefined, 'list')) {
       res.status(401).end();
       return;
