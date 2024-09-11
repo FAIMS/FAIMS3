@@ -83,7 +83,6 @@ export async function saveInvite(invite: RoleInvite) {
       try {
         await invite_db.put(invite);
         done = true;
-        console.log(invite);
       } catch {
         invite._id = generateId();
       }

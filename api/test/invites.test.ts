@@ -67,27 +67,22 @@ describe('Invites', () => {
         assert.fail('could not retrieve newly created invite');
       }
     } else {
-      assert.fail('could not get admin user');
+      assert.fail('could not create notebook');
     }
   });
 
-  it('create unlimited invite', async () => {
+  it('will not duplicate an invite', async () => {
     const project_id = await createNotebook('Test Notebook', uispec, {});
     const role = 'user';
 
     if (project_id) {
-      const invite = await createInvite(project_id, role);
+      const invite1 = await createInvite(project_id, role);
+      const invite2 = await createInvite(project_id, role);
 
       // check that it was saved - fetch from db
-      const fetched = await getInvite(invite._id);
-
-      if (fetched) {
-        expect(fetched.project_id).to.equal(project_id);
-      } else {
-        assert.fail('could not retrieve newly created invite');
-      }
+      expect(invite1._id).to.equal(invite2._id);
     } else {
-      assert.fail('could not get admin user');
+      assert.fail('could not create notebook');
     }
   });
 });
