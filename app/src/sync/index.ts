@@ -24,7 +24,7 @@ import {events} from './events';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import pouchdbDebug from 'pouchdb-debug';
-import {ProjectID, TemplateDetails} from '@faims3/data-model';
+import {ProjectID} from '@faims3/data-model';
 import {ProjectDataObject, ProjectMetaObject} from '@faims3/data-model';
 import {
   data_dbs,

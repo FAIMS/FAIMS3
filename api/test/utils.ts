@@ -17,18 +17,18 @@
  *   Setup helper functions for the api tests
  */
 
-import { expect } from 'chai';
+import {expect} from 'chai';
 import PouchDB from 'pouchdb';
-import { addLocalPasswordForUser } from '../src/auth_providers/local';
-import { createAuthKey } from '../src/authkeys/create';
-import { KEY_SERVICE, NOTEBOOK_CREATOR_GROUP_NAME } from '../src/buildconfig';
+import {addLocalPasswordForUser} from '../src/auth_providers/local';
+import {createAuthKey} from '../src/authkeys/create';
+import {KEY_SERVICE, NOTEBOOK_CREATOR_GROUP_NAME} from '../src/buildconfig';
 import {
-    addOtherRoleToUser,
-    createUser,
-    getUserFromEmailOrUsername,
-    saveUser,
+  addOtherRoleToUser,
+  createUser,
+  getUserFromEmailOrUsername,
+  saveUser,
 } from '../src/couchdb/users';
-import { cleanDataDBS, resetDatabases } from './mocks';
+import {cleanDataDBS, resetDatabases} from './mocks';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
 

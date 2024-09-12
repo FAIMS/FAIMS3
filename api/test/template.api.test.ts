@@ -365,7 +365,9 @@ describe('template API tests', () => {
       .expect(200)
       .then(response => {
         // due to "test_key": "test_value",
-        expect(response.body.metadata.test_key).to.equal(notebook.metadata.test_key);
+        expect(response.body.metadata.test_key).to.equal(
+          notebook.metadata.test_key
+        );
       });
   });
 
@@ -382,7 +384,7 @@ describe('template API tests', () => {
 
   it('only allow version increments during update', async () => {
     // Create a template and try to force in version
-    const {template, notebook} = await createSampleTemplate(app, {
+    const {template} = await createSampleTemplate(app, {
       // This pushes in an extra version field into the payload to ensure
       // properties are stripped
       payloadExtras: {version: 4},
@@ -443,18 +445,17 @@ describe('template API tests', () => {
 
   it("create notebook from template which doesn't exist", async () => {
     // Create a template
-    const {template, notebook} = await createSampleTemplate(app, {});
+    const {template} = await createSampleTemplate(app, {});
 
     // Create the notebook from template
-    const notebookId = await requestAuthAndType(
+    await requestAuthAndType(
       request(app)
         .post(`${NOTEBOOKS_API_BASE}/template`)
         .send({
           project_name: 'test project name',
           template_id: template._id + 'jdkfljs',
         } as PostCreateNotebookFromTemplate)
-    )
-      .expect(404)
+    ).expect(404);
   });
 
   it("delete template which doesn't exist", async () => {

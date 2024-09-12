@@ -76,7 +76,13 @@ api.post('/', requireAuthenticationAPI, async (req, res) => {
     const metadata = req.body.metadata;
 
     try {
-      const projectID = await createNotebook(projectName, uiSpec, metadata);
+      const projectID = await createNotebook(
+        projectName,
+        uiSpec,
+        metadata,
+        // No template ID in this case
+        undefined
+      );
       if (projectID) {
         // allow this user to modify the new notebook
         addProjectRoleToUser(req.user, projectID, 'admin');
@@ -148,7 +154,9 @@ api.post<
         // TODO bring in Zod runtime validation for ProjectUIModel so we don't
         // blindly type cast this here
         uiSpec as ProjectUIModel,
-        metadata
+        metadata,
+        // link to template ID
+        template._id
       );
       if (projectID) {
         // allow this user to modify the new notebook

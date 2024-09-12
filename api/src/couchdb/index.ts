@@ -42,7 +42,7 @@ const PEOPLE_DB_NAME = 'people';
 const INVITE_DB_NAME = 'invites';
 
 let _directoryDB: PouchDB.Database | undefined;
-let _projectsDB: PouchDB.Database | undefined;
+let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
 let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
 let _usersDB: PouchDB.Database | undefined;
 let _invitesDB: PouchDB.Database | undefined;
@@ -98,7 +98,9 @@ export const getUsersDB = (): PouchDB.Database | undefined => {
   return _usersDB;
 };
 
-export const getProjectsDB = (): PouchDB.Database | undefined => {
+export const getProjectsDB = ():
+  | PouchDB.Database<ProjectObject>
+  | undefined => {
   if (!_projectsDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PROJECTS_DB_NAME;
@@ -149,9 +151,7 @@ export const getProjectMetaDB = async (
   const projectsDB = getProjectsDB();
   if (projectsDB) {
     try {
-      const projectDoc = (await projectsDB.get(
-        projectID
-      )) as unknown as ProjectObject;
+      const projectDoc = await projectsDB.get(projectID);
       if (projectDoc.metadata_db) {
         const dbname =
           COUCHDB_INTERNAL_URL + '/' + projectDoc.metadata_db.db_name;
@@ -176,9 +176,7 @@ export const getProjectDataDB = async (
   const projectsDB = getProjectsDB();
   if (projectsDB) {
     try {
-      const projectDoc = (await projectsDB.get(
-        projectID
-      )) as unknown as ProjectObject;
+      const projectDoc = await projectsDB.get(projectID);
       if (projectDoc.data_db) {
         const dbname = COUCHDB_INTERNAL_URL + '/' + projectDoc.data_db.db_name;
         const pouch_options = pouchOptions();

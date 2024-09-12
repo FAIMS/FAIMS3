@@ -130,6 +130,8 @@ export interface ProjectObject {
   _id: NonUniqueProjectID;
   name: string;
   description?: string;
+  // Was the project created from a template?
+  template_id?: string;
   data_db?: PossibleConnectionInfo;
   metadata_db?: PossibleConnectionInfo;
   last_updated?: string;
@@ -471,6 +473,8 @@ export interface ProjectInformation {
   is_activated: boolean;
   listing_id: ListingID;
   non_unique_project_id: NonUniqueProjectID;
+  // Was the project created from a template?
+  template_id?: string;
 }
 
 export interface ProjectUIModel extends ProjectUIModelDetails {

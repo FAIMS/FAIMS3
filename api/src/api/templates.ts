@@ -23,7 +23,6 @@ import {
   GetTemplateByIdResponse,
   PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
-  PostCreateTemplateResponse,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
 } from '@faims3/data-model';

@@ -18,40 +18,40 @@
  *   Tests for the API
  */
 
-import { ProjectUIModel, registerClient } from '@faims3/data-model';
-import { expect } from 'chai';
+import {ProjectUIModel, registerClient} from '@faims3/data-model';
+import {expect} from 'chai';
 import fs from 'fs';
 import PouchDB from 'pouchdb';
 import request from 'supertest';
-import { createAuthKey } from '../src/authkeys/create';
+import {createAuthKey} from '../src/authkeys/create';
 import {
-    CLUSTER_ADMIN_GROUP_NAME,
-    CONDUCTOR_DESCRIPTION,
-    CONDUCTOR_INSTANCE_NAME,
-    CONDUCTOR_PUBLIC_URL,
-    DEVELOPER_MODE,
-    KEY_SERVICE,
-    NOTEBOOK_CREATOR_GROUP_NAME,
+  CLUSTER_ADMIN_GROUP_NAME,
+  CONDUCTOR_DESCRIPTION,
+  CONDUCTOR_INSTANCE_NAME,
+  CONDUCTOR_PUBLIC_URL,
+  DEVELOPER_MODE,
+  KEY_SERVICE,
+  NOTEBOOK_CREATOR_GROUP_NAME,
 } from '../src/buildconfig';
-import { restoreFromBackup } from '../src/couchdb/backupRestore';
+import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
-    createNotebook,
-    getNotebookMetadata,
-    getNotebooks,
+  createNotebook,
+  getNotebookMetadata,
+  getNotebooks,
 } from '../src/couchdb/notebooks';
 import {
-    getUserFromEmailOrUsername,
-    userHasProjectRole,
+  getUserFromEmailOrUsername,
+  userHasProjectRole,
 } from '../src/couchdb/users';
-import { app } from '../src/routes';
-import { callbackObject } from './mocks';
+import {app} from '../src/routes';
+import {callbackObject} from './mocks';
 import {
-    adminToken,
-    beforeApiTests,
-    localUserName,
-    localUserToken,
-    notebookUserName,
-    notebookUserToken
+  adminToken,
+  beforeApiTests,
+  localUserName,
+  localUserToken,
+  notebookUserName,
+  notebookUserToken,
 } from './utils';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));

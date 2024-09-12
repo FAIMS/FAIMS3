@@ -224,7 +224,8 @@ export const validateDatabases = async () => {
 export const createNotebook = async (
   projectName: string,
   uispec: ProjectUIModel,
-  metadata: any
+  metadata: any,
+  template_id: string | undefined = undefined
 ) => {
   const project_id = generateProjectID(projectName);
 
@@ -232,6 +233,7 @@ export const createNotebook = async (
   const dataDBName = `data-${project_id}`;
   const projectDoc = {
     _id: project_id,
+    template_id: template_id,
     name: projectName.trim(),
     metadata_db: {
       db_name: metaDBName,
@@ -240,7 +242,7 @@ export const createNotebook = async (
       db_name: dataDBName,
     },
     status: 'published',
-  };
+  } as ProjectObject;
 
   try {
     // first add an entry to the projects db about this project
