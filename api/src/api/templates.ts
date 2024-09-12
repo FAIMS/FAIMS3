@@ -24,11 +24,11 @@ import {
   PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
-  PostUpdateTemplateInputSchema,
-  PostUpdateTemplateResponse,
+  PutUpdateTemplateInputSchema,
+  PutUpdateTemplateResponse,
 } from '@faims3/data-model';
 import express from 'express';
-import {validateRequest} from 'zod-express-middleware';
+import {processRequest} from 'zod-express-middleware';
 import {
   createTemplate,
   deleteExistingTemplate,
@@ -104,13 +104,15 @@ api.get<{id: string}, GetTemplateByIdResponse>(
  * function. Expects a document as the response JSON. Requires cluster admin
  * privileges.
  */
-api.post<{}, PostCreateTemplateResponse, PostCreateTemplateInput>(
+api.post<{}, any, PostCreateTemplateInput>(
   '/',
-  validateRequest({
+  processRequest({
     body: PostCreateTemplateInputSchema,
   }),
   requireAuthenticationAPI,
   async (req, res, next) => {
+    // Parse the input schema to strip keys
+
     // First check the user has permissions to do this action
     if (!req.user) {
       res.status(401).end();
@@ -138,10 +140,10 @@ api.post<{}, PostCreateTemplateResponse, PostCreateTemplateInput>(
  * function. Expects a document as the response JSON. Requires cluster admin
  * privileges.
  */
-api.put<{id: string}, PostUpdateTemplateResponse>(
+api.put<{id: string}, PutUpdateTemplateResponse>(
   '/:id',
-  validateRequest({
-    body: PostUpdateTemplateInputSchema,
+  processRequest({
+    body: PutUpdateTemplateInputSchema,
   }),
   requireAuthenticationAPI,
   async (req, res, next) => {
@@ -162,16 +164,12 @@ api.put<{id: string}, PostUpdateTemplateResponse>(
 
     // Now update the existing document
     try {
-      await updateExistingTemplate(templateId, req.body);
+      // And respond with fulfilled document after updating
+      res.json(await updateExistingTemplate(templateId, req.body));
+      return;
     } catch (e) {
       next(e);
     }
-
-    // And respond with fulfilled document
-    res.json({
-      _id: templateId,
-      ...req.body,
-    });
   }
 );
 
@@ -180,7 +178,7 @@ api.put<{id: string}, PostUpdateTemplateResponse>(
  * Deletes latest revision of an existing template. Requires cluster admin
  * privileges.
  */
-api.post<{id: string}, PostUpdateTemplateResponse>(
+api.post<{id: string}, PutUpdateTemplateResponse>(
   '/:id/delete',
   requireAuthenticationAPI,
   async (req, res, next) => {

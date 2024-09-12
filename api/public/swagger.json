@@ -663,7 +663,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/definitions/PostUpdateTemplateInput"
+                                "$ref": "#/definitions/PutUpdateTemplateInput"
                             }
                         }
                     }
@@ -674,7 +674,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/definitions/PostUpdateTemplateResponse"
+                                    "$ref": "#/definitions/PutUpdateTemplateResponse"
                                 }
                             }
                         }
@@ -865,10 +865,10 @@
         "PostCreateTemplateResponse": {
             "$ref": "#/definitions/TemplateDocument"
         },
-        "PostUpdateTemplateInput": {
+        "PutUpdateTemplateInput": {
             "$ref": "#/definitions/TemplateEditableDetails"
         },
-        "PostUpdateTemplateResponse": {
+        "PutUpdateTemplateResponse": {
             "$ref": "#/definitions/TemplateDocument"
         },
         "TemplateDocument": {

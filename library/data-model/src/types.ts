@@ -713,19 +713,17 @@ export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
 // ==================
 
 // The editable properties for a template
-export const TemplateEditableDetailsSchema = z
-  .object({
-    // What is the display name of the template?
-    template_name: z
-      .string()
-      .trim()
-      .min(5, 'Please provide a template name of at least 5 character length.'),
-    // The UI specification for this template
-    ui_specification: UiSpecificationSchema,
-    // The metadata from the designer - copied into new notebooks
-    metadata: NotebookMetadataSchema,
-  })
-  .strict();
+export const TemplateEditableDetailsSchema = z.object({
+  // What is the display name of the template?
+  template_name: z
+    .string()
+    .trim()
+    .min(5, 'Please provide a template name of at least 5 character length.'),
+  // The UI specification for this template
+  ui_specification: UiSpecificationSchema,
+  // The metadata from the designer - copied into new notebooks
+  metadata: NotebookMetadataSchema,
+});
 export type TemplateEditableDetails = z.infer<
   typeof TemplateEditableDetailsSchema
 >;
@@ -741,6 +739,7 @@ export type TemplateDerivedDetails = z.infer<
 
 // The template record is an intersection of the editable/derived fields
 export const TemplateDetailsSchema = z.intersection(
+  // Need to disable strictness here or it propagates in the intersection
   TemplateEditableDetailsSchema,
   TemplateDerivedDetailsSchema
 );

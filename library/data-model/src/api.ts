@@ -17,14 +17,14 @@ export type PostCreateTemplateResponse = z.infer<
 >;
 
 // PUT update existing template input
-export const PostUpdateTemplateInputSchema = TemplateEditableDetailsSchema;
-export type PostUpdateTemplateInput = z.infer<
-  typeof PostUpdateTemplateInputSchema
+export const PutUpdateTemplateInputSchema = TemplateEditableDetailsSchema;
+export type PutUpdateTemplateInput = z.infer<
+  typeof PutUpdateTemplateInputSchema
 >;
 // PUT update existing template response
-export const PostUpdateTemplateResponseSchema = TemplateDocumentSchema;
-export type PostUpdateTemplateResponse = z.infer<
-  typeof PostUpdateTemplateResponseSchema
+export const PutUpdateTemplateResponseSchema = TemplateDocumentSchema;
+export type PutUpdateTemplateResponse = z.infer<
+  typeof PutUpdateTemplateResponseSchema
 >;
 
 // GET list all templates response

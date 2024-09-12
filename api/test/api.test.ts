@@ -21,7 +21,7 @@
 import PouchDB from 'pouchdb';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
-
+import {Express} from 'express';
 import request from 'supertest';
 import {app} from '../src/routes';
 import {
@@ -38,7 +38,10 @@ import {
   getNotebooks,
   getNotebookMetadata,
 } from '../src/couchdb/notebooks';
-import {ProjectUIModel} from '@faims3/data-model';
+import {
+  GetListTemplatesResponseSchema,
+  ProjectUIModel,
+} from '@faims3/data-model';
 import {
   CLUSTER_ADMIN_GROUP_NAME,
   CONDUCTOR_DESCRIPTION,
@@ -573,6 +576,9 @@ describe('API tests', () => {
         });
     }
   });
+
+  //======= DEV ONLY ===========
+  //============================
 
   if (DEVELOPER_MODE) {
     it('can create some random records', async () => {

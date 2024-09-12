@@ -111,7 +111,7 @@ export const createTemplate = async (
 export const updateExistingTemplate = async (
   templateId: string,
   payload: TemplateEditableDetails
-): Promise<string> => {
+): Promise<TemplateDocument> => {
   // Now fetch the existing template - this will allow us to get the latest
   // revision etc
   let existingTemplate;

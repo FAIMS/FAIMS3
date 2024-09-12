@@ -50,7 +50,7 @@ import {
   PostCreateNotebookFromTemplateSchema,
   ProjectUIModel,
 } from '@faims3/data-model';
-import {validateRequest} from 'zod-express-middleware';
+import {processRequest, validateRequest} from 'zod-express-middleware';
 import {getTemplate} from '../couchdb/templates';
 import * as Exceptions from '../exceptions';
 
@@ -109,7 +109,7 @@ api.post<
   PostCreateNotebookFromTemplate
 >(
   '/template',
-  validateRequest({
+  processRequest({
     body: PostCreateNotebookFromTemplateSchema,
   }),
   requireAuthenticationAPI,
