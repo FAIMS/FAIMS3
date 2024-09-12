@@ -127,7 +127,8 @@ export function add_auth_routes(app: any, handlers: any) {
         return next(err);
       }
       if (!user) {
-        return res.status(401).json({message: 'Authentication failed'});
+        req.flash('message', 'Invalid username or password');
+        return res.redirect('/auth/?redirect=' + redirect);
       }
 
       req.login(user, async (loginErr: any) => {
@@ -169,10 +170,8 @@ export function add_auth_routes(app: any, handlers: any) {
     req.session['invite'] = invite_id;
     const invite = await getInvite(invite_id);
     if (!invite) {
-      res.sendStatus(404);
-      return;
-    }
-    if (req.user) {
+      res.render('invite-error', {redirect});
+    } else if (req.user) {
       // user already registered, sign them up for this notebook
       // should there be conditions on this? Eg. check the email.
       await acceptInvite(req.user, invite);
