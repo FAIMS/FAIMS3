@@ -22,7 +22,7 @@ import React, {useEffect} from 'react';
 import {Divider, Box, Grid, TextField, Button} from '@mui/material';
 import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
-import {usePrevious} from '../../../utils/custom_hooks';
+import {usePrevious} from '../../../utils/customHooks';
 interface ToolbarProps {
   handleQueryFunction: any;
 }
