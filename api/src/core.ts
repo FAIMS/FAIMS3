@@ -139,10 +139,7 @@ const errorHandler: ErrorRequestHandler = (
 ) => {
   // Set the response status code
   const statusCode = err.status || 500;
-  res.status(statusCode);
-
-  // Send a JSON response
-  res.json({
+  res.status(statusCode).json({
     error: {
       message: err.message,
       status: statusCode,

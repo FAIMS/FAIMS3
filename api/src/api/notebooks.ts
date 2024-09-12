@@ -18,7 +18,14 @@
  *   This module contains notebook related API routes at /api/notebooks
  */
 
+import {
+  PostCreateNotebookFromTemplate,
+  PostCreateNotebookFromTemplateResponse,
+  PostCreateNotebookFromTemplateSchema,
+  ProjectUIModel,
+} from '@faims3/data-model';
 import express from 'express';
+import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
@@ -33,6 +40,7 @@ import {
   streamNotebookRecordsAsCSV,
   updateNotebook,
 } from '../couchdb/notebooks';
+import {getTemplate} from '../couchdb/templates';
 import {
   addProjectRoleToUser,
   getUserFromEmailOrUsername,
@@ -43,16 +51,8 @@ import {
   userHasPermission,
   userIsClusterAdmin,
 } from '../couchdb/users';
-import {requireAuthenticationAPI} from '../middleware';
-import {
-  PostCreateNotebookFromTemplate,
-  PostCreateNotebookFromTemplateResponse,
-  PostCreateNotebookFromTemplateSchema,
-  ProjectUIModel,
-} from '@faims3/data-model';
-import {processRequest, validateRequest} from 'zod-express-middleware';
-import {getTemplate} from '../couchdb/templates';
 import * as Exceptions from '../exceptions';
+import {requireAuthenticationAPI} from '../middleware';
 
 export const api = express.Router();
 
@@ -71,6 +71,7 @@ api.get('/', requireAuthenticationAPI, async (req, res) => {
  */
 api.post('/', requireAuthenticationAPI, async (req, res) => {
   if (req.user && userCanCreateNotebooks(req.user)) {
+    console.log(req.user);
     const uiSpec = req.body['ui-specification'];
     const projectName = req.body.name;
     const metadata = req.body.metadata;
@@ -83,18 +84,21 @@ api.post('/', requireAuthenticationAPI, async (req, res) => {
         await saveUser(req.user);
         res.json({notebook: projectID});
       } else {
-        res.json({error: 'error creating the notebook'});
-        res.status(500).end();
+        res.status(500).json({error: 'error creating the notebook'}).send();
       }
     } catch (err) {
-      res.json({error: 'there was an error creating the notebook'});
-      res.status(500).end();
+      res
+        .status(500)
+        .json({error: 'there was an error creating the notebook'})
+        .send();
     }
   } else {
-    res.json({
-      error: 'you do not have permission to create notebooks on this server',
-    });
-    res.status(401).end();
+    res
+      .status(401)
+      .json({
+        error: 'you do not have permission to create notebooks on this server',
+      })
+      .end();
   }
 });
 
@@ -175,8 +179,7 @@ api.get('/:id', requireAuthenticationAPI, async (req, res) => {
     if (metadata && uiSpec) {
       res.json({metadata, 'ui-specification': uiSpec});
     } else {
-      res.json({error: 'not found'});
-      res.status(404).end();
+      res.status(404).json({error: 'not found'}).end();
     }
   } else {
     // unauthorised response
@@ -195,15 +198,15 @@ api.put('/:id', requireAuthenticationAPI, async (req, res) => {
       await updateNotebook(projectID, uiSpec, metadata);
       res.json({notebook: projectID});
     } catch (err) {
-      res.json({error: 'there was an error creating the notebook'});
       console.log('Error creating notebook', err);
-      res.status(500).end();
     }
   } else {
-    res.json({
-      error: 'you do not have permission to modify this notebook',
-    });
-    res.status(401).end();
+    res
+      .status(401)
+      .json({
+        error: 'you do not have permission to modify this notebook',
+      })
+      .end();
   }
 });
 
@@ -216,8 +219,7 @@ api.get('/:id/records/', requireAuthenticationAPI, async (req, res) => {
   if (records) {
     res.json({records});
   } else {
-    res.json({error: 'notebook not found'});
-    res.status(404).end();
+    res.status(404).json({error: 'notebook not found'}).end();
   }
 });
 
@@ -229,12 +231,10 @@ api.get('/:id/:viewID.csv', requireAuthenticationAPI, async (req, res) => {
       streamNotebookRecordsAsCSV(req.params.id, req.params.viewID, res);
     } catch (err) {
       console.log('Error streaming CSV', err);
-      res.json({error: 'error creating CSV'});
-      res.status(500).end();
+      res.status(500).json({error: 'error creating CSV'}).end();
     }
   } else {
-    res.json({error: 'notebook not found'});
-    res.status(404).end();
+    res.status(404).json({error: 'notebook not found'}).end();
   }
 });
 
@@ -244,8 +244,7 @@ api.get('/:id/:viewid.zip', requireAuthenticationAPI, async (req, res) => {
     res.setHeader('Content-Type', 'application/zip');
     streamNotebookFilesAsZip(req.params.id, req.params.viewid, res);
   } else {
-    res.json({error: 'notebook not found'});
-    res.status(404).end();
+    res.status(404).json({error: 'notebook not found'}).end();
   }
 });
 
@@ -256,10 +255,12 @@ api.get('/:id/users/', requireAuthenticationAPI, async (req, res) => {
     const userInfo = await getUserInfoForNotebook(req.params.id);
     res.json(userInfo);
   } else {
-    res.json({
-      error: 'you do not have permission to view users for this notebook',
-    });
-    res.status(401).end();
+    res
+      .status(401)
+      .json({
+        error: 'you do not have permission to view users for this notebook',
+      })
+      .end();
   }
 });
 
@@ -302,11 +303,10 @@ api.post('/:id/users/', requireAuthenticationAPI, async (req, res) => {
       error = 'Unknown notebook';
     }
     // user or project not found or bad role
-    res.status(404);
-    res.json({status: 'error', error}).end();
+    res.status(404).json({status: 'error', error}).end();
   } else {
-    res.status(401);
     res
+      .status(401)
       .json({
         status: 'error',
         error: 'you do not have permission to modify users for this notebook',
@@ -339,8 +339,7 @@ if (DEVELOPER_MODE) {
         const project_id = req.params.notebook_id;
         const count = req.body.count || 1;
         const record_ids = await createManyRandomRecords(project_id, count);
-        res.json({record_ids});
-        res.status(200).end();
+        res.status(200).json({record_ids});
       } else {
         res.status(401).end();
       }

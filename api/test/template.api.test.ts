@@ -23,41 +23,25 @@ import {
     GetListTemplatesResponseSchema,
     GetTemplateByIdResponse,
     GetTemplateByIdResponseSchema,
+    PostCreateNotebookFromTemplate,
     PostCreateTemplateInput,
     PostCreateTemplateResponse,
     PostCreateTemplateResponseSchema,
     PutUpdateTemplateInput,
     PutUpdateTemplateInputSchema,
     PutUpdateTemplateResponse,
-    PutUpdateTemplateResponseSchema
+    PutUpdateTemplateResponseSchema,
 } from '@faims3/data-model';
 import { expect } from 'chai';
 import { Express } from 'express';
 import fs from 'fs';
 import PouchDB from 'pouchdb';
 import request from 'supertest';
-import { addLocalPasswordForUser } from '../src/auth_providers/local';
-import { createAuthKey } from '../src/authkeys/create';
-import { KEY_SERVICE, NOTEBOOK_CREATOR_GROUP_NAME } from '../src/buildconfig';
-import {
-    addOtherRoleToUser,
-    createUser,
-    getUserFromEmailOrUsername,
-    saveUser,
-} from '../src/couchdb/users';
 import { app } from '../src/routes';
-import { cleanDataDBS, resetDatabases } from './mocks';
+import { NOTEBOOKS_API_BASE } from './api.test';
+import { adminToken, beforeApiTests, localUserToken } from './utils';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
-
-let adminToken = '';
-const localUserName = 'bobalooba';
-const localUserPassword = 'bobalooba';
-let localUserToken = '';
-
-const notebookUserName = 'notebook';
-const notebookPassword = 'notebook';
-let notebookUserToken = '';
 
 // Where it the template API?
 const TEMPLATE_API_BASE = '/api/templates';
@@ -84,7 +68,8 @@ const createSampleTemplate = async (
   options: {
     templateName?: string;
     payloadExtras?: Object;
-  }
+  },
+  token: string = adminToken
 ): Promise<{
   template: PostCreateTemplateResponse;
   notebook: {ui_specification: Object; metadata: Object};
@@ -98,7 +83,8 @@ const createSampleTemplate = async (
         template_name: options.templateName ?? 'exampletemplate',
         ...nb,
         ...(options.payloadExtras ?? {}),
-      } as PostCreateTemplateInput)
+      } as PostCreateTemplateInput),
+    token
   )
     .expect(200)
     .then(res => {
@@ -112,9 +98,13 @@ const createSampleTemplate = async (
 
 // list and see the new template
 const listTemplates = async (
-  app: Express
+  app: Express,
+  token: string = adminToken
 ): Promise<GetListTemplatesResponse> => {
-  return await requestAuthAndType(request(app).get(`${TEMPLATE_API_BASE}`))
+  return await requestAuthAndType(
+    request(app).get(`${TEMPLATE_API_BASE}`),
+    token
+  )
     .expect(200)
     .then(res => {
       // Parse the response body against model
@@ -132,10 +122,12 @@ const listTemplates = async (
 const updateATemplate = async (
   app: Express,
   templateId: string,
-  payload: PutUpdateTemplateInput
+  payload: PutUpdateTemplateInput,
+  token: string = adminToken
 ): Promise<PutUpdateTemplateResponse> => {
   return await requestAuthAndType(
-    request(app).put(`${TEMPLATE_API_BASE}/${templateId}`).send(payload)
+    request(app).put(`${TEMPLATE_API_BASE}/${templateId}`).send(payload),
+    token
   )
     .expect(200)
     .then(res => {
@@ -150,9 +142,14 @@ const updateATemplate = async (
  * @param templateId The template Id to delete
  * @returns Response object with 200OK
  */
-const deleteATemplate = async (app: Express, templateId: string) => {
+const deleteATemplate = async (
+  app: Express,
+  templateId: string,
+  token: string = adminToken
+) => {
   return await requestAuthAndType(
-    request(app).post(`${TEMPLATE_API_BASE}/${templateId}/delete`)
+    request(app).post(`${TEMPLATE_API_BASE}/${templateId}/delete`),
+    token
   )
     .send()
     .expect(200);
@@ -166,11 +163,13 @@ const deleteATemplate = async (app: Express, templateId: string) => {
  */
 const getATemplate = async (
   app: Express,
-  templateId: string
+  templateId: string,
+  token: string = adminToken
 ): Promise<GetTemplateByIdResponse> => {
   // get the specific new template
   return await requestAuthAndType(
-    request(app).get(`${TEMPLATE_API_BASE}/${templateId}`)
+    request(app).get(`${TEMPLATE_API_BASE}/${templateId}`),
+    token
   )
     .expect(200)
     .then(res => {
@@ -185,43 +184,17 @@ const getATemplate = async (
  * @param request The test request object to wrap
  * @returns The wrapped request object
  */
-const requestAuthAndType = (request: request.Test) => {
+const requestAuthAndType = (
+  request: request.Test,
+  token: string = adminToken
+) => {
   return request
-    .set('Authorization', `Bearer ${adminToken}`)
+    .set('Authorization', `Bearer ${token}`)
     .set('Content-Type', 'application/json');
 };
 
 describe('template API tests', () => {
-  beforeEach(async () => {
-    await resetDatabases();
-    await cleanDataDBS();
-    const signingKey = await KEY_SERVICE.getSigningKey();
-    const adminUser = await getUserFromEmailOrUsername('admin');
-    if (adminUser) {
-      adminToken = await createAuthKey(adminUser, signingKey);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [user, _error] = await createUser('', localUserName);
-      if (user) {
-        await saveUser(user);
-      }
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [localUser, _error] = await createUser('', localUserName);
-    if (localUser) {
-      await saveUser(localUser);
-      await addLocalPasswordForUser(localUser, localUserPassword); // saves the user
-      localUserToken = await createAuthKey(localUser, signingKey);
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [nbUser, _nberror] = await createUser('', notebookUserName);
-    if (nbUser) {
-      await addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
-      await addLocalPasswordForUser(nbUser, notebookPassword); // saves the user
-      notebookUserToken = await createAuthKey(nbUser, signingKey);
-    }
-  });
+  beforeEach(beforeApiTests);
 
   //======= TEMPLATES ===========
   //=============================
@@ -362,6 +335,10 @@ describe('template API tests', () => {
     });
   });
 
+  it('create notebook from template', async () => {
+    // TODO
+  });
+
   // Edge conditions for templates
   //===============================
 
@@ -434,6 +411,10 @@ describe('template API tests', () => {
       .expect(404);
   });
 
+  it("create notebook from template which doesn't exist", async () => {
+    // TODO
+  });
+
   it("delete template which doesn't exist", async () => {
     // Try deleting non existent template
     const fakeId = '1234';
@@ -463,7 +444,7 @@ describe('template API tests', () => {
       .expect(404);
   });
 
-  it('template does not exist', async () => {
+  it('get template which does not exist', async () => {
     // First, try getting without any templates in list
     const fakeId = '1234';
     await requestAuthAndType(request(app).get(`${TEMPLATE_API_BASE}/${fakeId}`))
@@ -506,8 +487,12 @@ describe('template API tests', () => {
       });
   });
 
-  it('check name field is stripped', async () => {
-    // TODO
+  it('check name field is stripped of white space', async () => {
+    // Create a sample template
+    const {template} = await createSampleTemplate(app, {
+      templateName: ' name with whitespace    ',
+    });
+    expect(template.template_name).to.equal('name with whitespace');
   });
 
   it('invalid input due to insufficient field length', async () => {
@@ -537,11 +522,96 @@ describe('template API tests', () => {
 
   // Auth checks
   // ===========
-  // TODO
-  it('not allowed to create template', async () => {});
-  it('not allowed to list templates', async () => {});
-  it('not allowed to get templates', async () => {});
-  it('not allowed to update templates', async () => {});
-  it('not allowed to delete templates', async () => {});
-  it('not allowed to create notebook from template', async () => {});
+  it('list templates not authorised', async () => {
+    await request(app)
+      .get(`${TEMPLATE_API_BASE}`)
+      .set('Content-Type', 'application/json')
+      .send()
+      .expect(401);
+  });
+  it('get template not authorised', async () => {
+    await request(app).get(`${TEMPLATE_API_BASE}/1234`).send().expect(401);
+  });
+  it('update template not authorised', async () => {
+    await request(app)
+      .put(`${TEMPLATE_API_BASE}/12345`)
+      .send({
+        metadata: {},
+        template_name: '12345',
+        ui_specification: {},
+      } as PutUpdateTemplateInput)
+      .set('Content-Type', 'application/json')
+      .expect(401);
+  });
+  it('create template not authorised', async () => {
+    return await request(app)
+      .post(`${TEMPLATE_API_BASE}`)
+      .send({
+        template_name: 'exampletemplate',
+        metadata: {},
+        ui_specification: {},
+      } as PostCreateTemplateInput)
+      .set('Content-Type', 'application/json')
+      .expect(401);
+  });
+  it('delete template not authorised', async () => {
+    return await request(app)
+      .post(`${TEMPLATE_API_BASE}/12345/delete`)
+      .send()
+      .set('Content-Type', 'application/json')
+      .expect(401);
+  });
+  it('create notebook from template not authorised', async () => {
+    return await request(app)
+      .post(`${NOTEBOOKS_API_BASE}/template`)
+      .send({
+        project_name: '12345',
+        template_id: '12345',
+      } as PostCreateNotebookFromTemplate)
+      .set('Content-Type', 'application/json')
+      .expect(401);
+  });
+  it('not allowed to create template', async () => {
+    return await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          template_name: 'exampletemplate',
+          metadata: {},
+          ui_specification: {},
+        } as PostCreateTemplateInput),
+      localUserToken
+    )
+      .set('Content-Type', 'application/json')
+      .expect(401);
+  });
+  it('not allowed to update templates', async () => {
+    return await requestAuthAndType(
+      request(app)
+        .put(`${TEMPLATE_API_BASE}/12345`)
+        .send({
+          metadata: {},
+          template_name: '12345',
+          ui_specification: {},
+        } as PutUpdateTemplateInput),
+      localUserToken
+    ).expect(401);
+  });
+  it('not allowed to delete templates', async () => {
+    return await requestAuthAndType(
+      request(app).post(`${TEMPLATE_API_BASE}/12345/delete`).send(),
+      localUserToken
+    ).expect(401);
+  });
+  it('not allowed to create notebook from template', async () => {
+    return await requestAuthAndType(
+      request(app)
+        .post(`${NOTEBOOKS_API_BASE}/template`)
+        .send({
+          template_id: '12345',
+          project_name: '12345',
+        } as PostCreateNotebookFromTemplate),
+      localUserToken
+    ).expect(401);
+  });
 });

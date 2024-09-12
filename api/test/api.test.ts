@@ -18,45 +18,45 @@
  *   Tests for the API
  */
 
-import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
-import {Express} from 'express';
-import request from 'supertest';
-import {app} from '../src/routes';
-import {
-  getUserFromEmailOrUsername,
-  createUser,
-  saveUser,
-  addOtherRoleToUser,
-  userHasProjectRole,
-} from '../src/couchdb/users';
-import {createAuthKey} from '../src/authkeys/create';
+import { ProjectUIModel, registerClient } from '@faims3/data-model';
+import { expect } from 'chai';
 import fs from 'fs';
+import PouchDB from 'pouchdb';
+import request from 'supertest';
+import { createAuthKey } from '../src/authkeys/create';
 import {
-  createNotebook,
-  getNotebooks,
-  getNotebookMetadata,
+    CLUSTER_ADMIN_GROUP_NAME,
+    CONDUCTOR_DESCRIPTION,
+    CONDUCTOR_INSTANCE_NAME,
+    CONDUCTOR_PUBLIC_URL,
+    DEVELOPER_MODE,
+    KEY_SERVICE,
+    NOTEBOOK_CREATOR_GROUP_NAME,
+} from '../src/buildconfig';
+import { restoreFromBackup } from '../src/couchdb/backupRestore';
+import {
+    createNotebook,
+    getNotebookMetadata,
+    getNotebooks,
 } from '../src/couchdb/notebooks';
 import {
-  GetListTemplatesResponseSchema,
-  ProjectUIModel,
-} from '@faims3/data-model';
+    getUserFromEmailOrUsername,
+    userHasProjectRole,
+} from '../src/couchdb/users';
+import { app } from '../src/routes';
+import { callbackObject } from './mocks';
 import {
-  CLUSTER_ADMIN_GROUP_NAME,
-  CONDUCTOR_DESCRIPTION,
-  CONDUCTOR_INSTANCE_NAME,
-  CONDUCTOR_PUBLIC_URL,
-  DEVELOPER_MODE,
-  KEY_SERVICE,
-  NOTEBOOK_CREATOR_GROUP_NAME,
-} from '../src/buildconfig';
-import {expect} from 'chai';
-import {resetDatabases, cleanDataDBS} from './mocks';
-import {restoreFromBackup} from '../src/couchdb/backupRestore';
-import {addLocalPasswordForUser} from '../src/auth_providers/local';
-import {callbackObject} from './mocks';
-import {registerClient} from '@faims3/data-model';
+    adminToken,
+    beforeApiTests,
+    localUserName,
+    localUserToken,
+    notebookUserName,
+    notebookUserToken
+} from './utils';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+PouchDB.plugin(require('pouchdb-find'));
+
+export const NOTEBOOKS_API_BASE = '/api/notebooks';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
@@ -68,46 +68,8 @@ const uispec: ProjectUIModel = {
   visible_types: [],
 };
 
-let adminToken = '';
-const localUserName = 'bobalooba';
-const localUserPassword = 'bobalooba';
-let localUserToken = '';
-
-const notebookUserName = 'notebook';
-const notebookPassword = 'notebook';
-let notebookUserToken = '';
-
 describe('API tests', () => {
-  beforeEach(async () => {
-    await resetDatabases();
-    await cleanDataDBS();
-    const signingKey = await KEY_SERVICE.getSigningKey();
-    const adminUser = await getUserFromEmailOrUsername('admin');
-    if (adminUser) {
-      adminToken = await createAuthKey(adminUser, signingKey);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [user, _error] = await createUser('', localUserName);
-      if (user) {
-        await saveUser(user);
-      }
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [localUser, _error] = await createUser('', localUserName);
-    if (localUser) {
-      await saveUser(localUser);
-      await addLocalPasswordForUser(localUser, localUserPassword); // saves the user
-      localUserToken = await createAuthKey(localUser, signingKey);
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [nbUser, _nberror] = await createUser('', notebookUserName);
-    if (nbUser) {
-      await addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
-      await addLocalPasswordForUser(nbUser, notebookPassword); // saves the user
-      notebookUserToken = await createAuthKey(nbUser, signingKey);
-    }
-  });
+  beforeEach(beforeApiTests);
 
   it('responds to /info', async () => {
     return request(app)

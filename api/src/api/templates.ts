@@ -191,7 +191,7 @@ api.post<{id: string}, PutUpdateTemplateResponse>(
       return;
     }
 
-    // User is not authorised to create a template
+    // User is not authorised to delete a template
     if (!userCanDoWithTemplate(req.user, templateId, 'delete')) {
       res.status(401).end();
       return;
