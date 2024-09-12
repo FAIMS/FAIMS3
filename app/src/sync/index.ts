@@ -24,7 +24,7 @@ import {events} from './events';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import pouchdbDebug from 'pouchdb-debug';
-import {ProjectID} from '@faims3/data-model';
+import {ProjectID, TemplateDetails} from '@faims3/data-model';
 import {ProjectDataObject, ProjectMetaObject} from '@faims3/data-model';
 import {
   data_dbs,
@@ -102,6 +102,19 @@ export async function getDataDB(
   } else {
     throw `Data DB of project ${active_id} is not known`;
   }
+}
+
+/**
+ * Returns the current Templates DB
+ *
+ * @returns Pouch Data DB
+ */
+export async function getTemplateDb(): Promise<
+  PouchDB.Database<TemplateDetails>
+> {
+  // TODO stub method due to not understanding how context management works in
+  // app for template DB
+  return new PouchDB();
 }
 
 /**
