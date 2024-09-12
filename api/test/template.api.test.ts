@@ -19,36 +19,34 @@
  */
 
 import {
-  GetListTemplatesResponse,
-  GetListTemplatesResponseSchema,
-  GetTemplateByIdResponse,
-  GetTemplateByIdResponseSchema,
-  PostCreateNotebookFromTemplate,
-  PostCreateTemplateInput,
-  PostCreateTemplateResponse,
-  PostCreateTemplateResponseSchema,
-  PutUpdateTemplateInput,
-  PutUpdateTemplateInputSchema,
-  PutUpdateTemplateResponse,
-  PutUpdateTemplateResponseSchema,
-  TemplateDocument,
+    GetListTemplatesResponse,
+    GetListTemplatesResponseSchema,
+    GetTemplateByIdResponse,
+    GetTemplateByIdResponseSchema,
+    PostCreateTemplateInput,
+    PostCreateTemplateResponse,
+    PostCreateTemplateResponseSchema,
+    PutUpdateTemplateInput,
+    PutUpdateTemplateInputSchema,
+    PutUpdateTemplateResponse,
+    PutUpdateTemplateResponseSchema
 } from '@faims3/data-model';
-import {expect} from 'chai';
+import { expect } from 'chai';
+import { Express } from 'express';
 import fs from 'fs';
-import {Express} from 'express';
 import PouchDB from 'pouchdb';
 import request from 'supertest';
-import {addLocalPasswordForUser} from '../src/auth_providers/local';
-import {createAuthKey} from '../src/authkeys/create';
-import {KEY_SERVICE, NOTEBOOK_CREATOR_GROUP_NAME} from '../src/buildconfig';
+import { addLocalPasswordForUser } from '../src/auth_providers/local';
+import { createAuthKey } from '../src/authkeys/create';
+import { KEY_SERVICE, NOTEBOOK_CREATOR_GROUP_NAME } from '../src/buildconfig';
 import {
-  addOtherRoleToUser,
-  createUser,
-  getUserFromEmailOrUsername,
-  saveUser,
+    addOtherRoleToUser,
+    createUser,
+    getUserFromEmailOrUsername,
+    saveUser,
 } from '../src/couchdb/users';
-import {app} from '../src/routes';
-import {cleanDataDBS, resetDatabases} from './mocks';
+import { app } from '../src/routes';
+import { cleanDataDBS, resetDatabases } from './mocks';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
 

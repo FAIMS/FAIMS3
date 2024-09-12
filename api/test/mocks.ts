@@ -86,6 +86,5 @@ export const cleanDataDBS = async () => {
 export const callbackObject: DBCallbackObject = {
   getDataDB: mockGetDataDB,
   getProjectDB: mockGetProjectDB,
-  getTemplateDB: mockGetTemplateDB,
   shouldDisplayRecord: mockShouldDisplayRecord,
 };

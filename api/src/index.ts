@@ -26,7 +26,7 @@ import {CONDUCTOR_INTERNAL_PORT} from './buildconfig';
 
 import {app} from './routes';
 
-import {getTemplateDB, registerClient} from '@faims3/data-model';
+import {registerClient} from '@faims3/data-model';
 import {getProjectDataDB, getProjectMetaDB} from './couchdb';
 import {validateDatabases} from './couchdb/notebooks';
 
@@ -34,7 +34,6 @@ import {validateDatabases} from './couchdb/notebooks';
 registerClient({
   getDataDB: getProjectDataDB,
   getProjectDB: getProjectMetaDB,
-  getTemplateDB: getTemplateDB,
   shouldDisplayRecord: () => true,
 });
 

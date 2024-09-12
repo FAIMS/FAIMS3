@@ -55,6 +55,11 @@ import {expect} from 'chai';
 import {resetDatabases, cleanDataDBS} from './mocks';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {addLocalPasswordForUser} from '../src/auth_providers/local';
+import {callbackObject} from './mocks';
+import {registerClient} from '@faims3/data-model';
+
+// set up the database module @faims3/data-model with our callbacks to get databases
+registerClient(callbackObject);
 
 const uispec: ProjectUIModel = {
   fields: [],

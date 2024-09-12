@@ -107,7 +107,6 @@ export * from './api';
 export type DBCallbackObject = {
   getDataDB: CallableFunction;
   getProjectDB: CallableFunction;
-  getTemplateDB: CallableFunction;
   shouldDisplayRecord: CallableFunction;
 };
 
@@ -122,15 +121,6 @@ export const getDataDB = (project_id: ProjectID) => {
     return moduleCallback.getDataDB(project_id);
   } else {
     logError('No callback registered to get data database');
-    return undefined;
-  }
-};
-
-export const getTemplateDB = (project_id: ProjectID) => {
-  if (moduleCallback) {
-    return moduleCallback.getTemplateDB(project_id);
-  } else {
-    logError('No callback registered to get templates database');
     return undefined;
   }
 };

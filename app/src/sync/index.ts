@@ -105,19 +105,6 @@ export async function getDataDB(
 }
 
 /**
- * Returns the current Templates DB
- *
- * @returns Pouch Data DB
- */
-export async function getTemplateDb(): Promise<
-  PouchDB.Database<TemplateDetails>
-> {
-  // TODO stub method due to not understanding how context management works in
-  // app for template DB
-  return new PouchDB();
-}
-
-/**
  * Returns the current Meta PouchDB of a project.
  *
  * @param active_id Full Project ID to get Pouch data DB of.
