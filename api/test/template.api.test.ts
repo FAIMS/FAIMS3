@@ -19,27 +19,28 @@
  */
 
 import {
-    GetListTemplatesResponse,
-    GetListTemplatesResponseSchema,
-    GetTemplateByIdResponse,
-    GetTemplateByIdResponseSchema,
-    PostCreateNotebookFromTemplate,
-    PostCreateTemplateInput,
-    PostCreateTemplateResponse,
-    PostCreateTemplateResponseSchema,
-    PutUpdateTemplateInput,
-    PutUpdateTemplateInputSchema,
-    PutUpdateTemplateResponse,
-    PutUpdateTemplateResponseSchema,
+  GetListTemplatesResponse,
+  GetListTemplatesResponseSchema,
+  GetTemplateByIdResponse,
+  GetTemplateByIdResponseSchema,
+  PostCreateNotebookFromTemplate,
+  PostCreateNotebookFromTemplateResponseSchema,
+  PostCreateTemplateInput,
+  PostCreateTemplateResponse,
+  PostCreateTemplateResponseSchema,
+  PutUpdateTemplateInput,
+  PutUpdateTemplateInputSchema,
+  PutUpdateTemplateResponse,
+  PutUpdateTemplateResponseSchema,
 } from '@faims3/data-model';
-import { expect } from 'chai';
-import { Express } from 'express';
+import {expect} from 'chai';
+import {Express} from 'express';
 import fs from 'fs';
 import PouchDB from 'pouchdb';
 import request from 'supertest';
-import { app } from '../src/routes';
-import { NOTEBOOKS_API_BASE } from './api.test';
-import { adminToken, beforeApiTests, localUserToken } from './utils';
+import {app} from '../src/routes';
+import {NOTEBOOKS_API_BASE} from './api.test';
+import {adminToken, beforeApiTests, localUserToken} from './utils';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
 
@@ -72,7 +73,7 @@ const createSampleTemplate = async (
   token: string = adminToken
 ): Promise<{
   template: PostCreateTemplateResponse;
-  notebook: {ui_specification: Object; metadata: Object};
+  notebook: {ui_specification: any; metadata: any};
 }> => {
   // create a template from loaded spec
   const nb = getSampleNotebook();
@@ -336,7 +337,36 @@ describe('template API tests', () => {
   });
 
   it('create notebook from template', async () => {
-    // TODO
+    // Create a template
+    const {template, notebook} = await createSampleTemplate(app, {});
+
+    // Create the notebook from template
+    const notebookId = await requestAuthAndType(
+      request(app)
+        .post(`${NOTEBOOKS_API_BASE}/template`)
+        .send({
+          project_name: 'test project name',
+          template_id: template._id,
+        } as PostCreateNotebookFromTemplate)
+    )
+      .expect(200)
+      .then(res => {
+        const notebook = PostCreateNotebookFromTemplateResponseSchema.parse(
+          res.body
+        );
+        return notebook.notebook;
+      });
+
+    // Check some basic info about returned notebook TODO fully type return from
+    // get endpoint to allow better inspection of properties
+    return requestAuthAndType(
+      request(app).get(`${NOTEBOOKS_API_BASE}/${notebookId}`)
+    )
+      .expect(200)
+      .then(response => {
+        // due to "test_key": "test_value",
+        expect(response.body.metadata.test_key).to.equal(notebook.metadata.test_key);
+      });
   });
 
   // Edge conditions for templates
@@ -412,7 +442,19 @@ describe('template API tests', () => {
   });
 
   it("create notebook from template which doesn't exist", async () => {
-    // TODO
+    // Create a template
+    const {template, notebook} = await createSampleTemplate(app, {});
+
+    // Create the notebook from template
+    const notebookId = await requestAuthAndType(
+      request(app)
+        .post(`${NOTEBOOKS_API_BASE}/template`)
+        .send({
+          project_name: 'test project name',
+          template_id: template._id + 'jdkfljs',
+        } as PostCreateNotebookFromTemplate)
+    )
+      .expect(404)
   });
 
   it("delete template which doesn't exist", async () => {

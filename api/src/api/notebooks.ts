@@ -71,7 +71,6 @@ api.get('/', requireAuthenticationAPI, async (req, res) => {
  */
 api.post('/', requireAuthenticationAPI, async (req, res) => {
   if (req.user && userCanCreateNotebooks(req.user)) {
-    console.log(req.user);
     const uiSpec = req.body['ui-specification'];
     const projectName = req.body.name;
     const metadata = req.body.metadata;
