@@ -24,7 +24,7 @@ import {
   split_full_project_id,
   NonUniqueProjectID,
   resolve_project_id,
-  ListingInformation,
+  ListingsObject,
 } from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {logError} from '../logging';
@@ -32,7 +32,6 @@ import {getTokenForCluster} from '../users';
 
 import {
   ExistingActiveDoc,
-  ListingsObject,
   active_db,
   directory_db,
   ensure_local_db,
@@ -78,20 +77,24 @@ export async function update_directory() {
  */
 async function generate_listing(url: string): Promise<ListingsObject> {
   const url_object = new URL(url);
-  const listing: ListingsObject = {
+  const listing: PouchDB.Core.Document<ListingsObject> = {
     _id: url_object.host,
+    id: url_object.host,
     conductor_url: url,
     name: url_object.host, // default name from hostname
     description: '',
+    prefix: '',
   };
 
   await fetch(url + '/api/info')
-    .then(response => response.json() as unknown as ListingInformation)
+    .then(response => response.json() as unknown as ListingsObject)
     .then(data => {
       listing._id = data.id;
+      listing.id = data.id;
       listing.conductor_url = data.conductor_url;
       listing.name = data.name;
       listing.description = data.description;
+      listing.prefix = data.prefix;
     })
     .catch(() => {
       listing.description = 'No Description';
@@ -179,14 +182,14 @@ async function get_projects_from_conductor(listing: ListingsObject) {
   // projects_did_change is true if this made a new database
   const [projects_did_change, projects_local] = ensure_local_db(
     'projects',
-    listing._id,
+    listing.id,
     true,
     projects_dbs,
     true
   );
 
-  const previous_listing = getListing(listing._id);
-  addOrUpdateListing(listing._id, listing, projects_local);
+  const previous_listing = getListing(listing.id);
+  addOrUpdateListing(listing.id, listing, projects_local);
 
   // DON'T MOVE THIS PAST AN AWAIT POINT
   events.emit(
@@ -194,12 +197,11 @@ async function get_projects_from_conductor(listing: ListingsObject) {
     previous_listing === undefined ? ['create'] : ['update', previous_listing],
     projects_did_change,
     false,
-    listing._id
+    listing.id
   );
 
   // get the remote data
-  const jwt_token = await getTokenForCluster(listing._id);
-  console.log('%cDid we get a token:', 'background-color: red', jwt_token);
+  const jwt_token = await getTokenForCluster(listing.id);
   // if we have no token, then don't try to fetch
   if (!jwt_token) return;
 

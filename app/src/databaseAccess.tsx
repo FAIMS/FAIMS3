@@ -30,7 +30,7 @@
  */
 
 import {getAvailableProjectsFromListing} from './sync/projects';
-import {ProjectInformation, ListingInformation} from '@faims3/data-model';
+import {ProjectInformation, ListingsObject} from '@faims3/data-model';
 import {getAllListingIDs} from './sync/state';
 import {events} from './sync/events';
 import {getAllListings} from './sync';
@@ -60,26 +60,23 @@ export function listenProjectList(listener: () => void): () => void {
   };
 }
 
-export async function getSyncableListingsInfo(): Promise<ListingInformation[]> {
+export async function getSyncableListingsInfo(): Promise<ListingsObject[]> {
   const all_listings = await getAllListings();
-  const syncable_listings: ListingInformation[] = [];
+  const syncable_listings: ListingsObject[] = [];
   for (const listing_object of all_listings) {
-    if (listing_object.local_only === true) {
-      console.debug('Skipping as local only', listing_object._id);
-      continue;
-    }
     if (
       listing_object.conductor_url === null ||
       listing_object.conductor_url === undefined
     ) {
-      console.debug('Skipping as missing conductor url', listing_object._id);
+      console.debug('Skipping as missing conductor url', listing_object.id);
       continue;
     }
     syncable_listings.push({
-      id: listing_object._id,
+      id: listing_object.id,
       name: listing_object.name,
       description: listing_object.description,
       conductor_url: listing_object.conductor_url,
+      prefix: listing_object.prefix,
     });
   }
   return syncable_listings;

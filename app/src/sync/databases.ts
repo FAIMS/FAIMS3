@@ -25,8 +25,8 @@ import {
   ProjectDataObject,
   ProjectID,
   ListingID,
+  ListingsObject,
   NonUniqueProjectID,
-  PossibleConnectionInfo,
 } from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {logError} from '../logging';
@@ -40,19 +40,6 @@ import {draft_db} from './draft-storage';
 export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
-
-export interface ListingsObject {
-  _id: ListingID;
-  name: string;
-  description: string;
-  projects_db?: PossibleConnectionInfo;
-  conductor_url?: string;
-  local_only?: boolean;
-}
-
-export interface NonNullListingsObject extends ListingsObject {
-  projects_db: ConnectionInfo;
-}
 
 export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<ActiveDoc>;
 export type ExistingListings = PouchDB.Core.ExistingDocument<ListingsObject>;
