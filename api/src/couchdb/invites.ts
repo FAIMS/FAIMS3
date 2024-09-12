@@ -21,6 +21,7 @@
 import {NonUniqueProjectID, ProjectID} from '@faims3/data-model';
 import {getInvitesDB} from '.';
 import {ConductorRole, RoleInvite} from '../datamodel/users';
+import {CONDUCTOR_SHORT_CODE_PREFIX} from '../buildconfig';
 
 /**
  * Create an invite for this project and role if there isn't already
@@ -67,7 +68,7 @@ function generateId() {
     const char = chars[Math.floor(Math.random() * chars.length)];
     ident = ident + char;
   }
-  return ident;
+  return CONDUCTOR_SHORT_CODE_PREFIX + '-' + ident;
 }
 
 /**

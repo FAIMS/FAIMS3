@@ -79,6 +79,7 @@ export async function setTokenForCluster(token: string, cluster_id: string) {
 
     try {
       await local_auth_db.put(new_doc);
+      console.log('Document stored');
     } catch (err_conflict) {
       console.warn(
         'Failed to set token when conflicting for',

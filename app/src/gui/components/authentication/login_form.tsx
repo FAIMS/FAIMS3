@@ -41,35 +41,10 @@ export function LoginButton(props: LoginButtonProps) {
       }}
       startIcon={props.startIcon}
       onClick={async () => {
-        window.addEventListener(
-          'message',
-          async event => {
-            await setTokenForCluster(event.data.token, props.listing_id)
-              .then(async () => {
-                const token = await getTokenContentsForCluster(
-                  props.listing_id
-                );
-                console.debug('token is', token);
-                props.setToken(token);
-                reprocess_listing(props.listing_id);
-
-                window.location.href = '/';
-              })
-              .catch(() => {
-                props.setToken(undefined);
-              });
-          },
-          false
-        );
         if (await isWeb()) {
           const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
           window.location.href =
             props.conductor_url + '/auth?redirect=' + redirect;
-          // Open a new window/tab on web
-          const oauth_window = window.open(props.conductor_url);
-          if (oauth_window === null) {
-            logError('Failed to open oauth window');
-          }
         } else {
           // Use the capacitor browser plugin in apps
           await Browser.open({
