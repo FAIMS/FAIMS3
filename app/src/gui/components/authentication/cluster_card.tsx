@@ -44,7 +44,7 @@ import {
   getAllUsersForCluster,
   switchUsername,
 } from '../../../users';
-import {reprocess_listing} from '../../../sync/process-initialization';
+import {update_directory} from '../../../sync/process-initialization';
 import {TokenContents} from '@faims3/data-model';
 import * as ROUTES from '../../../constants/routes';
 import MainCard from '../ui/main-card';
@@ -189,7 +189,8 @@ export default function ClusterCard(props: ClusterCardProps) {
 
   useEffect(() => {
     const getToken = async () => {
-      setToken(await getTokenContentsForCluster(props.listing_id));
+      const new_token = await getTokenContentsForCluster(props.listing_id);
+      setToken(new_token);
     };
     getToken();
   }, [props.listing_id]);
@@ -259,7 +260,8 @@ export default function ClusterCard(props: ClusterCardProps) {
                 onClick={() =>
                   forgetCurrentToken(props.listing_id).then(() => {
                     setToken(undefined);
-                    reprocess_listing(props.listing_id);
+                    props.setToken(undefined);
+                    update_directory();
                   })
                 }
                 startIcon={<LogoutIcon />}

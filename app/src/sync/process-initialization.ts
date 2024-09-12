@@ -49,7 +49,6 @@ import {ensure_project_databases} from './projects';
  * Called on startup or page/app refresh.
  */
 export async function update_directory() {
-  console.log('UPDATE DIRECTORY');
   // get existing stored listings from the local db
   const listings = await getAllListings();
 
