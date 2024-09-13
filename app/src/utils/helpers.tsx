@@ -1,3 +1,4 @@
+import {Capacitor} from '@capacitor/core';
 import {TokenContents} from '@faims3/data-model';
 
 function tokenExists(token: null | undefined | TokenContents) {
@@ -20,4 +21,12 @@ export function checkToken(token: null | undefined | TokenContents) {
    * Check if the token exists, and whether it's valid
    */
   return tokenExists(token) && tokenValid(token);
+}
+/**
+ * Are we running on the web or mobile?
+ * @returns true if we're running in a web browser, false if in an app
+ */
+
+export function isWeb() {
+  return Capacitor.getPlatform() === 'web';
 }

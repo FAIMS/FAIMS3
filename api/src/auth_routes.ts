@@ -108,13 +108,18 @@ export function add_auth_routes(app: any, handlers: any) {
     });
   });
 
-  // app.post('/auth/local', (req: any, res: any, next: any) => {
-  //   const redirect = validateRedirect(req.query?.redirect || '/');
-  //   passport.authenticate('local', {
-  //     successRedirect: redirect,
-  //     failureRedirect: `/login?redirect=${redirect}`,
-  //   })(req, res, next);
-  // });
+  app.get('/logout/', (req: any, res: any, next: any) => {
+    const redirect = validateRedirect(req.query?.redirect || '/');
+
+    if (req.user) {
+      req.logout((err: any) => {
+        if (err) {
+          return next(err);
+        }
+      });
+    }
+    res.redirect(redirect);
+  });
 
   const authenticate_return = (
     req: any,

@@ -1,18 +1,11 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
 import React from 'react';
 import {Button, ButtonProps} from '@mui/material';
-import {Device} from '@capacitor/device';
 import {Browser} from '@capacitor/browser';
 
 import {TokenContents} from '@faims3/data-model';
-import {setTokenForCluster, getTokenContentsForCluster} from '../../../users';
-import {reprocess_listing} from '../../../sync/process-initialization';
-import {logError} from '../../../logging';
 
-export async function isWeb(): Promise<boolean> {
-  const info = await Device.getInfo();
-  return info.platform === 'web';
-}
+import {isWeb} from '../../../utils/helpers';
 
 export type LoginButtonProps = {
   listing_id: string;
@@ -41,7 +34,7 @@ export function LoginButton(props: LoginButtonProps) {
       }}
       startIcon={props.startIcon}
       onClick={async () => {
-        if (await isWeb()) {
+        if (isWeb()) {
           const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
           window.location.href =
             props.conductor_url + '/auth?redirect=' + redirect;

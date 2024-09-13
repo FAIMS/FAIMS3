@@ -216,17 +216,6 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.get('/logout/', (req, res, next) => {
-  if (req.user) {
-    req.logout(err => {
-      if (err) {
-        return next(err);
-      }
-    });
-  }
-  res.redirect('/');
-});
-
 app.get('/send-token/', (req, res) => {
   if (req.user) {
     res.render('send-token', {

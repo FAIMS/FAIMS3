@@ -28,7 +28,8 @@ import {ListingsObject} from '@faims3/data-model';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {logError} from '../../logging';
 import {NOTEBOOK_NAME} from '../../buildconfig';
-import {ShortCodeRegistration} from './shortcode';
+import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
+import {isWeb} from '../../utils/helpers';
 
 type SignInProps = {
   setToken?: any;
@@ -67,11 +68,15 @@ export function SignIn(props: SignInProps) {
           </Grid>
         ))}
         <Grid item lg={4} md={6} sm={8} xs={12} key="short-code">
-          <ShortCodeRegistration
-            listings={listings}
-            setToken={props.setToken}
-          />
+          <ShortCodeRegistration listings={listings} />
         </Grid>
+        {isWeb() ? (
+          <></>
+        ) : (
+          <Grid item lg={4} md={6} sm={8} xs={12} key="qr-code">
+            <QRCodeRegistration listings={listings} />
+          </Grid>
+        )}
       </Grid>
     </Box>
   );

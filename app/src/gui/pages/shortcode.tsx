@@ -17,9 +17,8 @@
  *   Defines the component to allow entering short codes for notebook registration
  */
 
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {
-  Card,
   Typography,
   TextField,
   Button,
@@ -29,16 +28,23 @@ import {
 } from '@mui/material';
 import {ListingsObject} from '@faims3/data-model';
 import LoginIcon from '@mui/icons-material/Login';
-import {isWeb} from '../components/authentication/login_form';
+import {isWeb} from '../../utils/helpers';
 import {Browser} from '@capacitor/browser';
 import MainCard from '../components/ui/main-card';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
+import {ActionType} from '../../context/actions';
+import {store} from '../../context/store';
 
 type ShortCodeProps = {
-  setToken: any;
   listings: ListingsObject[];
 };
 
+/**
+ * Component to render a control to register for a notebook via a short-code
+ *
+ * @param props component properties include only `listings`
+ */
 export function ShortCodeRegistration(props: ShortCodeProps) {
   const [shortCode, setShortCode] = useState('');
   const updateShortCode = (event: {
@@ -56,9 +62,8 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
         listing_info.prefix +
         '-' +
         shortCode;
-      console.log(url);
 
-      if (await isWeb()) {
+      if (isWeb()) {
         const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
         window.location.href = url + '?redirect=' + redirect;
       } else {
@@ -74,13 +79,19 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
     <MainCard
       title={
         <Grid container>
-          <Typography variant={'overline'}>
-            Register for {NOTEBOOK_NAME_CAPITALIZED}s
-          </Typography>
-          <Typography>
-            Enter a short code to get access to a {NOTEBOOK_NAME}.
-          </Typography>
-          <Divider orientation="vertical" flexItem />
+          <Grid item xs>
+            <Typography variant={'overline'}>
+              Register for {NOTEBOOK_NAME_CAPITALIZED}s
+            </Typography>
+            <Typography variant={'body2'} fontWeight={700} sx={{mb: 0}}>
+              Enter a short code to get access to a {NOTEBOOK_NAME}.
+            </Typography>
+            <Typography variant={'body2'} sx={{mb: 0}}>
+              The short code will have a short prefix and six letters or
+              numbers. The prefix must match one shown below. Enter the six
+              letters or numbers and click 'Register'.
+            </Typography>
+          </Grid>
         </Grid>
       }
     >
@@ -110,6 +121,67 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
           </Stack>
         </Stack>
       ))}
+    </MainCard>
+  );
+}
+
+/**
+ * Component to register a button for scanning a QR code to register
+ * for a notebook
+ * @param props Component properties include only `listings`
+ * @returns component content
+ */
+export function QRCodeRegistration(props: ShortCodeProps) {
+  const {dispatch} = useContext(store);
+  const handleRegister = async (url: string) => {
+    // verify that this URL is one that's going to work
+    // valid urls look like:
+    // http://192.168.1.2:8154/register/DEV-TMKZSM
+    const valid_hosts = props.listings.map(listing => listing.conductor_url);
+    const valid_re = valid_hosts.join('|') + '/register/.*-[A-Z1-9]+';
+
+    if (url.match(valid_re)) {
+      // Use the capacitor browser plugin in apps
+      await Browser.open({
+        url: url + '?redirect=org.fedarch.faims3://auth-return',
+      });
+    } else {
+      dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: 'Invalid QRCode Scanned',
+          severity: 'warning',
+        },
+      });
+    }
+  };
+
+  return (
+    <MainCard
+      title={
+        <Grid container>
+          <Grid item xs>
+            <Typography variant={'overline'}>
+              Register for {NOTEBOOK_NAME_CAPITALIZED}s
+            </Typography>
+            <Typography variant={'body2'} fontWeight={700} sx={{mb: 0}}>
+              Scan a QRCode to get access to a {NOTEBOOK_NAME}.
+            </Typography>
+          </Grid>
+        </Grid>
+      }
+    >
+      <Grid
+        container
+        spacing={2}
+        sx={{
+          margin: 'auto',
+        }}
+      >
+        <Grid item xs={12}>
+          <QRCodeButton label="Scan QR Code" onScanResult={handleRegister} />
+        </Grid>
+      </Grid>
     </MainCard>
   );
 }
