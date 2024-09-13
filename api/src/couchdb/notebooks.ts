@@ -20,6 +20,7 @@
 
 import {
   addDesignDocsForNotebook,
+  APINotebookList,
   getProjectDB,
   notebookRecordIterator,
   ProjectID,
@@ -92,20 +93,25 @@ export const getProjects = async (
  * @oaram user - only return notebooks that this user can see
  * @returns an array of ProjectObject objects
  */
-export const getNotebooks = async (user: Express.User): Promise<any[]> => {
-  const output: any[] = [];
+export const getNotebooks = async (
+  user: Express.User
+): Promise<APINotebookList[]> => {
+  // Respond with notebook list model
+  const output: APINotebookList[] = [];
+  // DB records are project objects
   const projects: ProjectObject[] = [];
   // in the frontend, the listing_id names the backend instance,
   // so far it's either 'default' or 'locallycreatedproject'
   const listing_id = 'default';
   const projects_db = getProjectsDB();
   if (projects_db) {
-    const res = await projects_db.allDocs({
+    // We want to type hint that this will include all values
+    const res = await projects_db.allDocs<ProjectObject>({
       include_docs: true,
     });
     res.rows.forEach(e => {
       if (e.doc !== undefined && !e.id.startsWith('_')) {
-        projects.push(e.doc as unknown as ProjectObject);
+        projects.push(e.doc);
       }
     });
 
@@ -118,6 +124,7 @@ export const getNotebooks = async (user: Express.User): Promise<any[]> => {
           name: project.name,
           last_updated: project.last_updated,
           created: project.created,
+          template_id: project.template_id,
           status: project.status,
           project_id: full_project_id,
           listing_id: listing_id,

@@ -41,9 +41,23 @@ export const localUserPassword = 'bobalooba';
 export const notebookUserName = 'notebook';
 export const notebookPassword = 'notebook';
 
+/**
+ * A startup function which
+ * - clears out the databases
+ * - re-initialises including setting up the admin user in the users database
+ * - removes all data databases
+ * - ensures the admin user exists
+ * - creates the local user who is authenticated but has no roles
+ * - creates a notebook user who has the notebook creator role
+ */
 export const beforeApiTests = async () => {
+  // Clean and reinitialise databases
   await resetDatabases();
   await cleanDataDBS();
+
+  // NOTE the admin user should exist at this point
+
+  // Get the signing key to use to create JWTs
   const signingKey = await KEY_SERVICE.getSigningKey();
 
   // get the admin user - this should exist at this point

@@ -214,6 +214,19 @@ describe('template API tests', () => {
 
       // Check all properties match
       expect(entry._id).to.equal(templateId1);
+
+      // TODO This is no longer true because the metadata is injected with the template ID, see BSS-343
+      // expect(JSON.stringify(entry.ui_specification)).to.equal(
+      //   JSON.stringify(nb.ui_specification)
+      // );
+      // expect(JSON.stringify(entry.metadata)).to.equal(
+      //   JSON.stringify(nb.metadata)
+      // );
+
+      // Instead - let's remove the template_id from the result and then check equality
+      // TODO BSS-343
+      delete entry.metadata.template_id;
+
       expect(JSON.stringify(entry.ui_specification)).to.equal(
         JSON.stringify(nb.ui_specification)
       );
@@ -232,6 +245,10 @@ describe('template API tests', () => {
       expect(JSON.stringify(template.ui_specification)).to.equal(
         JSON.stringify(nb.ui_specification)
       );
+
+      // Remove the template ID which was injected
+      // TODO see BSS-343
+      delete template.metadata.template_id;
       expect(JSON.stringify(template.metadata)).to.equal(
         JSON.stringify(nb.metadata)
       );
@@ -258,6 +275,12 @@ describe('template API tests', () => {
       expect(JSON.stringify(entry?.ui_specification)).to.equal(
         JSON.stringify(nb.ui_specification)
       );
+
+      // Remove the template_id from the result and then check equality
+      // TODO BSS-343
+      delete entry?.metadata.template_id;
+
+      //
       expect(JSON.stringify(entry?.metadata)).to.equal(
         JSON.stringify(nb.metadata)
       );
@@ -273,6 +296,10 @@ describe('template API tests', () => {
       expect(JSON.stringify(template.ui_specification)).to.equal(
         JSON.stringify(nb.ui_specification)
       );
+
+      // Remove the template_id from the result and then check equality
+      // TODO BSS-343
+      delete template.metadata.template_id;
       expect(JSON.stringify(template.metadata)).to.equal(
         JSON.stringify(nb.metadata)
       );
@@ -364,10 +391,15 @@ describe('template API tests', () => {
     )
       .expect(200)
       .then(response => {
+        // Parse response as the get model
+
         // due to "test_key": "test_value",
         expect(response.body.metadata.test_key).to.equal(
           notebook.metadata.test_key
         );
+
+        // check template ID is processed properly
+        expect(response.body.metadata.template_id).to.equal(template._id);
       });
   });
 

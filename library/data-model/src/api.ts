@@ -1,5 +1,24 @@
 import {z} from 'zod';
-import {TemplateDocumentSchema, TemplateEditableDetailsSchema} from './types';
+import {
+  APINotebookGetSchema,
+  APINotebookListSchema,
+  TemplateDocumentSchema,
+  TemplateEditableDetailsSchema,
+} from './types';
+
+// ==================
+// WIP NOTEBOOKS CRUD
+// ==================
+
+// GET notebook by ID
+export const GetNotebookResponseSchema = APINotebookGetSchema;
+export type GetNotebookResponse = z.infer<typeof GetNotebookResponseSchema>;
+
+// GET notebook list
+export const GetNotebookListResponseSchema = z.array(APINotebookListSchema);
+export type GetNotebookListResponse = z.infer<
+  typeof GetNotebookListResponseSchema
+>;
 
 // =================
 // TEMPLATES CRUD

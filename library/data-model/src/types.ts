@@ -129,6 +129,7 @@ export type PossibleConnectionInfo =
 export interface ProjectObject {
   _id: NonUniqueProjectID;
   name: string;
+  project_id: string;
   description?: string;
   // Was the project created from a template?
   template_id?: string;
@@ -138,6 +139,31 @@ export interface ProjectObject {
   created?: string;
   status?: string;
 }
+
+// TODO make this better, currently there is no real explanation for this
+// structure
+
+// This is returned from the list project endpoints
+export const APINotebookListSchema = z.object({
+  name: z.string(),
+  last_updated: z.string().optional(),
+  created: z.string().optional(),
+  template_id: z.string().optional(),
+  status: z.string().optional(),
+  project_id: z.string(),
+  listing_id: z.string(),
+  non_unique_project_id: z.string(),
+  metadata: z.record(z.unknown()).optional().nullable(),
+});
+export type APINotebookList = z.infer<typeof APINotebookListSchema>;
+
+// This is returned from the get project endpoint
+export const APINotebookGetSchema = z.object({
+  // metadata and spec to match notebook json schema
+  metadata: z.record(z.unknown()),
+  'ui-specification': z.record(z.unknown()),
+});
+export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 
 export type ProjectsList = {
   [key: string]: ProjectObject;

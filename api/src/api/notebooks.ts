@@ -19,6 +19,8 @@
  */
 
 import {
+  GetNotebookListResponse,
+  GetNotebookResponse,
   PostCreateNotebookFromTemplate,
   PostCreateNotebookFromTemplateResponse,
   PostCreateNotebookFromTemplateSchema,
@@ -56,15 +58,19 @@ import {requireAuthenticationAPI} from '../middleware';
 
 export const api = express.Router();
 
-api.get('/', requireAuthenticationAPI, async (req, res) => {
-  // get a list of notebooks from the db
-  if (req.user) {
-    const notebooks = await getNotebooks(req.user);
-    res.json(notebooks);
-  } else {
-    res.json([]);
+api.get<{}, GetNotebookListResponse>(
+  '/',
+  requireAuthenticationAPI,
+  async (req, res) => {
+    // get a list of notebooks from the db
+    if (req.user) {
+      const notebooks: GetNotebookListResponse = await getNotebooks(req.user);
+      res.json(notebooks);
+    } else {
+      throw new Exceptions.UnauthorizedException();
+    }
   }
-});
+);
 
 /**
  * POST to /notebooks/ to create a new notebook
@@ -177,22 +183,25 @@ api.post<
   }
 );
 
-api.get('/:id', requireAuthenticationAPI, async (req, res) => {
-  // get full details of a single notebook
-  const project_id = req.params.id;
-  if (req.user && userHasPermission(req.user, project_id, 'read')) {
-    const metadata = await getNotebookMetadata(project_id);
-    const uiSpec = await getNotebookUISpec(project_id);
-    if (metadata && uiSpec) {
-      res.json({metadata, 'ui-specification': uiSpec});
+api.get<{id: string}, GetNotebookResponse>(
+  '/:id',
+  requireAuthenticationAPI,
+  async (req, res) => {
+    // get full details of a single notebook
+    const project_id = req.params.id;
+    if (req.user && userHasPermission(req.user, project_id, 'read')) {
+      const metadata = await getNotebookMetadata(project_id);
+      const uiSpec = await getNotebookUISpec(project_id);
+      if (metadata && uiSpec) {
+        res.json({metadata, 'ui-specification': uiSpec} as GetNotebookResponse);
+      } else {
+        throw new Exceptions.ItemNotFoundException('Notebook not found.');
+      }
     } else {
-      res.status(404).json({error: 'not found'}).end();
+      throw new Exceptions.UnauthorizedException();
     }
-  } else {
-    // unauthorised response
-    res.status(401).end();
   }
-});
+);
 
 // PUT a new version of a notebook
 api.put('/:id', requireAuthenticationAPI, async (req, res) => {

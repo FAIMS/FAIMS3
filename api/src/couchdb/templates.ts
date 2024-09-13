@@ -74,6 +74,11 @@ export const createTemplate = async (
 
   // Get a unique id for the template Id
   const templateId = generateTemplateId(payload.template_name);
+
+  // inject templateId into the metadata
+  // TODO see BSS-343
+  payload.metadata.template_id = templateId;
+
   // Setup the document with id included
   const templateDoc: TemplateDocument = {
     _id: templateId,
@@ -125,6 +130,12 @@ export const updateExistingTemplate = async (
 
   // Now on the new put, we make sure to include the _rev of previous document which allows replacement
   const templateDb = getTemplatesDb();
+
+  // inject templateId into the metadata - we have to do this here because a
+  // user could potentially change the metadata
+  // TODO see BSS-343
+  payload.metadata.template_id = templateId;
+
   const newDocument = {
     _id: templateId,
     _rev: existingTemplate._rev,
