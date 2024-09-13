@@ -111,7 +111,7 @@ function validateRedirect(redirect: string) {
  * @param handlers an array of login provider identifiers
  */
 export function add_auth_routes(app: Router, handlers: string[]) {
-  // In the following generic type signatures for routes the 
+  // In the following generic type signatures for routes the
   // order of types is:
   //  <Params, ResBody, ReqBody, ReqQuery, Locals>
   // Params: Route parameters
