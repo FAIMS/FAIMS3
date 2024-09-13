@@ -18,14 +18,7 @@
  */
 
 import React, {useContext, useState} from 'react';
-import {
-  Typography,
-  TextField,
-  Button,
-  Stack,
-  Grid,
-  Divider,
-} from '@mui/material';
+import {Typography, TextField, Button, Stack, Grid} from '@mui/material';
 import {ListingsObject} from '@faims3/data-model';
 import LoginIcon from '@mui/icons-material/Login';
 import {isWeb} from '../../utils/helpers';

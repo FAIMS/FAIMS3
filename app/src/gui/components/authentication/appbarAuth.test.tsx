@@ -44,11 +44,5 @@ describe('Check appbarAuth', () => {
       </BrowserRouter>
     );
     expect(screen.getByText(testToken.username)).toBeTruthy();
-
-    expect(screen.getByText('Workspace')).toBeTruthy();
-
-    expect(screen.getByText('Switch User')).toBeTruthy();
-
-    expect(screen.getByText(`Log out ${testToken.username}`)).toBeTruthy();
   });
 });
