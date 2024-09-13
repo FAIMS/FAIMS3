@@ -84,7 +84,7 @@ api.post('/initialise/', async (req, res) => {
 /**
  * Handle info requests, basic identifying information for this server
  */
-api.get('/info', async (req, res) => {
+api.get<{}, ListingsObject>('/info', async (req, res) => {
   const info: ListingsObject = {
     id: slugify(CONDUCTOR_INSTANCE_NAME),
     name: CONDUCTOR_INSTANCE_NAME,
