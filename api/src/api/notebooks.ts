@@ -19,43 +19,44 @@
  */
 
 import {
-    CreateNotebookFromScratch,
-    CreateNotebookFromTemplate,
-    GetNotebookListResponse,
-    GetNotebookResponse,
-    PostCreateNotebookInput,
-    PostCreateNotebookInputSchema,
-    PostCreateNotebookResponse
+  CreateNotebookFromScratch,
+  CreateNotebookFromTemplate,
+  GetNotebookListResponse,
+  GetNotebookResponse,
+  PostCreateNotebookInput,
+  PostCreateNotebookInputSchema,
+  PostCreateNotebookResponse,
+  ProjectUIModel,
 } from '@faims3/data-model';
 import express from 'express';
-import { processRequest } from 'zod-express-middleware';
-import { DEVELOPER_MODE } from '../buildconfig';
-import { createManyRandomRecords } from '../couchdb/devtools';
+import {processRequest} from 'zod-express-middleware';
+import {DEVELOPER_MODE} from '../buildconfig';
+import {createManyRandomRecords} from '../couchdb/devtools';
 import {
-    createNotebook,
-    deleteNotebook,
-    getNotebookMetadata,
-    getNotebookRecords,
-    getNotebooks,
-    getNotebookUISpec,
-    getRolesForNotebook,
-    streamNotebookFilesAsZip,
-    streamNotebookRecordsAsCSV,
-    updateNotebook,
+  createNotebook,
+  deleteNotebook,
+  getNotebookMetadata,
+  getNotebookRecords,
+  getNotebooks,
+  getNotebookUISpec,
+  getRolesForNotebook,
+  streamNotebookFilesAsZip,
+  streamNotebookRecordsAsCSV,
+  updateNotebook,
 } from '../couchdb/notebooks';
-import { getTemplate } from '../couchdb/templates';
+import {getTemplate} from '../couchdb/templates';
 import {
-    addProjectRoleToUser,
-    getUserFromEmailOrUsername,
-    getUserInfoForNotebook,
-    removeProjectRoleFromUser,
-    saveUser,
-    userCanCreateNotebooks,
-    userHasPermission,
-    userIsClusterAdmin,
+  addProjectRoleToUser,
+  getUserFromEmailOrUsername,
+  getUserInfoForNotebook,
+  removeProjectRoleFromUser,
+  saveUser,
+  userCanCreateNotebooks,
+  userHasPermission,
+  userIsClusterAdmin,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import { requireAuthenticationAPI } from '../middleware';
+import {requireAuthenticationAPI} from '../middleware';
 
 export const api = express.Router();
 
@@ -74,7 +75,7 @@ api.get<{}, GetNotebookListResponse>(
 );
 
 /**
- * POST to /notebooks/ to create a new notebook. 
+ * POST to /notebooks/ to create a new notebook.
  *
  * This route accepts either a from scratch or from template payload. The
  * inclusion of a template_id indicates from a template, and the inclusion of a
@@ -117,12 +118,20 @@ api.post<{}, PostCreateNotebookResponse, PostCreateNotebookInput>(
     ): payload is CreateNotebookFromScratch => {
       return 'ui-specification' in payload;
     };
-
     const isFromTemplate = (
       payload: PostCreateNotebookInput
     ): payload is CreateNotebookFromTemplate => {
       return 'template_id' in payload;
     };
+
+    // Metadata is from payload, or from template
+    let metadata: any;
+    // ui Spec is from payload if manual, or from template
+    let uiSpec: ProjectUIModel;
+    // Project name is in both payloads
+    let projectName: string = req.body.name;
+    // Template ID is only needed if created from template
+    let templateId: string | undefined = undefined;
 
     // Check the type of creation
     if (isFromTemplate(req.body)) {
@@ -136,62 +145,41 @@ api.post<{}, PostCreateNotebookResponse, PostCreateNotebookInput>(
       }
 
       // Pull out values needed to create a new notebook
-      const {metadata, ui_specification: uiSpec} = template;
-      const {name: projectName} = req.body;
-
-      try {
-        const projectID = await createNotebook(
-          projectName,
-          uiSpec,
-          metadata,
-          // link to template ID
-          template._id
-        );
-        if (projectID) {
-          // allow this user to modify the new notebook
-          addProjectRoleToUser(req.user, projectID, 'admin');
-          await saveUser(req.user);
-          // TODO specify this return type properly
-          res.json({notebook: projectID});
-        } else {
-          throw new Exceptions.InternalSystemError(
-            'Error occurred during notebook creation.'
-          );
-        }
-      } catch (err) {
-        throw new Exceptions.InternalSystemError(
-          'Error occurred during notebook creation.'
-        );
-      }
+      metadata = template.metadata;
+      uiSpec = template.ui_specification;
+      templateId = template._id;
     } else if (isFromScratch(req.body)) {
       // Creating a new notebook from scratch
-      const uiSpec = req.body['ui-specification'];
-      const projectName = req.body.name;
-      const metadata = req.body.metadata;
+      uiSpec = req.body['ui-specification'];
+      metadata = req.body.metadata;
+    } else {
+      throw new Exceptions.ValidationException(
+        'Could not parse input payload as either a from scratch or from template creation. Contact a system administrator and validate payload integrity.'
+      );
+    }
 
-      try {
-        const projectID = await createNotebook(
-          projectName,
-          uiSpec,
-          metadata,
-          // No template ID in this case
-          undefined
-        );
-        if (projectID) {
-          // allow this user to modify the new notebook
-          addProjectRoleToUser(req.user, projectID, 'admin');
-          await saveUser(req.user);
-          res.json({notebook: projectID});
-        } else {
-          throw new Exceptions.InternalSystemError(
-            'Error occurred during notebook creation.'
-          );
-        }
-      } catch (err) {
+    try {
+      const projectID = await createNotebook(
+        projectName,
+        uiSpec,
+        metadata,
+        // link to template ID if necessary
+        templateId
+      );
+      if (projectID) {
+        // allow this user to modify the new notebook
+        addProjectRoleToUser(req.user, projectID, 'admin');
+        await saveUser(req.user);
+        res.json({notebook: projectID} as PostCreateNotebookResponse);
+      } else {
         throw new Exceptions.InternalSystemError(
           'Error occurred during notebook creation.'
         );
       }
+    } catch (err) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred during notebook creation.'
+      );
     }
   }
 );
