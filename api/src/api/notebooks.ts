@@ -129,7 +129,7 @@ api.post<{}, PostCreateNotebookResponse, PostCreateNotebookInput>(
     // ui Spec is from payload if manual, or from template
     let uiSpec: ProjectUIModel;
     // Project name is in both payloads
-    let projectName: string = req.body.name;
+    const projectName: string = req.body.name;
     // Template ID is only needed if created from template
     let templateId: string | undefined = undefined;
 
