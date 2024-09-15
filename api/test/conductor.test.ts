@@ -22,19 +22,13 @@ import PouchDB from 'pouchdb';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
 
-import request from 'supertest';
-import {app} from '../src/routes';
-import {
-  CONDUCTOR_AUTH_PROVIDERS,
-  LOCAL_COUCHDB_AUTH,
-  NOTEBOOK_CREATOR_GROUP_NAME,
-} from '../src/buildconfig';
 import {expect} from 'chai';
-import {cleanDataDBS, resetDatabases} from './mocks';
-import {addOtherRoleToUser, createUser, saveUser} from '../src/couchdb/users';
-import {createNotebook} from '../src/couchdb/notebooks';
 import fs from 'fs';
-import {addLocalPasswordForUser} from '../src/auth_providers/local';
+import request from 'supertest';
+import {CONDUCTOR_AUTH_PROVIDERS, LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
+import {createNotebook} from '../src/couchdb/notebooks';
+import {app} from '../src/routes';
+import {beforeApiTests} from './utils';
 
 it('check is up', async () => {
   const result = await request(app).get('/up');
@@ -49,24 +43,7 @@ const notebookUser = 'notebook';
 const notebookPassword = 'notebook';
 
 describe('Auth', () => {
-  beforeEach(async () => {
-    await resetDatabases();
-    await cleanDataDBS();
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [user, _error] = await createUser('', localUserName);
-    if (user) {
-      await saveUser(user);
-      await addLocalPasswordForUser(user, localUserPassword); // saves the user
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [nbUser, _nberror] = await createUser('', notebookUser);
-    if (nbUser) {
-      await addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
-      await addLocalPasswordForUser(nbUser, notebookPassword); // saves the user
-    }
-  });
+  beforeEach(beforeApiTests);
 
   it('redirect to auth', done => {
     request(app)

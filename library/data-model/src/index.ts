@@ -102,6 +102,7 @@ export {
 
 export * from './datamodel/database';
 export * from './types';
+export * from './api';
 
 export type DBCallbackObject = {
   getDataDB: CallableFunction;

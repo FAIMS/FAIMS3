@@ -19,14 +19,18 @@
  *   which server to use and whether to include test data
  */
 
-import express from 'express';
 import cookieSession from 'cookie-session';
 import cors from 'cors';
-import passport from 'passport';
-import morgan from 'morgan';
+import express, {
+  ErrorRequestHandler,
+  NextFunction,
+  Request,
+  Response,
+} from 'express';
 import {ExpressHandlebars} from 'express-handlebars';
 import handlebars from 'handlebars';
-import RateLimit from 'express-rate-limit';
+import morgan from 'morgan';
+import passport from 'passport';
 import flash from 'req-flash';
 
 // use swaggerUI to display the UI documentation
@@ -46,9 +50,12 @@ const indexContent = readFileSync(
 
 // Workaround done
 
-import {COOKIE_SECRET} from './buildconfig';
-import {api} from './api/routes';
 import markdownit from 'markdown-it';
+import {api as notebookApi} from './api/notebooks';
+import {api as utilityApi} from './api/utilities';
+import {api as usersApi} from './api/users';
+import {api as templatesApi} from './api/templates';
+import {COOKIE_SECRET} from './buildconfig';
 
 export const app = express();
 app.use(morgan('combined'));
@@ -115,7 +122,34 @@ app.use(passport.session());
 app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
 app.use(express.static('public'));
-app.use('/api', api);
+app.use('/api/notebooks', notebookApi);
+app.use('/api/templates', templatesApi);
+app.use('/api', utilityApi);
+app.use('/api/users', usersApi);
+
+// Custom error handler with type annotations
+// TODO specify this interface in data models
+const errorHandler: ErrorRequestHandler = (
+  err: Error & {status?: number},
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  req: Request,
+  res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  next: NextFunction
+) => {
+  // Set the response status code
+  const statusCode = err.status || 500;
+  res.status(statusCode).json({
+    error: {
+      message: err.message,
+      status: statusCode,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    },
+  });
+};
+
+// Use custom error handler which intercepts with JSON
+app.use(errorHandler);
 
 // Swagger-UI Routes
 app.get('/apidoc/swagger-initializer.js', (req, res) => res.send(indexContent));

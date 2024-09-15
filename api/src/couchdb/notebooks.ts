@@ -18,40 +18,42 @@
  *   This module provides functions to access notebooks from the database
  */
 
+import {
+  addDesignDocsForNotebook,
+  APINotebookList,
+  getProjectDB,
+  notebookRecordIterator,
+  ProjectID,
+  ProjectObject,
+  resolve_project_id,
+} from '@faims3/data-model';
+import archiver from 'archiver';
 import PouchDB from 'pouchdb';
+import {Stream} from 'stream';
 import {getProjectsDB} from '.';
 import {CLUSTER_ADMIN_GROUP_NAME, COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {
-  ProjectID,
-  getProjectDB,
-  ProjectObject,
-  resolve_project_id,
-  notebookRecordIterator,
-  addDesignDocsForNotebook,
-} from '@faims3/data-model';
-import {
+  PROJECT_METADATA_PREFIX,
   ProjectMetadata,
   ProjectUIFields,
   ProjectUIModel,
-  PROJECT_METADATA_PREFIX,
 } from '../datamodel/database';
-import archiver from 'archiver';
-import {Stream} from 'stream';
 
-import securityPlugin from 'pouchdb-security-helper';
 import {
   file_attachments_to_data,
   file_data_to_attachments,
   getDataDB,
   getFullRecordData,
   getRecordsWithRegex,
+  HRID_STRING,
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
-  HRID_STRING,
 } from '@faims3/data-model';
+import {Stringifier, stringify} from 'csv-stringify';
+import securityPlugin from 'pouchdb-security-helper';
+import {slugify} from '../utils';
 import {userHasPermission} from './users';
 PouchDB.plugin(securityPlugin);
-import {Stringifier, stringify} from 'csv-stringify';
 
 /**
  * getProjects - get the internal project documents that reference
@@ -91,20 +93,25 @@ export const getProjects = async (
  * @oaram user - only return notebooks that this user can see
  * @returns an array of ProjectObject objects
  */
-export const getNotebooks = async (user: Express.User): Promise<any[]> => {
-  const output: any[] = [];
+export const getNotebooks = async (
+  user: Express.User
+): Promise<APINotebookList[]> => {
+  // Respond with notebook list model
+  const output: APINotebookList[] = [];
+  // DB records are project objects
   const projects: ProjectObject[] = [];
   // in the frontend, the listing_id names the backend instance,
   // so far it's either 'default' or 'locallycreatedproject'
   const listing_id = 'default';
   const projects_db = getProjectsDB();
   if (projects_db) {
-    const res = await projects_db.allDocs({
+    // We want to type hint that this will include all values
+    const res = await projects_db.allDocs<ProjectObject>({
       include_docs: true,
     });
     res.rows.forEach(e => {
       if (e.doc !== undefined && !e.id.startsWith('_')) {
-        projects.push(e.doc as unknown as ProjectObject);
+        projects.push(e.doc);
       }
     });
 
@@ -117,6 +124,7 @@ export const getNotebooks = async (user: Express.User): Promise<any[]> => {
           name: project.name,
           last_updated: project.last_updated,
           created: project.created,
+          template_id: project.template_id,
           status: project.status,
           project_id: full_project_id,
           listing_id: listing_id,
@@ -127,31 +135,6 @@ export const getNotebooks = async (user: Express.User): Promise<any[]> => {
     }
   }
   return output;
-};
-
-/**
- * Slugify a string, replacing special characters with less special ones
- * @param str input string
- * @returns url safe version of the string
- * https://ourcodeworld.com/articles/read/255/creating-url-slugs-properly-in-javascript-including-transliteration-for-utf-8
- */
-export const slugify = (str: string) => {
-  str = str.trim();
-  str = str.toLowerCase();
-
-  // remove accents, swap ñ for n, etc
-  const from = 'ãàáäâáº½èéëêìíïîõòóöôùúüûñç·/_,:;';
-  const to = 'aaaaaeeeeeiiiiooooouuuunc------';
-  for (let i = 0, l = from.length; i < l; i++) {
-    str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
-  }
-
-  str = str
-    .replace(/[^a-z0-9 -]/g, '') // remove invalid chars
-    .replace(/\s+/g, '-') // collapse whitespace and replace by -
-    .replace(/-+/g, '-'); // collapse dashes
-
-  return str;
 };
 
 /**
@@ -248,7 +231,8 @@ export const validateDatabases = async () => {
 export const createNotebook = async (
   projectName: string,
   uispec: ProjectUIModel,
-  metadata: any
+  metadata: any,
+  template_id: string | undefined = undefined
 ) => {
   const project_id = generateProjectID(projectName);
 
@@ -256,6 +240,7 @@ export const createNotebook = async (
   const dataDBName = `data-${project_id}`;
   const projectDoc = {
     _id: project_id,
+    template_id: template_id,
     name: projectName.trim(),
     metadata_db: {
       db_name: metaDBName,
@@ -264,7 +249,7 @@ export const createNotebook = async (
       db_name: dataDBName,
     },
     status: 'published',
-  };
+  } as ProjectObject;
 
   try {
     // first add an entry to the projects db about this project

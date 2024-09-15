@@ -60,7 +60,8 @@
         "qrcode": "^1.5.3",
         "req-flash": "^0.0.3",
         "swagger-ui-dist": "^5.9.1",
-        "uuid": "9.0.1"
+        "uuid": "9.0.1",
+        "zod-express-middleware": "^1.4.0"
     },
     "devDependencies": {
         "@types/archiver": "^6.0.2",
