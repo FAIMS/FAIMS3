@@ -19,12 +19,12 @@
  */
 
 import {
+  CreateNotebookFromTemplate,
   GetListTemplatesResponse,
   GetListTemplatesResponseSchema,
   GetTemplateByIdResponse,
   GetTemplateByIdResponseSchema,
-  PostCreateNotebookFromTemplate,
-  PostCreateNotebookFromTemplateResponseSchema,
+  PostCreateNotebookResponseSchema,
   PostCreateTemplateInput,
   PostCreateTemplateResponse,
   PostCreateTemplateResponseSchema,
@@ -370,17 +370,15 @@ describe('template API tests', () => {
     // Create the notebook from template
     const notebookId = await requestAuthAndType(
       request(app)
-        .post(`${NOTEBOOKS_API_BASE}/template`)
+        .post(`${NOTEBOOKS_API_BASE}`)
         .send({
-          project_name: 'test project name',
+          name: 'test project name',
           template_id: template._id,
-        } as PostCreateNotebookFromTemplate)
+        } as CreateNotebookFromTemplate)
     )
       .expect(200)
       .then(res => {
-        const notebook = PostCreateNotebookFromTemplateResponseSchema.parse(
-          res.body
-        );
+        const notebook = PostCreateNotebookResponseSchema.parse(res.body);
         return notebook.notebook;
       });
 
@@ -482,11 +480,11 @@ describe('template API tests', () => {
     // Create the notebook from template
     await requestAuthAndType(
       request(app)
-        .post(`${NOTEBOOKS_API_BASE}/template`)
+        .post(`${NOTEBOOKS_API_BASE}`)
         .send({
-          project_name: 'test project name',
+          name: 'test project name',
           template_id: template._id + 'jdkfljs',
-        } as PostCreateNotebookFromTemplate)
+        } as CreateNotebookFromTemplate)
     ).expect(404);
   });
 
@@ -638,11 +636,11 @@ describe('template API tests', () => {
   });
   it('create notebook from template not authorised', async () => {
     return await request(app)
-      .post(`${NOTEBOOKS_API_BASE}/template`)
+      .post(`${NOTEBOOKS_API_BASE}`)
       .send({
-        project_name: '12345',
+        name: '12345',
         template_id: '12345',
-      } as PostCreateNotebookFromTemplate)
+      } as CreateNotebookFromTemplate)
       .set('Content-Type', 'application/json')
       .expect(401);
   });
@@ -681,11 +679,11 @@ describe('template API tests', () => {
   it('not allowed to create notebook from template', async () => {
     return await requestAuthAndType(
       request(app)
-        .post(`${NOTEBOOKS_API_BASE}/template`)
+        .post(`${NOTEBOOKS_API_BASE}`)
         .send({
           template_id: '12345',
-          project_name: '12345',
-        } as PostCreateNotebookFromTemplate),
+          name: '12345',
+        } as CreateNotebookFromTemplate),
       localUserToken
     ).expect(401);
   });

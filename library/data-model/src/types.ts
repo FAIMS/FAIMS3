@@ -730,7 +730,7 @@ export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
 
 // The UI specification
 // TODO use Zod for existing UI schema models to validate
-export const UiSpecificationSchema = z.record(z.any());
+export const UiSpecificationSchema = z.custom<ProjectUIModel>();
 export type UiSpecification = z.infer<typeof UiSpecificationSchema>;
 
 // Metadata schema

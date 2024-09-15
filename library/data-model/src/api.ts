@@ -2,6 +2,7 @@ import {z} from 'zod';
 import {
   APINotebookGetSchema,
   APINotebookListSchema,
+  ProjectUIModel,
   TemplateDocumentSchema,
   TemplateEditableDetailsSchema,
 } from './types';
@@ -18,6 +19,43 @@ export type GetNotebookResponse = z.infer<typeof GetNotebookResponseSchema>;
 export const GetNotebookListResponseSchema = z.array(APINotebookListSchema);
 export type GetNotebookListResponse = z.infer<
   typeof GetNotebookListResponseSchema
+>;
+
+export const CreateNotebookFromTemplateSchema = z.object({
+  // Prefer project_name for APIs but keeping alignment with existing endpoint
+  name: z.string(),
+  template_id: z.string(),
+});
+export type CreateNotebookFromTemplate = z.infer<
+  typeof CreateNotebookFromTemplateSchema
+>;
+
+export const CreateNotebookFromScratchSchema = z.object({
+  name: z.string(),
+  // This allows you to type hint as an interface but won't parse/validate it
+  // TODO convert these models into their zod counterparts
+  'ui-specification': z.custom<ProjectUIModel>(),
+  metadata: z.record(z.any()),
+});
+export type CreateNotebookFromScratch = z.infer<
+  typeof CreateNotebookFromScratchSchema
+>;
+
+// POST create new notebook from template input
+export const PostCreateNotebookInputSchema = z.union([
+  CreateNotebookFromScratchSchema,
+  CreateNotebookFromTemplateSchema,
+]);
+export type PostCreateNotebookInput = z.infer<
+  typeof PostCreateNotebookInputSchema
+>;
+
+// POST create new notebook from template response
+export const PostCreateNotebookResponseSchema = z.object({
+  notebook: z.string(),
+});
+export type PostCreateNotebookResponse = z.infer<
+  typeof PostCreateNotebookResponseSchema
 >;
 
 // =================
@@ -58,20 +96,4 @@ export type GetListTemplatesResponse = z.infer<
 export const GetTemplateByIdResponseSchema = TemplateDocumentSchema;
 export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
->;
-
-// POST create new notebook from template input
-export const PostCreateNotebookFromTemplateSchema = z.object({
-  template_id: z.string(),
-  project_name: z.string(),
-});
-export type PostCreateNotebookFromTemplate = z.infer<
-  typeof PostCreateNotebookFromTemplateSchema
->;
-// POST create new notebook from template response
-export const PostCreateNotebookFromTemplateResponseSchema = z.object({
-  notebook: z.string(),
-});
-export type PostCreateNotebookFromTemplateResponse = z.infer<
-  typeof PostCreateNotebookFromTemplateResponseSchema
 >;
