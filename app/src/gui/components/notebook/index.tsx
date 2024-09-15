@@ -26,6 +26,7 @@ import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {OverviewMap} from './overview_map';
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
@@ -209,6 +210,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 <Tab label="Records" {...a11yProps(0, NOTEBOOK_NAME)} />
                 <Tab label="Details" {...a11yProps(1, NOTEBOOK_NAME)} />
                 <Tab label="Settings" {...a11yProps(2, NOTEBOOK_NAME)} />
+                <Tab label="Map" {...a11yProps(3, NOTEBOOK_NAME)} />
               </Tabs>
             </AppBar>
           </Box>
@@ -373,6 +375,12 @@ export default function NotebookComponent(props: NotebookComponentProps) {
 
           <TabPanel value={notebookTabValue} index={2} id={'notebook'}>
             {uiSpec !== null && <NotebookSettings uiSpec={uiSpec} />}
+          </TabPanel>
+
+          <TabPanel value={notebookTabValue} index={3} id={'notebook'}>
+            {uiSpec !== null && (
+              <OverviewMap project_id={project.project_id} uiSpec={uiSpec} />
+            )}
           </TabPanel>
         </Box>
       )}

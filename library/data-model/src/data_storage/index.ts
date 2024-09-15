@@ -497,7 +497,7 @@ export async function getRecordsWithRegex(
 
 import {FormData} from './internals';
 
-const hydrateRecord = async (
+export const hydrateRecord = async (
   project_id: string,
   record: any // return type of getSomeRecords
 ) => {
@@ -578,6 +578,7 @@ export const notebookRecordIterator = async (
   viewID: string,
   filter_deleted = true
 ) => {
+  console.log('notebookRecordIterator', project_id);
   const batchSize = 100;
   const getNextBatch = async (bookmark: string | null) => {
     const records = await getSomeRecords(
@@ -586,6 +587,7 @@ export const notebookRecordIterator = async (
       bookmark,
       filter_deleted
     );
+    console.log('records', records);
     // select just those in this view
     return records.filter((record: any) => {
       return record.type === viewID;
@@ -600,6 +602,7 @@ export const notebookRecordIterator = async (
   let index = 0;
   const recordIterator = {
     async next() {
+      console.log('next');
       let record;
       if (index < records.length) {
         record = records[index];
