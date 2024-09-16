@@ -71,20 +71,14 @@ export const resetDatabases = async () => {
 export const cleanDataDBS = async () => {
   let db: PouchDB.Database;
   for (const name in databaseList) {
-    console.log("getting db ", name)
     db = databaseList[name];
-    console.log("Deleting db ", name)
     delete databaseList[name];
     if (db !== undefined) {
       try {
-        console.log("destroying db ", name)
-        console.log("db info", db.name)
         await db.destroy();
-        //await db.close();
       } catch (err) {
         console.log("error db ", name)
         console.log(err)
-        //console.error(err);
       }
     }
   }

@@ -275,9 +275,7 @@ describe('API tests', () => {
     const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
     const adminUser = await getUserFromEmailOrUsername('admin');
 
-    console.log('PRE ADMIN');
     if (adminUser) {
-      console.log('IN ADMIN');
       const project_id = await createNotebook(
         'test-notebook',
         uiSpec,
@@ -294,7 +292,6 @@ describe('API tests', () => {
         .expect(200);
       notebooks = await getNotebooks(adminUser);
       expect(notebooks).to.be.empty;
-      console.log('RUNNING');
 
       // Because of how mocks work with db list, we need to manually remove the
       // data db from the list TODO make the mock respect database deletion
@@ -302,13 +299,8 @@ describe('API tests', () => {
       // operation was actually occurring, instead the redirect request was
       // being accepted despite a hidden error. If we don't do this, the
       // db.destroy() method will run forever.
-      console.log(
-        `database list at end of delete notebook, ${Object.keys(databaseList)}`
-      );
       for (const db_name of Object.keys(databaseList)) {
-        console.log(`${databaseList[db_name].name} === ${dataDb.name}`);
         if (databaseList[db_name].name === dataDb.name) {
-          console.log(`Manually deleting ${db_name}`);
           delete databaseList[db_name];
         }
       }

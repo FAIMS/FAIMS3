@@ -41,28 +41,31 @@ api.post(
     params: z.object({id: z.string()}),
     body: PostUpdateUserInputSchema,
   }),
-  async (req, res) => {
-    // Cluster admins only
-    if (!userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not authorised to update user details.'
-      );
-    }
+  async (req, res, next) => {
+    try {
+      // Cluster admins only
+      if (!userIsClusterAdmin(req.user)) {
+        throw new Exceptions.UnauthorizedException(
+          'You are not authorised to update user details.'
+        );
+      }
 
-    // Get the current user from DB
-    const user = await getUserFromEmailOrUsername(req.params.id);
-    if (!user) {
-      throw new Exceptions.ItemNotFoundException(
-        'Username cannot be found in user database.'
-      );
+      // Get the current user from DB
+      const user = await getUserFromEmailOrUsername(req.params.id);
+      if (!user) {
+        throw new Exceptions.ItemNotFoundException(
+          'Username cannot be found in user database.'
+        );
+      }
+      if (req.body.addrole) {
+        addOtherRoleToUser(user, req.body.role);
+      } else {
+        removeOtherRoleFromUser(user, req.body.role);
+      }
+      await saveUser(user);
+      res.status(200).send();
+    } catch (e) {
+      next(e);
     }
-
-    if (req.body.addrole) {
-      addOtherRoleToUser(user, req.body.role);
-    } else {
-      removeOtherRoleFromUser(user, req.body.role);
-    }
-    await saveUser(user);
-    res.status(200).send();
   }
 );

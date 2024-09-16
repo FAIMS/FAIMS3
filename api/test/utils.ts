@@ -53,11 +53,8 @@ export const notebookPassword = 'notebook';
  */
 export const beforeApiTests = async () => {
   // Clean and reinitialise databases
-  console.log("reset dbs")
   await resetDatabases();
-  console.log("clean dbs")
   await cleanDataDBS();
-  console.log("done")
 
   // NOTE the admin user should exist at this point
 
@@ -100,5 +97,4 @@ export const beforeApiTests = async () => {
   addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
   await addLocalPasswordForUser(nbUser, notebookPassword);
   notebookUserToken = await createAuthKey(nbUser, signingKey);
-  console.log("done func")
 };

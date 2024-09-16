@@ -20,6 +20,7 @@
 import {ListingInformation} from '@faims3/data-model';
 import express from 'express';
 import multer from 'multer';
+import * as Exceptions from '../exceptions';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
@@ -66,13 +67,16 @@ api.get('/info', async (req, res) => {
   res.json(info);
 });
 
-api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
+api.get('/directory/', requireAuthenticationAPI, async (req, res, next) => {
   // get the directory of notebooks on this server
-  if (req.user) {
+  try {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
     const projects = await getProjects(req.user);
     res.json(projects);
-  } else {
-    res.json([]);
+  } catch (e) {
+    next(e);
   }
 });
 
@@ -81,12 +85,15 @@ if (DEVELOPER_MODE) {
     '/restore',
     upload.single('backup'),
     requireAuthenticationAPI,
-    async (req: any, res) => {
-      if (userIsClusterAdmin(req.user)) {
+    async (req: any, res, next) => {
+      try {
+        if (!userIsClusterAdmin(req.user)) {
+          throw new Exceptions.UnauthorizedException();
+        }
         await restoreFromBackup(req.file.path);
         res.json({status: 'success'});
-      } else {
-        res.status(401).end();
+      } catch (e) {
+        next(e);
       }
     }
   );

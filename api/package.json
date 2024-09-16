@@ -20,7 +20,7 @@
         "watch": "nodemon --ignore build --ext ts --exec 'tsc --incremental && node .'",
         "initdb": "env-cmd node scripts/initialise.js",
         "load-notebooks": "env-cmd node scripts/loadNotebook.js ./notebooks/*.json",
-        "test": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha",
+        "test": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha --exit",
         "test:watch": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha -w",
         "coverage": "nyc --reporter=html --reporter=lcov env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha"
     },
