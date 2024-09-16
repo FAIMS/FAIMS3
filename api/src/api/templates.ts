@@ -19,26 +19,31 @@
  */
 
 import {
-  GetListTemplatesResponse,
-  GetTemplateByIdResponse,
-  PostCreateTemplateInputSchema,
-  PostCreateTemplateResponse,
-  PutUpdateTemplateInputSchema,
-  PutUpdateTemplateResponse,
+    GetListTemplatesResponse,
+    GetTemplateByIdResponse,
+    PostCreateTemplateInputSchema,
+    PostCreateTemplateResponse,
+    PutUpdateTemplateInputSchema,
+    PutUpdateTemplateResponse,
 } from '@faims3/data-model';
-import * as Exceptions from '../exceptions';
-import express, {Response} from 'express';
-import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
+import express, { Response } from 'express';
+import { z } from 'zod';
+import { processRequest } from 'zod-express-middleware';
 import {
-  createTemplate,
-  deleteExistingTemplate,
-  getTemplate,
-  getTemplates,
-  updateExistingTemplate,
+    createTemplate,
+    deleteExistingTemplate,
+    getTemplate,
+    getTemplates,
+    updateExistingTemplate,
 } from '../couchdb/templates';
-import {userCanDoWithTemplate} from '../couchdb/users';
-import {requireAuthenticationAPI} from '../middleware';
+import { userCanDoWithTemplate } from '../couchdb/users';
+import * as Exceptions from '../exceptions';
+import { requireAuthenticationAPI } from '../middleware';
+
+// See https://github.com/davidbanham/express-async-errors - this patches
+// express to handle async errors without hanging or needing an explicit try
+// catch block
+require('express-async-errors');
 
 export const api = express.Router();
 
@@ -50,23 +55,19 @@ api.get(
   '/',
   requireAuthenticationAPI,
   async (req, res: Response<GetListTemplatesResponse>, next) => {
-    try {
-      if (!req.user) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not allowed to get templates.'
-        );
-      }
-
-      // User is not authorised to read the list of templates
-      if (!userCanDoWithTemplate(req.user, undefined, 'list')) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not allowed to get templates.'
-        );
-      }
-      res.json({templates: await getTemplates()});
-    } catch (e) {
-      next(e);
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to get templates.'
+      );
     }
+
+    // User is not authorised to read the list of templates
+    if (!userCanDoWithTemplate(req.user, undefined, 'list')) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to get templates.'
+      );
+    }
+    res.json({templates: await getTemplates()});
   }
 );
 
@@ -81,27 +82,23 @@ api.get(
   }),
   requireAuthenticationAPI,
   async (req, res: Response<GetTemplateByIdResponse>, next) => {
-    try {
-      const id = req.params.id;
+    const id = req.params.id;
 
-      if (!req.user) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not allowed to get templates.'
-        );
-      }
-
-      // User is not authorised to create a template
-      if (!userCanDoWithTemplate(req.user, id, 'read')) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not allowed to read this template.'
-        );
-      }
-
-      const template = await getTemplate(id);
-      res.json(template);
-    } catch (e) {
-      next(e);
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to get templates.'
+      );
     }
+
+    // User is not authorised to create a template
+    if (!userCanDoWithTemplate(req.user, id, 'read')) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to read this template.'
+      );
+    }
+
+    const template = await getTemplate(id);
+    res.json(template);
   }
 );
 
@@ -118,29 +115,25 @@ api.post(
   }),
   requireAuthenticationAPI,
   async (req, res: Response<PostCreateTemplateResponse>, next) => {
-    try {
-      // Parse the input schema to strip keys
+    // Parse the input schema to strip keys
 
-      // First check the user has permissions to do this action
-      if (!req.user) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not allowed to create templates.'
-        );
-      }
-
-      // User is not authorised to create a template
-      if (!userCanDoWithTemplate(req.user, undefined, 'create')) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not allowed to create a template.'
-        );
-      }
-
-      // Now we can create the new template and return it
-      const newTemplate = await createTemplate(req.body);
-      res.json(newTemplate);
-    } catch (e) {
-      next(e);
+    // First check the user has permissions to do this action
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to create templates.'
+      );
     }
+
+    // User is not authorised to create a template
+    if (!userCanDoWithTemplate(req.user, undefined, 'create')) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to create a template.'
+      );
+    }
+
+    // Now we can create the new template and return it
+    const newTemplate = await createTemplate(req.body);
+    res.json(newTemplate);
   }
 );
 
@@ -158,34 +151,27 @@ api.put(
   }),
   requireAuthenticationAPI,
   async (req, res: Response<PutUpdateTemplateResponse>, next) => {
-    try {
-      // pull out template Id
-      const templateId = req.params.id;
+    // pull out template Id
+    const templateId = req.params.id;
 
-      // First check the user has permissions to do this action
-      if (!req.user) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not allowed to update templates.'
-        );
-      }
-
-      // User is not authorised to create a template
-      if (!userCanDoWithTemplate(req.user, templateId, 'update')) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not allowed to update this template.'
-        );
-      }
-
-      // Now update the existing document
-      // And respond with fulfilled document after updating
-      const updatedTemplate = await updateExistingTemplate(
-        templateId,
-        req.body
+    // First check the user has permissions to do this action
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to update templates.'
       );
-      res.json(updatedTemplate);
-    } catch (e) {
-      next(e);
     }
+
+    // User is not authorised to create a template
+    if (!userCanDoWithTemplate(req.user, templateId, 'update')) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to update this template.'
+      );
+    }
+
+    // Now update the existing document
+    // And respond with fulfilled document after updating
+    const updatedTemplate = await updateExistingTemplate(templateId, req.body);
+    res.json(updatedTemplate);
   }
 );
 
@@ -201,31 +187,27 @@ api.post(
   }),
   requireAuthenticationAPI,
   async (req, res: Response<PutUpdateTemplateResponse>, next) => {
-    try {
-      // pull out template Id
-      const templateId = req.params.id;
+    // pull out template Id
+    const templateId = req.params.id;
 
-      // First check the user has permissions to do this action
-      if (!req.user) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not allowed to delete templates.'
-        );
-      }
-
-      // User is not authorised to delete a template
-      if (!userCanDoWithTemplate(req.user, templateId, 'delete')) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not allowed to delete this template.'
-        );
-      }
-
-      // Now delete the existing document
-      await deleteExistingTemplate(templateId);
-
-      // Indicate successful deletion and send
-      res.sendStatus(200);
-    } catch (e) {
-      next(e);
+    // First check the user has permissions to do this action
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to delete templates.'
+      );
     }
+
+    // User is not authorised to delete a template
+    if (!userCanDoWithTemplate(req.user, templateId, 'delete')) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to delete this template.'
+      );
+    }
+
+    // Now delete the existing document
+    await deleteExistingTemplate(templateId);
+
+    // Indicate successful deletion and send
+    res.sendStatus(200);
   }
 );

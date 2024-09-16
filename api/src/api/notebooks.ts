@@ -65,22 +65,26 @@ import {
 import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 
+// See https://github.com/davidbanham/express-async-errors - this patches
+// express to handle async errors without hanging or needing an explicit try
+// catch block
+require('express-async-errors');
+
 export const api = express.Router();
 
+/**
+ * Gets a list of notebooks
+ */
 api.get(
   '/',
   requireAuthenticationAPI,
   async (req, res: Response<GetNotebookListResponse>, next) => {
-    try {
-      // get a list of notebooks from the db
-      if (!req.user) {
-        throw new Exceptions.UnauthorizedException();
-      }
-      const notebooks = await getNotebooks(req.user);
-      res.json(notebooks);
-    } catch (e) {
-      next(e);
+    // get a list of notebooks from the db
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
     }
+    const notebooks = await getNotebooks(req.user);
+    res.json(notebooks);
   }
 );
 
@@ -99,91 +103,87 @@ api.post(
   }),
   requireAuthenticationAPI,
   async (req, res: Response<PostCreateNotebookResponse>, next) => {
-    try {
-      // First check the user has permissions to do this action
-      if (!req.user) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not authorised to create a notebook.'
-        );
-      }
-
-      // User is not authorised to create a notebook
-      if (!userCanCreateNotebooks(req.user)) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not authorised to create a notebook.'
-        );
-      }
-
-      // Validate payload combination
-      if ('ui-specification' in req.body && 'template_id' in req.body) {
-        throw new Exceptions.ValidationException(
-          'Inappropriate inclusion of both a template_id and a ui-specification when creating a notebook.'
-        );
-      }
-
-      // Functions which determine which type of payload is present
-
-      // TODO consider using a discriminated union approach for parsing here to
-      // make this more efficient e.g. zod allows literals on objects with
-      // discriminated unions on this
-      const isFromScratch = (
-        payload: PostCreateNotebookInput
-      ): payload is CreateNotebookFromScratch => {
-        return 'ui-specification' in payload;
-      };
-      const isFromTemplate = (
-        payload: PostCreateNotebookInput
-      ): payload is CreateNotebookFromTemplate => {
-        return 'template_id' in payload;
-      };
-
-      // Metadata is from payload, or from template
-      let metadata: any;
-      // ui Spec is from payload if manual, or from template
-      let uiSpec: ProjectUIModel;
-      // Project name is in both payloads
-      const projectName: string = req.body.name;
-      // Template ID is only needed if created from template
-      let templateId: string | undefined = undefined;
-
-      // Check the type of creation
-      if (isFromTemplate(req.body)) {
-        // Now we use the template to get details needed to instantiate a new notebook
-        const template = await getTemplate(req.body.template_id);
-
-        // Pull out values needed to create a new notebook
-        metadata = template.metadata;
-        uiSpec = template.ui_specification;
-        templateId = template._id;
-      } else if (isFromScratch(req.body)) {
-        // Creating a new notebook from scratch
-        uiSpec = req.body['ui-specification'];
-        metadata = req.body.metadata;
-      } else {
-        throw new Exceptions.ValidationException(
-          'Could not parse input payload as either a from scratch or from template creation. Contact a system administrator and validate payload integrity.'
-        );
-      }
-
-      const projectID = await createNotebook(
-        projectName,
-        uiSpec,
-        metadata,
-        // link to template ID if necessary
-        templateId
+    // First check the user has permissions to do this action
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorised to create a notebook.'
       );
-      if (projectID) {
-        // allow this user to modify the new notebook
-        addProjectRoleToUser(req.user, projectID, 'admin');
-        await saveUser(req.user);
-        res.json({notebook: projectID} as PostCreateNotebookResponse);
-      } else {
-        throw new Exceptions.InternalSystemError(
-          'Error occurred during notebook creation.'
-        );
-      }
-    } catch (e) {
-      next(e);
+    }
+
+    // User is not authorised to create a notebook
+    if (!userCanCreateNotebooks(req.user)) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorised to create a notebook.'
+      );
+    }
+
+    // Validate payload combination
+    if ('ui-specification' in req.body && 'template_id' in req.body) {
+      throw new Exceptions.ValidationException(
+        'Inappropriate inclusion of both a template_id and a ui-specification when creating a notebook.'
+      );
+    }
+
+    // Functions which determine which type of payload is present
+
+    // TODO consider using a discriminated union approach for parsing here to
+    // make this more efficient e.g. zod allows literals on objects with
+    // discriminated unions on this
+    const isFromScratch = (
+      payload: PostCreateNotebookInput
+    ): payload is CreateNotebookFromScratch => {
+      return 'ui-specification' in payload;
+    };
+    const isFromTemplate = (
+      payload: PostCreateNotebookInput
+    ): payload is CreateNotebookFromTemplate => {
+      return 'template_id' in payload;
+    };
+
+    // Metadata is from payload, or from template
+    let metadata: any;
+    // ui Spec is from payload if manual, or from template
+    let uiSpec: ProjectUIModel;
+    // Project name is in both payloads
+    const projectName: string = req.body.name;
+    // Template ID is only needed if created from template
+    let templateId: string | undefined = undefined;
+
+    // Check the type of creation
+    if (isFromTemplate(req.body)) {
+      // Now we use the template to get details needed to instantiate a new notebook
+      const template = await getTemplate(req.body.template_id);
+
+      // Pull out values needed to create a new notebook
+      metadata = template.metadata;
+      uiSpec = template.ui_specification;
+      templateId = template._id;
+    } else if (isFromScratch(req.body)) {
+      // Creating a new notebook from scratch
+      uiSpec = req.body['ui-specification'];
+      metadata = req.body.metadata;
+    } else {
+      throw new Exceptions.ValidationException(
+        'Could not parse input payload as either a from scratch or from template creation. Contact a system administrator and validate payload integrity.'
+      );
+    }
+
+    const projectID = await createNotebook(
+      projectName,
+      uiSpec,
+      metadata,
+      // link to template ID if necessary
+      templateId
+    );
+    if (projectID) {
+      // allow this user to modify the new notebook
+      addProjectRoleToUser(req.user, projectID, 'admin');
+      await saveUser(req.user);
+      res.json({notebook: projectID} as PostCreateNotebookResponse);
+    } else {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred during notebook creation.'
+      );
     }
   }
 );
@@ -193,21 +193,17 @@ api.get(
   processRequest({params: z.object({id: z.string()})}),
   requireAuthenticationAPI,
   async (req, res: Response<GetNotebookResponse>, next) => {
-    try {
-      // get full details of a single notebook
-      const project_id = req.params.id;
-      if (!req.user || !userHasPermission(req.user, project_id, 'read')) {
-        throw new Exceptions.UnauthorizedException();
-      }
-      const metadata = await getNotebookMetadata(project_id);
-      const uiSpec = await getNotebookUISpec(project_id);
-      if (metadata && uiSpec) {
-        res.json({metadata, 'ui-specification': uiSpec});
-      } else {
-        throw new Exceptions.ItemNotFoundException('Notebook not found.');
-      }
-    } catch (e) {
-      next(e);
+    // get full details of a single notebook
+    const project_id = req.params.id;
+    if (!req.user || !userHasPermission(req.user, project_id, 'read')) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const metadata = await getNotebookMetadata(project_id);
+    const uiSpec = await getNotebookUISpec(project_id);
+    if (metadata && uiSpec) {
+      res.json({metadata, 'ui-specification': uiSpec});
+    } else {
+      throw new Exceptions.ItemNotFoundException('Notebook not found.');
     }
   }
 );
@@ -221,21 +217,17 @@ api.put(
     body: PutUpdateNotebookInputSchema,
   }),
   async (req, res: Response<PutUpdateNotebookResponse>, next) => {
-    try {
-      // user must have modify permissions on this notebook
-      if (!userHasPermission(req.user, req.params.id, 'modify')) {
-        throw new Exceptions.UnauthorizedException(
-          'You do not have permission to modify this notebook'
-        );
-      }
-      const uiSpec = req.body['ui-specification'];
-      const metadata = req.body.metadata;
-      const projectID = req.params.id;
-      await updateNotebook(projectID, uiSpec, metadata);
-      res.json({notebook: projectID}).end();
-    } catch (e) {
-      next(e);
+    // user must have modify permissions on this notebook
+    if (!userHasPermission(req.user, req.params.id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to modify this notebook'
+      );
     }
+    const uiSpec = req.body['ui-specification'];
+    const metadata = req.body.metadata;
+    const projectID = req.params.id;
+    await updateNotebook(projectID, uiSpec, metadata);
+    res.json({notebook: projectID}).end();
   }
 );
 
@@ -248,18 +240,14 @@ api.get(
   requireAuthenticationAPI,
   // TODO complete type annotations for this method
   async (req, res: Response<{records: any}>, next) => {
-    try {
-      if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
-        throw new Exceptions.UnauthorizedException();
-      }
-      const records = await getNotebookRecords(req.params.id);
-      if (records) {
-        res.json({records});
-      } else {
-        throw new Exceptions.ItemNotFoundException('Notebook not found');
-      }
-    } catch (e) {
-      next(e);
+    if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const records = await getNotebookRecords(req.params.id);
+    if (records) {
+      res.json({records});
+    } else {
+      throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
   }
 );
@@ -271,15 +259,11 @@ api.get(
   requireAuthenticationAPI,
   // TODO complete type annotations for this method
   async (req, res, next) => {
-    try {
-      if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
-        throw new Exceptions.ItemNotFoundException('Notebook not found');
-      }
-      res.setHeader('Content-Type', 'text/csv');
-      streamNotebookRecordsAsCSV(req.params.id, req.params.viewID, res);
-    } catch (e) {
-      next(e);
+    if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
+      throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
+    res.setHeader('Content-Type', 'text/csv');
+    streamNotebookRecordsAsCSV(req.params.id, req.params.viewID, res);
   }
 );
 
@@ -290,15 +274,11 @@ api.get(
   requireAuthenticationAPI,
   // TODO complete type annotations for this method
   async (req, res, next) => {
-    try {
-      if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
-        throw new Exceptions.ItemNotFoundException('Notebook not found');
-      }
-      res.setHeader('Content-Type', 'application/zip');
-      streamNotebookFilesAsZip(req.params.id, req.params.viewID, res);
-    } catch (e) {
-      next(e);
+    if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
+      throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
+    res.setHeader('Content-Type', 'application/zip');
+    streamNotebookFilesAsZip(req.params.id, req.params.viewID, res);
   }
 );
 
@@ -307,18 +287,14 @@ api.get(
   processRequest({params: z.object({id: z.string()})}),
   requireAuthenticationAPI,
   async (req, res: Response<GetNotebookUsersResponse>, next) => {
-    try {
-      // user must have modify access to this notebook
-      if (!userHasPermission(req.user, req.params.id, 'modify')) {
-        throw new Exceptions.UnauthorizedException(
-          'You do not have permission to view users for this notebook.'
-        );
-      }
-      const userInfo = await getUserInfoForNotebook(req.params.id);
-      res.json(userInfo);
-    } catch (e) {
-      next(e);
+    // user must have modify access to this notebook
+    if (!userHasPermission(req.user, req.params.id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to view users for this notebook.'
+      );
     }
+    const userInfo = await getUserInfoForNotebook(req.params.id);
+    res.json(userInfo);
   }
 );
 
@@ -331,63 +307,59 @@ api.post(
   }),
   requireAuthenticationAPI,
   async (req, res, next) => {
-    try {
-      if (!userHasPermission(req.user, req.params.id, 'modify')) {
-        throw new Exceptions.UnauthorizedException(
-          "User does not have permission to modify this project's permissions."
-        );
-      }
-
-      // Get the notebook metadata to modify
-      const notebookMetadata = await getNotebookMetadata(req.params.id);
-
-      if (!notebookMetadata) {
-        throw new Exceptions.ItemNotFoundException(
-          'Could not find specified notebook.'
-        );
-      }
-
-      // Destructure request body
-      const {username, role, addrole} = req.body;
-
-      // check that this is a legitimate role for this notebook - pass in the
-      // metadata to avoid refetching it
-      const notebookRoles = await getRolesForNotebook(
-        notebookMetadata.project_id,
-        notebookMetadata
+    if (!userHasPermission(req.user, req.params.id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        "User does not have permission to modify this project's permissions."
       );
-
-      // Check for invalid role
-      if (!notebookRoles.includes(role)) {
-        // The role isn't valid for the notebook
-        throw new Exceptions.InvalidRequestException(
-          "You cannot add a role which doesn't exist within the notebooks configured roles."
-        );
-      }
-
-      // Get the user specified
-      const user = await getUserFromEmailOrUsername(username);
-
-      if (!user) {
-        throw new Exceptions.ItemNotFoundException(
-          'The username provided cannot be found in the user database.'
-        );
-      }
-
-      if (addrole) {
-        // Add project role to the user
-        addProjectRoleToUser(user, notebookMetadata.project_id, role);
-      } else {
-        // Remove project role from the user
-        removeProjectRoleFromUser(user, notebookMetadata.project_id, role);
-      }
-
-      // save the user after modifications have been made
-      await saveUser(user);
-      res.status(200).end();
-    } catch (e) {
-      next(e);
     }
+
+    // Get the notebook metadata to modify
+    const notebookMetadata = await getNotebookMetadata(req.params.id);
+
+    if (!notebookMetadata) {
+      throw new Exceptions.ItemNotFoundException(
+        'Could not find specified notebook.'
+      );
+    }
+
+    // Destructure request body
+    const {username, role, addrole} = req.body;
+
+    // check that this is a legitimate role for this notebook - pass in the
+    // metadata to avoid refetching it
+    const notebookRoles = await getRolesForNotebook(
+      notebookMetadata.project_id,
+      notebookMetadata
+    );
+
+    // Check for invalid role
+    if (!notebookRoles.includes(role)) {
+      // The role isn't valid for the notebook
+      throw new Exceptions.InvalidRequestException(
+        "You cannot add a role which doesn't exist within the notebooks configured roles."
+      );
+    }
+
+    // Get the user specified
+    const user = await getUserFromEmailOrUsername(username);
+
+    if (!user) {
+      throw new Exceptions.ItemNotFoundException(
+        'The username provided cannot be found in the user database.'
+      );
+    }
+
+    if (addrole) {
+      // Add project role to the user
+      addProjectRoleToUser(user, notebookMetadata.project_id, role);
+    } else {
+      // Remove project role from the user
+      removeProjectRoleFromUser(user, notebookMetadata.project_id, role);
+    }
+
+    // save the user after modifications have been made
+    await saveUser(user);
+    res.status(200).end();
   }
 );
 
@@ -397,22 +369,18 @@ api.post(
   processRequest({params: z.object({notebook_id: z.string()})}),
   requireAuthenticationAPI,
   async (req, res, next) => {
-    try {
-      if (!userIsClusterAdmin(req.user)) {
-        // Not authorised
-        throw new Exceptions.UnauthorizedException(
-          'Not authorised to delete a notebook.'
-        );
-      }
-
-      // Delete the notebook
-      await deleteNotebook(req.params.notebook_id);
-
-      // 200 OK indicating successful deletion
-      res.status(200).end();
-    } catch (e) {
-      next(e);
+    if (!userIsClusterAdmin(req.user)) {
+      // Not authorised
+      throw new Exceptions.UnauthorizedException(
+        'Not authorised to delete a notebook.'
+      );
     }
+
+    // Delete the notebook
+    await deleteNotebook(req.params.notebook_id);
+
+    // 200 OK indicating successful deletion
+    res.status(200).end();
   }
 );
 
@@ -425,22 +393,18 @@ if (DEVELOPER_MODE) {
       params: z.object({notebook_id: z.string()}),
     }),
     async (req, res: Response<PostRandomRecordsResponse>, next) => {
-      try {
-        if (!userIsClusterAdmin(req.user)) {
-          // Not authorised
-          throw new Exceptions.UnauthorizedException(
-            'Not authorised to generate random records.'
-          );
-        }
-
-        const record_ids = await createManyRandomRecords(
-          req.params.notebook_id,
-          req.body.count
+      if (!userIsClusterAdmin(req.user)) {
+        // Not authorised
+        throw new Exceptions.UnauthorizedException(
+          'Not authorised to generate random records.'
         );
-        res.json({record_ids});
-      } catch (e) {
-        next(e);
       }
+
+      const record_ids = await createManyRandomRecords(
+        req.params.notebook_id,
+        req.body.count
+      );
+      res.json({record_ids});
     }
   );
 }

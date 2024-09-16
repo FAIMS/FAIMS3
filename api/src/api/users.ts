@@ -31,6 +31,11 @@ import {processRequest} from 'zod-express-middleware';
 import {z} from 'zod';
 import {PostUpdateUserInputSchema} from '@faims3/data-model';
 
+// See https://github.com/davidbanham/express-async-errors - this patches
+// express to handle async errors without hanging or needing an explicit try
+// catch block
+require('express-async-errors');
+
 export const api = express.Router();
 
 // update a user
@@ -42,30 +47,26 @@ api.post(
     body: PostUpdateUserInputSchema,
   }),
   async (req, res, next) => {
-    try {
-      // Cluster admins only
-      if (!userIsClusterAdmin(req.user)) {
-        throw new Exceptions.UnauthorizedException(
-          'You are not authorised to update user details.'
-        );
-      }
-
-      // Get the current user from DB
-      const user = await getUserFromEmailOrUsername(req.params.id);
-      if (!user) {
-        throw new Exceptions.ItemNotFoundException(
-          'Username cannot be found in user database.'
-        );
-      }
-      if (req.body.addrole) {
-        addOtherRoleToUser(user, req.body.role);
-      } else {
-        removeOtherRoleFromUser(user, req.body.role);
-      }
-      await saveUser(user);
-      res.status(200).send();
-    } catch (e) {
-      next(e);
+    // Cluster admins only
+    if (!userIsClusterAdmin(req.user)) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorised to update user details.'
+      );
     }
+
+    // Get the current user from DB
+    const user = await getUserFromEmailOrUsername(req.params.id);
+    if (!user) {
+      throw new Exceptions.ItemNotFoundException(
+        'Username cannot be found in user database.'
+      );
+    }
+    if (req.body.addrole) {
+      addOtherRoleToUser(user, req.body.role);
+    } else {
+      removeOtherRoleFromUser(user, req.body.role);
+    }
+    await saveUser(user);
+    res.status(200).send();
   }
 );

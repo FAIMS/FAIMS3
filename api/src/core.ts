@@ -22,12 +22,12 @@
 import cookieSession from 'cookie-session';
 import cors from 'cors';
 import express, {
-  ErrorRequestHandler,
-  NextFunction,
-  Request,
-  Response,
+    ErrorRequestHandler,
+    NextFunction,
+    Request,
+    Response,
 } from 'express';
-import {ExpressHandlebars} from 'express-handlebars';
+import { ExpressHandlebars } from 'express-handlebars';
 import handlebars from 'handlebars';
 import morgan from 'morgan';
 import passport from 'passport';
@@ -39,8 +39,8 @@ import flash from 'req-flash';
 // https://github.com/swagger-api/swagger-ui/issues/5710
 const pathToSwaggerUi = require('swagger-ui-dist').getAbsoluteFSPath();
 
-import {readFileSync} from 'fs';
-import {join} from 'path';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 const indexContent = readFileSync(
   join(pathToSwaggerUi, 'swagger-initializer.js')
@@ -51,11 +51,16 @@ const indexContent = readFileSync(
 // Workaround done
 
 import markdownit from 'markdown-it';
-import {api as notebookApi} from './api/notebooks';
-import {api as utilityApi} from './api/utilities';
-import {api as usersApi} from './api/users';
-import {api as templatesApi} from './api/templates';
-import {COOKIE_SECRET} from './buildconfig';
+import { api as notebookApi } from './api/notebooks';
+import { api as templatesApi } from './api/templates';
+import { api as usersApi } from './api/users';
+import { api as utilityApi } from './api/utilities';
+import { COOKIE_SECRET } from './buildconfig';
+
+// See https://github.com/davidbanham/express-async-errors - this patches
+// express to handle async errors without hanging or needing an explicit try
+// catch block
+require('express-async-errors');
 
 export const app = express();
 app.use(morgan('combined'));
