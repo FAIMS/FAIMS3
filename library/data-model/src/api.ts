@@ -97,8 +97,24 @@ export const PostAddNotebookUserInputSchema = z.object({
   // Addrole:= true means add, false means remove
   addrole: z.boolean(),
 });
+
 export type PostAddNotebookUserInput = z.infer<
   typeof PostAddNotebookUserInputSchema
+>;
+
+// Post generate random records RandomRecords input
+export const PostRandomRecordsInputSchema = z.object({count: z.bigint()});
+export type PostRandomRecordsInput = z.infer<
+  typeof PostRandomRecordsInputSchema
+>;
+
+// Post generate random records RandomRecords response
+export const PostRandomRecordsResponseSchema = z.object({
+  // Ids of new records
+  record_ids: z.array(z.string()),
+});
+export type PostRandomRecordsResponse = z.infer<
+  typeof PostRandomRecordsResponseSchema
 >;
 
 // =================

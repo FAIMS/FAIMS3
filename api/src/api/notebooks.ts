@@ -19,49 +19,51 @@
  */
 
 import {
-  CreateNotebookFromScratch,
-  CreateNotebookFromTemplate,
-  GetNotebookListResponse,
-  GetNotebookResponse,
-  GetNotebookUsersResponse,
-  PostAddNotebookUserInputSchema,
-  PostCreateNotebookInput,
-  PostCreateNotebookInputSchema,
-  PostCreateNotebookResponse,
-  ProjectUIModel,
-  PutUpdateNotebookInputSchema,
-  PutUpdateNotebookResponse,
+    CreateNotebookFromScratch,
+    CreateNotebookFromTemplate,
+    GetNotebookListResponse,
+    GetNotebookResponse,
+    GetNotebookUsersResponse,
+    PostAddNotebookUserInputSchema,
+    PostCreateNotebookInput,
+    PostCreateNotebookInputSchema,
+    PostCreateNotebookResponse,
+    PostRandomRecordsInputSchema,
+    PostRandomRecordsResponse,
+    ProjectUIModel,
+    PutUpdateNotebookInputSchema,
+    PutUpdateNotebookResponse,
 } from '@faims3/data-model';
-import express, {Response} from 'express';
-import {z} from 'zod';
-import {processRequest} from 'zod-express-middleware';
-import {DEVELOPER_MODE} from '../buildconfig';
-import {createManyRandomRecords} from '../couchdb/devtools';
+import express, { Response } from 'express';
+import { z } from 'zod';
+import { processRequest } from 'zod-express-middleware';
+import { DEVELOPER_MODE } from '../buildconfig';
+import { createManyRandomRecords } from '../couchdb/devtools';
 import {
-  createNotebook,
-  deleteNotebook,
-  getNotebookMetadata,
-  getNotebookRecords,
-  getNotebooks,
-  getNotebookUISpec,
-  getRolesForNotebook,
-  streamNotebookFilesAsZip,
-  streamNotebookRecordsAsCSV,
-  updateNotebook,
+    createNotebook,
+    deleteNotebook,
+    getNotebookMetadata,
+    getNotebookRecords,
+    getNotebooks,
+    getNotebookUISpec,
+    getRolesForNotebook,
+    streamNotebookFilesAsZip,
+    streamNotebookRecordsAsCSV,
+    updateNotebook,
 } from '../couchdb/notebooks';
-import {getTemplate} from '../couchdb/templates';
+import { getTemplate } from '../couchdb/templates';
 import {
-  addProjectRoleToUser,
-  getUserFromEmailOrUsername,
-  getUserInfoForNotebook,
-  removeProjectRoleFromUser,
-  saveUser,
-  userCanCreateNotebooks,
-  userHasPermission,
-  userIsClusterAdmin,
+    addProjectRoleToUser,
+    getUserFromEmailOrUsername,
+    getUserInfoForNotebook,
+    removeProjectRoleFromUser,
+    saveUser,
+    userCanCreateNotebooks,
+    userHasPermission,
+    userIsClusterAdmin,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {requireAuthenticationAPI} from '../middleware';
+import { requireAuthenticationAPI } from '../middleware';
 
 export const api = express.Router();
 
@@ -314,92 +316,112 @@ api.get(
 );
 
 // POST to give a user permissions on this notebook
-// body includes:
-//   {
-//     username: 'a username or email',
-//     role: a valid role for this notebook,
-//     addrole: boolean, true to add, false to delete
-//   }
 api.post(
   '/:id/users/',
-  requireAuthenticationAPI,
   processRequest({
     body: PostAddNotebookUserInputSchema,
     params: z.object({id: z.string()}),
   }),
+  requireAuthenticationAPI,
   async (req, res) => {
-    if (userHasPermission(req.user, req.params.id, 'modify')) {
-      let error = '';
-      const notebook = await getNotebookMetadata(req.params.id);
-      if (notebook) {
-        const username = req.body.username;
-        const role = req.body.role;
-        const addrole = req.body.addrole;
-
-        // check that this is a legitimate role for this notebook
-        const notebookRoles = await getRolesForNotebook(notebook.project_id);
-        if (notebookRoles.indexOf(role) >= 0) {
-          const user = await getUserFromEmailOrUsername(username);
-          if (user) {
-            if (addrole) {
-              await addProjectRoleToUser(user, notebook.project_id, role);
-            } else {
-              await removeProjectRoleFromUser(user, notebook.project_id, role);
-            }
-            await saveUser(user);
-            res.status(200).end();
-            return;
-          } else {
-            error = 'Unknown user ' + username;
-          }
-        } else {
-          error = 'Unknown role';
-        }
-      } else {
-        error = 'Unknown notebook';
-      }
-      // user or project not found or bad role
-      res.status(404).json({status: 'error', error}).end();
-    } else {
-      res
-        .status(401)
-        .json({
-          status: 'error',
-          error: 'you do not have permission to modify users for this notebook',
-        })
-        .end();
+    if (!userHasPermission(req.user, req.params.id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        "User does not have permission to modify this project's permissions."
+      );
     }
+
+    // Get the notebook metadata to modify
+    const notebookMetadata = await getNotebookMetadata(req.params.id);
+
+    if (!notebookMetadata) {
+      throw new Exceptions.ItemNotFoundException(
+        'Could not find specified notebook.'
+      );
+    }
+
+    // Destructure request body
+    const {username, role, addrole} = req.body;
+
+    // check that this is a legitimate role for this notebook - pass in the
+    // metadata to avoid refetching it
+    const notebookRoles = await getRolesForNotebook(
+      notebookMetadata.project_id,
+      notebookMetadata
+    );
+
+    // Check for invalid role
+    if (!notebookRoles.includes(role)) {
+      // The role isn't valid for the notebook
+      throw new Exceptions.InvalidRequestException(
+        "You cannot add a role which doesn't exist within the notebooks configured roles."
+      );
+    }
+
+    // Get the user specified
+    const user = await getUserFromEmailOrUsername(username);
+
+    if (!user) {
+      throw new Exceptions.ItemNotFoundException(
+        'The username provided cannot be found in the user database.'
+      );
+    }
+
+    if (addrole) {
+      // Add project role to the user
+      await addProjectRoleToUser(user, notebookMetadata.project_id, role);
+    } else {
+      // Remove project role from the user
+      await removeProjectRoleFromUser(user, notebookMetadata.project_id, role);
+    }
+
+    // save the user after modifications have been made
+    await saveUser(user);
+    res.status(200).end();
   }
 );
 
-api.post('/:notebook_id/delete', requireAuthenticationAPI, async (req, res) => {
-  if (userIsClusterAdmin(req.user)) {
-    const project_id = req.params.notebook_id;
-    const notebook = await getNotebookMetadata(project_id);
-    if (notebook) {
-      await deleteNotebook(project_id);
-      res.redirect('/notebooks/');
-    } else {
-      res.status(404).end();
+/** Deletes a given notebook by ID */
+api.post(
+  '/:notebook_id/delete',
+  processRequest({params: z.object({notebook_id: z.string()})}),
+  requireAuthenticationAPI,
+  async (req, res) => {
+    if (!userIsClusterAdmin(req.user)) {
+      // Not authorised
+      throw new Exceptions.UnauthorizedException(
+        'Not authorised to delete a notebook.'
+      );
     }
-  } else {
-    res.status(401).end();
+
+    // Delete the notebook
+    await deleteNotebook(req.params.notebook_id);
+
+    // 200 OK indicating successful deletion
+    res.status(200).end();
   }
-});
+);
 
 if (DEVELOPER_MODE) {
   api.post(
     '/:notebook_id/generate',
     requireAuthenticationAPI,
-    async (req, res) => {
-      if (userIsClusterAdmin(req.user)) {
-        const project_id = req.params.notebook_id;
-        const count = req.body.count || 1;
-        const record_ids = await createManyRandomRecords(project_id, count);
-        res.status(200).json({record_ids});
-      } else {
-        res.status(401).end();
+    processRequest({
+      body: PostRandomRecordsInputSchema,
+      params: z.object({notebook_id: z.string()}),
+    }),
+    async (req, res: Response<PostRandomRecordsResponse>) => {
+      if (!userIsClusterAdmin(req.user)) {
+        // Not authorised
+        throw new Exceptions.UnauthorizedException(
+          'Not authorised to generate random records.'
+        );
       }
+
+      const record_ids = await createManyRandomRecords(
+        req.params.notebook_id,
+        req.body.count
+      );
+      res.json({record_ids});
     }
   );
 }

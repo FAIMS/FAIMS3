@@ -245,15 +245,20 @@ export function addOtherRoleToUser(user: Express.User, role: string) {
   user.roles = compactRoles(user.project_roles, user.other_roles);
 }
 
+/**
+ * Add given role for given project in the user object and compact
+ * @param user The express user to modify
+ * @param project_id The project ID to add role for
+ * @param role The role
+ */
 export function addProjectRoleToUser(
   user: Express.User,
   project_id: ProjectID,
   role: ProjectRole
-) {
+): void {
+  // Add roles for given project in the user information
   if (project_id in user.project_roles) {
-    if (user.project_roles[project_id].indexOf(role) >= 0) {
-      return; // already there
-    } else {
+    if (!user.project_roles[project_id].includes(role)) {
       user.project_roles[project_id].push(role);
     }
   } else {
@@ -346,21 +351,39 @@ function compactRoles(
 //   return [project_roles, other_roles];
 // }
 
+/**
+ * Removes a given role for specified project ID. If it doesn't exist, nothing
+ * happens.
+ * @param user The express user to update
+ * @param project_id The project ID for which this role should be removed
+ * @param role The role to remove
+ */
 export function removeProjectRoleFromUser(
   user: Express.User,
   project_id: NonUniqueProjectID,
   role: ConductorRole
-) {
-  const project_roles = user.project_roles[project_id] ?? [];
-  if (project_roles.length === 0) {
+): void {
+  // get the roles for the given project
+  const relevantProjectRoles = user.project_roles[project_id];
+
+  // If there are no roles, no need to remove anything
+  if (!relevantProjectRoles) {
     console.debug('User has no roles in project', user, project_id, role);
-  } else {
-    user.project_roles[project_id] = project_roles.filter(r => r !== role);
+    return;
   }
+
+  // Remove the role by filtering it out of existing list
+  user.project_roles[project_id] = relevantProjectRoles.filter(r => r !== role);
+
   // update the roles property based on this
   user.roles = compactRoles(user.project_roles, user.other_roles);
 }
 
+/**
+ * Removes the given role from global roles for user
+ * @param user The express user to modify
+ * @param role The role which should be removed from the global roles array
+ */
 export function removeOtherRoleFromUser(
   user: Express.User,
   role: ConductorRole
