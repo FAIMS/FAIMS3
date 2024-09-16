@@ -28,6 +28,7 @@ import {
   resolve_project_id,
 } from '@faims3/data-model';
 import archiver from 'archiver';
+import * as Exceptions from '../exceptions';
 import PouchDB from 'pouchdb';
 import {Stream} from 'stream';
 import {getProjectsDB} from '.';
@@ -52,7 +53,7 @@ import {
 import {Stringifier, stringify} from 'csv-stringify';
 import securityPlugin from 'pouchdb-security-helper';
 import {slugify} from '../utils';
-import {userHasPermission} from './users';
+import {ProjectPermission, userHasPermission} from './users';
 PouchDB.plugin(securityPlugin);
 
 /**
@@ -890,10 +891,20 @@ const generateFilename = (
   return filename;
 };
 
-export const getRolesForNotebook = async (project_id: ProjectID) => {
+/**
+ * Fetches the roles configured for a notebook from the notebook metadata DB.
+ * @param project_id The project ID to lookup
+ * @returns A list of roles for this notebook including at least admin and user
+ */
+export const getRolesForNotebook = async (
+  project_id: ProjectID
+): Promise<string[]> => {
+  // Gets the metadata for the notebook
   const meta = await getNotebookMetadata(project_id);
   if (meta) {
+    // Include all of these roles
     const roles = meta.accesses || [];
+    // But also add admin and user if not included
     if (roles.indexOf('admin') < 0) {
       roles.push('admin');
     }
@@ -902,7 +913,9 @@ export const getRolesForNotebook = async (project_id: ProjectID) => {
     }
     return roles;
   } else {
-    return [];
+    throw new Exceptions.InternalSystemError(
+      'Failed to retrieve roles from the metadata DB for the given project ID.'
+    );
   }
 };
 

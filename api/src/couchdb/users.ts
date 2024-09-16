@@ -25,7 +25,11 @@ import {
   CLUSTER_ADMIN_GROUP_NAME,
   NOTEBOOK_CREATOR_GROUP_NAME,
 } from '../buildconfig';
-import {NonUniqueProjectID, ProjectID} from '@faims3/data-model';
+import {
+  NonUniqueProjectID,
+  ProjectID,
+  NotebookAuthSummary,
+} from '@faims3/data-model';
 import {
   AllProjectRoles,
   ConductorRole,
@@ -34,6 +38,7 @@ import {
   CouchDBUserRoles,
 } from '../datamodel/users';
 import {getRolesForNotebook} from './notebooks';
+import * as Exceptions from '../exceptions';
 
 /**
  * createUser - create a new user record ensuring that the username or password
@@ -83,52 +88,62 @@ export async function createUser(
   }
 }
 
-export async function getUsers() {
+/**
+ * Return all users from the users database, if it does not exist, throws error.
+ * TODO wherever possible dumping the whole db will not be ideal as scales.
+ * @returns all users as Express.User[]
+ */
+export async function getUsers(): Promise<Express.User[]> {
+  // Get the users database
   const users_db = getUsersDB();
-
   if (users_db) {
-    const result = await users_db.allDocs({include_docs: true});
-    return result.rows.map(row => row.doc) as Express.User[];
+    // Fetch all user records from the database and get doc
+    return (await users_db.allDocs({include_docs: true})).rows.map(r => r.doc!);
   } else {
-    return [] as Express.User[];
+    throw new Exceptions.InternalSystemError(
+      'Could not find users database and therefore cannot return list of users. Contact system administrator.'
+    );
   }
 }
 
-export type NotebookUsersInfo = {
-  roles: string[];
-  users: {
-    name: string;
-    username: string;
-    roles: {name: string; value: boolean}[];
-  }[];
-};
-
-export async function getUserInfoForNotebook(project_id: ProjectID) {
+/**
+ * Fetches users with a specific permission for a project.
+ * TODO optimise this by filtering in DB
+ * @param project_id - The ID of the project/notebook.
+ * @param role - The permission to check (e.g., 'read').
+ * @returns An array of users with the specified permission.
+ */
+async function getUsersWithPermission(
+  project_id: ProjectID,
+  role: ProjectPermission
+): Promise<Express.User[]> {
+  // Get all users
   const users = await getUsers();
+  // Filter for relevant permission
+  return users.filter(user => userHasPermission(user, project_id, role));
+}
 
-  const userList = {
-    roles: await getRolesForNotebook(project_id),
-    users: [] as any[],
+export async function getUserInfoForNotebook(
+  project_id: ProjectID
+): Promise<NotebookAuthSummary> {
+  const [roles, users] = await Promise.all([
+    getRolesForNotebook(project_id),
+    getUsersWithPermission(project_id, 'read'),
+  ]);
+
+  const userList: NotebookAuthSummary = {
+    // What roles does the notebook have
+    roles,
+    users: users.map(user => ({
+      name: user.name,
+      username: user.user_id,
+      roles: roles.map(role => ({
+        name: role,
+        value: userHasProjectRole(user, project_id, role),
+      })),
+    })),
   };
-  for (let i = 0; i < users.length; i++) {
-    const user = users[i];
-    // only include those users who can at least read the notebook
-    if (userHasPermission(user, project_id, 'read')) {
-      const userData = {
-        name: user.name,
-        username: user.user_id,
-        roles: [] as any[],
-      };
-      for (let j = 0; j < userList.roles.length; j++) {
-        const role = userList.roles[j];
-        userData.roles.push({
-          name: role,
-          value: userHasProjectRole(user, project_id, role),
-        });
-      }
-      userList.users.push(userData);
-    }
-  }
+
   return userList;
 }
 
@@ -249,7 +264,9 @@ export function addProjectRoleToUser(
 }
 
 /**
- * Test for a user role on a project
+ * Checks if a user has a given role on a project. This is defined by the user
+ * project roles map containing a list for the project ID which contains this
+ * role.
  * @param user - a user object
  * @param project_id - a project identifier
  * @param role - a role name
@@ -261,7 +278,7 @@ export function userHasProjectRole(
   role: ProjectRole
 ): boolean {
   if (project_id in user.project_roles) {
-    if (user.project_roles[project_id].indexOf(role) >= 0) {
+    if (user.project_roles[project_id].includes(role)) {
       return true;
     }
   }

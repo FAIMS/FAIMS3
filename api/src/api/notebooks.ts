@@ -23,12 +23,17 @@ import {
   CreateNotebookFromTemplate,
   GetNotebookListResponse,
   GetNotebookResponse,
+  GetNotebookUsersResponse,
+  PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
   PostCreateNotebookResponse,
   ProjectUIModel,
+  PutUpdateNotebookInputSchema,
+  PutUpdateNotebookResponse,
 } from '@faims3/data-model';
-import express from 'express';
+import express, {Response} from 'express';
+import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
 import {createManyRandomRecords} from '../couchdb/devtools';
@@ -60,10 +65,10 @@ import {requireAuthenticationAPI} from '../middleware';
 
 export const api = express.Router();
 
-api.get<{}, GetNotebookListResponse>(
+api.get(
   '/',
   requireAuthenticationAPI,
-  async (req, res) => {
+  async (req, res: Response<GetNotebookListResponse>) => {
     // get a list of notebooks from the db
     if (req.user) {
       const notebooks: GetNotebookListResponse = await getNotebooks(req.user);
@@ -82,13 +87,13 @@ api.get<{}, GetNotebookListResponse>(
  * ui-specification and metadata indicates from scratch. Both payloads are
  * validated in a type safe way.
  */
-api.post<{}, PostCreateNotebookResponse, PostCreateNotebookInput>(
+api.post(
   '/',
   processRequest({
     body: PostCreateNotebookInputSchema,
   }),
   requireAuthenticationAPI,
-  async (req, res, next) => {
+  async (req, res: Response<PostCreateNotebookResponse>, next) => {
     // First check the user has permissions to do this action
     if (!req.user) {
       res.status(401).end();
@@ -184,17 +189,18 @@ api.post<{}, PostCreateNotebookResponse, PostCreateNotebookInput>(
   }
 );
 
-api.get<{id: string}, GetNotebookResponse>(
+api.get(
   '/:id',
+  processRequest({params: z.object({id: z.string()})}),
   requireAuthenticationAPI,
-  async (req, res) => {
+  async (req, res: Response<GetNotebookResponse>) => {
     // get full details of a single notebook
     const project_id = req.params.id;
     if (req.user && userHasPermission(req.user, project_id, 'read')) {
       const metadata = await getNotebookMetadata(project_id);
       const uiSpec = await getNotebookUISpec(project_id);
       if (metadata && uiSpec) {
-        res.json({metadata, 'ui-specification': uiSpec} as GetNotebookResponse);
+        res.json({metadata, 'ui-specification': uiSpec});
       } else {
         throw new Exceptions.ItemNotFoundException('Notebook not found.');
       }
@@ -205,81 +211,107 @@ api.get<{id: string}, GetNotebookResponse>(
 );
 
 // PUT a new version of a notebook
-api.put('/:id', requireAuthenticationAPI, async (req, res) => {
-  // user must have modify permissions on this notebook
-  if (userHasPermission(req.user, req.params.id, 'modify')) {
-    const uiSpec = req.body['ui-specification'];
-    const metadata = req.body.metadata;
-    const projectID = req.params.id;
-    try {
-      await updateNotebook(projectID, uiSpec, metadata);
-      res.json({notebook: projectID});
-    } catch (err) {
-      console.log('Error creating notebook', err);
+api.put(
+  '/:id',
+  requireAuthenticationAPI,
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PutUpdateNotebookInputSchema,
+  }),
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
+    // user must have modify permissions on this notebook
+    if (userHasPermission(req.user, req.params.id, 'modify')) {
+      const uiSpec = req.body['ui-specification'];
+      const metadata = req.body.metadata;
+      const projectID = req.params.id;
+      try {
+        await updateNotebook(projectID, uiSpec, metadata);
+        res.json({notebook: projectID}).end();
+      } catch {
+        throw new Exceptions.InternalSystemError('Error creating notebook.');
+      }
+    } else {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to modify this notebook'
+      );
     }
-  } else {
-    res
-      .status(401)
-      .json({
-        error: 'you do not have permission to modify this notebook',
-      })
-      .end();
   }
-});
+);
 
 // export current versions of all records in this notebook
-api.get('/:id/records/', requireAuthenticationAPI, async (req, res) => {
-  let records = [];
-  if (req.user && userHasPermission(req.user, req.params.id, 'read')) {
-    records = await getNotebookRecords(req.params.id);
+api.get(
+  '/:id/records/',
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  requireAuthenticationAPI,
+  // TODO complete type annotations for this method
+  async (req, res: Response<{records: any}>) => {
+    let records = [];
+    if (req.user && userHasPermission(req.user, req.params.id, 'read')) {
+      records = await getNotebookRecords(req.params.id);
+    }
+    if (records) {
+      res.json({records});
+    } else {
+      throw new Exceptions.ItemNotFoundException('Notebook not found');
+    }
   }
-  if (records) {
-    res.json({records});
-  } else {
-    res.status(404).json({error: 'notebook not found'}).end();
-  }
-});
+);
 
 // export current versions of all records in this notebook as csv
-api.get('/:id/:viewID.csv', requireAuthenticationAPI, async (req, res) => {
-  if (req.user && userHasPermission(req.user, req.params.id, 'read')) {
-    try {
-      res.setHeader('Content-Type', 'text/csv');
-      streamNotebookRecordsAsCSV(req.params.id, req.params.viewID, res);
-    } catch (err) {
-      console.log('Error streaming CSV', err);
-      res.status(500).json({error: 'error creating CSV'}).end();
+api.get(
+  '/:id/:viewID.csv',
+  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
+  requireAuthenticationAPI,
+  // TODO complete type annotations for this method
+  async (req, res) => {
+    if (req.user && userHasPermission(req.user, req.params.id, 'read')) {
+      try {
+        res.setHeader('Content-Type', 'text/csv');
+        streamNotebookRecordsAsCSV(req.params.id, req.params.viewID, res);
+      } catch (err) {
+        console.log('Error streaming CSV', err);
+        throw new Exceptions.InternalSystemError('Error creating CSV.');
+      }
+    } else {
+      throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
-  } else {
-    res.status(404).json({error: 'notebook not found'}).end();
   }
-});
+);
 
 // export files for all records in this notebook as zip
-api.get('/:id/:viewid.zip', requireAuthenticationAPI, async (req, res) => {
-  if (req.user && userHasPermission(req.user, req.params.id, 'read')) {
-    res.setHeader('Content-Type', 'application/zip');
-    streamNotebookFilesAsZip(req.params.id, req.params.viewid, res);
-  } else {
-    res.status(404).json({error: 'notebook not found'}).end();
+api.get(
+  '/:id/:viewID.zip',
+  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
+  requireAuthenticationAPI,
+  // TODO complete type annotations for this method
+  async (req, res) => {
+    if (req.user && userHasPermission(req.user, req.params.id, 'read')) {
+      res.setHeader('Content-Type', 'application/zip');
+      streamNotebookFilesAsZip(req.params.id, req.params.viewID, res);
+    } else {
+      throw new Exceptions.ItemNotFoundException('Notebook not found');
+    }
   }
-});
+);
 
-api.get('/:id/users/', requireAuthenticationAPI, async (req, res) => {
-  // user must have admin access tot his notebook
-
-  if (userHasPermission(req.user, req.params.id, 'modify')) {
-    const userInfo = await getUserInfoForNotebook(req.params.id);
-    res.json(userInfo);
-  } else {
-    res
-      .status(401)
-      .json({
-        error: 'you do not have permission to view users for this notebook',
-      })
-      .end();
+api.get(
+  '/:id/users/',
+  processRequest({params: z.object({id: z.string()})}),
+  requireAuthenticationAPI,
+  async (req, res: Response<GetNotebookUsersResponse>) => {
+    // user must have modify access to this notebook
+    if (userHasPermission(req.user, req.params.id, 'modify')) {
+      const userInfo = await getUserInfoForNotebook(req.params.id);
+      res.json(userInfo);
+    } else {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to view users for this notebook.'
+      );
+    }
   }
-});
+);
 
 // POST to give a user permissions on this notebook
 // body includes:
@@ -288,49 +320,57 @@ api.get('/:id/users/', requireAuthenticationAPI, async (req, res) => {
 //     role: a valid role for this notebook,
 //     addrole: boolean, true to add, false to delete
 //   }
-api.post('/:id/users/', requireAuthenticationAPI, async (req, res) => {
-  if (userHasPermission(req.user, req.params.id, 'modify')) {
-    let error = '';
-    const notebook = await getNotebookMetadata(req.params.id);
-    if (notebook) {
-      const username = req.body.username;
-      const role = req.body.role;
-      const addrole = req.body.addrole;
+api.post(
+  '/:id/users/',
+  requireAuthenticationAPI,
+  processRequest({
+    body: PostAddNotebookUserInputSchema,
+    params: z.object({id: z.string()}),
+  }),
+  async (req, res) => {
+    if (userHasPermission(req.user, req.params.id, 'modify')) {
+      let error = '';
+      const notebook = await getNotebookMetadata(req.params.id);
+      if (notebook) {
+        const username = req.body.username;
+        const role = req.body.role;
+        const addrole = req.body.addrole;
 
-      // check that this is a legitimate role for this notebook
-      const notebookRoles = await getRolesForNotebook(notebook.project_id);
-      if (notebookRoles.indexOf(role) >= 0) {
-        const user = await getUserFromEmailOrUsername(username);
-        if (user) {
-          if (addrole) {
-            await addProjectRoleToUser(user, notebook.project_id, role);
+        // check that this is a legitimate role for this notebook
+        const notebookRoles = await getRolesForNotebook(notebook.project_id);
+        if (notebookRoles.indexOf(role) >= 0) {
+          const user = await getUserFromEmailOrUsername(username);
+          if (user) {
+            if (addrole) {
+              await addProjectRoleToUser(user, notebook.project_id, role);
+            } else {
+              await removeProjectRoleFromUser(user, notebook.project_id, role);
+            }
+            await saveUser(user);
+            res.status(200).end();
+            return;
           } else {
-            await removeProjectRoleFromUser(user, notebook.project_id, role);
+            error = 'Unknown user ' + username;
           }
-          await saveUser(user);
-          res.json({status: 'success'});
-          return;
         } else {
-          error = 'Unknown user ' + username;
+          error = 'Unknown role';
         }
       } else {
-        error = 'Unknown role';
+        error = 'Unknown notebook';
       }
+      // user or project not found or bad role
+      res.status(404).json({status: 'error', error}).end();
     } else {
-      error = 'Unknown notebook';
+      res
+        .status(401)
+        .json({
+          status: 'error',
+          error: 'you do not have permission to modify users for this notebook',
+        })
+        .end();
     }
-    // user or project not found or bad role
-    res.status(404).json({status: 'error', error}).end();
-  } else {
-    res
-      .status(401)
-      .json({
-        status: 'error',
-        error: 'you do not have permission to modify users for this notebook',
-      })
-      .end();
   }
-});
+);
 
 api.post('/:notebook_id/delete', requireAuthenticationAPI, async (req, res) => {
   if (userIsClusterAdmin(req.user)) {
