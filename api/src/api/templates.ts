@@ -21,14 +21,14 @@
 import {
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
-  PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
 } from '@faims3/data-model';
-import {z} from 'zod';
+import * as Exceptions from '../exceptions';
 import express, {Response} from 'express';
+import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
   createTemplate,
@@ -125,8 +125,7 @@ api.post(
 
     // User is not authorised to create a template
     if (!userCanDoWithTemplate(req.user, undefined, 'create')) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException("You are not allowed to create a template.");
     }
 
     // Now we can create the new template and return it

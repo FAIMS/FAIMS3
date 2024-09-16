@@ -19,51 +19,51 @@
  */
 
 import {
-    CreateNotebookFromScratch,
-    CreateNotebookFromTemplate,
-    GetNotebookListResponse,
-    GetNotebookResponse,
-    GetNotebookUsersResponse,
-    PostAddNotebookUserInputSchema,
-    PostCreateNotebookInput,
-    PostCreateNotebookInputSchema,
-    PostCreateNotebookResponse,
-    PostRandomRecordsInputSchema,
-    PostRandomRecordsResponse,
-    ProjectUIModel,
-    PutUpdateNotebookInputSchema,
-    PutUpdateNotebookResponse,
+  CreateNotebookFromScratch,
+  CreateNotebookFromTemplate,
+  GetNotebookListResponse,
+  GetNotebookResponse,
+  GetNotebookUsersResponse,
+  PostAddNotebookUserInputSchema,
+  PostCreateNotebookInput,
+  PostCreateNotebookInputSchema,
+  PostCreateNotebookResponse,
+  PostRandomRecordsInputSchema,
+  PostRandomRecordsResponse,
+  ProjectUIModel,
+  PutUpdateNotebookInputSchema,
+  PutUpdateNotebookResponse,
 } from '@faims3/data-model';
-import express, { Response } from 'express';
-import { z } from 'zod';
-import { processRequest } from 'zod-express-middleware';
-import { DEVELOPER_MODE } from '../buildconfig';
-import { createManyRandomRecords } from '../couchdb/devtools';
+import express, {Response} from 'express';
+import {z} from 'zod';
+import {processRequest} from 'zod-express-middleware';
+import {DEVELOPER_MODE} from '../buildconfig';
+import {createManyRandomRecords} from '../couchdb/devtools';
 import {
-    createNotebook,
-    deleteNotebook,
-    getNotebookMetadata,
-    getNotebookRecords,
-    getNotebooks,
-    getNotebookUISpec,
-    getRolesForNotebook,
-    streamNotebookFilesAsZip,
-    streamNotebookRecordsAsCSV,
-    updateNotebook,
+  createNotebook,
+  deleteNotebook,
+  getNotebookMetadata,
+  getNotebookRecords,
+  getNotebooks,
+  getNotebookUISpec,
+  getRolesForNotebook,
+  streamNotebookFilesAsZip,
+  streamNotebookRecordsAsCSV,
+  updateNotebook,
 } from '../couchdb/notebooks';
-import { getTemplate } from '../couchdb/templates';
+import {getTemplate} from '../couchdb/templates';
 import {
-    addProjectRoleToUser,
-    getUserFromEmailOrUsername,
-    getUserInfoForNotebook,
-    removeProjectRoleFromUser,
-    saveUser,
-    userCanCreateNotebooks,
-    userHasPermission,
-    userIsClusterAdmin,
+  addProjectRoleToUser,
+  getUserFromEmailOrUsername,
+  getUserInfoForNotebook,
+  removeProjectRoleFromUser,
+  saveUser,
+  userCanCreateNotebooks,
+  userHasPermission,
+  userIsClusterAdmin,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import { requireAuthenticationAPI } from '../middleware';
+import {requireAuthenticationAPI} from '../middleware';
 
 export const api = express.Router();
 
@@ -110,9 +110,12 @@ api.post(
 
     // Validate payload combination
     if ('ui-specification' in req.body && 'template_id' in req.body) {
-      throw new Exceptions.ValidationException(
-        'Inappropriate inclusion of both a template_id and a ui-specification when creating a notebook.'
+      next(
+        new Exceptions.ValidationException(
+          'Inappropriate inclusion of both a template_id and a ui-specification when creating a notebook.'
+        )
       );
+      return;
     }
 
     // Functions which determine which type of payload is present
@@ -323,20 +326,26 @@ api.post(
     params: z.object({id: z.string()}),
   }),
   requireAuthenticationAPI,
-  async (req, res) => {
+  async (req, res, next) => {
     if (!userHasPermission(req.user, req.params.id, 'modify')) {
-      throw new Exceptions.UnauthorizedException(
-        "User does not have permission to modify this project's permissions."
+      next(
+        new Exceptions.UnauthorizedException(
+          "User does not have permission to modify this project's permissions."
+        )
       );
+      return;
     }
 
     // Get the notebook metadata to modify
     const notebookMetadata = await getNotebookMetadata(req.params.id);
 
     if (!notebookMetadata) {
-      throw new Exceptions.ItemNotFoundException(
-        'Could not find specified notebook.'
+      next(
+        new Exceptions.ItemNotFoundException(
+          'Could not find specified notebook.'
+        )
       );
+      return;
     }
 
     // Destructure request body
@@ -352,26 +361,32 @@ api.post(
     // Check for invalid role
     if (!notebookRoles.includes(role)) {
       // The role isn't valid for the notebook
-      throw new Exceptions.InvalidRequestException(
-        "You cannot add a role which doesn't exist within the notebooks configured roles."
+      next(
+        new Exceptions.InvalidRequestException(
+          "You cannot add a role which doesn't exist within the notebooks configured roles."
+        )
       );
+      return;
     }
 
     // Get the user specified
     const user = await getUserFromEmailOrUsername(username);
 
     if (!user) {
-      throw new Exceptions.ItemNotFoundException(
-        'The username provided cannot be found in the user database.'
+      next(
+        new Exceptions.ItemNotFoundException(
+          'The username provided cannot be found in the user database.'
+        )
       );
+      return;
     }
 
     if (addrole) {
       // Add project role to the user
-      await addProjectRoleToUser(user, notebookMetadata.project_id, role);
+      addProjectRoleToUser(user, notebookMetadata.project_id, role);
     } else {
       // Remove project role from the user
-      await removeProjectRoleFromUser(user, notebookMetadata.project_id, role);
+      removeProjectRoleFromUser(user, notebookMetadata.project_id, role);
     }
 
     // save the user after modifications have been made

@@ -10,7 +10,7 @@ import {
 } from '../src/couchdb';
 import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 
-const databaseList: any = {};
+export const databaseList: any = {};
 
 const getDatabase = async (databaseName: string) => {
   if (databaseList[databaseName] === undefined) {
@@ -50,6 +50,7 @@ const clearDB = async (db: PouchDB.Database) => {
     await db.remove(doc.id, doc.value.rev);
   }
 };
+
 export const resetDatabases = async () => {
   // Fetch and clear all mocked in memory DBs
   const usersDB = getUsersDB();
@@ -70,13 +71,19 @@ export const resetDatabases = async () => {
 export const cleanDataDBS = async () => {
   let db: PouchDB.Database;
   for (const name in databaseList) {
+    console.log("getting db ", name)
     db = databaseList[name];
+    console.log("Deleting db ", name)
     delete databaseList[name];
     if (db !== undefined) {
       try {
+        console.log("destroying db ", name)
+        console.log("db info", db.name)
         await db.destroy();
         //await db.close();
       } catch (err) {
+        console.log("error db ", name)
+        console.log(err)
         //console.error(err);
       }
     }

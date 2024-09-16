@@ -24,7 +24,7 @@ import {getUsersDB} from '.';
 import {
   CLUSTER_ADMIN_GROUP_NAME,
   NOTEBOOK_CREATOR_GROUP_NAME,
-} from '../buildconfig';
+} from '@faims3/data-model';
 import {
   NonUniqueProjectID,
   ProjectID,

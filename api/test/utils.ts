@@ -17,18 +17,19 @@
  *   Setup helper functions for the api tests
  */
 
-import {expect} from 'chai';
+import { NOTEBOOK_CREATOR_GROUP_NAME } from '@faims3/data-model';
+import { expect } from 'chai';
 import PouchDB from 'pouchdb';
-import {addLocalPasswordForUser} from '../src/auth_providers/local';
-import {createAuthKey} from '../src/authkeys/create';
-import {KEY_SERVICE, NOTEBOOK_CREATOR_GROUP_NAME} from '../src/buildconfig';
+import { addLocalPasswordForUser } from '../src/auth_providers/local';
+import { createAuthKey } from '../src/authkeys/create';
+import { KEY_SERVICE } from '../src/buildconfig';
 import {
-  addOtherRoleToUser,
-  createUser,
-  getUserFromEmailOrUsername,
-  saveUser,
+    addOtherRoleToUser,
+    createUser,
+    getUserFromEmailOrUsername,
+    saveUser,
 } from '../src/couchdb/users';
-import {cleanDataDBS, resetDatabases} from './mocks';
+import { cleanDataDBS, resetDatabases } from './mocks';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
 
@@ -52,8 +53,11 @@ export const notebookPassword = 'notebook';
  */
 export const beforeApiTests = async () => {
   // Clean and reinitialise databases
+  console.log("reset dbs")
   await resetDatabases();
+  console.log("clean dbs")
   await cleanDataDBS();
+  console.log("done")
 
   // NOTE the admin user should exist at this point
 
@@ -93,7 +97,8 @@ export const beforeApiTests = async () => {
 
   // save user and create password
   await saveUser(nbUser);
-  await addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
+  addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
   await addLocalPasswordForUser(nbUser, notebookPassword);
   notebookUserToken = await createAuthKey(nbUser, signingKey);
+  console.log("done func")
 };

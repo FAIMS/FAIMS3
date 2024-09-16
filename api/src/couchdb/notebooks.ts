@@ -28,7 +28,6 @@ import {
   resolve_project_id,
 } from '@faims3/data-model';
 import archiver from 'archiver';
-import * as Exceptions from '../exceptions';
 import PouchDB from 'pouchdb';
 import {Stream} from 'stream';
 import {
@@ -36,13 +35,15 @@ import {
   getMetadataDbFromProjectDocument,
   getProjectsDB,
 } from '.';
-import {CLUSTER_ADMIN_GROUP_NAME, COUCHDB_PUBLIC_URL} from '../buildconfig';
+import {COUCHDB_PUBLIC_URL} from '../buildconfig';
+import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
 import {
   PROJECT_METADATA_PREFIX,
   ProjectMetadata,
   ProjectUIFields,
   ProjectUIModel,
 } from '../datamodel/database';
+import * as Exceptions from '../exceptions';
 
 import {
   file_attachments_to_data,
@@ -57,7 +58,7 @@ import {
 import {Stringifier, stringify} from 'csv-stringify';
 import securityPlugin from 'pouchdb-security-helper';
 import {slugify} from '../utils';
-import {ProjectPermission, userHasPermission} from './users';
+import {userHasPermission} from './users';
 PouchDB.plugin(securityPlugin);
 
 /**

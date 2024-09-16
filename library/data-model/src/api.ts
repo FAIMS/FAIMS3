@@ -1,12 +1,24 @@
-import {z} from 'zod';
+import { z } from 'zod';
+import { ADMIN_GROUP_NAMES_SCHEMA } from './auth';
 import {
-  APINotebookGetSchema,
-  APINotebookListSchema,
-  NotebookAuthSummarySchema,
-  ProjectUIModel,
-  TemplateDocumentSchema,
-  TemplateEditableDetailsSchema,
+    APINotebookGetSchema,
+    APINotebookListSchema,
+    NotebookAuthSummarySchema,
+    ProjectUIModel,
+    TemplateDocumentSchema,
+    TemplateEditableDetailsSchema,
 } from './types';
+
+// ==================
+// WIP USERS
+// ==================
+
+// Post update a user UpdateUser input
+export const PostUpdateUserInputSchema = z.object({
+  addrole: z.boolean(),
+  role: ADMIN_GROUP_NAMES_SCHEMA,
+});
+export type PostUpdateUserInput = z.infer<typeof PostUpdateUserInputSchema>;
 
 // ==================
 // WIP NOTEBOOKS CRUD
@@ -103,7 +115,7 @@ export type PostAddNotebookUserInput = z.infer<
 >;
 
 // Post generate random records RandomRecords input
-export const PostRandomRecordsInputSchema = z.object({count: z.bigint()});
+export const PostRandomRecordsInputSchema = z.object({count: z.number()});
 export type PostRandomRecordsInput = z.infer<
   typeof PostRandomRecordsInputSchema
 >;
