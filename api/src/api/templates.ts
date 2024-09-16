@@ -52,12 +52,16 @@ api.get(
   async (req, res: Response<GetListTemplatesResponse>, next) => {
     try {
       if (!req.user) {
-        throw new Exceptions.UnauthorizedException("You are not allowed to get templates.")
+        throw new Exceptions.UnauthorizedException(
+          'You are not allowed to get templates.'
+        );
       }
 
       // User is not authorised to read the list of templates
       if (!userCanDoWithTemplate(req.user, undefined, 'list')) {
-        throw new Exceptions.UnauthorizedException("You are not allowed to get templates.")
+        throw new Exceptions.UnauthorizedException(
+          'You are not allowed to get templates.'
+        );
       }
       res.json({templates: await getTemplates()});
     } catch (e) {
@@ -81,12 +85,16 @@ api.get(
       const id = req.params.id;
 
       if (!req.user) {
-        throw new Exceptions.UnauthorizedException("You are not allowed to get templates.")
+        throw new Exceptions.UnauthorizedException(
+          'You are not allowed to get templates.'
+        );
       }
 
       // User is not authorised to create a template
       if (!userCanDoWithTemplate(req.user, id, 'read')) {
-        throw new Exceptions.UnauthorizedException("You are not allowed to read this template.")
+        throw new Exceptions.UnauthorizedException(
+          'You are not allowed to read this template.'
+        );
       }
 
       const template = await getTemplate(id);
@@ -115,12 +123,16 @@ api.post(
 
       // First check the user has permissions to do this action
       if (!req.user) {
-        throw new Exceptions.UnauthorizedException("You are not allowed to create templates.")
+        throw new Exceptions.UnauthorizedException(
+          'You are not allowed to create templates.'
+        );
       }
 
       // User is not authorised to create a template
       if (!userCanDoWithTemplate(req.user, undefined, 'create')) {
-        throw new Exceptions.UnauthorizedException('You are not allowed to create a template.')
+        throw new Exceptions.UnauthorizedException(
+          'You are not allowed to create a template.'
+        );
       }
 
       // Now we can create the new template and return it
@@ -152,12 +164,16 @@ api.put(
 
       // First check the user has permissions to do this action
       if (!req.user) {
-        throw new Exceptions.UnauthorizedException("You are not allowed to update templates.")
+        throw new Exceptions.UnauthorizedException(
+          'You are not allowed to update templates.'
+        );
       }
 
       // User is not authorised to create a template
       if (!userCanDoWithTemplate(req.user, templateId, 'update')) {
-        throw new Exceptions.UnauthorizedException("You are not allowed to update this template.")
+        throw new Exceptions.UnauthorizedException(
+          'You are not allowed to update this template.'
+        );
       }
 
       // Now update the existing document
@@ -191,12 +207,16 @@ api.post(
 
       // First check the user has permissions to do this action
       if (!req.user) {
-        throw new Exceptions.UnauthorizedException("You are not allowed to delete templates.")
+        throw new Exceptions.UnauthorizedException(
+          'You are not allowed to delete templates.'
+        );
       }
 
       // User is not authorised to delete a template
       if (!userCanDoWithTemplate(req.user, templateId, 'delete')) {
-        throw new Exceptions.UnauthorizedException("You are not allowed to delete this template.")
+        throw new Exceptions.UnauthorizedException(
+          'You are not allowed to delete this template.'
+        );
       }
 
       // Now delete the existing document

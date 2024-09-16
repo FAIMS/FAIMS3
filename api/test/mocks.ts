@@ -77,8 +77,8 @@ export const cleanDataDBS = async () => {
       try {
         await db.destroy();
       } catch (err) {
-        console.log("error db ", name)
-        console.log(err)
+        console.log('error db ', name);
+        console.log(err);
       }
     }
   }

@@ -1,12 +1,12 @@
-import { z } from 'zod';
-import { ADMIN_GROUP_NAMES_SCHEMA } from './auth';
+import {z} from 'zod';
+import {ADMIN_GROUP_NAMES_SCHEMA} from './auth';
 import {
-    APINotebookGetSchema,
-    APINotebookListSchema,
-    NotebookAuthSummarySchema,
-    ProjectUIModel,
-    TemplateDocumentSchema,
-    TemplateEditableDetailsSchema,
+  APINotebookGetSchema,
+  APINotebookListSchema,
+  NotebookAuthSummarySchema,
+  ProjectUIModel,
+  TemplateDocumentSchema,
+  TemplateEditableDetailsSchema,
 } from './types';
 
 // ==================

@@ -762,8 +762,6 @@ export const NotebookAuthSummarySchema = z.object({
 });
 export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;
 
-
-
 // ==================
 // TEMPLATE DB MODELS
 // ==================
