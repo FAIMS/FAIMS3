@@ -44,6 +44,7 @@ import {useEffect, useState} from 'react';
 
 import {TokenContents} from '@faims3/data-model';
 import NotFound404 from './gui/pages/404';
+import CreateNewSurvey from './gui/components/workspace/create_new_survey';
 
 // type AppProps = {};
 
@@ -103,6 +104,16 @@ export default function App() {
                   element={
                     <PrivateRoute allowed={Boolean(token)}>
                       <Notebook />
+                    </PrivateRoute>
+                  }
+                />
+
+                {/* Add CreateNewSurvey route here */}
+                <Route
+                  path={ROUTES.CREATE_NEW_SURVEY}
+                  element={
+                    <PrivateRoute allowed={Boolean(token)}>
+                      <CreateNewSurvey />
                     </PrivateRoute>
                   }
                 />
