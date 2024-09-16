@@ -238,6 +238,15 @@ export default function NoteBooks(props: NoteBookListProps) {
 
   return (
     <Box>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+        sx={{ mb: 2 }}
+      >
+        Create New Survey
+      </Button>
+
       {pouchProjectList.length === 0 ? (
         <CircularLoading label={`Loading ${NOTEBOOK_NAME}s`} />
       ) : (
