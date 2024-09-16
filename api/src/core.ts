@@ -132,7 +132,7 @@ app.use('/api/templates', templatesApi);
 app.use('/api', utilityApi);
 app.use('/api/users', usersApi);
 
-// Custom error handler with type annotations
+// Custom error handler which returns a JSON description of error
 // TODO specify this interface in data models
 const errorHandler: ErrorRequestHandler = (
   err: Error & {status?: number},

@@ -412,7 +412,6 @@ describe('API tests', () => {
 
     if (nb1) {
       // invalid notebook name
-      console.log('invalid notebook name');
       await request(app)
         .post('/api/notebooks/invalid-notebook/users/')
         .set('Authorization', `Bearer ${adminToken}`)
@@ -425,7 +424,7 @@ describe('API tests', () => {
         .expect(404);
 
       // invalid role name
-      console.log('invalid role name');
+      console.log("invalid role name")
       await request(app)
         .post(`/api/notebooks/${nb1}/users/`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -438,7 +437,7 @@ describe('API tests', () => {
         .expect(400);
 
       // invalid user name
-      console.log('invalid user name');
+      console.log("invalid user name")
       await request(app)
         .post(`/api/notebooks/${nb1}/users/`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -456,7 +455,7 @@ describe('API tests', () => {
         const bobbyToken = await createAuthKey(bobby, signingKey);
 
         // invalid user name
-        console.log('bobby token');
+      console.log("bobby token")
         await request(app)
           .post(`/api/notebooks/${nb1}/users/`)
           .set('Authorization', `Bearer ${bobbyToken}`)
