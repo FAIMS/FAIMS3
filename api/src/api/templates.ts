@@ -19,26 +19,26 @@
  */
 
 import {
-    GetListTemplatesResponse,
-    GetTemplateByIdResponse,
-    PostCreateTemplateInputSchema,
-    PostCreateTemplateResponse,
-    PutUpdateTemplateInputSchema,
-    PutUpdateTemplateResponse,
+  GetListTemplatesResponse,
+  GetTemplateByIdResponse,
+  PostCreateTemplateInputSchema,
+  PostCreateTemplateResponse,
+  PutUpdateTemplateInputSchema,
+  PutUpdateTemplateResponse,
 } from '@faims3/data-model';
-import express, { Response } from 'express';
-import { z } from 'zod';
-import { processRequest } from 'zod-express-middleware';
+import express, {Response} from 'express';
+import {z} from 'zod';
+import {processRequest} from 'zod-express-middleware';
 import {
-    createTemplate,
-    deleteExistingTemplate,
-    getTemplate,
-    getTemplates,
-    updateExistingTemplate,
+  createTemplate,
+  deleteExistingTemplate,
+  getTemplate,
+  getTemplates,
+  updateExistingTemplate,
 } from '../couchdb/templates';
-import { userCanDoWithTemplate } from '../couchdb/users';
+import {userCanDoWithTemplate} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import { requireAuthenticationAPI } from '../middleware';
+import {requireAuthenticationAPI} from '../middleware';
 
 // See https://github.com/davidbanham/express-async-errors - this patches
 // express to handle async errors without hanging or needing an explicit try
@@ -54,7 +54,7 @@ export const api = express.Router();
 api.get(
   '/',
   requireAuthenticationAPI,
-  async (req, res: Response<GetListTemplatesResponse>, next) => {
+  async (req, res: Response<GetListTemplatesResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException(
         'You are not allowed to get templates.'
@@ -81,7 +81,7 @@ api.get(
     params: z.object({id: z.string()}),
   }),
   requireAuthenticationAPI,
-  async (req, res: Response<GetTemplateByIdResponse>, next) => {
+  async (req, res: Response<GetTemplateByIdResponse>) => {
     const id = req.params.id;
 
     if (!req.user) {
@@ -114,7 +114,7 @@ api.post(
     body: PostCreateTemplateInputSchema,
   }),
   requireAuthenticationAPI,
-  async (req, res: Response<PostCreateTemplateResponse>, next) => {
+  async (req, res: Response<PostCreateTemplateResponse>) => {
     // Parse the input schema to strip keys
 
     // First check the user has permissions to do this action
@@ -150,7 +150,7 @@ api.put(
     body: PutUpdateTemplateInputSchema,
   }),
   requireAuthenticationAPI,
-  async (req, res: Response<PutUpdateTemplateResponse>, next) => {
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
     // pull out template Id
     const templateId = req.params.id;
 
@@ -186,7 +186,7 @@ api.post(
     params: z.object({id: z.string()}),
   }),
   requireAuthenticationAPI,
-  async (req, res: Response<PutUpdateTemplateResponse>, next) => {
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
     // pull out template Id
     const templateId = req.params.id;
 

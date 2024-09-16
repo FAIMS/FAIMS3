@@ -78,7 +78,7 @@ export const api = express.Router();
 api.get(
   '/',
   requireAuthenticationAPI,
-  async (req, res: Response<GetNotebookListResponse>, next) => {
+  async (req, res: Response<GetNotebookListResponse>) => {
     // get a list of notebooks from the db
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
@@ -102,7 +102,7 @@ api.post(
     body: PostCreateNotebookInputSchema,
   }),
   requireAuthenticationAPI,
-  async (req, res: Response<PostCreateNotebookResponse>, next) => {
+  async (req, res: Response<PostCreateNotebookResponse>) => {
     // First check the user has permissions to do this action
     if (!req.user) {
       throw new Exceptions.UnauthorizedException(
@@ -192,7 +192,7 @@ api.get(
   '/:id',
   processRequest({params: z.object({id: z.string()})}),
   requireAuthenticationAPI,
-  async (req, res: Response<GetNotebookResponse>, next) => {
+  async (req, res: Response<GetNotebookResponse>) => {
     // get full details of a single notebook
     const project_id = req.params.id;
     if (!req.user || !userHasPermission(req.user, project_id, 'read')) {
@@ -216,7 +216,7 @@ api.put(
     params: z.object({id: z.string()}),
     body: PutUpdateNotebookInputSchema,
   }),
-  async (req, res: Response<PutUpdateNotebookResponse>, next) => {
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
     // user must have modify permissions on this notebook
     if (!userHasPermission(req.user, req.params.id, 'modify')) {
       throw new Exceptions.UnauthorizedException(
@@ -239,7 +239,7 @@ api.get(
   }),
   requireAuthenticationAPI,
   // TODO complete type annotations for this method
-  async (req, res: Response<{records: any}>, next) => {
+  async (req, res: Response<{records: any}>) => {
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -258,7 +258,7 @@ api.get(
   processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
   requireAuthenticationAPI,
   // TODO complete type annotations for this method
-  async (req, res, next) => {
+  async (req, res) => {
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
@@ -273,7 +273,7 @@ api.get(
   processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
   requireAuthenticationAPI,
   // TODO complete type annotations for this method
-  async (req, res, next) => {
+  async (req, res) => {
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
@@ -286,7 +286,7 @@ api.get(
   '/:id/users/',
   processRequest({params: z.object({id: z.string()})}),
   requireAuthenticationAPI,
-  async (req, res: Response<GetNotebookUsersResponse>, next) => {
+  async (req, res: Response<GetNotebookUsersResponse>) => {
     // user must have modify access to this notebook
     if (!userHasPermission(req.user, req.params.id, 'modify')) {
       throw new Exceptions.UnauthorizedException(
@@ -306,7 +306,7 @@ api.post(
     params: z.object({id: z.string()}),
   }),
   requireAuthenticationAPI,
-  async (req, res, next) => {
+  async (req, res) => {
     if (!userHasPermission(req.user, req.params.id, 'modify')) {
       throw new Exceptions.UnauthorizedException(
         "User does not have permission to modify this project's permissions."
@@ -368,7 +368,7 @@ api.post(
   '/:notebook_id/delete',
   processRequest({params: z.object({notebook_id: z.string()})}),
   requireAuthenticationAPI,
-  async (req, res, next) => {
+  async (req, res) => {
     if (!userIsClusterAdmin(req.user)) {
       // Not authorised
       throw new Exceptions.UnauthorizedException(
@@ -392,7 +392,7 @@ if (DEVELOPER_MODE) {
       body: PostRandomRecordsInputSchema,
       params: z.object({notebook_id: z.string()}),
     }),
-    async (req, res: Response<PostRandomRecordsResponse>, next) => {
+    async (req, res: Response<PostRandomRecordsResponse>) => {
       if (!userIsClusterAdmin(req.user)) {
         // Not authorised
         throw new Exceptions.UnauthorizedException(

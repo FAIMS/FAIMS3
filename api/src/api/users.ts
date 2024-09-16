@@ -46,7 +46,7 @@ api.post(
     params: z.object({id: z.string()}),
     body: PostUpdateUserInputSchema,
   }),
-  async (req, res, next) => {
+  async (req, res) => {
     // Cluster admins only
     if (!userIsClusterAdmin(req.user)) {
       throw new Exceptions.UnauthorizedException(

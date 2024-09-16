@@ -71,7 +71,7 @@ api.get('/info', async (req, res) => {
   res.json(info);
 });
 
-api.get('/directory/', requireAuthenticationAPI, async (req, res, next) => {
+api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
   // get the directory of notebooks on this server
   if (!req.user) {
     throw new Exceptions.UnauthorizedException();
@@ -85,7 +85,7 @@ if (DEVELOPER_MODE) {
     '/restore',
     upload.single('backup'),
     requireAuthenticationAPI,
-    async (req: any, res, next) => {
+    async (req: any, res) => {
       if (!userIsClusterAdmin(req.user)) {
         throw new Exceptions.UnauthorizedException();
       }
