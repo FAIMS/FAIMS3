@@ -39,6 +39,7 @@ import HeadingGrid from '../ui/heading-grid';
 import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import {getListing} from '../../../sync/state';
 import {projectListVerbose} from '../../themes';
+import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 
 interface sortModel {
   field: string;
@@ -239,7 +240,7 @@ export default function NoteBooks(props: NoteBookListProps) {
   return (
     <Box>
       {pouchProjectList.length === 0 ? (
-        <CircularLoading label={`Loading ${  NOTEBOOK_NAME}s`} />
+        <CircularLoading label={`Loading ${NOTEBOOK_NAME}s`} />
       ) : (
         <Box component={Paper} elevation={0} p={2}>
           {projectListVerbose && (
@@ -268,6 +269,7 @@ export default function NoteBooks(props: NoteBookListProps) {
             color="primary"
             onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
             sx={{mb: 3, mt: 3}}
+            startIcon={<AddCircleSharpIcon />}
           >
             Create New Survey
           </Button>
