@@ -20,17 +20,21 @@ import {useNavigate} from 'react-router-dom';
 import {TemplateDocument} from '@faims3/data-model';
 import {SelectChangeEvent} from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
-import UploadIcon from '@mui/icons-material/Upload';
-import BrowserNotSupportedIcon from '@mui/icons-material/BrowserNotSupported';
 import InfoIcon from '@mui/icons-material/Info';
 import {fetchTemplates} from '../sync/templates';
 import {directory_db, ListingsObject} from '../../../sync/databases';
+import {createNotebookFromTemplate} from '../sync/create_notebook';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
+import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 
 const CreateNewSurvey: React.FC = () => {
   const [templates, setTemplates] = useState<TemplateDocument[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [openDialog, setOpenDialog] = useState(false);
   const [surveyName, setSurveyName] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false); // Initialize loading state
+  const [error, setError] = useState<string | null>(null); // Initialize error state
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -55,6 +59,7 @@ const CreateNewSurvey: React.FC = () => {
       console.log('listing in loadTemp;ates', listing);
       if (listing) {
         const response = await fetchTemplates(listing);
+        console.log('loadtemplates', response);
         if (response && response.templates) {
           console.log('response for templates', response.templates);
           setTemplates(response.templates);
@@ -87,70 +92,115 @@ const CreateNewSurvey: React.FC = () => {
 
   const handleTemplateChange = (event: SelectChangeEvent<string>) => {
     const templateId = event.target.value;
+    console.log('Template selected:', templateId);
     setSelectedTemplate(templateId);
   };
 
   const handleInstantiateSurvey = () => {
+    if (!selectedTemplate) {
+      setError('Please select a template before creating a survey');
+      return;
+    }
+    setError(null);
+    console.log('Instantiate Survey button clicked');
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
+    console.log('Dialog closed');
     setOpenDialog(false);
   };
 
-  const handleSubmitSurvey = () => {
+  // Handle survey creation
+  const handleSubmitSurvey = async () => {
     if (!surveyName) {
-      console.error('Survey Name is required');
+      setError('Survey Name is required');
+      console.error('Survey Name is missing');
       return;
     }
-    console.log('Creating survey with name:', surveyName);
-    setOpenDialog(false);
-    navigate('/');
+    if (!selectedTemplate) {
+      setError('Please select a template');
+      console.error('Template is not selected');
+      return;
+    }
+    console.log('RANIOIIII Starting survey creation with:', {
+      surveyName,
+      selectedTemplate,
+    });
+
+    setError(null);
+    setLoading(true);
+    try {
+      const listing = await getListingFromDB();
+      if (!listing) {
+        setError('Listing not found');
+        console.error('No listing found during survey creation');
+        setLoading(false);
+        return;
+      }
+
+      const createdNotebook = await createNotebookFromTemplate(
+        listing,
+        selectedTemplate,
+        surveyName
+      );
+      console.log('Notebook created successfully:', createdNotebook);
+
+      // On success, navigate to the newly created notebook page
+      navigate(`/notebooks/${createdNotebook.notebook}`);
+      setOpenDialog(false);
+    } catch (error) {
+      setError('Failed to create survey');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '80vh',
-        maxWidth: '600px',
-        width: '100%',
-        margin: 'auto',
-        padding: '20px',
-        gap: '16px',
-      }}
+    // sx={{
+    //   display: 'flex',
+    //   flexDirection: 'column',
+    //   alignItems: 'center',
+    //   justifyContent: 'center',
+    //   height: '80vh',
+    //   maxWidth: '700px',
+    //   width: '100%',
+    //   margin: 'auto',
+    //   padding: '20px',
+    //   gap: '16px',
+    // }}
     >
-      <Box>
-        <Box
-          sx={{
-            textAlign: 'center',
-            padding: '8px 0',
-            backgroundColor: '#f5f5f5',
-          }}
-        >
-          <Grid container direction="column" alignItems="center">
-            <Grid item>
-              <DescriptionIcon
-                color={'secondary'}
-                fontSize={isMobile ? 'medium' : 'large'}
-              />
-            </Grid>
-            <Grid item>
-              <Typography
-                variant={isMobile ? 'h5' : 'h4'}
-                component={'div'}
-                sx={{fontWeight: 'bold', fontSize: '1.28rem'}}
-              >
-                Create New Survey
-              </Typography>
-            </Grid>
+      <Box
+        sx={{
+          width: '100%',
+          backgroundColor: '#f5f5f5',
+          padding: isMobile ? '8px' : '8px',
+          textAlign: 'center',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginTop: '12px',
+        }}
+      >
+        <Grid container direction="column" alignItems="center">
+          <Grid item>
+            <DescriptionIcon
+              color={'secondary'}
+              fontSize={isMobile ? 'large' : 'inherit'}
+            />
           </Grid>
-        </Box>
+          <Grid item>
+            <Typography
+              variant={isMobile ? 'h5' : 'h4'}
+              component="div"
+              sx={{fontWeight: 'bold', fontSize: '20px', marginBottom: '18px'}}
+            >
+              Create New Survey
+            </Typography>
+          </Grid>
+        </Grid>
       </Box>
-
       <FormControl
         fullWidth
         sx={{
@@ -166,7 +216,8 @@ const CreateNewSurvey: React.FC = () => {
             transform: 'none',
             fontSize: '1.125rem',
             fontWeight: 'bold',
-            marginBottom: '15px',
+            marginBottom: '18px',
+            color: '#263238',
           }}
         >
           Using existing template
@@ -181,6 +232,7 @@ const CreateNewSurvey: React.FC = () => {
             justifyContent: 'center',
           }}
           MenuProps={{
+            disableScrollLock: true,
             anchorOrigin: {
               vertical: 'bottom',
               horizontal: 'left',
@@ -207,46 +259,34 @@ const CreateNewSurvey: React.FC = () => {
           )}
         </Select>
       </FormControl>
-
+      {error && <Typography color="error">{error}</Typography>}{' '}
+      {/* Show error if any */}
       <Box
         sx={{
-          fontSize: '0.875rem',
-          color: 'green',
-          mt: 1,
+          fontSize: '1.1rem',
+          color: '#00A9CE',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
+          marginTop: '16px',
+          padding: '6px',
+          textDecoration: 'underline',
         }}
       >
         View / Edit survey templates
+        <OpenInNewIcon
+          sx={{
+            fontSize: '1.2rem',
+            margin: '8px 6px',
+            fontWeight: 'bold',
+          }}
+        />
       </Box>
-
       <Box
         sx={{
           fontSize: '1.125rem',
           fontWeight: 'bold',
-          mt: 2,
-          mb: 1,
-          alignSelf: 'flex-start',
-        }}
-      >
-        Upload template
-      </Box>
-      <Button
-        variant="contained"
-        component="label"
-        startIcon={<UploadIcon />}
-        sx={{maxWidth: 400, width: '100%'}}
-      >
-        Browse
-        <input type="file" hidden />
-      </Button>
-
-      <Box
-        sx={{
-          fontSize: '1.125rem',
-          fontWeight: 'bold',
-          mt: 2,
+          marginTop: '2.3em',
           alignSelf: 'flex-start',
         }}
       >
@@ -254,34 +294,52 @@ const CreateNewSurvey: React.FC = () => {
       </Box>
       <Box
         sx={{
-          fontSize: '0.875rem',
+          fontSize: '1.23em',
           color: 'red',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'left',
           gap: 1,
-          textAlign: 'center',
-          marginBottom: 2,
+          textAlign: 'left',
+          marginTop: '18px',
         }}
       >
-        <BrowserNotSupportedIcon color="error" />
         Please log in with browser app on your computer to create a new survey
         template
+        <OpenInBrowserIcon
+          sx={{
+            fontSize: '2rem',
+            color: '#00A9CE',
+            cursor: 'pointer',
+          }}
+          onClick={() => {
+            window.open('/', '_blank');
+          }}
+        />
       </Box>
-
       <Button
         variant="contained"
         color="primary"
+        startIcon={<AddCircleSharpIcon />} // Add icon to button
         sx={{
           width: '100%',
           maxWidth: 400,
           alignSelf: 'center',
-          mt: '10px',
+          mt: '90px',
+          textTransform: 'none',
+          '&:hover': {
+            backgroundColor: '#1976d2',
+          },
         }}
         onClick={handleInstantiateSurvey}
+        disabled={loading || !selectedTemplate}
       >
-        Instantiate Survey
+        {loading ? 'Creating Survey...' : 'Create survey'}
       </Button>
-
+      {error && (
+        <Typography color="error" variant="body2" sx={{mt: 1}}>
+          {error}
+        </Typography>
+      )}
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
@@ -290,36 +348,79 @@ const CreateNewSurvey: React.FC = () => {
         disableScrollLock={true}
         sx={{
           '& .MuiDialog-paper': {
-            width: isMobile ? '95%' : '100%',
-            margin: isMobile ? '10px' : 'auto',
+            width: isMobile ? '47%' : '100%',
+            margin: 'auto',
+            position: 'absolute',
+            bottom: '60%',
+            left: '1%',
           },
         }}
       >
         <DialogTitle>
-          <InfoIcon
-            sx={{color: '#1976d2', fontSize: 40, verticalAlign: 'middle'}}
-          />
-          &nbsp;Instantiate Survey
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <InfoIcon
+              sx={{
+                color: '#1976d2',
+                fontSize: '1.5em',
+                verticalAlign: 'middle',
+                marginTop: '4px',
+              }}
+            />
+            &nbsp;&nbsp;
+            <Typography
+              variant="h6"
+              component="span"
+              sx={{
+                fontSize: '1.4em',
+                fontWeight: 'bold',
+                textAlign: 'center',
+              }}
+            >
+              Instantiate Survey
+            </Typography>
+          </Box>
         </DialogTitle>
+
         <DialogContent>
-          <Typography variant="subtitle1" fontWeight="bold">
-            Survey Information:
+          <Typography
+            variant="body2"
+            paragraph
+            sx={{
+              color: 'grey',
+              fontSize: '0.875rem',
+            }}
+          >
+            <i>
+              You are about to create a new survey based on the selected
+              template. Please ensure you have chosen the correct template.
+            </i>
           </Typography>
-          <Typography variant="body2" paragraph>
-            • You are about to create a new survey based on the selected
-            template. Please ensure you have chosen the correct template.
-          </Typography>
-          <Typography variant="body2" paragraph>
-            • After the survey is created, it will be listed in your active
-            surveys, and you can begin adding records.
+          <Typography
+            variant="body2"
+            paragraph
+            sx={{
+              color: 'grey',
+              fontSize: '0.875rem',
+            }}
+          >
+            <i>
+              After the survey is created, it will be listed in survey list.
+            </i>
           </Typography>
           <TextField
             fullWidth
-            label="Survey Name *"
+            label="Survey Name"
             value={surveyName}
             onChange={e => setSurveyName(e.target.value)}
             sx={{marginTop: '16px'}}
             required
+            disabled={loading}
           />
         </DialogContent>
         <DialogActions>
@@ -334,8 +435,9 @@ const CreateNewSurvey: React.FC = () => {
             onClick={handleSubmitSurvey}
             color="primary"
             variant="contained"
+            disabled={loading || !surveyName}
           >
-            Submit
+            {loading ? 'Creating...' : 'Submit'}
           </Button>
         </DialogActions>
       </Dialog>
