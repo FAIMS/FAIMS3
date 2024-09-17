@@ -28,9 +28,9 @@
     "start-app": "npm start --workspace=app",
     "watch-api": "npm run watch --workspace=api",
     "start-designer": "npm run start --workspace=designer",
-    "initdb" : "npm run initdb --workspace=api",
-    "load-notebooks" : "npm run load-notebooks --workspace=api",
-    "generate-local-keys" : "./api/keymanagement/makeInstanceKeys.sh",
+    "initdb": "npm run initdb --workspace=api",
+    "load -notebooks": "npm run load-notebooks --workspace=api",
+    "generat  e-local-keys": "./api/keymanagement/makeInstanceKeys.sh",
     "lint": "turbo lint",
     "clean": "turbo clean",
     "build": "turbo build"
@@ -52,6 +52,7 @@
   "dependencies": {
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "esbuild": "^0.23.1",
     "eslint": "^8.57.0",
     "gts": "^5.3.1"
   }
