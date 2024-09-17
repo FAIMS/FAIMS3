@@ -238,17 +238,8 @@ export default function NoteBooks(props: NoteBookListProps) {
 
   return (
     <Box>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
-        sx={{ mb: 2 }}
-      >
-        Create New Survey
-      </Button>
-
       {pouchProjectList.length === 0 ? (
-        <CircularLoading label={`Loading ${NOTEBOOK_NAME}s`} />
+        <CircularLoading label={`Loading ${  NOTEBOOK_NAME}s`} />
       ) : (
         <Box component={Paper} elevation={0} p={2}>
           {projectListVerbose && (
@@ -272,6 +263,14 @@ export default function NoteBooks(props: NoteBookListProps) {
               tab and click the activate button.
             </Typography>
           )}
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+            sx={{mb: 3, mt: 3}}
+          >
+            Create New Survey
+          </Button>
           {NOTEBOOK_LIST_TYPE === 'tabs' ? (
             <Tabs
               pouchProjectList={pouchProjectList}
