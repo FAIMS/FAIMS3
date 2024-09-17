@@ -21,7 +21,7 @@
 import {RoleInvite, ConductorRole} from './datamodel/users';
 import {addProjectRoleToUser, saveUser} from './couchdb/users';
 import {saveInvite, deleteInvite} from './couchdb/invites';
-import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
+import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
 
 export function userCanAddOtherRole(user: Express.User | undefined): boolean {
   if (user === undefined) {

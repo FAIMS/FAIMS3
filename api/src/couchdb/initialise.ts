@@ -23,13 +23,13 @@ import {
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
   LOCAL_COUCHDB_AUTH,
-  CLUSTER_ADMIN_GROUP_NAME,
 } from '../buildconfig';
 import {
   addOtherRoleToUser,
   getUserFromEmailOrUsername,
   saveUser,
 } from './users';
+import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
 
 /**
  * A helper to 1) clear out admins/members 2) add the specified roles 3) save

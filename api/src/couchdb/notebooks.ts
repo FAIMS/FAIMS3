@@ -30,14 +30,20 @@ import {
 import archiver from 'archiver';
 import PouchDB from 'pouchdb';
 import {Stream} from 'stream';
-import {getProjectsDB} from '.';
-import {CLUSTER_ADMIN_GROUP_NAME, COUCHDB_PUBLIC_URL} from '../buildconfig';
+import {
+  getDataDbFromProjectDocument,
+  getMetadataDbFromProjectDocument,
+  getProjectsDB,
+} from '.';
+import {COUCHDB_PUBLIC_URL} from '../buildconfig';
+import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
 import {
   PROJECT_METADATA_PREFIX,
   ProjectMetadata,
   ProjectUIFields,
   ProjectUIModel,
 } from '../datamodel/database';
+import * as Exceptions from '../exceptions';
 
 import {
   file_attachments_to_data,
@@ -404,20 +410,35 @@ export const updateNotebook = async (
  * @param project_id - project identifier
  */
 export const deleteNotebook = async (project_id: string) => {
+  // Get the projects DB
   const projectsDB = getProjectsDB();
-  if (projectsDB) {
-    const projectDoc = await projectsDB.get(project_id);
-    if (projectDoc) {
-      const metaDB = await getProjectDB(project_id);
-      const dataDB = await getDataDB(project_id);
-      if (metaDB && dataDB) {
-        await metaDB.destroy();
-        await dataDB.destroy();
-        // remove the project from the projectsDB
-        await projectsDB.remove(projectDoc);
-      }
-    }
+
+  // If not found, 404
+  if (!projectsDB) {
+    throw new Exceptions.InternalSystemError(
+      'Could not get the notebooks database. Contact a system administrator.'
+    );
   }
+
+  // Get the project document for given project ID
+  const projectDoc = await projectsDB.get(project_id);
+
+  if (!projectDoc) {
+    throw new Exceptions.ItemNotFoundException(
+      'Could not find the specified project. Are you sure the project id is correct?'
+    );
+  }
+
+  // This gets the metadata DB
+  const metaDB = await getMetadataDbFromProjectDocument(projectDoc);
+  // This gets the data DB
+  const dataDB = await getDataDbFromProjectDocument(projectDoc);
+
+  await metaDB.destroy();
+  await dataDB.destroy();
+
+  // remove the project from the projectsDB
+  await projectsDB.remove(projectDoc);
 };
 
 export const writeProjectMetadata = async (
@@ -890,20 +911,42 @@ const generateFilename = (
   return filename;
 };
 
-export const getRolesForNotebook = async (project_id: ProjectID) => {
-  const meta = await getNotebookMetadata(project_id);
-  if (meta) {
-    const roles = meta.accesses || [];
-    if (roles.indexOf('admin') < 0) {
-      roles.push('admin');
-    }
-    if (roles.indexOf('user') < 0) {
-      roles.push('user');
-    }
-    return roles;
+/**
+ * Fetches the roles configured for a notebook from the notebook metadata DB.
+ * @param project_id The project ID to lookup
+ * @param metadata If the project metadata is known, no need to fetch it again
+ * @returns A list of roles for this notebook including at least admin and user
+ */
+export const getRolesForNotebook = async (
+  project_id: ProjectID,
+  // If metadata is already known, pass it in here
+  metadata: ProjectMetadata | undefined = undefined
+): Promise<string[]> => {
+  // Either use provided metadata or fetch it
+  let meta: ProjectMetadata;
+  if (metadata) {
+    meta = metadata;
   } else {
-    return [];
+    // Gets the metadata for the notebook
+    const possibleMetadata = await getNotebookMetadata(project_id);
+    if (!possibleMetadata) {
+      throw new Exceptions.InternalSystemError(
+        'Failed to retrieve roles from the metadata DB for the given project ID.'
+      );
+    }
+    meta = possibleMetadata;
   }
+
+  // Include all of these roles
+  const roles = meta.accesses || [];
+  // But also add admin and user if not included
+  if (roles.indexOf('admin') < 0) {
+    roles.push('admin');
+  }
+  if (roles.indexOf('user') < 0) {
+    roles.push('user');
+  }
+  return roles;
 };
 
 export async function countRecordsInNotebook(
