@@ -208,8 +208,15 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     user: Express.User,
     redirect: string
   ) => {
+    // there is a case where the redirect url will already
+    // have a token (register >> login >>  register)
+    if (redirect.indexOf('?token=') >= 0) {
+      return res.redirect(redirect);
+    }
+
     // Generate a token
     const token = await generateUserToken(user);
+
     // Append the token to the redirect URL
     const redirectUrlWithToken = `${redirect}?token=${token.token}`;
 
@@ -249,10 +256,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         // user already registered, sign them up for this notebook
         // should there be conditions on this? Eg. check the email.
         await acceptInvite(req.user, invite);
-        req.flash(
-          'message',
-          'You will now have access to the ${invite.notebook} notebook.'
-        );
         redirect_with_token(res, req.user, redirect);
       } else {
         // need to sign up the user, show the registration page
@@ -263,8 +266,12 @@ export function add_auth_routes(app: Router, handlers: string[]) {
             name: AVAILABLE_AUTH_PROVIDER_DISPLAY_INFO[handler].name,
           });
         }
+        const encodedRedirect = encodeURIComponent(
+          `/register/${invite_id}?redirect=${redirect}`
+        );
         res.render('register', {
           invite: invite_id,
+          loginURL: `/auth?redirect=${encodedRedirect}`,
           providers: available_provider_info,
           redirect: redirect,
           localAuth: true, // maybe make this configurable?
