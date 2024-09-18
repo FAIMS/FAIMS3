@@ -146,8 +146,9 @@ const CreateNewSurvey: React.FC = () => {
       );
       console.log('Notebook created successfully:', createdNotebook);
 
-      // On success, navigate to the newly created notebook page
-      navigate(`/notebooks/${createdNotebook.notebook}`);
+      navigate(`/`);
+      window.location.reload();
+
       setOpenDialog(false);
     } catch (error) {
       setError('Failed to create survey');
@@ -157,20 +158,7 @@ const CreateNewSurvey: React.FC = () => {
   };
 
   return (
-    <Box
-    // sx={{
-    //   display: 'flex',
-    //   flexDirection: 'column',
-    //   alignItems: 'center',
-    //   justifyContent: 'center',
-    //   height: '80vh',
-    //   maxWidth: '700px',
-    //   width: '100%',
-    //   margin: 'auto',
-    //   padding: '20px',
-    //   gap: '16px',
-    // }}
-    >
+    <>
       <Box
         sx={{
           width: '100%',
@@ -441,7 +429,7 @@ const CreateNewSurvey: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
 };
 
