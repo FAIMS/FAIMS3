@@ -37,6 +37,8 @@ import {
 } from './connection';
 import {draft_db} from './draft-storage';
 
+import {db as projects_db} from '../dbs/projects-db';
+
 export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
@@ -399,6 +401,7 @@ export async function wipe_all_pouch_databases() {
     local_state_db,
     draft_db,
     local_auth_db,
+    projects_db,
   ];
   await delete_synced_dbs(data_dbs);
   await delete_synced_dbs(metadata_dbs);

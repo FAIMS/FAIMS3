@@ -1,14 +1,19 @@
 import {createContext, ReactNode, useEffect, useState} from 'react';
 import {ProjectExtended} from '../types/project';
 import {getRemoteProjects} from './functions';
-import {getLocalProjects, updateLocalProjects} from '../dbs/projects-db';
+import {
+  getProjectsDB,
+  updateProjectsDB,
+  activateProjectDB,
+} from '../dbs/projects-db';
+import {activate_project} from '../sync/process-initialization';
 
 export const ProjectsContext = createContext<{
   projects: ProjectExtended[];
-  setProjects: React.Dispatch<React.SetStateAction<ProjectExtended[]>>;
+  activateProject: (id: string, listing: string) => void;
 }>({
   projects: [],
-  setProjects: () => {},
+  activateProject: _ => {},
 });
 
 /**
@@ -21,7 +26,7 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
 
   useEffect(() => {
     const init = async () => {
-      const localProjects = await getLocalProjects();
+      const localProjects = await getProjectsDB();
 
       setProjects(localProjects);
 
@@ -43,14 +48,26 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
 
       setProjects(newProjects);
 
-      await updateLocalProjects(newProjects);
+      await updateProjectsDB(newProjects);
     };
 
     init();
   }, []);
 
+  const activateProject = async (id: string, listing: string) => {
+    const projectID = await activate_project(listing, id);
+
+    if (!projectID) return;
+
+    setProjects(projects =>
+      projects.map(p => (p._id === id ? {...p, activated: true} : p))
+    );
+
+    activateProjectDB(id);
+  };
+
   return (
-    <ProjectsContext.Provider value={{projects, setProjects}}>
+    <ProjectsContext.Provider value={{projects, activateProject}}>
       {children}
     </ProjectsContext.Provider>
   );

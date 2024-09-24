@@ -9,7 +9,7 @@ import PouchDB from 'pouchdb-browser';
  *
  * @typeParam T - The type of the documents stored in the database.
  */
-const db = new PouchDB<{
+export const db = new PouchDB<{
   _id: string;
   project: ProjectExtended;
 }>('local-projects');
@@ -20,7 +20,7 @@ const db = new PouchDB<{
  * @param projects - An array of ProjectExtended objects representing the projects to be updated.
  * @returns A promise that resolves when the update is complete.
  */
-export const updateLocalProjects = async (projects: ProjectExtended[]) =>
+export const updateProjectsDB = async (projects: ProjectExtended[]) =>
   await db.bulkDocs(
     projects.map(project => ({
       _id: project._id,
@@ -34,7 +34,7 @@ export const updateLocalProjects = async (projects: ProjectExtended[]) =>
  * @param project - The project to activate.
  * @returns A promise that resolves when the project is activated.
  */
-export const activateProject = async (_id: string) => {
+export const activateProjectDB = async (_id: string) => {
   const doc = await db.get(_id);
 
   await db.put({
@@ -52,7 +52,7 @@ export const activateProject = async (_id: string) => {
  *
  * @returns An array of local projects.
  */
-export const getLocalProjects = async () => {
+export const getProjectsDB = async () => {
   const {rows} = await db.allDocs({include_docs: true});
 
   return rows.map(row => row?.doc?.project).filter(x => x !== undefined);

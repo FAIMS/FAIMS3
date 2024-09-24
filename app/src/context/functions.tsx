@@ -1,6 +1,6 @@
 import {directory_db_pouch, local_auth_db} from '../sync/databases';
 import {ProjectObject} from '@faims3/data-model';
-import {Project} from '../types/project';
+import {ProjectExtended} from '../types/project';
 
 /**
  * Retrieves a list of listings from the directory database.
@@ -50,12 +50,12 @@ const getProjects = async (url: string, token: string) => {
 /**
  * Retrieves a list of Remote projects.
  *
- * @returns {Promise<Project[]>} A promise that resolves to an array of Project objects.
+ * @returns {Promise<ProjectExtended[]>} A promise that resolves to an array of Project objects.
  */
 export const getRemoteProjects = async () => {
   const listings = await getListings();
 
-  const projects: Project[] = [];
+  const projects: ProjectExtended[] = [];
 
   for (const {_id, conductor_url} of listings) {
     if (!_id || !conductor_url) continue;
@@ -66,6 +66,9 @@ export const getRemoteProjects = async () => {
     projects.push(
       ...response.map(project => ({
         ...project,
+        listing: _id,
+        activated: false,
+        sync: false,
         conductor_url,
       }))
     );

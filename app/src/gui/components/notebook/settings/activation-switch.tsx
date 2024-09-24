@@ -7,7 +7,6 @@ import Dialog from '@mui/material/Dialog';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
 import {ProjectExtended} from '../../../../types/project';
 import {ProjectsContext} from '../../../../context/projects-context';
-import {activateProject} from '../../../../dbs/projects-db';
 
 type NotebookActivationSwitchProps = {
   project: ProjectExtended;
@@ -17,12 +16,12 @@ type NotebookActivationSwitchProps = {
 };
 
 export default function NotebookActivationSwitch({
-  project: {_id, name},
+  project: {_id, name, listing},
   isWorking,
   setTabID,
 }: NotebookActivationSwitchProps) {
   const [open, setOpen] = React.useState(false);
-  const {setProjects} = useContext(ProjectsContext);
+  const {activateProject} = useContext(ProjectsContext);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -65,12 +64,7 @@ export default function NotebookActivationSwitch({
               disableElevation
               color={'primary'}
               onClick={() => {
-                setProjects(projects =>
-                  projects.map(p =>
-                    p._id === _id ? {...p, activated: true} : p
-                  )
-                );
-                activateProject(_id);
+                activateProject(_id, listing);
                 setTabID('1');
                 handleClose();
               }}

@@ -25,7 +25,6 @@ import {PrivateRoute} from './constants/privateRouter';
 import {SignIn} from './gui/pages/signin';
 import AboutBuild from './gui/pages/about-build';
 import Workspace from './gui/pages/workspace';
-import NoteBookList from './gui/pages/notebook_list';
 import Notebook from './gui/pages/notebook';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
