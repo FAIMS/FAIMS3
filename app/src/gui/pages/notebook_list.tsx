@@ -17,9 +17,6 @@
  * Description:
  *   TODO
  */
-
-import React from 'react';
-
 import {Box} from '@mui/material';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
@@ -39,7 +36,7 @@ export default function NoteBookList() {
   return (
     <Box>
       <Breadcrumbs data={breadcrumbs} />
-      <NoteBooks sortModel={{field: 'name', sort: 'asc'}} />
+      <NoteBooks />
     </Box>
   );
 }

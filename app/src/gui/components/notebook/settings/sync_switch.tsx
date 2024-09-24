@@ -41,13 +41,13 @@ import {ProjectExtended} from '../../../../types/project';
 type NotebookSyncSwitchProps = {
   project: ProjectExtended;
   showHelperText: boolean;
-  setTabID: Function;
+  setTabID?: Function;
 };
 
 export default function NotebookSyncSwitch({
   project,
   showHelperText,
-  setTabID,
+  setTabID = () => {},
 }: NotebookSyncSwitchProps) {
   const [open, setOpen] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
