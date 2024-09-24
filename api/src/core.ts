@@ -52,10 +52,15 @@ const indexContent = readFileSync(
 
 import markdownit from 'markdown-it';
 import {api as notebookApi} from './api/notebooks';
-import {api as utilityApi} from './api/utilities';
-import {api as usersApi} from './api/users';
 import {api as templatesApi} from './api/templates';
+import {api as usersApi} from './api/users';
+import {api as utilityApi} from './api/utilities';
 import {COOKIE_SECRET} from './buildconfig';
+
+// See https://github.com/davidbanham/express-async-errors - this patches
+// express to handle async errors without hanging or needing an explicit try
+// catch block
+require('express-async-errors');
 
 export const app = express();
 app.use(morgan('combined'));
@@ -127,7 +132,7 @@ app.use('/api/templates', templatesApi);
 app.use('/api', utilityApi);
 app.use('/api/users', usersApi);
 
-// Custom error handler with type annotations
+// Custom error handler which returns a JSON description of error
 // TODO specify this interface in data models
 const errorHandler: ErrorRequestHandler = (
   err: Error & {status?: number},

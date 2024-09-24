@@ -30,12 +30,17 @@ import {initialiseDatabases} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
 import {getProjects} from '../couchdb/notebooks';
 import {userIsClusterAdmin} from '../couchdb/users';
+import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 import {slugify} from '../utils';
 
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
 
+// See https://github.com/davidbanham/express-async-errors - this patches
+// express to handle async errors without hanging or needing an explicit try
+// catch block
+require('express-async-errors');
 export const api = express.Router();
 
 api.get('/hello/', requireAuthenticationAPI, (_req: any, res: any) => {
@@ -68,12 +73,11 @@ api.get('/info', async (req, res) => {
 
 api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
   // get the directory of notebooks on this server
-  if (req.user) {
-    const projects = await getProjects(req.user);
-    res.json(projects);
-  } else {
-    res.json([]);
+  if (!req.user) {
+    throw new Exceptions.UnauthorizedException();
   }
+  const projects = await getProjects(req.user);
+  res.json(projects);
 });
 
 if (DEVELOPER_MODE) {
@@ -82,12 +86,11 @@ if (DEVELOPER_MODE) {
     upload.single('backup'),
     requireAuthenticationAPI,
     async (req: any, res) => {
-      if (userIsClusterAdmin(req.user)) {
-        await restoreFromBackup(req.file.path);
-        res.json({status: 'success'});
-      } else {
-        res.status(401).end();
+      if (!userIsClusterAdmin(req.user)) {
+        throw new Exceptions.UnauthorizedException();
       }
+      await restoreFromBackup(req.file.path);
+      res.json({status: 'success'});
     }
   );
 }

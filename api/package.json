@@ -20,7 +20,8 @@
         "watch": "nodemon --ignore build --ext ts --exec 'tsc --incremental && node .'",
         "initdb": "env-cmd node scripts/initialise.js",
         "load-notebooks": "env-cmd node scripts/loadNotebook.js ./notebooks/*.json",
-        "test": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha",
+        "load-templates": "env-cmd node scripts/loadTemplate.js ./notebooks/*.json",
+        "test": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha --exit",
         "test:watch": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha -w",
         "coverage": "nyc --reporter=html --reporter=lcov env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha"
     },
@@ -35,6 +36,7 @@
         "cors": "2.8.5",
         "csv-stringify": "^6.4.4",
         "express": "4.19.2",
+        "express-async-errors": "3.1.1",
         "express-handlebars": "7.1.2",
         "express-rate-limit": "^7.1.5",
         "express-validator": "7.0.1",
@@ -61,6 +63,7 @@
         "req-flash": "^0.0.3",
         "swagger-ui-dist": "^5.9.1",
         "uuid": "9.0.1",
+        "zod": "^3.23.8",
         "zod-express-middleware": "^1.4.0"
     },
     "devDependencies": {

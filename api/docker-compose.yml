@@ -49,9 +49,6 @@ services:
 
       # https://faimsproject.atlassian.net/wiki/spaces/FAIMS3/pages/151846960/FAIMS3+Conductor+build+run+environment+variables
 
-      # optional
-      - CLUSTER_ADMIN_GROUP_NAME
-
       - FAIMS_COOKIE_SECRET
 
       # public URL for accessing Conductor & CouchDB

@@ -738,6 +738,30 @@ export type UiSpecification = z.infer<typeof UiSpecificationSchema>;
 export const NotebookMetadataSchema = z.record(z.any());
 export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
 
+// =========
+// USER INFO
+// =========
+
+// Information about users and roles for a notebook
+export const NotebookAuthSummarySchema = z.object({
+  // What roles does the notebook have
+  roles: z.array(z.string()),
+  // users permissions for this notebook
+  users: z.array(
+    z.object({
+      name: z.string(),
+      username: z.string(),
+      roles: z.array(
+        z.object({
+          name: z.string(),
+          value: z.boolean(),
+        })
+      ),
+    })
+  ),
+});
+export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;
+
 // ==================
 // TEMPLATE DB MODELS
 // ==================

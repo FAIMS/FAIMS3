@@ -13,11 +13,10 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: loadNotebooks.js
  * Description:
- *   Load notebooks into the running couchdb instance.
- *   All json files named on the command line will be loa`ded.
- *   eg. `node scripts/loadNotebooks.js notebooks/*.json`
+ *   Load templates into the running couchdb instance.
+ *   All json files named on the command line will be loaded.
+ *   eg. `node scripts/loadTemplate.js notebooks/*.json`
  */
 
 const fs = require('fs');
@@ -44,22 +43,6 @@ const main = async filename => {
   const jsonText = fs.readFileSync(filename, 'utf-8');
   const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
   const name = metadata.name;
-  // load notebook
-  fetch(CONDUCTOR_URL + '/api/notebooks/', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token.jwt_token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({metadata, 'ui-specification': uiSpec, name}),
-  })
-    .then(response => response.json())
-    .then(data => {
-      console.log('data:', data);
-    })
-    .catch(error => {
-      console.log(error);
-    });
 
   // load template
   fetch(CONDUCTOR_URL + '/api/templates/', {
@@ -74,10 +57,7 @@ const main = async filename => {
       template_name: name,
     }),
   })
-    .then(response => response.json())
-    .then(data => {
-      console.log('data:', data);
-    })
+    .then(response => console.log(response.status))
     .catch(error => {
       console.log(error);
     });

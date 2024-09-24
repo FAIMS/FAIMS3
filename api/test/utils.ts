@@ -17,11 +17,12 @@
  *   Setup helper functions for the api tests
  */
 
+import {NOTEBOOK_CREATOR_GROUP_NAME} from '@faims3/data-model';
 import {expect} from 'chai';
 import PouchDB from 'pouchdb';
 import {addLocalPasswordForUser} from '../src/auth_providers/local';
 import {createAuthKey} from '../src/authkeys/create';
-import {KEY_SERVICE, NOTEBOOK_CREATOR_GROUP_NAME} from '../src/buildconfig';
+import {KEY_SERVICE} from '../src/buildconfig';
 import {
   addOtherRoleToUser,
   createUser,
@@ -93,7 +94,7 @@ export const beforeApiTests = async () => {
 
   // save user and create password
   await saveUser(nbUser);
-  await addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
+  addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
   await addLocalPasswordForUser(nbUser, notebookPassword);
   notebookUserToken = await createAuthKey(nbUser, signingKey);
 };
