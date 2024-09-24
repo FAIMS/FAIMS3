@@ -1,17 +1,19 @@
 /*
- * notebooks.ts
- * This module handles creating notebooks from templates.
+ * create_notebook.ts
+ * This module is responsible for creating notebooks from templates.
+ * It interacts with the server's API to initiate the creation of notebooks using selected templates.
  */
 
 import {getTokenForCluster} from '../users';
 import {ListingsObject} from './databases';
 
 /**
- * Create a notebook from a selected template.
- * @param listing - Information about the server listing.
- * @param templateId - The ID of the selected template.
- * @param surveyName - The name of the survey to be created.
- * @returns The created notebook's data if successful, or an error if it fails.
+ * Creates a notebook based on the provided template and survey name.
+ *
+ * @param listing - Information about the server listing, including its ID and conductor URL.
+ * @param templateId - The ID of the selected template that will be used to create the notebook.
+ * @param surveyName - The name assigned to the new survey or notebook.
+ * @returns The data related to the created notebook if successful, or throws an error if it fails.
  */
 export const createNotebookFromTemplate = async (
   listing: ListingsObject,
@@ -25,6 +27,7 @@ export const createNotebookFromTemplate = async (
       throw new Error('No token available for this cluster.');
     }
 
+    // Make an API request to create the notebook from the selected template
     const response = await fetch(`${listing.conductor_url}/api/notebooks`, {
       method: 'POST',
       headers: {
