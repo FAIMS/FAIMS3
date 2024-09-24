@@ -30,11 +30,7 @@ import {
 import archiver from 'archiver';
 import PouchDB from 'pouchdb';
 import {Stream} from 'stream';
-import {
-  getDataDbFromProjectDocument,
-  getMetadataDbFromProjectDocument,
-  getProjectsDB,
-} from '.';
+import {getDataDb, getMetadataDb, getProjectsDB} from '.';
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
 import {
@@ -430,9 +426,9 @@ export const deleteNotebook = async (project_id: string) => {
   }
 
   // This gets the metadata DB
-  const metaDB = await getMetadataDbFromProjectDocument(projectDoc);
+  const metaDB = await getMetadataDb(project_id);
   // This gets the data DB
-  const dataDB = await getDataDbFromProjectDocument(projectDoc);
+  const dataDB = await getDataDB(project_id);
 
   await metaDB.destroy();
   await dataDB.destroy();
