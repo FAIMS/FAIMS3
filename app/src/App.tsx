@@ -92,7 +92,7 @@ export default function App() {
                     }
                   />
                   <Route
-                    path={ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + ':id'}
+                    path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
                     element={
                       <PrivateRoute allowed={Boolean(token)}>
                         <Notebook />

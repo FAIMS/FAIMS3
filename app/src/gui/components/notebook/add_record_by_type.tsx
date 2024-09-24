@@ -22,9 +22,9 @@ type AddRecordButtonsProps = {
   project: ProjectExtended;
 };
 
-export default function AddRecordButtons(props: AddRecordButtonsProps) {
-  const {project} = props;
-  const project_id = project._id;
+export default function AddRecordButtons({
+  project: {listing, _id},
+}: AddRecordButtonsProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
@@ -34,12 +34,12 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
     RecordMetadata | undefined
   >(undefined);
 
-  getMetadataValue(project_id, 'showQRCodeButton').then(value => {
+  getMetadataValue(_id, 'showQRCodeButton').then(value => {
     setShowQRButton(value === true || value === 'true');
   });
 
   useEffect(() => {
-    getUiSpecForProject(project_id).then(u => setUiSpec(u));
+    getUiSpecForProject(`${listing}||${_id}`).then(u => setUiSpec(u));
   }, []);
 
   if (uiSpec === undefined) {
@@ -50,7 +50,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
 
   const handleScanResult = (value: string) => {
     // find a record with this field value
-    getRecordsWithRegex(project_id, value, true).then(records => {
+    getRecordsWithRegex(_id, value, true).then(records => {
       // navigate to it
       // what should happen if there are more than one?
       for (const key in records) {
@@ -63,7 +63,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
     return (
       <Navigate
         to={ROUTES.getRecordRoute(
-          project_id || 'dummy',
+          `${listing}||${_id}` || 'dummy',
           (selectedRecord.record_id || '').toString(),
           (selectedRecord.revision_id || '').toString()
         )}
@@ -89,7 +89,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
               key="newRecord"
               to={
                 ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                project_id +
+                `${listing}||${_id}` +
                 ROUTES.RECORD_CREATE +
                 visible_types
               }
@@ -104,7 +104,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
                     component={RouterLink}
                     to={
                       ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      project._id +
+                      `${listing}||${_id}` +
                       ROUTES.RECORD_CREATE +
                       viewset_name
                     }

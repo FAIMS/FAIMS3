@@ -104,8 +104,8 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const history = useNavigate();
 
   useEffect(() => {
-    if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
-      getUiSpecForProject(project._id)
+    if (project.listing && project._id) {
+      getUiSpecForProject(`${project.listing}||${project._id}`)
         .then(spec => {
           setUiSpec(spec);
           setViewsets(spec.viewsets);

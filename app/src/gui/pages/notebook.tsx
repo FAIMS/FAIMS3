@@ -29,9 +29,15 @@ import {ProjectsContext} from '../../context/projects-context';
 import NotebookComponent from '../components/notebook';
 
 export default function Notebook() {
-  const {id} = useParams<{id: string}>();
+  const {project_id} = useParams<{
+    project_id: string;
+  }>();
+
   const project = useContext(ProjectsContext).projects.find(
-    project => project._id === id
+    ({_id, listing}) =>
+      project_id &&
+      project_id.split('||')[0] === listing &&
+      project_id.split('||')[1] === _id
   );
 
   const theme = useTheme();
