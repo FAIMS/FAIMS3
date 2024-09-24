@@ -45,6 +45,7 @@ import {
   getUserInfoForNotebook,
   getUsers,
   userCanCreateNotebooks,
+  userCanDoWithTemplate,
   userHasPermission,
   userIsClusterAdmin,
 } from './couchdb/users';
@@ -59,6 +60,7 @@ import {createAuthKey} from './authkeys/create';
 import {getPublicUserDbURL} from './couchdb';
 import {add_auth_providers} from './auth_providers';
 import {add_auth_routes} from './auth_routes';
+import {getTemplate, getTemplates} from './couchdb/templates';
 
 export {app};
 
@@ -116,6 +118,7 @@ app.get('/notebooks/', requireAuthentication, async (req, res) => {
   const user = req.user;
   if (user) {
     const notebooks = await getNotebooks(user);
+    console.log(notebooks);
     res.render('notebooks', {
       user: user,
       notebooks: notebooks,
@@ -153,10 +156,49 @@ app.get(
       }
       res.render('notebook-landing', {
         isAdmin: isAdmin,
+        cluster_admin: userIsClusterAdmin(user),
         notebook: notebook,
         records: await countRecordsInNotebook(project_id),
         invites: invitesQR,
         views: Object.keys(uiSpec.viewsets),
+        developer: DEVELOPER_MODE,
+      });
+    } else {
+      res.sendStatus(404);
+    }
+  }
+);
+
+app.get('/templates/', requireAuthentication, async (req, res) => {
+  const user = req.user;
+  if (user) {
+    const templates = await getTemplates();
+    console.log(templates);
+    res.render('templates', {
+      user: user,
+      templates: templates,
+      cluster_admin: userIsClusterAdmin(user),
+      can_create_templates: userCanCreateNotebooks(user),
+      developer: DEVELOPER_MODE,
+    });
+  } else {
+    res.status(401).end();
+  }
+});
+
+app.get(
+  '/templates/:template_id/',
+  requireNotebookMembership,
+  async (req, res) => {
+    const user = req.user as Express.User; // requireAuthentication ensures user
+    const template_id = req.params.template_id;
+    const template = await getTemplate(template_id);
+    if (template) {
+      res.render('template-landing', {
+        user: user,
+        cluster_admin: userIsClusterAdmin(user),
+        can_create_notebooks: userCanCreateNotebooks(user),
+        template: template,
         developer: DEVELOPER_MODE,
       });
     } else {
@@ -280,6 +322,7 @@ app.get('/notebooks/:id/users', requireClusterAdmin, async (req, res) => {
       roles: userList.roles,
       users: userList.users,
       notebook: notebook,
+      cluster_admin: userIsClusterAdmin(req.user),
     });
   } else {
     res.status(401).end();
@@ -291,6 +334,7 @@ app.get('/users', requireClusterAdmin, async (req, res) => {
     const id = req.user._id;
     const userList = await getUsers();
     res.render('cluster-users', {
+      cluster_admin: userIsClusterAdmin(req.user),
       users: userList
         .filter(user => user._id !== id)
         .map(user => {
