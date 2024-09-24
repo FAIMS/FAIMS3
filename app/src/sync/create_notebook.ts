@@ -3,8 +3,8 @@
  * This module handles creating notebooks from templates.
  */
 
-import {getTokenForCluster} from '../../../users';
-import {ListingsObject} from '../../../sync/databases';
+import {getTokenForCluster} from '../users';
+import {ListingsObject} from './databases';
 
 /**
  * Create a notebook from a selected template.

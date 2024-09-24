@@ -108,7 +108,6 @@ export default function App() {
                   }
                 />
 
-                {/* Add CreateNewSurvey route here */}
                 <Route
                   path={ROUTES.CREATE_NEW_SURVEY}
                   element={

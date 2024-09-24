@@ -21,9 +21,9 @@ import {TemplateDocument} from '@faims3/data-model';
 import {SelectChangeEvent} from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import InfoIcon from '@mui/icons-material/Info';
-import {fetchTemplates} from '../sync/templates';
+import {fetchTemplates} from '../../../sync/templates';
 import {directory_db, ListingsObject} from '../../../sync/databases';
-import {createNotebookFromTemplate} from '../sync/create_notebook';
+import {createNotebookFromTemplate} from '../../../sync/create_notebook';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
@@ -33,8 +33,8 @@ const CreateNewSurvey: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [openDialog, setOpenDialog] = useState(false);
   const [surveyName, setSurveyName] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false); // Initialize loading state
-  const [error, setError] = useState<string | null>(null); // Initialize error state
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));

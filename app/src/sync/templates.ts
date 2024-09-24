@@ -4,8 +4,8 @@
  */
 
 import {GetListTemplatesResponse} from '@faims3/data-model';
-import {getTokenForCluster} from '../../../users';
-import {ListingsObject} from '../../../sync/databases';
+import {getTokenForCluster} from '../users';
+import {ListingsObject} from './databases';
 
 /**
  * Fetch the list of templates from the server.
@@ -35,7 +35,6 @@ export const fetchTemplates = async (
       return undefined;
     }
 
-    // Parse and return the response data
     const data: GetListTemplatesResponse = await response.json();
     return data;
   } catch (error) {
