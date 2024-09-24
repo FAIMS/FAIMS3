@@ -146,7 +146,7 @@ const CreateNewSurvey: React.FC = () => {
       );
       console.log('Notebook created successfully:', createdNotebook);
 
-      navigate(`/`);
+      navigate('/');
       window.location.reload();
 
       setOpenDialog(false);
