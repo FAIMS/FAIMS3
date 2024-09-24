@@ -103,7 +103,7 @@ describe('Auth', () => {
       .expect(200)
       .then(response => {
         expect(response.text).to.include('test-notebook');
-        expect(response.text).to.include('Upload a Notebook');
+        expect(response.text).to.include('New Notebook');
       });
   });
 
@@ -125,7 +125,7 @@ describe('Auth', () => {
       .get('/notebooks/')
       .expect(200)
       .then(response => {
-        expect(response.text).to.include('Upload a Notebook');
+        expect(response.text).to.include('New Notebook');
       });
   });
 
