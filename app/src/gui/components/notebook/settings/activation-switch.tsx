@@ -1,12 +1,12 @@
 import React, {useContext} from 'react';
-import {Alert, Box, AlertTitle, Button} from '@mui/material';
+import {Alert, Box, AlertTitle, Button, Typography} from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
 import DialogActions from '@mui/material/DialogActions';
-
-import Dialog from '@mui/material/Dialog';
+import InfoIcon from '@mui/icons-material/Info';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
 import {ProjectExtended} from '../../../../types/project';
 import {ProjectsContext} from '../../../../context/projects-context';
+import FaimsDialog from '../../ui/Faims_Dialog';
 
 type NotebookActivationSwitchProps = {
   project: ProjectExtended;
@@ -25,6 +25,11 @@ export default function NotebookActivationSwitch({
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
+  const handleActivationClick = () => {
+    activateProject(_id, listing);
+    setTabID('1');
+    handleClose();
+  };
 
   return (
     <Box my={1}>
@@ -42,40 +47,36 @@ export default function NotebookActivationSwitch({
         title="Activating / Deactivating surveys"
         icon={<InfoIcon style={{fontSize: 40, color: '#1976d2'}} />}
         onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+        onPrimaryAction={handleActivationClick}
+        primaryActionText="Activate"
+        primaryActionLoading={isWorking}
+        primaryActionColor="primary"
+        primaryActionVariant="contained"
+        cancelButtonText="Cancel"
       >
-        <Alert severity={'info'}>
-          <AlertTitle>Are you sure?</AlertTitle>
-          Do you want to start syncing the {name} {NOTEBOOK_NAME} to your
-          device?
-        </Alert>
-        <DialogActions style={{justifyContent: 'space-between'}}>
-          <Button onClick={handleClose} autoFocus color={'primary'}>
-            Cancel
-          </Button>
-
-          {isWorking ? (
-            <LoadingButton loading variant="outlined" size={'small'}>
-              Activating...
-            </LoadingButton>
-          ) : (
-            <Button
-              size={'small'}
-              variant="contained"
-              disableElevation
-              color={'primary'}
-              onClick={() => {
-                activateProject(_id, listing);
-                setTabID('1');
-                handleClose();
-              }}
-            >
-              Activate
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
+        <Box mb={2}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Activating a survey:
+          </Typography>
+          <Typography variant="body2" paragraph>
+            • When a survey is “Active” you are safe to work offline at any
+            point because all the data is saved to your device.
+          </Typography>
+          <Typography variant="body2" paragraph>
+            • Before going out in the field you must ‘Activate’ your survey by
+            pressing the button “Activate" and selecting which survey(s) you
+            want to be available while out in the field.
+          </Typography>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Deactivating a survey:
+          </Typography>
+          <Typography variant="body2">
+            • This can be helpful when you need to free up space on your device
+            and when you no longer need access to surveys or survey data
+            offline.
+          </Typography>
+        </Box>
+      </FaimsDialog>
     </Box>
   );
 }
