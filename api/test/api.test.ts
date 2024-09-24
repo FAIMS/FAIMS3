@@ -18,21 +18,23 @@
  *   Tests for the API
  */
 
-import {ProjectUIModel, registerClient} from '@faims3/data-model';
+import {getDataDB, ProjectUIModel, registerClient} from '@faims3/data-model';
 import {expect} from 'chai';
 import fs from 'fs';
 import PouchDB from 'pouchdb';
 import request from 'supertest';
 import {createAuthKey} from '../src/authkeys/create';
 import {
-  CLUSTER_ADMIN_GROUP_NAME,
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
   DEVELOPER_MODE,
   KEY_SERVICE,
-  NOTEBOOK_CREATOR_GROUP_NAME,
 } from '../src/buildconfig';
+import {
+  CLUSTER_ADMIN_GROUP_NAME,
+  NOTEBOOK_CREATOR_GROUP_NAME,
+} from '@faims3/data-model';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
   createNotebook,
@@ -44,7 +46,7 @@ import {
   userHasProjectRole,
 } from '../src/couchdb/users';
 import {app} from '../src/routes';
-import {callbackObject} from './mocks';
+import {callbackObject, databaseList} from './mocks';
 import {
   adminToken,
   beforeApiTests,
@@ -280,45 +282,55 @@ describe('API tests', () => {
         metadata
       );
       let notebooks = await getNotebooks(adminUser);
+      const dataDb = await getDataDB(project_id!);
       expect(notebooks).to.have.lengthOf(1);
       expect(project_id).not.to.be.undefined;
       await request(app)
         .post('/api/notebooks/' + project_id + '/delete')
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json')
-        .expect(302)
-        .expect('Location', '/notebooks/');
+        .expect(200);
       notebooks = await getNotebooks(adminUser);
       expect(notebooks).to.be.empty;
+
+      // Because of how mocks work with db list, we need to manually remove the
+      // data db from the list TODO make the mock respect database deletion
+      // properly - this was being masked before as I don't think the delete
+      // operation was actually occurring, instead the redirect request was
+      // being accepted despite a hidden error. If we don't do this, the
+      // db.destroy() method will run forever.
+      for (const db_name of Object.keys(databaseList)) {
+        if (databaseList[db_name].name === dataDb.name) {
+          delete databaseList[db_name];
+        }
+      }
     }
   });
 
   it('update admin user - no auth', async () => {
-    return await request(app)
+    await request(app)
       .post(`/api/users/${localUserName}/admin`)
-      .send({addrole: true})
+      .send({addrole: true, role: CLUSTER_ADMIN_GROUP_NAME})
       .set('Content-Type', 'application/json')
       .expect(401);
   });
 
   it('update admin user - add cluster admin role', async () => {
-    return await request(app)
+    await request(app)
       .post(`/api/users/${localUserName}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .send({addrole: true, role: CLUSTER_ADMIN_GROUP_NAME})
-      .expect(200)
-      .expect({status: 'success'});
+      .expect(200);
   });
 
   it('update admin user - remove cluster admin role', () => {
-    return request(app)
+    request(app)
       .post(`/api/users/${localUserName}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .send({addrole: false, role: CLUSTER_ADMIN_GROUP_NAME})
-      .expect(200)
-      .expect({status: 'success'});
+      .expect(200);
   });
 
   it('update admin user - add notebook creator role', async () => {
@@ -327,8 +339,7 @@ describe('API tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .send({addrole: true, role: NOTEBOOK_CREATOR_GROUP_NAME})
-      .expect(200)
-      .expect({status: 'success'});
+      .expect(200);
   });
 
   it('update admin user - fail to add unknown role', async () => {
@@ -337,8 +348,7 @@ describe('API tests', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .send({addrole: true, role: 'unknown-role'})
-      .expect(404)
-      .expect({status: 'error', error: 'Unknown role'});
+      .expect(400);
   });
 
   it('get notebook users', async () => {
@@ -378,7 +388,6 @@ describe('API tests', () => {
           role: 'user',
           addrole: true,
         })
-        .expect({status: 'success'})
         .expect(200);
 
       // take it away again
@@ -391,7 +400,6 @@ describe('API tests', () => {
           role: 'user',
           addrole: false,
         })
-        .expect({status: 'success'})
         .expect(200);
     } else {
       throw new Error('could not make test notebooks');
@@ -413,10 +421,10 @@ describe('API tests', () => {
           role: 'user',
           addrole: true,
         })
-        .expect({error: 'Unknown notebook', status: 'error'})
         .expect(404);
 
       // invalid role name
+      console.log('invalid role name');
       await request(app)
         .post(`/api/notebooks/${nb1}/users/`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -426,10 +434,10 @@ describe('API tests', () => {
           role: 'not a valid role',
           addrole: true,
         })
-        .expect({error: 'Unknown role', status: 'error'})
-        .expect(404);
+        .expect(400);
 
       // invalid user name
+      console.log('invalid user name');
       await request(app)
         .post(`/api/notebooks/${nb1}/users/`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -439,7 +447,6 @@ describe('API tests', () => {
           role: 'user',
           addrole: true,
         })
-        .expect({error: 'Unknown user fred dag', status: 'error'})
         .expect(404);
 
       const bobby = await getUserFromEmailOrUsername(localUserName);
@@ -448,6 +455,7 @@ describe('API tests', () => {
         const bobbyToken = await createAuthKey(bobby, signingKey);
 
         // invalid user name
+        console.log('bobby token');
         await request(app)
           .post(`/api/notebooks/${nb1}/users/`)
           .set('Authorization', `Bearer ${bobbyToken}`)
@@ -456,11 +464,6 @@ describe('API tests', () => {
             username: localUserName,
             role: 'user',
             addrole: true,
-          })
-          .expect({
-            error:
-              'you do not have permission to modify users for this notebook',
-            status: 'error',
           })
           .expect(401);
       }
@@ -549,11 +552,17 @@ describe('API tests', () => {
 
   if (DEVELOPER_MODE) {
     it('can create some random records', async () => {
-      const nb1 = await createNotebook('NB1', uispec, {});
+      const jsonText = fs.readFileSync(
+        './notebooks/sample_notebook.json',
+        'utf-8'
+      );
+      const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
 
-      if (nb1) {
+      const projectID = await createNotebook('Test Notebook', uiSpec, metadata);
+
+      if (projectID) {
         return request(app)
-          .post(`/api/notebooks/${nb1}/generate`)
+          .post(`/api/notebooks/${projectID}/generate`)
           .set('Authorization', `Bearer ${adminToken}`)
           .set('Content-Type', 'application/json')
           .send({count: 10})

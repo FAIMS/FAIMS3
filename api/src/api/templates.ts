@@ -21,12 +21,13 @@
 import {
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
-  PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
+  PostCreateTemplateResponse,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
 } from '@faims3/data-model';
-import express from 'express';
+import express, {Response} from 'express';
+import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
   createTemplate,
@@ -36,7 +37,13 @@ import {
   updateExistingTemplate,
 } from '../couchdb/templates';
 import {userCanDoWithTemplate} from '../couchdb/users';
+import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
+
+// See https://github.com/davidbanham/express-async-errors - this patches
+// express to handle async errors without hanging or needing an explicit try
+// catch block
+require('express-async-errors');
 
 export const api = express.Router();
 
@@ -44,26 +51,23 @@ export const api = express.Router();
  * GET list templates
  * Gets a list of templates from the templates DB.
  */
-api.get<{}, GetListTemplatesResponse>(
+api.get(
   '/',
   requireAuthenticationAPI,
-  async (req, res, next) => {
+  async (req, res: Response<GetListTemplatesResponse>) => {
     if (!req.user) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to get templates.'
+      );
     }
 
     // User is not authorised to read the list of templates
     if (!userCanDoWithTemplate(req.user, undefined, 'list')) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to get templates.'
+      );
     }
-
-    try {
-      res.json({templates: await getTemplates()});
-    } catch (e) {
-      next(e);
-    }
+    res.json({templates: await getTemplates()});
   }
 );
 
@@ -71,29 +75,30 @@ api.get<{}, GetListTemplatesResponse>(
  * GET template by id
  * Gets a specific template by ID from the templates DB.
  */
-api.get<{id: string}, GetTemplateByIdResponse>(
+api.get(
   '/:id',
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
   requireAuthenticationAPI,
-  async (req, res, next) => {
+  async (req, res: Response<GetTemplateByIdResponse>) => {
     const id = req.params.id;
 
     if (!req.user) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to get templates.'
+      );
     }
 
     // User is not authorised to create a template
     if (!userCanDoWithTemplate(req.user, id, 'read')) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to read this template.'
+      );
     }
 
-    // Try and get the document and pass through to JSON handler if failed
-    try {
-      res.json(await getTemplate(id));
-    } catch (e) {
-      next(e);
-    }
+    const template = await getTemplate(id);
+    res.json(template);
   }
 );
 
@@ -103,33 +108,32 @@ api.get<{id: string}, GetTemplateByIdResponse>(
  * function. Expects a document as the response JSON. Requires cluster admin
  * privileges.
  */
-api.post<{}, any, PostCreateTemplateInput>(
+api.post(
   '/',
   processRequest({
     body: PostCreateTemplateInputSchema,
   }),
   requireAuthenticationAPI,
-  async (req, res, next) => {
+  async (req, res: Response<PostCreateTemplateResponse>) => {
     // Parse the input schema to strip keys
 
     // First check the user has permissions to do this action
     if (!req.user) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to create templates.'
+      );
     }
 
     // User is not authorised to create a template
     if (!userCanDoWithTemplate(req.user, undefined, 'create')) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to create a template.'
+      );
     }
 
     // Now we can create the new template and return it
-    try {
-      res.json(await createTemplate(req.body));
-    } catch (e) {
-      next(e);
-    }
+    const newTemplate = await createTemplate(req.body);
+    res.json(newTemplate);
   }
 );
 
@@ -139,36 +143,35 @@ api.post<{}, any, PostCreateTemplateInput>(
  * function. Expects a document as the response JSON. Requires cluster admin
  * privileges.
  */
-api.put<{id: string}, PutUpdateTemplateResponse>(
+api.put(
   '/:id',
   processRequest({
+    params: z.object({id: z.string()}),
     body: PutUpdateTemplateInputSchema,
   }),
   requireAuthenticationAPI,
-  async (req, res, next) => {
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
     // pull out template Id
     const templateId = req.params.id;
 
     // First check the user has permissions to do this action
     if (!req.user) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to update templates.'
+      );
     }
 
     // User is not authorised to create a template
     if (!userCanDoWithTemplate(req.user, templateId, 'update')) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to update this template.'
+      );
     }
 
     // Now update the existing document
-    try {
-      // And respond with fulfilled document after updating
-      res.json(await updateExistingTemplate(templateId, req.body));
-      return;
-    } catch (e) {
-      next(e);
-    }
+    // And respond with fulfilled document after updating
+    const updatedTemplate = await updateExistingTemplate(templateId, req.body);
+    res.json(updatedTemplate);
   }
 );
 
@@ -177,32 +180,32 @@ api.put<{id: string}, PutUpdateTemplateResponse>(
  * Deletes latest revision of an existing template. Requires cluster admin
  * privileges.
  */
-api.post<{id: string}, PutUpdateTemplateResponse>(
+api.post(
   '/:id/delete',
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
   requireAuthenticationAPI,
-  async (req, res, next) => {
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
     // pull out template Id
     const templateId = req.params.id;
 
     // First check the user has permissions to do this action
     if (!req.user) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to delete templates.'
+      );
     }
 
     // User is not authorised to delete a template
     if (!userCanDoWithTemplate(req.user, templateId, 'delete')) {
-      res.status(401).end();
-      return;
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to delete this template.'
+      );
     }
 
     // Now delete the existing document
-    try {
-      await deleteExistingTemplate(templateId);
-    } catch (e) {
-      next(e);
-      return;
-    }
+    await deleteExistingTemplate(templateId);
 
     // Indicate successful deletion and send
     res.sendStatus(200);
