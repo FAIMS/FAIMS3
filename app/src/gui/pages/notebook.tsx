@@ -34,10 +34,7 @@ export default function Notebook() {
   }>();
 
   const project = useContext(ProjectsContext).projects.find(
-    ({_id, listing}) =>
-      project_id &&
-      project_id.split('||')[0] === listing &&
-      project_id.split('||')[1] === _id
+    ({_id, listing}) => project_id === `${listing}||${_id}`
   );
 
   const theme = useTheme();

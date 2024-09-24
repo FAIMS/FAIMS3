@@ -11,9 +11,11 @@ import {activate_project} from '../sync/process-initialization';
 export const ProjectsContext = createContext<{
   projects: ProjectExtended[];
   activateProject: (id: string, listing: string) => void;
+  setProjectSync: (id: string, listing: string, sync: boolean) => void;
 }>({
   projects: [],
   activateProject: _ => {},
+  setProjectSync: _ => {},
 });
 
 /**
@@ -54,20 +56,49 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
     init();
   }, []);
 
+  /**
+   * Activates a project.
+   *
+   * @param id - The ID of the project to activate.
+   * @param listing - The listing of the project to activate.
+   */
   const activateProject = async (id: string, listing: string) => {
     const projectID = await activate_project(listing, id);
 
     if (!projectID) return;
 
     setProjects(projects =>
-      projects.map(p => (p._id === id ? {...p, activated: true} : p))
+      projects.map(p =>
+        p._id === id ? {...p, activated: true, sync: true} : p
+      )
+    );
+
+    activateProjectDB(id);
+  };
+
+  /**
+   * Sets the sync status of a project.
+   *
+   * @param id - The ID of the project to set the sync status of.
+   * @param listing - The listing of the project to set the sync status of.
+   * @param sync - The sync status to set.
+   */
+  const setProjectSync = async (id: string, listing: string, sync: boolean) => {
+    const projectID = await activate_project(listing, id, sync);
+
+    if (!projectID) return;
+
+    setProjects(projects =>
+      projects.map(p => (p._id === id ? {...p, sync} : p))
     );
 
     activateProjectDB(id);
   };
 
   return (
-    <ProjectsContext.Provider value={{projects, activateProject}}>
+    <ProjectsContext.Provider
+      value={{projects, activateProject, setProjectSync}}
+    >
       {children}
     </ProjectsContext.Provider>
   );
