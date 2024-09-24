@@ -283,7 +283,7 @@ const CreateNewSurvey: React.FC = () => {
       <Box
         sx={{
           fontSize: '1.23em',
-          color: 'red',
+          color: '#9d8a8a',
           display: 'flex',
           alignItems: 'left',
           gap: 1,
