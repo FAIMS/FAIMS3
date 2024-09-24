@@ -21,7 +21,13 @@
 import PouchDB from 'pouchdb';
 import * as Exceptions from '../exceptions';
 
-import {ProjectID, ProjectObject, TemplateDetails} from '@faims3/data-model';
+import {
+  ProjectDataObject,
+  ProjectID,
+  ProjectMetaObject,
+  ProjectObject,
+  TemplateDetails,
+} from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
   COUCHDB_INTERNAL_URL,
@@ -34,6 +40,7 @@ import {
   initialiseTemplatesDb,
   initialiseUserDB,
 } from './initialise';
+import {Express} from 'express';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
@@ -44,7 +51,7 @@ const INVITE_DB_NAME = 'invites';
 let _directoryDB: PouchDB.Database | undefined;
 let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
 let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
-let _usersDB: PouchDB.Database | undefined;
+let _usersDB: PouchDB.Database<Express.User> | undefined;
 let _invitesDB: PouchDB.Database | undefined;
 
 const pouchOptions = () => {
@@ -82,12 +89,12 @@ export const getPublicUserDbURL = (): string => {
   return COUCHDB_PUBLIC_URL + PEOPLE_DB_NAME;
 };
 
-export const getUsersDB = (): PouchDB.Database | undefined => {
+export const getUsersDB = (): PouchDB.Database<Express.User> | undefined => {
   if (!_usersDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PEOPLE_DB_NAME;
     try {
-      _usersDB = new PouchDB(dbName, pouch_options);
+      _usersDB = new PouchDB<Express.User>(dbName, pouch_options);
     } catch {
       throw new Exceptions.InternalSystemError(
         'Error occurred while getting users database.'
@@ -145,53 +152,116 @@ export const getInvitesDB = (): PouchDB.Database | undefined => {
   return _invitesDB;
 };
 
-export const getProjectMetaDB = async (
-  projectID: ProjectID
-): Promise<PouchDB.Database | undefined> => {
-  const projectsDB = getProjectsDB();
-  if (projectsDB) {
-    try {
-      const projectDoc = await projectsDB.get(projectID);
-      if (projectDoc.metadata_db) {
-        const dbname =
-          COUCHDB_INTERNAL_URL + '/' + projectDoc.metadata_db.db_name;
-        const pouch_options = pouchOptions();
-
-        if (LOCAL_COUCHDB_AUTH !== undefined) {
-          pouch_options.auth = LOCAL_COUCHDB_AUTH;
-        }
-        return new PouchDB(dbname, pouch_options);
-      }
-    } catch (error) {
-      console.error('Error getting project metadata DB for ', projectID);
-      return undefined;
-    }
+/**
+ * Gets a database client object for the metadata DB for a given project document
+ * @param projectDoc The project document to use as a connection reference for the metadata DB
+ * @returns The connected instantiated database
+ */
+export const getMetadataDbFromProjectDocument = async (
+  projectDoc: ProjectObject
+): Promise<PouchDB.Database<ProjectMetaObject>> => {
+  if (!projectDoc.metadata_db) {
+    throw new Exceptions.InternalSystemError(
+      "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
+    );
   }
-  return undefined;
+
+  // Build the pouch connection for this DB
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.metadata_db.db_name;
+  const pouch_options = pouchOptions();
+
+  // Authorise against this DB
+  if (LOCAL_COUCHDB_AUTH !== undefined) {
+    pouch_options.auth = LOCAL_COUCHDB_AUTH;
+  }
+
+  return new PouchDB(dbUrl, pouch_options);
 };
 
-export const getProjectDataDB = async (
+/**
+ * Returns the metadata DB for a given project - involves fetching the project
+ * doc and then fetching the corresponding metadata db
+ * @param projectID The project Id to use
+ * @returns The metadata DB for this project
+ */
+export const getMetadataDbFromProjectId = async (
   projectID: ProjectID
-): Promise<PouchDB.Database | undefined> => {
+): Promise<PouchDB.Database<ProjectMetaObject>> => {
+  // Gets the projects DB
   const projectsDB = getProjectsDB();
-  if (projectsDB) {
-    try {
-      const projectDoc = await projectsDB.get(projectID);
-      if (projectDoc.data_db) {
-        const dbname = COUCHDB_INTERNAL_URL + '/' + projectDoc.data_db.db_name;
-        const pouch_options = pouchOptions();
-
-        if (LOCAL_COUCHDB_AUTH !== undefined) {
-          pouch_options.auth = LOCAL_COUCHDB_AUTH;
-        }
-        return new PouchDB(dbname, pouch_options);
-      }
-    } catch (error) {
-      console.error('Error getting project DB for ', projectID);
-      return undefined;
-    }
+  if (!projectsDB) {
+    throw new Exceptions.InternalSystemError(
+      'Could not fetch the projects DB. Contact system administrator.'
+    );
   }
-  return undefined;
+
+  // Get the project doc for the given ID
+  const projectDoc = await projectsDB.get(projectID);
+
+  // 404 if project doc not found
+  if (!projectDoc) {
+    throw new Exceptions.ItemNotFoundException(
+      'Cannot find the given project ID in the projects database.'
+    );
+  }
+
+  // now get the metadata DB for this project
+  return await getMetadataDbFromProjectDocument(projectDoc);
+};
+
+/**
+ * Gets a database client object for the data DB for a given project document
+ * @param projectDoc The project document to use as a connection reference for the data DB
+ * @returns The connected instantiated database or undefined if not found
+ */
+export const getDataDbFromProjectDocument = async (
+  projectDoc: ProjectObject
+): Promise<PouchDB.Database<ProjectDataObject>> => {
+  if (!projectDoc.data_db) {
+    throw new Exceptions.InternalSystemError(
+      "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
+    );
+  }
+
+  // Build the pouch connection for this DB
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.data_db.db_name;
+  const pouch_options = pouchOptions();
+  // Authorize against this DB
+  if (LOCAL_COUCHDB_AUTH !== undefined) {
+    pouch_options.auth = LOCAL_COUCHDB_AUTH;
+  }
+  return new PouchDB(dbUrl, pouch_options);
+};
+
+/**
+ * Returns the data DB for a given project - involves fetching the project
+ * doc and then fetching the corresponding data db
+ * @param projectID The project ID to use
+ * @returns The data DB for this project or undefined if not found
+ */
+export const getDataDbFromProjectId = async (
+  projectID: ProjectID
+): Promise<PouchDB.Database<ProjectDataObject>> => {
+  // Get the projects DB
+  const projectsDB = getProjectsDB();
+  if (!projectsDB) {
+    throw new Exceptions.InternalSystemError(
+      'Could not fetch the projects DB. Contact system administrator.'
+    );
+  }
+
+  // Get the project doc for the given ID
+  const projectDoc = await projectsDB.get(projectID);
+
+  // 404 if project doc not found
+  if (!projectDoc) {
+    throw new Exceptions.ItemNotFoundException(
+      'Cannot find the given project ID in the projects database.'
+    );
+  }
+
+  // Now get the data DB for this project
+  return await getDataDbFromProjectDocument(projectDoc);
 };
 
 export const initialiseDatabases = async () => {

@@ -29,8 +29,9 @@
     "watch-api": "npm run watch --workspace=api",
     "start-designer": "npm run start --workspace=designer",
     "initdb": "npm run initdb --workspace=api",
-    "load -notebooks": "npm run load-notebooks --workspace=api",
-    "generat  e-local-keys": "./api/keymanagement/makeInstanceKeys.sh",
+    "load-notebooks": "npm run load-notebooks --workspace=api",
+    "load-templates": "npm run load-templates --workspace=api",
+    "generate-local-keys": "./api/keymanagement/makeInstanceKeys.sh",
     "lint": "turbo lint",
     "clean": "turbo clean",
     "build": "turbo build"

@@ -1,0 +1,4 @@
+
+> @faims3/api@0.1.0 test
+> env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha
+

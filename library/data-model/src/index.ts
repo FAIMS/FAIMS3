@@ -63,6 +63,7 @@ import {
   file_data_to_attachments,
   files_to_attachments,
 } from './data_storage/attachments';
+export * from './auth';
 
 export {
   HRID_STRING,
