@@ -24,7 +24,6 @@ import {EncodedProjectUIModel} from '@faims3/data-model';
 import {getProjectDB} from '.';
 import {getTokenForCluster} from '../users';
 import {createdListingsInterface} from './state';
-import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../constants/routes';
 
 export type PropertyMap = {
   [key: string]: unknown;

@@ -23,6 +23,7 @@ import {Typography, Grid} from '@mui/material';
 import Notebooks from '../components/workspace/notebooks';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {projectListVerbose} from '../themes';
 
 export default function Workspace() {
   return (

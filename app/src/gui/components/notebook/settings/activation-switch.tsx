@@ -30,15 +30,17 @@ export default function NotebookActivationSwitch({
     <Box my={1}>
       <Button
         onClick={handleOpen}
-        color={'primary'}
-        size={'small'}
-        variant={'outlined'}
-        disableElevation={true}
+        color="primary"
+        size="small"
+        variant="outlined"
+        disableElevation
       >
         Activate
       </Button>
-      <Dialog
+      <FaimsDialog
         open={open}
+        title="Activating / Deactivating surveys"
+        icon={<InfoIcon style={{fontSize: 40, color: '#1976d2'}} />}
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"

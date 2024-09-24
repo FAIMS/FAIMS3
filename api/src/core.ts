@@ -62,7 +62,6 @@ if (process.env.NODE_ENV !== 'test') {
   });
   app.use(limiter);
   console.log('Rate limiter enabled');
-  
 }
 
 // Only parse query parameters into strings, not objects

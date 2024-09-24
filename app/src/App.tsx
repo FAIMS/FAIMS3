@@ -28,7 +28,6 @@ import Workspace from './gui/pages/workspace';
 import Notebook from './gui/pages/notebook';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
-import NotFound404 from './gui/pages/404';
 import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';
 import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
@@ -37,12 +36,13 @@ import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 
-import theme from './gui/theme';
+import {theme} from './gui/themes';
 import {getTokenContentsForCurrentUser} from './users';
 
 import {useEffect, useState} from 'react';
 
 import {TokenContents} from '@faims3/data-model';
+import NotFound404 from './gui/pages/404';
 import {ProjectsProvider} from './context/projects-context';
 
 // type AppProps = {};

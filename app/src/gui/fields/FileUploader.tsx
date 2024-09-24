@@ -34,13 +34,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import {IconButton} from '@mui/material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ImageIcon from '@mui/icons-material/Image';
-import FaimsDialog from '../components/ui/Dialog';
-// import {FAIMSAttachmentReference} from '@faims3/data-model';
+import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   label?: string;
-  accepted_filetypes?: string | string[];
   disabled?: boolean;
   multiple?: boolean;
   maximum_number_of_files?: number;
@@ -52,7 +49,6 @@ interface Props {
 }
 
 export function FileUploader(props: FieldProps & Props) {
-  const accepted_filetypes = props.accepted_filetypes ?? 'image/*';
   const disabled = props.disabled ?? false;
   const multiple = props.multiple ?? true;
   const maximum_number_of_files = props.maximum_number_of_files ?? 0;
@@ -99,7 +95,6 @@ export function FileUploader(props: FieldProps & Props) {
       </Typography>
       {props.disabled !== true && (
         <Dropzone
-          // accept={accepted_filetypes}
           disabled={disabled}
           multiple={multiple}
           maxFiles={maximum_number_of_files}
@@ -188,7 +183,7 @@ export function FileUploader(props: FieldProps & Props) {
       <Typography variant="caption" color="textSecondary">
         {props.helperText}
       </Typography>
-      <FaimsDialog
+      <FaimsAttachmentManagerDialog
         project_id={props.form.values['_project_id']}
         open={open}
         setopen={() => setopen(false)}

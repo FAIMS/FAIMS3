@@ -5,13 +5,7 @@ import {
   Typography,
   Box,
   Paper,
-  Grid,
-  Table,
-  TableBody,
-  TableRow,
-  TableCell,
   AppBar,
-  TableContainer,
   Alert,
   AlertTitle,
   Button,
@@ -22,7 +16,6 @@ import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectUIModel} from '@faims3/data-model';
 import DraftsTable from './draft_table';
 import {RecordsBrowseTable} from './record_table';
-import RangeHeader from './range_header';
 import MetadataRenderer from '../metadataRenderer';
 import AddRecordButtons from './add_record_by_type';
 import NotebookSettings from './settings';
@@ -35,6 +28,9 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import {ProjectExtended} from '../../../types/project';
 
+/**
+ * TabPanelProps defines the properties for the TabPanel component.
+ */
 interface TabPanelProps {
   children?: React.ReactNode;
   id: string;
@@ -42,6 +38,13 @@ interface TabPanelProps {
   value: number;
 }
 
+/**
+ * TabPanel is a component for displaying the content of a specific tab.
+ * It conditionally renders its children based on the active tab.
+ *
+ * @param {TabPanelProps} props - The properties for the TabPanel.
+ * @returns {JSX.Element} - The JSX element for the TabPanel.
+ */
 function TabPanel(props: TabPanelProps) {
   const {children, id, value, index, ...other} = props;
 
@@ -58,6 +61,13 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+/**
+ * a11yProps returns accessibility properties for a tab.
+ *
+ * @param {number} index - The index of the tab.
+ * @param {string} id - The id of the tab panel.
+ * @returns {object} - The accessibility properties for the tab.
+ */
 function a11yProps(index: number, id: string) {
   /**
    * Accessibility props
@@ -68,18 +78,31 @@ function a11yProps(index: number, id: string) {
   };
 }
 
+/**
+ * NotebookComponentProps defines the properties for the NotebookComponent component.
+ */
 type NotebookComponentProps = {
   project: ProjectExtended;
   handleRefresh: () => Promise<any>;
 };
+
+/**
+ * NotebookComponent is a component that displays the main interface for the notebook.
+ * It includes tabs for Records, Details, Access, Layers, and Settings.
+ *
+ * @param {NotebookComponentProps} props - The properties for the NotebookComponent.
+ * @returns {JSX.Element} - The JSX element for the NotebookComponent.
+ */
 export default function NotebookComponent(props: NotebookComponentProps) {
-  /**
-   * Notebook component. Consolidating into three tabs; records, info (meta) and settings.
-   * Display customized for smaller screens
-   */
   const [notebookTabValue, setNotebookTabValue] = React.useState(0);
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
 
+  /**
+   * Handles the change event when the user switches between the Records and Drafts tabs.
+   *
+   * @param {React.SyntheticEvent} event - The event triggered by the tab change.
+   * @param {number} newValue - The index of the selected tab.
+   */
   const handleRecordDraftTabChange = (
     event: React.SyntheticEvent,
     newValue: number
@@ -87,6 +110,12 @@ export default function NotebookComponent(props: NotebookComponentProps) {
     setRecordDraftTabValue(newValue);
   };
 
+  /**
+   * Handles the change event when the user switches between the main tabs.
+   *
+   * @param {React.SyntheticEvent} event - The event triggered by the tab change.
+   * @param {number} newValue - The index of the selected tab.
+   */
   const handleNotebookTabChange = (
     event: React.SyntheticEvent,
     newValue: number
@@ -103,6 +132,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
 
+  /**
+   * Fetches the UI specification and viewsets for the project when the component mounts or the project changes.
+   */
   useEffect(() => {
     if (project.listing && project._id) {
       getUiSpecForProject(`${project.listing}||${project._id}`)
@@ -174,16 +206,14 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
-                // centered={mq_above_md ? false : true}
               >
                 <Tab label="Records" {...a11yProps(0, NOTEBOOK_NAME)} />
-                <Tab label="Info" {...a11yProps(1, NOTEBOOK_NAME)} />
+                <Tab label="Details" {...a11yProps(1, NOTEBOOK_NAME)} />
                 <Tab label="Settings" {...a11yProps(2, NOTEBOOK_NAME)} />
               </Tabs>
             </AppBar>
           </Box>
           <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
-            {/* Add Record Buttons */}
             <Box>
               <Typography variant={'overline'} sx={{marginTop: '-8px'}}>
                 Add New Record
@@ -239,6 +269,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
               </TabPanel>
             </Box>
           </TabPanel>
+
           <TabPanel value={notebookTabValue} index={1} id={'notebook'}>
             <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
               <Grid item xs={12} sm={6} md={6} lg={4}>
@@ -332,6 +363,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
               </Grid>
             </Grid>
           </TabPanel>
+
           <TabPanel value={notebookTabValue} index={2} id={'notebook'}>
             {uiSpec !== null && <NotebookSettings uiSpec={uiSpec} />}
           </TabPanel>
