@@ -21,6 +21,7 @@
 import {
   addDesignDocsForNotebook,
   APINotebookList,
+  CLUSTER_ADMIN_GROUP_NAME,
   getProjectDB,
   notebookRecordIterator,
   ProjectID,
@@ -30,9 +31,8 @@ import {
 import archiver from 'archiver';
 import PouchDB from 'pouchdb';
 import {Stream} from 'stream';
-import {getDataDb, getMetadataDb, getProjectsDB} from '.';
+import {getMetadataDb, getProjectsDB} from '.';
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
-import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
 import {
   PROJECT_METADATA_PREFIX,
   ProjectMetadata,
