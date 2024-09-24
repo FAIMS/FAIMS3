@@ -9,6 +9,12 @@ import {
   Alert,
   AlertTitle,
   Button,
+  Grid,
+  TableContainer,
+  Table,
+  TableBody,
+  TableRow,
+  TableCell,
 } from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {ProjectUIViewsets} from '@faims3/data-model';
@@ -27,6 +33,7 @@ import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import {ProjectExtended} from '../../../types/project';
+import RangeHeader from './range_header';
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
