@@ -153,38 +153,12 @@ export const getInvitesDB = (): PouchDB.Database | undefined => {
 };
 
 /**
- * Gets a database client object for the metadata DB for a given project document
- * @param projectDoc The project document to use as a connection reference for the metadata DB
- * @returns The connected instantiated database
- */
-export const getMetadataDbFromProjectDocument = async (
-  projectDoc: ProjectObject
-): Promise<PouchDB.Database<ProjectMetaObject>> => {
-  if (!projectDoc.metadata_db) {
-    throw new Exceptions.InternalSystemError(
-      "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
-    );
-  }
-
-  // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.metadata_db.db_name;
-  const pouch_options = pouchOptions();
-
-  // Authorise against this DB
-  if (LOCAL_COUCHDB_AUTH !== undefined) {
-    pouch_options.auth = LOCAL_COUCHDB_AUTH;
-  }
-
-  return new PouchDB(dbUrl, pouch_options);
-};
-
-/**
  * Returns the metadata DB for a given project - involves fetching the project
  * doc and then fetching the corresponding metadata db
  * @param projectID The project Id to use
  * @returns The metadata DB for this project
  */
-export const getMetadataDbFromProjectId = async (
+export const getMetadataDb = async (
   projectID: ProjectID
 ): Promise<PouchDB.Database<ProjectMetaObject>> => {
   // Gets the projects DB
@@ -205,31 +179,22 @@ export const getMetadataDbFromProjectId = async (
     );
   }
 
-  // now get the metadata DB for this project
-  return await getMetadataDbFromProjectDocument(projectDoc);
-};
-
-/**
- * Gets a database client object for the data DB for a given project document
- * @param projectDoc The project document to use as a connection reference for the data DB
- * @returns The connected instantiated database or undefined if not found
- */
-export const getDataDbFromProjectDocument = async (
-  projectDoc: ProjectObject
-): Promise<PouchDB.Database<ProjectDataObject>> => {
-  if (!projectDoc.data_db) {
+  // Now get the metadata DB from the project document
+  if (!projectDoc.metadata_db) {
     throw new Exceptions.InternalSystemError(
-      "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
+      "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
     );
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.data_db.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.metadata_db.db_name;
   const pouch_options = pouchOptions();
-  // Authorize against this DB
+
+  // Authorise against this DB
   if (LOCAL_COUCHDB_AUTH !== undefined) {
     pouch_options.auth = LOCAL_COUCHDB_AUTH;
   }
+
   return new PouchDB(dbUrl, pouch_options);
 };
 
@@ -239,7 +204,7 @@ export const getDataDbFromProjectDocument = async (
  * @param projectID The project ID to use
  * @returns The data DB for this project or undefined if not found
  */
-export const getDataDbFromProjectId = async (
+export const getDataDb = async (
   projectID: ProjectID
 ): Promise<PouchDB.Database<ProjectDataObject>> => {
   // Get the projects DB
@@ -261,7 +226,20 @@ export const getDataDbFromProjectId = async (
   }
 
   // Now get the data DB for this project
-  return await getDataDbFromProjectDocument(projectDoc);
+  if (!projectDoc.data_db) {
+    throw new Exceptions.InternalSystemError(
+      "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
+    );
+  }
+
+  // Build the pouch connection for this DB
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.data_db.db_name;
+  const pouch_options = pouchOptions();
+  // Authorize against this DB
+  if (LOCAL_COUCHDB_AUTH !== undefined) {
+    pouch_options.auth = LOCAL_COUCHDB_AUTH;
+  }
+  return new PouchDB(dbUrl, pouch_options);
 };
 
 export const initialiseDatabases = async () => {

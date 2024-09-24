@@ -552,11 +552,17 @@ describe('API tests', () => {
 
   if (DEVELOPER_MODE) {
     it('can create some random records', async () => {
-      const nb1 = await createNotebook('NB1', uispec, {});
+      const jsonText = fs.readFileSync(
+        './notebooks/sample_notebook.json',
+        'utf-8'
+      );
+      const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
 
-      if (nb1) {
+      const projectID = await createNotebook('Test Notebook', uiSpec, metadata);
+
+      if (projectID) {
         return request(app)
-          .post(`/api/notebooks/${nb1}/generate`)
+          .post(`/api/notebooks/${projectID}/generate`)
           .set('Authorization', `Bearer ${adminToken}`)
           .set('Content-Type', 'application/json')
           .send({count: 10})
