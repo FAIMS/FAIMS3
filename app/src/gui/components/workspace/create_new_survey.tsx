@@ -38,14 +38,28 @@ const CreateNewSurvey: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [listings, setListings] = useState<ListingsObject[]>([]); // State for multiple listings
+  const [selectedListing, setSelectedListing] = useState<string>(''); // New state for selected listing
 
-  const getListingFromDB = async (): Promise<ListingsObject | undefined> => {
+  /**
+   * Fetch all listings from the local database.
+   * @returns An array of ListingsObject if listings exist, otherwise undefined.
+   */
+  const getListingFromDB = async (): Promise<ListingsObject[] | undefined> => {
     try {
       const allListings = await directory_db.local.allDocs({
         include_docs: true,
       });
+
       if (allListings.rows.length > 0) {
-        return allListings.rows[0].doc as ListingsObject;
+        // Filter out any rows that don't meet the ListingsObject type requirement
+        const validListings = allListings.rows
+          .filter(
+            row => row.doc && row.doc._id && row.doc.name && row.doc.description
+          ) // Ensure required fields are present
+          .map(row => row.doc as ListingsObject); // Safely cast the row.doc to ListingsObject
+
+        return validListings;
       }
     } catch (err) {
       console.error('Error fetching listing from the database', err);
@@ -53,24 +67,29 @@ const CreateNewSurvey: React.FC = () => {
     return undefined;
   };
 
+  /**
+   * Load available templates for the selected listing.
+   * Sets templates state if successful, otherwise sets an error message.
+   */
   const loadTemplates = async () => {
     try {
-      const listing = await getListingFromDB();
-      console.log('listing in loadTemp;ates', listing);
-      if (listing) {
-        const response = await fetchTemplates(listing);
-        console.log('loadtemplates', response);
+      const fetchedListings = await getListingFromDB();
+      if (fetchedListings && fetchedListings.length > 0) {
+        setListings(fetchedListings); // Set multiple listings
+        setSelectedListing(fetchedListings[0]._id); // Automatically select the first listing for now
+
+        const response = await fetchTemplates(fetchedListings[0]); // Fetch templates for the first listing
         if (response && response.templates) {
-          console.log('response for templates', response.templates);
           setTemplates(response.templates);
         } else {
-          console.error('No templates found or error occurred.');
+          setError('No templates found or error occurred.');
         }
       } else {
-        console.error('No listing found.');
+        setError('No listing found.');
       }
     } catch (error) {
       console.error('Error fetching templates:', error);
+      setError('Failed to load templates.');
     }
   };
 
@@ -131,16 +150,26 @@ const CreateNewSurvey: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const listing = await getListingFromDB();
-      if (!listing) {
+      const listings = await getListingFromDB(); // fetch all listings
+      if (!listings || listings.length === 0) {
         setError('Listing not found');
         console.error('No listing found during survey creation');
         setLoading(false);
         return;
       }
 
+      // Find the selected listing based on selectedListing state
+      const listing = listings.find(list => list._id === selectedListing);
+
+      if (!listing) {
+        setError('Selected listing not found');
+        console.error('Selected listing not found during survey creation');
+        setLoading(false);
+        return;
+      }
+
       const createdNotebook = await createNotebookFromTemplate(
-        listing,
+        listing, // Pass the selected listing
         selectedTemplate,
         surveyName
       );
