@@ -56,7 +56,6 @@ import {
   getRolesForNotebook,
 } from './couchdb/notebooks';
 import {createAuthKey} from './authkeys/create';
-import {getPublicUserDbURL} from './couchdb';
 import {add_auth_providers} from './auth_providers';
 import {add_auth_routes} from './auth_routes';
 import {getTemplate, getTemplates} from './couchdb/templates';

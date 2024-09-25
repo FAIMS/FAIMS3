@@ -261,5 +261,4 @@ describe('Auth', () => {
 
     await agent.get('/templates').expect(401);
   });
-
 });

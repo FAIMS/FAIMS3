@@ -38,7 +38,6 @@ import {
   PROJECT_METADATA_PREFIX,
   ProjectMetadata,
   ProjectUIFields,
-  ProjectUIModel,
 } from '../datamodel/database';
 import * as Exceptions from '../exceptions';
 
