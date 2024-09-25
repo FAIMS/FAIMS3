@@ -111,7 +111,7 @@ export default function App() {
                 <Route
                   path={ROUTES.CREATE_NEW_SURVEY}
                   element={
-                    <PrivateRoute allowed={Boolean(token)}>
+                    <PrivateRoute allowed={!!token?.username}>
                       <CreateNewSurvey />
                     </PrivateRoute>
                   }
