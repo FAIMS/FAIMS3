@@ -1,164 +1,129 @@
-import React, {useEffect, useState} from 'react';
+import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+import DescriptionIcon from '@mui/icons-material/Description';
+import InfoIcon from '@mui/icons-material/Info';
+import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Box,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Button,
-  Typography,
   Dialog,
-  DialogTitle,
-  DialogContent,
   DialogActions,
-  TextField,
+  DialogContent,
+  DialogTitle,
+  FormControl,
   Grid,
+  InputLabel,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+  TextField,
+  Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {TemplateDocument} from '@faims3/data-model';
-import {SelectChangeEvent} from '@mui/material';
-import DescriptionIcon from '@mui/icons-material/Description';
-import InfoIcon from '@mui/icons-material/Info';
-import {fetchTemplates} from '../../../sync/templates';
-import {directory_db, ListingsObject} from '../../../sync/databases';
-import {createNotebookFromTemplate} from '../../../sync/create_notebook';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
-import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+import {ListingsObject} from '../../../sync/databases';
+import {useCreateNotebookFromTemplate} from '../../../utils/apiHooks/notebooks';
+import {useGetTemplates} from '../../../utils/apiHooks/templates';
+import CircularLoading from '../ui/circular_loading';
+import useErrorPopup from '../ui/errorPopup';
 
-const CreateNewSurvey: React.FC = () => {
-  const [templates, setTemplates] = useState<TemplateDocument[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+export interface NewNotebookForListingProps {
+  listingObject: ListingsObject;
+}
+const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
+  // Popup manager
+  const errorPopup = useErrorPopup();
+
+  // Use custom hook to get template list
+  const templates = useGetTemplates({listingId: props.listingObject._id});
+
+  // What template has the user selected - if any
+  const [selectedTemplate, setSelectedTemplate] = useState<string | undefined>(
+    undefined
+  );
+
+  // What survey name has user inputted, if any
+  const [surveyName, setSurveyName] = useState<string | undefined>(undefined);
+
+  // Mutation to create new survey
+  const createNotebook = useCreateNotebookFromTemplate({
+    listingId: props.listingObject._id,
+    name: surveyName,
+    templateId: selectedTemplate,
+    // When we succeed, navigate back to home page
+    options: {
+      onSuccess: () => {
+        navigate('/');
+        window.location.reload();
+      },
+      // If error occurs then display popup
+      onError: e => {
+        console.error(e);
+        errorPopup.showError(
+          'An error occurred while creating the notebook. ' + e
+        );
+      },
+    },
+  });
+
+  // Dialog management
   const [openDialog, setOpenDialog] = useState(false);
-  const [surveyName, setSurveyName] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const getListingFromDB = async (): Promise<ListingsObject | undefined> => {
-    try {
-      const allListings = await directory_db.local.allDocs({
-        include_docs: true,
-      });
-      if (allListings.rows.length > 0) {
-        return allListings.rows[0].doc as ListingsObject;
-      }
-    } catch (err) {
-      console.error('Error fetching listing from the database', err);
-    }
-    return undefined;
-  };
+  // --------
+  // HANDLERS
+  // --------
 
-  const loadTemplates = async () => {
-    try {
-      const listing = await getListingFromDB();
-      console.log('listing in loadTemp;ates', listing);
-      if (listing) {
-        const response = await fetchTemplates(listing);
-        console.log('loadtemplates', response);
-        if (response && response.templates) {
-          console.log('response for templates', response.templates);
-          setTemplates(response.templates);
-        } else {
-          console.error('No templates found or error occurred.');
-        }
-      } else {
-        console.error('No listing found.');
-      }
-    } catch (error) {
-      console.error('Error fetching templates:', error);
-    }
-  };
-
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  useEffect(() => {
-    const originalStyle = window.getComputedStyle(document.body).paddingRight;
-
-    if (openDialog) {
-      document.body.style.paddingRight = '0px';
-    }
-
-    return () => {
-      document.body.style.paddingRight = originalStyle;
-    };
-  }, [openDialog]);
-
+  // Handles when the template is selected from the list
   const handleTemplateChange = (event: SelectChangeEvent<string>) => {
     const templateId = event.target.value;
-    console.log('Template selected:', templateId);
     setSelectedTemplate(templateId);
   };
 
+  // Handles when the user confirms selection
   const handleInstantiateSurvey = () => {
-    if (!selectedTemplate) {
-      setError('Please select a template before creating a survey');
-      return;
-    }
-    setError(null);
-    console.log('Instantiate Survey button clicked');
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
-    console.log('Dialog closed');
     setOpenDialog(false);
   };
 
   // Handle survey creation
   const handleSubmitSurvey = async () => {
     if (!surveyName) {
-      setError('Survey Name is required');
-      console.error('Survey Name is missing');
+      errorPopup.showError(
+        'You cannot create a survey without providing a survey name!'
+      );
       return;
     }
     if (!selectedTemplate) {
-      setError('Please select a template');
-      console.error('Template is not selected');
+      errorPopup.showError(
+        'You cannot create a survey without selecting a template!'
+      );
       return;
     }
-    console.log('RANIOIIII Starting survey creation with:', {
-      surveyName,
-      selectedTemplate,
-    });
 
-    setError(null);
-    setLoading(true);
-    try {
-      const listing = await getListingFromDB();
-      if (!listing) {
-        setError('Listing not found');
-        console.error('No listing found during survey creation');
-        setLoading(false);
-        return;
-      }
-
-      const createdNotebook = await createNotebookFromTemplate(
-        listing,
-        selectedTemplate,
-        surveyName
+    if (!createNotebook.ready) {
+      console.error(
+        'Unexpected state where all values are present yet mutation is not ready!'
       );
-      console.log('Notebook created successfully:', createdNotebook);
-
-      navigate('/');
-      window.location.reload();
-
-      setOpenDialog(false);
-    } catch (error) {
-      setError('Failed to create survey');
-    } finally {
-      setLoading(false);
+      errorPopup.showError('You cannot create a survey yet.');
+      return;
     }
+
+    // Perform operation
+    createNotebook.mutation!.mutate();
   };
 
   return (
     <>
+      {errorPopup.ErrorPopupRenderer()}
       <Box
         sx={{
           width: '100%',
@@ -171,23 +136,13 @@ const CreateNewSurvey: React.FC = () => {
           marginTop: '12px',
         }}
       >
-        <Grid container direction="column" alignItems="center">
-          <Grid item>
-            <DescriptionIcon
-              color={'secondary'}
-              fontSize={isMobile ? 'large' : 'inherit'}
-            />
-          </Grid>
-          <Grid item>
-            <Typography
-              variant={isMobile ? 'h5' : 'h4'}
-              component="div"
-              sx={{fontWeight: 'bold', fontSize: '20px', marginBottom: '18px'}}
-            >
-              Create New Survey
-            </Typography>
-          </Grid>
-        </Grid>
+        <Typography
+          variant={'subtitle2'}
+          component="div"
+          sx={{fontWeight: 'bold', fontSize: '18px', padding: theme.spacing(2)}}
+        >
+          {props.listingObject.name}
+        </Typography>
       </Box>
       <FormControl
         fullWidth
@@ -210,44 +165,52 @@ const CreateNewSurvey: React.FC = () => {
         >
           Using existing template
         </InputLabel>
-        <Select
-          labelId="template-select-label"
-          value={selectedTemplate}
-          onChange={handleTemplateChange}
-          displayEmpty
-          sx={{
-            height: '48px',
-            justifyContent: 'center',
-          }}
-          MenuProps={{
-            disableScrollLock: true,
-            anchorOrigin: {
-              vertical: 'bottom',
-              horizontal: 'left',
-            },
-            transformOrigin: {
-              vertical: 'top',
-              horizontal: 'left',
-            },
-          }}
-        >
-          <MenuItem disabled value="">
-            Choose survey template
-          </MenuItem>
-          {templates.length > 0 ? (
-            templates.map(template => (
-              <MenuItem key={template._id} value={template._id}>
-                {template.template_name}
-              </MenuItem>
-            ))
-          ) : (
+        {templates.isLoading ? (
+          <CircularLoading label={'Loading Templates'} />
+        ) : templates.isError ? (
+          <Typography color="error">
+            {'An error occurred while fetching templates, error: ' +
+              templates.error}
+          </Typography>
+        ) : (
+          <Select
+            labelId="template-select-label"
+            value={selectedTemplate ?? ''}
+            onChange={handleTemplateChange}
+            displayEmpty
+            sx={{
+              height: '48px',
+              justifyContent: 'center',
+            }}
+            MenuProps={{
+              disableScrollLock: true,
+              anchorOrigin: {
+                vertical: 'bottom',
+                horizontal: 'left',
+              },
+              transformOrigin: {
+                vertical: 'top',
+                horizontal: 'left',
+              },
+            }}
+          >
             <MenuItem disabled value="">
-              No templates available
+              Choose survey template
             </MenuItem>
-          )}
-        </Select>
+            {templates.data && templates.data.templates.length > 0 ? (
+              templates.data.templates.map(template => (
+                <MenuItem key={template._id} value={template._id}>
+                  {template.template_name}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled value="">
+                No templates available
+              </MenuItem>
+            )}
+          </Select>
+        )}
       </FormControl>
-      {error && <Typography color="error">{error}</Typography>}{' '}
       {/* Show error if any */}
       <Box
         sx={{
@@ -319,15 +282,12 @@ const CreateNewSurvey: React.FC = () => {
           },
         }}
         onClick={handleInstantiateSurvey}
-        disabled={loading || !selectedTemplate}
+        disabled={createNotebook.mutation?.isLoading || !selectedTemplate}
       >
-        {loading ? 'Creating Survey...' : 'Create survey'}
+        {createNotebook.mutation?.isLoading
+          ? 'Creating Survey...'
+          : 'Create survey'}
       </Button>
-      {error && (
-        <Typography color="error" variant="body2" sx={{mt: 1}}>
-          {error}
-        </Typography>
-      )}
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
@@ -404,11 +364,11 @@ const CreateNewSurvey: React.FC = () => {
           <TextField
             fullWidth
             label="Survey Name"
-            value={surveyName}
+            value={surveyName ?? ''}
             onChange={e => setSurveyName(e.target.value)}
             sx={{marginTop: '16px'}}
             required
-            disabled={loading}
+            disabled={createNotebook.mutation?.isLoading}
           />
         </DialogContent>
         <DialogActions>
@@ -423,9 +383,9 @@ const CreateNewSurvey: React.FC = () => {
             onClick={handleSubmitSurvey}
             color="primary"
             variant="contained"
-            disabled={loading || !surveyName}
+            disabled={createNotebook.mutation?.isLoading || !surveyName}
           >
-            {loading ? 'Creating...' : 'Submit'}
+            {createNotebook.mutation?.isLoading ? 'Creating...' : 'Submit'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -433,4 +393,4 @@ const CreateNewSurvey: React.FC = () => {
   );
 };
 
-export default CreateNewSurvey;
+export default NewNotebookForListing;

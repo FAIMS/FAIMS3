@@ -45,7 +45,7 @@ import {useEffect, useState} from 'react';
 
 import {TokenContents} from '@faims3/data-model';
 import NotFound404 from './gui/pages/404';
-import CreateNewSurvey from './gui/components/workspace/create_new_survey';
+import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 
 // type AppProps = {};
 
