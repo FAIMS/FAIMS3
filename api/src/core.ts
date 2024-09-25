@@ -56,6 +56,7 @@ import {api as templatesApi} from './api/templates';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
 import {COOKIE_SECRET} from './buildconfig';
+import {userCanCreateNotebooks} from './couchdb/users';
 
 // See https://github.com/davidbanham/express-async-errors - this patches
 // express to handle async errors without hanging or needing an explicit try

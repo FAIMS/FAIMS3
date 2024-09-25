@@ -8,9 +8,8 @@
       <h1>{{ template.template_name }}</h1>
 
       <dl>
-          <dt>Project ID</dt><dd>{{ template.metadata.project_id}}</dd>
-          <dt>Project Lead</dt><dd>{{ template.metadata.project_lead}}</dd>
-          <dt>Lead Institution</dt><dd>{{ template.metadata.lead_institution }}</dd>
+          <dt>Template ID</dt><dd>{{ template.metadata.template_id}}</dd>
+          <dt>Notebook Version</dt><dd>{{template.metadata.notebook_version}}</dd>
           <dt>Description</dt><dd>{{markdown template.metadata.pre_description }}</dd>
       </dl>
     </div>
@@ -19,18 +18,59 @@
       <h2>Template Actions</h2>
 
 
-    <div class="container">
-      <div class="row">
-        <div class="col">
-          <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#updateTemplateModal">Update Template</button>
+    <div class="btn-group-vertical">
+
+      <button class="btn btn-primary" 
+        data-bs-toggle="modal" 
+        data-bs-target="#createNotebookModal">
+        Create Notebook from Template
+      </button>
+
+      <button class="btn btn-warning" 
+        data-bs-toggle="modal" 
+        data-bs-target="#updateTemplateModal">
+        Update Template
+      </button>
+     
+      <button type="button" 
+        class="btn btn-danger" 
+        data-bs-toggle="modal" 
+        data-bs-target="#deleteTemplateModal">
+        Delete Template
+      </button>
+    </div>
+      
+
+
+  <div id="createNotebookModal" class="modal fade modal-xl" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Notebook</h5>
         </div>
-        <div class="col">
-          <button type="button" class="btn btn-danger" 
-                        data-bs-toggle="modal" data-bs-target="#deleteTemplateModal">Delete Template</button>
+
+        <div class="modal-body">
+          <p>This will create a new notebook based on this template.</p>
+
+          <form id="create-notebook-form">
+            <div class="mb-3">
+              <label for="notebookName">Notebook Name</label>
+              <input id="notebookName" name="name" class="form-control" placeholder="Notebook Name">
+              <div class="form-text">This will be the name of the new notebook as it will appear in the 
+                list of notebooks for users.
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-warning" onclick="createNotebookHandler()">Create Notebook</button>
         </div>
       </div>
     </div>
-      
+  </div>
+
+
   <div id="updateTemplateModal" class="modal fade modal-xl" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -168,4 +208,38 @@
     }
   }
   document.getElementById('upload-template-form').onsubmit = uploadTemplateHandler;
+
+  const createNotebookHandler = () => {
+    const url = '/api/notebooks/';
+    const form = document.querySelector('#create-notebook-form');
+    const name = form.querySelector('[name="name"]').value;
+    if (name) {
+        try {
+          const body = {
+            template_id: '{{template.metadata.template_id}}',
+            name: name || data.metadata.name,
+          }
+          fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.notebook) {
+              // jump to the page for the new notebook
+              const url = `/notebooks/${data.notebook}`
+              window.location.href = url;
+            } else {
+              alert('Error uploading notebook');
+            }
+          });
+        } catch (e) {
+          alert('Invalid notebook file');
+          return;
+        }
+    }
+  }
 </script>

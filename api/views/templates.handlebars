@@ -2,7 +2,18 @@
 
 <h1>Templates</h1>
 
-  {{#if can_create_templates}}
+  <p>Notebook templates are complete notebook specifications that can be used to create new
+  notebook.   Use templates if you want to use a consistent set of forms for many
+  site-specific data collection exercises.</p>
+
+  <p>Once you have uploaded a template, you can create one or more notebooks from it.  Visit
+  the link for the template below to view options.</p>
+
+  <p>At the moment, all templates are visible to anyone with permission to create notebooks on
+  this server. Don't use templates if you have sensitive information in your notebook.
+  </p>
+
+  {{#if can_create_notebooks}}
   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
     New Template
   </button>

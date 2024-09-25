@@ -146,6 +146,7 @@ export interface ProjectObject {
 // This is returned from the list project endpoints
 export const APINotebookListSchema = z.object({
   name: z.string(),
+  is_admin: z.boolean().optional(),
   last_updated: z.string().optional(),
   created: z.string().optional(),
   template_id: z.string().optional(),

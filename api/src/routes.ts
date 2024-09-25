@@ -45,7 +45,6 @@ import {
   getUserInfoForNotebook,
   getUsers,
   userCanCreateNotebooks,
-  userCanDoWithTemplate,
   userHasPermission,
   userIsClusterAdmin,
 } from './couchdb/users';
@@ -161,6 +160,7 @@ app.get(
       res.render('notebook-landing', {
         isAdmin: isAdmin,
         cluster_admin: userIsClusterAdmin(user),
+        can_create_notebooks: userCanCreateNotebooks(req.user),
         notebook: notebook,
         records: await countRecordsInNotebook(project_id),
         invites: invitesQR,
@@ -175,14 +175,13 @@ app.get(
 
 app.get('/templates/', requireAuthentication, async (req, res) => {
   const user = req.user;
-  if (user) {
+  if (userCanCreateNotebooks(user)) {
     const templates = await getTemplates();
-    console.log(templates);
     res.render('templates', {
       user: user,
       templates: templates,
       cluster_admin: userIsClusterAdmin(user),
-      can_create_templates: userCanCreateNotebooks(user),
+      can_create_notebooks: userCanCreateNotebooks(req.user),
       developer: DEVELOPER_MODE,
     });
   } else {
@@ -195,6 +194,9 @@ app.get(
   requireNotebookMembership,
   async (req, res) => {
     const user = req.user as Express.User; // requireAuthentication ensures user
+    if (!userCanCreateNotebooks(user)) {
+      res.status(401).end();
+    }
     const template_id = req.params.template_id;
     const template = await getTemplate(template_id);
     if (template) {
@@ -246,21 +248,17 @@ app.get('/', async (req, res) => {
     // BBS 20221101 Adding token to here so we can support copy from conductor
     const signingKey = await KEY_SERVICE.getSigningKey();
     const jwt_token = await createAuthKey(req.user, signingKey);
-    const token = {
-      jwt_token: jwt_token,
-      public_key: signingKey.publicKeyString,
-      alg: signingKey.alg,
-      userdb: getPublicUserDbURL(), // query: is this actually needed?
-    };
+
     if (signingKey === null || signingKey === undefined) {
       res.status(500).send('Signing key not set up');
     } else {
       res.render('home', {
         user: req.user,
-        token: Buffer.from(JSON.stringify(token)).toString('base64'),
+        token: jwt_token,
         project_roles: rendered_project_roles,
         other_roles: req.user.other_roles,
         cluster_admin: userIsClusterAdmin(req.user),
+        can_create_notebooks: userCanCreateNotebooks(req.user),
         provider: provider,
         public_key: signingKey.publicKey,
         developer: DEVELOPER_MODE,
@@ -327,6 +325,8 @@ app.get('/notebooks/:id/users', requireClusterAdmin, async (req, res) => {
       users: userList.users,
       notebook: notebook,
       cluster_admin: userIsClusterAdmin(req.user),
+      can_create_notebooks: userCanCreateNotebooks(req.user),
+      developer: DEVELOPER_MODE,
     });
   } else {
     res.status(401).end();
@@ -339,14 +339,13 @@ app.get('/users', requireClusterAdmin, async (req, res) => {
     const userList = await getUsers();
     res.render('cluster-users', {
       cluster_admin: userIsClusterAdmin(req.user),
+      can_create_notebooks: userCanCreateNotebooks(req.user),
       users: userList
         .filter(user => user._id !== id)
         .map(user => {
           return {
             username: user._id,
             name: user.name,
-            is_cluster_admin: userIsClusterAdmin(user),
-            can_create_notebooks: userCanCreateNotebooks(user),
           };
         }),
     });
@@ -358,7 +357,11 @@ app.get('/users', requireClusterAdmin, async (req, res) => {
 if (DEVELOPER_MODE)
   app.get('/restore/', requireClusterAdmin, async (req, res) => {
     if (req.user) {
-      res.render('restore');
+      res.render('restore', {
+        cluster_admin: userIsClusterAdmin(req.user),
+        can_create_notebooks: userCanCreateNotebooks(req.user),
+        developer: DEVELOPER_MODE,
+      });
     } else {
       res.status(401).end();
     }

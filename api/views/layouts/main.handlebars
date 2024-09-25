@@ -74,14 +74,20 @@
           <li class="nav-item">
             <a class="nav-link" href="/notebooks">Notebooks</a>
           </li>
+          {{#if can_create_notebooks}}
           <li class="nav-item"></li>
             <a class="nav-link" href="/templates">Templates</a>
           </li>
-
+          {{/if}}
           {{#if cluster_admin}}
           <li class="nav-item"></li>
             <a class="nav-link" href="/users">Users</a>
           </li>
+          {{/if}}
+          {{#if developer}}
+          <li class="nav-item">
+            <a class="nav-link" href="/restore/">Restore Backup</a>
+          </li>   
           {{/if}}
         </ul>
         <div class="d-flex">
