@@ -52,6 +52,7 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
     name: 'New Text Field',
     type: 'TextField',
   });
+  const [addAfterField, setAddAfterField] = useState('');
 
   const allFieldNames = getFieldNames();
 
@@ -63,6 +64,12 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
     setDialogOpen(false);
   };
 
+  const addFieldAfterCallback = (fieldName: string) => {
+    console.log('adding a field after', fieldName);
+    setAddAfterField(fieldName);
+    setDialogOpen(true);
+  };
+
   const addField = () => {
     dispatch({
       type: 'ui-specification/fieldAdded',
@@ -71,6 +78,7 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
         fieldType: dialogState.type,
         viewId: viewId,
         viewSetId: viewSetId,
+        addAfter: addAfterField,
       },
     });
     setDialogOpen(false);
@@ -82,10 +90,7 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
   const [isExpanded, setIsExpanded] = useState(allClosed);
   const [showCollapseButton, setShowCollapseButton] = useState(false);
 
-  useEffect(() => {
-    // if fView.label changes we are viewing a different
-    // section, so reset all fields to be closed
-
+  const updateAllToggles = () => {
     fView.fields.forEach((fieldName: string) => {
       allClosed[fieldName] = false;
     });
@@ -93,7 +98,13 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
     fView.fields.forEach((fieldName: string) => {
       allOpen[fieldName] = true;
     });
+  };
 
+  updateAllToggles();
+
+  useEffect(() => {
+    // if fView.label changes we are viewing a different
+    // section, so reset all fields to be closed
     setIsExpanded(allClosed);
   }, [fView.label]);
 
@@ -170,6 +181,7 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
             viewSetId={viewSetId}
             viewId={viewId}
             expanded={isExpanded[fieldName] ?? false}
+            addFieldCallback={addFieldAfterCallback}
             handleExpandChange={handleExpandChange(fieldName)}
           />
         );

@@ -140,9 +140,10 @@ export const uiSpecificationReducer = createSlice({
         fieldType: string;
         viewId: string;
         viewSetId: string;
+        addAfter: string;
       }>
     ) => {
-      const {fieldName, fieldType, viewId, viewSetId} = action.payload;
+      const {fieldName, fieldType, viewId, viewSetId, addAfter} = action.payload;
 
       const newField: FieldType = getFieldSpec(fieldType);
 
@@ -198,7 +199,23 @@ export const uiSpecificationReducer = createSlice({
       newField['component-parameters'].name = fieldLabel;
       // add to fields and to the fview section
       state.fields[fieldLabel] = newField;
-      state.fviews[viewId].fields.push(fieldLabel);
+
+      // add either at the end or after a given field
+      // as long as that field is present
+      if (
+        addAfter === '' ||
+        state.fviews[viewId].fields.indexOf(addAfter) < 0
+      ) {
+        state.fviews[viewId].fields.push(fieldLabel);
+      } else {
+        const fields = state.fviews[viewId].fields;
+        const position = fields.indexOf(addAfter) + 1;
+        // insert after 'addAfter'
+        state.fviews[viewId].fields = fields
+          .slice(0, position)
+          .concat([fieldLabel])
+          .concat(fields.slice(position));
+      }
     },
     fieldDeleted: (
       state,
