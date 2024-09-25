@@ -5,6 +5,7 @@ import {
   getProjectsDB,
   updateProjectsDB,
   activateProjectDB,
+  setSyncProjectDB,
 } from '../dbs/projects-db';
 import {activate_project} from '../sync/process-initialization';
 
@@ -56,6 +57,10 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
     init();
   }, []);
 
+  useEffect(() => {
+    console.log(projects);
+  }, [projects]);
+
   /**
    * Activates a project.
    *
@@ -63,9 +68,12 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
    * @param listing - The listing of the project to activate.
    */
   const activateProject = async (id: string, listing: string) => {
-    const projectID = await activate_project(listing, id);
-
-    if (!projectID) return;
+    try {
+      await activate_project(listing, id);
+    } catch (err) {
+      console.error('Failed to activate project', err);
+      return;
+    }
 
     setProjects(projects =>
       projects.map(p =>
@@ -84,15 +92,18 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
    * @param sync - The sync status to set.
    */
   const setProjectSync = async (id: string, listing: string, sync: boolean) => {
-    const projectID = await activate_project(listing, id, sync);
-
-    if (!projectID) return;
+    try {
+      await activate_project(listing, id, sync);
+    } catch (err) {
+      console.error('Failed to activate project', err);
+      return;
+    }
 
     setProjects(projects =>
       projects.map(p => (p._id === id ? {...p, sync} : p))
     );
 
-    activateProjectDB(id);
+    setSyncProjectDB(id, sync);
   };
 
   return (

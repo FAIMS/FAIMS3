@@ -18,7 +18,7 @@
  * This provides a react component to manage the syncing state of a specific
  * project via a toggle.
  */
-import {useState} from 'react';
+import {useContext, useState} from 'react';
 import {
   Box,
   Switch,
@@ -37,6 +37,7 @@ import NotebookActivationSwitch from './activation-switch';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
 import {ProjectExtended} from '../../../../types/project';
+import {ProjectsContext} from '../../../../context/projects-context';
 
 type NotebookSyncSwitchProps = {
   project: ProjectExtended;
@@ -51,6 +52,8 @@ export default function NotebookSyncSwitch({
 }: NotebookSyncSwitchProps) {
   const [open, setOpen] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
+
+  const {setProjectSync} = useContext(ProjectsContext);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -70,14 +73,14 @@ export default function NotebookSyncSwitch({
             sx={{mr: 0}}
             control={
               <Switch
-                checked={project.activated}
+                checked={project.sync}
                 disabled={isWorking}
                 onClick={handleOpen}
               />
             }
             label={
               <Typography variant={'button'}>
-                {project.activated ? 'On' : 'Off'}
+                {project.sync ? 'On' : 'Off'}
               </Typography>
             }
           />
@@ -94,9 +97,9 @@ export default function NotebookSyncSwitch({
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
           >
-            <Alert severity={project.activated ? 'warning' : 'info'}>
+            <Alert severity={project.sync ? 'warning' : 'info'}>
               <AlertTitle>Are you sure?</AlertTitle>
-              Do you want to {project.activated ? 'stop' : 'start'} syncing the{' '}
+              Do you want to {project.sync ? 'stop' : 'start'} syncing the{' '}
               {project.name} {NOTEBOOK_NAME} to your device?
             </Alert>
             <DialogActions style={{justifyContent: 'space-between'}}>
@@ -106,16 +109,19 @@ export default function NotebookSyncSwitch({
 
               {isWorking ? (
                 <LoadingButton loading variant="outlined" size={'small'}>
-                  {project.activated ? 'Stopping' : 'Starting'} sync
+                  {project.sync ? 'Stopping' : 'Starting'} sync
                 </LoadingButton>
               ) : (
                 <Button
                   size={'small'}
                   variant="contained"
                   disableElevation
-                  onClick={async () => {}}
+                  onClick={async () => {
+                    setProjectSync(project._id, project.listing, !project.sync);
+                    handleClose();
+                  }}
                 >
-                  {project.activated ? 'Stop ' : 'Start'} sync
+                  {project.sync ? 'Stop ' : 'Start'} sync
                 </Button>
               )}
             </DialogActions>

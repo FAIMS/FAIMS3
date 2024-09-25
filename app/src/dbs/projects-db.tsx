@@ -43,6 +43,26 @@ export const activateProjectDB = async (_id: string) => {
     project: {
       ...doc.project,
       activated: true,
+      sync: true,
+    },
+  });
+};
+
+/**
+ * Sets the sync status of a project.
+ *
+ * @param _id - The ID of the project to set the sync status of.
+ * @param sync - The sync status to set.
+ */
+export const setSyncProjectDB = async (_id: string, sync: boolean) => {
+  const doc = await db.get(_id);
+
+  await db.put({
+    _id,
+    _rev: doc._rev,
+    project: {
+      ...doc.project,
+      sync: sync,
     },
   });
 };
