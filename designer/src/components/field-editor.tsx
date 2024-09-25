@@ -27,7 +27,6 @@ import MuiAccordionSummary, {
 } from '@mui/material/AccordionSummary';
 
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
-import AddIcon from '@mui/icons-material/Add';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
