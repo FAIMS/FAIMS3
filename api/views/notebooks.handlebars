@@ -2,6 +2,9 @@
 
 <h1>Notebooks</h1>
 
+  <p>This page shows a list of the notebooks that you have access to on this server.
+  </p>
+
   {{#if can_create_notebooks}}
   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
     New Notebook
@@ -43,8 +46,12 @@
 
   {{/if}}
 
+  <h2>Your Notebooks</h2>
+
+  <p>You are able to manage these notebooks - eg. updating the notebook definition.</p>
+
   <table class="table">
-      {{#each notebooks}}
+      {{#each ownNotebooks}}
           <tr>
             <td>
               <a href="/notebooks/{{this.non_unique_project_id}}">{{this.name}}</a>
@@ -61,6 +68,27 @@
       {{/each}}
   </table>
 
+
+  <h2>Other Notebooks</h2>
+
+  <p>These are notebooks you can contribute and download data from but not modify.</p>
+  <table class="table">
+      {{#each otherNotebooks}}
+          <tr>
+            <td>
+              <a href="/notebooks/{{this.non_unique_project_id}}">{{this.name}}</a>
+            </td>
+            <td>
+              {{this.metadata.project_lead}}
+            </td>
+            <td>
+              {{#if this.metadata.pre_description}}
+                {{markdown this.metadata.pre_description}}
+              {{/if}}
+            </td>
+          </tr>
+      {{/each}}
+  </table>
 
 
 </div>

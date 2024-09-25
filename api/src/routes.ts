@@ -118,10 +118,14 @@ app.get('/notebooks/', requireAuthentication, async (req, res) => {
   const user = req.user;
   if (user) {
     const notebooks = await getNotebooks(user);
-    console.log(notebooks);
+
+    const ownNotebooks = notebooks.filter(nb => nb.is_admin);
+    const otherNotebooks = notebooks.filter(nb => !nb.is_admin);
+
     res.render('notebooks', {
       user: user,
-      notebooks: notebooks,
+      ownNotebooks: ownNotebooks,
+      otherNotebooks: otherNotebooks,
       cluster_admin: userIsClusterAdmin(user),
       can_create_notebooks: userCanCreateNotebooks(user),
       developer: DEVELOPER_MODE,

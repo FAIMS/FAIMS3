@@ -125,6 +125,7 @@ export const getNotebooks = async (
       if (userHasPermission(user, project_id, 'read')) {
         output.push({
           name: project.name,
+          is_admin: userHasPermission(user, project_id, 'modify'),
           last_updated: project.last_updated,
           created: project.created,
           template_id: project.template_id,
