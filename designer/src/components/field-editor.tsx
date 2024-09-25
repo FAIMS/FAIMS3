@@ -138,7 +138,9 @@ export const FieldEditor = ({
           display: 'none',
         },
       }}
-      TransitionProps={{unmountOnExit: true}}
+      slotProps={{
+        transition: {unmountOnExit: true},
+      }}
     >
       <AccordionSummary>
         <Grid container rowGap={1}>

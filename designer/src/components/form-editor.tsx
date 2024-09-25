@@ -83,7 +83,6 @@ export const FormEditor = ({
   const dispatch = useAppDispatch();
 
   console.log('FormEditor', viewSetId);
-  console.log('FormEditor visible_types', visibleTypes);
 
   const [activeStep, setActiveStep] = useState(0);
   const [newSectionName, setNewSectionName] = useState('New Section');
