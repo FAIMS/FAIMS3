@@ -58,12 +58,12 @@ function formHandler(event) {
         },
         body: JSON.stringify(data)
       })
-      .then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
+      .then(async response => {
+        if (response.status === 200) {
           window.location.reload();
         } else {
-          document.getElementById('message').innerText = data.error;
+          const data = await response.json();
+          document.getElementById('message').innerText = data.error.message;
         }
       });
   }
