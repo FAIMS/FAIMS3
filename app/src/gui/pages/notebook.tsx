@@ -24,7 +24,6 @@ import FolderIcon from '@mui/icons-material/Folder';
 import {CircularProgress} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import RefreshNotebook from '../components/notebook/refresh';
 import {ProjectsContext} from '../../context/projects-context';
 import NotebookComponent from '../components/notebook';
 
@@ -37,10 +36,12 @@ export default function Notebook() {
     ({_id, listing}) => project_id === `${listing}||${_id}`
   );
 
+  if (!project) return <CircularProgress data-testid="progressbar" />;
+
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
 
-  return project ? (
+  return (
     <Box>
       <Grid
         container
@@ -69,17 +70,11 @@ export default function Notebook() {
             </Grid>
           </Typography>
         </Grid>
-        <Grid item xs>
-          {/* <Breadcrumbs data={breadcrumbs} /> */}
-        </Grid>
       </Grid>
-      <RefreshNotebook handleRefresh={() => {}} project_name={project.name} />
       <NotebookComponent
         project={project}
         handleRefresh={() => new Promise(() => {})}
       />
     </Box>
-  ) : (
-    <CircularProgress data-testid="progressbar" />
   );
 }
