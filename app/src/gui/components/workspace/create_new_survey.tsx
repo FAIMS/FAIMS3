@@ -111,7 +111,6 @@ const CreateNewSurvey: React.FC = () => {
 
   const handleTemplateChange = (event: SelectChangeEvent<string>) => {
     const templateId = event.target.value;
-    console.log('Template selected:', templateId);
     setSelectedTemplate(templateId);
   };
 
@@ -121,12 +120,10 @@ const CreateNewSurvey: React.FC = () => {
       return;
     }
     setError(null);
-    console.log('Instantiate Survey button clicked');
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
-    console.log('Dialog closed');
     setOpenDialog(false);
   };
 
@@ -134,18 +131,12 @@ const CreateNewSurvey: React.FC = () => {
   const handleSubmitSurvey = async () => {
     if (!surveyName) {
       setError('Survey Name is required');
-      console.error('Survey Name is missing');
       return;
     }
     if (!selectedTemplate) {
       setError('Please select a template');
-      console.error('Template is not selected');
       return;
     }
-    console.log('RANIOIIII Starting survey creation with:', {
-      surveyName,
-      selectedTemplate,
-    });
 
     setError(null);
     setLoading(true);
