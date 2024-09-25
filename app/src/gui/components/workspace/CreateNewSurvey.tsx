@@ -13,7 +13,7 @@ import NewNotebookForListing from '../notebook/NewNotebookForListing';
 import CircularLoading from '../ui/circular_loading';
 
 export interface CreateNewSurveyProps {}
-const CreateNewSurvey: React.FC<CreateNewSurveyProps> = props => {
+const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
   // TODO replace with context management @luke-mcfarlane-rocketlab
   const listings = useGetListings();
   const theme = useTheme();
@@ -53,7 +53,11 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = props => {
         </Grid>
       </Box>
 
-      <Stack direction="column" spacing={theme.spacing(2)} padding={theme.spacing(3)}>
+      <Stack
+        direction="column"
+        spacing={theme.spacing(2)}
+        padding={theme.spacing(3)}
+      >
         {listings.isLoading ? (
           <CircularLoading label={'Loading servers...'}></CircularLoading>
         ) : (

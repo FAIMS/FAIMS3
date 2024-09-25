@@ -3,10 +3,7 @@
  * This module is responsible for fetching available templates from the server.
  */
 
-import {
-  GetListTemplatesResponse,
-  PostCreateNotebookResponse,
-} from '@faims3/data-model';
+import {GetListTemplatesResponse} from '@faims3/data-model';
 import FetchManager from './client';
 
 /**
@@ -21,7 +18,7 @@ export const fetchTemplates = async (
   // Make a request to the server to fetch the templates
   return await FetchManager.get<GetListTemplatesResponse>(
     listingId,
-    `/api/templates`,
+    '/api/templates',
     {}
-  )
+  );
 };

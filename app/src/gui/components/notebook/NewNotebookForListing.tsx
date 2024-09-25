@@ -1,5 +1,4 @@
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
-import DescriptionIcon from '@mui/icons-material/Description';
 import InfoIcon from '@mui/icons-material/Info';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -11,7 +10,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  Grid,
   InputLabel,
   MenuItem,
   Select,
@@ -74,7 +72,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [selectedListing, setSelectedListing] = useState<string>(''); // New state for selected listing
 
   // --------
   // HANDLERS

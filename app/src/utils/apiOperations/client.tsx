@@ -104,7 +104,7 @@ export class ListingFetch {
     // Throw error if not OK
     if (!response.ok) {
       const errorText = await response.text();
-      console.log(`HTTP Error occurred.`);
+      console.log('HTTP Error occurred.');
       console.log(`Status: ${response.status}`);
       console.log(`Text: ${errorText}`);
       throw new HttpError(response);

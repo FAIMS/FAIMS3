@@ -18,7 +18,7 @@ export const useCreateNotebookFromTemplate = (
 ) => {
   /**
     Hook: useCreateNotebookFromTemplate
-    
+
     Mutation manager to create a new notebook from existing template.
 
     Only returns a mutation if values are provided

@@ -139,15 +139,15 @@ export default function App() {
                     }
                   />
 
-                <Route
-                  path={ROUTES.CREATE_NEW_SURVEY}
-                  element={
-                    <PrivateRoute allowed={token !== undefined}>
-                      <CreateNewSurvey />
-                    </PrivateRoute>
-                  }
-                />
-                {/* Draft creation happens by redirecting to a fresh minted UUID
+                  <Route
+                    path={ROUTES.CREATE_NEW_SURVEY}
+                    element={
+                      <PrivateRoute allowed={token !== undefined}>
+                        <CreateNewSurvey />
+                      </PrivateRoute>
+                    }
+                  />
+                  {/* Draft creation happens by redirecting to a fresh minted UUID
                   This is to keep it stable until the user navigates away. So the
                   draft_id is optional, and when RecordCreate is instantiated
                   without one, it immediately mints a UUID and redirects to it */}
