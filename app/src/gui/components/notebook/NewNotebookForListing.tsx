@@ -280,9 +280,9 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           },
         }}
         onClick={handleInstantiateSurvey}
-        disabled={createNotebook.mutation?.isLoading || !selectedTemplate}
+        disabled={createNotebook.mutation?.isPending || !selectedTemplate}
       >
-        {createNotebook.mutation?.isLoading
+        {createNotebook.mutation?.isPending
           ? 'Creating Survey...'
           : 'Create survey'}
       </Button>
@@ -366,7 +366,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             onChange={e => setSurveyName(e.target.value)}
             sx={{marginTop: '16px'}}
             required
-            disabled={createNotebook.mutation?.isLoading}
+            disabled={createNotebook.mutation?.isPending}
           />
         </DialogContent>
         <DialogActions>
@@ -381,9 +381,9 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             onClick={handleSubmitSurvey}
             color="primary"
             variant="contained"
-            disabled={createNotebook.mutation?.isLoading || !surveyName}
+            disabled={createNotebook.mutation?.isPending || !surveyName}
           >
-            {createNotebook.mutation?.isLoading ? 'Creating...' : 'Submit'}
+            {createNotebook.mutation?.isPending ? 'Creating...' : 'Submit'}
           </Button>
         </DialogActions>
       </Dialog>

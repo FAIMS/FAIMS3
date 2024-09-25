@@ -32,7 +32,7 @@ import RecordCreate from './gui/pages/record-create';
 import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';
 import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
-import {QueryClient, QueryClientProvider} from 'react-query';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 // import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@mui/material';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning

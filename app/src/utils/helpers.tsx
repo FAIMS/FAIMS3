@@ -24,15 +24,6 @@ export function checkToken(token: null | undefined | TokenContents) {
 }
 
 /**
- * A helper function to create multi-key react-query query keys
- * @param keys The keys to join together
- * @returns A single string joined
- */
-export function buildQueryKey(keys: string[]): string {
-  return keys.join(',');
-}
-
-/**
  * Input parameter checker to ensure all values are defined
  * @param vals Values to check
  * @returns Returns true iff no values are undefined or null

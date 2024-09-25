@@ -1,5 +1,4 @@
-import {useQuery} from 'react-query';
-import {buildQueryKey} from '../helpers';
+import {useQuery} from '@tanstack/react-query';
 import {fetchTemplates} from '../apiOperations/templates';
 import {GetListTemplatesResponse} from '@faims3/data-model';
 
@@ -14,12 +13,10 @@ export interface UseGetTemplatesProps {
 */
 export const useGetTemplates = (props: UseGetTemplatesProps) => {
   // Index off the listing id and operation
-  return useQuery<GetListTemplatesResponse>(
-    buildQueryKey(['get template list', props.listingId]),
-    {
-      queryFn: async () => {
-        return await fetchTemplates(props.listingId);
-      },
-    }
-  );
+  return useQuery<GetListTemplatesResponse>({
+    queryKey: ['get template list', props.listingId],
+    queryFn: async () => {
+      return await fetchTemplates(props.listingId);
+    },
+  });
 };

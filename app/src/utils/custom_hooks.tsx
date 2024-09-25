@@ -1,5 +1,5 @@
 import {useEffect, useRef} from 'react';
-import {useQuery, UseQueryResult} from 'react-query';
+import {useQuery, UseQueryResult} from '@tanstack/react-query';
 import {directory_db, ListingsObject} from '../sync/databases';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
@@ -30,7 +30,10 @@ const fetchListings = async (): Promise<ListingsObject[]> => {
  * Custom hook to fetch and manage listings from a directory database using React Query.
  */
 const useGetListings = (): UseQueryResult<ListingsObject[], Error> => {
-  return useQuery<ListingsObject[], Error>('listings', fetchListings, {});
+  return useQuery<ListingsObject[], Error>({
+    queryKey: ['listings'],
+    queryFn: fetchListings,
+  });
 };
 
 export default useGetListings;

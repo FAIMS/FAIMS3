@@ -1,5 +1,5 @@
 import {PostCreateNotebookResponse} from '@faims3/data-model';
-import {useMutation, UseMutationOptions} from 'react-query';
+import {useMutation, UseMutationOptions} from '@tanstack/react-query';
 import {createNotebookFromTemplate} from '../apiOperations/notebooks';
 import {checkAllRequired} from '../helpers';
 

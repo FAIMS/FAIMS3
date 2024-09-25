@@ -10,10 +10,10 @@ import {
 import FetchManager from './client';
 
 /**
- * Fetches the list of templates from the server for a specific cluster.
+ * Creates a new notebook from a given template ID.
  *
- * @param listing - Contains server information, including the cluster's unique ID and conductor URL.
- * @returns A promise that resolves to an array of templates if the request is successful, or undefined if an error occurs.
+ * @param listing - Which listing to apply this operation to
+ * @returns The response from notebook create op
  */
 export const createNotebookFromTemplate = async (input: {
   listingId: string;
