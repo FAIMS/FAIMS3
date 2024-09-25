@@ -4,8 +4,8 @@
  */
 
 import {GetListTemplatesResponse} from '@faims3/data-model';
-import {getTokenForCluster} from '../users';
-import {ListingsObject} from './databases';
+import {ListingsObject} from '../../../sync/databases';
+import {getTokenForCluster} from '../../../users';
 
 /**
  * Fetches the list of templates from the server for a specific cluster.

@@ -4,8 +4,8 @@
  * It interacts with the server's API to initiate the creation of notebooks using selected templates.
  */
 
-import {getTokenForCluster} from '../users';
-import {ListingsObject} from './databases';
+import {ListingsObject} from '../../../sync/databases';
+import {getTokenForCluster} from '../../../users';
 
 /**
  * Creates a notebook based on the provided template and survey name.

@@ -15,18 +15,19 @@ import {
   Grid,
   useMediaQuery,
   useTheme,
+  Alert,
 } from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {TemplateDocument} from '@faims3/data-model';
 import {SelectChangeEvent} from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import InfoIcon from '@mui/icons-material/Info';
-import {fetchTemplates} from '../../../sync/templates';
 import {directory_db, ListingsObject} from '../../../sync/databases';
-import {createNotebookFromTemplate} from '../../../sync/create_notebook';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+import {fetchTemplates} from '../survey-template/templates';
+import {createNotebookFromTemplate} from '../survey-template/create_notebook';
 
 const CreateNewSurvey: React.FC = () => {
   const [templates, setTemplates] = useState<TemplateDocument[]>([]);
@@ -63,6 +64,7 @@ const CreateNewSurvey: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching listing from the database', err);
+      setError('Error fetching listings from the database.'); // Set error message
     }
     return undefined;
   };
@@ -96,18 +98,6 @@ const CreateNewSurvey: React.FC = () => {
   useEffect(() => {
     loadTemplates();
   }, []);
-
-  useEffect(() => {
-    const originalStyle = window.getComputedStyle(document.body).paddingRight;
-
-    if (openDialog) {
-      document.body.style.paddingRight = '0px';
-    }
-
-    return () => {
-      document.body.style.paddingRight = originalStyle;
-    };
-  }, [openDialog]);
 
   const handleTemplateChange = (event: SelectChangeEvent<string>) => {
     const templateId = event.target.value;
@@ -160,7 +150,7 @@ const CreateNewSurvey: React.FC = () => {
       }
 
       const createdNotebook = await createNotebookFromTemplate(
-        listing, // Pass the selected listing
+        listing,
         selectedTemplate,
         surveyName
       );
@@ -208,6 +198,12 @@ const CreateNewSurvey: React.FC = () => {
           </Grid>
         </Grid>
       </Box>
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{mt: 2}}>
+          {error}
+        </Alert>
+      )}
       <FormControl
         fullWidth
         sx={{
