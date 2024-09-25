@@ -20,6 +20,7 @@
 
 import {
   CreateNotebookFromTemplate,
+  EncodedNotebook,
   GetListTemplatesResponse,
   GetListTemplatesResponseSchema,
   GetTemplateByIdResponse,
@@ -49,13 +50,12 @@ const TEMPLATE_API_BASE = '/api/templates';
 
 /**
  * Loads example notebook from file system and parses into appropriate format
- * @returns The sample notebook with metadata and ui_specification properties
+ * @returns The sample notebook with metadata and 'ui-specification' properties
  */
 const getSampleNotebook = () => {
   const filename = 'notebooks/sample_notebook.json';
   const jsonText = fs.readFileSync(filename, 'utf-8');
-  const {metadata, 'ui-specification': ui_specification} = JSON.parse(jsonText);
-  return {metadata, ui_specification};
+  return JSON.parse(jsonText) as EncodedNotebook;
 };
 
 /**
@@ -73,7 +73,7 @@ const createSampleTemplate = async (
   token: string = adminToken
 ): Promise<{
   template: PostCreateTemplateResponse;
-  notebook: {ui_specification: any; metadata: any};
+  notebook: EncodedNotebook;
 }> => {
   // create a template from loaded spec
   const nb = getSampleNotebook();
@@ -216,8 +216,8 @@ describe('template API tests', () => {
       expect(entry._id).to.equal(templateId1);
 
       // TODO This is no longer true because the metadata is injected with the template ID, see BSS-343
-      // expect(JSON.stringify(entry.ui_specification)).to.equal(
-      //   JSON.stringify(nb.ui_specification)
+      // expect(JSON.stringify(entry['ui-specification'])).to.equal(
+      //   JSON.stringify(nb['ui-specification'])
       // );
       // expect(JSON.stringify(entry.metadata)).to.equal(
       //   JSON.stringify(nb.metadata)
@@ -227,8 +227,8 @@ describe('template API tests', () => {
       // TODO BSS-343
       delete entry.metadata.template_id;
 
-      expect(JSON.stringify(entry.ui_specification)).to.equal(
-        JSON.stringify(nb.ui_specification)
+      expect(JSON.stringify(entry['ui-specification'])).to.equal(
+        JSON.stringify(nb['ui-specification'])
       );
       expect(JSON.stringify(entry.metadata)).to.equal(
         JSON.stringify(nb.metadata)
@@ -242,8 +242,8 @@ describe('template API tests', () => {
     await getATemplate(app, templateId1).then(template => {
       // Check all properties match
       expect(template._id).to.equal(templateId1);
-      expect(JSON.stringify(template.ui_specification)).to.equal(
-        JSON.stringify(nb.ui_specification)
+      expect(JSON.stringify(template['ui-specification'])).to.equal(
+        JSON.stringify(nb['ui-specification'])
       );
 
       // Remove the template ID which was injected
@@ -272,9 +272,11 @@ describe('template API tests', () => {
 
       // Check all properties match
       expect(entry?._id).to.equal(templateId2);
-      expect(JSON.stringify(entry?.ui_specification)).to.equal(
-        JSON.stringify(nb.ui_specification)
-      );
+      if (entry) {
+        expect(JSON.stringify(entry['ui-specification'])).to.equal(
+          JSON.stringify(nb['ui-specification'])
+        );
+      }
 
       // Remove the template_id from the result and then check equality
       // TODO BSS-343
@@ -293,8 +295,8 @@ describe('template API tests', () => {
     await getATemplate(app, templateId2).then(template => {
       // Check all properties match
       expect(template._id).to.equal(templateId2);
-      expect(JSON.stringify(template.ui_specification)).to.equal(
-        JSON.stringify(nb.ui_specification)
+      expect(JSON.stringify(template['ui-specification'])).to.equal(
+        JSON.stringify(nb['ui-specification'])
       );
 
       // Remove the template_id from the result and then check equality
@@ -441,7 +443,7 @@ describe('template API tests', () => {
         .send({
           metadata: {},
           template_name: 'faketemplate',
-          ui_specification: {},
+          'ui-specification': {},
         } as PutUpdateTemplateInput)
     )
       // Expect 404 not found
@@ -466,7 +468,7 @@ describe('template API tests', () => {
         .send({
           metadata: {},
           template_name: 'faketemplate',
-          ui_specification: {},
+          'ui-specification': {},
         } as PutUpdateTemplateInput)
     )
       // Expect 404 not found
@@ -544,7 +546,7 @@ describe('template API tests', () => {
         .send({
           // missing! metadata: {},
           template_name: 'faketemplate',
-          ui_specification: {},
+          'ui-specification': {},
         } as PutUpdateTemplateInput)
     )
       // Expect 400 bad request
@@ -577,7 +579,7 @@ describe('template API tests', () => {
           metadata: {},
           // must be > 5 long
           template_name: '123',
-          ui_specification: {},
+          'ui-specification': {},
         } as PutUpdateTemplateInput)
     )
       // Expect 400 bad request
@@ -611,7 +613,7 @@ describe('template API tests', () => {
       .send({
         metadata: {},
         template_name: '12345',
-        ui_specification: {},
+        'ui-specification': {},
       } as PutUpdateTemplateInput)
       .set('Content-Type', 'application/json')
       .expect(401);
@@ -622,7 +624,7 @@ describe('template API tests', () => {
       .send({
         template_name: 'exampletemplate',
         metadata: {},
-        ui_specification: {},
+        'ui-specification': {},
       } as PostCreateTemplateInput)
       .set('Content-Type', 'application/json')
       .expect(401);
@@ -651,7 +653,7 @@ describe('template API tests', () => {
         .send({
           template_name: 'exampletemplate',
           metadata: {},
-          ui_specification: {},
+          'ui-specification': {},
         } as PostCreateTemplateInput),
       localUserToken
     )
@@ -665,7 +667,7 @@ describe('template API tests', () => {
         .send({
           metadata: {},
           template_name: '12345',
-          ui_specification: {},
+          'ui-specification': {},
         } as PutUpdateTemplateInput),
       localUserToken
     ).expect(401);

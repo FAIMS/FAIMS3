@@ -192,6 +192,12 @@ export interface EncodedCouchRecordFields {
   _deleted?: boolean;
 }
 
+// Type for the external format of Notebooks
+export interface EncodedNotebook {
+  metadata: {[key: string]: any};
+  'ui-specification': EncodedProjectUIModel;
+}
+
 export interface EncodedProjectUIModel extends EncodedCouchRecordFields {
   fields: ProjectUIFields;
   fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
@@ -730,7 +736,8 @@ export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
 
 // The UI specification
 // TODO use Zod for existing UI schema models to validate
-export const UiSpecificationSchema = z.custom<ProjectUIModel>();
+// Note that this is a schema for an JSON notebook (fviews, not views)
+export const UiSpecificationSchema = z.custom<EncodedProjectUIModel>();
 export type UiSpecification = z.infer<typeof UiSpecificationSchema>;
 
 // Metadata schema
@@ -774,7 +781,7 @@ export const TemplateEditableDetailsSchema = z.object({
     .trim()
     .min(5, 'Please provide a template name of at least 5 character length.'),
   // The UI specification for this template
-  ui_specification: UiSpecificationSchema,
+  'ui-specification': UiSpecificationSchema,
   // The metadata from the designer - copied into new notebooks
   metadata: NotebookMetadataSchema,
 });
