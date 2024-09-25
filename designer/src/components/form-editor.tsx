@@ -502,7 +502,7 @@ export const FormEditor = ({
               <Grid item xs={12}>
                 <SectionEditor
                   viewSetId={viewSetId}
-                  viewId={viewSet.views[activeStep]}
+                  viewId={viewSet.views[activeStep] || viewSet.views[0]}
                   viewSet={viewSet}
                   deleteCallback={deleteSection}
                   addCallback={addNewSection}
