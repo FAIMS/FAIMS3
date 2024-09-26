@@ -23,20 +23,8 @@
             Create an invitation for users to sign up to
             this notebook.   This will generate an invite
             URL and QR code that can be used to register.
-            <div class="alert alert-warning mt-3" role="alert">
-              <i class="bi bi-info-circle"></i>&nbsp;&nbsp; Users will need 
-              internet access to sign in and accept invites.
-            </div>
 
             <form class="mb-1 mt-2" method="post">
-              <div class="mb-3">
-                <label for="number">Invite valid for how many users?</label>
-                <input name="number" type="number" class="form-control" id="number" aria-describedby="numberHelp" value="1">
-                <div id="numberHelp" class="form-text">How many users should be able to
-                  use this invite.  Set to zero (0) for an unlimited number. 
-                </div>
-              </div>
-
               <div class="mb-3">
                 <label for="role">Role</label>
                 <select name="role" class="form-control" id="role">

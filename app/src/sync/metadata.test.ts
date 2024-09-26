@@ -63,7 +63,7 @@ test('fetch project metadata', async () => {
   const lst = {
     listing: {
       conductor_url: conductor_url,
-      _id: 'test',
+      id: 'test',
       name: 'test',
       description: 'test',
     },

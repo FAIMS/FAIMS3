@@ -25,8 +25,8 @@ import {
   ProjectDataObject,
   ProjectID,
   ListingID,
+  ListingsObject,
   NonUniqueProjectID,
-  PossibleConnectionInfo,
 } from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {logError} from '../logging';
@@ -42,19 +42,6 @@ import {db as projects_db} from '../dbs/projects-db';
 export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
-
-export interface ListingsObject {
-  _id: ListingID;
-  name: string;
-  description: string;
-  projects_db?: PossibleConnectionInfo;
-  conductor_url?: string;
-  local_only?: boolean;
-}
-
-export interface NonNullListingsObject extends ListingsObject {
-  projects_db: ConnectionInfo;
-}
 
 export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<ActiveDoc>;
 export type ExistingListings = PouchDB.Core.ExistingDocument<ListingsObject>;
@@ -156,8 +143,6 @@ export const getLocalStateDB = () => {
 export type JWTToken = string;
 
 export interface JWTTokenInfo {
-  pubkey: string;
-  pubalg: string;
   token: JWTToken;
 }
 
@@ -300,11 +285,6 @@ export function setLocalConnection<Content extends {}>(
   db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
 ) {
   const options = db_info.remote.options;
-  console.debug(
-    '%cSetting local connection:',
-    'background-color: cyan;',
-    db_info
-  );
 
   if (db_info.is_sync) {
     if (db_info.remote.connection !== null) {

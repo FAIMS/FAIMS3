@@ -53,12 +53,13 @@ import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
+  CONDUCTOR_SHORT_CODE_PREFIX,
   DEVELOPER_MODE,
   NOTEBOOK_CREATOR_GROUP_NAME,
 } from '../buildconfig';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {restoreFromBackup} from '../couchdb/backupRestore';
-import {ListingInformation} from '@faims3/data-model';
+import {ListingsObject} from '@faims3/data-model';
 
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
@@ -83,12 +84,13 @@ api.post('/initialise/', async (req, res) => {
 /**
  * Handle info requests, basic identifying information for this server
  */
-api.get('/info', async (req, res) => {
-  const info: ListingInformation = {
+api.get<{}, ListingsObject>('/info', async (req, res) => {
+  const info: ListingsObject = {
     id: slugify(CONDUCTOR_INSTANCE_NAME),
     name: CONDUCTOR_INSTANCE_NAME,
     conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
+    prefix: CONDUCTOR_SHORT_CODE_PREFIX,
   };
   res.json(info);
 });

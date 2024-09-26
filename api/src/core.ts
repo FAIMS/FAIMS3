@@ -78,13 +78,13 @@ app.use(
 // fix for bug in passport 0.7.0 and compatibility with cookie-session
 app.use((request, response, next) => {
   if (request.session && !request.session.regenerate) {
-    request.session.regenerate = cb => {
+    request.session.regenerate = (cb: any) => {
       if (cb) cb('');
       return request.session;
     };
   }
   if (request.session && !request.session.save) {
-    request.session.save = cb => {
+    request.session.save = (cb: any) => {
       if (cb) cb('');
       return request.session;
     };

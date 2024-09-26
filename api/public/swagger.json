@@ -41,17 +41,41 @@
                 "responses": {
                     "200": {
                         "description": "successful operation",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
                                 }
                             }
                         }
                     },
                     "401": {
                         "$ref": "#/components/responses/UnauthorizedError"
+                    }
+                }
+            }
+        },
+        "/info": {
+            "get": {
+                "summary": "Get information",
+                "description": "Provides details of the server such as name and description",
+                "produces": ["application/json"], 
+                "security": {"Auth": []},
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/definitions/ListingsObject"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -66,10 +90,14 @@
                 "responses": {
                     "200": {
                         "description": "successful operation",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/NotebookMeta",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/NotebookMeta",
+                                    }
+                                }
                             }
                         }
                     },
@@ -116,8 +144,12 @@
                 "responses": {
                     "200": {
                         "description": "successful operation",
-                        "schema": {
-                            "$ref": "#/definitions/Notebook"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/definitions/Notebook"
+                                }
+                            }
                         }
                     },
                     "401": {
@@ -154,8 +186,12 @@
                 "responses": {
                     "200": {
                         "description": "successful operation",
-                        "schema": {
-                            "$ref": "#/definitions/Notebook"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/definitions/Notebook"
+                                }
+                            }
                         }
                     },
                     "401": {
@@ -183,10 +219,14 @@
                 "responses": {
                     "200": {
                         "description": "successful operation",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/RecordList",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/RecordList",
+                                    }
+                                }
                             }
                         }
                     },
@@ -221,10 +261,7 @@
                 "security": {"Auth": []},
                 "responses": {
                     "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "successful operation"
                     },
                     "401": {
                         "$ref": "#/components/responses/UnauthorizedError"
@@ -288,10 +325,14 @@
                 "responses": {
                     "200": {
                         "description": "successful operation",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/UserList",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/UserList",
+                                    }
+                                }
                             }
                         }
                     },
@@ -379,8 +420,12 @@
                 "responses": {
                     "200": {
                         "description": "successful operation",
-                        "schema": {
-                            "$ref": "#/definitions/UserList"
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/definitions/UserList"
+                                }
+                            }
                         }
                     },
                     "401": {
@@ -391,6 +436,26 @@
         }
     },
     "definitions": {
+        "ListingsObject": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "conductor_url": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "prefix": {
+                    "type": "string"
+                }
+            }
+        },
         "NotebookMeta": {
             "type": "object",
             "properties": {

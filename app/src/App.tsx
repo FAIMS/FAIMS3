@@ -43,6 +43,8 @@ import {useEffect, useState} from 'react';
 
 import {TokenContents} from '@faims3/data-model';
 import NotFound404 from './gui/pages/404';
+import {AuthReturn} from './gui/components/authentication/auth_return';
+import {AppUrlListener} from './native_hooks';
 import {ProjectsProvider} from './context/projects-context';
 
 // type AppProps = {};
@@ -73,7 +75,8 @@ export default function App() {
         <StyledEngineProvider injectFirst>
           <ThemeProvider theme={theme}>
             <Router>
-              <MainLayout token={token}>
+              <AppUrlListener></AppUrlListener>
+            <MainLayout token={token}>
                 <Routes>
                   <Route
                     path={ROUTES.SIGN_IN}
@@ -84,6 +87,14 @@ export default function App() {
                     }
                   />
                   <Route
+                  path={ROUTES.AUTH_RETURN}
+                  element={
+                    <PrivateRoute allowed>
+                      <AuthReturn setToken={setToken} />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
                     path={ROUTES.INDEX}
                     element={
                       <PrivateRoute allowed={Boolean(token)}>

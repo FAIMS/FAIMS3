@@ -25,13 +25,12 @@ import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import pouchdbDebug from 'pouchdb-debug';
 import {ProjectID} from '@faims3/data-model';
-import {ProjectDataObject, ProjectMetaObject} from '@faims3/data-model';
 import {
-  data_dbs,
   ListingsObject,
-  metadata_dbs,
-  directory_db,
-} from './databases';
+  ProjectDataObject,
+  ProjectMetaObject,
+} from '@faims3/data-model';
+import {data_dbs, metadata_dbs, directory_db} from './databases';
 
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(pouchdbDebug);

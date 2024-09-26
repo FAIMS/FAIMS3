@@ -55,8 +55,7 @@ import {
   getNotebooks,
   getRolesForNotebook,
 } from './couchdb/notebooks';
-import {createAuthKey} from './authkeys/create';
-import {getPublicUserDbURL} from './couchdb';
+import {generateUserToken} from './authkeys/create';
 import {add_auth_providers} from './auth_providers';
 import {add_auth_routes} from './auth_routes';
 
@@ -84,7 +83,6 @@ app.get('/notebooks/:id/invite/', requireAuthentication, async (req, res) => {
 app.post(
   '/notebooks/:id/invite/',
   requireAuthentication,
-  body('number').not().isEmpty(),
   body('role').not().isEmpty(),
   async (req, res) => {
     const errors = validationResult(req);
@@ -93,7 +91,6 @@ app.post(
     }
     const project_id: NonUniqueProjectID = req.params.id;
     const role: string = req.body.role;
-    const number: number = parseInt(req.body.number);
 
     if (!userHasPermission(req.user, project_id, 'modify')) {
       res.render('invite-error', {
@@ -106,7 +103,7 @@ app.post(
         ],
       });
     } else {
-      await createInvite(req.user as Express.User, project_id, role, number);
+      await createInvite(project_id, role);
       res.redirect('/notebooks/' + project_id);
     }
   }
@@ -199,13 +196,7 @@ app.get('/', async (req, res) => {
     const provider = Object.keys(req.user.profiles)[0];
     // BBS 20221101 Adding token to here so we can support copy from conductor
     const signingKey = await KEY_SERVICE.getSigningKey();
-    const jwt_token = await createAuthKey(req.user, signingKey);
-    const token = {
-      jwt_token: jwt_token,
-      public_key: signingKey.publicKeyString,
-      alg: signingKey.alg,
-      userdb: getPublicUserDbURL(), // query: is this actually needed?
-    };
+    const token = generateUserToken(req.user);
     if (signingKey === null || signingKey === undefined) {
       res.status(500).send('Signing key not set up');
     } else {
@@ -225,17 +216,6 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.get('/logout/', (req, res, next) => {
-  if (req.user) {
-    req.logout(err => {
-      if (err) {
-        return next(err);
-      }
-    });
-  }
-  res.redirect('/');
-});
-
 app.get('/send-token/', (req, res) => {
   if (req.user) {
     res.render('send-token', {
@@ -251,17 +231,11 @@ app.get('/send-token/', (req, res) => {
 
 app.get('/get-token/', async (req, res) => {
   if (req.user) {
-    const signingKey = await KEY_SERVICE.getSigningKey();
-    if (signingKey === null || signingKey === undefined) {
+    try {
+      const token = await generateUserToken(req.user);
+      res.send(token);
+    } catch {
       res.status(500).send('Signing key not set up');
-    } else {
-      const token = await createAuthKey(req.user, signingKey);
-
-      res.send({
-        token: token,
-        pubkey: signingKey.publicKeyString,
-        pubalg: signingKey.alg,
-      });
     }
   } else {
     res.status(403).end();
