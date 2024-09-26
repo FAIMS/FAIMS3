@@ -19,7 +19,7 @@
  *   throughout the app.
  */
 
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -48,9 +48,7 @@ import AccountTree from '@mui/icons-material/AccountTree';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import {getActiveProjectList} from '../../sync/projects';
 import SystemAlert from '../components/alert';
-import {ProjectInformation} from '@faims3/data-model';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../utils/helpers';

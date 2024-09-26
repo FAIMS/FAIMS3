@@ -144,7 +144,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
    */
   useEffect(() => {
     if (project.listing && project._id) {
-      getUiSpecForProject(`${project.listing}||${project._id}`)
+      getUiSpecForProject(project.project_id)
         .then(spec => {
           setUiSpec(spec);
           setViewsets(spec.viewsets);
@@ -240,11 +240,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                     {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
                   />
                   <Tab
-                    label={
-                      <DraftTabBadge
-                        project_id={`${project.listing}||${project._id}`}
-                      />
-                    }
+                    label={<DraftTabBadge project_id={project.project_id} />}
                     {...a11yProps(1, `${NOTEBOOK_NAME}-records`)}
                   />
                 </Tabs>
@@ -255,7 +251,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 id={'records-drafts-'}
               >
                 <RecordsBrowseTable
-                  project_id={`${project.listing}||${project._id}`}
+                  project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
                   filter_deleted={true}
@@ -268,7 +264,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 id={'records-drafts-'}
               >
                 <DraftsTable
-                  project_id={`${project.listing}||${project._id}`}
+                  project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
                   handleRefresh={props.handleRefresh}
@@ -286,7 +282,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   </Typography>
                   <Typography variant="body2" color="textPrimary" gutterBottom>
                     <MetadataRenderer
-                      project_id={`${project.listing}||${project._id}`}
+                      project_id={project.project_id}
                       metadata_key={'pre_description'}
                       chips={false}
                     />
@@ -310,7 +306,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
-                            project_id={`${project.listing}||${project._id}`}
+                            project_id={project.project_id}
                             metadata_key={'project_status'}
                             chips={false}
                           />
@@ -324,7 +320,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
-                            project_id={`${project.listing}||${project._id}`}
+                            project_id={project.project_id}
                             metadata_key={'lead_institution'}
                             chips={false}
                           />
@@ -338,7 +334,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
-                            project_id={`${project.listing}||${project._id}`}
+                            project_id={project.project_id}
                             metadata_key={'project_lead'}
                             chips={false}
                           />
@@ -352,7 +348,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
-                            project_id={`${project.listing}||${project._id}`}
+                            project_id={project.project_id}
                             metadata_key={'last_updated'}
                             chips={false}
                           />

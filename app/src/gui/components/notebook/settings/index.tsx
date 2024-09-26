@@ -55,7 +55,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {dispatch} = useContext(store);
 
   const project = useContext(ProjectsContext).projects.find(
-    ({_id, listing}) => project_id === `${listing}||${_id}`
+    project => project_id === project.project_id
   );
 
   if (!project) return <></>;

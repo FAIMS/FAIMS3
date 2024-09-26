@@ -23,7 +23,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {listing, _id},
+  project: {listing, _id, project_id},
 }: AddRecordButtonsProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
@@ -39,7 +39,7 @@ export default function AddRecordButtons({
   });
 
   useEffect(() => {
-    getUiSpecForProject(`${listing}||${_id}`).then(u => setUiSpec(u));
+    getUiSpecForProject(project_id).then(u => setUiSpec(u));
   }, []);
 
   if (uiSpec === undefined) {
@@ -63,7 +63,7 @@ export default function AddRecordButtons({
     return (
       <Navigate
         to={ROUTES.getRecordRoute(
-          `${listing}||${_id}` || 'dummy',
+          project_id || 'dummy',
           (selectedRecord.record_id || '').toString(),
           (selectedRecord.revision_id || '').toString()
         )}
@@ -89,7 +89,7 @@ export default function AddRecordButtons({
               key="newRecord"
               to={
                 ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                `${listing}||${_id}` +
+                project_id +
                 ROUTES.RECORD_CREATE +
                 visible_types
               }
@@ -104,7 +104,7 @@ export default function AddRecordButtons({
                     component={RouterLink}
                     to={
                       ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      `${listing}||${_id}` +
+                      project_id +
                       ROUTES.RECORD_CREATE +
                       viewset_name
                     }

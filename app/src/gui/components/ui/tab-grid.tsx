@@ -36,12 +36,11 @@ export default function TabGrid({
   const history = useNavigate();
 
   const handleRowClick: GridEventListener<'rowClick'> = ({
-    row: {activated, _id, listing},
+    row: {activated, project_id},
   }) => {
-    console.log(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${listing}||${_id}`);
+    console.log(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
 
-    if (activated)
-      history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${listing}||${_id}`);
+    if (activated) history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
   };
   return (
     <TabContext value={tabID}>
