@@ -3,7 +3,6 @@ import {ADMIN_GROUP_NAMES_SCHEMA} from './auth';
 import {
   APINotebookGetSchema,
   APINotebookListSchema,
-  EncodedProjectUIModel,
   NotebookAuthSummarySchema,
   TemplateDocumentSchema,
   TemplateEditableDetailsSchema,
