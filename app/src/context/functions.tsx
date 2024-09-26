@@ -1,5 +1,5 @@
 import {directory_db_pouch, local_auth_db} from '../sync/databases';
-import {ProjectObject} from '@faims3/data-model';
+import {ProjectObject, resolve_project_id} from '@faims3/data-model';
 import {ProjectExtended} from '../types/project';
 
 /**
@@ -66,6 +66,7 @@ export const getRemoteProjects = async () => {
     projects.push(
       ...response.map(project => ({
         ...project,
+        project_id: resolve_project_id(_id, project._id),
         listing: _id,
         activated: false,
         sync: false,

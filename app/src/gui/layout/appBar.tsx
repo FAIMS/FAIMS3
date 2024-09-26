@@ -19,7 +19,7 @@
  *   throughout the app.
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -57,6 +57,7 @@ import {checkToken} from '../../utils/helpers';
 import SyncStatus from '../components/sync';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
+import {ProjectsContext} from '../../context/projects-context';
 
 /**
  * Represents the properties for a menu list item.
@@ -190,9 +191,10 @@ const useStyles = makeStyles({
  * @returns {MenuItemProps} - The item for nested menu.
  */
 
-function getNestedProjects(pouchProjectList: ProjectInformation[]) {
+function getNestedProjects(pouchProjectList: ProjectExtended[]) {
   const projectListItems: ProjectListItemProps[] = [];
   pouchProjectList.map(project_info => {
+    console.log('PI>>>', project_info);
     projectListItems.push({
       title: project_info.name,
       icon: <DescriptionIcon />,
@@ -223,15 +225,14 @@ type NavbarProps = {
 export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
 
+  // get the list of activated projects
+  const projectList = useContext(ProjectsContext).projects.filter(
+    p => p.activated
+  );
+
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
-
-  const [projectList, setProjectList] = useState<ProjectInformation[]>([]);
-
-  useEffect(() => {
-    getActiveProjectList().then(projects => setProjectList(projects));
-  }, []);
 
   const topMenuItems: Array<MenuItemProps> = [
     {

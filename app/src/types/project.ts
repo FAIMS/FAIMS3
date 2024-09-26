@@ -2,6 +2,7 @@ import {
   NonUniqueProjectID,
   PossibleConnectionInfo,
   ProjectDataObject,
+  ProjectID,
   ProjectMetaObject,
   ProjectObject,
 } from '@faims3/data-model';
@@ -9,6 +10,7 @@ import {ExistingActiveDoc, LocalDB} from '../sync/databases';
 
 export interface Project {
   _id: NonUniqueProjectID;
+  project_id: ProjectID;
   name: string;
   description?: string;
   last_updated?: string;

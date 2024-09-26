@@ -20,7 +20,7 @@
  *
  */
 
-import {EncodedProjectUIModel} from '@faims3/data-model';
+import {EncodedProjectUIModel, resolve_project_id} from '@faims3/data-model';
 import {getProjectDB} from '.';
 import {getTokenForCluster} from '../users';
 import {createdListingsInterface} from './state';
@@ -55,7 +55,7 @@ export const fetchProjectMetadata = async (
 ) => {
   const url = `${lst.listing.conductor_url}/api/notebooks/${project_id}`;
   const jwt_token = await getTokenForCluster(lst.listing._id);
-  const full_project_id = lst.listing._id + '||' + project_id;
+  const full_project_id = resolve_project_id(lst.listing._id, project_id);
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${jwt_token}`,
