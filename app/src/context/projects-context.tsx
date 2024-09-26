@@ -15,8 +15,8 @@ export const ProjectsContext = createContext<{
   setProjectSync: (id: string, listing: string, sync: boolean) => void;
 }>({
   projects: [],
-  activateProject: _ => {},
-  setProjectSync: _ => {},
+  activateProject: () => {},
+  setProjectSync: () => {},
 });
 
 /**

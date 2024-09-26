@@ -58,6 +58,7 @@ import SyncStatus from '../components/sync';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import {ProjectsContext} from '../../context/projects-context';
+import {ProjectExtended} from '../../types/project';
 
 /**
  * Represents the properties for a menu list item.
