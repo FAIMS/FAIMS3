@@ -336,6 +336,18 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 gutterBottom
                 sx={{marginBottom: '16px'}}
               >
+                <strong>Template Used:</strong>{' '}
+                <MetadataRenderer
+                  project_id={project.project_id}
+                  metadata_key={'template_id'}
+                  chips={false}
+                />
+              </Typography>
+              <Typography
+                variant="body1"
+                gutterBottom
+                sx={{marginBottom: '16px'}}
+              >
                 <strong>Description:</strong>{' '}
                 <MetadataRenderer
                   project_id={project.project_id}
