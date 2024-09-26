@@ -57,10 +57,6 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
     init();
   }, []);
 
-  useEffect(() => {
-    console.log(projects);
-  }, [projects]);
-
   /**
    * Activates a project.
    *
