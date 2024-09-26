@@ -15,13 +15,17 @@
 
       <dl>
           <dt>Project ID</dt><dd>{{ notebook.project_id}}</dd>
+          
           <dt>Project Lead</dt><dd>{{ notebook.project_lead}}</dd>
           <dt>Lead Institution</dt><dd>{{ notebook.lead_institution }}</dd>
           <dt>Description</dt><dd>{{markdown notebook.pre_description }}</dd>
           <dt>Records</dt><dd>{{ records }}</dd>
+          {{#if notebook.template_id}}
+          <dt>Template</dt><a href="/templates/{{ notebook.template_id }}">{{ notebook.template_id }}</a>
+          {{/if}}
       </dl>
-
-      <p><a download href="/api/notebooks/{{notebook.project_id}}">Download this notebook's JSON definition file.</a></p>
+      <dt>Download Notebook JSON definition</dt>
+      <p><a download href="/api/notebooks/{{notebook.project_id}}">{{notebook.project_id}}.json</a></p>
     </div>
 
     <div class="col">
