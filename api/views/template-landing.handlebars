@@ -171,7 +171,6 @@
       reader.onload = (evt) => {
         try {
           const data = JSON.parse(evt.target.result);
-          console.log(data, !data.metadata, !data['ui-specification'] );
           // a little bit of validation
           if (!data.metadata || !data['ui-specification']) {
             alert('Invalid notebook file');

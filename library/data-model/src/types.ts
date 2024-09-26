@@ -735,7 +735,7 @@ export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
 // ========================
 // TODO use zod more effectively here to enhance validation
 
-// The UI specification 
+// The UI specification
 
 // TODO use Zod for existing UI schema models to validate. Note that this is a
 // schema for an JSON notebook (fviews, not views). We refine this model so that
@@ -785,8 +785,11 @@ export const TemplateEditableDetailsSchema = z.object({
     .string()
     .trim()
     .min(5, 'Please provide a template name of at least 5 character length.'),
-  // The UI specification for this template
-  'ui-specification': UiSpecificationSchema,
+  // The UI specification for this template, but require that it is not null or undefined
+  'ui-specification': UiSpecificationSchema.refine(
+    val => val !== null && val !== undefined,
+    {message: 'A UI Specification must be provided.'}
+  ),
   // The metadata from the designer - copied into new notebooks
   metadata: NotebookMetadataSchema,
 });
