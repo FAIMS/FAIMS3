@@ -51,6 +51,8 @@
       <h5>Manage Users</h5>
       <p><a class="btn btn-primary" href="/notebooks/{{notebook.project_id}}/invite/">Invite</a> 
       users to register for this notebook.</p>
+
+    {{#if invites}}
     <h6>Existing Invites</h6>
     <table>
       <tr>
@@ -63,12 +65,14 @@
       <tr>
 
         <td><strong>{{this.invite.role}}</strong></td>
-        <td>{{this.invite._id}}</td>
-        <td>
-          <button class="btn btn-primary" onclick="copyToClipboard('{{this.url}}')">Copy URL</button>
+        <td>{{this.invite._id}}
+          <button class="btn btn-primary btn-sm" onclick="copyToClipboard('{{this.invite._id}}')">Copy</button>
         </td>
         <td>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#qrModal{{this.invite._id}}">Show QR</button>
+          <button class="btn btn-primary btn-sm" onclick="copyToClipboard('{{this.url}}')">Copy URL</button>
+        </td>
+        <td>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#qrModal{{this.invite._id}}">Show QR</button>
         <div class="modal modal-fade" 
             id="qrModal{{this.invite._id}}"
               tabindex="-1" aria-labelledby="qrtitle-{{this.invite._id}}" aria-hidden="true">
@@ -92,6 +96,7 @@
       </tr>
       {{/each}}
     </table>
+    {{/if}}
 
     <p><a class="btn btn-primary" href="/notebooks/{{notebook.project_id}}/users/">Edit User Roles</a></p>
     </li>
@@ -216,9 +221,9 @@
   <script>
 const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-        alert("URL copied to clipboard.")
+        alert("Copied to clipboard: " + text)
     }, () => {
-            alert("Could not copy URL to clipboard.")
+            alert("Could not copy to clipboard.")
     });
 }
 
