@@ -1,28 +1,31 @@
-import React, {useState} from 'react';
-import {Button, Box, Typography} from '@mui/material';
+import React, {useContext} from 'react';
+import {Box, Button, Typography} from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
-import {ProjectInformation} from '@faims3/data-model';
+import {ProjectExtended} from '../../../../types/project';
+import {ProjectsContext} from '../../../../context/projects-context';
 import FaimsDialog from '../../ui/Faims_Dialog';
 
 type NotebookActivationSwitchProps = {
-  project: ProjectInformation;
+  project: ProjectExtended;
   project_status: string | undefined;
-  handleActivation: () => void;
   isWorking: boolean;
+  setTabID: Function;
 };
 
 export default function NotebookActivationSwitch({
-  handleActivation,
+  project: {_id, listing},
   isWorking,
+  setTabID,
 }: NotebookActivationSwitchProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = React.useState(false);
+  const {activateProject} = useContext(ProjectsContext);
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-
   const handleActivationClick = () => {
-    handleActivation(); // Trigger the activation process
-    handleClose(); // Close the dialog
+    activateProject(_id, listing);
+    setTabID('1');
+    handleClose();
   };
 
   return (

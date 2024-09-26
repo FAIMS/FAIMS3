@@ -383,8 +383,9 @@ export default function RecordCreate() {
       {
         link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + location.state.parent_link,
         title:
-          type! + ':' + location.state.parent_hrid! ??
-          location.state.parent_record_id!,
+          type! +
+          ':' +
+          (location.state.parent_hrid! ?? location.state.parent_record_id!),
       },
       {title: 'Draft'},
     ];
