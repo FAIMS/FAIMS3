@@ -18,7 +18,7 @@
  */
 
 import React, {useContext, useState} from 'react';
-import {Typography, TextField, Button, Stack, Grid} from '@mui/material';
+import {Typography, TextField, Button, Stack, Grid, Alert} from '@mui/material';
 import {ListingsObject} from '@faims3/data-model';
 import LoginIcon from '@mui/icons-material/Login';
 import {isWeb} from '../../utils/helpers';
@@ -40,11 +40,23 @@ type ShortCodeProps = {
  */
 export function ShortCodeRegistration(props: ShortCodeProps) {
   const [shortCode, setShortCode] = useState('');
+  const [message, setMessage] = useState('');
+
+  // pattern for allowed short codes
+  const codeChars = '^[ABCDEFGHIJKLMNPQRSTUVWXYZ123456789]*$';
+
   const updateShortCode = (event: {
     target: {value: React.SetStateAction<string>};
   }) => {
-    console.log('E', event);
-    setShortCode(event.target.value);
+    // codes are always 6 chars and uppercase
+    const value = (event.target.value as string).toUpperCase();
+    if (value.length <= 6 && value.match(codeChars)) {
+      setShortCode(value);
+      setMessage('');
+    } else
+      setMessage(
+        'Code must be exactly six characters. Do not include the prefix or dash character.'
+      );
   };
 
   const handleRegister = (listing_info: ListingsObject) => {
@@ -112,6 +124,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
               Register
             </Button>
           </Stack>
+          {message ? <Alert severity="warning">{message}</Alert> : <></>}
         </Stack>
       ))}
     </MainCard>
