@@ -23,7 +23,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {listing, _id, project_id},
+  project: {_id, project_id},
 }: AddRecordButtonsProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));

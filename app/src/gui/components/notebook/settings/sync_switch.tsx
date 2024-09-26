@@ -51,7 +51,6 @@ export default function NotebookSyncSwitch({
   setTabID = () => {},
 }: NotebookSyncSwitchProps) {
   const [open, setOpen] = useState(false);
-  const [isWorking, setIsWorking] = useState(false);
 
   const {setProjectSync} = useContext(ProjectsContext);
 
@@ -65,7 +64,7 @@ export default function NotebookSyncSwitch({
           project={project}
           project_status={project.status}
           setTabID={setTabID}
-          isWorking={isWorking}
+          isWorking={false}
         />
       ) : (
         <Box>
@@ -74,7 +73,7 @@ export default function NotebookSyncSwitch({
             control={
               <Switch
                 checked={project.sync}
-                disabled={isWorking}
+                disabled={false}
                 onClick={handleOpen}
               />
             }
@@ -84,7 +83,6 @@ export default function NotebookSyncSwitch({
               </Typography>
             }
           />
-          {isWorking ? <FormHelperText>Working...</FormHelperText> : ''}
           {showHelperText ? (
             <FormHelperText>
               Toggle syncing this {NOTEBOOK_NAME} to the server.
@@ -106,24 +104,17 @@ export default function NotebookSyncSwitch({
               <Button onClick={handleClose} autoFocus>
                 Cancel
               </Button>
-
-              {isWorking ? (
-                <LoadingButton loading variant="outlined" size={'small'}>
-                  {project.sync ? 'Stopping' : 'Starting'} sync
-                </LoadingButton>
-              ) : (
-                <Button
-                  size={'small'}
-                  variant="contained"
-                  disableElevation
-                  onClick={async () => {
-                    setProjectSync(project._id, project.listing, !project.sync);
-                    handleClose();
-                  }}
-                >
-                  {project.sync ? 'Stop ' : 'Start'} sync
-                </Button>
-              )}
+              <Button
+                size={'small'}
+                variant="contained"
+                disableElevation
+                onClick={async () => {
+                  setProjectSync(project._id, project.listing, !project.sync);
+                  handleClose();
+                }}
+              >
+                {project.sync ? 'Stop ' : 'Start'} sync
+              </Button>
             </DialogActions>
           </Dialog>
         </Box>

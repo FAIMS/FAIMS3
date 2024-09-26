@@ -1,9 +1,6 @@
 import React, {useContext} from 'react';
-import {Alert, Box, AlertTitle, Button, Typography} from '@mui/material';
-import LoadingButton from '@mui/lab/LoadingButton';
-import DialogActions from '@mui/material/DialogActions';
+import {Box, Button, Typography} from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
-import {NOTEBOOK_NAME} from '../../../../buildconfig';
 import {ProjectExtended} from '../../../../types/project';
 import {ProjectsContext} from '../../../../context/projects-context';
 import FaimsDialog from '../../ui/Faims_Dialog';
@@ -16,7 +13,7 @@ type NotebookActivationSwitchProps = {
 };
 
 export default function NotebookActivationSwitch({
-  project: {_id, name, listing},
+  project: {_id, listing},
   isWorking,
   setTabID,
 }: NotebookActivationSwitchProps) {
