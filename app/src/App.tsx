@@ -25,7 +25,6 @@ import {PrivateRoute} from './constants/privateRouter';
 import {SignIn} from './gui/pages/signin';
 import AboutBuild from './gui/pages/about-build';
 import Workspace from './gui/pages/workspace';
-import NoteBookList from './gui/pages/notebook_list';
 import Notebook from './gui/pages/notebook';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
@@ -44,6 +43,7 @@ import {useEffect, useState} from 'react';
 
 import {TokenContents} from '@faims3/data-model';
 import NotFound404 from './gui/pages/404';
+import {ProjectsProvider} from './context/projects-context';
 
 // type AppProps = {};
 
@@ -69,78 +69,71 @@ export default function App() {
     <></>
   ) : (
     <StateProvider>
-      <StyledEngineProvider injectFirst>
-        <ThemeProvider theme={theme}>
-          <Router>
-            <MainLayout token={token}>
-              <Routes>
-                <Route
-                  path={ROUTES.SIGN_IN}
-                  element={
-                    <PrivateRoute allowed>
-                      <SignIn setToken={setToken} />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path={ROUTES.INDEX}
-                  element={
-                    <PrivateRoute allowed={Boolean(token)}>
-                      <Workspace />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path={ROUTES.NOTEBOOK_LIST_ROUTE}
-                  element={
-                    <PrivateRoute allowed={Boolean(token)}>
-                      <NoteBookList />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path={ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + ':project_id'}
-                  element={
-                    <PrivateRoute allowed={Boolean(token)}>
-                      <Notebook />
-                    </PrivateRoute>
-                  }
-                />
-                {/* Draft creation happens by redirecting to a fresh minted UUID
+      <ProjectsProvider>
+        <StyledEngineProvider injectFirst>
+          <ThemeProvider theme={theme}>
+            <Router>
+              <MainLayout token={token}>
+                <Routes>
+                  <Route
+                    path={ROUTES.SIGN_IN}
+                    element={
+                      <PrivateRoute allowed>
+                        <SignIn setToken={setToken} />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path={ROUTES.INDEX}
+                    element={
+                      <PrivateRoute allowed={Boolean(token)}>
+                        <Workspace />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
+                    element={
+                      <PrivateRoute allowed={Boolean(token)}>
+                        <Notebook />
+                      </PrivateRoute>
+                    }
+                  />
+                  {/* Draft creation happens by redirecting to a fresh minted UUID
                   This is to keep it stable until the user navigates away. So the
                   draft_id is optional, and when RecordCreate is instantiated
                   without one, it immediately mints a UUID and redirects to it */}
-                <Route
-                  path={
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                    ':project_id' +
-                    ROUTES.RECORD_CREATE +
-                    ':type_name' +
-                    ROUTES.RECORD_DRAFT +
-                    ':draft_id' + //added for keep the record id same for draft
-                    ROUTES.RECORD_RECORD +
-                    ':record_id'
-                  }
-                  element={
-                    <PrivateRoute allowed={Boolean(token)}>
-                      <RecordCreate />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path={
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                    ':project_id' +
-                    ROUTES.RECORD_CREATE +
-                    ':type_name'
-                  }
-                  element={
-                    <PrivateRoute allowed={Boolean(token)}>
-                      <RecordCreate />
-                    </PrivateRoute>
-                  }
-                />
-                {/*Record editing and viewing is a separate affair, separated by
+                  <Route
+                    path={
+                      ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      ':project_id' +
+                      ROUTES.RECORD_CREATE +
+                      ':type_name' +
+                      ROUTES.RECORD_DRAFT +
+                      ':draft_id' + //added for keep the record id same for draft
+                      ROUTES.RECORD_RECORD +
+                      ':record_id'
+                    }
+                    element={
+                      <PrivateRoute allowed={Boolean(token)}>
+                        <RecordCreate />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path={
+                      ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      ':project_id' +
+                      ROUTES.RECORD_CREATE +
+                      ':type_name'
+                    }
+                    element={
+                      <PrivateRoute allowed={Boolean(token)}>
+                        <RecordCreate />
+                      </PrivateRoute>
+                    }
+                  />
+                  {/*Record editing and viewing is a separate affair, separated by
                   the presence/absence of draft_id prop OR draft_id being in the
                   state of the Record component. So if the user clicks a draft to
                   make continued changes, the draft_id is in the URL here.
@@ -148,45 +141,46 @@ export default function App() {
                   should at some point, TODO, redirect to the same Record form but
                   with the newly minted draft_id attached. BUt this TODO is in the
                   record/form.tsx*/}
-                <Route
-                  path={
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                    ':project_id' +
-                    ROUTES.RECORD_EXISTING +
-                    ':record_id' +
-                    ROUTES.REVISION +
-                    ':revision_id'
-                  }
-                  element={
-                    <PrivateRoute allowed={Boolean(token)}>
-                      <Record />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path={
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                    ':project_id' +
-                    ROUTES.RECORD_EXISTING +
-                    ':record_id' +
-                    ROUTES.REVISION +
-                    ':revision_id' +
-                    ROUTES.RECORD_DRAFT +
-                    ':draft_id'
-                  }
-                  element={
-                    <PrivateRoute allowed={Boolean(token)}>
-                      <Record />
-                    </PrivateRoute>
-                  }
-                />
-                <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
-                <Route path="*" Component={NotFound404} />
-              </Routes>
-            </MainLayout>
-          </Router>
-        </ThemeProvider>
-      </StyledEngineProvider>
+                  <Route
+                    path={
+                      ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      ':project_id' +
+                      ROUTES.RECORD_EXISTING +
+                      ':record_id' +
+                      ROUTES.REVISION +
+                      ':revision_id'
+                    }
+                    element={
+                      <PrivateRoute allowed={Boolean(token)}>
+                        <Record />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path={
+                      ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      ':project_id' +
+                      ROUTES.RECORD_EXISTING +
+                      ':record_id' +
+                      ROUTES.REVISION +
+                      ':revision_id' +
+                      ROUTES.RECORD_DRAFT +
+                      ':draft_id'
+                    }
+                    element={
+                      <PrivateRoute allowed={Boolean(token)}>
+                        <Record />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
+                  <Route path={'*'} Component={NotFound404} />
+                </Routes>
+              </MainLayout>
+            </Router>
+          </ThemeProvider>
+        </StyledEngineProvider>
+      </ProjectsProvider>
     </StateProvider>
   );
 }

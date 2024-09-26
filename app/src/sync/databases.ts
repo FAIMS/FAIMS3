@@ -37,6 +37,8 @@ import {
 } from './connection';
 import {draft_db} from './draft-storage';
 
+import {db as projects_db} from '../dbs/projects-db';
+
 export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
@@ -103,7 +105,7 @@ export const default_changes_opts: PouchDB.Core.ChangesOptions &
   attachments: true,
 };
 
-const directory_db_pouch = new PouchDB<ListingsObject>(
+export const directory_db_pouch = new PouchDB<ListingsObject>(
   'directory',
   local_pouch_options
 );
@@ -207,12 +209,10 @@ export function ensure_local_db<Content extends {}>(
   global_dbs: LocalDBList<Content>,
   start_sync_attachments: boolean
 ): [boolean, LocalDB<Content>] {
-  console.log('ensure_local_db', prefix, local_db_id, global_dbs);
   if (global_dbs[local_db_id]) {
     global_dbs[local_db_id].is_sync = start_sync;
     return [false, global_dbs[local_db_id]];
   } else {
-    console.log('creating a new db', prefix, local_db_id);
     const db = new PouchDB<Content>(
       prefix + POUCH_SEPARATOR + local_db_id,
       local_pouch_options
@@ -401,6 +401,7 @@ export async function wipe_all_pouch_databases() {
     local_state_db,
     draft_db,
     local_auth_db,
+    projects_db,
   ];
   await delete_synced_dbs(data_dbs);
   await delete_synced_dbs(metadata_dbs);

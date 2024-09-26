@@ -1,12 +1,11 @@
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import {Box, Stack, Tab} from '@mui/material';
+import {Box, Tab} from '@mui/material';
 import {DataGrid, GridEventListener} from '@mui/x-data-grid';
-import {ProjectInformation} from '@faims3/data-model/build/src/types';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import ProjectCardList from './project-card-list';
-import {projectListLayout} from '../../themes';
+import {ProjectExtended} from '../../../types/project';
+import {useNavigate} from 'react-router-dom';
+import * as ROUTES from '../../../constants/routes';
 
 /**
  * Renders a tabbed grid component.
@@ -21,142 +20,63 @@ import {projectListLayout} from '../../themes';
  * @returns The rendered tabbed grid component.
  */
 export default function TabGrid({
-  pouchProjectList,
+  projects,
   tabID,
   handleChange,
-  handleRowClick,
-  loading,
   columns,
-  sortModel,
 }: {
-  pouchProjectList: ProjectInformation[];
+  projects: ProjectExtended[];
   tabID: string;
-  handleChange: (event: React.SyntheticEvent, newValue: string) => void;
-  handleRowClick: GridEventListener<'rowClick'>;
-  loading: boolean;
+  handleChange: React.Dispatch<React.SetStateAction<string>>;
   columns: any;
-  sortModel: any;
 }) {
+  const activatedProjects = projects.filter(({activated}) => activated);
+  const availableProjects = projects.filter(({activated}) => !activated);
+
+  const history = useNavigate();
+
+  const handleRowClick: GridEventListener<'rowClick'> = ({
+    row: {activated, project_id},
+  }) => {
+    console.log(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
+
+    if (activated) history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
+  };
   return (
-    <TabContext
-      value={
-        pouchProjectList.filter(r => r.is_activated).length === 0 ? '2' : tabID
-      }
-    >
+    <TabContext value={tabID}>
       <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-        <TabList onChange={handleChange} aria-label="tablist">
-          <Tab
-            label={
-              'Activated (' +
-              pouchProjectList.filter(r => r.is_activated).length +
-              ')'
-            }
-            value="1"
-            disabled={
-              pouchProjectList.filter(r => r.is_activated).length === 0
-                ? true
-                : false
-            }
-          />
-          <Tab
-            label={
-              'Available (' +
-              pouchProjectList.filter(r => !r.is_activated).length +
-              ')'
-            }
-            value="2"
-          />
+        <TabList onChange={(_, value: string) => handleChange(value)}>
+          {['1', '2'].map(tab => (
+            <Tab
+              key={tab}
+              label={
+                tab === '1'
+                  ? `Activated (${activatedProjects.length})`
+                  : `Available (${availableProjects.length})`
+              }
+              value={tab}
+              disabled={
+                !projects.filter(r => r.activated).length && tab === '1'
+              }
+            />
+          ))}
         </TabList>
       </Box>
-      <TabPanel value="1" sx={{px: 0}}>
-        <div style={{display: 'flex', height: '100%'}}>
+      {['1', '2'].map(tab => (
+        <TabPanel key={tab} value={tab} sx={{px: 0}}>
           <div style={{flexGrow: 1}}>
-            {projectListLayout === 'card-list' ? (
-              <ProjectCardList
-                projects={pouchProjectList.filter(r => r.is_activated)}
-              />
-            ) : (
-              <DataGrid
-                key={'notebook_list_datagrid'}
-                rows={pouchProjectList.filter(r => r.is_activated)}
-                loading={loading}
-                columns={columns}
-                onRowClick={handleRowClick}
-                autoHeight
-                sx={{cursor: 'pointer'}}
-                getRowId={r => r.project_id}
-                hideFooter={true}
-                getRowHeight={() => 'auto'}
-                initialState={{
-                  sorting: {
-                    sortModel: [sortModel],
-                  },
-                  pagination: {
-                    paginationModel: {
-                      pageSize: pouchProjectList.length,
-                    },
-                  },
-                }}
-                slots={{
-                  noRowsOverlay: () => (
-                    <Stack
-                      height="100%"
-                      alignItems="center"
-                      justifyContent="center"
-                    >
-                      No {NOTEBOOK_NAME_CAPITALIZED}s have been activated yet.
-                    </Stack>
-                  ),
-                }}
-              />
-            )}
+            <DataGrid
+              key={`notebook_list_datagrid_${tab}`}
+              rows={tab === '1' ? activatedProjects : availableProjects}
+              columns={columns}
+              sx={{cursor: tab === '1' ? 'pointer' : 'default'}}
+              onRowClick={handleRowClick}
+              getRowId={({_id}) => _id}
+              hideFooter
+            />
           </div>
-        </div>
-      </TabPanel>
-      <TabPanel value="2" sx={{px: 0}}>
-        <div style={{display: 'flex', height: '100%'}}>
-          <div style={{flexGrow: 1}}>
-            {projectListLayout === 'card-list' ? (
-              <ProjectCardList
-                projects={pouchProjectList.filter(r => !r.is_activated)}
-              />
-            ) : (
-              <DataGrid
-                key={'notebook_list_datagrid'}
-                rows={pouchProjectList.filter(r => !r.is_activated)}
-                loading={loading}
-                columns={columns}
-                autoHeight
-                sx={{cursor: 'pointer'}}
-                getRowId={r => r.project_id}
-                hideFooter={true}
-                getRowHeight={() => 'auto'}
-                initialState={{
-                  sorting: {
-                    sortModel: [sortModel],
-                  },
-                  pagination: {
-                    paginationModel: {
-                      pageSize: pouchProjectList.length,
-                    },
-                  },
-                }}
-                slots={{
-                  noRowsOverlay: () => (
-                    <Stack
-                      height="100%"
-                      alignItems="center"
-                      justifyContent="center"
-                    >
-                      You don't have any unactivated {NOTEBOOK_NAME}s.
-                    </Stack>
-                  ),
-                }}
-              />
-            )}
-          </div>
-        </div>
-      </TabPanel>
+        </TabPanel>
+      ))}
     </TabContext>
   );
 }

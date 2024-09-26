@@ -1,9 +1,7 @@
 import {Stack} from '@mui/material';
-import {DataGrid, GridEventListener} from '@mui/x-data-grid';
-import {ProjectInformation} from '@faims3/data-model/build/src/types';
+import {DataGrid} from '@mui/x-data-grid';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import ProjectCardList from './project-card-list';
-import {projectListLayout} from '../../themes';
+import {ProjectExtended} from '../../../types/project';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -18,95 +16,72 @@ import {projectListLayout} from '../../themes';
  */
 export default function HeadingGrid({
   pouchProjectList,
-  handleRowClick,
   loading,
   columns,
-  sortModel,
 }: {
-  pouchProjectList: ProjectInformation[];
-  handleRowClick: GridEventListener<'rowClick'>;
+  pouchProjectList: ProjectExtended[];
   loading: boolean;
   columns: any;
-  sortModel: any;
 }) {
   return (
     <div style={{display: 'flex', flexDirection: 'column'}}>
       <div style={{padding: '6px', fontSize: '18px', fontWeight: 'bold'}}>
         Active
       </div>
-      {projectListLayout === 'card-list' ? (
-        <ProjectCardList
-          projects={pouchProjectList.filter(r => r.is_activated)}
-        />
-      ) : (
-        <DataGrid
-          key={'active_notebook_list_datagrid'}
-          rows={pouchProjectList.filter(r => r.is_activated)}
-          loading={loading}
-          columns={columns}
-          onRowClick={handleRowClick}
-          autoHeight
-          sx={{cursor: 'pointer'}}
-          getRowId={r => r.project_id}
-          hideFooter={true}
-          getRowHeight={() => 'auto'}
-          initialState={{
-            sorting: {
-              sortModel: [sortModel],
+      <DataGrid
+        key={'active_notebook_list_datagrid'}
+        rows={pouchProjectList.filter(r => r.activated)}
+        loading={loading}
+        columns={columns}
+        autoHeight
+        sx={{cursor: 'pointer'}}
+        getRowId={r => r._id}
+        hideFooter={true}
+        getRowHeight={() => 'auto'}
+        initialState={{
+          pagination: {
+            paginationModel: {
+              pageSize: pouchProjectList.length,
             },
-            pagination: {
-              paginationModel: {
-                pageSize: pouchProjectList.length,
-              },
-            },
-          }}
-          slots={{
-            noRowsOverlay: () => (
-              <Stack height="100%" alignItems="center" justifyContent="center">
-                No {NOTEBOOK_NAME_CAPITALIZED}s have been activated yet.
-              </Stack>
-            ),
-          }}
-        />
-      )}
+          },
+        }}
+        slots={{
+          noRowsOverlay: () => (
+            <Stack height="100%" alignItems="center" justifyContent="center">
+              No {NOTEBOOK_NAME_CAPITALIZED}s have been activated yet.
+            </Stack>
+          ),
+        }}
+      />
       <div style={{height: '16px'}} />
       <div style={{padding: '6px', fontSize: '18px', fontWeight: 'bold'}}>
         Not active
       </div>
-      {projectListLayout === 'card-list' ? (
-        <ProjectCardList
-          projects={pouchProjectList.filter(r => !r.is_activated)}
-        />
-      ) : (
-        <DataGrid
-          key={'not_active_notebook_list_datagrid'}
-          rows={pouchProjectList.filter(r => !r.is_activated)}
-          loading={loading}
-          columns={columns}
-          autoHeight
-          sx={{cursor: 'pointer'}}
-          getRowId={r => r.project_id}
-          hideFooter={true}
-          getRowHeight={() => 'auto'}
-          initialState={{
-            sorting: {
-              sortModel: [sortModel],
+      <DataGrid
+        key={'not_active_notebook_list_datagrid'}
+        rows={pouchProjectList.filter(r => !r.activated)}
+        loading={loading}
+        columns={columns}
+        autoHeight
+        sx={{cursor: 'pointer'}}
+        getRowId={r => r._id}
+        hideFooter={true}
+        getRowHeight={() => 'auto'}
+        initialState={{
+          pagination: {
+            paginationModel: {
+              pageSize: pouchProjectList.length,
             },
-            pagination: {
-              paginationModel: {
-                pageSize: pouchProjectList.length,
-              },
-            },
-          }}
-          slots={{
-            noRowsOverlay: () => (
-              <Stack height="100%" alignItems="center" justifyContent="center">
-                You don't have any unactivated {NOTEBOOK_NAME}s.
-              </Stack>
-            ),
-          }}
-        />
-      )}
+          },
+        }}
+        slots={{
+          noRowsOverlay: () => (
+            <Stack height="100%" alignItems="center" justifyContent="center">
+              You don't have any unactivated {NOTEBOOK_NAME}s.
+            </Stack>
+          ),
+        }}
+      />
     </div>
   );
 }

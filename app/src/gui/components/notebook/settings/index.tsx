@@ -46,12 +46,19 @@ import NotebookSyncSwitch from './sync_switch';
 import {ProjectUIModel} from '@faims3/data-model';
 import {logError} from '../../../../logging';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
+import {ProjectsContext} from '../../../../context/projects-context';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
 
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
   const {dispatch} = useContext(store);
+
+  const project = useContext(ProjectsContext).projects.find(
+    project => project_id === project.project_id
+  );
+
+  if (!project) return <></>;
 
   useEffect(() => {
     try {
@@ -91,11 +98,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             <Typography variant={'h6'} sx={{mb: 2}}>
               Sync ${NOTEBOOK_NAME_CAPITALIZED}
             </Typography>
-            <NotebookSyncSwitch
-              project={projectInfo}
-              showHelperText={true}
-              project_status={projectInfo?.status}
-            />
+            <NotebookSyncSwitch project={project} showHelperText={true} />
           </Box>
 
           <Box component={Paper} variant={'outlined'} elevation={0} p={2}>

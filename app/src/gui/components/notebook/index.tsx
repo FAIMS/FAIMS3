@@ -9,11 +9,17 @@ import {
   Alert,
   AlertTitle,
   Button,
+  Grid,
+  TableContainer,
+  Table,
+  TableBody,
+  TableRow,
+  TableCell,
 } from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {ProjectUIViewsets} from '@faims3/data-model';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import {ProjectInformation, ProjectUIModel} from '@faims3/data-model';
+import {ProjectUIModel} from '@faims3/data-model';
 import DraftsTable from './draft_table';
 import {RecordsBrowseTable} from './record_table';
 import MetadataRenderer from '../metadataRenderer';
@@ -26,6 +32,8 @@ import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {ProjectExtended} from '../../../types/project';
+import RangeHeader from './range_header';
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
@@ -81,7 +89,7 @@ function a11yProps(index: number, id: string) {
  * NotebookComponentProps defines the properties for the NotebookComponent component.
  */
 type NotebookComponentProps = {
-  project: ProjectInformation;
+  project: ProjectExtended;
   handleRefresh: () => Promise<any>;
 };
 
@@ -135,7 +143,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
    * Fetches the UI specification and viewsets for the project when the component mounts or the project changes.
    */
   useEffect(() => {
-    if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
+    if (project.listing && project._id) {
       getUiSpecForProject(project.project_id)
         .then(spec => {
           setUiSpec(spec);
@@ -266,109 +274,97 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           </TabPanel>
 
           <TabPanel value={notebookTabValue} index={1} id={'notebook'}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 2,
-                px: 2,
-              }}
-            >
-              {/* <Box
-                component="h2"
-                sx={{
-                  textAlign: 'left',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  marginBottom: '16px',
-                }}
-              >
-                Survey Details
-              </Box> */}
-              <Typography
-                variant="body1"
-                sx={{
-                  textAlign: 'center',
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  flexGrow: 1,
-                }}
-              >
-                Survey Details
-              </Typography>
-
-              {/* Unhide the edit button when the notebook cna be edited */}
-              {/* <IconButton
-                color="primary"
-                aria-label="edit"
-                onClick={() => {
-                  console.log('Edit Survey Details clicked');
-                }}
-                sx={{display: 'flex', alignItems: 'center'}}
-              >
-                <EditIcon />
-                <Typography
-                  variant="body2"
-                  color="primary"
-                  sx={{marginLeft: '4px'}}
+            <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
+              <Grid item xs={12} sm={6} md={6} lg={4}>
+                <Box component={Paper} elevation={0} variant={'outlined'} p={2}>
+                  <Typography variant={'h6'} sx={{mb: 2}}>
+                    Description
+                  </Typography>
+                  <Typography variant="body2" color="textPrimary" gutterBottom>
+                    <MetadataRenderer
+                      project_id={project.project_id}
+                      metadata_key={'pre_description'}
+                      chips={false}
+                    />
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TableContainer
+                  component={Paper}
+                  elevation={0}
+                  variant={'outlined'}
                 >
-                  Edit
-                </Typography>
-              </IconButton> */}
-            </Box>
-
-            <Box sx={{p: 2}}>
-              <Typography
-                variant="body1"
-                gutterBottom
-                sx={{marginBottom: '16px'}}
-              >
-                <strong>Name:</strong>{' '}
-                <MetadataRenderer
-                  project_id={project.project_id}
-                  metadata_key={'name'}
-                  chips={false}
+                  <Typography variant={'h6'} sx={{m: 2}} gutterBottom>
+                    About
+                  </Typography>
+                  <Table size={'small'}>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant={'overline'}>Status</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <MetadataRenderer
+                            project_id={project.project_id}
+                            metadata_key={'project_status'}
+                            chips={false}
+                          />
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant={'overline'}>
+                            Lead Institution
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <MetadataRenderer
+                            project_id={project.project_id}
+                            metadata_key={'lead_institution'}
+                            chips={false}
+                          />
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant={'overline'}>
+                            Project Lead
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <MetadataRenderer
+                            project_id={project.project_id}
+                            metadata_key={'project_lead'}
+                            chips={false}
+                          />
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant={'overline'}>
+                            Last Updated
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <MetadataRenderer
+                            project_id={project.project_id}
+                            metadata_key={'last_updated'}
+                            chips={false}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Grid>
+              <Grid item xs={12} sm={12} md={12} lg={4}>
+                <RangeHeader
+                  project={project}
+                  handleAIEdit={handleNotebookTabChange}
                 />
-              </Typography>
-              <Typography
-                variant="body1"
-                gutterBottom
-                sx={{marginBottom: '16px'}}
-              >
-                <strong>Description:</strong>{' '}
-                <MetadataRenderer
-                  project_id={project.project_id}
-                  metadata_key={'pre_description'}
-                  chips={false}
-                />
-              </Typography>
-
-              <Typography
-                variant="body1"
-                gutterBottom
-                sx={{marginBottom: '16px'}}
-              >
-                <strong>Lead Institution:</strong>{' '}
-                <MetadataRenderer
-                  project_id={project.project_id}
-                  metadata_key={'lead_institution'}
-                  chips={false}
-                />
-              </Typography>
-              <Typography
-                variant="body1"
-                gutterBottom
-                sx={{marginBottom: '16px', textAlign: 'left'}}
-              >
-                <strong>Project Lead:</strong>{' '}
-                <MetadataRenderer
-                  project_id={project.project_id}
-                  metadata_key={'project_lead'}
-                  chips={false}
-                />
-              </Typography>
-            </Box>
+              </Grid>
+            </Grid>
           </TabPanel>
 
           <TabPanel value={notebookTabValue} index={2} id={'notebook'}>
