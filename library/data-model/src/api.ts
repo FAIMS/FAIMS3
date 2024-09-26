@@ -4,9 +4,9 @@ import {
   APINotebookGetSchema,
   APINotebookListSchema,
   NotebookAuthSummarySchema,
-  ProjectUIModel,
   TemplateDocumentSchema,
   TemplateEditableDetailsSchema,
+  UiSpecificationSchema,
 } from './types';
 
 // ==================
@@ -38,7 +38,7 @@ export type GetNotebookListResponse = z.infer<
 export const NotebookEditableDetailsSchema = z.object({
   // This allows you to type hint as an interface but won't parse/validate it
   // TODO convert these models into their zod counterparts
-  'ui-specification': z.custom<ProjectUIModel>(),
+  'ui-specification': UiSpecificationSchema,
   metadata: z.record(z.any()),
 });
 export type NotebookEditableDetails = z.infer<

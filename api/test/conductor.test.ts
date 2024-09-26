@@ -103,7 +103,7 @@ describe('Auth', () => {
       .expect(200)
       .then(response => {
         expect(response.text).to.include('test-notebook');
-        expect(response.text).to.include('Upload a Notebook');
+        expect(response.text).to.include('New Notebook');
       });
   });
 
@@ -125,7 +125,7 @@ describe('Auth', () => {
       .get('/notebooks/')
       .expect(200)
       .then(response => {
-        expect(response.text).to.include('Upload a Notebook');
+        expect(response.text).to.include('New Notebook');
       });
   });
 
@@ -233,5 +233,32 @@ describe('Auth', () => {
       .expect(302);
 
     await agent.get('/users').expect(401);
+  });
+
+  it('shows templates page for admin user', async () => {
+    const agent = request.agent(app);
+
+    await agent
+      .post('/auth/local/')
+      .send({username: 'admin', password: adminPassword})
+      .expect(302);
+
+    await agent
+      .get('/templates')
+      .expect(200)
+      .then(response => {
+        expect(response.text).to.include('Admin User');
+      });
+  });
+
+  it('does not show the templates page for regular user', async () => {
+    const agent = request.agent(app);
+
+    await agent
+      .post('/auth/local/')
+      .send({username: localUserName, password: localUserPassword})
+      .expect(302);
+
+    await agent.get('/templates').expect(401);
   });
 });

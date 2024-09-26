@@ -18,7 +18,11 @@
  *   Tests for the API
  */
 
-import {getDataDB, ProjectUIModel, registerClient} from '@faims3/data-model';
+import {
+  EncodedProjectUIModel,
+  getDataDB,
+  registerClient,
+} from '@faims3/data-model';
 import {expect} from 'chai';
 import fs from 'fs';
 import PouchDB from 'pouchdb';
@@ -63,9 +67,10 @@ export const NOTEBOOKS_API_BASE = '/api/notebooks';
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
 
-const uispec: ProjectUIModel = {
+const uispec: EncodedProjectUIModel = {
+  _id: '',
   fields: [],
-  views: {},
+  fviews: {},
   viewsets: {},
   visible_types: [],
 };
