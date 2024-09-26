@@ -11,6 +11,7 @@ import React from 'react';
 import useGetListings from '../../../utils/custom_hooks';
 import NewNotebookForListing from '../notebook/NewNotebookForListing';
 import CircularLoading from '../ui/circular_loading';
+import {NOTEBOOK_NAME} from '../../../buildconfig';
 
 export interface CreateNewSurveyProps {}
 const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
@@ -25,12 +26,11 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
         sx={{
           width: '100%',
           backgroundColor: '#f5f5f5',
-          padding: isMobile ? '8px' : '8px',
+          padding: isMobile ? '14px' : '15px', // Increase padding for better spacing
           textAlign: 'center',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          marginTop: '12px',
         }}
       >
         <Grid container direction="column" alignItems="center">
@@ -38,16 +38,26 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
             <DescriptionIcon
               color={'secondary'}
               fontSize={isMobile ? 'large' : 'inherit'}
+              sx={{
+                fontSize: isMobile ? '2.1875rem' : '2.1975rem', // Increase size for both mobile and desktop
+                marginBottom: '2px', //  Space between icon and title
+                color: '#E18200',
+              }}
             />
           </Grid>
 
           <Grid item>
             <Typography
-              variant={isMobile ? 'h5' : 'h4'}
+              variant={isMobile ? 'h4' : 'h3'} // Make title larger
               component="div"
-              sx={{fontWeight: 'bold', fontSize: '20px', marginBottom: '18px'}}
+              sx={{
+                fontWeight: 'bold',
+                fontSize: isMobile ? '20px' : '24px', // Font size for both mobile and desktop
+                marginBottom: '5px',
+                color: '#263238', // Darker text for better contrast
+              }}
             >
-              Create New Survey
+              Create New {NOTEBOOK_NAME}
             </Typography>
           </Grid>
         </Grid>

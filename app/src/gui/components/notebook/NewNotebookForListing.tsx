@@ -1,6 +1,5 @@
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import InfoIcon from '@mui/icons-material/Info';
-import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Box,
@@ -26,6 +25,7 @@ import {useCreateNotebookFromTemplate} from '../../../utils/apiHooks/notebooks';
 import {useGetTemplates} from '../../../utils/apiHooks/templates';
 import CircularLoading from '../ui/circular_loading';
 import useErrorPopup from '../ui/errorPopup';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 
 export interface NewNotebookForListingProps {
   listingObject: ListingsObject;
@@ -36,7 +36,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
 
   // Use custom hook to get template list
   const templates = useGetTemplates({listingId: props.listingObject._id});
-
   // What template has the user selected - if any
   const [selectedTemplate, setSelectedTemplate] = useState<string | undefined>(
     undefined
@@ -145,8 +144,8 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
       <FormControl
         fullWidth
         sx={{
-          maxWidth: 400,
           marginTop: '28px',
+          width: 'auto',
         }}
       >
         <InputLabel
@@ -161,8 +160,50 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             color: '#263238',
           }}
         >
-          Using existing template
+          Select {NOTEBOOK_NAME_CAPITALIZED} template
         </InputLabel>
+        {/* Information blurb below the title */}
+        <Box
+          sx={{
+            backgroundColor: '#e0f7fa',
+            padding: '12px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '16px',
+          }}
+        >
+          <InfoIcon sx={{color: '#0288d1', marginRight: '8px'}} />
+          <Typography variant="body2" sx={{color: '#616161'}}>
+            Get started by selecting a <strong>Survey template</strong> from the
+            list below. Survey templates define a standardised set of questions
+            which users will need to answer to complete your Survey. <br></br>
+            If you would like to create, edit or update Survey templates, we
+            recommend using a browser, you can do so by{' '}
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 'bold',
+                color: '#00796b',
+                marginLeft: '4px',
+                fontStyle: 'italic',
+                textDecoration: 'underline',
+              }}
+              onClick={() => {
+                window.open('/', '_blank');
+              }}
+            >
+              visiting this link
+              <OpenInNewIcon
+                sx={{
+                  fontSize: '14px',
+                  marginLeft: '4px',
+                }}
+              />
+            </Typography>
+          </Typography>
+        </Box>
+
         {templates.isLoading ? (
           <CircularLoading label={'Loading Templates'} />
         ) : templates.isError ? (
@@ -179,6 +220,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             sx={{
               height: '48px',
               justifyContent: 'center',
+              width: '100%',
             }}
             MenuProps={{
               disableScrollLock: true,
@@ -193,7 +235,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             }}
           >
             <MenuItem disabled value="">
-              Choose survey template
+              Choose {NOTEBOOK_NAME} template
             </MenuItem>
             {templates.data && templates.data.templates.length > 0 ? (
               templates.data.templates.map(template => (
@@ -209,8 +251,8 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           </Select>
         )}
       </FormControl>
-      {/* Show error if any */}
-      <Box
+
+      {/* <Box
         sx={{
           fontSize: '1.1rem',
           color: '#00A9CE',
@@ -222,70 +264,105 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           textDecoration: 'underline',
         }}
       >
-        View / Edit survey templates
-        <OpenInNewIcon
+        If you would like to create, edit or update Survey templates, we
+        recommend using a browser, you can do so by{' '}
+        <Typography
+          component="span"
           sx={{
-            fontSize: '1.2rem',
-            margin: '8px 6px',
             fontWeight: 'bold',
-          }}
-        />
-      </Box>
-      <Box
-        sx={{
-          fontSize: '1.125rem',
-          fontWeight: 'bold',
-          marginTop: '2.3em',
-          alignSelf: 'flex-start',
-        }}
-      >
-        Create new template
-      </Box>
-      <Box
-        sx={{
-          fontSize: '1.23em',
-          color: '#9d8a8a',
-          display: 'flex',
-          alignItems: 'left',
-          gap: 1,
-          textAlign: 'left',
-          marginTop: '18px',
-        }}
-      >
-        Please log in with browser app on your computer to create a new survey
-        template
-        <OpenInBrowserIcon
-          sx={{
-            fontSize: '2rem',
-            color: '#00A9CE',
-            cursor: 'pointer',
+            color: '#00796b',
+            marginLeft: '4px',
+            fontStyle: 'italic',
           }}
           onClick={() => {
             window.open('/', '_blank');
           }}
-        />
+        >
+          visiting this link
+          <OpenInNewIcon
+            sx={{
+              fontSize: '1.2rem',
+              marginLeft: '4px',
+            }}
+          />
+        </Typography>
+      </Box> */}
+
+      <Box>
+        {/* <Box
+          sx={{
+            fontSize: '1.125rem',
+            fontWeight: 'bold',
+            marginTop: '40px',
+            alignSelf: 'flex-start',
+          }}
+        >
+          Create new template
+        </Box> */}
+        {/* <Box
+          sx={{
+            fontSize: '1.23em',
+            color: '#9d8a8a',
+            display: 'flex',
+            alignItems: 'left',
+            gap: 1,
+            textAlign: 'left',
+            marginTop: '18px',
+          }}
+        >
+          Please log in with browser app on your computer to create a new survey
+          template
+          <OpenInBrowserIcon
+            sx={{
+              fontSize: '2rem',
+              color: '#00A9CE',
+              cursor: 'pointer',
+            }}
+            onClick={() => {
+              window.open('/', '_blank');
+            }}
+          />
+        </Box> */}
       </Box>
+
       <Button
         variant="contained"
-        color="primary"
-        startIcon={<AddCircleSharpIcon />} // Add icon to button
+        startIcon={
+          <AddCircleSharpIcon sx={{fontSize: '1.6em', color: 'orange'}} />
+        }
         sx={{
-          width: '100%',
-          maxWidth: 400,
-          alignSelf: 'center',
-          mt: '90px',
+          width: '40%',
+          alignSelf: 'left',
+          mt: '120px',
           textTransform: 'none',
+          fontSize: '1.2em',
+          backgroundColor:
+            !createNotebook.mutation?.isPending && selectedTemplate
+              ? '#669911'
+              : '#d2e2b9', // Enabled and disabled color
+          color:
+            !createNotebook.mutation?.isPending && selectedTemplate
+              ? '#fff'
+              : 'darkgrey', // Enabled and disabled text color
           '&:hover': {
-            backgroundColor: '#1976d2',
+            backgroundColor:
+              !createNotebook.mutation?.isPending && selectedTemplate
+                ? '#1976d2'
+                : '#d2e2b9', // Adjust hover color
+          },
+          '&.Mui-disabled': {
+            backgroundColor: '#d2e2b9', // Override the default disabled color
+            color: 'darkgrey', // Override the default disabled text color
           },
         }}
         onClick={handleInstantiateSurvey}
         disabled={createNotebook.mutation?.isPending || !selectedTemplate}
       >
         {createNotebook.mutation?.isPending
-          ? 'Creating Survey...'
-          : 'Create survey'}
+          ? `Creating ${NOTEBOOK_NAME}...`
+          : `Create ${NOTEBOOK_NAME}`}
       </Button>
+
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
@@ -294,11 +371,9 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
         disableScrollLock={true}
         sx={{
           '& .MuiDialog-paper': {
-            width: isMobile ? '47%' : '100%',
-            margin: 'auto',
-            position: 'absolute',
-            bottom: '60%',
-            left: '1%',
+            width: isMobile ? '90%' : '60%', // Adjust width for mobile and desktop
+            margin: 'auto', // Center the dialog
+            fontStyle: 'bold',
           },
         }}
       >
@@ -328,7 +403,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
                 textAlign: 'center',
               }}
             >
-              Instantiate Survey
+              Instantiate {NOTEBOOK_NAME}
             </Typography>
           </Box>
         </DialogTitle>
@@ -343,8 +418,9 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             }}
           >
             <i>
-              You are about to create a new survey based on the selected
-              template. Please ensure you have chosen the correct template.
+              You are about to create a new {NOTEBOOK_NAME} based on the
+              selected template. Please ensure you have chosen the correct
+              template.
             </i>
           </Typography>
           <Typography
@@ -356,7 +432,8 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             }}
           >
             <i>
-              After the survey is created, it will be listed in survey list.
+              After the {NOTEBOOK_NAME} is created, it will be listed in the{' '}
+              {NOTEBOOK_NAME} list.
             </i>
           </Typography>
           <TextField
