@@ -114,8 +114,6 @@ export class TakePoint extends React.Component<
       );
     }
 
-    console.log('Take Point Props', this.props);
-
     return (
       <div>
         <p>
