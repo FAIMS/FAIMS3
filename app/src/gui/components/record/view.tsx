@@ -279,9 +279,7 @@ function getUsefulFieldNameFromUiSpec(
   if (field in ui_specification.fields) {
     const fieldInfo = ui_specification.fields[field];
     const fieldName =
-      fieldInfo.label ||
-      fieldInfo['component-parameters'].InputLabelProps?.label ||
-      field;
+      fieldInfo.label || fieldInfo['component-parameters'].label || field;
     // get the view that this field is part of
     let sectionName = '';
     for (const section in ui_specification.views) {
