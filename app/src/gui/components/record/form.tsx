@@ -1146,6 +1146,11 @@ class RecordForm extends React.Component<
     this.setState({...this.state, annotation: annotation});
   }
 
+  validateForm(values: {[fieldName: string]: unknown;}) {
+    console.log('%cVALIDATE', 'background-color: red', values);
+    return {};
+  }
+
   render() {
     // we can't do this here because it changes state and forces a redraw
     // if (this.state.draft_created !== null) {
@@ -1205,6 +1210,7 @@ class RecordForm extends React.Component<
             <Formik
               // enableReinitialize
               initialValues={initialValues}
+              validate={this.validateForm}
               validationSchema={validationSchema}
               validateOnMount={true}
               validateOnChange={false}
