@@ -232,7 +232,7 @@ const fields: {[key: string]: FieldType} = {
       geoTiff: '',
     },
     validationSchema: [['yup.string']],
-    initialValue: '1',
+    initialValue: '',
   },
   MultiSelect: {
     'component-namespace': 'faims-custom',
@@ -288,7 +288,7 @@ const fields: {[key: string]: FieldType} = {
       helperText: 'Make sure you choose the right one!',
     },
     validationSchema: [['yup.string']],
-    initialValue: '1',
+    initialValue: '',
   },
   RandomStyle: {
     'component-namespace': 'faims-custom',
@@ -428,7 +428,7 @@ const fields: {[key: string]: FieldType} = {
       helperText: 'Scan QR Code on the sample',
     },
     validationSchema: [['yup.string']],
-    initialValue: '1',
+    initialValue: '',
   },
   AddressField: {
     'component-namespace': 'faims-custom',
