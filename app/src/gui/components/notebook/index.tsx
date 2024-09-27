@@ -90,7 +90,6 @@ function a11yProps(index: number, id: string) {
  */
 type NotebookComponentProps = {
   project: ProjectExtended;
-  handleRefresh: () => Promise<any>;
 };
 
 /**
@@ -132,6 +131,8 @@ export default function NotebookComponent(props: NotebookComponentProps) {
 
   const {project} = props;
   const [loading, setLoading] = useState(true);
+  // refresh state is just something to change to force a rebuild
+  const [refresh, setRefresh] = useState(false);
   const [err, setErr] = useState('');
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
   const [uiSpec, setUiSpec] = useState<null | ProjectUIModel>(null);
@@ -161,7 +162,13 @@ export default function NotebookComponent(props: NotebookComponentProps) {
       setErr('');
       setLoading(true);
     };
-  }, [project]);
+  }, [project, refresh]);
+
+  // trigger a refresh of the component because something changed down
+  // below (a record or draft was deleted)
+  const handleRefresh = () => {
+    setRefresh(!refresh);
+  };
 
   return (
     <Box>
@@ -255,7 +262,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   maxRows={25}
                   viewsets={viewsets}
                   filter_deleted={true}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
               <TabPanel
@@ -267,7 +274,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
             </Box>
