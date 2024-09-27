@@ -73,7 +73,6 @@ async function deleteFromDB(
     );
     await deleteDraftsForRecord(project_id, record_id);
   }
-  console.log('calling callback fn');
   await callback();
 }
 
@@ -106,7 +105,6 @@ export default function RecordDelete(props: RecordDeleteProps) {
         )
       )
       .then(() => {
-        console.log('first then clause');
         const message = is_draft
           ? `Draft ${draft_id} for record ${record_id} discarded`
           : `Record ${record_id} deleted`;
@@ -117,7 +115,6 @@ export default function RecordDelete(props: RecordDeleteProps) {
             severity: 'success',
           },
         });
-        console.log('closing now');
         handleClose();
         history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
       })
