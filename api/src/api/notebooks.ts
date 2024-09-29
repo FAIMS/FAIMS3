@@ -21,6 +21,7 @@
 import {
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
+  EncodedProjectUIModel,
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
@@ -30,7 +31,6 @@ import {
   PostCreateNotebookResponse,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
-  ProjectUIModel,
   PutUpdateNotebookInputSchema,
   PutUpdateNotebookResponse,
 } from '@faims3/data-model';
@@ -143,7 +143,7 @@ api.post(
     // Metadata is from payload, or from template
     let metadata: any;
     // ui Spec is from payload if manual, or from template
-    let uiSpec: ProjectUIModel;
+    let uiSpec: EncodedProjectUIModel;
     // Project name is in both payloads
     const projectName: string = req.body.name;
     // Template ID is only needed if created from template
@@ -156,7 +156,7 @@ api.post(
 
       // Pull out values needed to create a new notebook
       metadata = template.metadata;
-      uiSpec = template.ui_specification;
+      uiSpec = template['ui-specification'];
       templateId = template._id;
     } else if (isFromScratch(req.body)) {
       // Creating a new notebook from scratch

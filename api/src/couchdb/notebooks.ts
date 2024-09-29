@@ -22,6 +22,7 @@ import {
   addDesignDocsForNotebook,
   APINotebookList,
   CLUSTER_ADMIN_GROUP_NAME,
+  EncodedProjectUIModel,
   getProjectDB,
   notebookRecordIterator,
   ProjectID,
@@ -37,7 +38,6 @@ import {
   PROJECT_METADATA_PREFIX,
   ProjectMetadata,
   ProjectUIFields,
-  ProjectUIModel,
 } from '../datamodel/database';
 import * as Exceptions from '../exceptions';
 
@@ -124,6 +124,7 @@ export const getNotebooks = async (
       if (userHasPermission(user, project_id, 'read')) {
         output.push({
           name: project.name,
+          is_admin: userHasPermission(user, project_id, 'modify'),
           last_updated: project.last_updated,
           created: project.created,
           template_id: project.template_id,
@@ -167,7 +168,7 @@ type AutoIncrementObject = {
  * @returns an autoincrementers object suitable for insertion into the db or
  *          undefined if there are no such fields
  */
-const getAutoIncrementers = (uiSpec: ProjectUIModel) => {
+const getAutoIncrementers = (uiSpec: EncodedProjectUIModel) => {
   // Note that this relies on the name 'local-autoincrementers' being the same as that
   // used in the front-end code (LOCAL_AUTOINCREMENTERS_NAME in src/local-data/autoincrementers.ts)
   const autoinc: AutoIncrementObject = {
@@ -232,7 +233,7 @@ export const validateDatabases = async () => {
  */
 export const createNotebook = async (
   projectName: string,
-  uispec: ProjectUIModel,
+  uispec: EncodedProjectUIModel,
   metadata: any,
   template_id: string | undefined = undefined
 ) => {
@@ -294,7 +295,7 @@ export const createNotebook = async (
     await metaDB.put(autoIncrementers);
   }
   uispec['_id'] = 'ui-specification';
-  await metaDB.put(uispec as PouchDB.Core.PutDocument<ProjectUIModel>);
+  await metaDB.put(uispec as PouchDB.Core.PutDocument<EncodedProjectUIModel>);
 
   // ensure that the name is in the metadata
   metadata.name = projectName.trim();
@@ -331,7 +332,7 @@ export const createNotebook = async (
  */
 export const updateNotebook = async (
   project_id: string,
-  uispec: ProjectUIModel,
+  uispec: EncodedProjectUIModel,
   metadata: any
 ) => {
   const metaDB = await getProjectDB(project_id);
@@ -391,7 +392,7 @@ export const updateNotebook = async (
   uispec['_id'] = 'ui-specification';
   uispec['_rev'] = existingUISpec['_rev'];
   // now store it to update the spec
-  await metaDB.put(uispec as PouchDB.Core.PutDocument<ProjectUIModel>);
+  await metaDB.put(uispec as PouchDB.Core.PutDocument<EncodedProjectUIModel>);
 
   // ensure that the name is in the metadata
   // metadata.name = projectName.trim();

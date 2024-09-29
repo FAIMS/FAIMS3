@@ -146,6 +146,7 @@ export interface ProjectObject {
 // This is returned from the list project endpoints
 export const APINotebookListSchema = z.object({
   name: z.string(),
+  is_admin: z.boolean().optional(),
   last_updated: z.string().optional(),
   created: z.string().optional(),
   template_id: z.string().optional(),
@@ -190,6 +191,12 @@ export interface EncodedCouchRecordFields {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean;
+}
+
+// Type for the external format of Notebooks
+export interface EncodedNotebook {
+  metadata: {[key: string]: any};
+  'ui-specification': EncodedProjectUIModel;
 }
 
 export interface EncodedProjectUIModel extends EncodedCouchRecordFields {
@@ -729,8 +736,13 @@ export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
 // TODO use zod more effectively here to enhance validation
 
 // The UI specification
-// TODO use Zod for existing UI schema models to validate
-export const UiSpecificationSchema = z.custom<ProjectUIModel>();
+
+// TODO use Zod for existing UI schema models to validate. Note that this is a
+// schema for an JSON notebook (fviews, not views). We refine this model so that
+// it cannot be undefined - Zod.custom by default allows undefined to validate
+export const UiSpecificationSchema = z
+  .custom<EncodedProjectUIModel>()
+  .refine(val => !!val);
 export type UiSpecification = z.infer<typeof UiSpecificationSchema>;
 
 // Metadata schema
@@ -774,7 +786,7 @@ export const TemplateEditableDetailsSchema = z.object({
     .trim()
     .min(5, 'Please provide a template name of at least 5 character length.'),
   // The UI specification for this template
-  ui_specification: UiSpecificationSchema,
+  'ui-specification': UiSpecificationSchema,
   // The metadata from the designer - copied into new notebooks
   metadata: NotebookMetadataSchema,
 });
