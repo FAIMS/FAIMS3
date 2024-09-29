@@ -26,7 +26,7 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
         sx={{
           width: '100%',
           backgroundColor: '#f5f5f5',
-          padding: isMobile ? '14px' : '15px', // Increase padding for better spacing
+          padding: isMobile ? '14px' : '15px',
           textAlign: 'center',
           display: 'flex',
           justifyContent: 'center',

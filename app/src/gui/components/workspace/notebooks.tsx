@@ -40,6 +40,7 @@ import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import {getListing} from '../../../sync/state';
 import {projectListVerbose} from '../../themes';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+// import {userCanCreateNotebooks} from '../../../utils/userPermissions';
 
 interface sortModel {
   field: string;
@@ -54,7 +55,7 @@ export default function NoteBooks(props: NoteBookListProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [counter, setCounter] = React.useState(5);
   const [tabID, setTabID] = React.useState('1');
-
+  // const [canCreateNotebooks, setCanCreateNotebooks] = useState<boolean>(false);
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
     setTabID(newValue);
   };
@@ -75,6 +76,11 @@ export default function NoteBooks(props: NoteBookListProps) {
   };
 
   useEffect(() => {
+    // // Check if the user has permission to create notebooks
+    // if (props.token && userCanCreateNotebooks(props.token)) {
+    //   setCanCreateNotebooks(true);
+    // }
+
     updateProjectList();
 
     if (counter === 0) {
@@ -264,6 +270,7 @@ export default function NoteBooks(props: NoteBookListProps) {
               tab and click the activate button.
             </Typography>
           )}
+          {/* {canCreateNotebooks && ( */}
           <Button
             variant="contained"
             color="primary"
@@ -273,6 +280,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           >
             Create New Survey
           </Button>
+          {/* // )} */}
           {NOTEBOOK_LIST_TYPE === 'tabs' ? (
             <Tabs
               pouchProjectList={pouchProjectList}
