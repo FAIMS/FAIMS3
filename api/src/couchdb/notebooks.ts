@@ -623,14 +623,33 @@ const csvFormatValue = (
   if (fieldType === 'faims-pos::Location') {
     if (value instanceof Object && 'geometry' in value) {
       result[fieldName] = value;
-      result[fieldName + '_latitude'] = value.geometry.coordinates[0];
-      result[fieldName + '_longitude'] = value.geometry.coordinates[1];
+      result[fieldName + '_latitude'] = value.geometry.coordinates[1];
+      result[fieldName + '_longitude'] = value.geometry.coordinates[0];
+      result[fieldName + '_accuracy'] = value.properties.accuracy || '';
     } else {
       result[fieldName] = value;
       result[fieldName + '_latitude'] = '';
       result[fieldName + '_longitude'] = '';
+      result[fieldName + '_accuracy'] = '';
     }
     return result;
+  }
+
+  if (fieldType === 'faims-core::JSON') {
+    // map location, if it's a point we can pull out lat/long
+    if (
+      value instanceof Object &&
+      'features' in value &&
+      value.features.length > 0 &&
+      value.features[0]?.geometry?.type === 'Point'
+    ) {
+      result[fieldName] = value;
+      result[fieldName + '_latitude'] =
+        value.features[0].geometry.coordinates[1];
+      result[fieldName + '_longitude'] =
+        value.features[0].geometry.coordinates[0];
+      return result;
+    }
   }
 
   if (fieldType === 'faims-core::Relationship') {
@@ -740,6 +759,8 @@ export const streamNotebookRecordsAsCSV = async (
       record.record_id,
       record.revision_id,
       record.type,
+      record.created_by,
+      record.created.toISOString(),
       record.updated_by,
       record.updated.toISOString(),
     ];
@@ -759,6 +780,8 @@ export const streamNotebookRecordsAsCSV = async (
         'record_id',
         'revision_id',
         'type',
+        'created_by',
+        'created',
         'updated_by',
         'updated',
       ];
