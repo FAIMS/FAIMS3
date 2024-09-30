@@ -39,6 +39,8 @@ import HeadingGrid from '../ui/heading-grid';
 import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import {getListing} from '../../../sync/state';
 import {projectListVerbose} from '../../themes';
+import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+import {getClusterId, userCanCreateNotebooks} from '../../../users';
 
 interface sortModel {
   field: string;
@@ -53,7 +55,7 @@ export default function NoteBooks(props: NoteBookListProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [counter, setCounter] = React.useState(5);
   const [tabID, setTabID] = React.useState('1');
-
+  const [canCreateNotebooks, setCanCreateNotebooks] = useState<boolean>(false);
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
     setTabID(newValue);
   };
@@ -74,6 +76,21 @@ export default function NoteBooks(props: NoteBookListProps) {
   };
 
   useEffect(() => {
+    // Check if the user has permission to create notebooks
+    const checkPermissions = async () => {
+      try {
+        const cluster_id = await getClusterId();
+        if (cluster_id) {
+          const permission = await userCanCreateNotebooks(cluster_id);
+          setCanCreateNotebooks(permission ?? false);
+        }
+      } catch (error) {
+        console.error('Error checking user permissions:', error);
+        setCanCreateNotebooks(false);
+      }
+    };
+
+    checkPermissions(); // Call the permission check function
     updateProjectList();
 
     if (counter === 0) {
@@ -262,6 +279,17 @@ export default function NoteBooks(props: NoteBookListProps) {
               </Button>{' '}
               tab and click the activate button.
             </Typography>
+          )}
+          {canCreateNotebooks && (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+              sx={{mb: 3, mt: 3}}
+              startIcon={<AddCircleSharpIcon />}
+            >
+              Create New Survey
+            </Button>
           )}
           {NOTEBOOK_LIST_TYPE === 'tabs' ? (
             <Tabs
