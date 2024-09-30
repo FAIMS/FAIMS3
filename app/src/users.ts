@@ -28,6 +28,7 @@ import {LocalAuthDoc, JWTTokenMap, local_auth_db} from './sync/databases';
 import {reprocess_listing} from './sync/process-initialization';
 import {
   ClusterProjectRoles,
+  NOTEBOOK_CREATOR_GROUP_NAME,
   ProjectID,
   ProjectRole,
   split_full_project_id,
@@ -435,4 +436,44 @@ export async function getTokenContentsForCurrentUser(): Promise<
     const cluster_id = docs.rows[0].id;
     return getTokenContentsForCluster(cluster_id);
   }
+}
+
+export async function getClusterId(): Promise<string | undefined> {
+  try {
+    const docs = await local_auth_db.allDocs();
+    if (docs.total_rows > 0) {
+      return docs.rows[0].id; // Returns the cluster_id found
+    }
+    return undefined;
+  } catch (error) {
+    console.error('Error fetching cluster_id:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Check whether the current user can create notebooks on a server
+ *
+ * @param cluster_id - the cluster identifier
+ * @returns true if the user is allowed to create notebooks
+ */
+
+export async function userCanCreateNotebooks(cluster_id: string) {
+  const token_contents = await getTokenContentsForCluster(cluster_id);
+  if (token_contents === undefined) {
+    return undefined;
+  }
+
+  const couch_roles = token_contents.roles;
+
+  // cluster admin can do anything
+  if (couch_roles.indexOf(CLUSTER_ADMIN_GROUP_NAME) >= 0) {
+    return true;
+  }
+
+  // explicit notebook creator permssions
+  if (couch_roles.indexOf(NOTEBOOK_CREATOR_GROUP_NAME) >= 0) {
+    return true;
+  }
+  return false;
 }
