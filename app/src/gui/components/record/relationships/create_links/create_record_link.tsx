@@ -128,7 +128,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: `Link between this record ${props.InputLabelProps.label} and ${selectedRecord.record_label} added`,
+            message: `Link between this record ${props.label} and ${selectedRecord.record_label} added`,
             severity: 'success',
           },
         });
@@ -217,7 +217,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             renderInput={(params: any) => (
               <TextField
                 {...params}
-                label={props.InputLabelProps.label}
+                label={props.label}
                 error={props.form.errors[props.id] === undefined ? false : true}
                 variant="outlined"
                 InputProps={{
