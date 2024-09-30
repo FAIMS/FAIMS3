@@ -52,6 +52,7 @@ import {
 import {userHasPermission} from './users';
 PouchDB.plugin(securityPlugin);
 import {Stringifier, stringify} from 'csv-stringify';
+import {kStringMaxLength} from 'buffer';
 
 /**
  * getProjects - get the internal project documents that reference
@@ -800,7 +801,25 @@ export const streamNotebookRecordsAsCSV = async (
     record = next.record;
     done = next.done;
   }
-  if (stringifier) stringifier.end();
+  if (stringifier) {
+    stringifier.end();
+  } else {
+    // no records to export so just send the bare column headings
+    const columns = [
+      'identifier',
+      'record_id',
+      'revision_id',
+      'type',
+      'created_by',
+      'created',
+      'updated_by',
+      'updated',
+    ];
+    stringifier = stringify({columns, header: true});
+    // pipe output to the respose
+    stringifier.pipe(res);
+    stringifier.end();
+  }
 };
 
 export const streamNotebookFilesAsZip = async (
