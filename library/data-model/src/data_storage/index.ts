@@ -548,6 +548,7 @@ export async function getSomeRecords(
         record_id: doc.id,
         revision_id: doc.value._id,
         created: doc.value.created,
+        created_by: doc.value.created_by,
         conflict: doc.value.conflict,
         type: doc.value.type,
         revision: doc.doc,
@@ -615,6 +616,7 @@ export const notebookRecordIterator = async (
       }
       if (record) {
         const data = await hydrateRecord(project_id, record);
+        console.log('returning hydrated record', record.created_by);
         return {record: data, done: false};
       } else {
         return {record: null, done: true};
