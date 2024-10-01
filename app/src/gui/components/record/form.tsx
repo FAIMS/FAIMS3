@@ -21,7 +21,7 @@
 import React from 'react';
 import {Formik, Form} from 'formik';
 
-import {Grid, Box, Typography, Divider} from '@mui/material';
+import {Grid, Box, Typography, Divider, Alert} from '@mui/material';
 
 import {firstDefinedFromList} from './helpers';
 import {
@@ -29,7 +29,7 @@ import {
   getFieldsMatchingCondition,
 } from './branchingLogic';
 
-import {ViewComponent} from './view';
+import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
 
 import {ActionType} from '../../../context/actions';
 
@@ -1147,63 +1147,22 @@ class RecordForm extends React.Component<
   }
 
   render() {
-    // we can't do this here because it changes state and forces a redraw
-    // if (this.state.draft_created !== null) {
-    //   // If a draft was created, that implies this form started from
-    //   // a non draft, so it must have been an existing record (see props
-    //   // as it's got a type {existing record} | {draft already created}
-    //   (this.context as any).dispatch({
-    //     type: ActionType.ADD_CUSTOM_ALERT,
-    //     payload: {
-    //       severity: 'success',
-    //       element: (
-    //         <React.Fragment>
-    //           <Link
-    //             component={RouterLink}
-    //             to={
-    //               ROUTES.NOTEBOOK +
-    //               this.props.project_id +
-    //               ROUTES.RECORD_EXISTING +
-    //               this.props.record_id! +
-    //               ROUTES.REVISION +
-    //               this.props.revision_id! +
-    //               ROUTES.RECORD_DRAFT +
-    //               this.state.draft_created
-    //             }
-    //           >
-    //             Created new draft
-    //           </Link>
-    //         </React.Fragment>
-    //       ),
-    //     },
-    //   });
-    //   this.setState({draft_created: null});
-    // }
-
     if (this.isReady()) {
       const viewName = this.requireView();
       const viewsetName = this.requireViewsetName();
       const initialValues = this.requireInitialValues();
       const ui_specification = this.props.ui_specification;
-      //fields list and views list could be updated depends on values user choose
-      let fieldNames: string[] = [];
-      let views: string[] = [];
       const validationSchema = getValidationSchemaForViewset(
         ui_specification,
         viewsetName
       );
       let view_index = 0;
       let is_final_view = true;
-      // this expression checks if we have the last element in the viewset array
-      const description = this.requireDescription(viewName);
+
       return (
         <Box>
-          {/* {this.state.revision_cached} */}
-          {/* remove the tab for edit ---Jira 530 */}
-          {/* add padding for form only */}
           <div>
             <Formik
-              // enableReinitialize
               initialValues={initialValues}
               validationSchema={validationSchema}
               validateOnMount={true}
@@ -1222,91 +1181,131 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
-                //ONLY update if the updated field is the controller field
-                fieldNames = getFieldsMatchingCondition(
+                const views = getViewsMatchingCondition(
                   this.props.ui_specification,
                   formProps.values,
-                  fieldNames,
-                  viewName,
-                  formProps.touched
-                );
-                views = getViewsMatchingCondition(
-                  this.props.ui_specification,
-                  formProps.values,
-                  views,
+                  [],
                   viewsetName,
                   formProps.touched
                 );
-                view_index = views.indexOf(viewName);
-                is_final_view = view_index + 1 === views.length;
-                this.draftState &&
-                  this.draftState.renderHook(
-                    formProps.values,
-                    this.state.annotation,
-                    this.state.relationship ?? {}
-                  );
+
                 return (
-                  <Form>
-                    {views.length > 1 && (
-                      <RecordStepper
-                        view_index={view_index}
-                        ui_specification={ui_specification}
-                        onChangeStepper={this.onChangeStepper}
-                        views={views}
-                      />
-                    )}
+                  <div>
+                    {views.map((name: string, index: number) => {
+                      const description = this.requireDescription(name);
+                      const fieldNames = getFieldsMatchingCondition(
+                        this.props.ui_specification,
+                        formProps.values,
+                        [],
+                        name,
+                        formProps.touched
+                      );
 
-                    {description !== '' && (
-                      <Box
-                        bgcolor={'#fafafa'}
-                        p={3}
-                        style={{border: '1px #eeeeee dashed'}}
-                      >
-                        <Typography>{description}</Typography>
-                      </Box>
-                    )}
-                    <br />
+                      return (
+                        <div>
+                          <div
+                            style={{
+                              fontSize: '29px',
+                              fontWeight: 'bold',
+                              padding: '10px',
+                            }}
+                          >
+                            {ui_specification.views[name].label}
+                          </div>
+                          <Form>
+                            {description !== '' && (
+                              <Box
+                                bgcolor={'#fafafa'}
+                                p={3}
+                                style={{border: '1px #eeeeee dashed'}}
+                              >
+                                <Typography>{description}</Typography>
+                              </Box>
+                            )}
+                            <br />
 
-                    <Grid container spacing={2}>
-                      <Grid item sm={12} xs={12}>
-                        <ViewComponent
-                          viewName={viewName}
-                          ui_specification={ui_specification}
-                          formProps={formProps}
-                          draftState={this.draftState}
-                          annotation={this.state.annotation}
-                          handleAnnotation={this.updateannotation}
-                          isSyncing={this.props.isSyncing}
-                          conflictfields={this.props.conflictfields}
-                          handleChangeTab={this.props.handleChangeTab}
-                          fieldNames={fieldNames}
-                          disabled={this.props.disabled}
-                        />
-                      </Grid>
-                      <br />
-                      <FormButtonGroup
-                        is_final_view={is_final_view}
-                        disabled={this.props.disabled}
-                        onChangeStepper={this.onChangeStepper}
-                        viewName={viewName}
-                        view_index={view_index}
-                        formProps={formProps}
-                        ui_specification={ui_specification}
-                        views={views}
-                        mq_above_md={this.props.mq_above_md}
-                        handleFormSubmit={(is_close: string) => {
-                          formProps.setSubmitting(true);
-                          this.setTimeout(() => {
-                            this.save(
-                              formProps.values,
-                              is_final_view,
-                              is_close,
-                              formProps.setSubmitting
-                            );
-                          }, 500);
-                        }}
-                      />
-                    </Grid>
+                            <Grid container spacing={2}>
+                              <Grid item sm={12} xs={12}>
+                                <ViewComponent
+                                  viewName={name}
+                                  ui_specification={ui_specification}
+                                  formProps={formProps}
+                                  draftState={this.draftState}
+                                  annotation={this.state.annotation}
+                                  handleAnnotation={this.updateannotation}
+                                  isSyncing={this.props.isSyncing}
+                                  conflictfields={this.props.conflictfields}
+                                  handleChangeTab={this.props.handleChangeTab}
+                                  fieldNames={fieldNames}
+                                  disabled={this.props.disabled}
+                                  hideErrors={true}
+                                />
+                              </Grid>
+                              <br />
+                            </Grid>
+                            {this.state.revision_cached !== undefined && (
+                              <Box mt={3}>
+                                <Divider />
+                                <UGCReport
+                                  handleUGCReport={(value: string) => {
+                                    this.setState({ugc_comment: value});
+                                    this.save(
+                                      formProps.values,
+                                      is_final_view,
+                                      'continue',
+                                      formProps.setSubmitting
+                                    );
+                                  }}
+                                />
+                              </Box>
+                            )}
+                          </Form>
+                        </div>
+                      );
+                    })}
+                    {!formProps.isValid &&
+                      Object.keys(formProps.errors).length > 0 && (
+                        <Alert severity="error">
+                          Form has errors, please scroll up and make changes
+                          before submitting.
+                          <div>
+                            {Object.keys(formProps.errors).map(field => (
+                              <React.Fragment key={field}>
+                                <dt>
+                                  {getUsefulFieldNameFromUiSpec(
+                                    field,
+                                    viewName,
+                                    ui_specification
+                                  )}
+                                </dt>
+                                <dd>{formProps.errors[field]}</dd>
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        </Alert>
+                      )}
+                    <FormButtonGroup
+                      is_final_view={is_final_view}
+                      disabled={this.props.disabled}
+                      onChangeStepper={this.onChangeStepper}
+                      viewName={viewName}
+                      view_index={view_index}
+                      formProps={formProps}
+                      ui_specification={ui_specification}
+                      views={views}
+                      mq_above_md={this.props.mq_above_md}
+                      handleFormSubmit={(is_close: string) => {
+                        formProps.setSubmitting(true);
+                        this.setTimeout(() => {
+                          this.save(
+                            formProps.values,
+                            is_final_view,
+                            is_close,
+                            formProps.setSubmitting
+                          );
+                        }, 500);
+                      }}
+                    />
                     {/* {UGCReport ONLY for the saved record} */}
                     {this.state.revision_cached !== undefined && (
                       <Box mt={3}>
@@ -1325,7 +1324,7 @@ class RecordForm extends React.Component<
                       </Box>
                     )}
                     <DevTool formProps={formProps} state={this.state} />
-                  </Form>
+                  </div>
                 );
               }}
             </Formik>
