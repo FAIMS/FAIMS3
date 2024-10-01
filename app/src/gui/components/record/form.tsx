@@ -1305,6 +1305,7 @@ class RecordForm extends React.Component<
                           );
                         }, 500);
                       }}
+                      hideNavigation={true}
                     />
                     {/* {UGCReport ONLY for the saved record} */}
                     {this.state.revision_cached !== undefined && (
