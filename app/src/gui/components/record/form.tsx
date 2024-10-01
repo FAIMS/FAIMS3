@@ -492,8 +492,7 @@ class RecordForm extends React.Component<
             logError(
               `Error in formChanged, data not saved, child_record_id is not record_id ${this.props.record_id} != ${location.state.child_record_id}`
             );
-          } else
-            this.save(this.state.initialValues, false, 'continue', () => {});
+          } else this.save(this.state.initialValues, 'continue', () => {});
         }
       }
     } catch (err: any) {
@@ -767,12 +766,7 @@ class RecordForm extends React.Component<
   // - - publish and new:  - close the current record and create new record when current record has no parent relationship
   //                    - when current record has parent: close current record, add new record into parent record, open the new record with parent
 
-  save(
-    values: object,
-    is_final_view: boolean,
-    is_close: string,
-    setSubmitting: any
-  ) {
+  save(values: object, is_close: string, setSubmitting: any) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
     //save state into persistent data
@@ -1156,8 +1150,6 @@ class RecordForm extends React.Component<
         ui_specification,
         viewsetName
       );
-      let view_index = 0;
-      let is_final_view = true;
 
       return (
         <Box>
@@ -1170,14 +1162,11 @@ class RecordForm extends React.Component<
               validateOnBlur={true}
               onSubmit={(values, {setSubmitting}) => {
                 setSubmitting(true);
-                return this.save(
-                  values,
-                  is_final_view,
-                  'continue',
-                  setSubmitting
-                ).then(result => {
-                  return result;
-                });
+                return this.save(values, 'continue', setSubmitting).then(
+                  result => {
+                    return result;
+                  }
+                );
               }}
             >
               {formProps => {
@@ -1251,7 +1240,6 @@ class RecordForm extends React.Component<
                                     this.setState({ugc_comment: value});
                                     this.save(
                                       formProps.values,
-                                      is_final_view,
                                       'continue',
                                       formProps.setSubmitting
                                     );
@@ -1285,11 +1273,11 @@ class RecordForm extends React.Component<
                         </Alert>
                       )}
                     <FormButtonGroup
-                      is_final_view={is_final_view}
+                      is_final_view={true}
                       disabled={this.props.disabled}
                       onChangeStepper={this.onChangeStepper}
                       viewName={viewName}
-                      view_index={view_index}
+                      view_index={0}
                       formProps={formProps}
                       ui_specification={ui_specification}
                       views={views}
@@ -1299,7 +1287,6 @@ class RecordForm extends React.Component<
                         this.setTimeout(() => {
                           this.save(
                             formProps.values,
-                            is_final_view,
                             is_close,
                             formProps.setSubmitting
                           );
@@ -1316,7 +1303,6 @@ class RecordForm extends React.Component<
                             this.setState({ugc_comment: value});
                             this.save(
                               formProps.values,
-                              is_final_view,
                               'continue',
                               formProps.setSubmitting
                             );
