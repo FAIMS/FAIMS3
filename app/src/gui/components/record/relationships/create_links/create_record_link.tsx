@@ -92,12 +92,30 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     field_name,
     options,
     handleChange,
-    relationshipLabel,
     SetSelectedRecord,
     selectedRecord,
     disabled,
     project_id,
   } = props;
+
+  // some validity checks on the field
+  if (
+    props.relation_linked_vocabPair.length === 0 ||
+    !props.relation_linked_vocabPair.every((pair: string[]) => {
+      return pair.length === 2;
+    })
+  ) {
+    return (
+      <p>
+        The field {field_name} is misconfigured. Please correct the notebook
+        definition
+      </p>
+    );
+  }
+  // default relationship to the first option
+  const relationshipLabel =
+    props.relationshipLabel || props.relation_linked_vocabPair[0][1];
+
   const handleSubmit = () => {
     /**
      * Submit relationship to couchDB
@@ -149,11 +167,6 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       p={{xs: 1, sm: 1, md: 2}}
       sx={{width: '100%'}}
     >
-      <Box>
-        <Typography variant={'subtitle2'} sx={{mb: 1}}>
-          Add a link to an existing record.
-        </Typography>
-      </Box>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
         {props.relation_type === 'Linked' &&
           props.relation_linked_vocabPair !== undefined && (
@@ -217,7 +230,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             renderInput={(params: any) => (
               <TextField
                 {...params}
-                label={props.label}
+                label={props.related_type_label}
                 error={props.form.errors[props.id] === undefined ? false : true}
                 variant="outlined"
                 InputProps={{

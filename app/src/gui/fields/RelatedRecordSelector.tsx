@@ -33,9 +33,7 @@ import {
   Update_New_Link,
   remove_link_from_list,
 } from '../components/record/relationships/RelatedInformation';
-import DataGridFieldLinksComponent, {
-  DataGridNoLink,
-} from '../components/record/relationships/field_level_links/datagrid';
+import {DataGridFieldLinksComponent} from '../components/record/relationships/field_level_links/datagrid';
 import {RecordLinkProps} from '../components/record/relationships/types';
 import {SelectChangeEvent} from '@mui/material';
 import CreateLinkComponent from '../components/record/relationships/create_links';
@@ -155,24 +153,26 @@ type DisplayChildProps = {
 };
 
 function DisplayChild(props: DisplayChildProps) {
-  let is_values = true;
-  if (props.value === undefined || props.value === null) is_values = false;
-  else if (props.multiple && props.value.length === 0) is_values = false;
+  let has_values = true;
+  if (props.value === undefined || props.value === null) has_values = false;
+  else if (props.multiple && props.value.length === 0) has_values = false;
   else if (!props.multiple && props.value.record_id === undefined)
-    is_values = false;
+    has_values = false;
 
-  if (!is_values) return <></>;
-  if (props.recordsInformation === null) {
-    if (is_values)
-      return (
-        <DataGridNoLink
-          links={props.multiple ? props.value : [props.value]}
-          relation_linked_vocab={props.relationshipLabel}
-          relation_type={props.relation_type}
-          relation_preferred_label={props.relation_preferred_label}
-        />
-      );
-  }
+  if (!has_values) return <></>;
+  // I'm pretty sure this is unreachable since props.recordsInformation is derived
+  // from props.value and will always contain the linked records
+  //
+  // if (props.recordsInformation === null) {
+  //   return (
+  //     <DataGridNoLink
+  //       links={props.multiple ? props.value : [props.value]}
+  //       relation_linked_vocab={props.relationshipLabel}
+  //       relation_type={props.relation_type}
+  //       relation_preferred_label={props.relation_preferred_label}
+  //     />
+  //   );
+  // }
   return (
     <DataGridFieldLinksComponent
       links={props.recordsInformation}
@@ -220,7 +220,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     props.relation_linked_vocabPair
   );
   const [relationshipLabel, setRelationshipLabel] = React.useState<string>(
-    lastvaluePair[0]
+    lastvaluePair[1]
   );
   const [relationshipPair, setRelationshipPair] =
     React.useState<Array<string>>(lastvaluePair);
@@ -231,6 +231,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
   const [preferred, setPreferred] = React.useState(null as string | null);
   const relation_preferred_label = props.relation_preferred_label ?? '';
+
   // BBS 20221117 using empty string instead of null as a quick hack to toggle control of preferred checkbox in absence of a different boolean.
   if (
     url_split.length > 1 &&
@@ -567,20 +568,22 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     //function to set preferred field
     const newValue = props.form.values[field_name];
     if (multiple) {
-      newValue.map((child_record: RecordReference) =>
-        child_record.record_id === child_record_id
-          ? (child_record.is_preferred = is_preferred)
-          : child_record
-      );
+      // turn all others off and this one on
+      newValue.map((child_record: RecordReference) => {
+        if (child_record.record_id === child_record_id)
+          child_record.is_preferred = is_preferred;
+        else child_record.is_preferred = false;
+      });
     } else {
       newValue.is_preferred = is_preferred;
     }
+
     if (recordsInformation !== null && recordsInformation.length > 0) {
       const newRecords = recordsInformation;
       newRecords.map((record: RecordLinkProps) =>
         record.record_id === child_record_id
-          ? (record['relation_preferred'] = is_preferred)
-          : record
+          ? (record.relation_preferred = is_preferred)
+          : (record.relation_preferred = !is_preferred)
       );
       setRecordsInformation(newRecords);
     }
@@ -643,24 +646,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           </Grid>
         )}
 
-        {/*
-        {disabled === false ||
-          (props.helperText === '' && !is_enabled && (
-            <Grid item xs={12} sm={12} md={12} lg={12}>
-              <Typography variant="caption">
-                {props.helperText}
-                {'   '}
-              </Typography>
-              {is_enabled && (
-                <Typography variant="caption">
-                  Remove existing link to enable Add record or Link
-                </Typography>
-              )}
-            </Grid>
-          ))}
-        */}
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          {/* {multiple?props.form.values[field_name][0]['record_id']:props.form.values[field_name]['record_id']} */}
           <DisplayChild
             recordsInformation={recordsInformation}
             record_id={record_id}
@@ -683,28 +669,3 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     </div>
   );
 }
-
-// const uiSpec = {
-//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-//   'component-name': 'RelatedRecordSelector',
-//   'type-returned': 'faims-core::Relationship', // matches a type in the Project Model
-//   'component-parameters': {
-//     fullWidth: true,
-//     helperText: 'Select or add new related record',
-//     variant: 'outlined',
-//     required: true,
-//     related_type: '',
-//     relation_type: 'faims-core::Child',
-//     InputProps: {
-//       type: 'text', // must be a valid html type
-//     },
-//     multiple: false,
-//     SelectProps: {},
-//     InputLabelProps: {
-//       label: 'Select Related',
-//     },
-//     FormHelperTextProps: {},
-//   },
-//   validationSchema: [['yup.string']],
-//   initialValue: '',
-// };

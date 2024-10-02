@@ -43,7 +43,6 @@ import {RecordID} from '@faims3/data-model';
 import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from '@faims3/data-model';
 import Checkbox from '@mui/material/Checkbox';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {gridParamsDataType} from '../record_links';
 
 const style = {
@@ -56,6 +55,8 @@ const style = {
   p: 1,
 };
 
+// Unused component - referenced in RelatedRecordSelector and commented out
+// because it is unreachable (I think - SC)
 export function DataGridNoLink(props: {
   links: RecordReference[];
   relation_linked_vocab: string;
@@ -98,6 +99,9 @@ export function DataGridNoLink(props: {
       flex: 0.4,
     },
   ];
+  // Add a 'preferred' checkbox to each row if we are
+  // handling child records and there is a non-empty relation_preferred_label
+  // configured on the field
   if (props.relation_type === 'Child' && props.relation_preferred_label !== '')
     columns.push({
       field: 'preferred',
@@ -136,7 +140,7 @@ export function DataGridNoLink(props: {
   );
 }
 
-export default function DataGridFieldLinksComponent(
+export function DataGridFieldLinksComponent(
   props: DataGridLinksComponentProps
 ) {
   /**
@@ -203,56 +207,64 @@ export default function DataGridFieldLinksComponent(
     ) : (
       <Typography variant={'body2'} fontWeight={'bold'}>
         <RecordRouteDisplay link={deleted ? '' : route} deleted={deleted}>
-          {type + ' ' + hrid}
+          {type + ': ' + hrid}
         </RecordRouteDisplay>
       </Typography>
     );
   }
-  const columns: any = [
-    {
-      field: 'relation_type_vocabPair',
-      headerName: 'Relationship',
-      headerClassName: 'faims-record-link--header',
-      minWidth: 200,
-      flex: 0.2,
-      valueGetter: (params: gridParamsDataType) => params.value[1],
-    },
-    {
-      field: 'record',
-      headerName: 'Record',
-      headerClassName: 'faims-record-link--header',
-      minWidth: 200,
-      flex: 0.4,
-      valueGetter: (params: GridCellParams) =>
-        params.row.type + ' ' + params.row.hrid,
-      renderCell: (params: GridCellParams) =>
-        recordDisplay(
-          props.record_id,
-          params.row.record_id,
-          params.row.type,
-          params.row.hrid,
-          params.row.route,
-          params.row.deleted
-        ),
-    },
 
-    {
-      field: 'lastUpdatedBy',
-      headerName: 'Last Updated By',
-      headerClassName: 'faims-record-link--header',
-      minWidth: 150,
-      flex: 0.2,
-      valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
-    },
-  ];
+  const relation_column = {
+    field: 'relation_type_vocabPair',
+    headerName: 'Relationship',
+    headerClassName: 'faims-record-link--header',
+    minWidth: 200,
+    flex: 0.2,
+    valueGetter: (params: gridParamsDataType) => params.value[1],
+  };
+
+  const record_column = {
+    field: 'record',
+    headerName: 'Record',
+    headerClassName: 'faims-record-link--header',
+    minWidth: 200,
+    flex: 0.4,
+    valueGetter: (params: GridCellParams) =>
+      params.row.type + ' ' + params.row.hrid,
+    renderCell: (params: GridCellParams) =>
+      recordDisplay(
+        props.record_id,
+        params.row.record_id,
+        params.row.type,
+        params.row.hrid,
+        params.row.route,
+        params.row.deleted
+      ),
+  };
+
+  const updated_by_column = {
+    field: 'lastUpdatedBy',
+    headerName: 'Last Updated By',
+    headerClassName: 'faims-record-link--header',
+    minWidth: 150,
+    flex: 0.2,
+    valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
+  };
+
+  const columns: any =
+    props.relation_type === 'Child'
+      ? [record_column, updated_by_column]
+      : [relation_column, record_column, updated_by_column];
+
   // for read ONLY
 
   // BBS 20221117 checking on empty label to toggle. Label is set in src/gui/fields/RelatedRecordSelector.tsx
+  // Add a 'preferred' checkbox to each row if we are
+  // handling child records and there is a non-empty relation_preferred_label
+  // configured on the field
   if (
     props.relation_type === 'Child' &&
-    props.disabled !== true &&
     props.relation_preferred_label !== ''
-  )
+  ) {
     columns.push({
       field: 'preferred',
       headerName: 'Make ' + props.relation_preferred_label,
@@ -266,13 +278,7 @@ export default function DataGridFieldLinksComponent(
       renderCell: (params: GridCellParams) => (
         <Checkbox
           checked={params.row.value}
-          disabled={
-            props.preferred !== undefined &&
-            props.preferred !== null &&
-            props.preferred !== params.row.record_id
-              ? true
-              : false
-          }
+          disabled={props.disabled}
           onChange={(event: any) => {
             if (props.handleMakePreferred !== undefined)
               props.handleMakePreferred(
@@ -283,29 +289,9 @@ export default function DataGridFieldLinksComponent(
         />
       ),
     });
-  else if (
-    props.relation_type === 'Child' &&
-    props.disabled === true &&
-    props.relation_preferred_label !== ''
-  )
-    columns.push({
-      field: 'preferred',
-      headerName: 'Make ' + props.relation_preferred_label,
-      headerClassName: 'faims-record-link--header',
-      minWidth: 200,
-      flex: 0.2,
-      valueGetter: (params: GridCellParams) =>
-        params.row.relation_preferred ?? false,
-      renderCell: (params: GridCellParams) =>
-        params.value ? (
-          <>
-            <CheckCircleIcon color="success" /> {props.relation_preferred_label}
-          </>
-        ) : (
-          <></>
-        ),
-    });
-  if (props.disabled !== true)
+  }
+
+  if (!props.disabled)
     columns.push({
       field: 'actions',
       type: 'actions',

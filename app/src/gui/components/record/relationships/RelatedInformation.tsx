@@ -228,7 +228,8 @@ async function getRecordInformation(child_record: RecordReference) {
       false
     );
   } catch (error) {
-    throw Error('Error to get record information' + child_record.project_id);
+    logError(error);
+    throw Error(`Unable to find record with id: ${child_record.project_id}`);
   }
   return {latest_record, revision_id};
 }
@@ -675,15 +676,9 @@ function get_field_label(ui_specification: ProjectUIModel, field: string) {
     return {field_name, is_deleted};
   }
   try {
-    if (
-      ui_specification['fields'][field]['component-parameters'][
-        'InputLabelProps'
-      ]['label']
-    )
+    if (ui_specification['fields'][field]['component-parameters'].label)
       field_name =
-        ui_specification['fields'][field]['component-parameters'][
-          'InputLabelProps'
-        ]['label'];
+        ui_specification['fields'][field]['component-parameters'].label;
     return {field_name, is_deleted};
   } catch (error) {
     logError(error);
