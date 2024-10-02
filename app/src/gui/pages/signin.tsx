@@ -15,26 +15,28 @@
  *
  * Filename: signin.tsx
  * Description:
- *   TODO
+ *   Defines the SignIn component to present login and registration options
  */
 
-import React, {useState, useEffect} from 'react';
+import {useState, useEffect} from 'react';
 import {Box, Grid, Typography} from '@mui/material';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ClusterCard from '../components/authentication/cluster_card';
 import * as ROUTES from '../../constants/routes';
-import {ListingInformation} from '@faims3/data-model';
+import {ListingsObject} from '@faims3/data-model';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {logError} from '../../logging';
 import {NOTEBOOK_NAME} from '../../buildconfig';
+import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
+import {isWeb} from '../../utils/helpers';
 
 type SignInProps = {
   setToken?: any;
 };
 
 export function SignIn(props: SignInProps) {
-  const [listings, setListings] = useState(null as null | ListingInformation[]);
+  const [listings, setListings] = useState(null as null | ListingsObject[]);
   const breadcrumbs = [{link: ROUTES.INDEX, title: 'Home'}, {title: 'Sign In'}];
 
   useEffect(() => {
@@ -65,6 +67,16 @@ export function SignIn(props: SignInProps) {
             />
           </Grid>
         ))}
+        <Grid item lg={4} md={6} sm={8} xs={12} key="short-code">
+          <ShortCodeRegistration listings={listings} />
+        </Grid>
+        {isWeb() ? (
+          <></>
+        ) : (
+          <Grid item lg={4} md={6} sm={8} xs={12} key="qr-code">
+            <QRCodeRegistration listings={listings} />
+          </Grid>
+        )}
       </Grid>
     </Box>
   );

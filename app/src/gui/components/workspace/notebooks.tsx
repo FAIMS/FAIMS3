@@ -18,42 +18,26 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {Box, Paper, Typography, Button} from '@mui/material';
+import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import FolderIcon from '@mui/icons-material/Folder';
-
-import {GridColDef, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-
-import * as ROUTES from '../../../constants/routes';
-import {getAllProjectList} from '../../../databaseAccess';
-import {ProjectInformation, TokenContents} from '@faims3/data-model';
-import CircularLoading from '../ui/circular_loading';
+import { Box, Button, Paper, Typography } from '@mui/material';
+import { grey } from '@mui/material/colors';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { GridColDef } from '@mui/x-data-grid';
+import { useContext, useState } from 'react';
+import { NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME } from '../../../buildconfig';
+import { ProjectsContext } from '../../../context/projects-context';
+import { ProjectExtended } from '../../../types/project';
+import { getClusterId, userCanCreateNotebooks } from '../../../users';
+import { projectListVerbose } from '../../themes';
 import ProjectStatus from '../notebook/settings/status';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
-import {grey} from '@mui/material/colors';
-import Tabs from '../ui/tab-grid';
+import CircularLoading from '../ui/circular_loading';
 import HeadingGrid from '../ui/heading-grid';
-import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
-import {getListing} from '../../../sync/state';
-import {projectListVerbose} from '../../themes';
-import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
-import {getClusterId, userCanCreateNotebooks} from '../../../users';
-
-interface sortModel {
-  field: string;
-  sort: 'asc' | 'desc';
-}
-type NoteBookListProps = {
-  token?: null | undefined | TokenContents;
-  sortModel: sortModel; // {field: 'name', sort: 'asc'}
-};
+import Tabs from '../ui/tab-grid';
 
 export default function NoteBooks(props: NoteBookListProps) {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [counter, setCounter] = React.useState(5);
   const [tabID, setTabID] = React.useState('1');
   const [canCreateNotebooks, setCanCreateNotebooks] = useState<boolean>(false);
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
@@ -61,53 +45,24 @@ export default function NoteBooks(props: NoteBookListProps) {
   };
 
   const history = useNavigate();
+  const {projects} = useContext(ProjectsContext);
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
-
-  const [pouchProjectList, setPouchProjectList] = useState<
-    ProjectInformation[]
-  >([]);
-
-  const updateProjectList = () => {
-    getAllProjectList().then(projectList => {
-      setPouchProjectList(projectList);
-      setLoading(false);
-    });
-  };
+  const columns: GridColDef<ProjectExtended>[] = not_xs;
 
   useEffect(() => {
     // Check if the user has permission to create notebooks
-    const checkPermissions = async () => {
-      try {
-        const cluster_id = await getClusterId();
-        if (cluster_id) {
-          const permission = await userCanCreateNotebooks(cluster_id);
-          setCanCreateNotebooks(permission ?? false);
-        }
-      } catch (error) {
-        console.error('Error checking user permissions:', error);
-        setCanCreateNotebooks(false);
+    try {
+      const cluster_id = await getClusterId();
+      if (cluster_id) {
+        const permission = await userCanCreateNotebooks(cluster_id);
+        setCanCreateNotebooks(permission ?? false);
       }
-    };
-
-    checkPermissions(); // Call the permission check function
-    updateProjectList();
-
-    if (counter === 0) {
-      if (pouchProjectList.length === 0) {
-        updateProjectList();
-        // reset counter
-        setCounter(5);
-      }
-    } else if (loading) {
-      setTimeout(() => setCounter(counter - 1), 1000);
+    } catch (error) {
+      console.error('Error checking user permissions:', error);
+      setCanCreateNotebooks(false);
     }
-  }, [counter]);
-
-  const handleNotebookActivation = () => {
-    updateProjectList();
-    setTabID('1'); // select the activated tab
-  };
+  }, []);
 
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     if (params.row.is_activated) {
@@ -116,7 +71,14 @@ export default function NoteBooks(props: NoteBookListProps) {
       // do nothing
     }
   };
-  const columns: GridColDef[] = not_xs
+  const {projects} = useContext(ProjectsContext);
+
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+
+  const activatedProjects = projects.filter(({activated}) => activated);
+
+  const columns: GridColDef<ProjectExtended>[] = not_xs
     ? [
         {
           field: 'name',
@@ -124,7 +86,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           type: 'string',
           flex: 0.4,
           minWidth: 200,
-          renderCell: (params: GridCellParams) => (
+          renderCell: ({row: {activated, name, description}}) => (
             <Box my={1}>
               <span
                 style={{
@@ -135,21 +97,18 @@ export default function NoteBooks(props: NoteBookListProps) {
               >
                 <FolderIcon
                   fontSize={'small'}
-                  color={params.row.is_activated ? 'secondary' : 'disabled'}
+                  color={activated ? 'secondary' : 'disabled'}
                   sx={{mr: '3px'}}
                 />
                 <Typography
                   variant={'body2'}
-                  fontWeight={params.row.is_activated ? 'bold' : 'normal'}
-                  color={params.row.is_activated ? 'black' : grey[800]}
+                  fontWeight={activated ? 'bold' : 'normal'}
+                  color={activated ? 'black' : grey[800]}
                 >
-                  {params.row.name}
+                  {name}
                 </Typography>
               </span>
-              <Typography variant={'caption'}>
-                {getListing(params.row.listing_id).listing.name}
-                {params.row.description}
-              </Typography>
+              <Typography variant={'caption'}>{description}</Typography>
             </Box>
           ),
         },
@@ -167,9 +126,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           type: 'string',
           flex: 0.2,
           minWidth: 160,
-          renderCell: (params: GridCellParams) => (
-            <ProjectStatus status={params.row.status} />
-          ),
+          renderCell: ({row: {status}}) => <ProjectStatus status={status} />,
         },
         {
           field: 'actions',
@@ -178,12 +135,11 @@ export default function NoteBooks(props: NoteBookListProps) {
           minWidth: 160,
           headerName: 'Sync',
           description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
-          renderCell: (params: GridCellParams) => (
+          renderCell: ({row}) => (
             <NotebookSyncSwitch
-              project={params.row}
+              project={row}
               showHelperText={false}
-              project_status={params.row.status}
-              handleNotebookActivation={handleNotebookActivation}
+              setTabID={setTabID}
             />
           ),
         },
@@ -195,36 +151,31 @@ export default function NoteBooks(props: NoteBookListProps) {
           type: 'string',
           flex: 0.4,
           minWidth: 160,
-          renderCell: (params: GridCellParams) => (
-            <Box my={1}>
-              <span
+          renderCell: ({row: {activated, name, description, status}}) => (
+            <div>
+              <div
                 style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
-                  flexWrap: 'nowrap',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
-                  color={params.row.is_activated ? 'secondary' : 'disabled'}
+                  color={activated ? 'secondary' : 'disabled'}
                   sx={{mr: '3px'}}
                 />
                 <Typography
                   variant={'body2'}
-                  fontWeight={params.row.is_activated ? 'bold' : 'normal'}
-                  color={params.row.is_activated ? 'black' : grey[800]}
+                  fontWeight={activated ? 'bold' : 'normal'}
+                  color={activated ? 'black' : grey[800]}
                 >
-                  {params.row.name}
+                  {name}
                 </Typography>
-              </span>
-              <Typography variant={'caption'}>
-                {getListing(params.row.listing_id).listing.name}
-                {params.row.description}
-              </Typography>
-              <Box my={1}>
-                <ProjectStatus status={params.row.status} />
-              </Box>
-            </Box>
+              </div>
+              <Typography variant={'caption'}>{description}</Typography>
+              <div>
+                <ProjectStatus status={status} />
+              </div>
+            </div>
           ),
         },
         {
@@ -242,12 +193,11 @@ export default function NoteBooks(props: NoteBookListProps) {
           minWidth: 80,
           headerName: 'Sync',
           description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
-          renderCell: (params: GridCellParams) => (
+          renderCell: ({row}) => (
             <NotebookSyncSwitch
-              project={params.row}
+              project={row}
               showHelperText={false}
-              project_status={params.row.status}
-              handleNotebookActivation={handleNotebookActivation}
+              setTabID={setTabID}
             />
           ),
         },
@@ -255,19 +205,15 @@ export default function NoteBooks(props: NoteBookListProps) {
 
   return (
     <Box>
-      {pouchProjectList.length === 0 ? (
+      {projects.length === 0 ? (
         <CircularLoading label={`Loading ${NOTEBOOK_NAME}s`} />
       ) : (
         <Box component={Paper} elevation={0} p={2}>
           {projectListVerbose && (
             <Typography variant={'body1'} gutterBottom>
-              You have {pouchProjectList.filter(r => r.is_activated).length}{' '}
-              {NOTEBOOK_NAME}
-              {pouchProjectList.filter(r => r.is_activated).length !== 1
-                ? 's'
-                : ''}{' '}
-              activated on this device. To start syncing a {NOTEBOOK_NAME},
-              visit the{' '}
+              You have {activatedProjects} {NOTEBOOK_NAME}
+              {activatedProjects.length !== 1 ? 's' : ''} activated on this
+              device. To start syncing a {NOTEBOOK_NAME}, visit the{' '}
               <Button
                 variant="text"
                 size={'small'}
@@ -293,7 +239,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           )}
           {NOTEBOOK_LIST_TYPE === 'tabs' ? (
             <Tabs
-              pouchProjectList={pouchProjectList}
+              pouchProjectList={projects}
               tabID={tabID}
               handleChange={handleChange}
               handleRowClick={handleRowClick}

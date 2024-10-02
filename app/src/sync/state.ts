@@ -18,11 +18,11 @@
  *   TODO
  */
 
-import {ProjectID} from '@faims3/data-model';
+import {ListingsObject, ProjectID} from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {ProjectMetaObject, isRecord, mergeHeads} from '@faims3/data-model';
 
-import {ListingsObject, ActiveDoc, LocalDB} from './databases';
+import {ActiveDoc, LocalDB} from './databases';
 import {DirectoryEmitter} from './events';
 import {logError} from '../logging';
 import {addProjectListener} from './projects';
@@ -157,12 +157,6 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
       all_projects_updated &&
       Array.from(projects_data_synced.values()).every(v => v);
 
-    console.log(
-      'COMMON CHECK',
-      all_projects_updated,
-      !listings_updated,
-      listing_projects_synced
-    );
     initializeEvents.emit('all_state');
   };
 
@@ -186,7 +180,7 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
     }
   );
   initializeEvents.on('projects_sync_state', (syncing, listing) => {
-    listing_projects_synced.set(listing._id, !syncing);
+    listing_projects_synced.set(listing.id, !syncing);
 
     common_check();
   });
@@ -211,8 +205,8 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
   initializeEvents.on('project_error', (active, err) => {
     console.debug('project_error active', active, 'err', err);
     // Don't hold up other things waiting for it to not be an error:
-    projects_meta_synced.set(active._id, true);
-    projects_data_synced.set(active._id, true);
+    projects_meta_synced.set(active.id, true);
+    projects_data_synced.set(active.id, true);
 
     common_check();
   });

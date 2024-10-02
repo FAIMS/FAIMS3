@@ -18,49 +18,49 @@
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data
  */
+import { NonUniqueProjectID } from '@faims3/data-model';
+import { body, validationResult } from 'express-validator';
 import handlebars from 'handlebars';
-import {body, validationResult} from 'express-validator';
 import QRCode from 'qrcode';
-import {app} from './core';
-import {NonUniqueProjectID} from '@faims3/data-model';
-import {AllProjectRoles} from './datamodel/users';
+import { app } from './core';
+import { AllProjectRoles } from './datamodel/users';
 
 // BBS 20221101 Adding this as a proxy for the pouch db url
+import { add_auth_providers } from './auth_providers';
+import { add_auth_routes } from './auth_routes';
+import { createAuthKey, generateUserToken } from './authkeys/create';
 import {
-  WEBAPP_PUBLIC_URL,
-  IOS_APP_URL,
-  ANDROID_APP_URL,
-  CONDUCTOR_PUBLIC_URL,
-  DEVELOPER_MODE,
-  CONDUCTOR_AUTH_PROVIDERS,
-  KEY_SERVICE,
+    ANDROID_APP_URL,
+    CONDUCTOR_AUTH_PROVIDERS,
+    CONDUCTOR_PUBLIC_URL,
+    DEVELOPER_MODE,
+    IOS_APP_URL,
+    KEY_SERVICE,
+    WEBAPP_PUBLIC_URL,
 } from './buildconfig';
+import { createInvite, getInvitesForNotebook } from './couchdb/invites';
 import {
-  requireAuthentication,
-  requireClusterAdmin,
-  requireNotebookMembership,
-} from './middleware';
-import {createInvite, getInvitesForNotebook} from './couchdb/invites';
+    countRecordsInNotebook,
+    getNotebookMetadata,
+    getNotebookUISpec,
+    getNotebooks,
+    getRolesForNotebook,
+} from './couchdb/notebooks';
+import { getTemplate, getTemplates } from './couchdb/templates';
 import {
-  getUserInfoForNotebook,
-  getUsers,
-  userCanCreateNotebooks,
-  userHasPermission,
-  userIsClusterAdmin,
+    getUserInfoForNotebook,
+    getUsers,
+    userCanCreateNotebooks,
+    userHasPermission,
+    userIsClusterAdmin,
 } from './couchdb/users';
 import {
-  countRecordsInNotebook,
-  getNotebookMetadata,
-  getNotebookUISpec,
-  getNotebooks,
-  getRolesForNotebook,
-} from './couchdb/notebooks';
-import {createAuthKey} from './authkeys/create';
-import {add_auth_providers} from './auth_providers';
-import {add_auth_routes} from './auth_routes';
-import {getTemplate, getTemplates} from './couchdb/templates';
+    requireAuthentication,
+    requireClusterAdmin,
+    requireNotebookMembership,
+} from './middleware';
 
-export {app};
+export { app };
 
 add_auth_providers(CONDUCTOR_AUTH_PROVIDERS);
 add_auth_routes(app, CONDUCTOR_AUTH_PROVIDERS);
@@ -84,7 +84,6 @@ app.get('/notebooks/:id/invite/', requireAuthentication, async (req, res) => {
 app.post(
   '/notebooks/:id/invite/',
   requireAuthentication,
-  body('number').not().isEmpty(),
   body('role').not().isEmpty(),
   async (req, res) => {
     const errors = validationResult(req);
@@ -93,7 +92,6 @@ app.post(
     }
     const project_id: NonUniqueProjectID = req.params.id;
     const role: string = req.body.role;
-    const number: number = parseInt(req.body.number);
 
     if (!userHasPermission(req.user, project_id, 'modify')) {
       res.render('invite-error', {
@@ -106,7 +104,7 @@ app.post(
         ],
       });
     } else {
-      await createInvite(req.user as Express.User, project_id, role, number);
+      await createInvite(project_id, role);
       res.redirect('/notebooks/' + project_id);
     }
   }
@@ -246,14 +244,13 @@ app.get('/', async (req, res) => {
     const provider = Object.keys(req.user.profiles)[0];
     // BBS 20221101 Adding token to here so we can support copy from conductor
     const signingKey = await KEY_SERVICE.getSigningKey();
-    const jwt_token = await createAuthKey(req.user, signingKey);
-
+    const token = generateUserToken(req.user);
     if (signingKey === null || signingKey === undefined) {
       res.status(500).send('Signing key not set up');
     } else {
       res.render('home', {
         user: req.user,
-        token: jwt_token,
+        token: token,
         project_roles: rendered_project_roles,
         other_roles: req.user.other_roles,
         cluster_admin: userIsClusterAdmin(req.user),
@@ -266,17 +263,6 @@ app.get('/', async (req, res) => {
   } else {
     res.redirect('/auth/');
   }
-});
-
-app.get('/logout/', (req, res, next) => {
-  if (req.user) {
-    req.logout(err => {
-      if (err) {
-        return next(err);
-      }
-    });
-  }
-  res.redirect('/');
 });
 
 app.get('/send-token/', (req, res) => {
@@ -294,17 +280,11 @@ app.get('/send-token/', (req, res) => {
 
 app.get('/get-token/', async (req, res) => {
   if (req.user) {
-    const signingKey = await KEY_SERVICE.getSigningKey();
-    if (signingKey === null || signingKey === undefined) {
+    try {
+      const token = await generateUserToken(req.user);
+      res.send(token);
+    } catch {
       res.status(500).send('Signing key not set up');
-    } else {
-      const token = await createAuthKey(req.user, signingKey);
-
-      res.send({
-        token: token,
-        pubkey: signingKey.publicKeyString,
-        pubalg: signingKey.alg,
-      });
     }
   } else {
     res.status(403).end();

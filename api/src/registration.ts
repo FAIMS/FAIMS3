@@ -52,15 +52,6 @@ export function userCanRemoveOtherRole(
 export async function acceptInvite(user: Express.User, invite: RoleInvite) {
   addProjectRoleToUser(user, invite.project_id, invite.role);
   await saveUser(user);
-
-  if (!invite.unlimited) {
-    invite.number--;
-    if (invite.number === 0) {
-      await deleteInvite(invite);
-    } else {
-      await saveInvite(invite);
-    }
-  }
 }
 
 export async function rejectInvite(invite: RoleInvite) {
