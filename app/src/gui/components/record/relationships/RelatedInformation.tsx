@@ -463,7 +463,6 @@ function generate_RecordLink(
     deleted: record_deleted,
     relation_type: relation_type,
   };
-  if (child_record.is_preferred === true) child['relation_preferred'] = true;
   return child;
 }
 

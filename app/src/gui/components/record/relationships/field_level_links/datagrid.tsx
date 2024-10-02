@@ -61,7 +61,6 @@ export function DataGridNoLink(props: {
   links: RecordReference[];
   relation_linked_vocab: string;
   relation_type: string;
-  relation_preferred_label: string;
 }) {
   const columns: any = [
     {
@@ -99,20 +98,6 @@ export function DataGridNoLink(props: {
       flex: 0.4,
     },
   ];
-  // Add a 'preferred' checkbox to each row if we are
-  // handling child records and there is a non-empty relation_preferred_label
-  // configured on the field
-  if (props.relation_type === 'Child' && props.relation_preferred_label !== '')
-    columns.push({
-      field: 'preferred',
-      headerName: props.relation_preferred_label,
-      headerClassName: 'faims-record-link--header',
-      minWidth: 200,
-      flex: 0.2,
-      valueGetter: (params: GridCellParams) => params.row.is_preferred ?? false,
-      renderCell: (params: GridCellParams) =>
-        params.value ? <>{props.relation_preferred_label}</> : <></>,
-    });
   // remove any invalid entries in links (due to a bug elsewhere)
   const links = props.links.filter(link => link.record_id);
   return props.links !== null && props.links.length > 0 ? (
@@ -254,42 +239,6 @@ export function DataGridFieldLinksComponent(
     props.relation_type === 'Child'
       ? [record_column, updated_by_column]
       : [relation_column, record_column, updated_by_column];
-
-  // for read ONLY
-
-  // BBS 20221117 checking on empty label to toggle. Label is set in src/gui/fields/RelatedRecordSelector.tsx
-  // Add a 'preferred' checkbox to each row if we are
-  // handling child records and there is a non-empty relation_preferred_label
-  // configured on the field
-  if (
-    props.relation_type === 'Child' &&
-    props.relation_preferred_label !== ''
-  ) {
-    columns.push({
-      field: 'preferred',
-      headerName: 'Make ' + props.relation_preferred_label,
-      headerClassName: 'faims-record-link--header',
-      minWidth: 100,
-      flex: 0.2,
-      align: 'center',
-      headerAlign: 'center',
-      valueGetter: (params: GridCellParams) =>
-        params.row.relation_preferred ?? false,
-      renderCell: (params: GridCellParams) => (
-        <Checkbox
-          checked={params.row.value}
-          disabled={props.disabled}
-          onChange={(event: any) => {
-            if (props.handleMakePreferred !== undefined)
-              props.handleMakePreferred(
-                params.row.record_id,
-                event.target.checked
-              );
-          }}
-        />
-      ),
-    });
-  }
 
   if (!props.disabled)
     columns.push({

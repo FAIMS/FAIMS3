@@ -55,7 +55,6 @@ interface Props {
   current_form?: string;
   current_form_label?: string;
   isconflict?: boolean;
-  relation_preferred_label?: string;
 }
 
 function get_default_relation_label(
@@ -146,10 +145,7 @@ type DisplayChildProps = {
   value: any;
   multiple: boolean;
   relationshipLabel: string;
-  handleMakePreferred: Function;
-  preferred: null | string;
   relation_type: string;
-  relation_preferred_label: string;
 };
 
 function DisplayChild(props: DisplayChildProps) {
@@ -169,7 +165,6 @@ function DisplayChild(props: DisplayChildProps) {
   //       links={props.multiple ? props.value : [props.value]}
   //       relation_linked_vocab={props.relationshipLabel}
   //       relation_type={props.relation_type}
-  //       relation_preferred_label={props.relation_preferred_label}
   //     />
   //   );
   // }
@@ -183,10 +178,7 @@ function DisplayChild(props: DisplayChildProps) {
       handleUnlink={props.handleUnlink}
       handleReset={props.handleReset}
       disabled={props.disabled}
-      handleMakePreferred={props.handleMakePreferred}
-      preferred={props.preferred}
       relation_type={props.relation_type}
-      relation_preferred_label={props.relation_preferred_label}
     />
   );
 }
@@ -229,10 +221,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const url_split = search.split('&');
 
   const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
-  const [preferred, setPreferred] = React.useState(null as string | null);
-  const relation_preferred_label = props.relation_preferred_label ?? '';
 
-  // BBS 20221117 using empty string instead of null as a quick hack to toggle control of preferred checkbox in absence of a different boolean.
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
@@ -261,28 +250,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         // or just no existing value
         if (!multiple && !props.form.values[field_name]) setIs_enabled(true);
 
-        if (!multiple) {
-          if (
-            props.form.values[field_name] &&
-            props.form.values[field_name]['record_id'] !== undefined &&
-            props.form.values[field_name]['is_preferred'] === true
-          )
-            setPreferred(props.form.values[field_name]['record_id']);
-        } else if (props.form.values[field_name]) {
-          // edge case: this record was created when multiple=false, so the values
-          // were stored as a singleton
-          if (Array.isArray(props.form.values[field_name])) {
-            props.form.values[field_name].map(
-              (child_record: RecordReference) => {
-                if (child_record.is_preferred === true) {
-                  setPreferred(child_record['record_id']);
-                }
-              }
-            );
-          } else {
-            setPreferred(props.form.values[field_name]['record_id']);
-          }
-        }
         const all_records = await getRecordsByType(
           project_id,
           props.related_type,
@@ -561,37 +528,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     //call the function to trigger the child to be updated??TBD
   };
 
-  const handleMakePreferred = (
-    child_record_id: string,
-    is_preferred: boolean
-  ) => {
-    //function to set preferred field
-    const newValue = props.form.values[field_name];
-    if (multiple) {
-      // turn all others off and this one on
-      newValue.map((child_record: RecordReference) => {
-        if (child_record.record_id === child_record_id)
-          child_record.is_preferred = is_preferred;
-        else child_record.is_preferred = false;
-      });
-    } else {
-      newValue.is_preferred = is_preferred;
-    }
-
-    if (recordsInformation !== null && recordsInformation.length > 0) {
-      const newRecords = recordsInformation;
-      newRecords.map((record: RecordLinkProps) =>
-        record.record_id === child_record_id
-          ? (record.relation_preferred = is_preferred)
-          : (record.relation_preferred = !is_preferred)
-      );
-      setRecordsInformation(newRecords);
-    }
-    props.form.setFieldValue(props.field.name, newValue);
-    if (is_preferred === true) setPreferred(child_record_id);
-    else setPreferred(null);
-  };
-
   return (
     <div id={field_name}>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
@@ -660,9 +596,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             value={props.form.values[field_name]}
             multiple={multiple}
             relationshipLabel={relationshipLabel}
-            handleMakePreferred={handleMakePreferred}
-            preferred={preferred}
-            relation_preferred_label={relation_preferred_label}
           />
         </Grid>
       </Grid>

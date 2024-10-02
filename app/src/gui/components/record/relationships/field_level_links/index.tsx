@@ -3,7 +3,7 @@ import CreateLinkComponent from '../create_links';
 import {Box} from '@mui/material';
 
 import {FieldRelationshipComponentProps} from '../types';
-import DataGridFieldLinksComponent from './datagrid';
+import {DataGridFieldLinksComponent} from './datagrid';
 const relationship_types = [
   {link: 'is below', reciprocal: 'is above'},
   {link: 'is above', reciprocal: 'is below'},
