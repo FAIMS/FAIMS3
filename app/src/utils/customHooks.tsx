@@ -1,7 +1,9 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {useNavigate} from 'react-router';
+import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
 import * as ROUTES from '../constants/routes';
-import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
+import { OfflineFallbackComponent } from '../gui/components/ui/OfflineFallback';
+import { directory_db, ListingsObject } from '../sync/databases';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -13,6 +15,29 @@ export const usePrevious = <T extends {}>(value: T): T | undefined => {
     ref.current = value;
   });
   return ref.current;
+};
+
+/**
+ * Fetches listings from the directory database.
+ * @returns Promise<ListingsObject[]>
+ */
+const fetchListings = async (): Promise<ListingsObject[]> => {
+  const {rows} = await directory_db.local.allDocs({
+    include_docs: true,
+  });
+
+  return rows.map(row => row.doc).filter(d => d !== undefined);
+};
+
+/**
+ * Custom hook to fetch and manage listings from a directory database using
+ * React Query.
+ */
+export const useGetListings = (): UseQueryResult<ListingsObject[], Error> => {
+  return useQuery<ListingsObject[], Error>({
+    queryKey: ['listings'],
+    queryFn: fetchListings,
+  });
 };
 
 export interface UseIsOnlineResponse {
