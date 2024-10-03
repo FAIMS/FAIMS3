@@ -18,8 +18,7 @@ services:
       - COUCHDB_PASSWORD
   conductor:
     platform: linux/amd64
-    image: ghcr.io/faims/faims3-conductor:main
-    command: "npm start" 
+    image: ghcr.io/faims/faims3-api:main
     ports:
       - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
     volumes:
