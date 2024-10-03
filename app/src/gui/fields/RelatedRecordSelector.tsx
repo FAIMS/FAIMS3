@@ -40,28 +40,11 @@ import CreateLinkComponent from '../components/record/relationships/create_links
 import {generateFAIMSDataID} from '@faims3/data-model';
 import {logError} from '../../logging';
 
-interface Props {
-  related_type: FAIMSTypeName;
-  relation_type: FAIMSTypeName;
-  multiple?: boolean;
-  id: string;
-  label?: string;
-  InputLabelProps: {label: string};
-  required: boolean;
-  helperText?: string;
-  disabled?: boolean;
-  relation_linked_vocabPair?: Array<Array<string>>;
-  related_type_label?: string;
-  current_form?: string;
-  current_form_label?: string;
-  isconflict?: boolean;
-}
-
 function get_default_relation_label(
   multiple: boolean,
   value: any,
   type: string,
-  relation_linked_vocabPair: string[][] | undefined
+  relation_linked_vocabPair: Array<Array<string>>
 ) {
   if (type === 'Child') {
     if (
@@ -141,7 +124,7 @@ type DisplayChildProps = {
   record_id: string;
   record_hrid: string;
   record_type: string;
-  field_label: string;
+  field_name: string;
   value: any;
   multiple: boolean;
   relationshipLabel: string;
@@ -174,7 +157,7 @@ function DisplayChild(props: DisplayChildProps) {
       record_id={props.record_id}
       record_hrid={props.record_hrid}
       record_type={props.record_type}
-      field_label={props.field_label}
+      field_name={props.field_name}
       handleUnlink={props.handleUnlink}
       handleReset={props.handleReset}
       disabled={props.disabled}
@@ -183,16 +166,27 @@ function DisplayChild(props: DisplayChildProps) {
   );
 }
 
-export function RelatedRecordSelector(props: FieldProps & Props) {
+interface RelatedRecordSelectorProps extends FieldProps {
+  related_type: FAIMSTypeName;
+  relation_type: FAIMSTypeName;
+  multiple?: boolean;
+  id: string;
+  label?: string;
+  InputLabelProps: {label: string};
+  required: boolean;
+  helperText?: string;
+  disabled?: boolean;
+  relation_linked_vocabPair: Array<Array<string>>;
+  related_type_label?: string;
+  current_form?: string;
+  current_form_label?: string;
+  isconflict?: boolean;
+}
+
+export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const project_id = props.form.values['_project_id'];
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;
-  let field_label = field_name;
-  // get field label from label property if there, otherwise back off
-  // to InputLabelProps and finally just the field name
-  if (props.label) field_label = props.label;
-  else if (props.InputLabelProps?.label)
-    field_label = props.InputLabelProps.label;
 
   const [options, setOptions] = React.useState<RecordReference[]>([]);
   const multiple = props.multiple !== undefined ? props.multiple : false;
@@ -200,7 +194,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   let search = location.search.includes('link=')
     ? location.search.replace('?', '')
     : '';
-  const [isactive, setIsactive] = React.useState(false);
   const [recordsInformation, setRecordsInformation] = React.useState<
     RecordLinkProps[] | null
   >(null);
@@ -264,14 +257,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           all_records
         );
         setOptions(records);
-        setIsactive(true);
 
         const records_info = await get_RelatedFields_for_field(
           props.form.values,
           props.related_type,
           relationshipPair,
           field_name,
-          field_label,
+          field_name,
           multiple,
           props.related_type_label,
           props.current_form,
@@ -280,7 +272,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         setRecordsInformation(records_info);
       } else {
         console.debug('Project ID is not available - this is probably bad');
-        // setIsactive(true);
       }
     })();
 
@@ -300,7 +291,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.related_type,
           relationshipPair,
           field_name,
-          field_label,
+          field_name,
           multiple,
           props.related_type_label,
           props.current_form,
@@ -309,7 +300,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         setRecordsInformation(records_info);
       } else {
         console.debug('Project ID is not available');
-        // setIsactive(true);
       }
     })();
 
@@ -322,9 +312,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
-  // if (!isactive) return <></>;
-  //to reset the method to pass state value between the link and record
-  //to pass information in state to child/link record
 
   const newState: LocationState = {
     parent_record_id: props.form.values._id, //current form record id
@@ -405,7 +392,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     Update_New_Link(
       selectedRecord,
       current_record,
-      field_label,
+      field_name,
       props.related_type_label ?? props.related_type,
       props.current_form,
       props.form.values['hrid' + props.current_form] ?? record_id,
@@ -494,7 +481,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       const new_child_record = await Update_New_Link(
         child_record,
         current_record,
-        field_label,
+        field_name,
         props.related_type_label ?? props.related_type,
         props.current_form,
         props.form.values['hrid' + props.current_form] ?? record_id,
@@ -545,7 +532,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             project_id={project_id}
             relation_type={type}
             add_related_child={add_related_child}
-            field_label={field_label}
+            field_name={field_name}
             pathname={
               ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
               project_id +
@@ -555,7 +542,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             state={newState}
             handleSubmit={() => props.form.submitForm()}
             save_new_record={save_new_record}
-            is_active={isactive}
             handleCreateError={remove_related_child}
           />
         </Grid>
@@ -589,7 +575,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             record_hrid={props.form.values['_id']}
             record_type={props.form.values['type']}
             relation_type={type}
-            field_label={field_label}
+            field_name={field_name}
             handleUnlink={remove_related_child}
             handleReset={() => {}}
             disabled={disabled}

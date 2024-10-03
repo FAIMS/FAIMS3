@@ -211,7 +211,7 @@ const linkExists = (
   return is_linked;
 };
 
-async function getRecordInformation(child_record: RecordReference) {
+export async function getRecordInformation(child_record: RecordReference) {
   let latest_record = null;
   let revision_id;
   if (child_record.project_id === undefined)
@@ -443,7 +443,9 @@ function generate_RecordLink(
   parent_deleted = false
 ): RecordLinkProps {
   const child: RecordLinkProps = {
+    project_id: child_record.project_id,
     record_id: child_record.record_id,
+    record_label: child_record.record_label,
     hrid: child_record.record_label,
     type: type,
     route: child_route,

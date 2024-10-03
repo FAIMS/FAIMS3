@@ -159,6 +159,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     };
   };
 
+  console.log('createRecordLink', props);
   return (
     <Box
       component={Paper}
