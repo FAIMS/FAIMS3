@@ -18,21 +18,11 @@
  *   Components for displaying record metadata in a table.
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-import {
-  Typography,
-  Box,
-  Paper,
-  Alert,
-  Grid,
-  FormGroup,
-  FormControlLabel,
-  Switch,
-  Link,
-} from '@mui/material';
+import {Box, Paper, Link} from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArticleIcon from '@mui/icons-material/Article';
 import {useTheme} from '@mui/material/styles';
@@ -49,8 +39,9 @@ import {
 import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
-import getLocalDate from '../../fields/LocalDate';
 import {logError} from '../../../logging';
+import {getTotalRecordCount} from './record_count_summary';
+import {getCurrentUserId} from '../../../users';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -60,6 +51,11 @@ type RecordsTableProps = {
   viewsets?: ProjectUIViewsets | null;
   handleQueryFunction: Function;
   handleRefresh: () => Promise<any>;
+  onRecordsCountChange?: (counts: {
+    total: number;
+    myRecords: number;
+    otherRecords: number;
+  }) => void;
 };
 
 type RecordsBrowseTableProps = {
@@ -68,14 +64,19 @@ type RecordsBrowseTableProps = {
   viewsets?: ProjectUIViewsets | null;
   filter_deleted: boolean;
   handleRefresh: () => Promise<any>;
+  onRecordsCountChange?: (counts: {
+    total: number;
+    myRecords: number;
+    otherRecords: number;
+  }) => void;
 };
 
 function RecordsTable(props: RecordsTableProps) {
-  const {project_id, maxRows, rows, loading} = props;
+  const {project_id, maxRows, rows, loading, onRecordsCountChange} = props;
+  const [currentUser, setCurrentUser] = useState<string>(''); // State to store the current user
 
   // default for mobileView is on (collapsed table)
-  const [mobileViewSwitchValue, setMobileViewSwitchValue] =
-    React.useState(true);
+  const [mobileViewSwitchValue] = React.useState(true);
 
   const theme = useTheme();
   const history = useNavigate();
@@ -85,12 +86,6 @@ function RecordsTable(props: RecordsTableProps) {
   const mobileView: boolean = not_xs ? false : mobileViewSwitchValue;
 
   const defaultMaxRowsMobile = 10;
-
-  const handleToggleMobileView = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setMobileViewSwitchValue(event.target.checked);
-  };
 
   // The entire row is clickable to the record
   const handleRowClick: GridEventListener<'rowClick'> = params => {
@@ -113,8 +108,18 @@ function RecordsTable(props: RecordsTableProps) {
       ? (props.viewsets[params.row.type.toString()].label ?? params.row.type)
       : params.row.type;
   }
+
+  // Filter the rows for mobile view to only include 'Site'
+  const filteredRows = mobileView
+    ? rows.filter(row => {
+        const mockParams = {row} as GridCellParams; // Create a minimal mock GridCellParams object
+        return getRowType(mockParams) === 'Site';
+      })
+    : rows;
+
   const columns = !mobileView
     ? [
+        // Desktop View Columns
         {
           field: 'article_icon',
           headerName: '',
@@ -227,148 +232,128 @@ function RecordsTable(props: RecordsTableProps) {
         },
       ]
     : [
+        // Mobile View Columns
+
         {
-          field: 'type',
-          headerName: 'Kind',
+          field: 'street',
+          headerName: 'Street',
           type: 'string',
-          filterable: true,
-          hide: true,
-          minWidth: 75,
-          valueGetter: getRowType,
+          minWidth: 120,
+          valueGetter: (params: GridCellParams) =>
+            params.row.hrid.split(', ')[0] || 'Unknown',
+          headerClassName: 'custom-header',
         },
+
         {
-          field: 'hrid',
-          headerName: 'HRID/UUID',
-          description: 'Human Readable Record ID',
+          field: 'suburb',
+          headerName: 'Suburb',
           type: 'string',
           minWidth: 150,
-          filterable: true,
-          renderCell: (params: GridCellParams) => {
-            return (
-              <Box sx={{width: '100%', my: 1}}>
-                <Grid
-                  container
-                  direction="row"
-                  justifyContent="flex-start"
-                  alignItems="center"
-                  spacing={0}
-                >
-                  <Grid item>
-                    <Typography>Kind: {getRowType(params)}</Typography>
-                  </Grid>
-                </Grid>
-
-                <Typography color="textSecondary">
-                  HRID/UUID: {JSON.stringify(params.value)}
-                </Typography>
-                {/*  If updated isn't present, then show created meta */}
-                {params.row.updated === undefined ? (
-                  <Typography
-                    color="textSecondary"
-                    variant="subtitle2"
-                    gutterBottom
-                    component="div"
-                  >
-                    Created{' '}
-                    {params.row.created !== undefined &&
-                      params.row.created !== '' &&
-                      getLocalDate(params.row.created).replace('T', ' ')}{' '}
-                    by {params.row.created_by}
-                  </Typography>
-                ) : (
-                  <Typography
-                    color="textSecondary"
-                    variant="subtitle2"
-                    gutterBottom
-                    component="div"
-                  >
-                    Updated{' '}
-                    {params.row.updated !== undefined &&
-                      params.row.updated !== '' &&
-                      getLocalDate(params.row.updated).replace('T', ' ')}{' '}
-                    by {params.row.updated_by}
-                  </Typography>
-                )}
-
-                {params.row.conflicts === true && (
-                  <Alert severity={'warning'}>Record has conflicts</Alert>
-                )}
-              </Box>
-            );
-          },
-        },
-        {
-          field: 'delete',
-          headerName: 'Actions',
-          type: 'actions',
-          renderCell: (params: GridCellParams) => {
-            return (
-              <RecordDelete
-                project_id={project_id}
-                record_id={params.row.record_id}
-                revision_id={params.row.revision_id}
-                draft_id={null}
-                show_label={false}
-                handleRefresh={props.handleRefresh}
-              />
-            );
-          },
-        },
-        {
-          field: 'updated',
-          headerName: 'Last Updated',
-          type: 'dateTime',
-          filterable: true,
-          hide: true,
-        },
-        {
-          field: 'updated_by',
-          headerName: 'Last Updated By',
-          type: 'string',
-          filterable: true,
-          hide: true,
-        },
-        {
-          field: 'conflicts',
-          headerName: 'Conflicts',
-          type: 'boolean',
-          filterable: true,
-          hide: true,
+          valueGetter: (params: GridCellParams) =>
+            params.row.hrid.split(', ')[1] || 'Unknown',
+          headerClassName: 'custom-header',
         },
         {
           field: 'created',
           headerName: 'Created',
           type: 'dateTime',
+          minWidth: 150,
           filterable: true,
           hide: true,
-        },
-        {
-          field: 'created_by',
-          headerName: 'Created By',
-          type: 'string',
-          filterable: true,
-          hide: true,
-        },
-        {
-          field: 'record_id',
-          headerName: 'UUID',
-          description: 'UUID Record ID',
-          type: 'string',
-          filterable: true,
-          hide: true,
+          headerClassName: 'custom-header',
         },
       ];
 
+  // Fetch the current user when the component mounts
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userId = await getCurrentUserId(project_id);
+        setCurrentUser(userId);
+      } catch (error) {
+        console.error('Error fetching user ID:', error);
+      }
+    };
+    fetchUser();
+  }, [project_id]);
+
+  useEffect(() => {
+    if (!rows || rows.length === 0 || !currentUser) {
+      console.log('No records available or current user not set.');
+      return;
+    }
+
+    const totalRecords = getTotalRecordCount(rows);
+
+    const myRecords = rows.filter(
+      record =>
+        getRowType({row: record} as GridCellParams) === 'Site' &&
+        record.created_by === currentUser
+    ).length;
+
+    const otherRecords = totalRecords - myRecords;
+
+    // Send count to parent with callback  - onRecordsCountChangee
+    if (onRecordsCountChange) {
+      onRecordsCountChange({total: totalRecords, myRecords, otherRecords});
+    }
+  }, [rows, currentUser, onRecordsCountChange]);
+
   return (
     <React.Fragment>
-      <Box component={Paper} elevation={0}>
+      <Box
+        component={Paper}
+        elevation={3}
+        sx={{
+          borderRadius: '4px',
+          boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.2)',
+          padding: '4px',
+        }}
+      >
+        {' '}
         <DataGrid
-          rows={rows}
+          rows={filteredRows}
           loading={loading}
           getRowId={r => r.record_id}
           columns={columns}
           autoHeight
-          sx={{cursor: 'pointer'}}
+          sx={{
+            cursor: 'pointer',
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 'bold',
+              fontSize: '1.1rem',
+            },
+            '& .MuiDataGrid-row': {
+              height: 80,
+              '&:hover': {
+                backgroundColor: '#f0f0f0',
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+                transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
+              },
+            },
+            '& .MuiDataGrid-cell': {
+              padding: '0 10px',
+              borderBottom: '1px solid #424242',
+              fontSize: '1rem',
+              fontWeight: 400,
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: '#f9f9f9',
+              borderBottom: '1px solid #424242',
+              '& .MuiDataGrid-columnHeader': {
+                '& .MuiDataGrid-sortIcon': {
+                  opacity: 1,
+                  visibility: 'visible',
+                },
+              },
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: '1px solid #424242',
+            },
+            '& .MuiDataGrid-root': {
+              border: 'none',
+            },
+          }}
           getRowHeight={() => 'auto'}
           pageSizeOptions={[10, 25, 50, 100]}
           density={'standard'}
@@ -388,7 +373,7 @@ function RecordsTable(props: RecordsTableProps) {
           }}
           initialState={{
             sorting: {
-              sortModel: [{field: 'updated', sort: 'desc'}],
+              sortModel: [{field: 'created', sort: 'desc'}],
             },
             pagination: {
               paginationModel: {
@@ -405,7 +390,8 @@ function RecordsTable(props: RecordsTableProps) {
           }}
         />
       </Box>
-      {not_xs ? (
+      {/* TODO remove later RG - toggle mobile view not needed */}
+      {/* {not_xs ? (
         ''
       ) : (
         <FormGroup>
@@ -416,7 +402,7 @@ function RecordsTable(props: RecordsTableProps) {
             label={'Toggle Mobile View'}
           />
         </FormGroup>
-      )}
+      )} */}
     </React.Fragment>
   );
 }
@@ -467,6 +453,7 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
       viewsets={props.viewsets}
       handleQueryFunction={setQuery}
       handleRefresh={props.handleRefresh}
+      onRecordsCountChange={props.onRecordsCountChange}
     />
   );
 }
