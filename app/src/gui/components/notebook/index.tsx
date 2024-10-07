@@ -25,7 +25,12 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+  RECORD_LABEL,
+} from '../../../buildconfig';
+import {bssTabStyling} from '../../themes';
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
@@ -195,7 +200,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
             <AppBar
               position="static"
               color="primary"
-              sx={{paddingLeft: '16px'}}
+              sx={{paddingLeft: '16px', ...bssTabStyling.tabsRoot}}
             >
               <Tabs
                 value={notebookTabValue}
@@ -205,10 +210,27 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
+                sx={{
+                  '& .MuiTabs-indicator': {
+                    ...bssTabStyling.indicator,
+                  },
+                }}
               >
-                <Tab label="Records" {...a11yProps(0, NOTEBOOK_NAME)} />
-                <Tab label="Details" {...a11yProps(1, NOTEBOOK_NAME)} />
-                <Tab label="Settings" {...a11yProps(2, NOTEBOOK_NAME)} />
+                <Tab
+                  label={`${RECORD_LABEL}s`}
+                  {...a11yProps(0, NOTEBOOK_NAME)}
+                  sx={{...bssTabStyling.tabRoot}}
+                />
+                <Tab
+                  label="Details"
+                  {...a11yProps(1, NOTEBOOK_NAME)}
+                  sx={{...bssTabStyling.tabRoot}}
+                />
+                <Tab
+                  label="Settings"
+                  {...a11yProps(2, NOTEBOOK_NAME)}
+                  sx={{...bssTabStyling.tabRoot}}
+                />
               </Tabs>
             </AppBar>
           </Box>
@@ -228,7 +250,14 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   aria-label={`${NOTEBOOK_NAME}-records`}
                 >
                   <Tab
-                    label="Records"
+                    label={
+                      <Typography
+                        variant="body1"
+                        sx={{fontWeight: 'bold', fontSize: '1.2em'}}
+                      >
+                        My {RECORD_LABEL}s
+                      </Typography>
+                    }
                     {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
                   />
                   <Tab
@@ -275,17 +304,6 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 px: 2,
               }}
             >
-              {/* <Box
-                component="h2"
-                sx={{
-                  textAlign: 'left',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  marginBottom: '16px',
-                }}
-              >
-                Survey Details
-              </Box> */}
               <Typography
                 variant="body1"
                 sx={{
