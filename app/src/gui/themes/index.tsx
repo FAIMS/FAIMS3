@@ -87,7 +87,7 @@ const exportAppBarHeading = () => {
  *  - `tabRoot`: Styles for each individual `Tab` component, including font size, font weight, color, and hover effects.
  *  - `indicator`: Styles for the tab indicator, including color and thickness.
  */
-const exportTabStyling = () => {
+const exportBSSTabStyling = () => {
   switch (import.meta.env.VITE_THEME) {
     case 'bubble':
       return {
@@ -124,4 +124,4 @@ export const appBarStyling = exportAppBarStyling();
 export const projectListLayout = exportProjectListLayout();
 export const projectListVerbose = exportProjectListVerbose();
 export const appBarHeading = exportAppBarHeading();
-export const tabStyling = exportTabStyling();
+export const bssTabStyling = exportBSSTabStyling();
