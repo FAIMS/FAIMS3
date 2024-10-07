@@ -18,10 +18,9 @@
  *   TODO
  */
 import React, {useState, useEffect} from 'react';
-import {useParams, Navigate} from 'react-router-dom';
-import {Box, Grid, Typography} from '@mui/material';
+import {useParams, Navigate, useNavigate} from 'react-router-dom';
+import {Box, Chip, IconButton, Typography} from '@mui/material';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo} from '../../sync/projects';
@@ -31,10 +30,12 @@ import {CircularProgress} from '@mui/material';
 import NotebookComponent from '../components/notebook';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import RefreshNotebook from '../components/notebook/refresh';
 import {ProjectInformation} from '@faims3/data-model';
 import {logError} from '../../logging';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ErrorIcon from '@mui/icons-material/Error';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 export default function Notebook() {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -77,9 +78,104 @@ export default function Notebook() {
     return getInfoWrapper();
   };
 
+  const history = useNavigate();
+  const isActive = project_info?.is_activated;
+
   return !loading ? (
     <Box>
+      {/* Back Button Section */}
+      <Box sx={{display: 'flex', alignItems: 'center', padding: '8px'}}>
+        <IconButton
+          onClick={() => history(ROUTES.NOTEBOOK_LIST_ROUTE)}
+          aria-label="back"
+          size="small"
+          sx={{color: 'black'}}
+        >
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography
+          variant="body1"
+          sx={{marginLeft: '8px', fontWeight: 'bold'}}
+        >
+          Back to {NOTEBOOK_NAME_CAPITALIZED}s
+        </Typography>
+      </Box>
+
       <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 16px',
+        }}
+      >
+        <Box
+          sx={{display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0}}
+        >
+          <MenuBookIcon
+            color="primary"
+            fontSize={mq_above_md ? 'large' : 'medium'}
+            sx={{marginRight: '8px'}}
+          />
+          <Typography
+            variant={mq_above_md ? 'h4' : 'h5'}
+            component="div"
+            sx={{
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              fontSize: '1.6rem',
+            }}
+          >
+            {project_info.name}
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            textAlign: 'center',
+            marginLeft: {xs: '32px', sm: '24px', md: '20px'},
+          }}
+        >
+          {isActive ? (
+            <Chip
+              label="Active"
+              icon={<CheckCircleIcon />}
+              sx={{
+                backgroundColor: 'green',
+                color: 'white',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                '& .MuiChip-icon': {
+                  color: 'white',
+                },
+              }}
+            />
+          ) : (
+            <Chip
+              label="Not Active"
+              icon={<ErrorIcon sx={{color: 'white'}} />}
+              sx={{
+                backgroundColor: '#b62b2b',
+                color: 'white',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                '& .MuiChip-icon': {
+                  color: 'white',
+                },
+              }}
+            />
+          )}
+        </Box>
+      </Box>
+
+      {/* Grid box for folder icon and notebook name  */}
+      {/* <Box
         sx={{
           textAlign: 'center',
           padding: '8px 0',
