@@ -174,42 +174,17 @@ export default function Notebook() {
         </Box>
       </Box>
 
-      {/* Grid box for folder icon and notebook name  */}
-      {/* <Box
-        sx={{
-          textAlign: 'center',
-          padding: '8px 0',
-          backgroundColor: '#f5f5f5',
-        }}
-      >
-        <Grid container direction="column" alignItems="center">
-          <Grid item>
-            <MenuBookIcon
-              color={'secondary'}
-              fontSize={mq_above_md ? 'large' : 'medium'}
-            />
-          </Grid>
-          <Grid item>
-            <Typography
-              variant={mq_above_md ? 'h3' : 'h4'}
-              component={'div'}
-              sx={{fontWeight: 'bold'}}
-            >
-              {project_info.name}
-            </Typography>
-          </Grid>
-        </Grid>
-      </Box>
-
-      <Box sx={{paddingLeft: '16px', marginTop: '8px'}}>
+      {/* Breadcrumbs  - @TODO remove later */}
+      {/* <Box sx={{paddingLeft: '6px', marginTop: '2px'}}>
         <Breadcrumbs data={breadcrumbs} />
-      </Box>
+      </Box> */}
 
       <Box sx={{paddingTop: '16px'}}>
+        {/* @TODO remove later
         <RefreshNotebook
           handleRefresh={handleRefresh}
           project_name={project_info.name}
-        />
+        /> */}
         <NotebookComponent
           project={project_info}
           handleRefresh={handleRefresh}
