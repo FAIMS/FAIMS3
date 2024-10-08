@@ -36,7 +36,8 @@
         "@types/pouchdb": "^6.4.0",
         "fast-json-stable-stringify": "^2.1.0",
         "lodash": "^4.17.21",
-        "uuid": "^9.0.0"
+        "uuid": "^9.0.0",
+        "zod": "^3.23.8"
     },
     "devDependencies": {
         "@fast-check/jest": "^1.6.0",

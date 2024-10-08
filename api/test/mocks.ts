@@ -2,10 +2,15 @@ import PouchDB from 'pouchdb';
 // eslint-disable-next-line n/no-unpublished-require
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import {ProjectID, DBCallbackObject} from '@faims3/data-model';
-import {getProjectsDB, getUsersDB, initialiseDatabases} from '../src/couchdb';
+import {
+  getProjectsDB,
+  getTemplatesDb,
+  getUsersDB,
+  initialiseDatabases,
+} from '../src/couchdb';
 import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 
-const databaseList: any = {};
+export const databaseList: any = {};
 
 const getDatabase = async (databaseName: string) => {
   if (databaseList[databaseName] === undefined) {
@@ -28,6 +33,12 @@ const mockGetProjectDB = async (project_id: ProjectID) => {
   return getDatabase('metadatadb-' + project_id);
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const mockGetTemplateDB = async (project_id: ProjectID) => {
+  // Right now the mock get template DB does not need the project ID as context
+  return getDatabase('templatedb');
+};
+
 const mockShouldDisplayRecord = () => {
   return true;
 };
@@ -39,7 +50,9 @@ const clearDB = async (db: PouchDB.Database) => {
     await db.remove(doc.id, doc.value.rev);
   }
 };
+
 export const resetDatabases = async () => {
+  // Fetch and clear all mocked in memory DBs
   const usersDB = getUsersDB();
   if (usersDB) {
     await clearDB(usersDB);
@@ -47,6 +60,10 @@ export const resetDatabases = async () => {
   const projectsDB = getProjectsDB();
   if (projectsDB) {
     await clearDB(projectsDB);
+  }
+  const templatesDB = getTemplatesDb();
+  if (templatesDB) {
+    await clearDB(templatesDB);
   }
   await initialiseDatabases();
 };
@@ -59,9 +76,9 @@ export const cleanDataDBS = async () => {
     if (db !== undefined) {
       try {
         await db.destroy();
-        //await db.close();
       } catch (err) {
-        //console.error(err);
+        console.log('error db ', name);
+        console.log(err);
       }
     }
   }

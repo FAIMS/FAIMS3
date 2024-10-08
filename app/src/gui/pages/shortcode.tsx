@@ -19,7 +19,7 @@
 
 import React, {useContext, useState} from 'react';
 import {Typography, TextField, Button, Stack, Grid, Alert} from '@mui/material';
-import {ListingsObject} from '@faims3/data-model';
+import {ListingsObject} from '@faims3/data-model/src/types';
 import LoginIcon from '@mui/icons-material/Login';
 import {isWeb} from '../../utils/helpers';
 import {Browser} from '@capacitor/browser';

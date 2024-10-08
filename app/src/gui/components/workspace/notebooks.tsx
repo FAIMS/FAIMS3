@@ -30,13 +30,16 @@ import {grey} from '@mui/material/colors';
 import Tabs from '../ui/tab-grid';
 import HeadingGrid from '../ui/heading-grid';
 import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
+import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+import * as ROUTES from '../../../constants/routes';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
+import {useNavigate} from 'react-router-dom';
 
 export default function NoteBooks() {
   const [tabID, setTabID] = useState('1');
-
   const {projects} = useContext(ProjectsContext);
+  const history = useNavigate();
 
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
@@ -180,6 +183,15 @@ export default function NoteBooks() {
           </Button>{' '}
           tab and click the activate button.
         </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+          sx={{mb: 3, mt: 3}}
+          startIcon={<AddCircleSharpIcon />}
+        >
+          Create New Survey
+        </Button>
         {NOTEBOOK_LIST_TYPE === 'tabs' ? (
           <Tabs
             projects={projects}

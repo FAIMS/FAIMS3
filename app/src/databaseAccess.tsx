@@ -30,7 +30,8 @@
  */
 
 import {getAvailableProjectsFromListing} from './sync/projects';
-import {ProjectInformation, ListingsObject} from '@faims3/data-model';
+import {ProjectInformation} from '@faims3/data-model';
+import {ListingsObject} from '@faims3/data-model/src/types';
 import {getAllListingIDs} from './sync/state';
 import {events} from './sync/events';
 import {getAllListings} from './sync';
