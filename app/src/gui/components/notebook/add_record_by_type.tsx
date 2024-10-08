@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Link as RouterLink, Navigate} from 'react-router-dom';
 
 import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
@@ -17,6 +17,7 @@ import {
   ProjectUIModel,
 } from '@faims3/data-model';
 import {getMetadataValue} from '../../../sync/metadata';
+import {RECORD_LABEL} from '../../../buildconfig';
 
 type AddRecordButtonsProps = {
   project: ProjectInformation;
@@ -25,14 +26,20 @@ type AddRecordButtonsProps = {
 export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const {project} = props;
   const project_id = project.project_id;
-  const theme = useTheme();
-  const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
-  const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
+  const muiTheme = useTheme();
+  const mq_above_md = useMediaQuery(muiTheme.breakpoints.up('md'));
+  const mq_above_sm = useMediaQuery(muiTheme.breakpoints.up('sm'));
   const [uiSpec, setUiSpec] = useState<ProjectUIModel | undefined>(undefined);
   const [showQRButton, setShowQRButton] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
   >(undefined);
+
+  const envTheme = import.meta.env.VITE_THEME;
+
+  // Determine 'add new record' button label based on the environment theme
+  const buttonLabel =
+    envTheme === 'bubble' ? `Survey New ${RECORD_LABEL}` : 'New Record';
 
   getMetadataValue(project_id, 'showQRCodeButton').then(value => {
     setShowQRButton(value === true || value === 'true');
@@ -75,16 +82,18 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
         <ButtonGroup
           fullWidth={mq_above_md ? false : true}
           orientation={mq_above_sm ? 'horizontal' : 'vertical'}
-          sx={{maxHeight: '400px', overflowY: 'scroll'}}
+          sx={{
+            maxHeight: '400px',
+            justifyContent: mq_above_sm ? 'flex-start' : 'center',
+          }}
         >
           {/*If the list of views hasn't loaded yet*/}
           {/*we can still show this button, except it will*/}
           {/*redirect to the Record creation without known type*/}
           {visible_types.length === 1 ? (
             <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<AddIcon />}
+              variant="contained"
+              color="success"
               component={RouterLink}
               key="newRecord"
               to={
@@ -93,8 +102,34 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
                 ROUTES.RECORD_CREATE +
                 visible_types
               }
+              sx={{
+                backgroundColor: 'green',
+                color: 'white',
+                borderRadius: '8px',
+                padding: '10px 15px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                width: mq_above_sm ? 'auto' : '50%',
+                '&:hover': {
+                  backgroundColor: 'darkgreen',
+                },
+              }}
             >
-              New Record
+              <Box
+                sx={{
+                  backgroundColor: 'white',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  width: 24,
+                  height: 24,
+                  marginRight: 1,
+                }}
+              >
+                <AddIcon sx={{fontSize: '1.2rem', color: 'green'}} />
+              </Box>
+              {buttonLabel}
             </Button>
           ) : (
             visible_types.map(
@@ -110,6 +145,18 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
                     }
                     key={viewset_name}
                     startIcon={<AddIcon />}
+                    sx={{
+                      backgroundColor: 'green',
+                      color: 'white',
+                      borderRadius: '8px',
+                      padding: '10px 15px',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      width: mq_above_sm ? 'auto' : '50%',
+                      '&:hover': {
+                        backgroundColor: 'darkgreen',
+                      },
+                    }}
                   >
                     {viewsets[viewset_name].label || viewset_name}
                   </Button>

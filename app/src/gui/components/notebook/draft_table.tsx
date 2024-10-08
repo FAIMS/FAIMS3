@@ -21,16 +21,7 @@
 import React, {useEffect, useState} from 'react';
 import _ from 'lodash';
 import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-import {
-  Typography,
-  Box,
-  Paper,
-  Grid,
-  FormGroup,
-  FormControlLabel,
-  Switch,
-  Link,
-} from '@mui/material';
+import {Typography, Box, Paper, Grid, Link} from '@mui/material';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {useNavigate} from 'react-router-dom';
 import {useTheme} from '@mui/material/styles';
@@ -61,25 +52,14 @@ type DraftsRecordProps = {
 
 function DraftRecord(props: DraftsRecordProps) {
   const {project_id, maxRows, rows, loading} = props;
-
-  // default for mobileView is on (collapsed table)
-  const [mobileViewSwitchValue, setMobileViewSwitchValue] =
-    React.useState(true);
-
   const theme = useTheme();
   const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   // if screensize is > mobile, always set to false i.e., no mobile view. If mobile, allow control via the switch
-  const mobileView: boolean = not_xs ? false : mobileViewSwitchValue;
+  const mobileView: boolean = not_xs;
 
   const defaultMaxRowsMobile = 10;
-
-  const handleToggleMobileView = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setMobileViewSwitchValue(event.target.checked);
-  };
 
   // The entire row is clickable to the record
   const handleRowClick: GridEventListener<'rowClick'> = params => {
@@ -272,18 +252,6 @@ function DraftRecord(props: DraftsRecordProps) {
           }}
         />
       </Box>
-      {not_xs ? (
-        ''
-      ) : (
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Switch checked={mobileView} onChange={handleToggleMobileView} />
-            }
-            label={'Toggle Mobile View'}
-          />
-        </FormGroup>
-      )}
     </React.Fragment>
   );
 }

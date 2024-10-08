@@ -25,7 +25,12 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+  RECORD_LABEL,
+} from '../../../buildconfig';
+import {bssTabStyling} from '../../themes';
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
@@ -95,7 +100,9 @@ type NotebookComponentProps = {
 export default function NotebookComponent(props: NotebookComponentProps) {
   const [notebookTabValue, setNotebookTabValue] = React.useState(0);
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
-
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [myRecords, setMyRecords] = useState(0);
+  const [otherRecords, setOtherRecords] = useState(0);
   /**
    * Handles the change event when the user switches between the Records and Drafts tabs.
    *
@@ -155,6 +162,17 @@ export default function NotebookComponent(props: NotebookComponentProps) {
     };
   }, [project]);
 
+  // Callback to handle counts from RecordsTable
+  const handleCountChange = (counts: {
+    total: number;
+    myRecords: number;
+    otherRecords: number;
+  }) => {
+    setTotalRecords(counts.total);
+    setMyRecords(counts.myRecords);
+    setOtherRecords(counts.otherRecords);
+  };
+
   return (
     <Box>
       {err ? (
@@ -195,7 +213,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
             <AppBar
               position="static"
               color="primary"
-              sx={{paddingLeft: '16px'}}
+              sx={{paddingLeft: '16px', ...bssTabStyling.tabsRoot}}
             >
               <Tabs
                 value={notebookTabValue}
@@ -205,18 +223,55 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
+                sx={{
+                  '& .MuiTabs-indicator': {
+                    ...bssTabStyling.indicator,
+                  },
+                }}
               >
-                <Tab label="Records" {...a11yProps(0, NOTEBOOK_NAME)} />
-                <Tab label="Details" {...a11yProps(1, NOTEBOOK_NAME)} />
-                <Tab label="Settings" {...a11yProps(2, NOTEBOOK_NAME)} />
+                <Tab
+                  label={`${RECORD_LABEL}s`}
+                  {...a11yProps(0, NOTEBOOK_NAME)}
+                  sx={{...bssTabStyling.tabRoot}}
+                />
+                <Tab
+                  label="Details"
+                  {...a11yProps(1, NOTEBOOK_NAME)}
+                  sx={{...bssTabStyling.tabRoot}}
+                />
+                <Tab
+                  label="Settings"
+                  {...a11yProps(2, NOTEBOOK_NAME)}
+                  sx={{...bssTabStyling.tabRoot}}
+                />
               </Tabs>
             </AppBar>
           </Box>
+          {/* Display counts here */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#f5f5f5',
+              padding: '12px 16px',
+              borderRadius: '4px',
+              marginBottom: '16px',
+            }}
+          >
+            <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
+              <strong>My {RECORD_LABEL}s:</strong> {myRecords}
+            </Typography>
+            <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
+              <strong>Others:</strong> {otherRecords}
+            </Typography>
+            <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
+              <strong>Total:</strong> {totalRecords}
+            </Typography>
+          </Box>
+
           <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
             <Box>
-              <Typography variant={'overline'} sx={{marginTop: '-8px'}}>
-                Add New Record
-              </Typography>
               <AddRecordButtons project={project} />
             </Box>
             {/* Records/Drafts */}
@@ -228,7 +283,14 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   aria-label={`${NOTEBOOK_NAME}-records`}
                 >
                   <Tab
-                    label="Records"
+                    label={
+                      <Typography
+                        variant="body1"
+                        sx={{fontWeight: 'bold', fontSize: '1.2em'}}
+                      >
+                        My {RECORD_LABEL}s
+                      </Typography>
+                    }
                     {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
                   />
                   <Tab
@@ -248,6 +310,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   viewsets={viewsets}
                   filter_deleted={true}
                   handleRefresh={props.handleRefresh}
+                  onRecordsCountChange={handleCountChange}
                 />
               </TabPanel>
               <TabPanel
@@ -275,17 +338,6 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 px: 2,
               }}
             >
-              {/* <Box
-                component="h2"
-                sx={{
-                  textAlign: 'left',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  marginBottom: '16px',
-                }}
-              >
-                Survey Details
-              </Box> */}
               <Typography
                 variant="body1"
                 sx={{
@@ -300,22 +352,22 @@ export default function NotebookComponent(props: NotebookComponentProps) {
 
               {/* Unhide the edit button when the notebook cna be edited */}
               {/* <IconButton
+              color="primary"
+              aria-label="edit"
+              onClick={() => {
+                console.log('Edit Survey Details clicked');
+              }}
+              sx={{display: 'flex', alignItems: 'center'}}
+            >
+              <EditIcon />
+              <Typography
+                variant="body2"
                 color="primary"
-                aria-label="edit"
-                onClick={() => {
-                  console.log('Edit Survey Details clicked');
-                }}
-                sx={{display: 'flex', alignItems: 'center'}}
+                sx={{marginLeft: '4px'}}
               >
-                <EditIcon />
-                <Typography
-                  variant="body2"
-                  color="primary"
-                  sx={{marginLeft: '4px'}}
-                >
-                  Edit
-                </Typography>
-              </IconButton> */}
+                Edit
+              </Typography>
+            </IconButton> */}
             </Box>
 
             <Box sx={{p: 2}}>
