@@ -73,10 +73,7 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
         ) : (
           listings.data?.map(listing => {
             return (
-              <NewNotebookForListing
-                listingObject={listing}
-                key={listing._id}
-              />
+              <NewNotebookForListing listingObject={listing} key={listing.id} />
             );
           })
         )}

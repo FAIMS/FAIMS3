@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {ListingsObject} from '../../../sync/databases';
+import {ListingsObject} from '@faims3/data-model/src/types';
 import {useCreateNotebookFromTemplate} from '../../../utils/apiHooks/notebooks';
 import {useGetTemplates} from '../../../utils/apiHooks/templates';
 import CircularLoading from '../ui/circular_loading';
@@ -35,7 +35,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   const errorPopup = useErrorPopup();
 
   // Use custom hook to get template list
-  const templates = useGetTemplates({listingId: props.listingObject._id});
+  const templates = useGetTemplates({listingId: props.listingObject.id});
   // What template has the user selected - if any
   const [selectedTemplate, setSelectedTemplate] = useState<string | undefined>(
     undefined
@@ -46,7 +46,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
 
   // Mutation to create new survey
   const createNotebook = useCreateNotebookFromTemplate({
-    listingId: props.listingObject._id,
+    listingId: props.listingObject.id,
     name: surveyName,
     templateId: selectedTemplate,
     // When we succeed, navigate back to home page

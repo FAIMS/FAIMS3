@@ -17,7 +17,7 @@
  *   This module contains utility routes at /api
  */
 
-import {ListingInformation} from '@faims3/data-model';
+import {ListingInformation} from '@faims3/data-model/src/types';
 import express from 'express';
 import multer from 'multer';
 import {

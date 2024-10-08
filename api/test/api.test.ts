@@ -32,6 +32,7 @@ import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
+  CONDUCTOR_SHORT_CODE_PREFIX,
   DEVELOPER_MODE,
   KEY_SERVICE,
 } from '../src/buildconfig';
@@ -86,6 +87,7 @@ describe('API tests', () => {
         expect(response.body.name).to.equal(CONDUCTOR_INSTANCE_NAME);
         expect(response.body.description).to.equal(CONDUCTOR_DESCRIPTION);
         expect(response.body.conductor_url).to.equal(CONDUCTOR_PUBLIC_URL);
+        expect(response.body.prefix).to.equal(CONDUCTOR_SHORT_CODE_PREFIX);
       });
   });
 

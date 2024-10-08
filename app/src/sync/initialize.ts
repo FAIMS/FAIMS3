@@ -54,7 +54,5 @@ async function initializeNoCheck() {
 
   register_sync_state(events);
   register_basic_automerge_resolver(events);
-
-  console.log('sync/initialize: starting');
   update_directory().catch(err => events.emit('directory_error', err));
 }

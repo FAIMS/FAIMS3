@@ -1,6 +1,7 @@
 import {useEffect, useRef} from 'react';
 import {useQuery, UseQueryResult} from '@tanstack/react-query';
-import {directory_db, ListingsObject} from '../sync/databases';
+import {directory_db} from '../sync/databases';
+import {ListingsObject} from '@faims3/data-model/src/types';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**

@@ -496,6 +496,10 @@ export interface ListingInformation {
   conductor_url: string;
 }
 
+export interface ListingsObject extends ListingInformation {
+  prefix: string;
+}
+
 export interface ProjectInformation {
   project_id: ProjectID;
   name: string;

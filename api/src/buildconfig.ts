@@ -185,6 +185,18 @@ function instance_name(): string {
   }
 }
 
+function short_code_prefix(): string {
+  const prefix = process.env.CONDUCTOR_SHORT_CODE_PREFIX;
+  if (prefix === '' || prefix === undefined) {
+    console.log(
+      'CONDUCTOR_SHORT_CODE_PREFIX not set, using "FAIMS" as default'
+    );
+    return 'FAIMS';
+  } else {
+    return prefix;
+  }
+}
+
 function instance_description(): string {
   const name = process.env.CONDUCTOR_DESCRIPTION;
   if (name === '' || name === undefined) {
@@ -282,6 +294,7 @@ export const CONDUCTOR_KEY_ID = signing_key_id();
 export const CONDUCTOR_PRIVATE_KEY_PATH = private_key_path();
 export const CONDUCTOR_PUBLIC_KEY_PATH = public_key_path();
 export const CONDUCTOR_INSTANCE_NAME = instance_name();
+export const CONDUCTOR_SHORT_CODE_PREFIX = short_code_prefix();
 export const CONDUCTOR_DESCRIPTION = instance_description();
 export const COOKIE_SECRET = cookie_secret();
 export const GOOGLE_CLIENT_ID = google_client_id();

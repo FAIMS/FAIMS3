@@ -44,12 +44,14 @@ import {
   getAllUsersForCluster,
   switchUsername,
 } from '../../../users';
-import {reprocess_listing} from '../../../sync/process-initialization';
+import {update_directory} from '../../../sync/process-initialization';
 import {TokenContents} from '@faims3/data-model';
 import * as ROUTES from '../../../constants/routes';
 import MainCard from '../ui/main-card';
 import {store} from '../../../context/store';
 import {ActionType} from '../../../context/actions';
+import {Browser} from '@capacitor/browser';
+import {isWeb} from '../../../utils/helpers';
 
 type ClusterCardProps = {
   listing_id: string;
@@ -189,10 +191,32 @@ export default function ClusterCard(props: ClusterCardProps) {
 
   useEffect(() => {
     const getToken = async () => {
-      setToken(await getTokenContentsForCluster(props.listing_id));
+      const new_token = await getTokenContentsForCluster(props.listing_id);
+      setToken(new_token);
     };
     getToken();
   }, [props.listing_id]);
+
+  const handleLogout = () => {
+    forgetCurrentToken(props.listing_id).then(async () => {
+      setToken(undefined);
+      props.setToken(undefined);
+      update_directory();
+
+      if (isWeb()) {
+        const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
+        window.location.href =
+          props.conductor_url + '/logout?redirect=' + redirect;
+      } else {
+        // Use the capacitor browser plugin in apps
+        await Browser.open({
+          url:
+            props.conductor_url +
+            '/logout?redirect=org.fedarch.faims3://auth-return',
+        });
+      }
+    });
+  };
 
   return (
     <MainCard
@@ -256,12 +280,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                 sx={{float: 'right'}}
                 variant={'contained'}
                 disableElevation
-                onClick={() =>
-                  forgetCurrentToken(props.listing_id).then(() => {
-                    setToken(undefined);
-                    reprocess_listing(props.listing_id);
-                  })
-                }
+                onClick={handleLogout}
                 startIcon={<LogoutIcon />}
               >
                 Log&nbsp;Out
