@@ -23,22 +23,17 @@ import {Typography, Grid} from '@mui/material';
 import Notebooks from '../components/workspace/notebooks';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import {projectListVerbose} from '../themes';
 
 export default function Workspace() {
-  const breadcrumbs = [{title: 'Workspace'}];
-
   return (
     <React.Fragment>
-      {projectListVerbose && <Breadcrumbs data={breadcrumbs} />}
+      <Breadcrumbs data={[{title: 'Workspace'}]} />
       <Grid container spacing={3}>
         <Grid item xs={12} md={12} lg={8}>
-          {projectListVerbose && (
-            <Typography variant="h6" color="textSecondary">
-              My {NOTEBOOK_NAME_CAPITALIZED}s
-            </Typography>
-          )}
-          <Notebooks sortModel={{field: 'last_updated', sort: 'desc'}} />
+          <Typography variant="h6" color="textSecondary">
+            My {NOTEBOOK_NAME_CAPITALIZED}s
+          </Typography>
+          <Notebooks />
         </Grid>
       </Grid>
     </React.Fragment>

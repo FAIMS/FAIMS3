@@ -26,8 +26,8 @@ import {
   ProjectID,
   ListingID,
   NonUniqueProjectID,
-  PossibleConnectionInfo,
 } from '@faims3/data-model';
+import {ListingsObject} from '@faims3/data-model/src/types';
 import {ProjectObject} from './projects';
 import {logError} from '../logging';
 import {
@@ -37,22 +37,11 @@ import {
 } from './connection';
 import {draft_db} from './draft-storage';
 
+import {db as projects_db} from '../dbs/projects-db';
+
 export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
-
-export interface ListingsObject {
-  _id: ListingID;
-  name: string;
-  description: string;
-  projects_db?: PossibleConnectionInfo;
-  conductor_url?: string;
-  local_only?: boolean;
-}
-
-export interface NonNullListingsObject extends ListingsObject {
-  projects_db: ConnectionInfo;
-}
 
 export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<ActiveDoc>;
 export type ExistingListings = PouchDB.Core.ExistingDocument<ListingsObject>;
@@ -103,7 +92,7 @@ export const default_changes_opts: PouchDB.Core.ChangesOptions &
   attachments: true,
 };
 
-const directory_db_pouch = new PouchDB<ListingsObject>(
+export const directory_db_pouch = new PouchDB<ListingsObject>(
   'directory',
   local_pouch_options
 );
@@ -154,8 +143,6 @@ export const getLocalStateDB = () => {
 export type JWTToken = string;
 
 export interface JWTTokenInfo {
-  pubkey: string;
-  pubalg: string;
   token: JWTToken;
 }
 
@@ -207,12 +194,10 @@ export function ensure_local_db<Content extends {}>(
   global_dbs: LocalDBList<Content>,
   start_sync_attachments: boolean
 ): [boolean, LocalDB<Content>] {
-  console.log('ensure_local_db', prefix, local_db_id, global_dbs);
   if (global_dbs[local_db_id]) {
     global_dbs[local_db_id].is_sync = start_sync;
     return [false, global_dbs[local_db_id]];
   } else {
-    console.log('creating a new db', prefix, local_db_id);
     const db = new PouchDB<Content>(
       prefix + POUCH_SEPARATOR + local_db_id,
       local_pouch_options
@@ -300,11 +285,6 @@ export function setLocalConnection<Content extends {}>(
   db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
 ) {
   const options = db_info.remote.options;
-  console.debug(
-    '%cSetting local connection:',
-    'background-color: cyan;',
-    db_info
-  );
 
   if (db_info.is_sync) {
     if (db_info.remote.connection !== null) {
@@ -401,6 +381,7 @@ export async function wipe_all_pouch_databases() {
     local_state_db,
     draft_db,
     local_auth_db,
+    projects_db,
   ];
   await delete_synced_dbs(data_dbs);
   await delete_synced_dbs(metadata_dbs);
