@@ -143,7 +143,8 @@ export const uiSpecificationReducer = createSlice({
         addAfter: string;
       }>
     ) => {
-      const {fieldName, fieldType, viewId, viewSetId, addAfter} = action.payload;
+      const {fieldName, fieldType, viewId, viewSetId, addAfter} =
+        action.payload;
 
       const newField: FieldType = getFieldSpec(fieldType);
 
