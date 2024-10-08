@@ -1,5 +1,6 @@
 interface ProgressBarProps {
   percentage: number;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -9,9 +10,16 @@ interface ProgressBarProps {
  * @param {number} props.percentage - A value between 0 and 1 representing the completion percentage.
  * @returns {JSX.Element} A visual representation of the progress in the form of a bar and percentage text.
  */
-export default function ProgressBar({percentage}: ProgressBarProps) {
+export default function ProgressBar({percentage, style}: ProgressBarProps) {
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: '6px'}}>
+    <div
+      style={{
+        ...style,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+      }}
+    >
       <div
         style={{
           backgroundColor: '#edeeeb',

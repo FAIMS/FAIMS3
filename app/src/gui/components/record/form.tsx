@@ -92,6 +92,7 @@ type RecordFormProps = {
   ViewName?: string | null;
   draftLastSaved?: null | Date;
   mq_above_md?: boolean;
+  setProgress?: React.Dispatch<React.SetStateAction<number>>;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -1147,39 +1148,6 @@ class RecordForm extends React.Component<
   }
 
   render() {
-    // we can't do this here because it changes state and forces a redraw
-    // if (this.state.draft_created !== null) {
-    //   // If a draft was created, that implies this form started from
-    //   // a non draft, so it must have been an existing record (see props
-    //   // as it's got a type {existing record} | {draft already created}
-    //   (this.context as any).dispatch({
-    //     type: ActionType.ADD_CUSTOM_ALERT,
-    //     payload: {
-    //       severity: 'success',
-    //       element: (
-    //         <React.Fragment>
-    //           <Link
-    //             component={RouterLink}
-    //             to={
-    //               ROUTES.NOTEBOOK +
-    //               this.props.project_id +
-    //               ROUTES.RECORD_EXISTING +
-    //               this.props.record_id! +
-    //               ROUTES.REVISION +
-    //               this.props.revision_id! +
-    //               ROUTES.RECORD_DRAFT +
-    //               this.state.draft_created
-    //             }
-    //           >
-    //             Created new draft
-    //           </Link>
-    //         </React.Fragment>
-    //       ),
-    //     },
-    //   });
-    //   this.setState({draft_created: null});
-    // }
-
     if (this.isReady()) {
       const viewName = this.requireView();
       const viewsetName = this.requireViewsetName();
@@ -1196,6 +1164,7 @@ class RecordForm extends React.Component<
       let is_final_view = true;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
+
       return (
         <Box>
           {/* {this.state.revision_cached} */}
@@ -1222,6 +1191,23 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
+                const {fields} = this.props.ui_specification;
+                const requiredFields = Object.keys(fields).filter(
+                  field => fields[field]['component-parameters'].required
+                );
+
+                const {values} = formProps;
+
+                const numberCompleted = requiredFields
+                  .map(field =>
+                    values.hasOwnProperty(field) && values[field] ? 1 : 0
+                  )
+                  .reduce((a: number, b: number) => a + b, 0);
+
+                this.props.setProgress?.(
+                  numberCompleted / requiredFields.length
+                );
+
                 //ONLY update if the updated field is the controller field
                 fieldNames = getFieldsMatchingCondition(
                   this.props.ui_specification,
@@ -1230,6 +1216,7 @@ class RecordForm extends React.Component<
                   viewName,
                   formProps.touched
                 );
+
                 views = getViewsMatchingCondition(
                   this.props.ui_specification,
                   formProps.values,
@@ -1341,5 +1328,6 @@ class RecordForm extends React.Component<
     }
   }
 }
+
 RecordForm.contextType = store;
 export default RecordForm;
