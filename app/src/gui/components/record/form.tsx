@@ -92,7 +92,7 @@ type RecordFormProps = {
   ViewName?: string | null;
   draftLastSaved?: null | Date;
   mq_above_md?: boolean;
-  setProgress?: React.Dispatch<React.SetStateAction<number>>;
+  setCompletionPercentage?: React.Dispatch<React.SetStateAction<number>>;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
