@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Alert,
   Box,
@@ -28,6 +28,7 @@ import {
   Modal,
   Paper,
   CircularProgress,
+  Stack,
 } from '@mui/material';
 import {
   DataGrid,
@@ -36,15 +37,15 @@ import {
   GridRow,
   GridRowParams,
 } from '@mui/x-data-grid';
-import {DataGridLinksComponentProps} from '../types';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
-import {RecordID} from '@faims3/data-model';
+import {RecordID, Record} from '@faims3/data-model';
 import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from '@faims3/data-model';
-import Checkbox from '@mui/material/Checkbox';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {gridParamsDataType} from '../record_links';
+import {RecordLinkProps} from '../types';
+import {getRecordInformation} from '../RelatedInformation';
+import {R} from 'msw/lib/core/HttpResponse-B07UKAkU';
 
 const style = {
   position: 'absolute' as const,
@@ -56,11 +57,12 @@ const style = {
   p: 1,
 };
 
+// Unused component - referenced in RelatedRecordSelector and commented out
+// because it is unreachable (I think - SC)
 export function DataGridNoLink(props: {
   links: RecordReference[];
   relation_linked_vocab: string;
   relation_type: string;
-  relation_preferred_label: string;
 }) {
   const columns: any = [
     {
@@ -98,17 +100,6 @@ export function DataGridNoLink(props: {
       flex: 0.4,
     },
   ];
-  if (props.relation_type === 'Child' && props.relation_preferred_label !== '')
-    columns.push({
-      field: 'preferred',
-      headerName: props.relation_preferred_label,
-      headerClassName: 'faims-record-link--header',
-      minWidth: 200,
-      flex: 0.2,
-      valueGetter: (params: GridCellParams) => params.row.is_preferred ?? false,
-      renderCell: (params: GridCellParams) =>
-        params.value ? <>{props.relation_preferred_label}</> : <></>,
-    });
   // remove any invalid entries in links (due to a bug elsewhere)
   const links = props.links.filter(link => link.record_id);
   return props.links !== null && props.links.length > 0 ? (
@@ -136,7 +127,19 @@ export function DataGridNoLink(props: {
   );
 }
 
-export default function DataGridFieldLinksComponent(
+interface DataGridLinksComponentProps {
+  links: Array<RecordLinkProps> | null;
+  record_id: RecordID;
+  record_hrid: string;
+  record_type: string;
+  field_label: string;
+  handleUnlink?: Function;
+  handleReset?: Function;
+  disabled?: boolean;
+  relation_type?: string;
+}
+
+export function DataGridFieldLinksComponent(
   props: DataGridLinksComponentProps
 ) {
   /**
@@ -190,122 +193,155 @@ export default function DataGridFieldLinksComponent(
         };
       });
   }
-  function recordDisplay(
-    current_record_id: RecordID,
-    record_id: RecordID,
-    type: string,
-    hrid: string,
-    route: any,
-    deleted: boolean
-  ) {
-    return record_id === current_record_id ? (
-      <RecordRouteDisplay>This record</RecordRouteDisplay>
-    ) : (
-      <Typography variant={'body2'} fontWeight={'bold'}>
-        <RecordRouteDisplay link={deleted ? '' : route} deleted={deleted}>
-          {type + ' ' + hrid}
-        </RecordRouteDisplay>
-      </Typography>
-    );
-  }
-  const columns: any = [
-    {
-      field: 'relation_type_vocabPair',
-      headerName: 'Relationship',
-      headerClassName: 'faims-record-link--header',
-      minWidth: 200,
-      flex: 0.2,
-      valueGetter: (params: gridParamsDataType) => params.value[1],
-    },
-    {
-      field: 'record',
-      headerName: 'Record',
-      headerClassName: 'faims-record-link--header',
-      minWidth: 200,
-      flex: 0.4,
-      valueGetter: (params: GridCellParams) =>
-        params.row.type + ' ' + params.row.hrid,
-      renderCell: (params: GridCellParams) =>
-        recordDisplay(
-          props.record_id,
-          params.row.record_id,
-          params.row.type,
-          params.row.hrid,
-          params.row.route,
-          params.row.deleted
-        ),
-    },
 
-    {
-      field: 'lastUpdatedBy',
-      headerName: 'Last Updated By',
-      headerClassName: 'faims-record-link--header',
-      minWidth: 150,
-      flex: 0.2,
-      valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
-    },
-  ];
-  // for read ONLY
+  function ChildRecordDisplay(props: {
+    current_record_id: RecordID;
+    child_record: RecordLinkProps;
+  }) {
+    const [recordData, setRecordData] = useState<
+      | {
+          latest_record: null;
+          revision_id: undefined;
+        }
+      | {
+          latest_record: Record | null;
+          revision_id: string;
+        }
+    >();
 
-  // BBS 20221117 checking on empty label to toggle. Label is set in src/gui/fields/RelatedRecordSelector.tsx
-  if (
-    props.relation_type === 'Child' &&
-    props.disabled !== true &&
-    props.relation_preferred_label !== ''
-  )
-    columns.push({
-      field: 'preferred',
-      headerName: 'Make ' + props.relation_preferred_label,
-      headerClassName: 'faims-record-link--header',
-      minWidth: 100,
-      flex: 0.2,
-      align: 'center',
-      headerAlign: 'center',
-      valueGetter: (params: GridCellParams) =>
-        params.row.relation_preferred ?? false,
-      renderCell: (params: GridCellParams) => (
-        <Checkbox
-          checked={params.row.value}
-          disabled={
-            props.preferred !== undefined &&
-            props.preferred !== null &&
-            props.preferred !== params.row.record_id
-              ? true
-              : false
-          }
-          onChange={(event: any) => {
-            if (props.handleMakePreferred !== undefined)
-              props.handleMakePreferred(
-                params.row.record_id,
-                event.target.checked
+    const [childFields, setChildFields] = useState<Array<string>>([]);
+
+    useEffect(() => {
+      const fn = async () => {
+        // get the record so we can display some fields
+        const rd = await getRecordInformation(props.child_record);
+        setRecordData(rd);
+        console.log(rd);
+
+        if (rd.latest_record) {
+          const fields = Object.getOwnPropertyNames(
+            rd.latest_record.data
+          ).filter(
+            (n: string) =>
+              n !== 'fieldNames' && n !== 'views' && n !== 'updateField'
+          );
+          setChildFields(fields);
+          console.log(fields);
+        }
+      };
+
+      fn();
+    }, [props.child_record]);
+
+    if (props.child_record.record_id === props.current_record_id) {
+      return <RecordRouteDisplay>This record</RecordRouteDisplay>;
+    } else {
+      return (
+        <Stack>
+          <Typography variant={'body2'} fontWeight={'bold'}>
+            <RecordRouteDisplay
+              link={props.child_record.deleted ? '' : props.child_record.route}
+              deleted={props.child_record.deleted}
+            >
+              {props.child_record.type + ': ' + props.child_record.hrid}
+            </RecordRouteDisplay>
+          </Typography>
+          {childFields.map(fieldName => {
+            const value = recordData?.latest_record?.data[fieldName];
+            if (typeof value === 'string')
+              return (
+                <Typography variant={'body2'}>
+                  {fieldName}:{' '}
+                  {recordData?.latest_record?.data[fieldName] || ''}
+                </Typography>
               );
-          }}
-        />
-      ),
-    });
-  else if (
-    props.relation_type === 'Child' &&
-    props.disabled === true &&
-    props.relation_preferred_label !== ''
-  )
-    columns.push({
-      field: 'preferred',
-      headerName: 'Make ' + props.relation_preferred_label,
-      headerClassName: 'faims-record-link--header',
-      minWidth: 200,
-      flex: 0.2,
-      valueGetter: (params: GridCellParams) =>
-        params.row.relation_preferred ?? false,
-      renderCell: (params: GridCellParams) =>
-        params.value ? (
-          <>
-            <CheckCircleIcon color="success" /> {props.relation_preferred_label}
-          </>
-        ) : (
-          <></>
-        ),
-    });
-  if (props.disabled !== true)
+            else return <></>;
+          })}
+        </Stack>
+      );
+    }
+  }
+
+  const xx = {
+    latest_record: {
+      project_id: 'development-faims-server||1727833559528-rapid-impact-survey',
+      record_id: 'rec-914ff804-a35c-4848-9642-9e7f00ee7d52',
+      revision_id: 'frev-479906db-bb67-4599-a4a5-0947cf058ac3',
+      type: 'Building',
+      data: {
+        'hridBuilding-Building-Details': 'Building: Mobile-NNN',
+        'Building-Identifier': 'My House',
+        'Structure-Type': 'Mobile',
+        'Building-Location': {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [150.95982747559432, -33.75271099772671],
+              },
+              properties: null,
+            },
+          ],
+        },
+        'Building-Damage': 'Damage',
+        'building-hazards': 'Yes',
+        'Hazard-Details': 'A big mess.',
+        'Building-Photograph': null,
+        fieldNames: [],
+        views: [],
+        updateField: 'Hazard-Details',
+      },
+      updated_by: 'admin',
+      updated: '2024-10-03T03:47:55.196Z',
+      created: '2024-10-03T03:47:55.196Z',
+      created_by: 'admin',
+      deleted: false,
+    },
+    revision_id: 'frev-479906db-bb67-4599-a4a5-0947cf058ac3',
+  };
+
+  const relation_column = {
+    field: 'relation_type_vocabPair',
+    headerName: 'Relationship',
+    headerClassName: 'faims-record-link--header',
+    minWidth: 200,
+    flex: 0.2,
+    valueGetter: (params: gridParamsDataType) => params.value[1],
+  };
+
+  const record_column = {
+    field: 'record',
+    headerName: 'Record',
+    headerClassName: 'faims-record-link--header',
+    minWidth: 200,
+    flex: 0.4,
+    valueGetter: (params: GridCellParams) =>
+      params.row.type + ' ' + params.row.hrid,
+    renderCell: (params: GridCellParams) => (
+      <ChildRecordDisplay
+        current_record_id={props.record_id}
+        child_record={params.row}
+      />
+    ),
+  };
+
+  const updated_by_column = {
+    field: 'lastUpdatedBy',
+    headerName: 'Last Updated By',
+    headerClassName: 'faims-record-link--header',
+    minWidth: 150,
+    flex: 0.2,
+    valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
+  };
+
+  const columns: any =
+    props.relation_type === 'Child'
+      ? [record_column, updated_by_column]
+      : [relation_column, record_column, updated_by_column];
+
+  if (!props.disabled)
     columns.push({
       field: 'actions',
       type: 'actions',
@@ -321,6 +357,8 @@ export default function DataGridFieldLinksComponent(
         />,
       ],
     });
+
+  console.log('Data Grid', props);
 
   return (
     <Box component={Paper} elevation={0}>
@@ -373,6 +411,7 @@ export default function DataGridFieldLinksComponent(
           </Modal>
           <DataGrid
             autoHeight
+            getRowHeight={() => 'auto'}
             density={'compact'}
             pageSizeOptions={[5, 10, 20]}
             disableRowSelectionOnClick

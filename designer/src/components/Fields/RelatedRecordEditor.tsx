@@ -173,7 +173,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
       <Grid item xs={12}>
         <Card variant="outlined">
           <Grid container p={2} rowSpacing={3}>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3}>
               <FormControlLabel
                 required
                 control={
@@ -189,7 +189,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormHelperText>
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3}>
               <FormControl required sx={{minWidth: 150}}>
                 <InputLabel id="featureType-label">
                   Select Relation Type
@@ -206,7 +206,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={3}>
               <FormControl required sx={{minWidth: 150}}>
                 <InputLabel id="relatedType-label">
                   Select Related Form
@@ -225,6 +225,21 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
                     );
                   })}
                 </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={3}>
+              <FormControl required sx={{minWidth: 150}}>
+                <TextField
+                  name="related-type-label"
+                  variant="outlined"
+                  label="Related Type Label"
+                  value={state.relatedTypeLabel}
+                  onChange={e =>
+                    updateProperty('relatedTypeLabel', e.target.value)
+                  }
+                  helperText="Label for the other type."
+                />
               </FormControl>
             </Grid>
           </Grid>
