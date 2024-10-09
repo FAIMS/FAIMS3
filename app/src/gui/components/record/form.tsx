@@ -74,6 +74,7 @@ import UGCReport from './UGCReport';
 import {generateFAIMSDataID, getFirstRecordHead} from '@faims3/data-model';
 import {logError} from '../../../logging';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
+import {percentComplete, requiredFields} from '../../../lib/survey';
 //import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -1116,16 +1117,6 @@ class RecordForm extends React.Component<
   }
 
   isReady(): boolean {
-    // if (DEBUG_APP) {
-    //   if (!this.state.type_cached)
-    //     console.debug('isReady false because type_cached is false');
-    //   if (!this.state.initialValues)
-    //     console.debug('isReady false because initialValues is false');
-    //   if (!this.props.ui_specification)
-    //     console.debug('isReady false because ui_specification is false');
-    //   if (!this.state.view_cached)
-    //     console.debug('isReady false because view_cached is false');
-    // }
     return Boolean(
       this.state.type_cached &&
         this.state.initialValues &&
@@ -1163,7 +1154,6 @@ class RecordForm extends React.Component<
       let is_final_view = true;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
-
       return (
         <Box>
           {/* {this.state.revision_cached} */}
@@ -1190,21 +1180,11 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
-                const {fields} = this.props.ui_specification;
-                const requiredFields = Object.keys(fields).filter(
-                  field => fields[field]['component-parameters'].required
-                );
-
-                const {values} = formProps;
-
-                const numberCompleted = requiredFields
-                  .map(field =>
-                    values.hasOwnProperty(field) && values[field] ? 1 : 0
-                  )
-                  .reduce((a: number, b: number) => a + b, 0);
-
                 this.props.setProgress?.(
-                  numberCompleted / requiredFields.length
+                  percentComplete(
+                    requiredFields(this.props.ui_specification.fields),
+                    formProps.values
+                  )
                 );
 
                 //ONLY update if the updated field is the controller field
