@@ -8,8 +8,8 @@ import {ProjectUIModel} from '@faims3/data-model/build/src/types';
  */
 export const requiredFields = (fields: ProjectUIModel): string[] =>
   Object.entries(fields)
-    .filter(([_, value]) => value['component-parameters'].required)
-    .map(([key, _]) => key);
+    .filter(([, value]) => value['component-parameters'].required)
+    .map(([key]) => key);
 
 /**
  * Determines whether a given value is considered "empty".
@@ -35,7 +35,7 @@ const emptyValue = (value: any): boolean => {
 export const percentComplete = (fields: string[], values: object): number =>
   fields
     .map(field =>
-      values.hasOwnProperty(field) &&
+      Object.prototype.hasOwnProperty.call(values, field) &&
       !emptyValue(values[field as keyof typeof values])
         ? 1
         : 0
