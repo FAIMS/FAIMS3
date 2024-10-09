@@ -76,7 +76,7 @@ export default function App() {
           <ThemeProvider theme={theme}>
             <Router>
               <AppUrlListener></AppUrlListener>
-            <MainLayout token={token}>
+              <MainLayout token={token}>
                 <Routes>
                   <Route
                     path={ROUTES.SIGN_IN}
@@ -87,14 +87,14 @@ export default function App() {
                     }
                   />
                   <Route
-                  path={ROUTES.AUTH_RETURN}
-                  element={
-                    <PrivateRoute allowed>
-                      <AuthReturn setToken={setToken} />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
+                    path={ROUTES.AUTH_RETURN}
+                    element={
+                      <PrivateRoute allowed>
+                        <AuthReturn setToken={setToken} />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
                     path={ROUTES.INDEX}
                     element={
                       <PrivateRoute allowed={Boolean(token)}>
