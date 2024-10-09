@@ -30,7 +30,7 @@ import UnfoldLessDoubleRoundedIcon from '@mui/icons-material/UnfoldLessDoubleRou
 import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
 
 import {FieldEditor} from './field-editor';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {getFieldNames} from '../fields';
 
@@ -40,6 +40,8 @@ type Props = {
 };
 
 export const FieldList = ({viewSetId, viewId}: Props) => {
+  console.log('FieldList', viewSetId, viewId);
+
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
   );
@@ -50,6 +52,7 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
     name: 'New Text Field',
     type: 'TextField',
   });
+  const [addAfterField, setAddAfterField] = useState('');
 
   const allFieldNames = getFieldNames();
 
@@ -61,6 +64,12 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
     setDialogOpen(false);
   };
 
+  const addFieldAfterCallback = (fieldName: string) => {
+    console.log('adding a field after', fieldName);
+    setAddAfterField(fieldName);
+    setDialogOpen(true);
+  };
+
   const addField = () => {
     dispatch({
       type: 'ui-specification/fieldAdded',
@@ -69,35 +78,52 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
         fieldType: dialogState.type,
         viewId: viewId,
         viewSetId: viewSetId,
+        addAfter: addAfterField,
       },
     });
     setDialogOpen(false);
   };
 
   const allClosed: {[key: string]: boolean} = {};
-  fView.fields.forEach((fieldName: string) => {
-    allClosed[fieldName] = false;
-  });
-
   const allOpen: {[key: string]: boolean} = {};
-  fView.fields.forEach((fieldName: string) => {
-    allOpen[fieldName] = true;
-  });
 
   const [isExpanded, setIsExpanded] = useState(allClosed);
   const [showCollapseButton, setShowCollapseButton] = useState(false);
 
-  // if any of the fields is not in the isExpanded state it is because
-  // they were just added or their name was changed
-  // so add them to the list as expanded in both cases
-  fView.fields.forEach((fieldName: string) => {
-    if (isExpanded[fieldName] === undefined) {
-      setIsExpanded(prevState => ({
-        ...prevState,
-        [fieldName]: true,
-      }));
-    }
-  });
+  const updateAllToggles = () => {
+    fView.fields.forEach((fieldName: string) => {
+      allClosed[fieldName] = false;
+    });
+
+    fView.fields.forEach((fieldName: string) => {
+      allOpen[fieldName] = true;
+    });
+  };
+
+  updateAllToggles();
+
+  useEffect(() => {
+    // if fView.label changes we are viewing a different
+    // section, so reset all fields to be closed
+    setIsExpanded(allClosed);
+  }, [fView.label]);
+
+  // can't do this with another useEffect because it might fire before
+  // or after the other one, it then opens up random fields
+  //
+  // useEffect(() => {
+  //   // if fViews.fields changes we check if there is a new
+  //   // field (just added) and open it up
+  //   fView.fields.forEach((fieldName: string) => {
+  //     console.log('checking', fieldName, isExpanded[fieldName]);
+  //     if (isExpanded[fieldName] === undefined) {
+  //       setIsExpanded({
+  //         ...isExpanded,
+  //         [fieldName]: true,
+  //       });
+  //     }
+  //   });
+  // }, [fView.fields]);
 
   const handleExpandChange = (fieldName: string) => {
     return (_event: React.SyntheticEvent, expanded: boolean) => {
@@ -110,6 +136,43 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
 
   return (
     <>
+      <Stack direction="row" spacing={1} mt={2}>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={openDialog}
+          startIcon={<AddCircleOutlineRoundedIcon />}
+        >
+          Add a Field
+        </Button>
+
+        {showCollapseButton ? (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => {
+              setIsExpanded(allClosed);
+              setShowCollapseButton(false);
+            }}
+            startIcon={<UnfoldLessDoubleRoundedIcon />}
+          >
+            Collapse All Fields
+          </Button>
+        ) : (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => {
+              setIsExpanded(allOpen);
+              setShowCollapseButton(true);
+            }}
+            startIcon={<UnfoldMoreDoubleRoundedIcon />}
+          >
+            Expand All Fields
+          </Button>
+        )}
+      </Stack>
+
       {fView.fields.map((fieldName: string) => {
         return (
           <FieldEditor
@@ -117,7 +180,8 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
             fieldName={fieldName}
             viewSetId={viewSetId}
             viewId={viewId}
-            expanded={isExpanded[fieldName]}
+            expanded={isExpanded[fieldName] ?? false}
+            addFieldCallback={addFieldAfterCallback}
             handleExpandChange={handleExpandChange(fieldName)}
           />
         );
