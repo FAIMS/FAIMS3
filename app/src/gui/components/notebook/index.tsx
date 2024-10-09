@@ -131,8 +131,6 @@ export default function NotebookComponent(props: NotebookComponentProps) {
 
   const {project} = props;
   const [loading, setLoading] = useState(true);
-  // refresh state is just something to change to force a rebuild
-  const [refresh, setRefresh] = useState(false);
   const [err, setErr] = useState('');
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
   const [uiSpec, setUiSpec] = useState<null | ProjectUIModel>(null);
@@ -141,9 +139,16 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const history = useNavigate();
 
   /**
-   * Fetches the UI specification and viewsets for the project when the component mounts or the project changes.
+   * Fetches the UI specification and viewsets for the project
    */
-  useEffect(() => {
+  const pageLoader = () => {
+    // Starting state reset
+    setViewsets(null);
+    setUiSpec(null);
+    setErr('');
+    setLoading(true);
+
+    // Try to load details and records
     if (project.listing && project._id) {
       getUiSpecForProject(project.project_id)
         .then(spec => {
@@ -153,21 +158,24 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           setErr('');
         })
         .catch(err => {
+          setLoading(false);
           setErr(err.message);
         });
     }
-    return () => {
-      setViewsets(null);
-      setUiSpec(null);
-      setErr('');
-      setLoading(true);
-    };
-  }, [project, refresh]);
+  };
 
-  // trigger a refresh of the component because something changed down
-  // below (a record or draft was deleted)
+  /**
+   * Fetches the UI specification and viewsets for the project when the
+   * component mounts or the project changes.
+   */
+  useEffect(() => {
+    pageLoader();
+  }, [project]);
+
+  // trigger a refresh of the content because something changed down below (a
+  // record or draft was deleted)
   const handleRefresh = () => {
-    setRefresh(!refresh);
+    pageLoader();
   };
 
   return (
