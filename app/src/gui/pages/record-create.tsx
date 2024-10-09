@@ -94,8 +94,6 @@ function DraftCreate(props: DraftCreateProps) {
   const [draft_id, setDraft_id] = useState(null as null | string);
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
 
-  console.log('HERERERE');
-
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
   }, [project_id]);
@@ -255,7 +253,9 @@ function DraftEdit(props: DraftEditProps) {
           {project_info !== null ? project_info.name : project_id} project.
         </Typography>
       </Box>
-      <ProgressBar percentage={progress} style={{paddingBottom: '16px'}} />
+      <div style={{padding: '10px'}}>
+        <ProgressBar percentage={progress} />
+      </div>
       <div />
       <Paper square>
         <TabContext value={value}>
@@ -332,10 +332,6 @@ function DraftEdit(props: DraftEditProps) {
     </React.Fragment>
   );
 }
-
-// type RecordCreateProps = {
-//   token?: null | undefined | TokenContents;
-// };
 
 export default function RecordCreate() {
   const {project_id, type_name, draft_id, record_id} = useParams<{

@@ -1195,7 +1195,6 @@ class RecordForm extends React.Component<
                   viewName,
                   formProps.touched
                 );
-
                 views = getViewsMatchingCondition(
                   this.props.ui_specification,
                   formProps.values,
@@ -1307,6 +1306,5 @@ class RecordForm extends React.Component<
     }
   }
 }
-
 RecordForm.contextType = store;
 export default RecordForm;
