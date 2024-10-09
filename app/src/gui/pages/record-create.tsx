@@ -63,6 +63,8 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import InheritedDataComponent from '../components/record/inherited_data';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import TransparentButton from '../components/buttons/transparent-button';
+import {scrollToDiv} from '../../lib/navigation';
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 
 interface DraftCreateProps {
@@ -260,23 +262,10 @@ function DraftEdit(props: DraftEditProps) {
               justifyContent: 'flex-end',
             }}
           >
-            <div
-              onClick={() =>
-                buttonRef.current &&
-                buttonRef.current.scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'end',
-                })
-              }
-              style={{
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'center',
-              }}
-            >
+            <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
               <ArrowDropDown />
               Jump to end
-            </div>
+            </TransparentButton>
           </div>
         </Box>
         <Paper square>
