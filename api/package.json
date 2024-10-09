@@ -36,6 +36,7 @@
     "cors": "2.8.5",
     "csv-stringify": "^6.4.4",
     "express": "4.21.0",
+    "express-async-errors": "^3.1.1",
     "express-handlebars": "7.1.2",
     "express-rate-limit": "^7.1.5",
     "express-validator": "7.0.1",
