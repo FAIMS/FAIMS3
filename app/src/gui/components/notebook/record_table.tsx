@@ -59,7 +59,7 @@ type RecordsTableProps = {
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
   handleQueryFunction: Function;
-  handleRefresh: () => Promise<any>;
+  handleRefresh: () => void;
 };
 
 type RecordsBrowseTableProps = {
@@ -67,7 +67,7 @@ type RecordsBrowseTableProps = {
   maxRows: number | null;
   viewsets?: ProjectUIViewsets | null;
   filter_deleted: boolean;
-  handleRefresh: () => Promise<any>;
+  handleRefresh: () => void;
 };
 
 function RecordsTable(props: RecordsTableProps) {
@@ -429,9 +429,6 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
 
   useEffect(() => {
     const getData = async () => {
-      if (DEBUG_APP) {
-        console.log('RecordsTable updating', props.project_id, query);
-      }
       try {
         if (query.length === 0) {
           const ma = await getMetadataForAllRecords(

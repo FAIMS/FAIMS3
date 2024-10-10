@@ -18,41 +18,45 @@
  *   This module provides functions to access notebooks from the database
  */
 
-import PouchDB from 'pouchdb';
-import {getProjectsDB} from '.';
-import {CLUSTER_ADMIN_GROUP_NAME, COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {
-  ProjectID,
+  addDesignDocsForNotebook,
+  APINotebookList,
+  CLUSTER_ADMIN_GROUP_NAME,
+  EncodedProjectUIModel,
   getProjectDB,
+  notebookRecordIterator,
+  ProjectID,
   ProjectObject,
   resolve_project_id,
-  notebookRecordIterator,
-  addDesignDocsForNotebook,
 } from '@faims3/data-model';
+import archiver from 'archiver';
+import PouchDB from 'pouchdb';
+import {Stream} from 'stream';
+import {getMetadataDb, getProjectsDB} from '.';
+import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {
+  PROJECT_METADATA_PREFIX,
   ProjectMetadata,
   ProjectUIFields,
-  ProjectUIModel,
-  PROJECT_METADATA_PREFIX,
 } from '../datamodel/database';
-import archiver from 'archiver';
-import {Stream} from 'stream';
+import * as Exceptions from '../exceptions';
 
-import securityPlugin from 'pouchdb-security-helper';
 import {
   file_attachments_to_data,
   file_data_to_attachments,
   getDataDB,
   getFullRecordData,
   getRecordsWithRegex,
+  HRID_STRING,
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
-  HRID_STRING,
 } from '@faims3/data-model';
+import {Stringifier, stringify} from 'csv-stringify';
+import securityPlugin from 'pouchdb-security-helper';
+import {slugify} from '../utils';
 import {userHasPermission} from './users';
 PouchDB.plugin(securityPlugin);
 import {Stringifier, stringify} from 'csv-stringify';
-import {kStringMaxLength} from 'buffer';
 
 /**
  * getProjects - get the internal project documents that reference
@@ -92,20 +96,25 @@ export const getProjects = async (
  * @oaram user - only return notebooks that this user can see
  * @returns an array of ProjectObject objects
  */
-export const getNotebooks = async (user: Express.User): Promise<any[]> => {
-  const output: any[] = [];
+export const getNotebooks = async (
+  user: Express.User
+): Promise<APINotebookList[]> => {
+  // Respond with notebook list model
+  const output: APINotebookList[] = [];
+  // DB records are project objects
   const projects: ProjectObject[] = [];
   // in the frontend, the listing_id names the backend instance,
   // so far it's either 'default' or 'locallycreatedproject'
   const listing_id = 'default';
   const projects_db = getProjectsDB();
   if (projects_db) {
-    const res = await projects_db.allDocs({
+    // We want to type hint that this will include all values
+    const res = await projects_db.allDocs<ProjectObject>({
       include_docs: true,
     });
     res.rows.forEach(e => {
       if (e.doc !== undefined && !e.id.startsWith('_')) {
-        projects.push(e.doc as unknown as ProjectObject);
+        projects.push(e.doc);
       }
     });
 
@@ -116,8 +125,10 @@ export const getNotebooks = async (user: Express.User): Promise<any[]> => {
       if (userHasPermission(user, project_id, 'read')) {
         output.push({
           name: project.name,
+          is_admin: userHasPermission(user, project_id, 'modify'),
           last_updated: project.last_updated,
           created: project.created,
+          template_id: project.template_id,
           status: project.status,
           project_id: full_project_id,
           listing_id: listing_id,
@@ -128,31 +139,6 @@ export const getNotebooks = async (user: Express.User): Promise<any[]> => {
     }
   }
   return output;
-};
-
-/**
- * Slugify a string, replacing special characters with less special ones
- * @param str input string
- * @returns url safe version of the string
- * https://ourcodeworld.com/articles/read/255/creating-url-slugs-properly-in-javascript-including-transliteration-for-utf-8
- */
-export const slugify = (str: string) => {
-  str = str.trim();
-  str = str.toLowerCase();
-
-  // remove accents, swap ñ for n, etc
-  const from = 'ãàáäâáº½èéëêìíïîõòóöôùúüûñç·/_,:;';
-  const to = 'aaaaaeeeeeiiiiooooouuuunc------';
-  for (let i = 0, l = from.length; i < l; i++) {
-    str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
-  }
-
-  str = str
-    .replace(/[^a-z0-9 -]/g, '') // remove invalid chars
-    .replace(/\s+/g, '-') // collapse whitespace and replace by -
-    .replace(/-+/g, '-'); // collapse dashes
-
-  return str;
 };
 
 /**
@@ -183,7 +169,7 @@ type AutoIncrementObject = {
  * @returns an autoincrementers object suitable for insertion into the db or
  *          undefined if there are no such fields
  */
-const getAutoIncrementers = (uiSpec: ProjectUIModel) => {
+const getAutoIncrementers = (uiSpec: EncodedProjectUIModel) => {
   // Note that this relies on the name 'local-autoincrementers' being the same as that
   // used in the front-end code (LOCAL_AUTOINCREMENTERS_NAME in src/local-data/autoincrementers.ts)
   const autoinc: AutoIncrementObject = {
@@ -248,8 +234,9 @@ export const validateDatabases = async () => {
  */
 export const createNotebook = async (
   projectName: string,
-  uispec: ProjectUIModel,
-  metadata: any
+  uispec: EncodedProjectUIModel,
+  metadata: any,
+  template_id: string | undefined = undefined
 ) => {
   const project_id = generateProjectID(projectName);
 
@@ -257,6 +244,7 @@ export const createNotebook = async (
   const dataDBName = `data-${project_id}`;
   const projectDoc = {
     _id: project_id,
+    template_id: template_id,
     name: projectName.trim(),
     metadata_db: {
       db_name: metaDBName,
@@ -265,7 +253,7 @@ export const createNotebook = async (
       db_name: dataDBName,
     },
     status: 'published',
-  };
+  } as ProjectObject;
 
   try {
     // first add an entry to the projects db about this project
@@ -308,7 +296,7 @@ export const createNotebook = async (
     await metaDB.put(autoIncrementers);
   }
   uispec['_id'] = 'ui-specification';
-  await metaDB.put(uispec as PouchDB.Core.PutDocument<ProjectUIModel>);
+  await metaDB.put(uispec as PouchDB.Core.PutDocument<EncodedProjectUIModel>);
 
   // ensure that the name is in the metadata
   metadata.name = projectName.trim();
@@ -345,7 +333,7 @@ export const createNotebook = async (
  */
 export const updateNotebook = async (
   project_id: string,
-  uispec: ProjectUIModel,
+  uispec: EncodedProjectUIModel,
   metadata: any
 ) => {
   const metaDB = await getProjectDB(project_id);
@@ -405,7 +393,7 @@ export const updateNotebook = async (
   uispec['_id'] = 'ui-specification';
   uispec['_rev'] = existingUISpec['_rev'];
   // now store it to update the spec
-  await metaDB.put(uispec as PouchDB.Core.PutDocument<ProjectUIModel>);
+  await metaDB.put(uispec as PouchDB.Core.PutDocument<EncodedProjectUIModel>);
 
   // ensure that the name is in the metadata
   // metadata.name = projectName.trim();
@@ -420,20 +408,35 @@ export const updateNotebook = async (
  * @param project_id - project identifier
  */
 export const deleteNotebook = async (project_id: string) => {
+  // Get the projects DB
   const projectsDB = getProjectsDB();
-  if (projectsDB) {
-    const projectDoc = await projectsDB.get(project_id);
-    if (projectDoc) {
-      const metaDB = await getProjectDB(project_id);
-      const dataDB = await getDataDB(project_id);
-      if (metaDB && dataDB) {
-        await metaDB.destroy();
-        await dataDB.destroy();
-        // remove the project from the projectsDB
-        await projectsDB.remove(projectDoc);
-      }
-    }
+
+  // If not found, 404
+  if (!projectsDB) {
+    throw new Exceptions.InternalSystemError(
+      'Could not get the notebooks database. Contact a system administrator.'
+    );
   }
+
+  // Get the project document for given project ID
+  const projectDoc = await projectsDB.get(project_id);
+
+  if (!projectDoc) {
+    throw new Exceptions.ItemNotFoundException(
+      'Could not find the specified project. Are you sure the project id is correct?'
+    );
+  }
+
+  // This gets the metadata DB
+  const metaDB = await getMetadataDb(project_id);
+  // This gets the data DB
+  const dataDB = await getDataDB(project_id);
+
+  await metaDB.destroy();
+  await dataDB.destroy();
+
+  // remove the project from the projectsDB
+  await projectsDB.remove(projectDoc);
 };
 
 export const writeProjectMetadata = async (
@@ -952,20 +955,42 @@ const generateFilename = (
   return filename;
 };
 
-export const getRolesForNotebook = async (project_id: ProjectID) => {
-  const meta = await getNotebookMetadata(project_id);
-  if (meta) {
-    const roles = meta.accesses || [];
-    if (roles.indexOf('admin') < 0) {
-      roles.push('admin');
-    }
-    if (roles.indexOf('user') < 0) {
-      roles.push('user');
-    }
-    return roles;
+/**
+ * Fetches the roles configured for a notebook from the notebook metadata DB.
+ * @param project_id The project ID to lookup
+ * @param metadata If the project metadata is known, no need to fetch it again
+ * @returns A list of roles for this notebook including at least admin and user
+ */
+export const getRolesForNotebook = async (
+  project_id: ProjectID,
+  // If metadata is already known, pass it in here
+  metadata: ProjectMetadata | undefined = undefined
+): Promise<string[]> => {
+  // Either use provided metadata or fetch it
+  let meta: ProjectMetadata;
+  if (metadata) {
+    meta = metadata;
   } else {
-    return [];
+    // Gets the metadata for the notebook
+    const possibleMetadata = await getNotebookMetadata(project_id);
+    if (!possibleMetadata) {
+      throw new Exceptions.InternalSystemError(
+        'Failed to retrieve roles from the metadata DB for the given project ID.'
+      );
+    }
+    meta = possibleMetadata;
   }
+
+  // Include all of these roles
+  const roles = meta.accesses || [];
+  // But also add admin and user if not included
+  if (roles.indexOf('admin') < 0) {
+    roles.push('admin');
+  }
+  if (roles.indexOf('user') < 0) {
+    roles.push('user');
+  }
+  return roles;
 };
 
 export async function countRecordsInNotebook(

@@ -163,6 +163,7 @@ export async function getAvailableProjectsFromListing(
   const output: ProjectInformation[] = [];
   const projects: ProjectObject[] = [];
   const listing = getListing(listing_id);
+
   if (listing) {
     const projects_db = listing.projects.local;
     const res = await projects_db.allDocs({
@@ -173,7 +174,7 @@ export async function getAvailableProjectsFromListing(
         projects.push(e.doc as ProjectObject);
       }
     });
-    
+
     for (const project of projects) {
       const project_id = project._id;
       const full_project_id = resolve_project_id(listing_id, project_id);

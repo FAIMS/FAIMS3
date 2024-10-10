@@ -25,9 +25,9 @@ import {
   ProjectDataObject,
   ProjectID,
   ListingID,
-  ListingsObject,
   NonUniqueProjectID,
 } from '@faims3/data-model';
+import {ListingsObject} from '@faims3/data-model/src/types';
 import {ProjectObject} from './projects';
 import {logError} from '../logging';
 import {

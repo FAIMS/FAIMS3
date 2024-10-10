@@ -26,12 +26,6 @@ import nodemailer from 'nodemailer';
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
-// Some non-configurable constants
-export const CLUSTER_ADMIN_GROUP_NAME = 'cluster-admin';
-export const NOTEBOOK_CREATOR_GROUP_NAME = 'notebook-creator';
-
-// Constants
-
 // If a URL for the conductor instance is not provided this will be used as a fall-through
 const DEFAULT_CONDUCTOR_URL = 'http://localhost:8080';
 

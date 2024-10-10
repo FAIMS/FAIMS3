@@ -18,7 +18,7 @@
  *   Tests for invite handling
  */
 
-import {ProjectUIModel} from '@faims3/data-model';
+import {EncodedProjectUIModel} from '@faims3/data-model';
 import PouchDB from 'pouchdb';
 import {createNotebook} from '../src/couchdb/notebooks';
 import {
@@ -33,9 +33,10 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 PouchDB.plugin(require('pouchdb-find'));
 import {expect, assert} from 'chai';
 
-const uispec: ProjectUIModel = {
+const uispec: EncodedProjectUIModel = {
+  _id: '',
   fields: [],
-  views: {},
+  fviews: {},
   viewsets: {},
   visible_types: [],
 };
