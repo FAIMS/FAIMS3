@@ -389,10 +389,8 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'TakePoint',
     'type-returned': 'faims-pos::Location',
     'component-parameters': {
-      fullWidth: true,
       name: 'take-point-field',
       helperText: 'Click to save current location',
-      variant: 'outlined',
       label: 'Take point',
     },
     validationSchema: [['yup.object'], ['yup.nullable']],

@@ -90,7 +90,6 @@ function a11yProps(index: number, id: string) {
  */
 type NotebookComponentProps = {
   project: ProjectExtended;
-  handleRefresh: () => Promise<any>;
 };
 
 /**
@@ -140,9 +139,16 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const history = useNavigate();
 
   /**
-   * Fetches the UI specification and viewsets for the project when the component mounts or the project changes.
+   * Fetches the UI specification and viewsets for the project
    */
-  useEffect(() => {
+  const pageLoader = () => {
+    // Starting state reset
+    setViewsets(null);
+    setUiSpec(null);
+    setErr('');
+    setLoading(true);
+
+    // Try to load details and records
     if (project.listing && project._id) {
       getUiSpecForProject(project.project_id)
         .then(spec => {
@@ -152,16 +158,25 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           setErr('');
         })
         .catch(err => {
+          setLoading(false);
           setErr(err.message);
         });
     }
-    return () => {
-      setViewsets(null);
-      setUiSpec(null);
-      setErr('');
-      setLoading(true);
-    };
+  };
+
+  /**
+   * Fetches the UI specification and viewsets for the project when the
+   * component mounts or the project changes.
+   */
+  useEffect(() => {
+    pageLoader();
   }, [project]);
+
+  // trigger a refresh of the content because something changed down below (a
+  // record or draft was deleted)
+  const handleRefresh = () => {
+    pageLoader();
+  };
 
   return (
     <Box>
@@ -255,7 +270,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   maxRows={25}
                   viewsets={viewsets}
                   filter_deleted={true}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
               <TabPanel
@@ -267,7 +282,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
             </Box>

@@ -38,8 +38,6 @@ export default function TabGrid({
   const handleRowClick: GridEventListener<'rowClick'> = ({
     row: {activated, project_id},
   }) => {
-    console.log(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
-
     if (activated) history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
   };
   return (
