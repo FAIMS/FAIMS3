@@ -63,17 +63,7 @@ function SingleComponent(props: SingleComponentProps) {
   const fieldName = props.fieldName;
   const fields = props.fields;
   const fieldConfig = fields[fieldName];
-  const label =
-    fieldConfig['component-parameters']['InputLabelProps'] !== undefined
-      ? fieldConfig['component-parameters']['InputLabelProps']['label']
-      : fieldConfig['component-parameters']['FormLabelProps'] !== undefined
-        ? fieldConfig['component-parameters']['FormLabelProps']['children']
-        : fieldConfig['component-parameters']['FormControlLabelProps'] !==
-            undefined
-          ? fieldConfig['component-parameters']['FormControlLabelProps'][
-              'children'
-            ]
-          : fieldName;
+  const label = fieldConfig['component-parameters'].label;
   const [expanded, setExpanded] = React.useState(false);
 
   const handleExpandClick = () => {
@@ -289,9 +279,7 @@ function getUsefulFieldNameFromUiSpec(
   if (field in ui_specification.fields) {
     const fieldInfo = ui_specification.fields[field];
     const fieldName =
-      fieldInfo.label ||
-      fieldInfo['component-parameters'].InputLabelProps?.label ||
-      field;
+      fieldInfo.label || fieldInfo['component-parameters'].label || field;
     // get the view that this field is part of
     let sectionName = '';
     for (const section in ui_specification.views) {

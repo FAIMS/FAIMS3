@@ -53,10 +53,25 @@ export class TemplatedStringField extends React.Component<
     };
   }
 
+  // compute the value on startup and on any update
+  componentDidMount(): void {
+    this.updateValue();
+  }
+
   componentDidUpdate() {
+    this.updateValue();
+  }
+
+  /**
+   * Update the field value based on the values of other
+   * fields in the form and the configured template string
+   */
+  updateValue() {
     if (this.props.disabled === true) return;
     const {template, ...textFieldProps} = this.props;
 
+    // gather the field values together that will be used as
+    // placeholder names in the template
     const field_values: FieldValues = {};
     for (const field_name in textFieldProps.form.values) {
       if (field_name !== textFieldProps.field.name) {
@@ -66,10 +81,11 @@ export class TemplatedStringField extends React.Component<
         field_values[field_name] = value;
       }
     }
+    // compute the new value and update if it has changed
     const value = render_template(template, field_values);
     if (value !== this.state.value) {
       this.setState({value: value});
-      this.props.form.setFieldValue(this.props.field.name, value);
+      this.props.form.setFieldValue(this.props.field.name, value, true);
       if (value !== '')
         if (this.props.form.errors[this.props.field.name] !== undefined)
           this.props.form.setFieldError(this.props.field.name, undefined);

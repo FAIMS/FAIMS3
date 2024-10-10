@@ -88,10 +88,15 @@ export const AddressField = (props: FieldProps & Props) => {
     const dn = parts.join(', ');
     setDisplayName(dn);
     setAddress(a);
-    props.form.setFieldValue(props.field.name, {
-      display_name: dn,
-      address: a,
-    });
+    props.form.setFieldValue(
+      props.field.name,
+      {
+        display_name: dn,
+        address: a,
+      },
+      true
+    );
+    props.form.validateForm();
   };
 
   const updateProperty = (

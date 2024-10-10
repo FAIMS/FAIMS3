@@ -208,7 +208,7 @@ export class BasicAutoIncrementer extends React.Component<
             },
           });
         } else {
-          this.props.form.setFieldValue(this.props.field.name, new_id);
+          this.props.form.setFieldValue(this.props.field.name, new_id, true);
           if (this.props.form.errors[this.props.field.name] !== undefined)
             this.props.form.setFieldError(this.props.field.name, undefined);
         }

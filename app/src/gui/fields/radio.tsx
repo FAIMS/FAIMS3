@@ -56,6 +56,10 @@ interface Props {
 }
 
 export class RadioGroup extends React.Component<RadioGroupProps & Props> {
+  handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    this.props.form.setFieldValue(this.props.field.name, e.target.value, true);
+  }
+
   render() {
     const {
       ElementProps,
@@ -87,7 +91,10 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
     return (
       <FormControl error={error}>
         <FormLabel children={label} />
-        <MuiRadioGroup {...fieldToRadioGroup(radioGroupProps)}>
+        <MuiRadioGroup
+          {...fieldToRadioGroup(radioGroupProps)}
+          onChange={e => this.handleChange(e)}
+        >
           {ElementProps.options.map(option => (
             <FormControlLabel
               key={option.key ? option.key : option.value}

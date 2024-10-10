@@ -83,8 +83,7 @@ export class TakePoint extends React.Component<
       const coordinates = capacitor_coordindates_to_faims_pos(
         await Geolocation.getCurrentPosition(this.getPositionOptions())
       );
-      console.debug('Take point coord', coordinates);
-      this.props.form.setFieldValue(this.props.field.name, coordinates);
+      this.props.form.setFieldValue(this.props.field.name, coordinates, true);
     } catch (err: any) {
       logError(err);
       this.props.form.setFieldError(this.props.field.name, err.message);

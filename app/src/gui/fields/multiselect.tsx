@@ -34,6 +34,10 @@ interface Props {
 }
 
 export class MultiSelect extends React.Component<TextFieldProps & Props> {
+  handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    this.props.form.setFieldValue(this.props.field.name, e.target.value, true);
+  }
+
   render() {
     const {ElementProps, children, ...textFieldProps} = this.props;
     return (
@@ -44,6 +48,7 @@ export class MultiSelect extends React.Component<TextFieldProps & Props> {
           SelectProps={{
             multiple: true,
           }}
+          onChange={e => this.handleChange(e)}
         >
           {children}
           {ElementProps.options.map((option: any) => (
