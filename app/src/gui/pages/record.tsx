@@ -478,9 +478,6 @@ export default function Record() {
           )}
         </Grid>
       </Grid>
-      <Grid item xs>
-        {is_link_ready && <Breadcrumbs data={breadcrumbs} />}
-      </Grid>
       {draft_id !== undefined && (
         <Alert severity={'warning'}>
           This record is currently a draft. The data is stored locally on your

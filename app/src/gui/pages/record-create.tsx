@@ -393,7 +393,6 @@ export default function RecordCreate() {
   return (
     <React.Fragment>
       <Box>
-        <Breadcrumbs data={breadcrumbs} />
         {draft_id === undefined || record_id === undefined ? (
           <DraftCreate
             project_id={project_id!}

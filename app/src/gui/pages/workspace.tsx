@@ -21,13 +21,11 @@
 import React from 'react';
 import {Typography, Grid} from '@mui/material';
 import Notebooks from '../components/workspace/notebooks';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 export default function Workspace() {
   return (
     <React.Fragment>
-      <Breadcrumbs data={[{title: 'Workspace'}]} />
       <Grid container spacing={3}>
         <Grid item xs={12} md={12} lg={8}>
           <Typography variant="h6" color="textSecondary">

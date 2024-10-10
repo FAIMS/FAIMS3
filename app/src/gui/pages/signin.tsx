@@ -53,7 +53,6 @@ export function SignIn(props: SignInProps) {
 
   return (
     <Box>
-      <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={4}>
         {listings.map((listing_info, index) => (
           <Grid item lg={4} md={6} sm={8} xs={12} key={index}>

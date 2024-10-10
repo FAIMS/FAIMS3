@@ -1,64 +1,50 @@
-import React from 'react';
-import {
-  Box,
-  Typography,
-  Breadcrumbs as MuiBreadcrumbs,
-  IconButton,
-} from '@mui/material';
+import {Box, Breadcrumbs as MuiBreadcrumbs, IconButton} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import HomeIcon from '@mui/icons-material/Home';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import {abbreviateTitle, removeListing} from '../../../lib/string';
 
-type BreadcrumbProps = {
-  data: Array<{title: string; link?: string}>;
-};
+interface BreadcrumbProps {
+  path: string;
+}
 
-export default function Breadcrumbs(props: BreadcrumbProps) {
-  const {data} = props;
+/**
+ * Breadcrumbs component that displays the current path as navigational breadcrumbs.
+ *
+ * @param {BreadcrumbProps} props - The properties passed to the component.
+ * @param {string} props.path - The path to display as breadcrumbs.
+ * @returns {JSX.Element | null} - The rendered Breadcrumbs component or null if no path is provided.
+ */
+export default function Breadcrumbs({
+  path,
+}: BreadcrumbProps): JSX.Element | null {
+  if (!path) return null;
+
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
-  // Function to abbreviate long titles on small screens
-  const abbreviateTitle = (title: string) => {
-    if (title.length > 10 && !not_xs) {
-      return title.substring(0, 7) + '...';
-    }
-    return title;
-  };
+  const pathSplit = path.split('/').filter((p: string) => p !== '');
 
   return (
-    <Box display="flex" flexDirection="row-reverse" sx={{p: 1, m: 1}}>
-      <MuiBreadcrumbs
-        aria-label="breadcrumb"
-        maxItems={not_xs ? 4 : 2}
-        itemsAfterCollapse={not_xs ? 2 : 1}
-        itemsBeforeCollapse={not_xs ? 0 : 1}
-      >
-        {data.map((item, index) => {
-          // If it's the root item, use an icon
-          if (index === 0 && item.link) {
-            return (
-              <RouterLink to={item.link} key={'breadcrumb-item-' + item.title}>
-                <IconButton size="small">
-                  <HomeIcon fontSize="inherit" />
-                </IconButton>
-              </RouterLink>
-            );
-          }
-          return item.link !== undefined ? (
-            <RouterLink to={item.link} key={'breadcrumb-item-' + item.title}>
-              {abbreviateTitle(item.title)}
-            </RouterLink>
-          ) : (
-            <Typography
-              color="textPrimary"
-              key={'breadcrumb-item-' + item.title}
-            >
-              {abbreviateTitle(item.title)}
-            </Typography>
-          );
-        })}
+    <Box display="flex" flexDirection="row-reverse">
+      <MuiBreadcrumbs aria-label="breadcrumb">
+        <RouterLink to="/" key={'breadcrumb-item-/'}>
+          <IconButton size="small">
+            <HomeIcon fontSize="inherit" />
+          </IconButton>
+        </RouterLink>
+        {pathSplit.length > 2 && <div>{'...'}</div>}
+        {pathSplit.length > 1 && (
+          <div>
+            {abbreviateTitle(removeListing(pathSplit.at(-2) || ''), not_xs)}
+          </div>
+        )}
+        {pathSplit.length > 0 && (
+          <div>
+            {abbreviateTitle(removeListing(pathSplit.at(-1) || ''), not_xs)}
+          </div>
+        )}
       </MuiBreadcrumbs>
     </Box>
   );
