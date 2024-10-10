@@ -622,7 +622,11 @@ const csvFormatValue = (
 
   // gps locations
   if (fieldType === 'faims-pos::Location') {
-    if (value instanceof Object && 'geometry' in value) {
+    if (
+      value instanceof Object &&
+      'geometry' in value &&
+      value.geometry.coordinates.length === 2
+    ) {
       result[fieldName] = value;
       result[fieldName + '_latitude'] = value.geometry.coordinates[1];
       result[fieldName + '_longitude'] = value.geometry.coordinates[0];
@@ -642,7 +646,8 @@ const csvFormatValue = (
       value instanceof Object &&
       'features' in value &&
       value.features.length > 0 &&
-      value.features[0]?.geometry?.type === 'Point'
+      value.features[0]?.geometry?.type === 'Point' &&
+      value.features[0].geometry.coordinates.length === 2
     ) {
       result[fieldName] = value;
       result[fieldName + '_latitude'] =
