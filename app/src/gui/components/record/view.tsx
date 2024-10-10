@@ -43,6 +43,7 @@ type ViewProps = {
   handleChangeTab?: any;
   fieldNames: string[]; //add for branching logic
   disabled?: boolean; // add for view tab or edit tab
+  hideErrors?: boolean;
 };
 type SingleComponentProps = {
   fieldName: string;
@@ -228,7 +229,7 @@ export function ViewComponent(props: ViewProps) {
           disabled={props.disabled}
         />
       ))}
-      {!props.formProps.isValid && error !== false && (
+      {!props.hideErrors && !props.formProps.isValid && error !== false && (
         <Alert severity="error">
           Form has errors, please scroll up and make changes before submitting.
           {displayErrors(
@@ -238,7 +239,7 @@ export function ViewComponent(props: ViewProps) {
           )}
         </Alert>
       )}
-      {!props.formProps.isValid && error === false && (
+      {!props.hideErrors && !props.formProps.isValid && error === false && (
         <Alert severity="warning">
           Form has errors, please check other tabs before submitting.
           {displayErrors(
@@ -281,7 +282,7 @@ function displayErrors(
  * @param thisView current view name
  * @param ui_specification the ui specification object
  */
-function getUsefulFieldNameFromUiSpec(
+export function getUsefulFieldNameFromUiSpec(
   field: string,
   thisView: string,
   ui_specification: ProjectUIModel
