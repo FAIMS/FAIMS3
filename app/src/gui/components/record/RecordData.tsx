@@ -62,6 +62,7 @@ interface RecordDataTypes {
   handleUnlink: Function;
   setRevision_id?: Function;
   mq_above_md: boolean;
+  buttonRef: React.RefObject<HTMLDivElement>;
 }
 
 export default function RecordData(props: RecordDataTypes) {
@@ -147,6 +148,7 @@ export default function RecordData(props: RecordDataTypes) {
                         draftLastSaved={props.draftLastSaved}
                         mq_above_md={props.mq_above_md}
                         navigate={navigate}
+                        buttonRef={props.buttonRef}
                       />
                     ) : (
                       <CircularProgress size={24} />
@@ -204,6 +206,7 @@ export default function RecordData(props: RecordDataTypes) {
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                       handleSetDraftError={props.handleSetDraftError}
                       navigate={navigate}
+                      buttonRef={props.buttonRef}
                     />
                   </Box>
                 </Grid>

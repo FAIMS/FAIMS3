@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useContext, useState, useEffect} from 'react';
+import React, {useContext, useState, useEffect, useRef} from 'react';
 import {
   Navigate,
   useNavigate,
@@ -63,6 +63,9 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import InheritedDataComponent from '../components/record/inherited_data';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import TransparentButton from '../components/buttons/transparent-button';
+import {scrollToDiv} from '../../lib/navigation';
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 
 interface DraftCreateProps {
   project_id: ProjectID;
@@ -172,6 +175,8 @@ function DraftEdit(props: DraftEditProps) {
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
 
+  const buttonRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
   }, [project_id]);
@@ -251,6 +256,17 @@ function DraftEdit(props: DraftEditProps) {
             Add a record for the{' '}
             {project_info !== null ? project_info.name : project_id} project.
           </Typography>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
+              <ArrowDropDown />
+              Jump to end
+            </TransparentButton>
+          </div>
         </Box>
         <Paper square>
           <TabContext value={value}>
@@ -303,6 +319,7 @@ function DraftEdit(props: DraftEditProps) {
                       mq_above_md={mq_above_md}
                       navigate={navigate}
                       location={props.location}
+                      buttonRef={buttonRef}
                     />
                   </Box>
                 </Box>
