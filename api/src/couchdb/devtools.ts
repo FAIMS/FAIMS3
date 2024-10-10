@@ -23,6 +23,7 @@ import {
   upsertFAIMSData,
   Record,
   generateFAIMSDataID,
+  getDataDB,
 } from '@faims3/data-model';
 import {getNotebookUISpec} from './notebooks';
 import {randomInt} from 'crypto';
@@ -163,4 +164,61 @@ const generateValue = (field: any) => {
     default:
       return '';
   }
+};
+
+/**
+ * Validate the documents in a project database at a low level to spot
+ * any missing or incomplete records
+ *
+ * @param project_id Project id
+ * @returns {errors: string[]} an array of error strings if any found
+ */
+export const validateProjectDatabase = async (project_id: ProjectID) => {
+  const dataDB = await getDataDB(project_id);
+
+  // get all record documents
+  // check that all revision documents (frev) are present
+  // for each revision
+  // check that every mentioned avp document is present
+
+  const errors: string[] = [];
+  const records = await dataDB.find({selector: {record_format_version: 1}});
+
+  if (records) {
+    for (let i = 0; i < records.docs.length; i++) {
+      const doc = records.docs[i];
+      for (let j = 0; j < doc.revisions.length; j++) {
+        const rev = doc.revisions[j];
+        try {
+          const rev_doc = await dataDB.get(rev);
+          const avps = Object.values(rev_doc.avps);
+          for (let k = 0; k < avps.length; k++) {
+            try {
+              const avp_doc = await dataDB.get(avps[k]);
+              // check for any attachments
+              if (avp_doc.faims_attachments) {
+                for (let l = 0; l < avp_doc.faims_attachments.length; l++) {
+                  const att = avp_doc.faims_attachments[l];
+                  try {
+                    await dataDB.get(att.attachment_id);
+                  } catch {
+                    errors.push(
+                      `missing attachment ${att.attachment_id} on ${avps[k]} in ${rev} of ${doc._id}`
+                    );
+                  }
+                }
+              }
+            } catch {
+              errors.push(
+                `missing avp document ${avps[k]} in ${rev} of ${doc._id}`
+              );
+            }
+          }
+        } catch {
+          errors.push(`missing revision document ${rev} in ${doc._id}`);
+        }
+      }
+    }
+  }
+  return {errors: errors};
 };

@@ -24,8 +24,11 @@
           <dt>Template</dt><a href="/templates/{{ notebook.template_id }}">{{ notebook.template_id }}</a>
           {{/if}}
       </dl>
-      <dt>Download Notebook JSON definition</dt>
+      <h3>Download Notebook JSON definition</h3>
       <p><a download href="/api/notebooks/{{notebook.project_id}}">{{notebook.project_id}}.json</a></p>
+
+      <p><a href="/notebooks/{{notebook.project_id}}/validate">Validate Notebook Data</a></p>
+      
     </div>
 
     <div class="col">

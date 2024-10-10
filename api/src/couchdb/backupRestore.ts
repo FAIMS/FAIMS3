@@ -36,44 +36,51 @@ export const restoreFromBackup = async (filename: string) => {
 
   let dbName;
   let db;
+  let line_number = 1;
 
   for await (const line of file.readLines()) {
-    const doc = JSON.parse(line);
-    if (doc.type === 'header') {
-      dbName = doc.database;
+    try {
+      const doc = JSON.parse(line);
+      if (doc.type === 'header') {
+        dbName = doc.database;
 
-      if (dbName.startsWith('projects')) {
-        // name will be eg. 'projects_default', where 'default' is the
-        // conductor instance id
-        // we'll put all projects into our projectsDB
-        db = await getProjectsDB();
-      } else if (dbName.startsWith('metadata')) {
-        const projectName = dbName.split('||')[1];
-        db = await getProjectDB(projectName);
-      } else if (dbName.startsWith('data')) {
-        const projectName = dbName.split('||')[1];
-        db = await getDataDB(projectName);
-        if (db) {
-          addDesignDocsForNotebook(db);
-          // TODO: set up permissions for the databases
+        if (dbName.startsWith('projects')) {
+          // name will be eg. 'projects_default', where 'default' is the
+          // conductor instance id
+          // we'll put all projects into our projectsDB
+          db = await getProjectsDB();
+        } else if (dbName.startsWith('metadata')) {
+          const projectName = dbName.split('||')[1];
+          db = await getProjectDB(projectName);
+        } else if (dbName.startsWith('data')) {
+          const projectName = dbName.split('||')[1];
+          db = await getDataDB(projectName);
+          if (db) {
+            addDesignDocsForNotebook(db);
+            // TODO: set up permissions for the databases
+          }
+        } else {
+          // don't try to restore anything we don't know about
+          db = undefined;
         }
-      } else {
-        // don't try to restore anything we don't know about
-        db = undefined;
-      }
-    } else if (!doc.id.startsWith('_design') && db) {
-      // don't try to restore design documents as these will have been
-      // created on the database initialisation
+      } else if (!doc.id.startsWith('_design') && db) {
+        // don't try to restore design documents as these will have been
+        // created on the database initialisation
 
-      // delete the _rev attribute so that we can put it into an empty db
-      // if we were restoring into an existing db, we would need to be more
-      // careful and check whether this _rev is present in the db already
-      delete doc.doc._rev;
-      try {
-        await db.put(doc.doc);
-      } catch (error) {
-        console.log('Error restoring document', doc.id, error);
+        // delete the _rev attribute so that we can put it into an empty db
+        // if we were restoring into an existing db, we would need to be more
+        // careful and check whether this _rev is present in the db already
+        delete doc.doc._rev;
+        try {
+          await db.put(doc.doc);
+        } catch (error) {
+          console.log('Error restoring document', doc.id);
+        }
       }
+    } catch {
+      console.error(`error parsing JSON on line ${line_number}`);
+      return;
     }
+    line_number += 1;
   }
 };

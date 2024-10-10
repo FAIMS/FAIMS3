@@ -54,11 +54,13 @@ import {
   getNotebookUISpec,
   getNotebooks,
   getRolesForNotebook,
+  validateDatabases,
 } from './couchdb/notebooks';
 import {createAuthKey, generateUserToken} from './authkeys/create';
 import {add_auth_providers} from './auth_providers';
 import {add_auth_routes} from './auth_routes';
 import {getTemplate, getTemplates} from './couchdb/templates';
+import {validateProjectDatabase} from './couchdb/devtools';
 
 export {app};
 
@@ -334,7 +336,7 @@ app.get('/users', requireClusterAdmin, async (req, res) => {
   }
 });
 
-if (DEVELOPER_MODE)
+if (DEVELOPER_MODE) {
   app.get('/restore/', requireClusterAdmin, async (req, res) => {
     if (req.user) {
       res.render('restore', {
@@ -346,6 +348,14 @@ if (DEVELOPER_MODE)
       res.status(401).end();
     }
   });
+
+  app.get('/notebooks/:id/validate', requireClusterAdmin, async (req, res) => {
+    if (req.user) {
+      const result = await validateProjectDatabase(req.params.id);
+      res.json(result);
+    }
+  });
+}
 
 app.get('/up/', (req, res) => {
   res.status(200).json({up: 'true'});
