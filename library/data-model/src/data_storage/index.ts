@@ -616,7 +616,6 @@ export const notebookRecordIterator = async (
       }
       if (record) {
         const data = await hydrateRecord(project_id, record);
-        console.log('returning hydrated record', record.created_by);
         return {record: data, done: false};
       } else {
         return {record: null, done: true};
