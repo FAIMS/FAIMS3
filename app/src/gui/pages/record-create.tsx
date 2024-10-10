@@ -52,7 +52,6 @@ import {
 } from '../../uiSpecification';
 import RecordDelete from '../components/notebook/delete';
 import {newStagedData} from '../../sync/draft-storage';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import UnpublishedWarning from '../components/record/unpublished_warning';
 import DraftSyncStatus from '../components/record/sync_status';
@@ -62,7 +61,6 @@ import {useTheme} from '@mui/material/styles';
 import {ParentLinkProps} from '../components/record/relationships/types';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import InheritedDataComponent from '../components/record/inherited_data';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 interface DraftCreateProps {
   project_id: ProjectID;
@@ -354,42 +352,6 @@ export default function RecordCreate() {
       getProjectInfo(project_id).then(info => setProjectInfo(info));
   }, [project_id]);
 
-  let breadcrumbs = [
-    // {link: ROUTES.INDEX, title: 'Home'},
-    {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
-    {
-      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-      title: projectInfo !== null ? projectInfo.name! : project_id!,
-    },
-    {title: 'Draft'},
-  ];
-
-  // add parent link back for the parent or linked record
-  if (location.state && location.state.parent_record_id !== record_id) {
-    const type =
-      location.state.type === 'Child'
-        ? 'Parent'
-        : location.state.relation_type_vocabPair[0];
-    breadcrumbs = [
-      // {link: ROUTES.INDEX, title: 'Home'},
-      {
-        link: ROUTES.NOTEBOOK_LIST_ROUTE,
-        title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-      },
-      {
-        link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-        title: projectInfo !== null ? projectInfo.name! : project_id!,
-      },
-      {
-        link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + location.state.parent_link,
-        title:
-          type! +
-          ':' +
-          (location.state.parent_hrid! ?? location.state.parent_record_id!),
-      },
-      {title: 'Draft'},
-    ];
-  }
   return (
     <React.Fragment>
       <Box>

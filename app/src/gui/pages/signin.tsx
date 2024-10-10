@@ -20,10 +20,7 @@
 
 import {useState, useEffect} from 'react';
 import {Box, Grid, Typography} from '@mui/material';
-
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import ClusterCard from '../components/authentication/cluster_card';
-import * as ROUTES from '../../constants/routes';
 import {ListingsObject} from '@faims3/data-model/src/types';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {logError} from '../../logging';
@@ -37,7 +34,6 @@ type SignInProps = {
 
 export function SignIn(props: SignInProps) {
   const [listings, setListings] = useState(null as null | ListingsObject[]);
-  const breadcrumbs = [{link: ROUTES.INDEX, title: 'Home'}, {title: 'Sign In'}];
 
   useEffect(() => {
     getSyncableListingsInfo().then(setListings).catch(logError);

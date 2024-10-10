@@ -38,14 +38,12 @@ import TabPanel from '@mui/lab/TabPanel';
 import {ActionType} from '../../context/actions';
 
 import * as ROUTES from '../../constants/routes';
-import {getProjectInfo} from '../../sync/projects';
 import {
   ProjectID,
   RecordID,
   Relationship,
   RevisionID,
   ProjectUIModel,
-  ProjectInformation,
   listFAIMSRecordRevisions,
   getFullRecordData,
   getHRIDforRecordID,
@@ -59,7 +57,6 @@ import {getUiSpecForProject} from '../../uiSpecification';
 import ConflictForm from '../components/record/conflict/conflictform';
 import RecordMeta from '../components/record/meta';
 import BoxTab from '../components/ui/boxTab';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
 import {} from '@faims3/data-model';
 
@@ -90,7 +87,6 @@ import RecordData from '../components/record/RecordData';
 import getLocalDate from '../fields/LocalDate';
 import RecordDelete from '../components/notebook/delete';
 import {logError} from '../../logging';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -111,14 +107,6 @@ export default function Record() {
   const history = useNavigate();
 
   const [value, setValue] = React.useState('1');
-  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
-    null
-  );
-  useEffect(() => {
-    if (project_id)
-      getProjectInfo(project_id).then(info => setProjectInfo(info));
-  }, [project_id]);
-
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [revisions, setRevisions] = React.useState([] as string[]);
   const [error, setError] = useState(null as null | {});
@@ -144,9 +132,6 @@ export default function Record() {
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-  const [breadcrumbs, setBreadcrumbs] = useState<
-    {link?: string; title: string}[]
-  >([]);
 
   useEffect(() => {
     getUiSpecForProject(project_id!).then(setUISpec, setError);
@@ -170,18 +155,6 @@ export default function Record() {
         .catch(logError);
       getHRIDforRecordID(project_id!, record_id!).then(hrid => {
         setHrid(hrid);
-        setBreadcrumbs([
-          // {link: ROUTES.INDEX, title: 'Home'},
-          {
-            link: ROUTES.NOTEBOOK_LIST_ROUTE,
-            title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-          },
-          {
-            link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-            title: projectInfo !== null ? projectInfo.name! : project_id!,
-          },
-          {title: hrid ?? record_id},
-        ]);
         setrevision_id(revision_id);
         setselectedRevision(revision_id!);
         setValue('1');
@@ -292,41 +265,6 @@ export default function Record() {
               record_id!
             );
             setParentLinks(newParent);
-            let newBreadcrumbs = [
-              // {link: ROUTES.INDEX, title: 'Home'},
-              {
-                link: ROUTES.NOTEBOOK_LIST_ROUTE,
-                title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-              },
-              {
-                link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-                title: projectInfo !== null ? projectInfo.name! : project_id!,
-              },
-              {title: hrid! ?? record_id!},
-            ];
-            if (
-              newParent !== null &&
-              newParent.length > 0 &&
-              newParent[0].deleted !== true
-            ) {
-              newBreadcrumbs = [
-                // {link: ROUTES.INDEX, title: 'Home'},
-                {
-                  link: ROUTES.NOTEBOOK_LIST_ROUTE,
-                  title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-                },
-                {
-                  link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-                  title: projectInfo !== null ? projectInfo.name! : project_id!,
-                },
-                {
-                  link: newParent[0]['route'],
-                  title: newParent[0]['hrid'],
-                },
-                {title: hrid! ?? record_id!},
-              ];
-            }
-            setBreadcrumbs(newBreadcrumbs);
           }
           // setValue('1');
           setIs_link_ready(true);
