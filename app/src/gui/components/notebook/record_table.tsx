@@ -46,7 +46,6 @@ import {
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '@faims3/data-model';
-import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';

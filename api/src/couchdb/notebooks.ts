@@ -56,7 +56,6 @@ import securityPlugin from 'pouchdb-security-helper';
 import {slugify} from '../utils';
 import {userHasPermission} from './users';
 PouchDB.plugin(securityPlugin);
-import {Stringifier, stringify} from 'csv-stringify';
 
 /**
  * getProjects - get the internal project documents that reference
