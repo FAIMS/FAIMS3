@@ -18,7 +18,7 @@ export const abbreviateTitle = (title: string, not_xs: boolean): string => {
  * @returns {string} - The title with the part after '%7C%7C' removed.
  */
 export const removeListing = (title: string): string => {
-  if (title.includes('%7C%7C')) return title.split('%7C%7C')[0];
+  if (title.includes('%7C%7C')) return title.split('%7C%7C').join(' / ');
 
   return title;
 };
