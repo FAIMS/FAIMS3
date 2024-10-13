@@ -51,9 +51,11 @@ export function getSyncStatusCallbacks(
 ): SyncStatusCallbacks {
   const handleStartSyncUp = () => {
     startSync(dispatch, ActionType.IS_SYNCING_UP);
+    setSyncError(dispatch, false); // no error if we're syncing
   };
   const handleStartSyncDown = () => {
     startSync(dispatch, ActionType.IS_SYNCING_DOWN);
+    setSyncError(dispatch, false); // no error if we're syncing
   };
   const handleStartSyncError = () => {
     setSyncError(dispatch, true);

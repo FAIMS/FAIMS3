@@ -389,10 +389,8 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'TakePoint',
     'type-returned': 'faims-pos::Location',
     'component-parameters': {
-      fullWidth: true,
       name: 'take-point-field',
       helperText: 'Click to save current location',
-      variant: 'outlined',
       label: 'Take point',
     },
     validationSchema: [['yup.object'], ['yup.nullable']],
@@ -429,6 +427,18 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string']],
     initialValue: '1',
+  },
+  AddressField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'AddressField',
+    'type-returned': 'faims-core::JSON',
+    'component-parameters': {
+      helperText: 'Enter your address',
+      required: false,
+      name: 'Address',
+      label: 'Address',
+    },
+    validationSchema: [['yup.object'], ['yup.nullable']],
   },
 };
 

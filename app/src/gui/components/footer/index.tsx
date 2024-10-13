@@ -70,7 +70,7 @@ export default function Footer(props: FooterProps) {
 function DevelopTool() {
   const globalState = useContext(store);
   return (
-    <Grid container spacing={2}>
+    <Grid container spacing={2} sx={{width: '100vh', overflow: 'scroll'}}>
       <Grid item xs={12} sm={12}>
         <hr />
       </Grid>
@@ -90,7 +90,11 @@ function DevelopTool() {
           title={'Developer tool: react GlobalState'}
           bgcolor={grey[100]}
         />
-        <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}}>
+        <Box
+          bgcolor={grey[100]}
+          p={2}
+          style={{width: '90vh', overflowX: 'scroll'}}
+        >
           <pre>
             {JSON.stringify(
               {

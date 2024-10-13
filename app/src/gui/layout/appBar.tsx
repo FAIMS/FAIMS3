@@ -19,15 +19,15 @@
  *   throughout the app.
  */
 
-import React, {useEffect, useState} from 'react';
-import {Link as RouterLink, NavLink} from 'react-router-dom';
+import React, {useContext, useState} from 'react';
+import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
   CircularProgress,
   IconButton,
   Toolbar,
-  createTheme,
   ListItemButton,
+  createTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import {createUseStyles as makeStyles} from 'react-jss';
@@ -48,21 +48,15 @@ import AccountTree from '@mui/icons-material/AccountTree';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import {getActiveProjectList} from '../../sync/projects';
 import SystemAlert from '../components/alert';
-import {ProjectInformation} from '@faims3/data-model';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../utils/helpers';
 import SyncStatus from '../components/sync';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import HelpIcon from '@mui/icons-material/Help';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import {now} from 'lodash';
+import {AppBarHeading} from '../components/app-bar/app-bar-heading';
+import {ProjectsContext} from '../../context/projects-context';
+import {ProjectExtended} from '../../types/project';
 
 /**
  * Represents the properties for a menu list item.
@@ -196,7 +190,7 @@ const useStyles = makeStyles({
  * @returns {MenuItemProps} - The item for nested menu.
  */
 
-function getNestedProjects(pouchProjectList: ProjectInformation[]) {
+function getNestedProjects(pouchProjectList: ProjectExtended[]) {
   const projectListItems: ProjectListItemProps[] = [];
   pouchProjectList.map(project_info => {
     projectListItems.push({
@@ -229,15 +223,14 @@ type NavbarProps = {
 export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
 
+  // get the list of activated projects
+  const projectList = useContext(ProjectsContext).projects.filter(
+    p => p.activated
+  );
+
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
-
-  const [projectList, setProjectList] = useState<ProjectInformation[]>([]);
-
-  useEffect(() => {
-    getActiveProjectList().then(projects => setProjectList(projects));
-  }, []);
 
   const topMenuItems: Array<MenuItemProps> = [
     {
@@ -307,18 +300,11 @@ export default function MainAppBar(props: NavbarProps) {
               onClick={toggle}
               edge="start"
               className={clsx(classes.menuButton, isOpen && classes.hide)}
-              size="large"
             >
               <MenuIcon />
             </IconButton>
-            <NavLink style={{flexGrow: 1}} to={ROUTES.INDEX}>
-              <img
-                src="/static/logo/Fieldmark-Short-Green-NoBorder.png"
-                style={{maxWidth: '140px', flex: 1}}
-              />
-            </NavLink>
+            <AppBarHeading link={ROUTES.INDEX} />
             <div>
-              {/*{isAuthenticated ? <ConnectedStatus token={props.token} /> : ''}*/}
               {isAuthenticated ? <SyncStatus /> : ''}
               <AppBarAuth token={props.token} />
             </div>

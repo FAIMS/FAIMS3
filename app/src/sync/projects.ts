@@ -105,9 +105,6 @@ export const projectIsActivated = (project_id: string) => {
 export const getProject = async (
   project_id: ProjectID
 ): Promise<createdProjectsInterface> => {
-  // Wait for all_projects_updated to possibly change before returning
-  // error/data DB if it's ready.
-  //  await waitForStateOnce(() => all_projects_updated);
   if (project_id in data_dbs) {
     return createdProjects[project_id];
   } else {
@@ -166,6 +163,7 @@ export async function getAvailableProjectsFromListing(
   const output: ProjectInformation[] = [];
   const projects: ProjectObject[] = [];
   const listing = getListing(listing_id);
+
   if (listing) {
     const projects_db = listing.projects.local;
     const res = await projects_db.allDocs({
@@ -176,6 +174,7 @@ export async function getAvailableProjectsFromListing(
         projects.push(e.doc as ProjectObject);
       }
     });
+
     for (const project of projects) {
       const project_id = project._id;
       const full_project_id = resolve_project_id(listing_id, project_id);
@@ -184,6 +183,7 @@ export async function getAvailableProjectsFromListing(
       }
     }
   }
+
   return output;
 }
 

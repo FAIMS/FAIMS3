@@ -1,7 +1,7 @@
 import {Stack} from '@mui/material';
-import {DataGrid, GridEventListener} from '@mui/x-data-grid';
-import {ProjectInformation} from '@faims3/data-model/build/src/types';
+import {DataGrid} from '@mui/x-data-grid';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {ProjectExtended} from '../../../types/project';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -16,16 +16,12 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
  */
 export default function HeadingGrid({
   pouchProjectList,
-  handleRowClick,
   loading,
   columns,
-  sortModel,
 }: {
-  pouchProjectList: ProjectInformation[];
-  handleRowClick: GridEventListener<'rowClick'>;
+  pouchProjectList: ProjectExtended[];
   loading: boolean;
   columns: any;
-  sortModel: any;
 }) {
   return (
     <div style={{display: 'flex', flexDirection: 'column'}}>
@@ -34,19 +30,15 @@ export default function HeadingGrid({
       </div>
       <DataGrid
         key={'active_notebook_list_datagrid'}
-        rows={pouchProjectList.filter(r => r.is_activated)}
+        rows={pouchProjectList.filter(r => r.activated)}
         loading={loading}
         columns={columns}
-        onRowClick={handleRowClick}
         autoHeight
         sx={{cursor: 'pointer'}}
-        getRowId={r => r.project_id}
+        getRowId={r => r._id}
         hideFooter={true}
         getRowHeight={() => 'auto'}
         initialState={{
-          sorting: {
-            sortModel: [sortModel],
-          },
           pagination: {
             paginationModel: {
               pageSize: pouchProjectList.length,
@@ -67,18 +59,15 @@ export default function HeadingGrid({
       </div>
       <DataGrid
         key={'not_active_notebook_list_datagrid'}
-        rows={pouchProjectList.filter(r => !r.is_activated)}
+        rows={pouchProjectList.filter(r => !r.activated)}
         loading={loading}
         columns={columns}
         autoHeight
         sx={{cursor: 'pointer'}}
-        getRowId={r => r.project_id}
+        getRowId={r => r._id}
         hideFooter={true}
         getRowHeight={() => 'auto'}
         initialState={{
-          sorting: {
-            sortModel: [sortModel],
-          },
           pagination: {
             paginationModel: {
               pageSize: pouchProjectList.length,

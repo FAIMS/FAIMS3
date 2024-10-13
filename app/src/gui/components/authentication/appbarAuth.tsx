@@ -15,21 +15,10 @@
  *
  * Filename: appbarAuth.tsx
  * Description:
- *   This contains the navbar React component, which allows users to navigate
- *   throughout the app.
+ *   Provides a component to show either a link to sign-in or the username
+ *   which links to the sign-in page
  */
-import React from 'react';
-import {
-  Button,
-  Menu,
-  MenuItem,
-  ListItemText,
-  ListItemIcon,
-} from '@mui/material';
-import {useNavigate} from 'react-router-dom';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import LogoutIcon from '@mui/icons-material/Logout';
-import GroupIcon from '@mui/icons-material/Group';
+import {Button} from '@mui/material';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {TokenContents} from '@faims3/data-model';
@@ -44,69 +33,18 @@ export default function AppBarAuth(props: AppBarAuthProps) {
    * Show username and auth menu if authenticated, otherwise render login button
    */
   const isAuthenticated = checkToken(props.token);
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const history = useNavigate();
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleRoutingAndClose = (route: string) => {
-    handleClose();
-    history(route);
-  };
 
   if (isAuthenticated) {
     return (
-      <React.Fragment>
-        <Button
-          size="large"
-          aria-label="account of current user"
-          aria-controls="menu-appbar"
-          aria-haspopup="true"
-          onClick={handleMenu}
-          color="inherit"
-        >
-          {props.token?.username}
-        </Button>
-        <Menu
-          id="menu-appbar"
-          anchorEl={anchorEl}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          keepMounted
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          open={Boolean(anchorEl)}
-          onClose={handleClose}
-        >
-          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.INDEX)}>
-            <ListItemIcon>
-              <DashboardIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Workspace</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.SIGN_IN)}>
-            <ListItemIcon>
-              <GroupIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Switch User</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.SIGN_IN)}>
-            <ListItemIcon>
-              <LogoutIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Log out {props.token!.username}</ListItemText>
-          </MenuItem>
-        </Menu>
-      </React.Fragment>
+      <Button
+        component={NavLink}
+        to={ROUTES.SIGN_IN}
+        variant={'outlined'}
+        color={'primary'}
+        disableElevation
+      >
+        {props.token!.username}
+      </Button>
     );
   } else {
     return (

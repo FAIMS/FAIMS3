@@ -13,26 +13,25 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: RichText.tsx
+ /*
+ * Filename: RichTextField.tsx
  * Description:
  *   A rich text field that will render markdown content.
  */
 
+import React from 'react';
 import MarkdownIt from 'markdown-it';
 
 interface Props {
-  label?: string;
-  content: any;
+  content: string;
 }
 
-export const RichTextField = ({content}: Props) => {
-  // render the content Markdown to HTML
+export const RichTextField: React.FC<Props> = ({content}) => {
   const md = new MarkdownIt();
   const renderedContent = md.render(content);
 
   return <div dangerouslySetInnerHTML={{__html: renderedContent}} />;
 };
-
 // const uiSpec = {
 //   'component-namespace': 'faims-custom',
 //   'component-name': 'RichText',

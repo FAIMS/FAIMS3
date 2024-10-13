@@ -18,12 +18,12 @@
  *   Alerts are shown one at a time with configurable durations and severity levels.
  */
 
-import React, {useContext} from 'react';
+import {useContext} from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import {ThemeProvider} from '@mui/material/styles';
+import {theme} from '../themes';
 import Alert from '@mui/material/Alert';
 import {createUseStyles} from 'react-jss';
-import theme from '../theme';
 import {store} from '../../context/store';
 import {ActionType} from '../../context/actions';
 
