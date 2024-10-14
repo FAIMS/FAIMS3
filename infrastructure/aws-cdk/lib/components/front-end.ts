@@ -145,7 +145,7 @@ export class FaimsFrontEnd extends Construct {
       VITE_SHOW_MINIFAUXTON: 'true',
 
       // Theme: default or bubble
-      VITE_THEME_ID: props.uiTheme,
+      VITE_THEME: props.uiTheme,
 
       // tabs or headings
       VITE_NOTEBOOK_LIST_TYPE: props.notebookListType,
