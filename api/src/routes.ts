@@ -324,7 +324,7 @@ app.get('/users', requireClusterAdmin, async (req, res) => {
         .filter(user => user._id !== id)
         .map(user => {
           return {
-            username: user._id,
+            email: user._id,
             name: user.name,
           };
         }),

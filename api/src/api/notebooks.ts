@@ -323,7 +323,7 @@ api.post(
     }
 
     // Destructure request body
-    const {username, role, addrole} = req.body;
+    const {email, role, addrole} = req.body;
 
     // check that this is a legitimate role for this notebook - pass in the
     // metadata to avoid refetching it
@@ -341,11 +341,11 @@ api.post(
     }
 
     // Get the user specified
-    const user = await getUserFromEmailOrUsername(username);
+    const user = await getUserFromEmailOrUsername(email);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
-        'The username provided cannot be found in the user database.'
+        'The email provided cannot be found in the user database.'
       );
     }
 

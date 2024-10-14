@@ -181,7 +181,8 @@ export const initialiseUserDB = async (db: PouchDB.Database | undefined) => {
   // register a local admin user with the same password as couchdb
   // if there isn't already one there
   if (db && LOCAL_COUCHDB_AUTH) {
-    const adminUser = await getUserFromEmailOrUsername('admin');
+    // TODO Verify this initial admin email
+    const adminUser = await getUserFromEmailOrUsername('admin@email.com');
 
     if (adminUser) {
       return;

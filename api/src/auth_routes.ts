@@ -35,7 +35,6 @@ interface RequestQueryRedirect {
   redirect: string;
 }
 interface PostRegisterRequestBody {
-  username: string;
   password: string;
   email: string;
   repeat: string;
@@ -183,7 +182,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         return next(err);
       }
       if (!user) {
-        req.flash('message', 'Invalid username or password');
+        req.flash('message', 'Invalid email or password');
         return res.redirect('/auth/?redirect=' + redirect);
       }
 
@@ -225,7 +224,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
   };
 
   /**
-   * Handle local login request with username and password
+   * Handle local login request with email and password
    */
   app.post<{}, {}, {}, RequestQueryRedirect>(
     '/auth/local',
@@ -283,14 +282,12 @@ export function add_auth_routes(app: Router, handlers: string[]) {
 
   app.post<{}, {}, PostRegisterRequestBody, RequestQueryRedirect>(
     '/register/local',
-    body('username').trim(),
     body('password')
       .isLength({min: 10})
       .withMessage('Must be at least 10 characters'),
     body('email').isEmail().withMessage('Must be a valid email address'),
     async (req: any, res: any, next: any) => {
       // create a new local account if we have a valid invite
-      const username = req.body.username;
       const password = req.body.password;
       const repeat = req.body.repeat;
       const name = req.body.name;
@@ -301,7 +298,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
 
       if (!errors.isEmpty()) {
         req.flash('error', errors.mapped());
-        req.flash('username', username);
         req.flash('email', email);
         req.flash('name', name);
         res.status(400);
@@ -319,7 +315,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         res.redirect('/');
       } else if (password === repeat) {
         const [user, error] = await registerLocalUser(
-          username,
           email,
           name,
           password
@@ -335,7 +330,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
           });
         } else {
           req.flash('error', {registration: error});
-          req.flash('username', username);
           req.flash('email', email);
           req.flash('name', name);
           res.status(400);
@@ -345,7 +339,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         }
       } else {
         req.flash('error', {repeat: {msg: "Password and repeat don't match."}});
-        req.flash('username', username);
         req.flash('email', email);
         req.flash('name', name);
         res.status(400);

@@ -47,7 +47,7 @@ import {
   getNotebooks,
 } from '../src/couchdb/notebooks';
 import {
-  getUserFromEmailOrUsername,
+  getUserFromEmail,
   userHasProjectRole,
 } from '../src/couchdb/users';
 import {app} from '../src/routes';
@@ -55,9 +55,9 @@ import {callbackObject, databaseList} from './mocks';
 import {
   adminToken,
   beforeApiTests,
-  localUserName,
+  localEmail,
   localUserToken,
-  notebookUserName,
+  notebookEmail,
   notebookUserToken,
 } from './utils';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
@@ -175,7 +175,7 @@ describe('API tests', () => {
     expect(project_id).not.to.be.undefined;
     expect(project_id).to.include('-test-notebook');
 
-    const notebookUser = await getUserFromEmailOrUsername(notebookUserName);
+    const notebookUser = await getUserFromEmail(notebookEmail);
     if (notebookUser) {
       // check that this user now has the right roles on this notebook
       expect(userHasProjectRole(notebookUser, project_id, 'admin')).to.be.true;
@@ -280,7 +280,8 @@ describe('API tests', () => {
     const filename = 'notebooks/sample_notebook.json';
     const jsonText = fs.readFileSync(filename, 'utf-8');
     const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-    const adminUser = await getUserFromEmailOrUsername('admin');
+    // TODO verify this fake admin email
+    const adminUser = await getUserFromEmail('admin@email.com');
 
     if (adminUser) {
       const project_id = await createNotebook(
@@ -316,7 +317,7 @@ describe('API tests', () => {
 
   it('update admin user - no auth', async () => {
     await request(app)
-      .post(`/api/users/${localUserName}/admin`)
+      .post(`/api/users/${localEmail}/admin`)
       .send({addrole: true, role: CLUSTER_ADMIN_GROUP_NAME})
       .set('Content-Type', 'application/json')
       .expect(401);
@@ -324,7 +325,7 @@ describe('API tests', () => {
 
   it('update admin user - add cluster admin role', async () => {
     await request(app)
-      .post(`/api/users/${localUserName}/admin`)
+      .post(`/api/users/${localEmail}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .send({addrole: true, role: CLUSTER_ADMIN_GROUP_NAME})
@@ -332,8 +333,9 @@ describe('API tests', () => {
   });
 
   it('update admin user - remove cluster admin role', () => {
+    // TODO is it advisable to put emails into URLs? might need to URL encode
     request(app)
-      .post(`/api/users/${localUserName}/admin`)
+      .post(`/api/users/${localEmail}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .send({addrole: false, role: CLUSTER_ADMIN_GROUP_NAME})
@@ -342,7 +344,7 @@ describe('API tests', () => {
 
   it('update admin user - add notebook creator role', async () => {
     return await request(app)
-      .post(`/api/users/${localUserName}/admin`)
+      .post(`/api/users/${localEmail}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .send({addrole: true, role: NOTEBOOK_CREATOR_GROUP_NAME})
@@ -351,7 +353,7 @@ describe('API tests', () => {
 
   it('update admin user - fail to add unknown role', async () => {
     return await request(app)
-      .post(`/api/users/${localUserName}/admin`)
+      .post(`/api/users/${localEmail}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .send({addrole: true, role: 'unknown-role'})
@@ -391,7 +393,7 @@ describe('API tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json')
         .send({
-          username: localUserName,
+          email: localEmail,
           role: 'user',
           addrole: true,
         })
@@ -403,7 +405,7 @@ describe('API tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json')
         .send({
-          username: localUserName,
+          email: localEmail,
           role: 'user',
           addrole: false,
         })

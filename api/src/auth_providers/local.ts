@@ -33,11 +33,11 @@ type LocalProfile = {
 
 // Export so that we can test
 export const validateLocalUser = async (
-  username: string,
+  email: string,
   password: string,
   done: CallableFunction
 ) => {
-  const user = await getUserFromEmailOrUsername(username);
+  const user = await getUserFromEmailOrUsername(email);
   if (user) {
     // check the password...
     const profile = user.profiles['local'] as LocalProfile;
@@ -66,21 +66,19 @@ export const get_strategy = () => {
 
 /**
  * registerLocalUser - create a new user account
- *   either `username` or `email` is required to make an account
+ *   `email` is required to make an account
  *   no existing account should exist with these credentials
- * @param username - a username, not previously used
  * @param email - an email address, not previously used
  * @param name - user's full name
  * @param password - a password
  * @param roles - a list of user roles
  */
 export const registerLocalUser = async (
-  username: string,
   email: string,
   name: string,
   password: string
 ): Promise<[Express.User | null, string]> => {
-  const [user, error] = await createUser(email, username);
+  const [user, error] = await createUser(email);
   if (user) {
     user.name = name;
     addLocalPasswordForUser(user, password);

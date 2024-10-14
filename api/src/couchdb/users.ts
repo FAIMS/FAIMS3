@@ -34,44 +34,29 @@ import {
   AllProjectRoles,
   ConductorRole,
   OtherRoles,
-  CouchDBUsername,
   CouchDBUserRoles,
 } from '../datamodel/users';
 import {getRolesForNotebook} from './notebooks';
 import * as Exceptions from '../exceptions';
 
 /**
- * createUser - create a new user record ensuring that the username or password
- *   - at least one of these needs to be supplied but the other can be empty
+ * createUser - create a new user record using the user's email
  * @param email - email address
- * @param username - username
  * @returns a new Express.User object ready to be saved in the DB
  */
 export async function createUser(
   email: string,
-  username: string
 ): Promise<[Express.User | null, string]> {
-  if (!email && !username) {
-    return [null, 'At least one of username and email is required'];
-  }
-
   const users_db = getUsersDB();
   if (users_db) {
     if (email && (await getUserFromEmail(email))) {
       return [null, `User with email '${email}' already exists`];
     }
-    if (username && (await getUserFromUsername(username))) {
-      return [null, `User with username '${username}' already exists`];
-    }
-    if (!username) {
-      username = email.toLowerCase();
-    }
-
     // make a new user record
     return [
       {
-        _id: username,
-        user_id: username,
+        _id: email,
+        user_id: email,
         name: '',
         emails: email ? [email.toLowerCase()] : [],
         roles: [],
@@ -136,7 +121,7 @@ export async function getUserInfoForNotebook(
     roles,
     users: users.map(user => ({
       name: user.name,
-      username: user.user_id,
+      email: user.user_id,
       roles: roles.map(role => ({
         name: role,
         value: userHasProjectRole(user, project_id, role),
@@ -145,22 +130,6 @@ export async function getUserInfoForNotebook(
   };
 
   return userList;
-}
-
-/**
- * getUserFromEmailOrUsername - find a user based on an identifier that could be either an email or username
- * @param identifier - either an email address or username
- * @returns The Express.User record denoted by the identifier or null if it doesn't exist
- */
-export async function getUserFromEmailOrUsername(
-  identifier: string
-): Promise<null | Express.User> {
-  let user;
-  user = await getUserFromEmail(identifier);
-  if (!user) {
-    user = await getUserFromUsername(identifier);
-  }
-  return user;
 }
 
 /**
@@ -180,28 +149,6 @@ async function getUserFromEmail(email: string): Promise<null | Express.User> {
       return result.docs[0] as Express.User;
     } else {
       throw Error(`Multiple conflicting users with email ${email}`);
-    }
-  } else {
-    throw Error('Failed to connect to user database');
-  }
-}
-
-/**
- * getUserFromUsername - retrieve a user record given their username
- * @param username - the username
- * @returns An Express.User record or null if the user is not in the database
- */
-async function getUserFromUsername(
-  username: CouchDBUsername
-): Promise<Express.User | null> {
-  const users_db = getUsersDB();
-  if (users_db) {
-    try {
-      const user = (await users_db.get(username)) as Express.User;
-      return user;
-      //return (await users_db.get(username)) as Express.User;
-    } catch (err) {
-      return null;
     }
   } else {
     throw Error('Failed to connect to user database');

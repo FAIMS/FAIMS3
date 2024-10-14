@@ -127,21 +127,21 @@ function couchdb_public_url(): string {
 
 function local_couchdb_auth():
   | undefined
-  | {username: string; password: string} {
+  | {email: string; password: string} {
   // Used in the server, as opposed to COUCHDB_USER and PASSWORD for testing.
-  const username = process.env.COUCHDB_USER;
+  const email = process.env.COUCHDB_EMAIL;
   const password = process.env.COUCHDB_PASSWORD;
 
   if (
-    username === '' ||
-    username === undefined ||
+    email === '' ||
+    email === undefined ||
     password === '' ||
     password === undefined
   ) {
     console.warn('Falling back to default local couchdb auth');
-    return {username: 'admin', password: 'password'};
+    return {email: 'admin', password: 'password'};
   } else {
-    return {username: username, password: password};
+    return {email: email, password: password};
   }
 }
 

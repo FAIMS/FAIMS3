@@ -58,7 +58,7 @@ api.post(
     const user = await getUserFromEmailOrUsername(req.params.id);
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
-        'Username cannot be found in user database.'
+        'Email cannot be found in user database.'
       );
     }
     if (req.body.addrole) {

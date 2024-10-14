@@ -37,7 +37,6 @@ export type ServiceID = string;
 export type UserServiceProfiles = {
   [ServiceID: string]: UserServiceProfileLocked;
 };
-export type CouchDBUsername = string;
 export type CouchDBUserRole = string;
 export type CouchDBUserRoles = CouchDBUserRole[];
 

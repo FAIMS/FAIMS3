@@ -33,7 +33,7 @@ The `directory` database holds a default document as follows:
 
 Database referenced in `directory` as `people_db`.
 
-Used to store records of users with the username as the record `_id`.  
+Used to store records of users with the email as the record `_id`.  
 
 ### `projects`
 
