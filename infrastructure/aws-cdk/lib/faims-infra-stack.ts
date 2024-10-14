@@ -166,6 +166,15 @@ const BackupConfigSchema = z
     }
   );
 
+export const UiConfiguration = z.object({
+  /** The UI Theme for the app */
+  uiTheme: z.enum(['bubble', 'default']),
+  /** The notebook list type for the app */
+  notebookListType: z.enum(['tabs', 'headings']),
+  /** The display name for notebooks e.g. survey, notebook */
+  notebookName: z.string(),
+});
+
 // Define the schema
 export const ConfigSchema = z.object({
   /** The name of the stack to deploy to cloudformation. Note that changing
@@ -194,6 +203,8 @@ export const ConfigSchema = z.object({
     /** ARN of the public key secret */
     publicKey: z.string(),
   }),
+  /** UI Configuration values */
+  uiConfiguration: UiConfiguration,
   /** CouchDB configuration */
   couch: CouchConfigSchema,
   /** Backup configuration */
@@ -360,6 +371,9 @@ export class FaimsInfraStack extends cdk.Stack {
       designerHz: hz,
       designerUsEast1Certificate: cfnCert,
       conductorUrl: conductor.conductorEndpoint,
+      uiTheme: config.uiConfiguration.uiTheme,
+      notebookListType: config.uiConfiguration.notebookListType,
+      notebookName: config.uiConfiguration.notebookName,
     });
 
     // Backup setup

@@ -149,10 +149,6 @@ export class FaimsConductor extends Construct {
           // Conductor API URLs
           CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
           CONDUCTOR_URL: this.conductorEndpoint,
-          // TODO Setup Google auth
-          CONDUCTOR_AUTH_PROVIDERS: 'google',
-          GOOGLE_CLIENT_ID: 'replace-me',
-          GOOGLE_CLIENT_SECRET: 'replace-me',
           WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
           ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
           IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,

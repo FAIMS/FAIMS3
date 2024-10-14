@@ -25,6 +25,11 @@ export interface FaimsFrontEndProps {
   // Domain name
   faimsDomainNames: Array<string>;
 
+  // customisation
+  uiTheme: 'bubble' | 'default';
+  notebookListType: 'tabs' | 'headings';
+  notebookName: string;
+
   // Designer standalone website
   designerHz: IHostedZone;
   designerUsEast1Certificate: ICertificate;
@@ -138,6 +143,14 @@ export class FaimsFrontEnd extends Construct {
       VITE_SHOW_WIPE: 'true',
       VITE_SHOW_NEW_NOTEBOOK: 'true',
       VITE_SHOW_MINIFAUXTON: 'true',
+
+      // Theme: default or bubble
+      VITE_THEME_ID: props.uiTheme,
+
+      // tabs or headings
+      VITE_NOTEBOOK_LIST_TYPE: props.notebookListType,
+      // e.g. survey, notebook
+      VITE_NOTEBOOK_NAME: props.notebookName,
 
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
