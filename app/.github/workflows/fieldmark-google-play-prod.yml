@@ -126,7 +126,6 @@ jobs:
           export VITE_DIRECTORY_HOST=db.fieldmark.app
           export VITE_DIRECTORY_PORT=443
           export VITE_PRODUCTION_BUILD=true          
-          export VITE_SERVICES=FAIMSTEXT
           export VITE_PROD_BUILD=true          
           export VITE_TAG=prodAndroid      
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
