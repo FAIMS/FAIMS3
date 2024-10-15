@@ -379,6 +379,9 @@ EOL`,
       instanceType: new ec2.InstanceType(props.instanceType),
     });
 
+    // grant permission for the instance to read the secret
+    props.cookieSecret.grantRead(this.instance);
+
     // Create and attach the EBS volume for CouchDB data
     const dataVolume = new ec2.Volume(
       this,
