@@ -20,22 +20,17 @@
  *  - Publish and continue editing(TBD)
  *  - Publish and Close Record(TBD)
  */
-import React from 'react';
 
 import {
-  Button,
-  Grid,
-  ButtonGroup,
-  Typography,
   Alert,
   AlertTitle,
+  Button,
+  ButtonGroup,
   Divider,
-  Box,
+  Grid,
 } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import BoxTab from '../ui/boxTab';
 
-import {grey} from '@mui/material/colors';
 import {CustomMobileStepper} from './recordStepper';
 
 function FormSubmitButton(props: any) {
@@ -145,42 +140,5 @@ export default function FormButtonGroup(props: any) {
         </Grid>
       </Grid>
     </Grid>
-  );
-}
-
-type DevToolProps = {
-  formProps: any;
-  state: any;
-};
-export function DevTool(props: DevToolProps) {
-  const {formProps, state} = props;
-  return String(import.meta.env.VITE_SERVER) === 'developer' ? (
-    <Grid item sm={12} xs={12} md={12}>
-      <BoxTab title={'Developer tool: form state'} />
-      <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
-        <pre>{JSON.stringify(formProps, null, 2)}</pre>
-        <pre>{JSON.stringify(state, null, 2)}</pre>
-      </Box>
-      <Box mt={3}>
-        <BoxTab title={'Alpha info: Autosave, validation and syncing'} />
-        <Box bgcolor={grey[200]} p={2}>
-          <p>
-            The data in this form are auto-saved locally within the app every 5
-            seconds. The data do not need to be valid, and you can return to
-            this page to complete this record on this device at any time.
-          </p>
-          <p>
-            Once you are ready, click the{' '}
-            <Typography variant="button">
-              <b>Publish and Close Record</b>
-            </Typography>{' '}
-            button. This will firstly validate the data, and if valid, sync the
-            record to the remote server.
-          </p>
-        </Box>
-      </Box>
-    </Grid>
-  ) : (
-    <></>
   );
 }

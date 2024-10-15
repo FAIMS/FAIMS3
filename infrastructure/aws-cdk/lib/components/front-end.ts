@@ -142,7 +142,6 @@ export class FaimsFrontEnd extends Construct {
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
       VITE_PRODUCTION_BUILD: 'true',
-      VITE_SERVICES: 'FAIMSTEXT',
       VITE_TAG: 'CDKDeployment',
     };
 
