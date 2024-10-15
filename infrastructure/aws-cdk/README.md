@@ -310,6 +310,10 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `vaultArn`: (Optional) The ARN of an existing backup vault to use. If provided, a new vault will not be created
   - `retentionDays`: The number of days to retain backups (default: 30)
   - `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
+- `uiConfiguration`:
+  - `uiTheme`: the UI theme to use, out of bubble or default
+  - `notebookListType`: 'tabs' or 'headings' display mode for notebook list
+  - `notebookName`: the app display name for notebooks, e.g. 'survey'
 - `couch`:
   - `volumeSize`: The size in GB of the EBS volume to mount to the EC2 instance
   - `instanceType`: The EC2 instance type for CouchDB (e.g., "t3.small")
