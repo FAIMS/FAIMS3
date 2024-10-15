@@ -21,14 +21,7 @@
  *  - Publish and Close Record(TBD)
  */
 
-import {
-  Alert,
-  AlertTitle,
-  Button,
-  ButtonGroup,
-  Divider,
-  Grid,
-} from '@mui/material';
+import {Button} from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 
 import {CustomMobileStepper} from './recordStepper';
@@ -85,7 +78,6 @@ export default function FormButtonGroup(props: any) {
     handleFormSubmit,
     views,
     ui_specification,
-    mq_above_md,
   } = props;
   return (
     <div
