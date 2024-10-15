@@ -312,6 +312,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
 - `couch`:
   - `volumeSize`: The size in GB of the EBS volume to mount to the EC2 instance
+  - `couchVersionTag`: (Optional) The DockerHub version tag to use for the couch image - defaults to 3.3.3, e.g. 'latest'
   - `instanceType`: The EC2 instance type for CouchDB (e.g., "t3.small")
   - `ebsRecoverySnapshotId`: (Optional) The ID of an EBS snapshot to recover the couch data volume from
   - `monitoring`: (Optional) Configuration for CouchDB monitoring alarms
