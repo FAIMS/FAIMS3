@@ -156,10 +156,6 @@ export class FaimsConductor extends Construct {
           WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
           ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
           IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
-          // TODO Setup email
-          CONDUCTOR_EMAIL_FROM_ADDRESS: 'noreply@localhost.test',
-          CONDUCTOR_EMAIL_HOST_CONFIG:
-            'smtps://username:password@smtp.example.test',
           // TODO Setup git revision properly
           COMMIT_VERSION: 'todo',
           KEY_SOURCE: 'AWS_SM',

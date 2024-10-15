@@ -21,7 +21,6 @@
 
 import {v4 as uuidv4} from 'uuid';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
-import nodemailer from 'nodemailer';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
@@ -259,26 +258,6 @@ function conductor_internal_port(): number {
   return parseInt(port);
 }
 
-function email_from_address(): string {
-  const hostname = process.env.CONDUCTOR_EMAIL_FROM_ADDRESS;
-  if (hostname === '' || hostname === undefined) {
-    throw Error(
-      'CONDUCTOR_EMAIL_FROM_ADDRESS must be set to send email invites'
-    );
-  }
-  return hostname;
-}
-
-function email_transporter(): any {
-  const config = process.env.CONDUCTOR_EMAIL_HOST_CONFIG;
-  if (config === '' || config === undefined) {
-    throw Error(
-      'CONDUCTOR_EMAIL_HOST_CONFIG must be set to send email invites'
-    );
-  }
-  return nodemailer.createTransport(config);
-}
-
 function developer_mode(): any {
   const develop = process.env.DEVELOPER_MODE;
   if (develop) {
@@ -306,8 +285,6 @@ export const COOKIE_SECRET = cookie_secret();
 export const GOOGLE_CLIENT_ID = google_client_id();
 export const GOOGLE_CLIENT_SECRET = google_client_secret();
 export const CONDUCTOR_AUTH_PROVIDERS = get_providers_to_use();
-export const EMAIL_FROM_ADDRESS = email_from_address();
-export const EMAIL_TRANSPORTER = email_transporter();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
