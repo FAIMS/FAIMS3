@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {BackupConstruct} from './components/backups';
 import {Construct} from 'constructs';
 import {FaimsConductor} from './components/conductor';
@@ -97,6 +98,8 @@ const CouchConfigSchema = z.object({
   monitoring: MonitoringConfigSchema.optional(),
   /** EC2 instance type for CouchDB */
   instanceType: z.string(),
+  /** The version to use of CouchDB - 3.3.3 is default */
+  couchVersionTag: z.string().default('3.3.3'),
 });
 
 const DomainsConfigSchema = z.object({
@@ -320,6 +323,19 @@ export class FaimsInfraStack extends cdk.Stack {
       certificate: primaryCert,
     });
 
+    // Cookie secret shared between couch and conductor
+
+    // Generate cookie auth secret at deploy time
+    const cookieSecret = new sm.Secret(this, 'conductor-cookie-secret', {
+      description: 'Contains a randomly generated string used for cookie auth in conductor and couch',
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      generateSecretString: {
+        includeSpace: false,
+        passwordLength: 25,
+        excludePunctuation: true,
+      },
+    });
+
     // COUCHDB
     // =======
 
@@ -334,6 +350,8 @@ export class FaimsInfraStack extends cdk.Stack {
       dataVolumeSize: config.couch.volumeSize,
       dataVolumeSnapshotId: config.couch.ebsRecoverySnapshotId,
       monitoring: config.couch.monitoring,
+      couchVersionTag: config.couch.couchVersionTag,
+      cookieSecret: cookieSecret
     });
 
     // CONDUCTOR
@@ -354,6 +372,7 @@ export class FaimsInfraStack extends cdk.Stack {
       iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
       sharedBalancer: networking.sharedBalancer,
       config: config.conductor,
+      cookieSecret: cookieSecret
     });
 
     // FRONT-END

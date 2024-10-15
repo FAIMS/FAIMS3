@@ -14,19 +14,19 @@
  * 25-07-2024 | Peter Baker | use the same LB as the couch DB network to save $$$.
  */
 
-import {Duration, RemovalPolicy} from 'aws-cdk-lib';
-import * as r53 from 'aws-cdk-lib/aws-route53';
-import * as sm from 'aws-cdk-lib/aws-secretsmanager';
-import * as r53Targets from 'aws-cdk-lib/aws-route53-targets';
+import {Duration} from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as r53 from 'aws-cdk-lib/aws-route53';
+import * as r53Targets from 'aws-cdk-lib/aws-route53-targets';
+import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {Construct} from 'constructs';
+import {ConductorConfig} from '../faims-infra-stack';
 import {getPathToRoot} from '../util/mono';
 import {SharedBalancer} from './networking';
-import {ConductorConfig} from '../faims-infra-stack';
 
 /**
  * Properties for the FaimsConductor construct
@@ -58,6 +58,8 @@ export interface FaimsConductorProps {
   iosAppPublicUrl: string;
   /** The configuration object for the Conductor service */
   config: ConductorConfig;
+  /** FAIMS_COOKIE_SECRET */
+  cookieSecret: sm.Secret;
 }
 
 /**
@@ -81,20 +83,6 @@ export class FaimsConductor extends Construct {
 
     // Build the public URL and expose
     this.conductorEndpoint = `https://${props.domainName}:${this.externalPort}`;
-
-    // AUXILIARY SETUP
-    // ================
-
-    // Generate cookie auth secret at deploy time
-    const cookieSecret = new sm.Secret(this, 'conductor-cookie-secret', {
-      description: 'Contains a randomly generated string used for cookie auth',
-      removalPolicy: RemovalPolicy.DESTROY,
-      generateSecretString: {
-        includeSpace: false,
-        passwordLength: 25,
-        excludePunctuation: true,
-      },
-    });
 
     // CONTAINER SETUP
     // ================
@@ -170,7 +158,9 @@ export class FaimsConductor extends Construct {
             props.couchDbAdminSecret,
             'username'
           ),
-          FAIMS_COOKIE_SECRET: ecs.Secret.fromSecretsManager(cookieSecret),
+          FAIMS_COOKIE_SECRET: ecs.Secret.fromSecretsManager(
+            props.cookieSecret
+          ),
         },
         logging: ecs.LogDriver.awsLogs({
           streamPrefix: 'faims-conductor',
