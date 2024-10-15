@@ -37,7 +37,6 @@ import ErrorIcon from '@mui/icons-material/Error';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ShareIcon from '@mui/icons-material/Share';
 import StorageIcon from '@mui/icons-material/Storage';
-import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {progressiveSaveFiles} from '../../sync/data-dump';
 import {
@@ -48,18 +47,12 @@ import {
   NOTEBOOK_NAME,
   CONDUCTOR_URLS,
 } from '../../buildconfig';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
 
 export default function AboutBuild() {
-  const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Home'},
-    {title: 'about-build'},
-  ];
-
   const [wipeDialogOpen, setWipeDialogOpen] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const [showingProgress, setShowingProgress] = React.useState(false);
@@ -109,7 +102,6 @@ export default function AboutBuild() {
 
   return (
     <Box sx={{p: 2}}>
-      <Breadcrumbs data={breadcrumbs} />
       <BoxTab title={'Fieldmark Configuration'} bgcolor={grey[100]} />
       <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}} mb={2}>
         <pre>
