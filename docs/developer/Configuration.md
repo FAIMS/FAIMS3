@@ -40,15 +40,17 @@ graph TD
 
 The most significant form of configuration in the application is the specification for the notebook. This defines **what** to render, and **how** it should be rendered. A notebook specification includes the following components, as shown in the diagram below
 
-- metadata: a set of key value pairs which contain
+- metadata (field: `metadata`): a set of key value pairs which contain
   - important notebook metadata such as name, description, author etc
   - configuration switches such as QR code behaviour (TODO document this further)
   - arbitrary user metadata key-value pairs
-- field definitions: a set of fields with a unique name, this includes detailed specifications on how to render the field, it's allowable returned values etc
-- forms: top level forms which display as discrete forms in the application e.g. Site, Building - these are a collection of views, which are a collection of fields
-- views/sections: a sub-section within a form, which contain a collection of Fields identified from the field definitions list by their unique identifier
+- field definitions (field: `ui-specification.fields`): a set of fields with a unique name, this includes detailed specifications on how to render the field, it's allowable returned values etc
+- forms (field: `ui-specification.viewsets`): top level forms which display as discrete forms in the application e.g. Site, Building - these are a collection of views, which are a collection of fields
+- views/sections (fields: `ui-specification.fviews`): a sub-section within a form, which contain a collection of Fields identified from the field definitions list by their unique identifier
 
 **When should this be used**: The notebook specification is a powerful form of configuration for the behaviour of a _specific_ notebook. When the behaviour to be configured applies to a) a specific notebook b) individual fields/forms/sections c) some notebooks but not all d) should be configurable by the user within a given deployment, then the notebook specification should be used.
+
+**Note: backwards compatibility**: Making a change to the notebook format should be done in a backwards compatible way if possible - existing functionality should work if the option is missing or has a previous version's implementation. Any change to the format will generally also require an update to the Designer to allow users to customise that option.
 
 A user/developer can therefore change notebook behaviour in the following ways
 
