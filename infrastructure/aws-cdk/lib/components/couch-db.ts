@@ -15,6 +15,8 @@
 
 import {Duration, RemovalPolicy, Size} from 'aws-cdk-lib';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import {GraphWidget, Metric, TextWidget} from 'aws-cdk-lib/aws-cloudwatch';
 import * as cw_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
@@ -22,11 +24,9 @@ import * as elbTargets from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as r53targets from 'aws-cdk-lib/aws-route53-targets';
-import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
-import {GraphWidget, Metric, TextWidget} from 'aws-cdk-lib/aws-cloudwatch';
 
 import {Construct} from 'constructs';
 import {MonitoringConfig} from '../faims-infra-stack';
@@ -54,6 +54,11 @@ export interface EC2CouchDBProps {
   monitoring?: MonitoringConfig;
   /** EC2 instance type for CouchDB */
   instanceType: string;
+  /** Which version of couchDB to use. Set to latest if wanting to use newest
+   * version. */
+  couchVersionTag: string;
+  /** chttpd_auth.secret configuration value - injected into init file */
+  cookieSecret: sm.Secret;
 }
 
 /**
@@ -67,7 +72,7 @@ export class EC2CouchDB extends Construct {
   /** The exposed HTTPS port */
   public readonly exposedPort: number = 443;
   /** The secret containing the CouchDB admin user/password */
-  public readonly passwordSecret: secretsmanager.Secret;
+  public readonly passwordSecret: sm.Secret;
   /** Shared ALB */
   private readonly sharedBalancer: SharedBalancer;
   /** EC2 Target group */
@@ -78,8 +83,6 @@ export class EC2CouchDB extends Construct {
   private readonly couchDataPath: string = '/opt/couchdb/data';
   /** The device name for the EBS data volume */
   private readonly ebsDeviceName: string = '/dev/xvdf';
-  /** The Couch DB Docker version tag to use  */
-  private readonly couchVersionTag: string = 'latest';
   /** The device name for the EBS data volume */
   public readonly dataVolume: ec2.Volume;
   /** The Alarm SNS topic being published to */
@@ -118,9 +121,6 @@ writer = file
 file = ${this.couchDataPath}/couch.log
 level = info
 
-[chttpd_auth]
-secret = db7a1a86dbc734593febf8ca6fdf0cf8
-
 [cors]
 origins = *
 headers = accept, authorization, content-type, origin, referer
@@ -143,19 +143,15 @@ methods = GET, PUT, POST, HEAD, DELETE
     // ================
 
     // Create a secret for the CouchDB admin password
-    this.passwordSecret = new secretsmanager.Secret(
-      this,
-      'CouchDBAdminPassword',
-      {
-        generateSecretString: {
-          excludeCharacters: '/\\"%@',
-          generateStringKey: 'password',
-          passwordLength: 16,
-          secretStringTemplate: JSON.stringify({username: 'admin'}),
-        },
-        removalPolicy: RemovalPolicy.DESTROY,
-      }
-    );
+    this.passwordSecret = new sm.Secret(this, 'CouchDBAdminPassword', {
+      generateSecretString: {
+        excludeCharacters: '/\\"%@',
+        generateStringKey: 'password',
+        passwordLength: 16,
+        secretStringTemplate: JSON.stringify({username: 'admin'}),
+      },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
 
     // INSTANCE CONFIG
     // ================
@@ -270,16 +266,20 @@ methods = GET, PUT, POST, HEAD, DELETE
       // Run CouchDB with docker service
       'systemctl start docker',
       'systemctl enable docker',
-      `docker pull couchdb:${this.couchVersionTag}`,
+      `docker pull couchdb:${props.couchVersionTag}`,
 
       // Set environment variables
-      `SECRET_ARN=${this.passwordSecret.secretArn}`,
+      `ADMIN_SECRET_ARN=${this.passwordSecret.secretArn}`,
+      `COOKIE_SECRET_ARN=${props.cookieSecret.secretArn}`,
       'REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)',
       'export AWS_DEFAULT_REGION=$REGION',
 
       // Get username and password from Secrets Manager
-      'ADMIN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text | jq -r .password)',
-      'ADMIN_USER=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query SecretString --output text | jq -r .username)',
+      'ADMIN_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $ADMIN_SECRET_ARN --query SecretString --output text | jq -r .password)',
+      'ADMIN_USER=$(aws secretsmanager get-secret-value --secret-id $ADMIN_SECRET_ARN --query SecretString --output text | jq -r .username)',
+
+      // Get the chttpd_auth cookie secret
+      'COOKIE_SECRET=$(aws secretsmanager get-secret-value --secret-id $COOKIE_SECRET_ARN --query SecretString --output text)',
 
       // Create CouchDB configuration file
       'mkdir -p /opt/couchdb/etc/local.d',
@@ -290,6 +290,10 @@ EOL`,
       // Append admin and password configuration to local.ini
       'echo "[admins]" >> /opt/couchdb/etc/local.d/local.ini',
       'echo "$ADMIN_USER = $ADMIN_PASSWORD" >> /opt/couchdb/etc/local.d/local.ini',
+
+      // Append chttpd auth cookie secret
+      'echo "[chttpd_auth]" >> /opt/couchdb/etc/local.d/local.ini',
+      'echo "secret = $COOKIE_SECRET" >> /opt/couchdb/etc/local.d/local.ini',
 
       // Mount the EBS volume for CouchDB data
       `DEVICE=${this.ebsDeviceName}`,
@@ -331,7 +335,7 @@ After=docker.service
 
 [Service]
 Restart=always
-ExecStart=/usr/bin/docker run --rm --name couchdb -p 5984:5984 -v /opt/couchdb/etc/local.d:/opt/couchdb/etc/local.d -v ${this.couchDataPath}:${this.couchDataPath} couchdb:${this.couchVersionTag}
+ExecStart=/usr/bin/docker run --rm --name couchdb -p 5984:5984 -v /opt/couchdb/etc/local.d:/opt/couchdb/etc/local.d -v ${this.couchDataPath}:${this.couchDataPath} couchdb:${props.couchVersionTag}
 ExecStop=/usr/bin/docker stop couchdb
 
 [Install]
