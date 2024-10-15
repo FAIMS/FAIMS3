@@ -20,7 +20,7 @@
  */
 
 import passport from 'passport';
-
+import {z} from 'zod';
 import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
 import {DoneFunction} from './types';
 import {getUserFromEmailOrUsername} from './couchdb/users';
@@ -30,6 +30,14 @@ import {getInvite} from './couchdb/invites';
 import {acceptInvite} from './registration';
 import {generateUserToken} from './authkeys/create';
 import {NextFunction, Request, Response, Router} from 'express';
+import {processRequest} from 'zod-express-middleware';
+import {
+  GetRegisterByInviteQuerySchema,
+  PostLocalAuthInputSchema,
+  PostLocalAuthQuerySchema,
+  PostRegisterLocalInputSchema,
+  PostRegisterLocalQuerySchema,
+} from '@faims3/data-model';
 
 interface RequestQueryRedirect {
   redirect: string;
@@ -183,7 +191,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         return next(err);
       }
       if (!user) {
-        req.flash('message', 'Invalid username or password');
+        req.flash('message', 'Invalid email or password');
         return res.redirect('/auth/?redirect=' + redirect);
       }
 
@@ -227,10 +235,14 @@ export function add_auth_routes(app: Router, handlers: string[]) {
   /**
    * Handle local login request with username and password
    */
-  app.post<{}, {}, {}, RequestQueryRedirect>(
+  app.post(
     '/auth/local',
+    processRequest({
+      body: PostLocalAuthInputSchema,
+      query: PostLocalAuthQuerySchema,
+    }),
     (req, res, next: NextFunction) => {
-      const redirect = validateRedirect(req.query?.redirect || '/');
+      const redirect = validateRedirect(req.query.redirect || '/');
       passport.authenticate(
         'local',
         authenticate_return(req, res, next, redirect)
@@ -243,10 +255,14 @@ export function add_auth_routes(app: Router, handlers: string[]) {
    * then ask them to register.  User is authenticated in either case.
    * Return a redirect response to the given URL
    */
-  app.get<{invite_id: string}, {}, {}, RequestQueryRedirect>(
+  app.get(
     '/register/:invite_id/',
+    processRequest({
+      params: z.object({invite_id: z.string()}),
+      query: GetRegisterByInviteQuerySchema,
+    }),
     async (req, res) => {
-      const redirect = validateRedirect(req.query?.redirect || '/');
+      const redirect = validateRedirect(req.query.redirect || '/');
       const invite_id = req.params.invite_id;
       req.session['invite'] = invite_id;
       const invite = await getInvite(invite_id);
@@ -281,21 +297,33 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     }
   );
 
-  app.post<{}, {}, PostRegisterRequestBody, RequestQueryRedirect>(
+  app.post(
     '/register/local',
-    body('username').trim(),
+    processRequest({
+      body: PostRegisterLocalInputSchema,
+      query: PostRegisterLocalQuerySchema,
+    }),
+    // TODO move this validation to Zod - right now this is depended on by
+    // handlebars since the errors are 'flashed' in the function below
     body('password')
       .isLength({min: 10})
       .withMessage('Must be at least 10 characters'),
     body('email').isEmail().withMessage('Must be a valid email address'),
-    async (req: any, res: any, next: any) => {
+    async (req, res, next: NextFunction) => {
       // create a new local account if we have a valid invite
-      const username = req.body.username;
+
+      // In the form, the username is =
+      var username = req.body.username;
       const password = req.body.password;
       const repeat = req.body.repeat;
       const name = req.body.name;
       const email = req.body.email;
       const redirect = validateRedirect(req.body.redirect || '/');
+
+      // If the username was not provided, use the email
+      if (username === undefined || username === null) {
+        username = email;
+      }
 
       const errors = validationResult(req);
 
