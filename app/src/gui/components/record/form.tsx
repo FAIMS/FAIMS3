@@ -1263,49 +1263,41 @@ class RecordForm extends React.Component<
                         <Typography>{description}</Typography>
                       </Box>
                     )}
-                    <br />
-
-                    <Grid container spacing={2}>
-                      <Grid item sm={12} xs={12}>
-                        <ViewComponent
-                          viewName={viewName}
-                          ui_specification={ui_specification}
-                          formProps={formProps}
-                          draftState={this.draftState}
-                          annotation={this.state.annotation}
-                          handleAnnotation={this.updateannotation}
-                          isSyncing={this.props.isSyncing}
-                          conflictfields={this.props.conflictfields}
-                          handleChangeTab={this.props.handleChangeTab}
-                          fieldNames={fieldNames}
-                          disabled={this.props.disabled}
-                        />
-                      </Grid>
-                      <br />
-                      <FormButtonGroup
-                        is_final_view={is_final_view}
-                        disabled={this.props.disabled}
-                        onChangeStepper={this.onChangeStepper}
-                        viewName={viewName}
-                        view_index={view_index}
-                        formProps={formProps}
-                        ui_specification={ui_specification}
-                        views={views}
-                        mq_above_md={this.props.mq_above_md}
-                        handleFormSubmit={(is_close: string) => {
-                          formProps.setSubmitting(true);
-                          this.setTimeout(() => {
-                            this.save(
-                              formProps.values,
-                              is_final_view,
-                              is_close,
-                              formProps.setSubmitting
-                            );
-                          }, 500);
-                        }}
-                      />
-                    </Grid>
-                    {/* {UGCReport ONLY for the saved record} */}
+                    <ViewComponent
+                      viewName={viewName}
+                      ui_specification={ui_specification}
+                      formProps={formProps}
+                      draftState={this.draftState}
+                      annotation={this.state.annotation}
+                      handleAnnotation={this.updateannotation}
+                      isSyncing={this.props.isSyncing}
+                      conflictfields={this.props.conflictfields}
+                      handleChangeTab={this.props.handleChangeTab}
+                      fieldNames={fieldNames}
+                      disabled={this.props.disabled}
+                    />
+                    <FormButtonGroup
+                      is_final_view={is_final_view}
+                      disabled={this.props.disabled}
+                      onChangeStepper={this.onChangeStepper}
+                      viewName={viewName}
+                      view_index={view_index}
+                      formProps={formProps}
+                      ui_specification={ui_specification}
+                      views={views}
+                      mq_above_md={this.props.mq_above_md}
+                      handleFormSubmit={(is_close: string) => {
+                        formProps.setSubmitting(true);
+                        this.setTimeout(() => {
+                          this.save(
+                            formProps.values,
+                            is_final_view,
+                            is_close,
+                            formProps.setSubmitting
+                          );
+                        }, 500);
+                      }}
+                    />
                     {this.state.revision_cached !== undefined && (
                       <Box mt={3}>
                         <Divider />
