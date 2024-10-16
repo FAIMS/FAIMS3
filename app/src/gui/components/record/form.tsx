@@ -74,7 +74,7 @@ import UGCReport from './UGCReport';
 import {generateFAIMSDataID, getFirstRecordHead} from '@faims3/data-model';
 import {logError} from '../../../logging';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
-import {percentComplete, requiredFields} from '../../../lib/survey';
+import {percentComplete, requiredFields} from '../../../lib/form-utils';
 //import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   navigate: NavigateFunction;
