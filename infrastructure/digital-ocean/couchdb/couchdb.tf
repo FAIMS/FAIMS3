@@ -17,7 +17,7 @@ data "cloudinit_config" "couchdb_config" {
         write_files = [
             {
                 encoding = "b64"
-                content = base64encode(file("../../../api/couchdb/local.ini"))
+                content = var.local_ini_b64
                 path = "/opt/couchdb/etc/local.d/local.ini"
             },
             {
