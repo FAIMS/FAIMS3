@@ -17,110 +17,61 @@
  * Description:
  *   TODO
  */
-import React, {useState, useEffect} from 'react';
-import {useParams, Navigate} from 'react-router-dom';
+import {useContext} from 'react';
+import {useParams} from 'react-router-dom';
 import {Box, Grid, Typography} from '@mui/material';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import * as ROUTES from '../../constants/routes';
-
-import {getProjectInfo} from '../../sync/projects';
-import {ProjectID} from '@faims3/data-model';
+import FolderIcon from '@mui/icons-material/Folder';
 import {CircularProgress} from '@mui/material';
-
-import NotebookComponent from '../components/notebook';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import RefreshNotebook from '../components/notebook/refresh';
-import {ProjectInformation} from '@faims3/data-model';
-import {logError} from '../../logging';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {ProjectsContext} from '../../context/projects-context';
+import NotebookComponent from '../components/notebook';
 
 export default function Notebook() {
-  const {project_id} = useParams<{project_id: ProjectID}>();
-  const [project_info, setProjectInfo] = useState(
-    undefined as ProjectInformation | undefined
+  const {project_id} = useParams<{
+    project_id: string;
+  }>();
+
+  const project = useContext(ProjectsContext).projects.find(
+    project => project_id === project.project_id
   );
-  const [project_error, setProjectError] = useState(null as any);
-  const loading = project_info === undefined;
 
-  const getInfoWrapper = async () => {
-    try {
-      const info = await getProjectInfo(project_id!);
-      setProjectInfo(info);
-    } catch (err) {
-      setProjectError(err);
-    }
-  };
+  if (!project) return <CircularProgress data-testid="progressbar" />;
 
-  useEffect(() => {
-    const getInfo = async () => {
-      await getInfoWrapper();
-    };
-    getInfo();
-  }, [project_id]);
-
-  const breadcrumbs = [
-    {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
-    {
-      title: !loading ? project_info.name : '',
-    },
-  ];
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
 
-  if (project_error !== null) {
-    logError(`Failed to load ${NOTEBOOK_NAME} ${project_id}, ${project_error}`);
-    return <Navigate to="/404" />;
-  }
-  const handleRefresh = () => {
-    return getInfoWrapper();
-  };
-
-  return !loading ? (
+  return (
     <Box>
-      <Box
-        sx={{
-          textAlign: 'center',
-          padding: '8px 0',
-          backgroundColor: '#f5f5f5',
-        }}
+      <Grid
+        container
+        direction="row"
+        justifyContent="flex-start"
+        alignItems="center"
+        spacing={2}
       >
-        <Grid container direction="column" alignItems="center">
-          <Grid item>
-            <MenuBookIcon
-              color={'secondary'}
-              fontSize={mq_above_md ? 'large' : 'medium'}
-            />
-          </Grid>
-          <Grid item>
-            <Typography
-              variant={mq_above_md ? 'h3' : 'h4'}
-              component={'div'}
-              sx={{fontWeight: 'bold'}}
+        <Grid item xs={'auto'}>
+          <Typography variant={mq_above_md ? 'h3' : 'h4'} component={'div'}>
+            <Grid
+              container
+              direction="row"
+              justifyContent="flex-start"
+              alignItems="center"
+              spacing={1}
             >
-              {project_info.name}
-            </Typography>
-          </Grid>
+              <Grid item>
+                <FolderIcon
+                  color={'secondary'}
+                  fontSize={mq_above_md ? 'large' : 'medium'}
+                  style={{verticalAlign: 'middle'}}
+                />
+              </Grid>
+              <Grid item>{project.name}</Grid>
+            </Grid>
+          </Typography>
         </Grid>
-      </Box>
-
-      <Box sx={{paddingLeft: '16px', marginTop: '8px'}}>
-        <Breadcrumbs data={breadcrumbs} />
-      </Box>
-
-      <Box sx={{paddingTop: '16px'}}>
-        <RefreshNotebook
-          handleRefresh={handleRefresh}
-          project_name={project_info.name}
-        />
-        <NotebookComponent
-          project={project_info}
-          handleRefresh={handleRefresh}
-        />
-      </Box>
+      </Grid>
+      <NotebookComponent project={project} />
     </Box>
-  ) : (
-    <CircularProgress data-testid="progressbar" />
   );
 }

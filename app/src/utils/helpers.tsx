@@ -1,10 +1,11 @@
+import {Capacitor} from '@capacitor/core';
 import {TokenContents} from '@faims3/data-model';
 
-export function tokenExists(token: null | undefined | TokenContents) {
+function tokenExists(token: null | undefined | TokenContents) {
   return token !== null && token !== undefined;
 }
 
-export function tokenValid(token: null | undefined | TokenContents) {
+function tokenValid(token: null | undefined | TokenContents) {
   /**
    * Check for expiry AND validity
    */
@@ -19,7 +20,6 @@ export function checkToken(token: null | undefined | TokenContents) {
   /**
    * Check if the token exists, and whether it's valid
    */
-  console.log('checkToken', token);
   return tokenExists(token) && tokenValid(token);
 }
 
@@ -30,4 +30,13 @@ export function checkToken(token: null | undefined | TokenContents) {
  */
 export function checkAllRequired(vals: any[]): boolean {
   return !vals.some(v => v === undefined || v === null);
+}
+
+/**
+ * Are we running on the web or mobile?
+ * @returns true if we're running in a web browser, false if in an app
+ */
+
+export function isWeb() {
+  return Capacitor.getPlatform() === 'web';
 }

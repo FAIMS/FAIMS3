@@ -32,6 +32,7 @@ import handlebars from 'handlebars';
 import morgan from 'morgan';
 import passport from 'passport';
 import flash from 'req-flash';
+import RateLimit from 'express-rate-limit';
 
 // use swaggerUI to display the UI documentation
 // need this workaround to have the swagger-ui-dist package
@@ -65,16 +66,16 @@ require('express-async-errors');
 export const app = express();
 app.use(morgan('combined'));
 
-// if (process.env.NODE_ENV !== 'test') {
-//   // set up rate limiter: maximum of 30 requests per minute
-//   const limiter = RateLimit({
-//     windowMs: 1 * 60 * 1000, // 1 minute
-//     max: 30,
-//     validate: true,
-//   });
-//   app.use(limiter);
-//   console.log('Rate limiter enabled');
-// }
+if (process.env.NODE_ENV !== 'test') {
+  // set up rate limiter: maximum of 30 requests per minute
+  const limiter = RateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 30,
+    validate: true,
+  });
+  app.use(limiter);
+  console.log('Rate limiter enabled');
+}
 
 // Only parse query parameters into strings, not objects
 app.set('query parser', 'simple');
@@ -90,13 +91,13 @@ app.use(
 // fix for bug in passport 0.7.0 and compatibility with cookie-session
 app.use((request, response, next) => {
   if (request.session && !request.session.regenerate) {
-    request.session.regenerate = cb => {
+    request.session.regenerate = (cb: any) => {
       if (cb) cb('');
       return request.session;
     };
   }
   if (request.session && !request.session.save) {
-    request.session.save = cb => {
+    request.session.save = (cb: any) => {
       if (cb) cb('');
       return request.session;
     };

@@ -11,20 +11,20 @@ import * as ROUTES from '../../../constants/routes';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {
-  ProjectInformation,
   getRecordsWithRegex,
   RecordMetadata,
   ProjectUIModel,
 } from '@faims3/data-model';
 import {getMetadataValue} from '../../../sync/metadata';
+import {ProjectExtended} from '../../../types/project';
 
 type AddRecordButtonsProps = {
-  project: ProjectInformation;
+  project: ProjectExtended;
 };
 
-export default function AddRecordButtons(props: AddRecordButtonsProps) {
-  const {project} = props;
-  const project_id = project.project_id;
+export default function AddRecordButtons({
+  project: {_id, project_id},
+}: AddRecordButtonsProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
@@ -50,7 +50,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
 
   const handleScanResult = (value: string) => {
     // find a record with this field value
-    getRecordsWithRegex(project_id, value, true).then(records => {
+    getRecordsWithRegex(_id, value, true).then(records => {
       // navigate to it
       // what should happen if there are more than one?
       for (const key in records) {
@@ -104,7 +104,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
                     component={RouterLink}
                     to={
                       ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      project.project_id +
+                      project_id +
                       ROUTES.RECORD_CREATE +
                       viewset_name
                     }

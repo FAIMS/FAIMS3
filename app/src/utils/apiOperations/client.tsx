@@ -5,7 +5,7 @@
  * more consistent.
  */
 
-import {ListingsObject} from '../../sync/databases';
+import {ListingsObject} from '@faims3/data-model/src/types';
 import {getAllListingIDs, getListing} from '../../sync/state';
 import {getTokenForCluster} from '../../users';
 
@@ -61,7 +61,7 @@ export class ListingFetch {
    * @throws Error if no token is available for the cluster
    */
   private async getAuthHeaders(): Promise<{}> {
-    const jwt_token = await getTokenForCluster(this.listing._id);
+    const jwt_token = await getTokenForCluster(this.listing.id);
     if (!jwt_token) {
       throw new Error('No token available for this cluster.');
     }
@@ -343,10 +343,10 @@ export class ListingFetchManager {
    * @param listing - The ListingsObject to update or add
    */
   updateListing(listing: ListingsObject): void {
-    this.listingsMap.set(listing._id, listing);
+    this.listingsMap.set(listing.id, listing);
     // If a client already exists for this listing, update it
-    if (this.clients.has(listing._id)) {
-      this.clients.set(listing._id, new ListingFetch(listing));
+    if (this.clients.has(listing.id)) {
+      this.clients.set(listing.id, new ListingFetch(listing));
     }
   }
 

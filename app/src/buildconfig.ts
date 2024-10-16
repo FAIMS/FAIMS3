@@ -247,7 +247,6 @@ function get_bugsnag_key(): string | false {
   if (bugsnag_key === '' || bugsnag_key === undefined) {
     return false;
   }
-  console.log('BK', bugsnag_key);
   return bugsnag_key;
 }
 

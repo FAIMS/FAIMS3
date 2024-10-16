@@ -9,11 +9,17 @@ import {
   Alert,
   AlertTitle,
   Button,
+  Grid,
+  TableContainer,
+  Table,
+  TableBody,
+  TableRow,
+  TableCell,
 } from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {ProjectUIViewsets} from '@faims3/data-model';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import {ProjectInformation, ProjectUIModel} from '@faims3/data-model';
+import {ProjectUIModel} from '@faims3/data-model';
 import DraftsTable from './draft_table';
 import {RecordsBrowseTable} from './record_table';
 import MetadataRenderer from '../metadataRenderer';
@@ -28,6 +34,8 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import {useQuery} from '@tanstack/react-query';
 import {getMetadataValue} from '../../../sync/metadata';
+import {ProjectExtended} from '../../../types/project';
+import RangeHeader from './range_header';
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
@@ -83,8 +91,7 @@ function a11yProps(index: number, id: string) {
  * NotebookComponentProps defines the properties for the NotebookComponent component.
  */
 type NotebookComponentProps = {
-  project: ProjectInformation;
-  handleRefresh: () => Promise<any>;
+  project: ProjectExtended;
 };
 
 /**
@@ -94,10 +101,7 @@ type NotebookComponentProps = {
  * @param {NotebookComponentProps} props - The properties for the NotebookComponent.
  * @returns {JSX.Element} - The JSX element for the NotebookComponent.
  */
-export default function NotebookComponent({
-  project,
-  handleRefresh,
-}: NotebookComponentProps) {
+export default function NotebookComponent({project}: NotebookComponentProps) {
   const [notebookTabValue, setNotebookTabValue] = React.useState(0);
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
 
@@ -142,10 +146,17 @@ export default function NotebookComponent({
   });
 
   /**
-   * Fetches the UI specification and viewsets for the project when the component mounts or the project changes.
+   * Fetches the UI specification and viewsets for the project
    */
-  useEffect(() => {
-    if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
+  const pageLoader = () => {
+    // Starting state reset
+    setViewsets(null);
+    setUiSpec(null);
+    setErr('');
+    setLoading(true);
+
+    // Try to load details and records
+    if (project.listing && project._id) {
       getUiSpecForProject(project.project_id)
         .then(spec => {
           setUiSpec(spec);
@@ -154,16 +165,25 @@ export default function NotebookComponent({
           setErr('');
         })
         .catch(err => {
+          setLoading(false);
           setErr(err.message);
         });
     }
-    return () => {
-      setViewsets(null);
-      setUiSpec(null);
-      setErr('');
-      setLoading(true);
-    };
+  };
+
+  /**
+   * Fetches the UI specification and viewsets for the project when the
+   * component mounts or the project changes.
+   */
+  useEffect(() => {
+    pageLoader();
   }, [project]);
+
+  // trigger a refresh of the content because something changed down below (a
+  // record or draft was deleted)
+  const handleRefresh = () => {
+    pageLoader();
+  };
 
   return (
     <Box>
@@ -354,6 +374,7 @@ export default function NotebookComponent({
               <Typography
                 variant="body1"
                 gutterBottom
+                component="div"
                 sx={{marginBottom: '16px'}}
               >
                 <strong>Description:</strong>{' '}
@@ -389,6 +410,97 @@ export default function NotebookComponent({
                 />
               </Typography>
             </Box>
+            <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
+              <Grid item xs={12} sm={6} md={6} lg={4}>
+                <Box component={Paper} elevation={0} variant={'outlined'} p={2}>
+                  <Typography variant={'h6'} sx={{mb: 2}}>
+                    Description
+                  </Typography>
+                  <Typography variant="body2" color="textPrimary" gutterBottom>
+                    <MetadataRenderer
+                      project_id={project.project_id}
+                      metadata_key={'pre_description'}
+                      chips={false}
+                    />
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <TableContainer
+                  component={Paper}
+                  elevation={0}
+                  variant={'outlined'}
+                >
+                  <Typography variant={'h6'} sx={{m: 2}} gutterBottom>
+                    About
+                  </Typography>
+                  <Table size={'small'}>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant={'overline'}>Status</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <MetadataRenderer
+                            project_id={project.project_id}
+                            metadata_key={'project_status'}
+                            chips={false}
+                          />
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant={'overline'}>
+                            Lead Institution
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <MetadataRenderer
+                            project_id={project.project_id}
+                            metadata_key={'lead_institution'}
+                            chips={false}
+                          />
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant={'overline'}>
+                            Project Lead
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <MetadataRenderer
+                            project_id={project.project_id}
+                            metadata_key={'project_lead'}
+                            chips={false}
+                          />
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant={'overline'}>
+                            Last Updated
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <MetadataRenderer
+                            project_id={project.project_id}
+                            metadata_key={'last_updated'}
+                            chips={false}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Grid>
+              <Grid item xs={12} sm={12} md={12} lg={4}>
+                <RangeHeader
+                  project={project}
+                  handleAIEdit={handleNotebookTabChange}
+                />
+              </Grid>
+            </Grid>
           </TabPanel>
 
           <TabPanel value={notebookTabValue} index={2} id={'notebook'}>

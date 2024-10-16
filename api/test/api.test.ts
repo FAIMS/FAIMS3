@@ -18,7 +18,11 @@
  *   Tests for the API
  */
 
-import {getDataDB, ProjectUIModel, registerClient} from '@faims3/data-model';
+import {
+  EncodedProjectUIModel,
+  getDataDB,
+  registerClient,
+} from '@faims3/data-model';
 import {expect} from 'chai';
 import fs from 'fs';
 import PouchDB from 'pouchdb';
@@ -28,6 +32,7 @@ import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
+  CONDUCTOR_SHORT_CODE_PREFIX,
   DEVELOPER_MODE,
   KEY_SERVICE,
 } from '../src/buildconfig';
@@ -63,9 +68,10 @@ export const NOTEBOOKS_API_BASE = '/api/notebooks';
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
 
-const uispec: ProjectUIModel = {
+const uispec: EncodedProjectUIModel = {
+  _id: '',
   fields: [],
-  views: {},
+  fviews: {},
   viewsets: {},
   visible_types: [],
 };
@@ -81,6 +87,7 @@ describe('API tests', () => {
         expect(response.body.name).to.equal(CONDUCTOR_INSTANCE_NAME);
         expect(response.body.description).to.equal(CONDUCTOR_DESCRIPTION);
         expect(response.body.conductor_url).to.equal(CONDUCTOR_PUBLIC_URL);
+        expect(response.body.prefix).to.equal(CONDUCTOR_SHORT_CODE_PREFIX);
       });
   });
 

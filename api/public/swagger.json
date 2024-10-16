@@ -1,973 +1,948 @@
 {
-    "openapi": "3.0.0",
-    "info": {
-        "description": "This is the FAIMS Conductor server API documentation.",
-        "version": "1.0.0",
-        "title": "FAIMS3 API",
-        "termsOfService": "http://faims.edu.au/terms/",
-        "contact": {
-            "email": "help@faims.edu.au"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        }
+  "openapi": "3.0.0",
+  "info": {
+    "description": "This is the FAIMS Conductor server API documentation.",
+    "version": "1.0.0",
+    "title": "FAIMS3 API",
+    "termsOfService": "http://faims.edu.au/terms/",
+    "contact": {
+      "email": "help@faims.edu.au"
     },
-    "servers": [
-        {
-            "url": "/api"
-        }
-    ],
-    "components": {
-        "securitySchemes": {
-            "Auth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT"
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "Auth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Access token is missing or invalid"
+      }
+    }
+  },
+  "paths": {
+    "/hello/": {
+      "get": {
+        "summary": "Say hello",
+        "description": "Return a hello message as JSON",
+        "security": {
+          "Auth": []
+        },
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/info": {
+      "get": {
+        "summary": "Get information",
+        "description": "Provides details of the server such as name and description",
+        "produces": ["application/json"],
+        "security": {"Auth": []},
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/ListingsObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notebooks/": {
+      "get": {
+        "summary": "Get a list of notebooks",
+        "description": "Get a list of the notebooks managed by this server",
+        "tags": ["Notebooks"],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
         },
         "responses": {
-            "UnauthorizedError": {
-                "description": "Access token is missing or invalid"
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/NotebookMeta"
+              }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
         }
+      },
+      "post": {
+        "summary": "Create a new notebook",
+        "description": "Create a new notebook by uploading JSON metadata and ui-specification",
+        "tags": ["Notebooks"],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "requestBody": {
+          "description": "Notebook metadata and ui-specification",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/Notebook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/Notebook"
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
     },
-    "paths": {
-        "/hello/": {
-            "get": {
-                "summary": "Say hello",
-                "description": "Return a hello message as JSON",
-                "security": {
-                    "Auth": []
-                },
-                "produces": [
-                    "application/json"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "message": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            }
+    "/notebooks/{id}/": {
+      "get": {
+        "summary": "Get a notebook",
+        "description": "Get a notebook by id",
+        "tags": ["Notebooks"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
         },
-        "/notebooks/": {
-            "get": {
-                "summary": "Get a list of notebooks",
-                "description": "Get a list of the notebooks managed by this server",
-                "tags": [
-                    "Notebooks"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/NotebookMeta"
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/Notebook"
                 }
-            },
-            "post": {
-                "summary": "Create a new notebook",
-                "description": "Create a new notebook by uploading JSON metadata and ui-specification",
-                "tags": [
-                    "Notebooks"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "requestBody": {
-                    "description": "Notebook metadata and ui-specification",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/definitions/Notebook"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "$ref": "#/definitions/Notebook"
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
+              }
             }
-        },
-        "/notebooks/{id}/": {
-            "get": {
-                "summary": "Get a notebook",
-                "description": "Get a notebook by id",
-                "tags": [
-                    "Notebooks"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Notebook id",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "$ref": "#/definitions/Notebook"
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            },
-            "put": {
-                "summary": "Update a notebook",
-                "description": "Update a notebook by identifier",
-                "tags": [
-                    "Notebooks"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Notebook identifier",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "requestBody": {
-                    "description": "Notebook metadata and ui-specification",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/definitions/Notebook"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "$ref": "#/definitions/Notebook"
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            }
-        },
-        "/notebooks/{id}/records": {
-            "get": {
-                "summary": "Get a list of records",
-                "description": "Get a list of records for a notebook",
-                "tags": [
-                    "Notebooks"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Notebook identifier",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/RecordList"
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            }
-        },
-        "/notebooks/{id}/{viewID}.csv": {
-            "get": {
-                "summary": "Get records as CSV",
-                "description": "Export notebook records as CSV for one form",
-                "tags": [
-                    "Export"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Notebook identifier",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "name": "viewID",
-                        "in": "path",
-                        "description": "view (form) identifier",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
-                "produces": [
-                    "text/csv"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            }
-        },
-        "/notebooks/{id}/{viewID}.zip": {
-            "get": {
-                "summary": "Get all record attachments as a zip file",
-                "description": "Export all attachments (photos, files) for a form as a zip file",
-                "tags": [
-                    "Export"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Notebook id",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "name": "viewID",
-                        "in": "path",
-                        "description": "view (form) identifier",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
-                "produces": [
-                    "application/zip"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "string",
-                            "format": "binary"
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            }
-        },
-        "/notebooks/{id}/users": {
-            "get": {
-                "summary": "Get users for a notebook",
-                "description": "Get a list of users with access to a notebook",
-                "tags": [
-                    "Users"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Notebook id",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/UserList"
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            },
-            "post": {
-                "summary": "Add a user to a notebook",
-                "description": "Add a user to a notebook",
-                "tags": [
-                    "Users"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Notebook id",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "requestBody": {
-                    "description": "User Information",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "username": {
-                                        "type": "string"
-                                    },
-                                    "role": {
-                                        "type": "string"
-                                    },
-                                    "addrole": {
-                                        "type": "boolean"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "$ref": "#/definitions/UserList"
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            }
-        },
-        "/notebooks/template": {
-            "post": {
-                "summary": "Create a new notebook from an existing template",
-                "description": "Creates a new notebook based on an existing template. Requires permission to create notebooks.",
-                "tags": [
-                    "Notebooks"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "requestBody": {
-                    "description": "Template ID and project name for the new notebook",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/definitions/PostCreateNotebookFromTemplate"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/definitions/PostCreateNotebookFromTemplateResponse"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    },
-                    "500": {
-                        "description": "Internal server error"
-                    }
-                }
-            }
-        },
-        "/users/{id}/admin": {
-            "post": {
-                "summary": "Set server admin status for a user",
-                "description": "Set server cluster-admin status for a user. Requires cluster-admin role.",
-                "tags": [
-                    "Users"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "User id",
-                        "required": true,
-                        "type": "string"
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "requestBody": {
-                    "description": "User Information",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "username": {
-                                        "type": "string"
-                                    },
-                                    "addrole": {
-                                        "type": "boolean"
-                                    },
-                                    "role": {
-                                        "type": "string",
-                                        "enum": [
-                                            "cluster-admin",
-                                            "notebook-creator"
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "schema": {
-                            "$ref": "#/definitions/UserList"
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            }
-        },
-        "/templates/": {
-            "get": {
-                "summary": "Get a list of templates",
-                "description": "Gets a list of templates from the templates DB.",
-                "tags": [
-                    "Templates"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/definitions/GetListTemplatesResponse"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            },
-            "post": {
-                "summary": "Create a new template",
-                "description": "Creates a new template. The payload is validated before processing. Requires appropriate permissions.",
-                "tags": [
-                    "Templates"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "requestBody": {
-                    "description": "Template details",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/definitions/PostCreateTemplateInput"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/definitions/PostCreateTemplateResponse"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            }
-        },
-        "/templates/{id}": {
-            "get": {
-                "summary": "Get a specific template",
-                "description": "Gets a specific template by ID from the templates DB.",
-                "tags": [
-                    "Templates"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Template id",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/definitions/GetTemplateByIdResponse"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            },
-            "put": {
-                "summary": "Update an existing template",
-                "description": "Updates an existing template. The payload is validated before processing. Requires appropriate permissions.",
-                "tags": [
-                    "Templates"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Template id",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "requestBody": {
-                    "description": "Template details",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/definitions/PutUpdateTemplateInput"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/definitions/PutUpdateTemplateResponse"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            }
-        },
-        "/templates/{id}/delete": {
-            "post": {
-                "summary": "Delete an existing template",
-                "description": "Deletes the latest revision of an existing template. Requires appropriate permissions.",
-                "tags": [
-                    "Templates"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "Template id",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "security": {
-                    "Auth": []
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/UnauthorizedError"
-                    }
-                }
-            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
         }
+      },
+      "put": {
+        "summary": "Update a notebook",
+        "description": "Update a notebook by identifier",
+        "tags": ["Notebooks"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook identifier",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "requestBody": {
+          "description": "Notebook metadata and ui-specification",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/Notebook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/Notebook"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
     },
-    "definitions": {
-        "NotebookMeta": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
+    "/notebooks/{id}/records": {
+      "get": {
+        "summary": "Get a list of records",
+        "description": "Get a list of records for a notebook",
+        "tags": ["Notebooks"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook identifier",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/RecordList"
+              }
             }
-        },
-        "Notebook": {
-            "type": "object",
-            "properties": {
-                "metadata": {
-                    "type": "object"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "ui-specification": {
-                    "type": "object"
-                }
-            }
-        },
-        "RecordList": {
-            "type": "object",
-            "properties": {
-                "records": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/Record"
-                    }
-                }
-            }
-        },
-        "Record": {
-            "type": "object",
-            "properties": {
-                "project_id": {
-                    "type": "string"
-                },
-                "record_id": {
-                    "type": "string"
-                },
-                "revision_id": {
-                    "type": "object"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "data": {
-                    "type": "object"
-                },
-                "annotations": {
-                    "type": "object"
-                },
-                "field_types": {
-                    "type": "object"
-                },
-                "relationship": {
-                    "type": "object"
-                },
-                "deleted": {
-                    "type": "boolean"
-                },
-                "updated_by": {
-                    "type": "string"
-                },
-                "created_by": {
-                    "type": "string"
-                },
-                "updated": {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                "created": {
-                    "type": "string",
-                    "format": "date-time"
-                }
-            }
-        },
-        "UserList": {
-            "type": "object",
-            "properties": {
-                "roles": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "users": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/User"
-                    }
-                }
-            }
-        },
-        "User": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                },
-                "roles": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string"
-                            },
-                            "value": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "GetListTemplatesResponse": {
-            "type": "object",
-            "properties": {
-                "templates": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/TemplateDocument"
-                    }
-                }
-            }
-        },
-        "GetTemplateByIdResponse": {
-            "$ref": "#/definitions/TemplateDocument"
-        },
-        "PostCreateTemplateInput": {
-            "$ref": "#/definitions/TemplateEditableDetails"
-        },
-        "PostCreateTemplateResponse": {
-            "$ref": "#/definitions/TemplateDocument"
-        },
-        "PutUpdateTemplateInput": {
-            "$ref": "#/definitions/TemplateEditableDetails"
-        },
-        "PutUpdateTemplateResponse": {
-            "$ref": "#/definitions/TemplateDocument"
-        },
-        "TemplateDocument": {
-            "allOf": [
-                {
-                    "$ref": "#/definitions/TemplateDetails"
-                },
-                {
-                    "$ref": "#/definitions/CouchDocumentFields"
-                }
-            ]
-        },
-        "TemplateDetails": {
-            "allOf": [
-                {
-                    "$ref": "#/definitions/TemplateEditableDetails"
-                },
-                {
-                    "$ref": "#/definitions/TemplateDerivedDetails"
-                }
-            ]
-        },
-        "TemplateEditableDetails": {
-            "type": "object",
-            "properties": {
-                "template_name": {
-                    "type": "string",
-                    "minLength": 5
-                },
-                "ui_specification": {
-                    "$ref": "#/definitions/UiSpecification"
-                },
-                "metadata": {
-                    "$ref": "#/definitions/NotebookMetadata"
-                }
-            },
-            "required": [
-                "template_name",
-                "ui_specification",
-                "metadata"
-            ]
-        },
-        "TemplateDerivedDetails": {
-            "type": "object",
-            "properties": {
-                "version": {
-                    "type": "number",
-                    "default": 1
-                }
-            }
-        },
-        "CouchDocumentFields": {
-            "type": "object",
-            "properties": {
-                "_id": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "_rev": {
-                    "type": "string"
-                },
-                "_deleted": {
-                    "type": "boolean"
-                }
-            },
-            "required": [
-                "_id"
-            ]
-        },
-        "UiSpecification": {
-            "type": "object",
-            "additionalProperties": true
-        },
-        "NotebookMetadata": {
-            "type": "object",
-            "additionalProperties": true
-        },
-        "PostCreateNotebookFromTemplate": {
-            "type": "object",
-            "properties": {
-                "template_id": {
-                    "type": "string"
-                },
-                "project_name": {
-                    "type": "string"
-                }
-            },
-            "required": [
-                "template_id",
-                "project_name"
-            ]
-        },
-        "PostCreateNotebookFromTemplateResponse": {
-            "type": "object",
-            "properties": {
-                "notebook": {
-                    "type": "string"
-                }
-            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
         }
+      }
+    },
+    "/notebooks/{id}/{viewID}.csv": {
+      "get": {
+        "summary": "Get records as CSV",
+        "description": "Export notebook records as CSV for one form",
+        "tags": ["Export"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook identifier",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "viewID",
+            "in": "path",
+            "description": "view (form) identifier",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["text/csv"],
+        "security": {
+          "Auth": []
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/{viewID}.zip": {
+      "get": {
+        "summary": "Get all record attachments as a zip file",
+        "description": "Export all attachments (photos, files) for a form as a zip file",
+        "tags": ["Export"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "viewID",
+            "in": "path",
+            "description": "view (form) identifier",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/zip"],
+        "security": {
+          "Auth": []
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/users": {
+      "get": {
+        "summary": "Get users for a notebook",
+        "description": "Get a list of users with access to a notebook",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/UserList"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a user to a notebook",
+        "description": "Add a user to a notebook",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "requestBody": {
+          "description": "User Information",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
+                  "addrole": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/UserList"
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/notebooks/template": {
+      "post": {
+        "summary": "Create a new notebook from an existing template",
+        "description": "Creates a new notebook based on an existing template. Requires permission to create notebooks.",
+        "tags": ["Notebooks"],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "requestBody": {
+          "description": "Template ID and project name for the new notebook",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PostCreateNotebookFromTemplate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PostCreateNotebookFromTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/users/{id}/admin": {
+      "post": {
+        "summary": "Set server admin status for a user",
+        "description": "Set server cluster-admin status for a user. Requires cluster-admin role.",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "requestBody": {
+          "description": "User Information",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "addrole": {
+                    "type": "boolean"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": ["cluster-admin", "notebook-creator"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/UserList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/templates/": {
+      "get": {
+        "summary": "Get a list of templates",
+        "description": "Gets a list of templates from the templates DB.",
+        "tags": ["Templates"],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetListTemplatesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new template",
+        "description": "Creates a new template. The payload is validated before processing. Requires appropriate permissions.",
+        "tags": ["Templates"],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "requestBody": {
+          "description": "Template details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PostCreateTemplateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PostCreateTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/templates/{id}": {
+      "get": {
+        "summary": "Get a specific template",
+        "description": "Gets a specific template by ID from the templates DB.",
+        "tags": ["Templates"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetTemplateByIdResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update an existing template",
+        "description": "Updates an existing template. The payload is validated before processing. Requires appropriate permissions.",
+        "tags": ["Templates"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "requestBody": {
+          "description": "Template details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutUpdateTemplateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PutUpdateTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/templates/{id}/delete": {
+      "post": {
+        "summary": "Delete an existing template",
+        "description": "Deletes the latest revision of an existing template. Requires appropriate permissions.",
+        "tags": ["Templates"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": {
+          "Auth": []
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
     }
+  },
+  "definitions": {
+    "ListingsObject": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "conductor_url": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "prefix": {
+          "type": "string"
+        }
+      }
+    },
+    "NotebookMeta": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Notebook": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        },
+        "ui-specification": {
+          "type": "object"
+        }
+      }
+    },
+    "RecordList": {
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Record"
+          }
+        }
+      }
+    },
+    "Record": {
+      "type": "object",
+      "properties": {
+        "project_id": {
+          "type": "string"
+        },
+        "record_id": {
+          "type": "string"
+        },
+        "revision_id": {
+          "type": "object"
+        },
+        "type": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        },
+        "annotations": {
+          "type": "object"
+        },
+        "field_types": {
+          "type": "object"
+        },
+        "relationship": {
+          "type": "object"
+        },
+        "deleted": {
+          "type": "boolean"
+        },
+        "updated_by": {
+          "type": "string"
+        },
+        "created_by": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "UserList": {
+      "type": "object",
+      "properties": {
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "users": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/User"
+          }
+        }
+      }
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "GetListTemplatesResponse": {
+      "type": "object",
+      "properties": {
+        "templates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TemplateDocument"
+          }
+        }
+      }
+    },
+    "GetTemplateByIdResponse": {
+      "$ref": "#/definitions/TemplateDocument"
+    },
+    "PostCreateTemplateInput": {
+      "$ref": "#/definitions/TemplateEditableDetails"
+    },
+    "PostCreateTemplateResponse": {
+      "$ref": "#/definitions/TemplateDocument"
+    },
+    "PutUpdateTemplateInput": {
+      "$ref": "#/definitions/TemplateEditableDetails"
+    },
+    "PutUpdateTemplateResponse": {
+      "$ref": "#/definitions/TemplateDocument"
+    },
+    "TemplateDocument": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/TemplateDetails"
+        },
+        {
+          "$ref": "#/definitions/CouchDocumentFields"
+        }
+      ]
+    },
+    "TemplateDetails": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/TemplateEditableDetails"
+        },
+        {
+          "$ref": "#/definitions/TemplateDerivedDetails"
+        }
+      ]
+    },
+    "TemplateEditableDetails": {
+      "type": "object",
+      "properties": {
+        "template_name": {
+          "type": "string",
+          "minLength": 5
+        },
+        "ui_specification": {
+          "$ref": "#/definitions/UiSpecification"
+        },
+        "metadata": {
+          "$ref": "#/definitions/NotebookMetadata"
+        }
+      },
+      "required": ["template_name", "ui_specification", "metadata"]
+    },
+    "TemplateDerivedDetails": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "number",
+          "default": 1
+        }
+      }
+    },
+    "CouchDocumentFields": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "_rev": {
+          "type": "string"
+        },
+        "_deleted": {
+          "type": "boolean"
+        }
+      },
+      "required": ["_id"]
+    },
+    "UiSpecification": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "NotebookMetadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "PostCreateNotebookFromTemplate": {
+      "type": "object",
+      "properties": {
+        "template_id": {
+          "type": "string"
+        },
+        "project_name": {
+          "type": "string"
+        }
+      },
+      "required": ["template_id", "project_name"]
+    },
+    "PostCreateNotebookFromTemplateResponse": {
+      "type": "object",
+      "properties": {
+        "notebook": {
+          "type": "string"
+        }
+      }
+    }
+  }
 }
