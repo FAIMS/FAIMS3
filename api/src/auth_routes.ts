@@ -318,7 +318,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       const repeat = req.body.repeat;
       const name = req.body.name;
       const email = req.body.email;
-      const redirect = validateRedirect(req.body.redirect || '/');
+      const redirect = validateRedirect(req.query?.redirect || '/');
 
       // If the username was not provided, use the email
       if (username === undefined || username === null) {

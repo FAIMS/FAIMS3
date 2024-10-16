@@ -29,7 +29,7 @@ export const OptionalRedirectQuery = z.object({
 // Local login POST
 // Body
 export const PostLocalAuthInputSchema = z.object({
-  username: z.string().email(),
+  username: z.string(),
   password: z.string().min(1),
 });
 // Query
