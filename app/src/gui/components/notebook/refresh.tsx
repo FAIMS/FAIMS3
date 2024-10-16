@@ -87,6 +87,7 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
 
   return (
     <Box
+      data-testid="refreshAlert"
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -128,6 +129,7 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
         startIcon={<RefreshIcon />}
         onClick={handleRefresh}
         variant="contained"
+        data-testid="refreshRecords"
         sx={{marginLeft: '12px', padding: '4px 8px', fontSize: '0.75rem'}}
       >
         Refresh

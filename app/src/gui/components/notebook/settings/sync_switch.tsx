@@ -34,7 +34,6 @@ import {
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import NotebookActivationSwitch from './activation-switch';
-import LoadingButton from '@mui/lab/LoadingButton';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
 import {ProjectExtended} from '../../../../types/project';
 import {ProjectsContext} from '../../../../context/projects-context';

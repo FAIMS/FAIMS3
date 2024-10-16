@@ -90,7 +90,6 @@ function a11yProps(index: number, id: string) {
  */
 type NotebookComponentProps = {
   project: ProjectExtended;
-  handleRefresh: () => Promise<any>;
 };
 
 /**
@@ -140,9 +139,16 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const history = useNavigate();
 
   /**
-   * Fetches the UI specification and viewsets for the project when the component mounts or the project changes.
+   * Fetches the UI specification and viewsets for the project
    */
-  useEffect(() => {
+  const pageLoader = () => {
+    // Starting state reset
+    setViewsets(null);
+    setUiSpec(null);
+    setErr('');
+    setLoading(true);
+
+    // Try to load details and records
     if (project.listing && project._id) {
       getUiSpecForProject(project.project_id)
         .then(spec => {
@@ -152,16 +158,25 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           setErr('');
         })
         .catch(err => {
+          setLoading(false);
           setErr(err.message);
         });
     }
-    return () => {
-      setViewsets(null);
-      setUiSpec(null);
-      setErr('');
-      setLoading(true);
-    };
+  };
+
+  /**
+   * Fetches the UI specification and viewsets for the project when the
+   * component mounts or the project changes.
+   */
+  useEffect(() => {
+    pageLoader();
   }, [project]);
+
+  // trigger a refresh of the content because something changed down below (a
+  // record or draft was deleted)
+  const handleRefresh = () => {
+    pageLoader();
+  };
 
   return (
     <Box>
@@ -255,7 +270,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   maxRows={25}
                   viewsets={viewsets}
                   filter_deleted={true}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
               <TabPanel
@@ -267,13 +282,117 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
             </Box>
           </TabPanel>
 
           <TabPanel value={notebookTabValue} index={1} id={'notebook'}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 2,
+                px: 2,
+              }}
+            >
+              {/* <Box
+                component="h2"
+                sx={{
+                  textAlign: 'left',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  marginBottom: '16px',
+                }}
+              >
+                Survey Details
+              </Box> */}
+              <Typography
+                variant="body1"
+                sx={{
+                  textAlign: 'center',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  flexGrow: 1,
+                }}
+              >
+                Survey Details
+              </Typography>
+
+              {/* Unhide the edit button when the notebook cna be edited */}
+              {/* <IconButton
+                color="primary"
+                aria-label="edit"
+                onClick={() => {
+                  console.log('Edit Survey Details clicked');
+                }}
+                sx={{display: 'flex', alignItems: 'center'}}
+              >
+                <EditIcon />
+                <Typography
+                  variant="body2"
+                  color="primary"
+                  sx={{marginLeft: '4px'}}
+                >
+                  Edit
+                </Typography>
+              </IconButton> */}
+            </Box>
+
+            <Box sx={{p: 2}}>
+              <Typography
+                variant="body1"
+                gutterBottom
+                sx={{marginBottom: '16px'}}
+              >
+                <strong>Name:</strong>{' '}
+                <MetadataRenderer
+                  project_id={project.project_id}
+                  metadata_key={'name'}
+                  chips={false}
+                />
+              </Typography>
+              <Typography
+                variant="body1"
+                gutterBottom
+                component="div"
+                sx={{marginBottom: '16px'}}
+              >
+                <strong>Description:</strong>{' '}
+                <MetadataRenderer
+                  project_id={project.project_id}
+                  metadata_key={'pre_description'}
+                  chips={false}
+                />
+              </Typography>
+
+              <Typography
+                variant="body1"
+                gutterBottom
+                sx={{marginBottom: '16px'}}
+              >
+                <strong>Lead Institution:</strong>{' '}
+                <MetadataRenderer
+                  project_id={project.project_id}
+                  metadata_key={'lead_institution'}
+                  chips={false}
+                />
+              </Typography>
+              <Typography
+                variant="body1"
+                gutterBottom
+                sx={{marginBottom: '16px', textAlign: 'left'}}
+              >
+                <strong>Project Lead:</strong>{' '}
+                <MetadataRenderer
+                  project_id={project.project_id}
+                  metadata_key={'project_lead'}
+                  chips={false}
+                />
+              </Typography>
+            </Box>
             <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
               <Grid item xs={12} sm={6} md={6} lg={4}>
                 <Box component={Paper} elevation={0} variant={'outlined'} p={2}>

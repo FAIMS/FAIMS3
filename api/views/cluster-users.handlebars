@@ -1,18 +1,15 @@
 <div class="container">
-<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Home</a></li>
-    <li class="breadcrumb-item" active aria-current="page">Users</li>
-  </ol>
-</nav>
 
+<h1>Manage Users</h1>
 
-<h1>Manage Cluster Admins</h1>
-
-<p>This page allows you to add or remove the cluster admin permission
+<p>This page allows you to add or remove the cluster admin or
+  notebook creation roles 
   for individual users.  Note that cluster admins can perform any task
-  on the server.
+  on the server. Notebook Creation permission allows the user to
+  make new notebooks that they will then be admin users on.
 </p>
+
+<div id="message">&nbsp;</div>
 
 <table class="table">
     <thead>
@@ -62,12 +59,20 @@ function toggleRole(event) {
     },
     body: JSON.stringify(data)
   })
-  .then(response => response.json())
-  .then(data => {
-    if (data.status !== 'success') {
-      target.checked = !target.checked;
-      document.getElementById('message').innerText = data.error;
-    }
+  .then(async (response) => {
+      if (response.status === 200) {
+        document.getElementById('message').innerHTML = `User ${target.dataset.username} status changed`;
+        setInterval(() => {
+          document.getElementById('message').innerHTML = "&nbsp;";
+        }, 2000)
+      } else {
+        const data = await response.json();
+        console.log(data);
+        document.getElementById('message').innerHTML = data.error;
+        setInterval(() => {
+          document.getElementById('message').innerHTML = "&nbsp;";
+        }, 2000)
+      }
   });
 }
 

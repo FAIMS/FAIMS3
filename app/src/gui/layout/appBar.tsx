@@ -193,7 +193,6 @@ const useStyles = makeStyles({
 function getNestedProjects(pouchProjectList: ProjectExtended[]) {
   const projectListItems: ProjectListItemProps[] = [];
   pouchProjectList.map(project_info => {
-    console.log('PI>>>', project_info);
     projectListItems.push({
       title: project_info.name,
       icon: <DescriptionIcon />,

@@ -163,6 +163,7 @@ export async function getAvailableProjectsFromListing(
   const output: ProjectInformation[] = [];
   const projects: ProjectObject[] = [];
   const listing = getListing(listing_id);
+
   if (listing) {
     const projects_db = listing.projects.local;
     const res = await projects_db.allDocs({

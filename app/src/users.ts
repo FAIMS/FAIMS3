@@ -21,13 +21,14 @@
  *   on the happy path of not seeing access denied, or at least in ways the GUI
  *   can meaningfully handle.
  */
-import {jwtVerify, KeyLike, importSPKI} from 'jose';
+import {decodeJwt} from 'jose';
 
 import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
 import {LocalAuthDoc, JWTTokenMap, local_auth_db} from './sync/databases';
 import {reprocess_listing} from './sync/process-initialization';
 import {
   ClusterProjectRoles,
+  NOTEBOOK_CREATOR_GROUP_NAME,
   ProjectID,
   ProjectRole,
   split_full_project_id,
@@ -43,7 +44,6 @@ interface SplitCouchDBRole {
 
 interface TokenInfo {
   token: string;
-  pubkey: KeyLike;
 }
 
 /**
@@ -70,23 +70,17 @@ export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
 /**
  * Store a token for a server (cluster)
  * @param token new authentication token
- * @param pubkey token public key
- * @param pubalg token pubkey algorithm
  * @param cluster_id server identifier that this token is for
  */
-export async function setTokenForCluster(
-  token: string,
-  pubkey: string,
-  pubalg: string,
-  cluster_id: string
-) {
+export async function setTokenForCluster(token: string, cluster_id: string) {
   if (token === undefined) throw Error('Token undefined in setTokenForCluster');
   try {
     const doc = await local_auth_db.get(cluster_id);
-    const new_doc = await addTokenToDoc(token, pubkey, pubalg, cluster_id, doc);
+    const new_doc = await addTokenToDoc(token, cluster_id, doc);
 
     try {
       await local_auth_db.put(new_doc);
+      console.log('Document stored');
     } catch (err_conflict) {
       console.warn(
         'Failed to set token when conflicting for',
@@ -96,9 +90,9 @@ export async function setTokenForCluster(
       throw Error(`Failed to set token when conflicting for: ${cluster_id}`);
     }
   } catch (err) {
-    console.debug('Failed to get token when setting for', cluster_id, err);
+    console.debug('No existing token for', cluster_id);
     try {
-      const doc = await addTokenToDoc(token, pubkey, pubalg, cluster_id, null);
+      const doc = await addTokenToDoc(token, cluster_id, null);
       console.debug('Initial token info is:', doc);
       await local_auth_db.put(doc);
     } catch (err_initial: any) {
@@ -111,26 +105,20 @@ export async function setTokenForCluster(
 /**
  * Add a token to an auth object or create a new one
  * @param token auth token
- * @param pubkey public key
- * @param pubalg pubkey algorithm
  * @param cluster_id server identifier
  * @param current_doc current auth doc if any
  * @returns a promise resolving to a new or updated auth document
  */
 async function addTokenToDoc(
   token: string,
-  pubkey: string,
-  pubalg: string,
   cluster_id: string,
   current_doc: LocalAuthDoc | null
 ): Promise<LocalAuthDoc> {
-  const new_username = await getUsernameFromToken(token, pubkey, pubalg);
+  const new_username = await getUsernameFromToken(token);
   if (current_doc === null) {
     const available_tokens: JWTTokenMap = {};
     available_tokens[new_username] = {
       token,
-      pubkey,
-      pubalg,
     };
     return {
       _id: cluster_id,
@@ -141,8 +129,6 @@ async function addTokenToDoc(
   current_doc.current_username = new_username;
   current_doc.available_tokens[new_username] = {
     token,
-    pubkey,
-    pubalg,
   };
   return current_doc;
 }
@@ -225,8 +211,7 @@ export async function getAllUsersForCluster(
   const token_contents = [];
   const doc = await local_auth_db.get(cluster_id);
   for (const token_details of Object.values(doc.available_tokens)) {
-    const pubkey = await importSPKI(token_details.pubkey, token_details.pubalg);
-    token_contents.push(await parseToken(token_details.token, pubkey));
+    token_contents.push(await parseToken(token_details.token));
   }
   return token_contents;
 }
@@ -240,13 +225,8 @@ export async function deleteAllTokensForCluster(cluster_id: string) {
   }
 }
 
-async function getUsernameFromToken(
-  token: string,
-  pubkey: string,
-  pubalg: string
-): Promise<string> {
-  const keyobj = await importSPKI(pubkey, pubalg);
-  return (await parseToken(token, keyobj)).username;
+async function getUsernameFromToken(token: string): Promise<string> {
+  return (await parseToken(token)).username;
 }
 
 async function getTokenInfoForCluster(
@@ -256,10 +236,8 @@ async function getTokenInfoForCluster(
     const doc = await local_auth_db.get(cluster_id);
     const username = doc.current_username;
     const token_details = doc.available_tokens[username];
-    const pubkey = await importSPKI(token_details.pubkey, token_details.pubalg);
     return {
       token: token_details.token,
-      pubkey: pubkey,
     };
   } catch (err) {
     return undefined;
@@ -280,27 +258,16 @@ export async function getTokenContentsForCluster(
     return undefined;
   }
   try {
-    return await parseToken(token_info.token, token_info.pubkey);
+    return await parseToken(token_info.token);
   } catch (err: any) {
-    console.debug(
-      'Failed to parse token',
-      token_info.token,
-      token_info.pubkey,
-      cluster_id
-    );
+    console.debug('Failed to parse token', token_info.token, cluster_id);
     return undefined;
   }
 }
 
-async function parseToken(
-  token: string,
-  pubkey: KeyLike
-): Promise<TokenContents> {
-  const res = await jwtVerify(token, pubkey);
-  const payload = res.payload;
-  // if (DEBUG_APP) {
-  //   console.debug('Token payload is:', payload);
-  // }
+async function parseToken(token: string): Promise<TokenContents> {
+  const payload = await decodeJwt(token);
+
   const username = payload.sub ?? undefined;
   if (username === undefined) {
     throw Error('Username not specified in token');
@@ -434,4 +401,44 @@ export async function getTokenContentsForCurrentUser(): Promise<
     const cluster_id = docs.rows[0].id;
     return getTokenContentsForCluster(cluster_id);
   }
+}
+
+export async function getClusterId(): Promise<string | undefined> {
+  try {
+    const docs = await local_auth_db.allDocs();
+    if (docs.total_rows > 0) {
+      return docs.rows[0].id; // Returns the cluster_id found
+    }
+    return undefined;
+  } catch (error) {
+    console.error('Error fetching cluster_id:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Check whether the current user can create notebooks on a server
+ *
+ * @param cluster_id - the cluster identifier
+ * @returns true if the user is allowed to create notebooks
+ */
+
+export async function userCanCreateNotebooks(cluster_id: string) {
+  const token_contents = await getTokenContentsForCluster(cluster_id);
+  if (token_contents === undefined) {
+    return undefined;
+  }
+
+  const couch_roles = token_contents.roles;
+
+  // cluster admin can do anything
+  if (couch_roles.indexOf(CLUSTER_ADMIN_GROUP_NAME) >= 0) {
+    return true;
+  }
+
+  // explicit notebook creator permssions
+  if (couch_roles.indexOf(NOTEBOOK_CREATOR_GROUP_NAME) >= 0) {
+    return true;
+  }
+  return false;
 }

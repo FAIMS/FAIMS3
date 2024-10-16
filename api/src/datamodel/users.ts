@@ -66,9 +66,6 @@ export interface RoleInvite {
   _id: string;
   _rev?: string;
   _deleted?: boolean;
-  requesting_user: string;
-  unlimited?: boolean;
   project_id: NonUniqueProjectID;
   role: ConductorRole;
-  number: number;
 }

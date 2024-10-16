@@ -21,6 +21,7 @@
 
 import {SignJWT} from 'jose';
 import type {SigningKey} from '../services/keyService';
+import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
 
 export async function createAuthKey(
   user: Express.User,
@@ -29,6 +30,7 @@ export async function createAuthKey(
   const jwt = await new SignJWT({
     '_couchdb.roles': user.roles ?? [],
     name: user.name,
+    server: CONDUCTOR_PUBLIC_URL,
   })
     .setProtectedHeader({
       alg: signingKey.alg,
@@ -41,4 +43,19 @@ export async function createAuthKey(
     //.setExpirationTime('2h')
     .sign(signingKey.privateKey);
   return jwt;
+}
+
+export async function generateUserToken(user: Express.User) {
+  const signingKey = await KEY_SERVICE.getSigningKey();
+  if (signingKey === null || signingKey === undefined) {
+    throw new Error('No signing key is available, check configuration');
+  } else {
+    const token = await createAuthKey(user, signingKey);
+
+    return {
+      token: token,
+      pubkey: signingKey.publicKeyString,
+      pubalg: signingKey.alg,
+    };
+  }
 }
