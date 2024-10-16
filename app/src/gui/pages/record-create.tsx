@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useContext, useState, useEffect} from 'react';
+import React, {useContext, useState, useEffect, useRef} from 'react';
 import {
   Navigate,
   useNavigate,
@@ -64,6 +64,9 @@ import {getParentPersistenceData} from '../components/record/relationships/Relat
 import InheritedDataComponent from '../components/record/inherited_data';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import ProgressBar from '../components/progress-bar';
+import TransparentButton from '../components/buttons/transparent-button';
+import {scrollToDiv} from '../../lib/navigation';
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 
 interface DraftCreateProps {
   project_id: ProjectID;
@@ -175,6 +178,8 @@ function DraftEdit(props: DraftEditProps) {
 
   const [progress, setProgress] = useState(0);
 
+  const buttonRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
   }, [project_id]);
@@ -252,6 +257,17 @@ function DraftEdit(props: DraftEditProps) {
           Add a record for the{' '}
           {project_info !== null ? project_info.name : project_id} project.
         </Typography>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
+            <ArrowDropDown />
+            Jump to end
+          </TransparentButton>
+        </div>
       </Box>
       <div style={{padding: '10px'}}>
         <ProgressBar percentage={progress} />
@@ -307,6 +323,7 @@ function DraftEdit(props: DraftEditProps) {
                     navigate={navigate}
                     location={props.location}
                     setProgress={setProgress}
+                    buttonRef={buttonRef}
                   />
                 </Box>
               </Box>

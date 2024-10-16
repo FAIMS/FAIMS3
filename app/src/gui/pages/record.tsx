@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
 import {
   AppBar,
@@ -93,6 +93,9 @@ import {logError} from '../../logging';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import ProgressBar from '../components/progress-bar';
 
+import {scrollToDiv} from '../../lib/navigation';
+import TransparentButton from '../components/buttons/transparent-button';
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -150,6 +153,7 @@ export default function Record() {
     {link?: string; title: string}[]
   >([]);
   const [progress, setProgress] = useState<number>(0);
+  const buttonRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     getUiSpecForProject(project_id!).then(setUISpec, setError);
@@ -502,7 +506,17 @@ export default function Record() {
         Edit data for this record. If you need to, you can also revisit previous
         revisions and resolve conflicts.
       </Typography>
-
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}
+      >
+        <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
+          <ArrowDropDown />
+          Jump to end
+        </TransparentButton>
+      </div>
       <Box mb={2} pr={1}>
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
@@ -669,6 +683,7 @@ export default function Record() {
                                 setRevision_id={setrevision_id}
                                 mq_above_md={mq_above_md}
                                 setProgress={setProgress}
+                                buttonRef={buttonRef}
                               />
                             )}
                           </Box>
@@ -698,6 +713,7 @@ export default function Record() {
                           setRevision_id={setrevision_id}
                           mq_above_md={mq_above_md}
                           setProgress={setProgress}
+                          buttonRef={buttonRef}
                         />
                       )}
                     </Box>

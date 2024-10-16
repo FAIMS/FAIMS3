@@ -1268,6 +1268,7 @@ class RecordForm extends React.Component<
                             );
                           }, 500);
                         }}
+                        buttonRef={this.props.buttonRef}
                       />
                     </Grid>
                     {/* {UGCReport ONLY for the saved record} */}

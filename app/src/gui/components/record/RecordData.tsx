@@ -63,6 +63,7 @@ interface RecordDataTypes {
   setRevision_id?: Function;
   mq_above_md: boolean;
   setProgress: React.Dispatch<React.SetStateAction<number>>;
+  buttonRef: React.RefObject<HTMLDivElement>;
 }
 
 export default function RecordData(props: RecordDataTypes) {
@@ -149,6 +150,7 @@ export default function RecordData(props: RecordDataTypes) {
                         mq_above_md={props.mq_above_md}
                         navigate={navigate}
                         setProgress={props.setProgress}
+                        buttonRef={props.buttonRef}
                       />
                     ) : (
                       <CircularProgress size={24} />
@@ -207,6 +209,7 @@ export default function RecordData(props: RecordDataTypes) {
                       handleSetDraftError={props.handleSetDraftError}
                       navigate={navigate}
                       setProgress={props.setProgress}
+                      buttonRef={props.buttonRef}
                     />
                   </Box>
                 </Grid>
