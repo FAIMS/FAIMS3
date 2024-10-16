@@ -17,13 +17,14 @@
  *   This module contains utility routes at /api
  */
 
-import {ListingInformation} from '@faims3/data-model/src/types';
+import {ListingsObject} from '@faims3/data-model';
 import express from 'express';
 import multer from 'multer';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
+  CONDUCTOR_SHORT_CODE_PREFIX,
   DEVELOPER_MODE,
 } from '../buildconfig';
 import {initialiseDatabases} from '../couchdb';
@@ -62,11 +63,12 @@ api.post('/initialise/', async (req, res) => {
  * Handle info requests, basic identifying information for this server
  */
 api.get('/info', async (req, res) => {
-  const info: ListingInformation = {
+  const info: ListingsObject = {
     id: slugify(CONDUCTOR_INSTANCE_NAME),
     name: CONDUCTOR_INSTANCE_NAME,
     conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
+    prefix: CONDUCTOR_SHORT_CODE_PREFIX,
   };
   res.json(info);
 });
