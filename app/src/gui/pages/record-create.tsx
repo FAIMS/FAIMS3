@@ -63,6 +63,7 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import InheritedDataComponent from '../components/record/inherited_data';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import ProgressBar from '../components/progress-bar';
 import TransparentButton from '../components/buttons/transparent-button';
 import {scrollToDiv} from '../../lib/navigation';
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
@@ -175,6 +176,8 @@ function DraftEdit(props: DraftEditProps) {
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
 
+  const [progress, setProgress] = useState(0);
+
   const buttonRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -240,116 +243,112 @@ function DraftEdit(props: DraftEditProps) {
     });
     navigate(-1);
     return <React.Fragment />;
-  } else if (uiSpec === null) {
-    // Loading
-    return <CircularProgress size={12} thickness={4} />;
-  } else {
-    // Loaded, variant picked, show form:
+  }
 
-    return (
-      <React.Fragment>
-        <Box mb={2}>
-          <Typography variant={'h2'} component={'h1'}>
-            {uiSpec['viewsets'][type_name]['label'] ?? type_name} Record
-          </Typography>
-          <Typography variant={'subtitle1'} gutterBottom>
-            Add a record for the{' '}
-            {project_info !== null ? project_info.name : project_id} project.
-          </Typography>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-            }}
-          >
-            <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
-              <ArrowDropDown />
-              Jump to end
-            </TransparentButton>
-          </div>
-        </Box>
-        <Paper square>
-          <TabContext value={value}>
-            <AppBar position="static" color="primary">
-              <TabList
-                onChange={handleChange}
-                aria-label="simple tabs example"
-                indicatorColor={'secondary'}
-                textColor="secondary"
-              >
-                <Tab label="Create" value="1" sx={{color: '#c2c2c2'}} />
-                <Tab label="Meta" value="2" sx={{color: '#c2c2c2'}} />
-              </TabList>
-            </AppBar>
-            <TabPanel value="1" sx={{p: 0}}>
-              <Box>
-                <UnpublishedWarning />
-                <DraftSyncStatus
-                  last_saved={draftLastSaved}
-                  is_saving={isDraftSaving}
-                  error={draftError}
-                />
+  if (uiSpec === null) return <CircularProgress size={12} thickness={4} />;
+
+  return (
+    <React.Fragment>
+      <Box mb={2}>
+        <Typography variant={'h2'} component={'h1'}>
+          {uiSpec['viewsets'][type_name]['label'] ?? type_name} Record
+        </Typography>
+        <Typography variant={'subtitle1'} gutterBottom>
+          Add a record for the{' '}
+          {project_info !== null ? project_info.name : project_id} project.
+        </Typography>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
+            <ArrowDropDown />
+            Jump to end
+          </TransparentButton>
+        </div>
+      </Box>
+      <div style={{padding: '10px'}}>
+        <ProgressBar percentage={progress} />
+      </div>
+      <div />
+      <Paper square>
+        <TabContext value={value}>
+          <AppBar position="static" color="primary">
+            <TabList
+              onChange={handleChange}
+              aria-label="simple tabs example"
+              indicatorColor={'secondary'}
+              textColor="secondary"
+            >
+              <Tab label="Create" value="1" sx={{color: '#c2c2c2'}} />
+              <Tab label="Meta" value="2" sx={{color: '#c2c2c2'}} />
+            </TabList>
+          </AppBar>
+          <TabPanel value="1" sx={{p: 0}}>
+            <Box>
+              <UnpublishedWarning />
+              <DraftSyncStatus
+                last_saved={draftLastSaved}
+                is_saving={isDraftSaving}
+                error={draftError}
+              />
+              <Box sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}>
                 <Box
-                  sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
+                  component={Paper}
+                  elevation={0}
+                  p={{xs: 1, sm: 1, md: 2, lg: 2}}
+                  variant={is_mobile ? undefined : 'outlined'}
                 >
-                  <Box
-                    component={Paper}
-                    elevation={0}
-                    p={{xs: 1, sm: 1, md: 2, lg: 2}}
-                    variant={is_mobile ? undefined : 'outlined'}
-                  >
-                    {is_link_ready ? (
-                      <InheritedDataComponent
-                        parentRecords={parentLinks}
-                        ui_specification={uiSpec}
-                      />
-                    ) : (
-                      <CircularProgress size={24} />
-                    )}
-                    <RecordForm
-                      project_id={project_id}
-                      record_id={record_id}
-                      type={type_name}
+                  {is_link_ready ? (
+                    <InheritedDataComponent
+                      parentRecords={parentLinks}
                       ui_specification={uiSpec}
-                      draft_id={draft_id}
-                      handleSetIsDraftSaving={setIsDraftSaving}
-                      handleSetDraftLastSaved={setDraftLastSaved}
-                      handleSetDraftError={setDraftError}
-                      draftLastSaved={draftLastSaved}
-                      mq_above_md={mq_above_md}
-                      navigate={navigate}
-                      location={props.location}
-                      buttonRef={buttonRef}
                     />
-                  </Box>
+                  ) : (
+                    <CircularProgress size={24} />
+                  )}
+                  <RecordForm
+                    project_id={project_id}
+                    record_id={record_id}
+                    type={type_name}
+                    ui_specification={uiSpec}
+                    draft_id={draft_id}
+                    handleSetIsDraftSaving={setIsDraftSaving}
+                    handleSetDraftLastSaved={setDraftLastSaved}
+                    handleSetDraftError={setDraftError}
+                    draftLastSaved={draftLastSaved}
+                    mq_above_md={mq_above_md}
+                    navigate={navigate}
+                    location={props.location}
+                    setProgress={setProgress}
+                    buttonRef={buttonRef}
+                  />
                 </Box>
               </Box>
-            </TabPanel>
-            <TabPanel value="2">
-              <Box mt={2}>
-                <Typography variant={'h5'} gutterBottom>
-                  Discard Draft
-                </Typography>
-                <RecordDelete
-                  project_id={project_id}
-                  record_id={record_id}
-                  revision_id={null}
-                  draft_id={draft_id}
-                  show_label={true}
-                  handleRefresh={handleRefresh}
-                />
-              </Box>
-            </TabPanel>
-          </TabContext>
-        </Paper>
-      </React.Fragment>
-    );
-  }
+            </Box>
+          </TabPanel>
+          <TabPanel value="2">
+            <Box mt={2}>
+              <Typography variant={'h5'} gutterBottom>
+                Discard Draft
+              </Typography>
+              <RecordDelete
+                project_id={project_id}
+                record_id={record_id}
+                revision_id={null}
+                draft_id={draft_id}
+                show_label={true}
+                handleRefresh={handleRefresh}
+              />
+            </Box>
+          </TabPanel>
+        </TabContext>
+      </Paper>
+    </React.Fragment>
+  );
 }
-
-// type RecordCreateProps = {
-//   token?: null | undefined | TokenContents;
-// };
 
 export default function RecordCreate() {
   const {project_id, type_name, draft_id, record_id} = useParams<{

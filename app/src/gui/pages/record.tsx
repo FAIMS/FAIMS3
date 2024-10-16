@@ -91,6 +91,8 @@ import getLocalDate from '../fields/LocalDate';
 import RecordDelete from '../components/notebook/delete';
 import {logError} from '../../logging';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import ProgressBar from '../components/progress-bar';
+
 import {scrollToDiv} from '../../lib/navigation';
 import TransparentButton from '../components/buttons/transparent-button';
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
@@ -150,6 +152,7 @@ export default function Record() {
   const [breadcrumbs, setBreadcrumbs] = useState<
     {link?: string; title: string}[]
   >([]);
+  const [progress, setProgress] = useState<number>(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -482,6 +485,9 @@ export default function Record() {
           )}
         </Grid>
       </Grid>
+      <div style={{padding: '10px'}}>
+        <ProgressBar percentage={progress} />
+      </div>
       <Grid item xs>
         {is_link_ready && <Breadcrumbs data={breadcrumbs} />}
       </Grid>
@@ -658,11 +664,6 @@ export default function Record() {
                                 record_id={record_id!}
                                 hrid={hrid}
                                 record_type={record_type}
-                                // revision_id={
-                                //   selectrevision !== null
-                                //     ? selectrevision
-                                //     : updatedrevision_id
-                                // }
                                 revision_id={updatedrevision_id!}
                                 ui_specification={uiSpec}
                                 draft_id={draft_id}
@@ -681,6 +682,7 @@ export default function Record() {
                                 handleUnlink={handleUnlink}
                                 setRevision_id={setrevision_id}
                                 mq_above_md={mq_above_md}
+                                setProgress={setProgress}
                                 buttonRef={buttonRef}
                               />
                             )}
@@ -710,6 +712,7 @@ export default function Record() {
                           handleUnlink={handleUnlink}
                           setRevision_id={setrevision_id}
                           mq_above_md={mq_above_md}
+                          setProgress={setProgress}
                           buttonRef={buttonRef}
                         />
                       )}
