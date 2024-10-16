@@ -14,6 +14,18 @@
                 "build",
                 "dist"
             ]
+        },
+        "test": {
+            "dependsOn": [
+                "build"
+            ],
+            "inputs": [
+                "src/**/*.ts",
+                "test/**/*.ts",
+                "package.json"
+            ],
+            "outputs": [],
+            "cache": true
         }
     }
 }
