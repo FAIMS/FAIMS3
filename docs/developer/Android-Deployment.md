@@ -5,6 +5,39 @@ Based on the example given in [this Runway blog post](https://www.runway.team/bl
 
 ## Pre-requisites
 
+### Create Google Play App
+
+The automated process below can only work once we have created an app on the
+Google Play console and uploaded a first version app bundle.  This means we need
+to do a local build, sign it with an _upload key_ and upload it to the
+Google Play console manually.
+
+Sign in to the Google Play console and create a new app. Fill in the required
+details following the workflow prompts.  
+
+Build the app and open up Android Studio:
+
+```bash
+npm run build
+cd app
+npx cap sync android
+npx cap open android
+```
+
+Inside Android Studio, create a production build. To do this you'll need to generate
+an _upload key and keystore_, there are instructions 
+[on android.com](https://developer.android.com/studio/publish/app-signing#sign-apk).
+Basically you select "Generate Signed Bundle or API" from the Build menu and follow the
+prompts. This will get you to generate a new keystore file, key name and password.  
+Make a note of these, we'll create repository secrets for them on Github:
+
+- `secrets.KEYSTORE_FILE` - java key store file, base64 encoded
+- `secrets.JAVA_KEY_PASSWORD` - password for the Java keystore
+- `secrets.JAVA_KEY` - key alias for the Java Keystore
+
+Complete the build and you should have an `app-release.aab` file that you can
+upload to the Google Play console.
+
 ### Fastlane
 
 Fastlane is a tool to automate uploading builds to Google Play. It requires some setup that
@@ -148,5 +181,6 @@ Secrets will not be visible once added so we need to keep copies somewhere safe.
 - `secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON` - bases64 encoded version of service account key, the workflow decodes this and sets `ANDROID_JSON_KEY_FILE` to point to it
 - `secrets.KEYSTORE_FILE` - contents of android-signing-keystore.jks (as base64?)
 - `secrets.BUGSNAG_KEY`
-- `secrets.JAVA_KEYSTORE_PASSWORD`
-- `secrets.JAVA_KEY_PASSWORD`
+- `secrets.KEYSTORE_FILE` - java key store file, base64 encoded
+- `secrets.JAVA_KEY_PASSWORD` - password for the Java keystore
+- `secrets.JAVA_KEY` - key alias for the Java Keystore
