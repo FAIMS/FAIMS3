@@ -24,8 +24,6 @@ export async function upsertDocument<T extends {}>(
     // latest ensuring it is upserted)
     let upsertData = {...data, _rev: existingDoc?._rev};
 
-    console.log(`Putting ${JSON.stringify(upsertData)}`);
-
     // Put the document (create or update)
     const response = await db.put(upsertData);
 
