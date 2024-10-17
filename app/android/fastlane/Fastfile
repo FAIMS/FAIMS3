@@ -19,46 +19,40 @@ JAVA_KEYSTORE = ENV["JAVA_KEYSTORE"]
 JAVA_KEYSTORE_PASSWORD = ENV["JAVA_KEYSTORE_PASSWORD"]
 JAVA_KEY = ENV["JAVA_KEY"]
 JAVA_KEY_PASSWORD = ENV["JAVA_KEY_PASSWORD"]
-FIP_CLOSED_LANE = ENV["FIP_LANE"]
 VERSION= `echo "$(($(date +%s)/60))" | tr -d "\n"`
 VERSION_NAME=`echo -n "${serverprefix}.${prnum}" | tr -d "\n"`
+
+# ANDROID_DEPLOY_TRACK - 'internal' or 'production'
 
 platform :android do  
   desc "Deploy a new version to Google Play"
 
-  lane :debug do |variable|
-    gradle(task: "clean")
-    sh("echo", VERSION_NAME)
-    sh("echo", FIP_CLOSED_LANE)
-    sh("../bin/changelog.sh", VERSION)
-    gradle(task: "assemble",
-           build_type: "Debug",
-           properties: {
-              "versionCode" => VERSION,
-              "versionName" => VERSION_NAME,
-           }
-           )
-  end
-  lane :compile_special do
-    gradle(task: "clean")
-    sh("echo", VERSION_NAME)
-    sh("echo", FIP_CLOSED_LANE)
-    sh("../bin/changelog.sh", VERSION)
-    gradle(task: "assemble",
-           build_type: "Release",
-           properties: {
-              "versionCode" => VERSION,
-              "versionName" => VERSION_NAME,
-              "android.injected.signing.store.file" => JAVA_KEYSTORE,
-              "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
-              "android.injected.signing.key.alias" => JAVA_KEY,
-              "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
-           }
-           )
-  end
+   lane :deploy_fieldmark do
+      gradle(task: "clean")
+      sh("echo", VERSION_NAME)
+      sh("../bin/changelog.sh", VERSION)
+      gradle(task: "bundle",
+            build_type: "Release",
+            properties: {
+               "versionCode" => VERSION,
+               "versionName" => VERSION_NAME,
+               "android.injected.signing.store.file" => JAVA_KEYSTORE,
+               "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
+               "android.injected.signing.key.alias" => JAVA_KEY,
+               "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
+            }
+      )
+      upload_to_play_store(json_key: ENV["ANDROID_JSON_KEY_FILE"],
+                           track: ENV["ANDROID_DEPLOY_TRACK"],
+                           release_status: 'completed',
+                           skip_upload_metadata: true,
+                           skip_upload_images: true,
+                           skip_upload_screenshots: true
+      )
+   end
 
 
-
+  ## old versions, now parameterisd by ANDROID_DEPLOY_TRACK
 
   lane :deploy_fieldmark_closed_track do
     gradle(task: "clean")    
@@ -83,76 +77,7 @@ platform :android do
                          skip_upload_screenshots: true
                         )
   end
-  #https://www.runway.team/blog/ci-cd-pipeline-android-app-fastlane-github-actions
-  lane :deploy_testing_github do
-    gradle(task: "clean")    
-    sh("echo", VERSION_NAME)
-    sh("../bin/changelog.sh", VERSION)
-    gradle(task: "bundle",
-           build_type: "Release",
-           properties: {
-              "versionCode" => VERSION,
-              "versionName" => VERSION_NAME,
-              "android.injected.signing.store.file" => JAVA_KEYSTORE,
-              "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
-              "android.injected.signing.key.alias" => JAVA_KEY,
-              "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
-           }
-           )
-    upload_to_play_store(json_key: ENV["ANDROID_JSON_KEY_FILE"],
-                         track: 'internal',
-                         release_status: 'completed',
-                         skip_upload_metadata: true,
-                         skip_upload_images: true,
-                         skip_upload_screenshots: true
-                        )
-  end  
 
-  lane :deploy_alpha do
-    gradle(task: "clean")
-    sh("echo", VERSION)
-    sh("echo", VERSION_NAME)
-    sh("../bin/changelog.sh", VERSION)
-    gradle(task: "bundle",
-           build_type: "Release",
-           properties: {
-              "versionCode" => VERSION,
-              "versionName" => VERSION_NAME,
-              "android.injected.signing.store.file" => JAVA_KEYSTORE,
-              "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
-              "android.injected.signing.key.alias" => JAVA_KEY,
-              "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,
-           }
-           )
-    upload_to_play_store(track: 'internal',
-                         release_status: 'completed',
-                         skip_upload_metadata: true,
-                         skip_upload_images: true,
-                         skip_upload_screenshots: true
-                        )
-  end
-  lane :deploy_demo do
-    gradle(task: "clean")    
-    sh("echo", VERSION_NAME)
-    sh("../bin/changelog.sh", VERSION)
-    gradle(task: "bundle",
-           build_type: "Release",
-           properties: {
-              "versionCode" => VERSION,
-              "versionName" => VERSION_NAME,
-              "android.injected.signing.store.file" => JAVA_KEYSTORE,
-              "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
-              "android.injected.signing.key.alias" => JAVA_KEY,
-              "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
-           }
-           )
-    upload_to_play_store(track: 'Demo',
-                         release_status: 'completed',
-                         skip_upload_metadata: true,
-                         skip_upload_images: true,
-                         skip_upload_screenshots: true
-                        )
-  end
 
   lane :deploy_fieldmark_production do
     gradle(task: "clean")
