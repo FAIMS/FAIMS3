@@ -109,7 +109,6 @@ jobs:
           export VITE_PROD_BUILD=true          
           export VITE_TAG=prodAndroid      
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
-          git clean -xfd
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android

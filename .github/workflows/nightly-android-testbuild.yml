@@ -130,7 +130,6 @@ jobs:
           export VITE_NOTEBOOK_LIST_TYPE=tabs
           export VITE_THEME=default
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
-          git clean -xfd
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
