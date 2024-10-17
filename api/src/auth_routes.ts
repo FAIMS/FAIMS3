@@ -42,14 +42,6 @@ import {
 interface RequestQueryRedirect {
   redirect: string;
 }
-interface PostRegisterRequestBody {
-  username: string;
-  password: string;
-  email: string;
-  repeat: string;
-  name: string;
-}
-
 const AVAILABLE_AUTH_PROVIDER_DISPLAY_INFO: {[name: string]: any} = {
   google: {
     name: 'Google',
@@ -313,7 +305,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       // create a new local account if we have a valid invite
 
       // In the form, the username is =
-      var username = req.body.username;
+      let username = req.body.username;
       const password = req.body.password;
       const repeat = req.body.repeat;
       const name = req.body.name;
