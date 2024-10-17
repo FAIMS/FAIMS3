@@ -23,6 +23,7 @@ import {NOTEBOOK_NAME} from '../buildconfig';
 
 export const INDEX = '/';
 export const SIGN_IN = '/signin/';
+export const AUTH_RETURN = '/auth-return/';
 
 export const NOT_FOUND = '/not-found';
 
@@ -40,6 +41,7 @@ export const AUTOINCREMENT = '/autoincrements/';
 export const PROJECT_ATTACHMENT = '/attachment/';
 export const SWITCH_ORG = '/switch-organisation';
 export const HELP = '/help';
+export const CREATE_NEW_SURVEY = '/create-new-survey';
 
 export function getRecordRoute(
   project_id: ProjectID,

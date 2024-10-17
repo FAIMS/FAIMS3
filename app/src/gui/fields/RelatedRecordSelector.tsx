@@ -415,7 +415,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         newValue = [newValue, new_child_record];
       else newValue = [new_child_record];
     } else newValue = new_child_record;
-    props.form.setFieldValue(props.field.name, newValue);
+    props.form.setFieldValue(props.field.name, newValue, true);
     return new_record_id;
   };
 
@@ -427,7 +427,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     if (multiple) newValue = [...(newValue ?? []), selectedRecord];
     else newValue = selectedRecord;
 
-    props.form.setFieldValue(props.field.name, newValue);
+    props.form.setFieldValue(props.field.name, newValue, true);
     props.form.submitForm();
     const current_record = {
       record_id: record_id,
@@ -514,7 +514,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       relation_type_vocabPair: relationshipPair,
     };
     //set the form value
-    props.form.setFieldValue(props.field.name, newValue);
+    props.form.setFieldValue(props.field.name, newValue, true);
     let revision_id = props.form.values['_current_revision_id'];
     try {
       revision_id = await props.form.submitForm();
@@ -584,7 +584,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       );
       setRecordsInformation(newRecords);
     }
-    props.form.setFieldValue(props.field.name, newValue);
+    props.form.setFieldValue(props.field.name, newValue, true);
     if (is_preferred === true) setPreferred(child_record_id);
     else setPreferred(null);
   };

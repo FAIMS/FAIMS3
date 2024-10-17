@@ -232,7 +232,7 @@ const fields: {[key: string]: FieldType} = {
       geoTiff: '',
     },
     validationSchema: [['yup.string']],
-    initialValue: '1',
+    initialValue: '',
   },
   MultiSelect: {
     'component-namespace': 'faims-custom',
@@ -288,7 +288,7 @@ const fields: {[key: string]: FieldType} = {
       helperText: 'Make sure you choose the right one!',
     },
     validationSchema: [['yup.string']],
-    initialValue: '1',
+    initialValue: '',
   },
   RandomStyle: {
     'component-namespace': 'faims-custom',
@@ -389,10 +389,8 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'TakePoint',
     'type-returned': 'faims-pos::Location',
     'component-parameters': {
-      fullWidth: true,
       name: 'take-point-field',
       helperText: 'Click to save current location',
-      variant: 'outlined',
       label: 'Take point',
     },
     validationSchema: [['yup.object'], ['yup.nullable']],
@@ -428,7 +426,19 @@ const fields: {[key: string]: FieldType} = {
       helperText: 'Scan QR Code on the sample',
     },
     validationSchema: [['yup.string']],
-    initialValue: '1',
+    initialValue: '',
+  },
+  AddressField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'AddressField',
+    'type-returned': 'faims-core::JSON',
+    'component-parameters': {
+      helperText: 'Enter your address',
+      required: false,
+      name: 'Address',
+      label: 'Address',
+    },
+    validationSchema: [['yup.object'], ['yup.nullable']],
   },
 };
 

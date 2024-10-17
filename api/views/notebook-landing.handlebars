@@ -15,11 +15,17 @@
 
       <dl>
           <dt>Project ID</dt><dd>{{ notebook.project_id}}</dd>
+          
           <dt>Project Lead</dt><dd>{{ notebook.project_lead}}</dd>
           <dt>Lead Institution</dt><dd>{{ notebook.lead_institution }}</dd>
           <dt>Description</dt><dd>{{markdown notebook.pre_description }}</dd>
           <dt>Records</dt><dd>{{ records }}</dd>
+          {{#if notebook.template_id}}
+          <dt>Template</dt><a href="/templates/{{ notebook.template_id }}">{{ notebook.template_id }}</a>
+          {{/if}}
       </dl>
+      <dt>Download Notebook JSON definition</dt>
+      <p><a download href="/api/notebooks/{{notebook.project_id}}">{{notebook.project_id}}.json</a></p>
     </div>
 
     <div class="col">
@@ -51,21 +57,28 @@
       <h5>Manage Users</h5>
       <p><a class="btn btn-primary" href="/notebooks/{{notebook.project_id}}/invite/">Invite</a> 
       users to register for this notebook.</p>
+
+    {{#if invites}}
     <h6>Existing Invites</h6>
     <table>
+      <tr>
+        <th>Role</th>
+        <th>Short Code</th>
+        <th></th>
+        <th></th>
+      </tr>
       {{#each invites}}
       <tr>
-        {{#if this.invite.unlimited}}
-        <td>Unlimited users for role "{{this.invite.role}}"</td>
-        {{else}}
-        <td>{{this.invite.number}} users for role "{{this.invite.role}}"</td>
-        {{/if}}
 
-        <td>
-          <button class="btn btn-primary" onclick="copyToClipboard('{{this.url}}')">Copy Registration URL</button>
+        <td><strong>{{this.invite.role}}</strong></td>
+        <td>{{this.invite._id}}
+          <button class="btn btn-primary btn-sm" onclick="copyToClipboard('{{this.invite._id}}')">Copy</button>
         </td>
         <td>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#qrModal{{this.invite._id}}">Show QRCode</button>
+          <button class="btn btn-primary btn-sm" onclick="copyToClipboard('{{this.url}}')">Copy URL</button>
+        </td>
+        <td>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#qrModal{{this.invite._id}}">Show QR</button>
         <div class="modal modal-fade" 
             id="qrModal{{this.invite._id}}"
               tabindex="-1" aria-labelledby="qrtitle-{{this.invite._id}}" aria-hidden="true">
@@ -89,6 +102,7 @@
       </tr>
       {{/each}}
     </table>
+    {{/if}}
 
     <p><a class="btn btn-primary" href="/notebooks/{{notebook.project_id}}/users/">Edit User Roles</a></p>
     </li>
@@ -128,7 +142,7 @@
       </div>
       <div class="col">
         <button type="button" class="btn btn-danger" 
-                      data-bs-toggle="modal" data-bs-target="#deleteNotebookModal">Delete Notebok</button>
+                      data-bs-toggle="modal" data-bs-target="#deleteNotebookModal">Delete Notebook</button>
       </div>
     </div>
   </div>
@@ -210,18 +224,12 @@
 </div>
 </div>
 
-
-
   <script>
 const copyToClipboard = (text) => {
-    navigator.permissions.query({name: "clipboard-write"}).then((result) => {
-    if (result.state === "granted" || result.state === "prompt") {
-        navigator.clipboard.writeText(text).then(() => {
-            alert("Copied to clipboard.")
-        }, () => {
-                alert("Could not copy text.")
-        });
-    }
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Copied to clipboard: " + text)
+    }, () => {
+            alert("Could not copy to clipboard.")
     });
 }
 

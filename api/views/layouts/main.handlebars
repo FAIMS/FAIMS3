@@ -15,6 +15,7 @@
     html,
     body {
       height: 100%;
+      padding-top: 70px;
     }
 
     body {
@@ -25,26 +26,9 @@
       background-color: #edeeeb;
     }
 
-    .form-signin {
-      max-width: 400px;
-      padding: 15px;
-    }
-
-    
     .btn-outline-primary {
       color: #669911;
       border-color: #669911;
-    }
-  .callout{
-      padding: 1.25rem;
-      margin-top: 1.25rem;
-      margin-bottom: 1.25rem;
-      background-color: #edeeeb;
-      border-left: 0.25rem solid #edeeeb
-    }
-    .form-signin {
-      max-width: 400px;
-      padding: 15px;
     }
     .btn-primary {
       background-color: #669911;
@@ -67,22 +51,87 @@
   </style>
 </head>
 <body class="d-flex flex-column h-100" >
-  <main class="w-100 m-auto">
-  <div class="form-signin w-100 m-auto text-center">
-    <a href="/"><img src="/images/Fieldmark-Portrait-Margin@4x.png" style='max-width:150px;' /></a>
-  </div>
+  <header>
+  <nav class="navbar navbar-expand-md bg-light navbar-light fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">
+        <img src="/images/Fieldmark-Portrait-Margin@4x.png" height="24">
+      </a>
+      <button class="navbar-toggler" 
+              type="button" 
+              data-bs-toggle="collapse" 
+              data-bs-target="#navbarSupportedContent" 
+              aria-controls="navbarSupportedContent" 
+              aria-expanded="false" 
+              aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/notebooks">Notebooks</a>
+          </li>
+          {{#if can_create_notebooks}}
+          <li class="nav-item"></li>
+            <a class="nav-link" href="/templates">Templates</a>
+          </li>
+          {{/if}}
+          {{#if cluster_admin}}
+          <li class="nav-item"></li>
+            <a class="nav-link" href="/users">Users</a>
+          </li>
+          {{/if}}
+          {{#if developer}}
+          <li class="nav-item">
+            <a class="nav-link" href="/restore/">Restore Backup</a>
+          </li>   
+          {{/if}}
+        </ul>
+        <div class="d-flex">
+        <span class="navbar-text">
+          {{user.name}}
+        </span>
+        &nbsp;
+        <span class="nav-item">
+          <a href="/logout/" class="btn btn-primary">Log Out</a>
+        </span>
+        </div>
+      </div>
+    </div>
+  </nav>
+  </header>
+
+  <main class="flex-shrink-0">
   {{{body}}}
-  <div class="form-signin w-100 m-auto">
-  <p class="mt-5 mb-3" style="font-size: 12px">Access to <strong>the Fieldmark™ Demonstration App</strong> is provided for the purpose of creating and testing <strong>trial notebooks</strong> only. For
-  field trials, users are responsible for testing all aspects of notebook functionality including notebook set up, data
-  collection, saving and exporting data. <strong>No warranty is provided for data loss.</strong> Do not store sensitive or highly sensitive
-  data according to the Australian Privacy Act on this server, as we cannot guarantee access controls on this server. The
-  server may be reset without notice. Access to the <strong>Fieldmark™ Demonstration App</strong> may be revoked at short notice. Records
-  created in shared notebooks will be visible to other users.</p>
-  <p class="mt-5 mb-3" style="font-size: 12px">The <a href="https://faims.edu.au/">FAIMS 3.0 Electronic Field Notebooks project</a> received investment ( <a href="https://dx.doi.org/10.47486/PL110">doi: 10.47486/PL110</a>) from the <a href="https://ardc.edu.au/">Australian Research Data Commons (ARDC)</a>, <a href="https://www.mq.edu.au/">Macquarie University</a>, <a href="https://www.csiro.au/en/about/people/business-units/mineral-resources">CSIRO</a>, <a href="https://www.unsw.edu.au/">UNSW Sydney</a>, <a href="https://www.latrobe.edu.au/">La Trobe University</a>, and <a href="https://international.au.dk/">Aarhus University</a>. We are proud to collaborate with more than a dozen other <a href="https://faims.edu.au/partners/">partners</a>. Contribute to this <a href="https://github.com/FAIMS/FAIMS3">project on GitHub!</a>
-  </p>
-  </div>
-</main>
+  </main>
+
+  <footer class="footer mt-auto py-3 bg-light">
+    <div class="container">
+        <p style="font-size: 12px">Access to <strong>the Fieldmark™ Demonstration App</strong> is provided for the purpose of 
+        creating and testing <strong>trial notebooks</strong> only. For
+    field trials, users are responsible for testing all aspects of notebook functionality including notebook set up, data
+    collection, saving and exporting data. <strong>No warranty is provided for data loss.</strong> Do not store sensitive or highly sensitive
+    data according to the Australian Privacy Act on this server, as we cannot guarantee access controls on this server. The
+    server may be reset without notice. Access to the <strong>Fieldmark™ Demonstration App</strong> may be revoked at short notice. Records
+    created in shared notebooks will be visible to other users.</p>
+
+    <p class="mt-5 mb-3" style="font-size: 12px">The <a href="https://faims.edu.au/">FAIMS 3.0 Electronic Field Notebooks project</a> 
+    received investment ( <a href="https://dx.doi.org/10.47486/PL110">doi: 10.47486/PL110</a>) from 
+    the <a href="https://ardc.edu.au/">Australian Research Data Commons (ARDC)</a>,
+    <a href="https://www.mq.edu.au/">Macquarie University</a>, 
+    <a href="https://www.csiro.au/en/about/people/business-units/mineral-resources">CSIRO</a>, 
+    <a href="https://www.unsw.edu.au/">UNSW Sydney</a>, <a href="https://www.latrobe.edu.au/">La Trobe University</a>, 
+    and <a href="https://international.au.dk/">Aarhus University</a>. We are proud to collaborate 
+    with more than a dozen other <a href="https://faims.edu.au/partners/">partners</a>. Contribute 
+    to this <a href="https://github.com/FAIMS/FAIMS3">project on GitHub!</a>
+  
+    </div>
+  </footer>
+
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
 </body>
 </html>

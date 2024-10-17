@@ -25,26 +25,15 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 export default function Workspace() {
-  const breadcrumbs = [
-    // {link: ROUTES.INDEX, title: 'Home'},
-    {title: 'Workspace'},
-  ];
-
   return (
     <React.Fragment>
-      <Breadcrumbs data={breadcrumbs} />
+      <Breadcrumbs data={[{title: 'Workspace'}]} />
       <Grid container spacing={3}>
-        {/*<Grid item xs={12}>*/}
-        {/*  <Typography variant="h5" gutterBottom>*/}
-        {/*    Workspace*/}
-        {/*  </Typography>*/}
-        {/*</Grid>*/}
-
         <Grid item xs={12} md={12} lg={8}>
           <Typography variant="h6" color="textSecondary">
             My {NOTEBOOK_NAME_CAPITALIZED}s
           </Typography>
-          <Notebooks sortModel={{field: 'last_updated', sort: 'desc'}} />
+          <Notebooks />
         </Grid>
       </Grid>
     </React.Fragment>

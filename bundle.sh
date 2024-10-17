@@ -63,7 +63,7 @@ process_directory() {
         mkdir -p "$output_path/$relative_dir"
         
         # Copy node_modules, dist, build, and views if they exist
-        for folder in node_modules dist build views; do
+        for folder in node_modules dist build; do
             if [ -d "$source_path/$relative_dir/$folder" ]; then
                 cp -R "$source_path/$relative_dir/$folder" "$output_path/$relative_dir/"
             fi

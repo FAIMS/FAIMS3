@@ -5,24 +5,23 @@ import {
   Typography,
   Box,
   Paper,
+  AppBar,
+  Alert,
+  AlertTitle,
+  Button,
   Grid,
+  TableContainer,
   Table,
   TableBody,
   TableRow,
   TableCell,
-  AppBar,
-  TableContainer,
-  Alert,
-  AlertTitle,
-  Button,
 } from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {ProjectUIViewsets} from '@faims3/data-model';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import {ProjectInformation, ProjectUIModel} from '@faims3/data-model';
+import {ProjectUIModel} from '@faims3/data-model';
 import DraftsTable from './draft_table';
 import {RecordsBrowseTable} from './record_table';
-import RangeHeader from './range_header';
 import MetadataRenderer from '../metadataRenderer';
 import AddRecordButtons from './add_record_by_type';
 import NotebookSettings from './settings';
@@ -33,7 +32,14 @@ import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {useQuery} from '@tanstack/react-query';
+import {getMetadataValue} from '../../../sync/metadata';
+import {ProjectExtended} from '../../../types/project';
+import RangeHeader from './range_header';
 
+/**
+ * TabPanelProps defines the properties for the TabPanel component.
+ */
 interface TabPanelProps {
   children?: React.ReactNode;
   id: string;
@@ -41,6 +47,13 @@ interface TabPanelProps {
   value: number;
 }
 
+/**
+ * TabPanel is a component for displaying the content of a specific tab.
+ * It conditionally renders its children based on the active tab.
+ *
+ * @param {TabPanelProps} props - The properties for the TabPanel.
+ * @returns {JSX.Element} - The JSX element for the TabPanel.
+ */
 function TabPanel(props: TabPanelProps) {
   const {children, id, value, index, ...other} = props;
 
@@ -57,6 +70,13 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+/**
+ * a11yProps returns accessibility properties for a tab.
+ *
+ * @param {number} index - The index of the tab.
+ * @param {string} id - The id of the tab panel.
+ * @returns {object} - The accessibility properties for the tab.
+ */
 function a11yProps(index: number, id: string) {
   /**
    * Accessibility props
@@ -67,18 +87,30 @@ function a11yProps(index: number, id: string) {
   };
 }
 
+/**
+ * NotebookComponentProps defines the properties for the NotebookComponent component.
+ */
 type NotebookComponentProps = {
-  project: ProjectInformation;
-  handleRefresh: () => Promise<any>;
+  project: ProjectExtended;
 };
-export default function NotebookComponent(props: NotebookComponentProps) {
-  /**
-   * Notebook component. Consolidating into three tabs; records, info (meta) and settings.
-   * Display customized for smaller screens
-   */
+
+/**
+ * NotebookComponent is a component that displays the main interface for the notebook.
+ * It includes tabs for Records, Details, Access, Layers, and Settings.
+ *
+ * @param {NotebookComponentProps} props - The properties for the NotebookComponent.
+ * @returns {JSX.Element} - The JSX element for the NotebookComponent.
+ */
+export default function NotebookComponent({project}: NotebookComponentProps) {
   const [notebookTabValue, setNotebookTabValue] = React.useState(0);
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
 
+  /**
+   * Handles the change event when the user switches between the Records and Drafts tabs.
+   *
+   * @param {React.SyntheticEvent} event - The event triggered by the tab change.
+   * @param {number} newValue - The index of the selected tab.
+   */
   const handleRecordDraftTabChange = (
     event: React.SyntheticEvent,
     newValue: number
@@ -86,6 +118,12 @@ export default function NotebookComponent(props: NotebookComponentProps) {
     setRecordDraftTabValue(newValue);
   };
 
+  /**
+   * Handles the change event when the user switches between the main tabs.
+   *
+   * @param {React.SyntheticEvent} event - The event triggered by the tab change.
+   * @param {number} newValue - The index of the selected tab.
+   */
   const handleNotebookTabChange = (
     event: React.SyntheticEvent,
     newValue: number
@@ -93,7 +131,6 @@ export default function NotebookComponent(props: NotebookComponentProps) {
     setNotebookTabValue(newValue);
   };
 
-  const {project} = props;
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
@@ -101,8 +138,25 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
-  useEffect(() => {
-    if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
+
+  const {data: template_id} = useQuery({
+    queryKey: ['project-template-id', project.project_id],
+    queryFn: () =>
+      getMetadataValue(project.project_id, 'template_id') as Promise<string>,
+  });
+
+  /**
+   * Fetches the UI specification and viewsets for the project
+   */
+  const pageLoader = () => {
+    // Starting state reset
+    setViewsets(null);
+    setUiSpec(null);
+    setErr('');
+    setLoading(true);
+
+    // Try to load details and records
+    if (project.listing && project._id) {
       getUiSpecForProject(project.project_id)
         .then(spec => {
           setUiSpec(spec);
@@ -111,16 +165,25 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           setErr('');
         })
         .catch(err => {
+          setLoading(false);
           setErr(err.message);
         });
     }
-    return () => {
-      setViewsets(null);
-      setUiSpec(null);
-      setErr('');
-      setLoading(true);
-    };
+  };
+
+  /**
+   * Fetches the UI specification and viewsets for the project when the
+   * component mounts or the project changes.
+   */
+  useEffect(() => {
+    pageLoader();
   }, [project]);
+
+  // trigger a refresh of the content because something changed down below (a
+  // record or draft was deleted)
+  const handleRefresh = () => {
+    pageLoader();
+  };
 
   return (
     <Box>
@@ -128,7 +191,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
         <Alert severity="error">
           <AlertTitle>
             {' '}
-            {props.project.name} {NOTEBOOK_NAME} cannot sync right now.
+            {project.name} {NOTEBOOK_NAME} cannot sync right now.
           </AlertTitle>
           Your device may be offline.
           <br />
@@ -172,16 +235,14 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
-                // centered={mq_above_md ? false : true}
               >
                 <Tab label="Records" {...a11yProps(0, NOTEBOOK_NAME)} />
-                <Tab label="Info" {...a11yProps(1, NOTEBOOK_NAME)} />
+                <Tab label="Details" {...a11yProps(1, NOTEBOOK_NAME)} />
                 <Tab label="Settings" {...a11yProps(2, NOTEBOOK_NAME)} />
               </Tabs>
             </AppBar>
           </Box>
           <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
-            {/* Add Record Buttons */}
             <Box>
               <Typography variant={'overline'} sx={{marginTop: '-8px'}}>
                 Add New Record
@@ -216,7 +277,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   maxRows={25}
                   viewsets={viewsets}
                   filter_deleted={true}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
               <TabPanel
@@ -228,12 +289,127 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
             </Box>
           </TabPanel>
+
           <TabPanel value={notebookTabValue} index={1} id={'notebook'}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 2,
+                px: 2,
+              }}
+            >
+              {/* <Box
+                component="h2"
+                sx={{
+                  textAlign: 'left',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  marginBottom: '16px',
+                }}
+              >
+                Survey Details
+              </Box> */}
+              <Typography
+                variant="body1"
+                sx={{
+                  textAlign: 'center',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  flexGrow: 1,
+                }}
+              >
+                Survey Details
+              </Typography>
+
+              {/* Unhide the edit button when the notebook cna be edited */}
+              {/* <IconButton
+                color="primary"
+                aria-label="edit"
+                onClick={() => {
+                  console.log('Edit Survey Details clicked');
+                }}
+                sx={{display: 'flex', alignItems: 'center'}}
+              >
+                <EditIcon />
+                <Typography
+                  variant="body2"
+                  color="primary"
+                  sx={{marginLeft: '4px'}}
+                >
+                  Edit
+                </Typography>
+              </IconButton> */}
+            </Box>
+
+            <Box sx={{p: 2}}>
+              <Typography
+                variant="body1"
+                gutterBottom
+                sx={{marginBottom: '16px'}}
+              >
+                <strong>Name:</strong>{' '}
+                <MetadataRenderer
+                  project_id={project.project_id}
+                  metadata_key={'name'}
+                  chips={false}
+                />
+              </Typography>
+              {template_id && (
+                <Typography
+                  variant="body1"
+                  gutterBottom
+                  sx={{marginBottom: '16px'}}
+                >
+                  <strong>Template Used: </strong>
+                  <span>{template_id}</span>
+                </Typography>
+              )}
+              <Typography
+                variant="body1"
+                gutterBottom
+                component="div"
+                sx={{marginBottom: '16px'}}
+              >
+                <strong>Description:</strong>{' '}
+                <MetadataRenderer
+                  project_id={project.project_id}
+                  metadata_key={'pre_description'}
+                  chips={false}
+                />
+              </Typography>
+
+              <Typography
+                variant="body1"
+                gutterBottom
+                sx={{marginBottom: '16px'}}
+              >
+                <strong>Lead Institution:</strong>{' '}
+                <MetadataRenderer
+                  project_id={project.project_id}
+                  metadata_key={'lead_institution'}
+                  chips={false}
+                />
+              </Typography>
+              <Typography
+                variant="body1"
+                gutterBottom
+                sx={{marginBottom: '16px', textAlign: 'left'}}
+              >
+                <strong>Project Lead:</strong>{' '}
+                <MetadataRenderer
+                  project_id={project.project_id}
+                  metadata_key={'project_lead'}
+                  chips={false}
+                />
+              </Typography>
+            </Box>
             <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
               <Grid item xs={12} sm={6} md={6} lg={4}>
                 <Box component={Paper} elevation={0} variant={'outlined'} p={2}>
@@ -326,6 +502,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
               </Grid>
             </Grid>
           </TabPanel>
+
           <TabPanel value={notebookTabValue} index={2} id={'notebook'}>
             {uiSpec !== null && <NotebookSettings uiSpec={uiSpec} />}
           </TabPanel>

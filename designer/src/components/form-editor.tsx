@@ -83,7 +83,6 @@ export const FormEditor = ({
   const dispatch = useAppDispatch();
 
   console.log('FormEditor', viewSetId);
-  console.log('FormEditor visible_types', visibleTypes);
 
   const [activeStep, setActiveStep] = useState(0);
   const [newSectionName, setNewSectionName] = useState('New Section');
@@ -502,7 +501,7 @@ export const FormEditor = ({
               <Grid item xs={12}>
                 <SectionEditor
                   viewSetId={viewSetId}
-                  viewId={viewSet.views[activeStep]}
+                  viewId={viewSet.views[activeStep] || viewSet.views[0]}
                   viewSet={viewSet}
                   deleteCallback={deleteSection}
                   addCallback={addNewSection}

@@ -91,7 +91,7 @@ npm run build-data-model
 echo "> cd app && npm i && cd ../"
 cd app && npm i && cd ../
 
-echo "Service is setup, to load notebooks follow the below steps"
+echo "Service is setup, to load notebooks and templates follow the below steps"
 cat << EOF
 This script requires authentication, so you need to get a user token for the admin
 user. First, connect to the conductor instance on http://localhost:8080/ or whatever
@@ -103,6 +103,9 @@ value of USER_TOKEN.
 Then run: 
 
 $> npm run load-notebooks
+
+And:
+$> npm run load-templates
 EOF
 
 echo "To run the FAIMS app locally with live reload, run npm run start-app"
