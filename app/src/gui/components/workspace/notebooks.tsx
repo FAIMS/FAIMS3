@@ -87,14 +87,6 @@ export default function NoteBooks() {
           valueGetter: ({value}) => value && new Date(value),
         },
         {
-          field: 'status',
-          headerName: 'Status',
-          type: 'string',
-          flex: 0.2,
-          minWidth: 160,
-          renderCell: ({row: {status}}) => <ProjectStatus status={status} />,
-        },
-        {
           field: 'actions',
           type: 'actions',
           flex: 0.2,
