@@ -30,6 +30,17 @@ import {getInvite} from './couchdb/invites';
 import {acceptInvite} from './registration';
 import {generateUserToken} from './authkeys/create';
 import {NextFunction, Request, Response, Router} from 'express';
+import {
+  createNewRefreshToken,
+  validateRefreshToken,
+} from './couchdb/refreshTokens';
+import {processRequest} from 'zod-express-middleware';
+import {
+  PostRefreshTokenInputSchema,
+  PostRefreshTokenResponse,
+  PostRefreshTokenResponseSchema,
+} from '@faims3/data-model';
+import {UnauthorizedException} from './exceptions';
 
 interface RequestQueryRedirect {
   redirect: string;
@@ -143,6 +154,32 @@ export function add_auth_routes(app: Router, handlers: string[]) {
   });
 
   /**
+   * Refresh - get a new JWT using a refresh token. TODO - make this the ONLY
+   * way to get a new JWT - currently there are various exploits which allow
+   * infinite regeneration of JWTs for logged in users.
+   */
+  app.post(
+    '/refresh',
+    processRequest({body: PostRefreshTokenInputSchema}),
+    async (req, res: Response<PostRefreshTokenResponse>) => {
+      // Anyone can use this route, since your access token may have expired
+
+      // If the user is logged in - then record the user ID as an additional
+      // security measure - don't allow cross generation
+      let userId: string | undefined = req.user?._id;
+
+      // validate the token
+      const {valid, validationError} = await validateRefreshToken(
+        req.body.refreshToken,
+        userId
+      );
+
+      if (!valid) {
+      }
+    }
+  );
+
+  /**
    * Define the logout route. Optionally redirect to a given URL
    * after logout to account for logout from the app
    */
@@ -218,7 +255,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     const token = await generateUserToken(user);
 
     // Append the token to the redirect URL
-    const redirectUrlWithToken = `${redirect}?token=${token.token}`;
+    const redirectUrlWithToken = `${redirect}?token=${token.token}&refreshToken=${token.refreshToken}`;
 
     // Redirect to the app with the token
     return res.redirect(redirectUrlWithToken);

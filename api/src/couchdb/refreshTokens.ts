@@ -6,7 +6,11 @@
  * tokens, as well as utility functions for token expiration.
  */
 
-import {AuthRecord, RefreshRecordFields} from '@faims3/data-model';
+import {
+  AuthRecord,
+  GetRefreshTokenIndex,
+  RefreshRecordFields,
+} from '@faims3/data-model';
 import {getAuthDB} from '.';
 import {v4 as uuidv4} from 'uuid';
 import {InternalSystemError} from '../exceptions';
@@ -69,7 +73,7 @@ export const createNewRefreshToken = async (
  */
 export const validateRefreshToken = async (
   token: string,
-  userId: string
+  userId?: string
 ): Promise<{valid: boolean; validationError?: string}> => {
   try {
     const tokenDoc = await getTokenByToken(token);
@@ -81,11 +85,11 @@ export const validateRefreshToken = async (
       };
     }
 
-    // Check if the token belongs to the correct user
-    if (tokenDoc.userId !== userId) {
+    // Check if the token belongs to the correct user (If a user ID is supplied for validation)
+    if (userId && tokenDoc.userId !== userId) {
       return {
         valid: false,
-        validationError: 'Token does not belong to the user.',
+        validationError: 'Token does not belong to the user specified.',
       };
     }
 
@@ -180,4 +184,48 @@ export const getAllTokens = async (): Promise<AuthRecord[]> => {
   });
 
   return result.rows.map(row => row.doc as AuthRecord);
+};
+
+/**
+ * Deletes a refresh token based on the specified index and identifier.
+ *
+ * @param index The index to use for finding the token ('id' or 'token').
+ * @param identifier The value to search for using the specified index.
+ * @returns A Promise that resolves when the token is successfully deleted.
+ * @throws Error if the token is not found or if there's an issue with deletion.
+ */
+export const deleteRefreshToken = async (
+  index: GetRefreshTokenIndex,
+  identifier: string
+): Promise<void> => {
+  const authDB = getAuthDB();
+  let tokenDoc: AuthRecord | null = null;
+
+  // Find the token document based on the specified index
+  if (index === 'id') {
+    try {
+      tokenDoc = await getTokenByTokenId(identifier);
+    } catch (error) {
+      if ((error as any).status === 404) {
+        throw new Error(`Refresh token with ID ${identifier} not found.`);
+      }
+      throw error;
+    }
+  } else if (index === 'token') {
+    tokenDoc = await getTokenByToken(identifier);
+    if (!tokenDoc) {
+      throw new Error(`Refresh token with token ${identifier} not found.`);
+    }
+  } else {
+    throw new Error(`Invalid index type: ${index}`);
+  }
+
+  // If we've reached this point, we have a valid tokenDoc
+  try {
+    await authDB.remove(tokenDoc._id, tokenDoc._rev);
+  } catch (error) {
+    throw new Error(
+      `Failed to delete refresh token: ${(error as Error).message}`
+    );
+  }
 };

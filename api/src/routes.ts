@@ -237,7 +237,7 @@ function render_project_roles(roles: AllProjectRoles): handlebars.SafeString {
 }
 
 app.get('/', async (req, res) => {
-  if (req.user) {
+  if (req.user && req.user._id) {
     // Handlebars is pretty useless at including render logic in templates, just
     // parse the raw, pre-processed string in...
     const rendered_project_roles = render_project_roles(req.user.project_roles);

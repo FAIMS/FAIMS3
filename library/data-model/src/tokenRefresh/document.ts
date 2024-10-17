@@ -1,6 +1,9 @@
 /** Provides types for the Auth database */
 export type AuthRecordTypes = 'refresh';
 
+// These indicate the available indexes to fetch things
+export type GetRefreshTokenIndex = 'id' | 'token';
+
 // Document type
 export interface RefreshRecordFields {
   // Mandatory field for auth records
@@ -30,5 +33,5 @@ export const AuthRecordIdPrefixMap = new Map<AuthRecordTypes, string>([
 export type AuthRecordFields = RefreshRecordFields;
 
 // Type of instantiated auth record in the database
-export type AuthRecord = PouchDB.Core.Document<AuthRecordFields>;
+export type AuthRecord = PouchDB.Core.Document<AuthRecordFields> & PouchDB.Core.RevisionIdMeta;
 export type AuthDatabase = PouchDB.Database<AuthRecordFields>;
