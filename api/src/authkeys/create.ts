@@ -41,7 +41,7 @@ export async function createAuthKey(
     .setIssuedAt()
     .setIssuer(signingKey.instanceName)
     // TODO reinstate expiration time
-    // 
+    //
     //.setExpirationTime('2h')
     .sign(signingKey.privateKey);
   return jwt;
@@ -52,17 +52,22 @@ export async function createAuthKey(
  * @param user The passport user
  * @returns The generated token which is a payload containing the actual JWT + refresh token + other information
  */
-export async function generateUserToken(user: Express.User) {
+export async function generateUserToken(
+  user: Express.User,
+  refresh: boolean = true
+) {
   const signingKey = await KEY_SERVICE.getSigningKey();
   if (signingKey === null || signingKey === undefined) {
     throw new Error('No signing key is available, check configuration');
   } else {
     const token = await createAuthKey(user, signingKey);
-    const refreshTokenDocument = await createNewRefreshToken(user._id!);
 
     return {
       token: token,
-      refreshToken: refreshTokenDocument.token,
+      // Provide a refresh token if necessary
+      refreshToken: refresh
+        ? (await createNewRefreshToken(user._id!)).token
+        : undefined,
       pubkey: signingKey.publicKeyString,
       pubalg: signingKey.alg,
     };

@@ -18,29 +18,35 @@
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data
  */
-import handlebars from 'handlebars';
+import {NonUniqueProjectID} from '@faims3/data-model';
 import {body, validationResult} from 'express-validator';
+import handlebars from 'handlebars';
 import QRCode from 'qrcode';
 import {app} from './core';
-import {NonUniqueProjectID} from '@faims3/data-model';
 import {AllProjectRoles} from './datamodel/users';
 
 // BBS 20221101 Adding this as a proxy for the pouch db url
+import {add_auth_providers} from './auth_providers';
+import {add_auth_routes} from './auth_routes';
+import {createAuthKey, generateUserToken} from './authkeys/create';
 import {
-  WEBAPP_PUBLIC_URL,
-  IOS_APP_URL,
   ANDROID_APP_URL,
+  CONDUCTOR_AUTH_PROVIDERS,
   CONDUCTOR_PUBLIC_URL,
   DEVELOPER_MODE,
-  CONDUCTOR_AUTH_PROVIDERS,
+  IOS_APP_URL,
   KEY_SERVICE,
+  WEBAPP_PUBLIC_URL,
 } from './buildconfig';
-import {
-  requireAuthentication,
-  requireClusterAdmin,
-  requireNotebookMembership,
-} from './middleware';
 import {createInvite, getInvitesForNotebook} from './couchdb/invites';
+import {
+  countRecordsInNotebook,
+  getNotebookMetadata,
+  getNotebookUISpec,
+  getNotebooks,
+  getRolesForNotebook,
+} from './couchdb/notebooks';
+import {getTemplate, getTemplates} from './couchdb/templates';
 import {
   getUserInfoForNotebook,
   getUsers,
@@ -49,16 +55,10 @@ import {
   userIsClusterAdmin,
 } from './couchdb/users';
 import {
-  countRecordsInNotebook,
-  getNotebookMetadata,
-  getNotebookUISpec,
-  getNotebooks,
-  getRolesForNotebook,
-} from './couchdb/notebooks';
-import {createAuthKey, generateUserToken} from './authkeys/create';
-import {add_auth_providers} from './auth_providers';
-import {add_auth_routes} from './auth_routes';
-import {getTemplate, getTemplates} from './couchdb/templates';
+  requireAuthentication,
+  requireClusterAdmin,
+  requireNotebookMembership,
+} from './middleware';
 
 export {app};
 
@@ -236,31 +236,29 @@ function render_project_roles(roles: AllProjectRoles): handlebars.SafeString {
   return new handlebars.SafeString(all_project_sections.join(''));
 }
 
+/**
+ * Handlebars route which returns information about the logged in user
+ *
+ */
 app.get('/', async (req, res) => {
   if (req.user && req.user._id) {
     // Handlebars is pretty useless at including render logic in templates, just
     // parse the raw, pre-processed string in...
     const rendered_project_roles = render_project_roles(req.user.project_roles);
     const provider = Object.keys(req.user.profiles)[0];
-    // BBS 20221101 Adding token to here so we can support copy from conductor
-    const signingKey = await KEY_SERVICE.getSigningKey();
-    const jwt_token = await createAuthKey(req.user, signingKey);
+    // No need for a refresh here
+    const token = await generateUserToken(req.user, false);
 
-    if (signingKey === null || signingKey === undefined) {
-      res.status(500).send('Signing key not set up');
-    } else {
-      res.render('home', {
-        user: req.user,
-        token: jwt_token,
-        project_roles: rendered_project_roles,
-        other_roles: req.user.other_roles,
-        cluster_admin: userIsClusterAdmin(req.user),
-        can_create_notebooks: userCanCreateNotebooks(req.user),
-        provider: provider,
-        public_key: signingKey.publicKey,
-        developer: DEVELOPER_MODE,
-      });
-    }
+    res.render('home', {
+      user: req.user,
+      token: token.token,
+      project_roles: rendered_project_roles,
+      other_roles: req.user.other_roles,
+      cluster_admin: userIsClusterAdmin(req.user),
+      can_create_notebooks: userCanCreateNotebooks(req.user),
+      provider: provider,
+      developer: DEVELOPER_MODE,
+    });
   } else {
     res.redirect('/auth/');
   }
@@ -279,10 +277,18 @@ app.get('/send-token/', (req, res) => {
   }
 });
 
+/**
+ *
+ * For a logged in user (via session), generates a new token and returns the result.
+ *
+ * TODO: I don't think this should exist as it's exploitable to generate JWTs
+ * forever more...
+ */
 app.get('/get-token/', async (req, res) => {
   if (req.user) {
     try {
-      const token = await generateUserToken(req.user);
+      // No need for a refresh here
+      const token = await generateUserToken(req.user, false);
       res.send(token);
     } catch {
       res.status(500).send('Signing key not set up');
