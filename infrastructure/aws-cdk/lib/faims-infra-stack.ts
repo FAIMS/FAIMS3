@@ -327,7 +327,8 @@ export class FaimsInfraStack extends cdk.Stack {
 
     // Generate cookie auth secret at deploy time
     const cookieSecret = new sm.Secret(this, 'conductor-cookie-secret', {
-      description: 'Contains a randomly generated string used for cookie auth in conductor and couch',
+      description:
+        'Contains a randomly generated string used for cookie auth in conductor and couch',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       generateSecretString: {
         includeSpace: false,
@@ -351,7 +352,7 @@ export class FaimsInfraStack extends cdk.Stack {
       dataVolumeSnapshotId: config.couch.ebsRecoverySnapshotId,
       monitoring: config.couch.monitoring,
       couchVersionTag: config.couch.couchVersionTag,
-      cookieSecret: cookieSecret
+      cookieSecret: cookieSecret,
     });
 
     // CONDUCTOR
@@ -372,7 +373,7 @@ export class FaimsInfraStack extends cdk.Stack {
       iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
       sharedBalancer: networking.sharedBalancer,
       config: config.conductor,
-      cookieSecret: cookieSecret
+      cookieSecret: cookieSecret,
     });
 
     // FRONT-END

@@ -76,6 +76,7 @@ export default function FormButtonGroup(props: any) {
     views,
     ui_specification,
     mq_above_md,
+    buttonRef,
   } = props;
   return (
     <Grid item sm={12} xs={12} md={12}>
@@ -128,6 +129,7 @@ export default function FormButtonGroup(props: any) {
           </ButtonGroup>
         </Grid>
         <Grid item sm={12} xs={12} md={12}>
+          <div ref={buttonRef} />
           {disabled !== true && (
             <Alert severity={'info'} variant="outlined">
               <AlertTitle>What does publishing mean?</AlertTitle>
