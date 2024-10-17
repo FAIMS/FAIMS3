@@ -64,6 +64,7 @@ import {
   files_to_attachments,
 } from './data_storage/attachments';
 export * from './auth';
+export * from './tokenRefresh';
 
 export {
   HRID_STRING,

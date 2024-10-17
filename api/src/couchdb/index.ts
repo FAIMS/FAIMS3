@@ -18,39 +18,44 @@
  *    Core functions to access the various databases used by the application
  */
 
-import PouchDB from 'pouchdb';
-import * as Exceptions from '../exceptions';
-
 import {
+  AuthDatabase,
+  AuthDatabaseSecurityDocument,
+  permissionDocument,
   ProjectDataObject,
   ProjectID,
   ProjectMetaObject,
   ProjectObject,
   TemplateDetails,
+  viewsDocument,
 } from '@faims3/data-model';
+import PouchDB from 'pouchdb';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
   COUCHDB_INTERNAL_URL,
   COUCHDB_PUBLIC_URL,
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
+import * as Exceptions from '../exceptions';
+import {upsertDocument} from './helpers';
 import {
   initialiseDirectoryDB,
   initialiseProjectsDB,
   initialiseTemplatesDb,
   initialiseUserDB,
 } from './initialise';
-import {Express} from 'express';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
 const TEMPLATES_DB_NAME = 'templates';
+const AUTH_DB_NAME = 'auth';
 const PEOPLE_DB_NAME = 'people';
 const INVITE_DB_NAME = 'invites';
 
 let _directoryDB: PouchDB.Database | undefined;
 let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
 let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
+let _authDB: AuthDatabase | undefined;
 let _usersDB: PouchDB.Database<Express.User> | undefined;
 let _invitesDB: PouchDB.Database | undefined;
 
@@ -243,6 +248,15 @@ export const getDataDb = async (
 };
 
 export const initialiseDatabases = async () => {
+  // Setup the auth DB
+  const authDB = getAuthDB();
+  try {
+    await initialiseAuthDb(authDB);
+  } catch (error) {
+    console.log('Could not initialise the auth database', error);
+    throw error;
+  }
+
   const directoryDB = getDirectoryDB();
   try {
     await initialiseDirectoryDB(directoryDB);
@@ -312,5 +326,66 @@ export const closeDatabases = async () => {
     } catch (error) {
       console.log(error);
     }
+  }
+};
+
+// ============
+// AUTH DB
+// ============
+
+export const getAuthDB = (): AuthDatabase => {
+  if (!_authDB) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + AUTH_DB_NAME;
+    try {
+      _authDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting auth database.'
+      );
+    }
+  }
+  return _authDB;
+};
+
+/**
+ * Initialises the Auth DB by injecting a security document, and design
+ * documents from the data model.
+ *
+ * NOTE: This is currently an upsert so that DBs can be maintained, but this
+ * might be exploitable since the endpoint is not authenticated.
+ *
+ * @param db The database to initialise, intentionally not typed so as to not
+ * include type errors for interacting with permission and security documents.
+ */
+export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
+  // can't save security on an in-memory database so skip if testing
+  if (process.env.NODE_ENV !== 'test') {
+    try {
+      await db.security(AuthDatabaseSecurityDocument).save();
+    } catch (e) {
+      console.error(
+        'Failed to save security document into Auth DB. Error: ' + e
+      );
+      throw e;
+    }
+  }
+
+  // Next setup the permissions document - overwrite if existing
+  try {
+    await upsertDocument(db, permissionDocument);
+  } catch (e) {
+    console.error(
+      'Failed to upsert permission document into Auth DB. Error: ' + e
+    );
+    throw e;
+  }
+
+  // Next setup the index document - overwrite if existing
+  try {
+    await upsertDocument(db, viewsDocument);
+  } catch (e) {
+    console.error('Failed to upsert index document into Auth DB. Error: ' + e);
+    throw e;
   }
 };

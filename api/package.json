@@ -17,7 +17,6 @@
     "start": "node .",
     "start:prod": "node build/src/index.js",
     "local": "env-cmd nodemon --ignore build --ext ts --exec 'tsc --incremental && node .'",
-    "watch": "nodemon --ignore build --ext ts --exec 'tsc --incremental && node .'",
     "initdb": "env-cmd node scripts/initialise.js",
     "load-notebooks": "env-cmd node scripts/loadNotebook.js ./notebooks/*.json",
     "load-templates": "env-cmd node scripts/loadTemplate.js ./notebooks/*.json",
