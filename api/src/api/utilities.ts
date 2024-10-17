@@ -17,13 +17,14 @@
  *   This module contains utility routes at /api
  */
 
-import {ListingInformation} from '@faims3/data-model/src/types';
+import {ListingsObject} from '@faims3/data-model';
 import express from 'express';
 import multer from 'multer';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
+  CONDUCTOR_SHORT_CODE_PREFIX,
   DEVELOPER_MODE,
 } from '../buildconfig';
 import {initialiseDatabases} from '../couchdb';
@@ -37,10 +38,11 @@ import {slugify} from '../utils';
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
 
-// See https://github.com/davidbanham/express-async-errors - this patches
-// express to handle async errors without hanging or needing an explicit try
-// catch block
-require('express-async-errors');
+import patch from '../utils/patchExpressAsync';
+
+// This must occur before express api is used
+patch();
+
 export const api = express.Router();
 
 api.get('/hello/', requireAuthenticationAPI, (_req: any, res: any) => {
@@ -62,13 +64,13 @@ api.post('/initialise/', async (req, res) => {
  * Handle info requests, basic identifying information for this server
  */
 api.get('/info', async (req, res) => {
-  const info: ListingInformation = {
+  res.json({
     id: slugify(CONDUCTOR_INSTANCE_NAME),
     name: CONDUCTOR_INSTANCE_NAME,
     conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
-  };
-  res.json(info);
+    prefix: CONDUCTOR_SHORT_CODE_PREFIX,
+  } as ListingsObject);
 });
 
 api.get('/directory/', requireAuthenticationAPI, async (req, res) => {

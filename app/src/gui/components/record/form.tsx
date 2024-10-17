@@ -18,62 +18,61 @@
  *   Record/Draft form file
  */
 
+import {Form, Formik} from 'formik';
 import React from 'react';
-import {Formik, Form} from 'formik';
 
-import {Grid, Box, Typography, Divider} from '@mui/material';
+import {Box, Divider, Grid, Typography} from '@mui/material';
 
-import {firstDefinedFromList} from './helpers';
 import {
-  getViewsMatchingCondition,
   getFieldsMatchingCondition,
+  getViewsMatchingCondition,
 } from './branchingLogic';
+import {firstDefinedFromList} from './helpers';
 
 import {ViewComponent} from './view';
 
 import {ActionType} from '../../../context/actions';
 
-import * as ROUTES from '../../../constants/routes';
 import {
-  ProjectID,
-  RecordID,
-  RevisionID,
   Annotations,
-  Relationship,
-  RecordReference,
-} from '@faims3/data-model';
-import {
-  ProjectUIModel,
-  upsertFAIMSData,
   getFullRecordData,
+  ProjectID,
+  ProjectUIModel,
+  RecordID,
+  RecordReference,
+  Relationship,
+  RevisionID,
+  upsertFAIMSData,
 } from '@faims3/data-model';
-import {getValidationSchemaForViewset} from '../validation';
+import {NavigateFunction} from 'react-router-dom';
+import {DEBUG_APP} from '../../../buildconfig';
+import * as ROUTES from '../../../constants/routes';
 import {store} from '../../../context/store';
+import {getFieldPersistentData} from '../../../local-data/field-persistent';
 import RecordDraftState from '../../../sync/draft-state';
 import {
-  getFieldsForViewSet,
   getFieldNamesFromFields,
+  getFieldsForViewSet,
   getReturnedTypesForViewSet,
 } from '../../../uiSpecification';
-import {DEBUG_APP} from '../../../buildconfig';
 import {getCurrentUserId} from '../../../users';
-import {NavigateFunction} from 'react-router-dom';
-import RecordStepper from './recordStepper';
+import {getValidationSchemaForViewset} from '../validation';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
-import {getFieldPersistentData} from '../../../local-data/field-persistent';
+import RecordStepper from './recordStepper';
 
 import {
-  getParentLinkInfo,
-  generateRelationship,
   generateLocationState,
+  generateRelationship,
+  getParentLinkInfo,
 } from './relationships/RelatedInformation';
 
-import CircularLoading from '../ui/circular_loading';
-import FormButtonGroup, {DevTool} from './formButton';
-import UGCReport from './UGCReport';
 import {generateFAIMSDataID, getFirstRecordHead} from '@faims3/data-model';
-import {logError} from '../../../logging';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
+import {percentComplete, requiredFields} from '../../../lib/form-utils';
+import {logError} from '../../../logging';
+import CircularLoading from '../ui/circular_loading';
+import FormButtonGroup from './formButton';
+import UGCReport from './UGCReport';
 //import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -1116,16 +1115,6 @@ class RecordForm extends React.Component<
   }
 
   isReady(): boolean {
-    // if (DEBUG_APP) {
-    //   if (!this.state.type_cached)
-    //     console.debug('isReady false because type_cached is false');
-    //   if (!this.state.initialValues)
-    //     console.debug('isReady false because initialValues is false');
-    //   if (!this.props.ui_specification)
-    //     console.debug('isReady false because ui_specification is false');
-    //   if (!this.state.view_cached)
-    //     console.debug('isReady false because view_cached is false');
-    // }
     return Boolean(
       this.state.type_cached &&
         this.state.initialValues &&
@@ -1147,39 +1136,6 @@ class RecordForm extends React.Component<
   }
 
   render() {
-    // we can't do this here because it changes state and forces a redraw
-    // if (this.state.draft_created !== null) {
-    //   // If a draft was created, that implies this form started from
-    //   // a non draft, so it must have been an existing record (see props
-    //   // as it's got a type {existing record} | {draft already created}
-    //   (this.context as any).dispatch({
-    //     type: ActionType.ADD_CUSTOM_ALERT,
-    //     payload: {
-    //       severity: 'success',
-    //       element: (
-    //         <React.Fragment>
-    //           <Link
-    //             component={RouterLink}
-    //             to={
-    //               ROUTES.NOTEBOOK +
-    //               this.props.project_id +
-    //               ROUTES.RECORD_EXISTING +
-    //               this.props.record_id! +
-    //               ROUTES.REVISION +
-    //               this.props.revision_id! +
-    //               ROUTES.RECORD_DRAFT +
-    //               this.state.draft_created
-    //             }
-    //           >
-    //             Created new draft
-    //           </Link>
-    //         </React.Fragment>
-    //       ),
-    //     },
-    //   });
-    //   this.setState({draft_created: null});
-    // }
-
     if (this.isReady()) {
       const viewName = this.requireView();
       const viewsetName = this.requireViewsetName();
@@ -1222,6 +1178,13 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
+                this.props.setProgress?.(
+                  percentComplete(
+                    requiredFields(this.props.ui_specification.fields),
+                    formProps.values
+                  )
+                );
+
                 //ONLY update if the updated field is the controller field
                 fieldNames = getFieldsMatchingCondition(
                   this.props.ui_specification,
@@ -1305,6 +1268,7 @@ class RecordForm extends React.Component<
                             );
                           }, 500);
                         }}
+                        buttonRef={this.props.buttonRef}
                       />
                     </Grid>
                     {/* {UGCReport ONLY for the saved record} */}
@@ -1324,7 +1288,6 @@ class RecordForm extends React.Component<
                         />
                       </Box>
                     )}
-                    <DevTool formProps={formProps} state={this.state} />
                   </Form>
                 );
               }}

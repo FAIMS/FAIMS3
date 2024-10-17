@@ -126,7 +126,6 @@ jobs:
           export VITE_SHOW_MINIFAUXTON=true
           export VITE_CONDUCTOR_URL=${{vars.NIGHTLY_CONDUCTOR_URL}}
           export VITE_PRODUCTION_BUILD=true          
-          export VITE_SERVICES=FAIMSTEXT  
           export VITE_PROD_BUILD=true 
           export VITE_TAG=prodAndroid
           VITE_NOTEBOOK_LIST_TYPE=tabs

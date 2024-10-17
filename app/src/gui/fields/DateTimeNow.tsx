@@ -33,7 +33,7 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
      * The internal value is ISO, display value is yyyy-MM-ddTHH:mm:ss
      */
     const date = new Date(newValue);
-    setFieldValue(name, date.toISOString());
+    setFieldValue(name, date.toISOString(), true);
   };
 
   const onChange = React.useCallback(
@@ -66,7 +66,7 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
     if (is_auto_pick === true && value === '') {
       try {
         const date = new Date();
-        setFieldValue(name, date.toISOString());
+        setFieldValue(name, date.toISOString(), true);
       } catch (err) {
         setFieldError(name, 'Could not set display value. Contact support.');
         logError(err);

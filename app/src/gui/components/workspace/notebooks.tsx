@@ -28,7 +28,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import {grey} from '@mui/material/colors';
 import Tabs from '../ui/tab-grid';
-import HeadingGrid from '../ui/heading-grid';
+import HeadingProjectGrid from '../ui/heading-grid';
 import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import * as ROUTES from '../../../constants/routes';
@@ -63,7 +63,7 @@ export default function NoteBooks() {
               >
                 <FolderIcon
                   fontSize={'small'}
-                  color={activated ? 'secondary' : 'disabled'}
+                  color={activated ? 'primary' : 'disabled'}
                   sx={{mr: '3px'}}
                 />
                 <Typography
@@ -200,11 +200,7 @@ export default function NoteBooks() {
             columns={columns}
           />
         ) : (
-          <HeadingGrid
-            pouchProjectList={projects}
-            loading={false}
-            columns={columns}
-          />
+          <HeadingProjectGrid projects={projects} columns={columns} />
         )}
       </Box>
     </Box>

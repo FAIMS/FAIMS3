@@ -16,6 +16,11 @@
         "privateKey": "arn:aws:secretsmanager:region:account-id:secret:private-key-secret-id",
         "publicKey": "arn:aws:secretsmanager:region:account-id:secret:public-key-secret-id"
     },
+    "uiConfiguration": {
+        "uiTheme": "default",
+        "notebookListType": "tabs",
+        "notebookName": "notebook"
+    },
     "couch": {
         "ebsRecoverySnapshotId": "1234",
         "volumeSize": 20,
