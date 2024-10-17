@@ -30,7 +30,8 @@ platform :android do
    lane :deploy_fieldmark do
       gradle(task: "clean")
       sh("echo", VERSION_NAME)
-      sh("../bin/changelog.sh", VERSION)
+      # skipping as we don't upload metadata
+      # sh("../bin/changelog.sh", VERSION)
       gradle(task: "bundle",
             build_type: "Release",
             properties: {
