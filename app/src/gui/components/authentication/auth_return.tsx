@@ -75,7 +75,7 @@ export function AuthReturn() {
 
       // Store the token in the database
       try {
-        await setTokenForCluster(decodedToken, listing_id);
+        await setTokenForCluster(decodedToken, parsedToken, listing_id);
       } catch (e) {
         return setErrorAndReturnHome(
           'Auth return route attempted to store token in local auth DB but encountered an error. ' +

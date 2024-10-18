@@ -79,11 +79,12 @@ export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
  * @param token new authentication token
  * @param cluster_id server identifier that this token is for
  */
-export async function setTokenForCluster(token: string, cluster_id: string) {
+export async function setTokenForCluster(
+  token: string,
+  parsedToken: TokenContents,
+  cluster_id: string
+) {
   if (token === undefined) throw Error('Token undefined in setTokenForCluster');
-
-  // Firstly, try and parse the token
-  const parsedToken = await parseToken(token);
 
   // Then see if we have a doc -> return null if get throws
   const doc = await local_auth_db.get(cluster_id).catch(() => null);
@@ -273,8 +274,11 @@ export async function getTokenContentsForCluster(
 }
 
 /**
+ * Decodes JWT ready for use in app.
+ *
  * NOTE: This does not validate the token. This does not check expiry. Decodes
  * the token and puts into TokenContents.
+ *
  * @param token The raw JWT
  * @returns The parsed token as a TokenContents object
  */
