@@ -1,6 +1,5 @@
 import {useQuery} from '@tanstack/react-query';
 import {getDefaultToken, getToken} from '../context/functions';
-import {parseToken} from '../users';
 
 /**
  * Custom hook to fetch the current token (by current username) for a given

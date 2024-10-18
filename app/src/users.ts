@@ -248,10 +248,6 @@ export async function deleteAllTokensForCluster(cluster_id: string) {
   }
 }
 
-async function getUsernameFromToken(token: string): Promise<string> {
-  return (await parseToken(token)).username;
-}
-
 async function getTokenInfoForCluster(
   cluster_id: string
 ): Promise<JWTTokenInfo | undefined> {
@@ -273,18 +269,15 @@ async function getTokenInfoForCluster(
 export async function getTokenContentsForCluster(
   cluster_id: string
 ): Promise<PossibleToken> {
-  const token_info = await getTokenInfoForCluster(cluster_id);
-  if (token_info === undefined) {
-    return undefined;
-  }
-  try {
-    return await parseToken(token_info.token);
-  } catch (err: any) {
-    console.debug('Failed to parse token', token_info.token, cluster_id);
-    return undefined;
-  }
+  return (await getTokenInfoForCluster(cluster_id))?.parsedToken;
 }
 
+/**
+ * NOTE: This does not validate the token. This does not check expiry. Decodes
+ * the token and puts into TokenContents.
+ * @param token The raw JWT
+ * @returns The parsed token as a TokenContents object
+ */
 export async function parseToken(token: string): Promise<TokenContents> {
   const payload = await decodeJwt(token);
 
