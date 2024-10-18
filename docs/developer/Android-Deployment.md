@@ -145,7 +145,7 @@ Fastlane actions are defined by a `lane` in the [Fastfile](../../app/android/fas
             )
       upload_to_play_store(json_key: ENV["ANDROID_JSON_KEY_FILE"],
                            track: ENV["ANDROID_DEPLOY_TRACK"],
-                           release_status: 'completed',
+                           release_status: RELEASE_STATUS,
                            skip_upload_metadata: true,
                            skip_upload_images: true,
                            skip_upload_screenshots: true
@@ -174,12 +174,12 @@ where these workflows will run.
 - `vars.TURBO_TEAM` - Turbo cache team name for authentication
 - `vars.TURBO_API_URL` - Turbo cache URL
 - `vars.ANDROID_APP_ID` - the id of the app on the app store, eg. 'au.edu.faims.fieldmark', needs to be unique per deployment
+= `vars.ANDROID_RELEASE_STATUS` - the release status, normally 'completed' but for a draft (not yet reviewed) app this could be 'draft'
 
 Secrets will not be visible once added so we need to keep copies somewhere safe.
 
 - `secrets.TURBO_TOKEN` - authentication token for the turbo cache
 - `secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON` - bases64 encoded version of service account key, the workflow decodes this and sets `ANDROID_JSON_KEY_FILE` to point to it
-- `secrets.KEYSTORE_FILE` - contents of android-signing-keystore.jks (as base64?)
 - `secrets.BUGSNAG_KEY`
 - `secrets.KEYSTORE_FILE` - java key store file, base64 encoded
 - `secrets.JAVA_KEY_PASSWORD` - password for the Java keystore
