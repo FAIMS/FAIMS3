@@ -63,6 +63,7 @@ export function listenProjectList(listener: () => void): () => void {
 
 export async function getSyncableListingsInfo(): Promise<ListingsObject[]> {
   const all_listings = await getAllListings();
+  console.log('all listings ', JSON.stringify(all_listings));
   const syncable_listings: ListingsObject[] = [];
   for (const listing_object of all_listings) {
     if (
@@ -80,5 +81,6 @@ export async function getSyncableListingsInfo(): Promise<ListingsObject[]> {
       prefix: listing_object.prefix,
     });
   }
+  console.log('syncable listings ', JSON.stringify(syncable_listings));
   return syncable_listings;
 }
