@@ -23,19 +23,26 @@
  */
 import {decodeJwt} from 'jose';
 
-import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
-import {LocalAuthDoc, JWTTokenMap, local_auth_db} from './sync/databases';
-import {reprocess_listing} from './sync/process-initialization';
 import {
   ClusterProjectRoles,
   NOTEBOOK_CREATOR_GROUP_NAME,
   ProjectID,
   ProjectRole,
+  RecordMetadata,
   split_full_project_id,
   TokenContents,
 } from '@faims3/data-model';
-import {RecordMetadata} from '@faims3/data-model';
+import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
 import {logError} from './logging';
+import {
+  JWTTokenInfo,
+  JWTTokenMap,
+  local_auth_db,
+  LocalAuthDoc,
+} from './sync/databases';
+import {reprocess_listing} from './sync/process-initialization';
+import {PossibleToken} from './types/misc';
+import {iteratorTakeOne} from './utils/helpers';
 
 interface SplitCouchDBRole {
   project_id: ProjectID;
@@ -74,31 +81,23 @@ export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
  */
 export async function setTokenForCluster(token: string, cluster_id: string) {
   if (token === undefined) throw Error('Token undefined in setTokenForCluster');
-  try {
-    const doc = await local_auth_db.get(cluster_id);
-    const new_doc = await addTokenToDoc(token, cluster_id, doc);
 
-    try {
-      await local_auth_db.put(new_doc);
-      console.log('Document stored');
-    } catch (err_conflict) {
-      console.warn(
-        'Failed to set token when conflicting for',
-        cluster_id,
-        err_conflict
-      );
-      throw Error(`Failed to set token when conflicting for: ${cluster_id}`);
-    }
-  } catch (err) {
-    console.debug('No existing token for', cluster_id);
-    try {
-      const doc = await addTokenToDoc(token, cluster_id, null);
-      console.debug('Initial token info is:', doc);
-      await local_auth_db.put(doc);
-    } catch (err_initial: any) {
-      console.warn('Failed to set initial token for', cluster_id, err_initial);
-      throw Error(`Failed to set initial token for: ${cluster_id}`);
-    }
+  // Firstly, try and parse the token
+  const parsedToken = await parseToken(token);
+
+  // Then see if we have a doc -> return null if get throws
+  const doc = await local_auth_db.get(cluster_id).catch(() => null);
+  const newDoc = await addTokenToDoc(token, parsedToken, cluster_id, doc);
+
+  try {
+    await local_auth_db.put(newDoc);
+  } catch (err_conflict) {
+    console.error(
+      'Failed to set token when conflicting for',
+      cluster_id,
+      err_conflict
+    );
+    throw Error(`Failed to set token when conflicting for: ${cluster_id}`);
   }
 }
 
@@ -111,15 +110,17 @@ export async function setTokenForCluster(token: string, cluster_id: string) {
  */
 async function addTokenToDoc(
   token: string,
+  parsedToken: TokenContents,
   cluster_id: string,
   current_doc: LocalAuthDoc | null
 ): Promise<LocalAuthDoc> {
-  const new_username = await getUsernameFromToken(token);
+  const new_username = parsedToken.username;
   if (current_doc === null) {
-    const available_tokens: JWTTokenMap = {};
-    available_tokens[new_username] = {
+    const available_tokens: JWTTokenMap = new Map([]);
+    available_tokens.set(new_username, {
       token,
-    };
+      parsedToken,
+    });
     return {
       _id: cluster_id,
       available_tokens: available_tokens,
@@ -127,9 +128,10 @@ async function addTokenToDoc(
     };
   }
   current_doc.current_username = new_username;
-  current_doc.available_tokens[new_username] = {
+  current_doc.available_tokens.set(new_username, {
     token,
-  };
+    parsedToken,
+  });
   return current_doc;
 }
 
@@ -137,17 +139,19 @@ async function removeTokenFromDoc(
   username: string,
   current_doc: LocalAuthDoc
 ): Promise<LocalAuthDoc | null> {
-  if (current_doc.available_tokens[username] === undefined) {
+  if (current_doc.available_tokens.get(username) === undefined) {
     throw Error(`${username} is not in doc`);
   }
-  if (Object.keys(current_doc.available_tokens).length < 2) {
+  if (current_doc.available_tokens.size < 2) {
     // Removing last user results in an empty doc
     return null;
   }
-  delete current_doc.available_tokens[username];
+  current_doc.available_tokens.delete(username);
   if (current_doc.current_username === username) {
     // Choose first username if removed user is current user
-    current_doc.current_username = Object.keys(current_doc.available_tokens)[0];
+    current_doc.current_username = iteratorTakeOne(
+      current_doc.available_tokens.keys()
+    )!;
   }
   return current_doc;
 }
@@ -157,7 +161,7 @@ export async function getTokenForCluster(
 ): Promise<string | undefined> {
   try {
     const doc = await local_auth_db.get(cluster_id);
-    return doc.available_tokens[doc.current_username].token;
+    return doc.available_tokens.get(doc.current_username)?.token;
   } catch (err) {
     return undefined;
   }
@@ -205,15 +209,34 @@ export async function switchUsername(cluster_id: string, new_username: string) {
   }
 }
 
-export async function getAllUsersForCluster(
-  cluster_id: string
-): Promise<TokenContents[]> {
-  const token_contents = [];
+export async function getCurrentUsername(cluster_id: string): Promise<string> {
   const doc = await local_auth_db.get(cluster_id);
-  for (const token_details of Object.values(doc.available_tokens)) {
-    token_contents.push(await parseToken(token_details.token));
+  return doc.current_username;
+}
+
+export async function getAllParsedTokensForCluster(
+  cluster_id: string
+): Promise<JWTTokenInfo[]> {
+  const token_contents = [];
+  let doc;
+  try {
+    doc = await local_auth_db.get(cluster_id);
+  } catch (e) {
+    console.error(
+      'Failed to get all token info from DB. Cluster ID record probalby not present.',
+      e
+    );
+    return [];
   }
-  return token_contents;
+
+  return Array.from(doc.available_tokens.values());
+}
+
+export async function getAllUsernamesForCluster(
+  cluster_id: string
+): Promise<string[]> {
+  const tokens = await getAllParsedTokensForCluster(cluster_id);
+  return tokens.map(({parsedToken}) => parsedToken.username);
 }
 
 export async function deleteAllTokensForCluster(cluster_id: string) {
@@ -231,14 +254,11 @@ async function getUsernameFromToken(token: string): Promise<string> {
 
 async function getTokenInfoForCluster(
   cluster_id: string
-): Promise<TokenInfo | undefined> {
+): Promise<JWTTokenInfo | undefined> {
   try {
     const doc = await local_auth_db.get(cluster_id);
     const username = doc.current_username;
-    const token_details = doc.available_tokens[username];
-    return {
-      token: token_details.token,
-    };
+    return doc.available_tokens.get(username);
   } catch (err) {
     return undefined;
   }
@@ -252,7 +272,7 @@ async function getTokenInfoForCluster(
  */
 export async function getTokenContentsForCluster(
   cluster_id: string
-): Promise<TokenContents | undefined> {
+): Promise<PossibleToken> {
   const token_info = await getTokenInfoForCluster(cluster_id);
   if (token_info === undefined) {
     return undefined;
@@ -265,19 +285,25 @@ export async function getTokenContentsForCluster(
   }
 }
 
-async function parseToken(token: string): Promise<TokenContents> {
+export async function parseToken(token: string): Promise<TokenContents> {
   const payload = await decodeJwt(token);
 
   const username = payload.sub ?? undefined;
+  const server = payload['server'] as string | undefined;
+  if (!server) {
+    throw Error('Server not specified in token');
+  }
   if (username === undefined) {
     throw Error('Username not specified in token');
   }
   const roles = (payload['_couchdb.roles'] as string[]) ?? [];
   const name = (payload['name'] as string) ?? undefined;
+
   return {
     username: username,
     roles: roles,
     name: name,
+    server: server,
   };
 }
 

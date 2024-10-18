@@ -40,3 +40,13 @@ export function checkAllRequired(vals: any[]): boolean {
 export function isWeb() {
   return Capacitor.getPlatform() === 'web';
 }
+
+/**
+* Takes an element from an iterator
+* @param iterator The iterator to take first element from
+* @returns The first element of an iterator or undefined
+*/
+export function iteratorTakeOne<V>(iterator: Iterator<V>): V | undefined {
+ const result = iterator.next();
+ return result.done ? undefined : result.value;
+}

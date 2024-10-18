@@ -1,6 +1,6 @@
 import {createContext, ReactNode, useEffect, useState} from 'react';
 import {ProjectExtended} from '../types/project';
-import {getRemoteProjects} from './functions';
+import {getRemoteProjects, getToken} from './functions';
 import {
   getProjectsDB,
   updateProjectsDB,
@@ -8,6 +8,7 @@ import {
   setSyncProjectDB,
 } from '../dbs/projects-db';
 import {activate_project} from '../sync/process-initialization';
+import {PossibleToken} from '../types/misc';
 
 export const ProjectsContext = createContext<{
   projects: ProjectExtended[];

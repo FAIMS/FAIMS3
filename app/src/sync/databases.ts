@@ -26,6 +26,7 @@ import {
   ProjectID,
   ListingID,
   NonUniqueProjectID,
+  TokenContents,
 } from '@faims3/data-model';
 import {ListingsObject} from '@faims3/data-model/src/types';
 import {ProjectObject} from './projects';
@@ -144,16 +145,16 @@ export type JWTToken = string;
 
 export interface JWTTokenInfo {
   token: JWTToken;
+  parsedToken: TokenContents;
 }
 
-export type JWTTokenMap = {
-  [username: string]: JWTTokenInfo;
-};
+export type JWTTokenMap = Map<string, JWTTokenInfo>;
 
 export interface LocalAuthDoc {
   _id: string; //Corresponds to a listings ID
   _rev?: string; // optional as we may want to include the raw json in places
   current_username: string;
+  // Map from username -> TokenContents
   available_tokens: JWTTokenMap;
 }
 
