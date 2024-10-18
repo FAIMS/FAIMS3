@@ -66,10 +66,10 @@ export const app = express();
 app.use(morgan('combined'));
 
 if (process.env.NODE_ENV !== 'test') {
-  // set up rate limiter: maximum of 30 requests per minute
+  // set up rate limiter: maximum of 60 requests per minute
   const limiter = RateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 30,
+    max: 60,
     validate: true,
   });
   app.use(limiter);

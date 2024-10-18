@@ -56,7 +56,7 @@ export default function HeadingProjectGrid({
       </div>
 
       <DataGrid
-        key={`notebook_list_datagrid_activated`}
+        key={'notebook_list_datagrid_activated'}
         rows={activatedProjects}
         columns={columns}
         onRowClick={handleRowClick}
@@ -80,7 +80,7 @@ export default function HeadingProjectGrid({
         Not active
       </div>
       <DataGrid
-        key={`notebook_list_datagrid_not_activated`}
+        key={'notebook_list_datagrid_not_activated'}
         rows={availableProjects}
         columns={columns}
         autoHeight

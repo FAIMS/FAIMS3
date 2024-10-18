@@ -56,6 +56,8 @@ import {
 import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
 import {logError} from '../logging';
 
+export * from './authDB';
+
 export function generateFAIMSDataID(): RecordID {
   return 'rec-' + uuidv4();
 }
