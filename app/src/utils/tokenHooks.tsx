@@ -1,5 +1,7 @@
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, useMutation} from '@tanstack/react-query';
 import {getDefaultToken, getToken} from '../context/functions';
+import {local_auth_db} from '../sync/databases';
+import {requestTokenRefresh} from './apiOperations/auth';
 
 /**
  * Custom hook to fetch the current token (by current username) for a given
@@ -47,4 +49,50 @@ export const useGetDefaultToken = () => {
 
   // Return an object with the token and query state
   return query;
+};
+
+export interface UseRefreshTokenProps {
+  listingId: string;
+  // Uses current if not provided
+  username?: string;
+}
+export const useRefreshToken = (
+  props: UseRefreshTokenProps
+) => {
+  /**
+    Hook: useRefreshToken
+
+    This is a mutation which can perform a token refresh on demand
+    */
+  return useMutation({
+    mutationFn: async () => {
+      // get the auth information for the listing
+      const {available_tokens, current_username} = await local_auth_db.get(
+        props.listingId
+      );
+
+      // use either the current or the props username
+      const username = props.username ?? current_username;
+
+      // now get tokens for that username
+      const tokens = available_tokens.get(username);
+
+      if (!tokens || !tokens?.refreshToken) {
+        throw Error(
+          'Could not refresh token since auth DB does not contain refresh token for the listing ' +
+            props.listingId
+        );
+      }
+
+      // Now we have a refresh token
+      const refreshToken = tokens.refreshToken;
+
+      // Now make query to the refresh API
+      const updatedToken = await requestTokenRefresh(props.listingId, {
+        refreshToken,
+      });
+
+      return updatedToken.token;
+    },
+  });
 };

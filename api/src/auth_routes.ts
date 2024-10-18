@@ -153,45 +153,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     });
   });
 
-  /**
-   * Refresh - get a new JWT using a refresh token.
-   *
-   * Anyone can use this route, since your access token may have expired
-   *
-   * TODO - make this the ONLY way to get a new JWT (other than logging in with
-   * credentials or identity provider) - currently there are various exploits
-   * which allow infinite regeneration of JWTs for logged in users.
-   */
-  app.post(
-    '/refresh',
-    processRequest({body: PostRefreshTokenInputSchema}),
-    async (req, res: Response<PostRefreshTokenResponse>) => {
-      // If the user is logged in - then record the user ID as an additional
-      // security measure - don't allow a user who currently has a JWT of user
-      // A, to use a refresh token for user B, but if the user is not logged in
-      // at all (e.g. JWT expired) we still want to ensure they can generate a
-      // fresh JWT
-      let userId: string | undefined = req.user?._id;
-
-      // validate the token
-      const {valid, validationError} = await validateRefreshToken(
-        req.body.refreshToken,
-        userId
-      );
-
-      // If the refresh token is not valid, let user know
-      if (!valid) {
-        throw new InvalidRequestException(
-          `Validation of refresh token failed. Validation error: ${validationError}.`
-        );
-      }
-
-      // We know the refresh is valid, generate a JWT (no refresh) for this
-      // existing user.
-
-      
-    }
-  );
 
   /**
    * Define the logout route. Optionally redirect to a given URL
@@ -248,7 +209,10 @@ export function add_auth_routes(app: Router, handlers: string[]) {
   };
 
   /**
-   * Generate a redirect response with a token for a logged in user
+   * Generate a redirect response with a token and refresh token for a logged in
+   * user
+   *
+   * TODO restrict the generation of refresh tokens to initial login
    * @param res Express response
    * @param user Express user
    * @param redirect URL to redirect to
@@ -265,8 +229,8 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       return res.redirect(redirect);
     }
 
-    // Generate a token
-    const token = await generateUserToken(user);
+    // Generate a token (include refresh)
+    const token = await generateUserToken(user, true);
 
     // Append the token to the redirect URL
     const redirectUrlWithToken = `${redirect}?token=${token.token}&refreshToken=${token.refreshToken}`;

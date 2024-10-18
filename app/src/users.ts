@@ -77,18 +77,27 @@ export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
 /**
  * Store a token for a server (cluster)
  * @param token new authentication token
+ * @param parsedToken the already parsed JWT
+ * @param refreshToken the refresh token, if provided, will be stored alongside tokens
  * @param cluster_id server identifier that this token is for
  */
 export async function setTokenForCluster(
   token: string,
   parsedToken: TokenContents,
+  refreshToken: string | undefined,
   cluster_id: string
 ) {
   if (token === undefined) throw Error('Token undefined in setTokenForCluster');
 
   // Then see if we have a doc -> return null if get throws
   const doc = await local_auth_db.get(cluster_id).catch(() => null);
-  const newDoc = await addTokenToDoc(token, parsedToken, cluster_id, doc);
+  const newDoc = await addTokenToDoc(
+    token,
+    parsedToken,
+    refreshToken,
+    cluster_id,
+    doc
+  );
 
   try {
     await local_auth_db.put(newDoc);
@@ -105,6 +114,8 @@ export async function setTokenForCluster(
 /**
  * Add a token to an auth object or create a new one
  * @param token auth token
+ * @param parsedToken the parsed token contents
+ * @param refreshToken refresh token, if any
  * @param cluster_id server identifier
  * @param current_doc current auth doc if any
  * @returns a promise resolving to a new or updated auth document
@@ -112,6 +123,7 @@ export async function setTokenForCluster(
 async function addTokenToDoc(
   token: string,
   parsedToken: TokenContents,
+  refreshToken: string | undefined,
   cluster_id: string,
   current_doc: LocalAuthDoc | null
 ): Promise<LocalAuthDoc> {
@@ -121,6 +133,7 @@ async function addTokenToDoc(
     available_tokens.set(new_username, {
       token,
       parsedToken,
+      refreshToken,
     });
     return {
       _id: cluster_id,
@@ -128,10 +141,17 @@ async function addTokenToDoc(
       current_username: new_username,
     };
   }
+
+  // Does the current doc have a refresh token already?
+  const currentRefreshToken = current_doc.available_tokens.get(
+    current_doc.current_username
+  )?.refreshToken;
   current_doc.current_username = new_username;
   current_doc.available_tokens.set(new_username, {
     token,
     parsedToken,
+    // Use the provided, then as a fall back the previous
+    refreshToken: refreshToken ?? currentRefreshToken,
   });
   return current_doc;
 }

@@ -280,9 +280,6 @@ app.get('/send-token/', (req, res) => {
 /**
  *
  * For a logged in user (via session), generates a new token and returns the result.
- *
- * TODO: I don't think this should exist as it's exploitable to generate JWTs
- * forever more...
  */
 app.get('/get-token/', async (req, res) => {
   if (req.user) {

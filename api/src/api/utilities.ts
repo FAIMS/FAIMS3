@@ -17,8 +17,12 @@
  *   This module contains utility routes at /api
  */
 
-import {ListingsObject} from '@faims3/data-model';
-import express from 'express';
+import {
+  ListingsObject,
+  PostRefreshTokenInputSchema,
+  PostRefreshTokenResponse,
+} from '@faims3/data-model';
+import express, {Response} from 'express';
 import multer from 'multer';
 import {
   CONDUCTOR_DESCRIPTION,
@@ -39,6 +43,9 @@ import {slugify} from '../utils';
 const upload = multer({dest: '/tmp/'});
 
 import patch from '../utils/patchExpressAsync';
+import {processRequest} from 'zod-express-middleware';
+import {validateRefreshToken} from '../couchdb/refreshTokens';
+import {generateUserToken} from '../authkeys/create';
 
 // This must occur before express api is used
 patch();
@@ -81,6 +88,48 @@ api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
   const projects = await getProjects(req.user);
   res.json(projects);
 });
+
+/**
+ * Refresh - get a new JWT using a refresh token.
+ *
+ * Anyone can use this route, since your access token may have expired
+ *
+ * TODO - make this the ONLY way to get a new JWT (other than logging in with
+ * credentials or identity provider) - currently there are various exploits
+ * which allow infinite regeneration of JWTs for logged in users.
+ */
+api.post(
+  '/refresh',
+  processRequest({body: PostRefreshTokenInputSchema}),
+  async (req, res: Response<PostRefreshTokenResponse>) => {
+    // If the user is logged in - then record the user ID as an additional
+    // security measure - don't allow a user who currently has a JWT of user
+    // A, to use a refresh token for user B, but if the user is not logged in
+    // at all (e.g. JWT expired) we still want to ensure they can generate a
+    // fresh JWT
+    let userId: string | undefined = req.user?._id;
+
+    // validate the token
+    const {valid, validationError, user} = await validateRefreshToken(
+      req.body.refreshToken,
+      userId
+    );
+
+    // If the refresh token is not valid, let user know
+    if (!valid) {
+      throw new Exceptions.InvalidRequestException(
+        `Validation of refresh token failed. Validation error: ${validationError}.`
+      );
+    }
+
+    // We know the refresh is valid, generate a JWT (no refresh) for this
+    // existing user.
+    const {token} = await generateUserToken(user!, false);
+
+    // return the token
+    res.json({token});
+  }
+);
 
 if (DEVELOPER_MODE) {
   api.post(

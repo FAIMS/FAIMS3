@@ -8,12 +8,14 @@
 
 import {
   AuthRecord,
+  AuthRecordIdPrefixMap,
   GetRefreshTokenIndex,
   RefreshRecordFields,
 } from '@faims3/data-model';
 import {getAuthDB} from '.';
 import {v4 as uuidv4} from 'uuid';
 import {InternalSystemError} from '../exceptions';
+import {getUserFromEmailOrUsername} from './users';
 
 // Expiry time in hours
 const TOKEN_EXPIRY_HOURS = 24; // 24 hours
@@ -46,6 +48,7 @@ export const createNewRefreshToken = async (
 
   // Generate a new UUID for the token
   const token = uuidv4();
+  const dbId = AuthRecordIdPrefixMap.get('refresh') + uuidv4();
 
   // Set expiry to 30 days from now
   const expiryTimestampMs = generateExpiryTimestamp();
@@ -59,24 +62,24 @@ export const createNewRefreshToken = async (
   };
 
   // Create a new document in the database
-  const response = await authDB.post(newRefreshToken);
+  const response = await authDB.put({_id: dbId, ...newRefreshToken});
 
   // Fetch the created document to return the full AuthRecord
   return await authDB.get(response.id);
 };
 
 /**
- * Validates a refresh token for a given user.
- * @param token The refresh token to validate.
+ * Validates a refresh token for a given user. Also fetches the user from the DB.
+ * @param refreshToken The refresh token to validate.
  * @param userId The ID of the user associated with the token.
  * @returns A Promise that resolves to an object indicating validity and any validation errors.
  */
 export const validateRefreshToken = async (
-  token: string,
+  refreshToken: string,
   userId?: string
-): Promise<{valid: boolean; validationError?: string}> => {
+): Promise<{valid: boolean; user?: Express.User; validationError?: string}> => {
   try {
-    const tokenDoc = await getTokenByToken(token);
+    const tokenDoc = await getTokenByToken(refreshToken);
 
     if (!tokenDoc) {
       return {
@@ -103,9 +106,26 @@ export const validateRefreshToken = async (
       return {valid: false, validationError: 'Token has expired'};
     }
 
-    return {valid: true};
+    // Get the user by the user ID
+    const user =
+      (await getUserFromEmailOrUsername(tokenDoc.userId)) ?? undefined;
+
+    if (!user) {
+      return {
+        valid: false,
+        validationError: `While token appears valid, could not find associated user.`,
+      };
+    }
+
+    return {valid: true, user};
   } catch (error) {
-    console.error('Error validating refresh token:', error);
+    console.error(
+      'Unhandled error validating refresh token. Token: ',
+      refreshToken,
+      ' Error: ',
+      error,
+      console.trace()
+    );
     return {valid: false, validationError: 'Internal server error'};
   }
 };
@@ -120,10 +140,13 @@ export const getTokensByUserId = async (
 ): Promise<AuthRecord[]> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>('refreshTokensByUserId', {
-    key: userId,
-    include_docs: true,
-  });
+  const result = await authDB.query<AuthRecord>(
+    'viewsDocument/refreshTokensByUserId',
+    {
+      key: userId,
+      include_docs: true,
+    }
+  );
 
   return result.rows.filter(r => !!r.doc).map(row => row.doc!);
 };
@@ -138,10 +161,13 @@ export const getTokenByToken = async (
 ): Promise<AuthRecord | null> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>('refreshTokensByToken', {
-    key: token,
-    include_docs: true,
-  });
+  const result = await authDB.query<AuthRecord>(
+    'viewsDocument/refreshTokensByToken',
+    {
+      key: token,
+      include_docs: true,
+    }
+  );
 
   const filtered = result.rows.filter(r => !!r.doc).map(row => row.doc!);
 
@@ -149,7 +175,7 @@ export const getTokenByToken = async (
     return null;
   }
 
-  if (filtered.length > 0) {
+  if (filtered.length > 1) {
     throw new InternalSystemError(
       'Duplicate items sharing a token. Cannot validate this refresh token.'
     );
@@ -179,7 +205,7 @@ export const getTokenByTokenId = async (
 export const getAllTokens = async (): Promise<AuthRecord[]> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>('refreshTokens', {
+  const result = await authDB.query<AuthRecord>('viewsDocument/refreshTokens', {
     include_docs: true,
   });
 

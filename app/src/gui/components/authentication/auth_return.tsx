@@ -63,9 +63,15 @@ export function AuthReturn() {
     if (hasRun.current) return;
     hasRun.current = true;
 
-    const storeToken = async (token: string) => {
+    const storeToken = async (
+      token: string,
+      refreshToken: string | undefined
+    ) => {
       // Decode in case URI encoded
       const decodedToken = decodeURIComponent(token);
+      const decodedRefreshToken = refreshToken
+        ? decodeURIComponent(refreshToken)
+        : undefined;
 
       // Decode the JWT object into an untyped object
       const parsedToken = await parseToken(decodedToken);
@@ -75,7 +81,12 @@ export function AuthReturn() {
 
       // Store the token in the database
       try {
-        await setTokenForCluster(decodedToken, parsedToken, listing_id);
+        await setTokenForCluster(
+          decodedToken,
+          parsedToken,
+          decodedRefreshToken,
+          listing_id
+        );
       } catch (e) {
         return setErrorAndReturnHome(
           'Auth return route attempted to store token in local auth DB but encountered an error. ' +
@@ -91,13 +102,14 @@ export function AuthReturn() {
     const params = new URLSearchParams(window.location.search);
 
     const rawToken = params.get('token');
+    const refreshToken = params.get('refreshToken') ?? undefined;
     if (!rawToken) {
       navigate('/');
       return;
     }
 
     // Now try to decode and store it
-    storeToken(rawToken).catch(err => {
+    storeToken(rawToken, refreshToken).catch(err => {
       return setErrorAndReturnHome(
         'An unhandled error occurred during token storage.'
       );

@@ -55,7 +55,7 @@
     "passport-local": "^1.0.0",
     "passport-oauth2": "1.7.0",
     "pouchdb": "7.3.1",
-    "pouchdb-find": "8.0.1",
+    "pouchdb-find": "^8.0.1",
     "pouchdb-security-helper": "^2.1.2",
     "qrcode": "^1.5.3",
     "req-flash": "^0.0.3",
