@@ -49,10 +49,6 @@ interface SplitCouchDBRole {
   project_role: ProjectRole;
 }
 
-interface TokenInfo {
-  token: string;
-}
-
 /**
  * Get the current logged in user identifier for this project
  *  - used in two places:
@@ -238,7 +234,6 @@ export async function getCurrentUsername(cluster_id: string): Promise<string> {
 export async function getAllParsedTokensForCluster(
   cluster_id: string
 ): Promise<JWTTokenInfo[]> {
-  const token_contents = [];
   let doc;
   try {
     doc = await local_auth_db.get(cluster_id);

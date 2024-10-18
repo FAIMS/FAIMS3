@@ -33,5 +33,6 @@ export const AuthRecordIdPrefixMap = new Map<AuthRecordTypes, string>([
 export type AuthRecordFields = RefreshRecordFields;
 
 // Type of instantiated auth record in the database
-export type AuthRecord = PouchDB.Core.Document<AuthRecordFields> & PouchDB.Core.RevisionIdMeta;
+export type AuthRecord = PouchDB.Core.Document<AuthRecordFields> &
+  PouchDB.Core.RevisionIdMeta;
 export type AuthDatabase = PouchDB.Database<AuthRecordFields>;

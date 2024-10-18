@@ -113,7 +113,8 @@ export const validateRefreshToken = async (
     if (!user) {
       return {
         valid: false,
-        validationError: `While token appears valid, could not find associated user.`,
+        validationError:
+          'While token appears valid, could not find associated user.',
       };
     }
 

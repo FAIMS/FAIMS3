@@ -22,7 +22,7 @@ export async function upsertDocument<T extends {}>(
 
     // If the document exists, include its revision (which is overridden to be
     // latest ensuring it is upserted)
-    let upsertData = {...data, _rev: existingDoc?._rev};
+    const upsertData = {...data, _rev: existingDoc?._rev};
 
     // Put the document (create or update)
     const response = await db.put(upsertData);

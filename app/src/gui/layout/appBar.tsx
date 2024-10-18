@@ -29,12 +29,12 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
-    CircularProgress,
-    IconButton,
-    ListItemButton,
-    AppBar as MuiAppBar,
-    Toolbar,
-    createTheme,
+  CircularProgress,
+  IconButton,
+  ListItemButton,
+  AppBar as MuiAppBar,
+  Toolbar,
+  createTheme,
 } from '@mui/material';
 import Collapse from '@mui/material/Collapse';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -44,17 +44,17 @@ import List from '@mui/material/List';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import clsx from 'clsx';
-import React, { useContext, useState } from 'react';
-import { createUseStyles as makeStyles } from 'react-jss';
-import { Link as RouterLink } from 'react-router-dom';
-import { NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED } from '../../buildconfig';
+import React, {useContext, useState} from 'react';
+import {createUseStyles as makeStyles} from 'react-jss';
+import {Link as RouterLink} from 'react-router-dom';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import { ProjectsContext } from '../../context/projects-context';
-import { PossibleToken } from '../../types/misc';
-import { ProjectExtended } from '../../types/project';
-import { checkToken } from '../../utils/helpers';
+import {ProjectsContext} from '../../context/projects-context';
+import {PossibleToken} from '../../types/misc';
+import {ProjectExtended} from '../../types/project';
+import {checkToken} from '../../utils/helpers';
 import SystemAlert from '../components/alert';
-import { AppBarHeading } from '../components/app-bar/app-bar-heading';
+import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import SyncStatus from '../components/sync';
 

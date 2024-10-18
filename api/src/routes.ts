@@ -28,14 +28,13 @@ import {AllProjectRoles} from './datamodel/users';
 // BBS 20221101 Adding this as a proxy for the pouch db url
 import {add_auth_providers} from './auth_providers';
 import {add_auth_routes} from './auth_routes';
-import {createAuthKey, generateUserToken} from './authkeys/create';
+import {generateUserToken} from './authkeys/create';
 import {
   ANDROID_APP_URL,
   CONDUCTOR_AUTH_PROVIDERS,
   CONDUCTOR_PUBLIC_URL,
   DEVELOPER_MODE,
   IOS_APP_URL,
-  KEY_SERVICE,
   WEBAPP_PUBLIC_URL,
 } from './buildconfig';
 import {createInvite, getInvitesForNotebook} from './couchdb/invites';

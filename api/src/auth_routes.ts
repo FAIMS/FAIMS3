@@ -21,26 +21,15 @@
 
 import passport from 'passport';
 
-import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
-import {DoneFunction} from './types';
-import {getUserFromEmailOrUsername} from './couchdb/users';
-import {registerLocalUser} from './auth_providers/local';
-import {body, validationResult} from 'express-validator';
-import {getInvite} from './couchdb/invites';
-import {acceptInvite} from './registration';
-import {generateUserToken} from './authkeys/create';
 import {NextFunction, Request, Response, Router} from 'express';
-import {
-  createNewRefreshToken,
-  validateRefreshToken,
-} from './couchdb/refreshTokens';
-import {processRequest} from 'zod-express-middleware';
-import {
-  PostRefreshTokenInputSchema,
-  PostRefreshTokenResponse,
-  PostRefreshTokenResponseSchema,
-} from '@faims3/data-model';
-import {InvalidRequestException, UnauthorizedException} from './exceptions';
+import {body, validationResult} from 'express-validator';
+import {registerLocalUser} from './auth_providers/local';
+import {generateUserToken} from './authkeys/create';
+import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
+import {getInvite} from './couchdb/invites';
+import {getUserFromEmailOrUsername} from './couchdb/users';
+import {acceptInvite} from './registration';
+import {DoneFunction} from './types';
 
 interface RequestQueryRedirect {
   redirect: string;
@@ -152,7 +141,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       redirect: redirect,
     });
   });
-
 
   /**
    * Define the logout route. Optionally redirect to a given URL

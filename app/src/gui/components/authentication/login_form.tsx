@@ -1,10 +1,9 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
-import { Browser } from '@capacitor/browser';
-import { Button, ButtonProps } from '@mui/material';
+import {Browser} from '@capacitor/browser';
+import {Button, ButtonProps} from '@mui/material';
 import React from 'react';
 
-
-import { isWeb } from '../../../utils/helpers';
+import {isWeb} from '../../../utils/helpers';
 
 export type LoginButtonProps = {
   conductor_url: string;

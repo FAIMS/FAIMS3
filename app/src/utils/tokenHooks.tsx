@@ -56,9 +56,7 @@ export interface UseRefreshTokenProps {
   // Uses current if not provided
   username?: string;
 }
-export const useRefreshToken = (
-  props: UseRefreshTokenProps
-) => {
+export const useRefreshToken = (props: UseRefreshTokenProps) => {
   /**
     Hook: useRefreshToken
 

@@ -5,7 +5,6 @@ import {
 } from '../sync/databases';
 import {ProjectObject, resolve_project_id} from '@faims3/data-model';
 import {ProjectExtended} from '../types/project';
-import {PossibleToken} from '../types/misc';
 
 /**
  * Retrieves a list of listings from the directory database.

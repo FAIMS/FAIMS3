@@ -20,12 +20,12 @@
  *    to the main page
  */
 
+import {Button, Stack} from '@mui/material';
 import {useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {getSyncableListingsInfo} from '../../../databaseAccess';
 import {update_directory} from '../../../sync/process-initialization';
 import {parseToken, setTokenForCluster} from '../../../users';
-import {Button, Stack} from '@mui/material';
 
 async function getListingForConductorUrl(conductor_url: string) {
   const origin = new URL(conductor_url).origin;
@@ -49,7 +49,7 @@ export function AuthReturn() {
   const setErrorAndReturnHome = (msg: string) => {
     console.error(msg);
     setError(msg);
-    let timeout = setTimeout(() => {
+    const timeout = setTimeout(() => {
       navigate('/');
     }, 10000);
     return () => {
@@ -109,7 +109,7 @@ export function AuthReturn() {
     }
 
     // Now try to decode and store it
-    storeToken(rawToken, refreshToken).catch(err => {
+    storeToken(rawToken, refreshToken).catch(() => {
       return setErrorAndReturnHome(
         'An unhandled error occurred during token storage.'
       );

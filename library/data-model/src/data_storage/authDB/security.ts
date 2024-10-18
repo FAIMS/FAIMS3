@@ -2,7 +2,7 @@
  * This module exports the security document to be used for the auth database.
  */
 
-import {CLUSTER_ADMIN_GROUP_NAME} from '../auth';
+import {CLUSTER_ADMIN_GROUP_NAME} from '../../auth';
 
 export interface SecurityDocument {
   // Standard fields for a CouchDB security document
@@ -27,5 +27,3 @@ export const AuthDatabaseSecurityDocument: SecurityDocument = {
     roles: [CLUSTER_ADMIN_GROUP_NAME],
   },
 };
-
-

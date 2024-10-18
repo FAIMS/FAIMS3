@@ -1,3 +1,3 @@
-import { TokenContents } from "@faims3/data-model";
+import {TokenContents} from '@faims3/data-model';
 
 export type PossibleToken = TokenContents | undefined;

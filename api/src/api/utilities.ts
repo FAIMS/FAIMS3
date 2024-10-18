@@ -107,7 +107,7 @@ api.post(
     // A, to use a refresh token for user B, but if the user is not logged in
     // at all (e.g. JWT expired) we still want to ensure they can generate a
     // fresh JWT
-    let userId: string | undefined = req.user?._id;
+    const userId: string | undefined = req.user?._id;
 
     // validate the token
     const {valid, validationError, user} = await validateRefreshToken(
