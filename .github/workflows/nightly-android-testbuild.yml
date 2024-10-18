@@ -128,10 +128,11 @@ jobs:
           export VITE_PROD_BUILD=true 
           export VITE_TAG=prodAndroid
           export VITE_NOTEBOOK_LIST_TYPE=tabs
-          export VITE_THEME=default
+          export VITE_THEME=${{vars.THEME}}
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
           npm ci
           npm run build
+          npm run assets --workspace=@faims3/app
       # https://capacitorjs.com/docs/android
       # The bundle install shouldn't be necessary, but given we've got ios and android in...      
       - run: npm run app-update android --workspace=@faims3/app

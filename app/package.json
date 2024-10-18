@@ -40,7 +40,8 @@
         "compile": "tsc",
         "fix": "gts fix",
         "doc": "jsdoc -c ./jsdoc.config.json",
-        "set-version": "./bin/setBuildVersion.sh"
+        "set-version": "./bin/setBuildVersion.sh",
+        "assets": "capacitor-assets generate --assetPath ./assets/${VITE_THEME} --iconBackgroundColorDark '#001d34' --splashBackgroundColorDark '#001d34'"
     },
     "dependencies": {
         "@bugsnag/js": "^7.20.2",
@@ -139,6 +140,7 @@
         "yup": "1.1.1"
     },
     "devDependencies": {
+        "@capacitor/assets": "^3.0.5",
         "@capacitor/cli": "^6.0.0",
         "@swc/core": "^1.7.10",
         "@testing-library/jest-dom": "6.4.6",
