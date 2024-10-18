@@ -93,10 +93,6 @@ api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
  * Refresh - get a new JWT using a refresh token.
  *
  * Anyone can use this route, since your access token may have expired
- *
- * TODO - make this the ONLY way to get a new JWT (other than logging in with
- * credentials or identity provider) - currently there are various exploits
- * which allow infinite regeneration of JWTs for logged in users.
  */
 api.post(
   '/refresh',
