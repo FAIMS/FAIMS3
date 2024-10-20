@@ -20,7 +20,7 @@ import {getMetadataValue} from '../../../sync/metadata';
 
 type AddRecordButtonsProps = {
   project: ProjectInformation;
-  recordLabel: string; // New prop to receive recordLabel
+  recordLabel: string;
 };
 
 export default function AddRecordButtons(props: AddRecordButtonsProps) {

@@ -158,7 +158,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
             // Only one type, so we can use its label
             const recordType = visibleTypes[0]; // e.g., "Site" or "Building"
             console.log('recordtype as fetched', recordType);
-            setRecordLabel(recordType); // setRecordLabel is the state setter
+            setRecordLabel(recordType); // setRecordLabel- set state
           } else {
             // Multiple types or none, default to "Records"
             setRecordLabel('Records');
