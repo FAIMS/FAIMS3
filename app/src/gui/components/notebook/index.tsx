@@ -137,6 +137,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
+  const [recordLabel, setRecordLabel] = useState('Records');
 
   /**
    * Fetches the UI specification and viewsets for the project when the component mounts or the project changes.
@@ -149,11 +150,26 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           setViewsets(spec.viewsets);
           setLoading(false);
           setErr('');
+
+          // Dynamically set RECORD_LABEL based on uiSpec
+          const visibleTypes = spec.visible_types;
+          console.log('visible types in index file', visibleTypes);
+          if (visibleTypes && visibleTypes.length === 1) {
+            // Only one type, so we can use its label
+            const recordType = visibleTypes[0]; // e.g., "Site" or "Building"
+            console.log('recordtype as fetched', recordType);
+            setRecordLabel(recordType); // setRecordLabel is the state setter
+          } else {
+            // Multiple types or none, default to "Records"
+            setRecordLabel('Records');
+          }
         })
         .catch(err => {
           setErr(err.message);
         });
     }
+
+    // Cleanup on component unmount or when project changes
     return () => {
       setViewsets(null);
       setUiSpec(null);
@@ -230,7 +246,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 }}
               >
                 <Tab
-                  label={`${RECORD_LABEL}s`}
+                  label={`${recordLabel}s`}
                   {...a11yProps(0, NOTEBOOK_NAME)}
                   sx={{...bssTabStyling.tabRoot}}
                 />
@@ -260,7 +276,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
             }}
           >
             <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
-              <strong>My {RECORD_LABEL}s:</strong> {myRecords}
+              <strong>My {recordLabel}s:</strong> {myRecords}
             </Typography>
             <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
               <strong>Others:</strong> {otherRecords}
@@ -272,7 +288,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
 
           <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
             <Box>
-              <AddRecordButtons project={project} />
+              <AddRecordButtons project={project} recordLabel={recordLabel} />
             </Box>
             {/* Records/Drafts */}
             <Box mt={2}>
@@ -288,7 +304,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                         variant="body1"
                         sx={{fontWeight: 'bold', fontSize: '1.2em'}}
                       >
-                        My {RECORD_LABEL}s
+                        My {recordLabel}s
                       </Typography>
                     }
                     {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}

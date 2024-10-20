@@ -17,14 +17,14 @@ import {
   ProjectUIModel,
 } from '@faims3/data-model';
 import {getMetadataValue} from '../../../sync/metadata';
-import {RECORD_LABEL} from '../../../buildconfig';
 
 type AddRecordButtonsProps = {
   project: ProjectInformation;
+  recordLabel: string; // New prop to receive recordLabel
 };
 
 export default function AddRecordButtons(props: AddRecordButtonsProps) {
-  const {project} = props;
+  const {project, recordLabel} = props;
   const project_id = project.project_id;
   const muiTheme = useTheme();
   const mq_above_md = useMediaQuery(muiTheme.breakpoints.up('md'));
@@ -35,11 +35,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
     RecordMetadata | undefined
   >(undefined);
 
-  const envTheme = import.meta.env.VITE_THEME;
-
-  // Determine 'add new record' button label based on the environment theme
-  const buttonLabel =
-    envTheme === 'bubble' ? `Survey New ${RECORD_LABEL}` : 'New Record';
+  const buttonLabel = `New ${recordLabel}`; // Use recordLabel for the button label
 
   getMetadataValue(project_id, 'showQRCodeButton').then(value => {
     setShowQRButton(value === true || value === 'true');
@@ -129,7 +125,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
               >
                 <AddIcon sx={{fontSize: '1.2rem', color: 'green'}} />
               </Box>
-              {buttonLabel}
+              {buttonLabel} {/* Dynamic label based on recordLabel */}
             </Button>
           ) : (
             visible_types.map(
