@@ -51,11 +51,7 @@ type RecordsTableProps = {
   viewsets?: ProjectUIViewsets | null;
   handleQueryFunction: Function;
   handleRefresh: () => Promise<any>;
-  onRecordsCountChange?: (counts: {
-    total: number;
-    myRecords: number;
-    otherRecords: number;
-  }) => void;
+  onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
 };
 
 type RecordsBrowseTableProps = {
@@ -64,11 +60,7 @@ type RecordsBrowseTableProps = {
   viewsets?: ProjectUIViewsets | null;
   filter_deleted: boolean;
   handleRefresh: () => Promise<any>;
-  onRecordsCountChange?: (counts: {
-    total: number;
-    myRecords: number;
-    otherRecords: number;
-  }) => void;
+  onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
 };
 
 function RecordsTable(props: RecordsTableProps) {
@@ -290,8 +282,6 @@ function RecordsTable(props: RecordsTableProps) {
         getRowType({row: record} as GridCellParams) === 'Site' &&
         record.created_by === currentUser
     ).length;
-
-    const otherRecords = totalRecords - myRecords;
 
     // Send count to parent with callback  - onRecordsCountChangee
     if (onRecordsCountChange) {

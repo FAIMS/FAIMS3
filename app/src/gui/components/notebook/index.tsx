@@ -102,7 +102,6 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
   const [myRecords, setMyRecords] = useState(0);
-  const [otherRecords, setOtherRecords] = useState(0);
   /**
    * Handles the change event when the user switches between the Records and Drafts tabs.
    *
@@ -153,11 +152,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
 
           // Dynamically set RECORD_LABEL based on uiSpec
           const visibleTypes = spec.visible_types;
-          console.log('visible types in index file', visibleTypes);
           if (visibleTypes && visibleTypes.length === 1) {
             // Only one type, so we can use its label
             const recordType = visibleTypes[0]; // e.g., "Site" or "Building"
-            console.log('recordtype as fetched', recordType);
             setRecordLabel(recordType); // setRecordLabel- set state
           } else {
             // Multiple types or none, default to "Records"
@@ -179,14 +176,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   }, [project]);
 
   // Callback to handle counts from RecordsTable
-  const handleCountChange = (counts: {
-    total: number;
-    myRecords: number;
-    otherRecords: number;
-  }) => {
+  const handleCountChange = (counts: {total: number; myRecords: number}) => {
     setTotalRecords(counts.total);
     setMyRecords(counts.myRecords);
-    setOtherRecords(counts.otherRecords);
   };
 
   return (
@@ -278,9 +270,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
             <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
               <strong>My {recordLabel}s:</strong> {myRecords}
             </Typography>
-            <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
-              <strong>Others:</strong> {otherRecords}
-            </Typography>
+
             <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
               <strong>Total:</strong> {totalRecords}
             </Typography>
