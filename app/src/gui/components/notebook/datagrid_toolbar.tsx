@@ -68,7 +68,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
         {/* Search Bar */}
         <Grid item xs={9} sm={10} md={11}>
           <TextField
-            placeholder="Search for records address"
+            placeholder="Search record data (case sensitive)"
             value={value}
             onChange={handleChange}
             variant="outlined"
