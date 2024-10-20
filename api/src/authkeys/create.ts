@@ -52,7 +52,7 @@ export async function createAuthKey(
  * @param user The passport user
  * @returns The generated token which is a payload containing the actual JWT + refresh token + other information
  */
-export async function generateUserToken(user: Express.User, refresh = true) {
+export async function generateUserToken(user: Express.User, refresh = false) {
   const signingKey = await KEY_SERVICE.getSigningKey();
   if (signingKey === null || signingKey === undefined) {
     throw new Error('No signing key is available, check configuration');

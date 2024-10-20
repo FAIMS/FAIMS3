@@ -14,11 +14,12 @@ import {
 } from '@faims3/data-model';
 import {getAuthDB} from '.';
 import {v4 as uuidv4} from 'uuid';
-import {InternalSystemError} from '../exceptions';
+import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {getUserFromEmailOrUsername} from './users';
 
 // Expiry time in hours
 const TOKEN_EXPIRY_HOURS = 24; // 24 hours
+const TOKEN_EXPIRY_MS = TOKEN_EXPIRY_HOURS * 60 * 60 * 1000;
 
 /**
  * Generates an expiry timestamp for a refresh token.
@@ -30,10 +31,9 @@ const TOKEN_EXPIRY_HOURS = 24; // 24 hours
  *
  * @returns {number} The expiry timestamp in milliseconds since the Unix epoch.
  */
-function generateExpiryTimestamp(): number {
+function generateExpiryTimestamp(expiryMs: number): number {
   const currentTimestamp = Date.now();
-  const expiryDurationMs = TOKEN_EXPIRY_HOURS * 60 * 60 * 1000; // Convert hours to milliseconds
-  return currentTimestamp + expiryDurationMs;
+  return currentTimestamp + expiryMs;
 }
 
 /**
@@ -42,7 +42,8 @@ function generateExpiryTimestamp(): number {
  * @returns A Promise that resolves to the newly created AuthRecord.
  */
 export const createNewRefreshToken = async (
-  userId: string
+  userId: string,
+  expiryMs: number = TOKEN_EXPIRY_MS
 ): Promise<AuthRecord> => {
   const authDB = getAuthDB();
 
@@ -51,7 +52,7 @@ export const createNewRefreshToken = async (
   const dbId = AuthRecordIdPrefixMap.get('refresh') + uuidv4();
 
   // Set expiry to 30 days from now
-  const expiryTimestampMs = generateExpiryTimestamp();
+  const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
 
   const newRefreshToken: RefreshRecordFields = {
     documentType: 'refresh',
@@ -150,6 +151,54 @@ export const getTokensByUserId = async (
   );
 
   return result.rows.filter(r => !!r.doc).map(row => row.doc!);
+};
+
+/**
+ * Invalidates an existing token by setting enabled = false
+ * @param token The token value to invalidate
+ * @returns A Promise that resolves to the AuthRecord associated with the invalidated token.
+ */
+export const invalidateToken = async (
+  token: string
+): Promise<AuthRecord | null> => {
+  const authDB = getAuthDB();
+
+  const result = await authDB.query<AuthRecord>(
+    'viewsDocument/refreshTokensByToken',
+    {
+      key: token,
+      include_docs: true,
+    }
+  );
+
+  const filtered = result.rows.filter(r => !!r.doc).map(row => row.doc!);
+
+  if (filtered.length === 0) {
+    throw new ItemNotFoundException('Could not find the specified token.');
+  }
+
+  if (filtered.length > 1) {
+    throw new InternalSystemError(
+      'Duplicate items sharing a token. Cannot invalidate this refresh token.'
+    );
+  }
+
+  const existingTokenDoc = filtered[0];
+
+  // Update the valid property
+  existingTokenDoc.enabled = false;
+
+  // put back with enabled as false
+  try {
+    await authDB.put(existingTokenDoc);
+  } catch (e) {
+    throw new InternalSystemError(
+      'Failed to update existing auth DB refresh token record during invalidation. Error: ' +
+        e
+    );
+  }
+
+  return existingTokenDoc;
 };
 
 /**

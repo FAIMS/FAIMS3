@@ -16,7 +16,7 @@ export const requestTokenRefresh = async (
 ): Promise<PostRefreshTokenResponse> => {
   return await FetchManager.post<PostRefreshTokenResponse>(
     listingId,
-    '/api/refresh',
+    '/api/auth/refresh',
     input
   );
 };

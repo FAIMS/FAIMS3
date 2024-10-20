@@ -95,7 +95,7 @@ api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
  * Anyone can use this route, since your access token may have expired
  */
 api.post(
-  '/refresh',
+  '/auth/refresh',
   processRequest({body: PostRefreshTokenInputSchema}),
   async (req, res: Response<PostRefreshTokenResponse>) => {
     // If the user is logged in - then record the user ID as an additional
