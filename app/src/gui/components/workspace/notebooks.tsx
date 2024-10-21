@@ -177,7 +177,7 @@ export default function NoteBooks() {
         <Typography variant={'body1'} gutterBottom>
           You have {activatedProjects.length} {NOTEBOOK_NAME}
           {activatedProjects.length !== 1 ? 's' : ''} activated on this device.
-          To start syncing a {NOTEBOOK_NAME}, visit the{' '}
+          To start using a {NOTEBOOK_NAME}, visit the{' '}
           <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
             Available
           </Button>{' '}
