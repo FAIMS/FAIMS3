@@ -51,7 +51,7 @@ export const createNewRefreshToken = async (
   const token = uuidv4();
   const dbId = AuthRecordIdPrefixMap.get('refresh') + uuidv4();
 
-  // Set expiry to 30 days from now
+  // Set expiry to configured duration
   const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
 
   const newRefreshToken: RefreshRecordFields = {
