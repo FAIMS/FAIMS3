@@ -23,9 +23,7 @@ import React, {useEffect} from 'react';
 import {FieldProps} from 'formik';
 
 import * as ROUTES from '../../constants/routes';
-import {FAIMSTypeName, LocationState} from '@faims3/data-model';
-import {RecordReference} from '@faims3/data-model';
-import {getRecordsByType} from '@faims3/data-model';
+import {generateFAIMSDataID, FAIMSTypeName, LocationState, RecordReference, getPossibleRelatedRecords} from '@faims3/data-model';
 import {useLocation} from 'react-router-dom';
 import {Grid, Typography} from '@mui/material';
 import {
@@ -37,7 +35,6 @@ import {DataGridFieldLinksComponent} from '../components/record/relationships/fi
 import {RecordLinkProps} from '../components/record/relationships/types';
 import {SelectChangeEvent} from '@mui/material';
 import CreateLinkComponent from '../components/record/relationships/create_links';
-import {generateFAIMSDataID} from '@faims3/data-model';
 import {logError} from '../../logging';
 
 function get_default_relation_label(
@@ -116,7 +113,7 @@ function excludes_related_record(
   return records;
 }
 
-type DisplayChildProps = {
+type DisplayRelatedRecordsProps = {
   handleUnlink: Function;
   handleReset: Function;
   recordsInformation: RecordLinkProps[] | null;
@@ -131,26 +128,17 @@ type DisplayChildProps = {
   relation_type: string;
 };
 
-function DisplayChild(props: DisplayChildProps) {
+function DisplayRelatedRecords(props: DisplayRelatedRecordsProps) {
   let has_values = true;
   if (props.value === undefined || props.value === null) has_values = false;
   else if (props.multiple && props.value.length === 0) has_values = false;
   else if (!props.multiple && props.value.record_id === undefined)
     has_values = false;
 
+  console.log('DisplayRelatedRecords', props);
+
   if (!has_values) return <></>;
-  // I'm pretty sure this is unreachable since props.recordsInformation is derived
-  // from props.value and will always contain the linked records
-  //
-  // if (props.recordsInformation === null) {
-  //   return (
-  //     <DataGridNoLink
-  //       links={props.multiple ? props.value : [props.value]}
-  //       relation_linked_vocab={props.relationshipLabel}
-  //       relation_type={props.relation_type}
-  //     />
-  //   );
-  // }
+ 
   return (
     <DataGridFieldLinksComponent
       links={props.recordsInformation}
@@ -188,7 +176,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;
 
-  const [options, setOptions] = React.useState<RecordReference[]>([]);
+  const [relatedRecords, setRelatedRecords] = React.useState<RecordReference[]>([]);
   const multiple = props.multiple !== undefined ? props.multiple : false;
   const location = useLocation();
   let search = location.search.includes('link=')
@@ -243,7 +231,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
         // or just no existing value
         if (!multiple && !props.form.values[field_name]) setIs_enabled(true);
 
-        const all_records = await getRecordsByType(
+        const all_records = await getPossibleRelatedRecords(
           project_id,
           props.related_type,
           props.relation_type,
@@ -256,7 +244,9 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           props.form.values[field_name],
           all_records
         );
-        setOptions(records);
+        console.log("Related Records", records);
+
+        setRelatedRecords(records);
 
         const records_info = await get_RelatedFields_for_field(
           props.form.values,
@@ -346,9 +336,9 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       );
       setRelationshipPair(valuePair);
       //reset the value of the record list
-      const records = options;
+      const records = relatedRecords;
       records.map(record => (record['relation_type_vocabPair'] = valuePair));
-      setOptions(records);
+      setRelatedRecords(records);
     }
   };
 
@@ -418,9 +408,9 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     const records = excludes_related_record(
       multiple,
       props.form.values[field_name],
-      options
+      relatedRecords
     );
-    setOptions(records);
+    setRelatedRecords(records);
     // now that we have a value, disable if we don't allow multiple values
     if (!multiple) setIs_enabled(false);
     //set the form value
@@ -458,9 +448,9 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       // }
     }
 
-    const records = options;
+    const records = relatedRecords;
     records.push(child_record);
-    setOptions(records);
+    setRelatedRecords(records);
 
     if (!multiple) setIs_enabled(true);
     const current_record = {
@@ -522,7 +512,8 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           <CreateLinkComponent
             {...props}
             field_name={field_name}
-            options={options}
+            field_label={field_name}
+            relatedRecords={relatedRecords}
             handleChange={handleChange}
             relationshipLabel={relationshipLabel}
             SetSelectedRecord={SetSelectedRecord}
@@ -532,7 +523,6 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
             project_id={project_id}
             relation_type={type}
             add_related_child={add_related_child}
-            field_name={field_name}
             pathname={
               ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
               project_id +
@@ -569,7 +559,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
         )}
 
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          <DisplayChild
+          <DisplayRelatedRecords
             recordsInformation={recordsInformation}
             record_id={record_id}
             record_hrid={props.form.values['_id']}
