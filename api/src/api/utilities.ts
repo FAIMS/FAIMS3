@@ -36,7 +36,10 @@ import {restoreFromBackup} from '../couchdb/backupRestore';
 import {getProjects} from '../couchdb/notebooks';
 import {userIsClusterAdmin} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {optionalAuthenticationJWT, requireAuthenticationAPI} from '../middleware';
+import {
+  optionalAuthenticationJWT,
+  requireAuthenticationAPI,
+} from '../middleware';
 import {slugify} from '../utils';
 
 // TODO: configure this directory

@@ -85,7 +85,7 @@ describe('token refresh tests', () => {
     let allTokens = await getAllTokens();
     expect(allTokens.length).to.equal(0);
 
-    const adminUserTokens = await getTokensByUserId(adminUser?.user_id!);
+    const adminUserTokens = await getTokensByUserId(adminUser.user_id!);
     expect(adminUserTokens.length).to.equal(0);
 
     // generate a token for each user and check that the query methods work as expected
@@ -118,29 +118,29 @@ describe('token refresh tests', () => {
     let fetchedTokenDoc;
 
     // admin
-    fetchedTokenDoc = await getTokenByToken(adminUserRefresh);
+    fetchedTokenDoc = (await getTokenByToken(adminUserRefresh))!;
     expect(fetchedTokenDoc).to.not.be.undefined;
     expect(fetchedTokenDoc?.token).to.eq(adminUserRefresh);
 
-    fetchedTokenDoc = await getTokenByTokenId(fetchedTokenDoc?._id!);
+    fetchedTokenDoc = await getTokenByTokenId(fetchedTokenDoc._id);
     expect(fetchedTokenDoc).to.not.be.undefined;
     expect(fetchedTokenDoc?.token).to.eq(adminUserRefresh);
 
     // local
-    fetchedTokenDoc = await getTokenByToken(localUserRefresh);
+    fetchedTokenDoc = (await getTokenByToken(localUserRefresh))!;
     expect(fetchedTokenDoc).to.not.be.undefined;
     expect(fetchedTokenDoc?.token).to.eq(localUserRefresh);
 
-    fetchedTokenDoc = await getTokenByTokenId(fetchedTokenDoc?._id!);
+    fetchedTokenDoc = await getTokenByTokenId(fetchedTokenDoc._id);
     expect(fetchedTokenDoc).to.not.be.undefined;
     expect(fetchedTokenDoc?.token).to.eq(localUserRefresh);
 
     // notebook
-    fetchedTokenDoc = await getTokenByToken(notebookUserRefresh);
+    fetchedTokenDoc = (await getTokenByToken(notebookUserRefresh))!;
     expect(fetchedTokenDoc).to.not.be.undefined;
     expect(fetchedTokenDoc?.token).to.eq(notebookUserRefresh);
 
-    fetchedTokenDoc = await getTokenByTokenId(fetchedTokenDoc?._id!);
+    fetchedTokenDoc = await getTokenByTokenId(fetchedTokenDoc._id);
     expect(fetchedTokenDoc).to.not.be.undefined;
     expect(fetchedTokenDoc?.token).to.eq(notebookUserRefresh);
 
@@ -165,8 +165,8 @@ describe('token refresh tests', () => {
       expect(rawTokenList).to.include(t);
     }
 
-    fetchedTokenDoc = await getTokenByToken(notebookUserRefresh);
-    await deleteRefreshToken('id', fetchedTokenDoc?._id!);
+    fetchedTokenDoc = (await getTokenByToken(notebookUserRefresh))!;
+    await deleteRefreshToken('id', fetchedTokenDoc._id);
 
     allTokens = await getAllTokens();
     rawTokenList = allTokens.map(t => t.token);
@@ -211,7 +211,7 @@ describe('token refresh tests', () => {
     expect(valid.validationError).to.not.be.undefined;
 
     // Now generate a new token with a very short expiry
-    refresh = (await createNewRefreshToken(localUser?._id!, 10)).token;
+    refresh = (await createNewRefreshToken(localUser._id!, 10)).token;
 
     // Wait until it expires
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -225,12 +225,12 @@ describe('token refresh tests', () => {
   it('use refresh token to generate new token', async () => {
     // Get local user profile and setup refresh
     const localUser = (await getUserFromEmailOrUsername(localUserName))!;
-    let refresh = (await generateUserToken(localUser, true)).refreshToken!;
+    const refresh = (await generateUserToken(localUser, true)).refreshToken!;
 
     // now run the refresh method
-    let newToken = await requestAuthAndType(
+    const newToken = await requestAuthAndType(
       request(app)
-        .post(`/api/auth/refresh`)
+        .post('/api/auth/refresh')
         .send({
           refreshToken: refresh,
         } as PostRefreshTokenInput),
@@ -250,12 +250,12 @@ describe('token refresh tests', () => {
   it('user ID must match if requested as a logged in user', async () => {
     // Get local user profile and setup refresh
     const localUser = (await getUserFromEmailOrUsername(localUserName))!;
-    let refresh = (await generateUserToken(localUser, true)).refreshToken!;
+    const refresh = (await generateUserToken(localUser, true)).refreshToken!;
 
     // now run the refresh method - this should work
     await requestAuthAndType(
       request(app)
-        .post(`/api/auth/refresh`)
+        .post('/api/auth/refresh')
         .send({
           refreshToken: refresh,
         } as PostRefreshTokenInput),
@@ -265,7 +265,7 @@ describe('token refresh tests', () => {
     // now use the incorrect token
     await requestAuthAndType(
       request(app)
-        .post(`/api/auth/refresh`)
+        .post('/api/auth/refresh')
         .send({
           refreshToken: refresh,
         } as PostRefreshTokenInput),
