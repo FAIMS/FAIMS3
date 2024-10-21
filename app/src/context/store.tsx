@@ -18,12 +18,13 @@
  *   Define a global Context store to hold the state of sync and alerts
  */
 
-import React, {
+import {
   createContext,
   useReducer,
   Dispatch,
   useEffect,
   useState,
+  useRef,
 } from 'react';
 
 import {v4 as uuidv4} from 'uuid';
@@ -71,6 +72,8 @@ const {Provider} = store;
 
 const StateProvider = (props: any) => {
   const [initialized, setInitialized] = useState(false);
+  const startedInitialisation = useRef(false);
+
   const [state, dispatch] = useReducer(
     (state: InitialStateProps, action: SyncingActions | AlertActions) => {
       switch (action.type) {
@@ -141,6 +144,12 @@ const StateProvider = (props: any) => {
   set_sync_status_callbacks(getSyncStatusCallbacks(dispatch));
 
   useEffect(() => {
+    if (startedInitialisation.current) {
+      return;
+    }
+
+    // Mark that we've started
+    startedInitialisation.current = true;
     initialize()
       .then(() => {
         setInitialized(true);

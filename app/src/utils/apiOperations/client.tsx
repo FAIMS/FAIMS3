@@ -13,7 +13,7 @@ import {getTokenForCluster} from '../../users';
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 /** Extended fetch options interface */
-interface FetchOptions extends RequestInit {
+interface FetchOptions extends CustomOptions {
   method?: HttpMethod;
   body?: any;
 }
@@ -60,13 +60,19 @@ export class ListingFetch {
    * @returns Promise resolving to Headers object with auth token
    * @throws Error if no token is available for the cluster
    */
-  private async getAuthHeaders(): Promise<{}> {
-    const jwt_token = await getTokenForCluster(this.listing.id);
-    if (!jwt_token) {
-      throw new Error('No token available for this cluster.');
+  private async getAuthHeaders(options: CustomOptions): Promise<{}> {
+    if (options.useToken ?? true) {
+      const jwt_token = await getTokenForCluster(this.listing.id);
+      if (!jwt_token) {
+        throw new Error('No token available for this cluster.');
+      }
+      return {
+        Authorization: `Bearer ${jwt_token}`,
+        'Content-Type': 'application/json',
+      };
     }
+
     return {
-      Authorization: `Bearer ${jwt_token}`,
       'Content-Type': 'application/json',
     };
   }
@@ -85,7 +91,7 @@ export class ListingFetch {
     // Prepend the conductor URL
     const url = `${this.listing.conductor_url}${endpoint}`;
     // Include auth headers
-    const headers = await this.getAuthHeaders();
+    const headers = await this.getAuthHeaders(options);
 
     // Include user options
     const fetchOptions: RequestInit = {
@@ -181,6 +187,8 @@ export class ListingFetch {
   }
 }
 
+type CustomOptions = RequestInit & {useToken?: boolean};
+
 /**
  * Manages multiple API clients for different listings - maintains a simple map
  *
@@ -249,7 +257,7 @@ export class ListingFetchManager {
   async get<T>(
     listingId: string,
     endpoint: string,
-    options?: RequestInit
+    options?: CustomOptions
   ): Promise<T> {
     const client = this.getOrCreateClient(listingId);
     return client.get<T>(endpoint, options);
@@ -266,7 +274,7 @@ export class ListingFetchManager {
     listingId: string,
     endpoint: string,
     body: any,
-    options?: RequestInit
+    options?: CustomOptions
   ): Promise<T> {
     const client = this.getOrCreateClient(listingId);
     return client.post<T>(endpoint, body, options);
@@ -283,7 +291,7 @@ export class ListingFetchManager {
     listingId: string,
     endpoint: string,
     body: any,
-    options?: RequestInit
+    options?: CustomOptions
   ): Promise<T> {
     const client = this.getOrCreateClient(listingId);
     return client.put<T>(endpoint, body, options);
@@ -298,7 +306,7 @@ export class ListingFetchManager {
   async delete<T>(
     listingId: string,
     endpoint: string,
-    options?: RequestInit
+    options?: CustomOptions
   ): Promise<T> {
     const client = this.getOrCreateClient(listingId);
     return client.delete<T>(endpoint, options);
@@ -315,7 +323,7 @@ export class ListingFetchManager {
     listingId: string,
     endpoint: string,
     body: any,
-    options?: RequestInit
+    options?: CustomOptions
   ): Promise<T> {
     const client = this.getOrCreateClient(listingId);
     return client.patch<T>(endpoint, body, options);

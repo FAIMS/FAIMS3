@@ -61,24 +61,19 @@ export function listenProjectList(listener: () => void): () => void {
   };
 }
 
+/**
+ * Retrieves listings from the local directory DB, and returns syncable listings
+ * (:= those with conductor URLs)
+ * @returns Current set of listings which have conductor urls that are not
+ * falsey
+ */
 export async function getSyncableListingsInfo(): Promise<ListingsObject[]> {
   const all_listings = await getAllListings();
-  const syncable_listings: ListingsObject[] = [];
-  for (const listing_object of all_listings) {
-    if (
-      listing_object.conductor_url === null ||
-      listing_object.conductor_url === undefined
-    ) {
-      console.debug('Skipping as missing conductor url', listing_object.id);
-      continue;
+  return all_listings.filter(listing => {
+    if (!listing.conductor_url) {
+      console.debug('Skipping as missing conductor url', listing.id);
+      return false;
     }
-    syncable_listings.push({
-      id: listing_object.id,
-      name: listing_object.name,
-      description: listing_object.description,
-      conductor_url: listing_object.conductor_url,
-      prefix: listing_object.prefix,
-    });
-  }
-  return syncable_listings;
+    return true;
+  });
 }
