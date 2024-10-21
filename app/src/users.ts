@@ -42,7 +42,6 @@ import {
 } from './sync/databases';
 import {reprocess_listing} from './sync/process-initialization';
 import {PossibleToken} from './types/misc';
-import {iteratorTakeOne} from './utils/helpers';
 import ObjectMap from './utils/ObjectMap';
 
 interface SplitCouchDBRole {

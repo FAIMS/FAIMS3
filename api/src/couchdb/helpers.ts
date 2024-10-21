@@ -11,7 +11,7 @@
 export async function safeWriteDocument<T extends {}>(
   db: PouchDB.Database<T>,
   data: PouchDB.Core.Document<T>,
-  writeOnClash: boolean = true
+  writeOnClash = true
 ) {
   try {
     // Try to get the existing document

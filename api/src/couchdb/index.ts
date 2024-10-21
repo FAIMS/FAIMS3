@@ -19,27 +19,27 @@
  */
 
 import {
-    AuthDatabase,
-    ProjectDataObject,
-    ProjectID,
-    ProjectMetaObject,
-    ProjectObject,
-    TemplateDetails,
+  AuthDatabase,
+  ProjectDataObject,
+  ProjectID,
+  ProjectMetaObject,
+  ProjectObject,
+  TemplateDetails,
 } from '@faims3/data-model';
 import PouchDB from 'pouchdb';
-import { initialiseJWTKey } from '../authkeys/initJWTKeys';
+import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
-    COUCHDB_INTERNAL_URL,
-    COUCHDB_PUBLIC_URL,
-    LOCAL_COUCHDB_AUTH,
+  COUCHDB_INTERNAL_URL,
+  COUCHDB_PUBLIC_URL,
+  LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {
-    initialiseAuthDb,
-    initialiseDirectoryDB,
-    initialiseProjectsDB,
-    initialiseTemplatesDb,
-    initialiseUserDB,
+  initialiseAuthDb,
+  initialiseDirectoryDB,
+  initialiseProjectsDB,
+  initialiseTemplatesDb,
+  initialiseUserDB,
 } from './initialise';
 
 const DIRECTORY_DB_NAME = 'directory';
