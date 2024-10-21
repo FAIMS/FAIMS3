@@ -232,7 +232,7 @@ export const initialiseUserDB = async (db: PouchDB.Database | undefined) => {
 export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
   // To check if we are initialised - we check for presence of expected
   // documents
-  let initialised = true;
+  let initialised = false;
 
   try {
     db.get(permissionDocument._id);
@@ -240,19 +240,17 @@ export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
   } catch (err: any) {
     // 404 for not found
     if (err.status !== 404) {
+        console.log("Error was not 404")
       throw err;
     }
 
     // item was not found - so not initialised
-    initialised = false;
+    initialised = true;
   }
 
   if (initialised) {
-    console.log('Already initialised AuthDB - no-op.');
     return;
   }
-
-  console.log('Performing initialisation of AuthDB.');
 
   // can't save security on an in-memory database so skip if testing
   if (process.env.NODE_ENV !== 'test') {
