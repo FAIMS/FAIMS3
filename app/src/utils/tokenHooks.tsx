@@ -2,6 +2,7 @@ import {useQuery, useMutation} from '@tanstack/react-query';
 import {getDefaultToken, getToken} from '../context/functions';
 import {local_auth_db} from '../sync/databases';
 import {requestTokenRefresh} from './apiOperations/auth';
+import ObjectMap from './ObjectMap';
 
 /**
  * Custom hook to fetch the current token (by current username) for a given
@@ -73,7 +74,7 @@ export const useRefreshToken = (props: UseRefreshTokenProps) => {
       const username = props.username ?? current_username;
 
       // now get tokens for that username
-      const tokens = available_tokens.get(username);
+      const tokens = ObjectMap.get(available_tokens, username);
 
       if (!tokens || !tokens?.refreshToken) {
         throw Error(

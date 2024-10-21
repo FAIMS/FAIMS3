@@ -43,6 +43,7 @@ import {
 import {reprocess_listing} from './sync/process-initialization';
 import {PossibleToken} from './types/misc';
 import {iteratorTakeOne} from './utils/helpers';
+import ObjectMap from './utils/ObjectMap';
 
 interface SplitCouchDBRole {
   project_id: ProjectID;
@@ -125,8 +126,8 @@ async function addTokenToDoc(
 ): Promise<LocalAuthDoc> {
   const new_username = parsedToken.username;
   if (current_doc === null) {
-    const available_tokens: JWTTokenMap = new Map([]);
-    available_tokens.set(new_username, {
+    const available_tokens: JWTTokenMap = {};
+    ObjectMap.set(available_tokens, new_username, {
       token,
       parsedToken,
       refreshToken,
@@ -139,11 +140,13 @@ async function addTokenToDoc(
   }
 
   // Does the current doc have a refresh token already?
-  const currentRefreshToken = current_doc.available_tokens.get(
+  const currentRefreshToken = ObjectMap.get(
+    current_doc.available_tokens,
     current_doc.current_username
   )?.refreshToken;
+
   current_doc.current_username = new_username;
-  current_doc.available_tokens.set(new_username, {
+  ObjectMap.set(current_doc.available_tokens, new_username, {
     token,
     parsedToken,
     // Use the provided, then as a fall back the previous
@@ -156,19 +159,19 @@ async function removeTokenFromDoc(
   username: string,
   current_doc: LocalAuthDoc
 ): Promise<LocalAuthDoc | null> {
-  if (current_doc.available_tokens.get(username) === undefined) {
+  if (ObjectMap.get(current_doc.available_tokens, username) === undefined) {
     throw Error(`${username} is not in doc`);
   }
-  if (current_doc.available_tokens.size < 2) {
+  if (ObjectMap.size(current_doc.available_tokens) < 2) {
     // Removing last user results in an empty doc
     return null;
   }
-  current_doc.available_tokens.delete(username);
+  ObjectMap.delete(current_doc.available_tokens, username);
   if (current_doc.current_username === username) {
     // Choose first username if removed user is current user
-    current_doc.current_username = iteratorTakeOne(
-      current_doc.available_tokens.keys()
-    )!;
+    current_doc.current_username = ObjectMap.keys<string>(
+      current_doc.available_tokens
+    )[0];
   }
   return current_doc;
 }
@@ -178,7 +181,7 @@ export async function getTokenForCluster(
 ): Promise<string | undefined> {
   try {
     const doc = await local_auth_db.get(cluster_id);
-    return doc.available_tokens.get(doc.current_username)?.token;
+    return ObjectMap.get(doc.available_tokens, doc.current_username)?.token;
   } catch (err) {
     return undefined;
   }
@@ -245,7 +248,7 @@ export async function getAllParsedTokensForCluster(
     return [];
   }
 
-  return Array.from(doc.available_tokens.values());
+  return ObjectMap.values(doc.available_tokens);
 }
 
 export async function getAllUsernamesForCluster(
@@ -270,7 +273,7 @@ async function getTokenInfoForCluster(
   try {
     const doc = await local_auth_db.get(cluster_id);
     const username = doc.current_username;
-    return doc.available_tokens.get(username);
+    return ObjectMap.get(doc.available_tokens, username);
   } catch (err) {
     return undefined;
   }

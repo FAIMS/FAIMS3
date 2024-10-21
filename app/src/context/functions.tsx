@@ -5,6 +5,7 @@ import {
 } from '../sync/databases';
 import {ProjectObject, resolve_project_id} from '@faims3/data-model';
 import {ProjectExtended} from '../types/project';
+import ObjectMap from '../utils/ObjectMap';
 
 /**
  * Retrieves a list of listings from the directory database.
@@ -27,7 +28,7 @@ const getListings = async () => {
 export const getToken = async (id: string) => {
   const {available_tokens, current_username} = await local_auth_db.get(id);
 
-  return available_tokens.get(current_username);
+  return ObjectMap.get(available_tokens, current_username);
 };
 
 /**

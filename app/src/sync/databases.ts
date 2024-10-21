@@ -150,13 +150,14 @@ export interface JWTTokenInfo {
   parsedToken: TokenContents;
 }
 
-export type JWTTokenMap = Map<string, JWTTokenInfo>;
+export type JWTTokenMap = {[k: string]: JWTTokenInfo};
 
 export interface LocalAuthDoc {
   _id: string; // Corresponds to a listings ID
   _rev?: string; // optional as we may want to include the raw json in places
   current_username: string;
-  // Map from username -> TokenContents
+  // Map from username -> TokenContents - this is serialised as a JS object but
+  // interacted with through ObjectMap
   available_tokens: JWTTokenMap;
 }
 
