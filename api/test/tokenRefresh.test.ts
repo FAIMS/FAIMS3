@@ -35,9 +35,11 @@ import {
 import {getUserFromEmailOrUsername} from '../src/couchdb/users';
 import {app} from '../src/routes';
 import {
+  adminToken,
   adminUserName,
   beforeApiTests,
   localUserName,
+  localUserToken,
   notebookUserName,
   requestAuthAndType,
 } from './utils';
@@ -231,7 +233,8 @@ describe('token refresh tests', () => {
         .post(`/api/auth/refresh`)
         .send({
           refreshToken: refresh,
-        } as PostRefreshTokenInput)
+        } as PostRefreshTokenInput),
+      localUserToken
     )
       .expect(200)
       .then(res => {
@@ -244,7 +247,29 @@ describe('token refresh tests', () => {
     await listTemplates(app, newToken);
   });
 
-  it('user ID must match if requested as a logged in user', async () => {});
+  it('user ID must match if requested as a logged in user', async () => {
+    // Get local user profile and setup refresh
+    const localUser = (await getUserFromEmailOrUsername(localUserName))!;
+    let refresh = (await generateUserToken(localUser, true)).refreshToken!;
 
-  it('invalidate refresh token', async () => {});
+    // now run the refresh method - this should work
+    await requestAuthAndType(
+      request(app)
+        .post(`/api/auth/refresh`)
+        .send({
+          refreshToken: refresh,
+        } as PostRefreshTokenInput),
+      localUserToken
+    ).expect(200);
+
+    // now use the incorrect token
+    await requestAuthAndType(
+      request(app)
+        .post(`/api/auth/refresh`)
+        .send({
+          refreshToken: refresh,
+        } as PostRefreshTokenInput),
+      adminToken
+    ).expect(400);
+  });
 });

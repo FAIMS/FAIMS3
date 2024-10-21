@@ -94,6 +94,51 @@ export async function requireAuthenticationAPI(
   }
 }
 
+/**
+ * Opportunistically parses the user and populates req.user from DB if JWT is
+ * valid. If not, then passes through with no-op.
+ *
+ * NOTE not to be used for endpoint which **requires** JWT auth - intended to be
+ * used to enhance open endpoints with user information where available, or
+ * where authorisation logic is more complex and must be handled within the
+ * route.
+ *
+ * @param req The express request
+ * @param res The express response - not necessary here
+ * @param next The next function to pass through
+ * @returns A req.user which is populated iff the JWT is valid and relevant for
+ * user in DB
+ */
+export async function optionalAuthenticationJWT(
+  req: Express.Request,
+  res: Express.Response,
+  next: Express.NextFunction
+) {
+  if (req.user) {
+    next();
+    return;
+  } else {
+    const token = extractBearerToken(req);
+
+    // just pass through if no token - no op
+    if (!token) {
+      next();
+      return;
+    }
+
+    const user = await validateToken(token);
+
+    if (!user) {
+      next();
+      return;
+    }
+
+    // insert user into the request
+    req.user = user;
+    next();
+  }
+}
+
 export function requireNotebookMembership(
   req: Express.Request,
   res: Express.Response,

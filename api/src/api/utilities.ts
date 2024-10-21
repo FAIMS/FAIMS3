@@ -36,7 +36,7 @@ import {restoreFromBackup} from '../couchdb/backupRestore';
 import {getProjects} from '../couchdb/notebooks';
 import {userIsClusterAdmin} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {requireAuthenticationAPI} from '../middleware';
+import {optionalAuthenticationJWT, requireAuthenticationAPI} from '../middleware';
 import {slugify} from '../utils';
 
 // TODO: configure this directory
@@ -96,6 +96,7 @@ api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
  */
 api.post(
   '/auth/refresh',
+  optionalAuthenticationJWT,
   processRequest({body: PostRefreshTokenInputSchema}),
   async (req, res: Response<PostRefreshTokenResponse>) => {
     // If the user is logged in - then record the user ID as an additional
