@@ -30,7 +30,7 @@ export const ExpandMoreButton = styled((props: ExpandMoreProps) => {
   },
 }));
 
-interface CreateLinkComponentProps {
+interface CreateLinkComponentProps extends CreateRecordLinkProps {
   field_label: string;
 }
 
@@ -104,7 +104,7 @@ export default function CreateLinkComponent(
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <Collapse in={expanded} timeout="auto" unmountOnExit sx={{mt: 1}}>
-            <CreateRecordLink {...others} />
+            <CreateRecordLink {...props} />
           </Collapse>
         </Grid>
       </Grid>

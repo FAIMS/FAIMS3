@@ -411,6 +411,7 @@ export interface ProjectUIViewsets {
     views: string[];
     submit_label?: string;
     is_visible?: boolean;
+    summary_fields?: Array<string>;
   };
 }
 
@@ -475,6 +476,14 @@ export interface ProjectUIModel {
   viewsets: ProjectUIViewsets;
   visible_types: string[];
   conditional_sources?: Set<string>;
+}
+export interface RecordReference {
+  project_id?: ProjectID;
+  record_id: RecordID;
+  // This is for HRIDs or other non ID descriptions of reference
+  record_label: RecordID | string;
+  //this is for Label of linked items, default: ['is related to', 'is related to']
+  relation_type_vocabPair?: Array<string>;
 }
 
 export interface RecordMetadata {
@@ -555,15 +564,6 @@ export interface UserMergeResult {
 export type RecordList = {
   [key: string]: Record;
 };
-
-export interface RecordReference {
-  project_id?: ProjectID;
-  record_id: RecordID;
-  // This is for HRIDs or other non ID descriptions of reference
-  record_label: RecordID | string;
-  //this is for Label of linked items, default: ['is related to', 'is related to']
-  relation_type_vocabPair?: Array<string>;
-}
 
 /*
  * This somehow needs to handle class-based components and function-based

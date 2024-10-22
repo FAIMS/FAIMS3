@@ -348,11 +348,10 @@ export async function getHRIDforRecordID(
   }
 }
 
-
 /**
  * getPossibleRelatedRecords - get all records of a given type but remove any that
  *   are already children of some parent if relation_type is Child
- * 
+ *
  * @param project_id - project identifier
  * @param type - type of record we are looking for
  * @param relation_type - 'faims-core::Child' or 'faims-core::Linked'
@@ -382,7 +381,6 @@ export async function getPossibleRelatedRecords(
       )
         relation_vocab = relation_linked_vocabPair; //get the name from relation_linked_vocabPair
     }
-
 
     const records: RecordReference[] = [];
     await listRecordMetadata(project_id).then(record_list => {

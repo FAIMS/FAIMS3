@@ -80,6 +80,7 @@ export function AddNewRecordButton(props: {
     </Button>
   );
 }
+
 export function CreateRecordLink(props: CreateRecordLinkProps) {
   /**
    * Allow users to add a link to a record from the current record
@@ -90,7 +91,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
 
   const {
     field_name,
-    options,
+    relatedRecords,
     handleChange,
     SetSelectedRecord,
     selectedRecord,
@@ -98,20 +99,8 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     project_id,
   } = props;
 
-  // some validity checks on the field
-  if (
-    props.relation_linked_vocabPair.length === 0 ||
-    !props.relation_linked_vocabPair.every((pair: string[]) => {
-      return pair.length === 2;
-    })
-  ) {
-    return (
-      <p>
-        The field {field_name} is misconfigured. Please correct the notebook
-        definition
-      </p>
-    );
-  }
+  console.log('CreateRecordLink', relatedRecords);
+
   // default relationship to the first option
   const relationshipLabel =
     props.relationshipLabel || props.relation_linked_vocabPair[0][1];
@@ -159,7 +148,6 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     };
   };
 
-  console.log('createRecordLink', props);
   return (
     <Box
       component={Paper}
@@ -220,7 +208,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             getOptionLabel={(option: RecordReference) =>
               option.record_label ?? ''
             }
-            options={options}
+            options={relatedRecords}
             defaultValue={undefined}
             disabled={disabled}
             onChange={(event: any, values: any) => {

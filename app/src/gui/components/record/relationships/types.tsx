@@ -97,12 +97,12 @@ export const PARENT_CHILD_VOCAB = [
 ];
 
 /**
- * Properties for CreateRecrodLink component, also used in
+ * Properties for CreateRecordLink component, also used in
  * CreateLinkComponent
  */
 export interface CreateRecordLinkProps {
   field_name: string;
-  options: any;
+  relatedRecords: any;
   relationshipLabel: string;
   selectedRecord: any;
   disabled: boolean;

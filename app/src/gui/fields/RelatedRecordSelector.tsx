@@ -23,11 +23,17 @@ import React, {useEffect} from 'react';
 import {FieldProps} from 'formik';
 
 import * as ROUTES from '../../constants/routes';
-import {generateFAIMSDataID, FAIMSTypeName, LocationState, RecordReference, getPossibleRelatedRecords} from '@faims3/data-model';
+import {
+  generateFAIMSDataID,
+  FAIMSTypeName,
+  LocationState,
+  RecordReference,
+  getPossibleRelatedRecords,
+} from '@faims3/data-model';
 import {useLocation} from 'react-router-dom';
 import {Grid, Typography} from '@mui/material';
 import {
-  get_RelatedFields_for_field,
+  getRelatedRecords,
   Update_New_Link,
   remove_link_from_list,
 } from '../components/record/relationships/RelatedInformation';
@@ -44,13 +50,7 @@ function get_default_relation_label(
   relation_linked_vocabPair: Array<Array<string>>
 ) {
   if (type === 'Child') {
-    if (
-      relation_linked_vocabPair === undefined ||
-      relation_linked_vocabPair.length === 0
-    )
-      //get default value for relation_linked_vocabPair
-      return ['is child of', 'is parent of'];
-    else return relation_linked_vocabPair;
+    return ['is child of', 'is parent of'];
   }
   if (value === null || value === undefined) {
     if (
@@ -113,47 +113,6 @@ function excludes_related_record(
   return records;
 }
 
-type DisplayRelatedRecordsProps = {
-  handleUnlink: Function;
-  handleReset: Function;
-  recordsInformation: RecordLinkProps[] | null;
-  disabled: boolean;
-  record_id: string;
-  record_hrid: string;
-  record_type: string;
-  field_name: string;
-  value: any;
-  multiple: boolean;
-  relationshipLabel: string;
-  relation_type: string;
-};
-
-function DisplayRelatedRecords(props: DisplayRelatedRecordsProps) {
-  let has_values = true;
-  if (props.value === undefined || props.value === null) has_values = false;
-  else if (props.multiple && props.value.length === 0) has_values = false;
-  else if (!props.multiple && props.value.record_id === undefined)
-    has_values = false;
-
-  console.log('DisplayRelatedRecords', props);
-
-  if (!has_values) return <></>;
- 
-  return (
-    <DataGridFieldLinksComponent
-      links={props.recordsInformation}
-      record_id={props.record_id}
-      record_hrid={props.record_hrid}
-      record_type={props.record_type}
-      field_name={props.field_name}
-      handleUnlink={props.handleUnlink}
-      handleReset={props.handleReset}
-      disabled={props.disabled}
-      relation_type={props.relation_type}
-    />
-  );
-}
-
 interface RelatedRecordSelectorProps extends FieldProps {
   related_type: FAIMSTypeName;
   relation_type: FAIMSTypeName;
@@ -176,7 +135,9 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;
 
-  const [relatedRecords, setRelatedRecords] = React.useState<RecordReference[]>([]);
+  const [relatedRecords, setRelatedRecords] = React.useState<RecordReference[]>(
+    []
+  );
   const multiple = props.multiple !== undefined ? props.multiple : false;
   const location = useLocation();
   let search = location.search.includes('link=')
@@ -244,11 +205,10 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           props.form.values[field_name],
           all_records
         );
-        console.log("Related Records", records);
 
         setRelatedRecords(records);
 
-        const records_info = await get_RelatedFields_for_field(
+        const records_info = await getRelatedRecords(
           props.form.values,
           props.related_type,
           relationshipPair,
@@ -260,9 +220,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           type
         );
         setRecordsInformation(records_info);
-      } else {
-        console.debug('Project ID is not available - this is probably bad');
-      }
+      };
     })();
 
     return () => {
@@ -276,7 +234,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     (async () => {
       // this is for conflict only
       if (project_id !== undefined && mounted && props.isconflict === true) {
-        const records_info = await get_RelatedFields_for_field(
+        const records_info = await getRelatedRecords(
           props.form.values,
           props.related_type,
           relationshipPair,
@@ -288,9 +246,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           type
         );
         setRecordsInformation(records_info);
-      } else {
-        console.debug('Project ID is not available');
-      }
+      };
     })();
 
     return () => {
@@ -559,20 +515,22 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
         )}
 
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          <DisplayRelatedRecords
-            recordsInformation={recordsInformation}
-            record_id={record_id}
-            record_hrid={props.form.values['_id']}
-            record_type={props.form.values['type']}
-            relation_type={type}
-            field_name={field_name}
-            handleUnlink={remove_related_child}
-            handleReset={() => {}}
-            disabled={disabled}
-            value={props.form.values[field_name]}
-            multiple={multiple}
-            relationshipLabel={relationshipLabel}
-          />
+          {!!recordsInformation && recordsInformation.length > 0 ? (
+            <DataGridFieldLinksComponent
+              project_id={project_id}
+              links={recordsInformation}
+              record_id={record_id}
+              record_hrid={props.form.values['_id']}
+              record_type={props.form.values['type']}
+              field_name={field_name}
+              handleUnlink={remove_related_child}
+              handleReset={() => {}}
+              disabled={disabled}
+              relation_type={type}
+            />
+          ) : (
+            <></>
+          )}
         </Grid>
       </Grid>
     </div>
