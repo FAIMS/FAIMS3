@@ -1,1 +1,0 @@
-The Pilot Soil Monitoring Incentives Program (PSMIP) soil data entry application has been built using the FAIMS Project's FieldNote technology. This electronic field notebook allows for offline data collection and editing.

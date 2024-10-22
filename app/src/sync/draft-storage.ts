@@ -135,7 +135,6 @@ export async function setStagedData(
   relationship: Relationship
 ): Promise<PouchDB.Core.Response> {
   const existing = await draft_db.get(draft_id);
-
   const encoded_info = encodeStagedData(
     new_data,
     new_annotations,

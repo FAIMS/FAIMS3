@@ -23,7 +23,7 @@ import {
   addLocalPasswordForUser,
   validateLocalUser,
 } from '../src/auth_providers/local';
-import {CLUSTER_ADMIN_GROUP_NAME} from '../src/buildconfig';
+import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
 import {getUsersDB, initialiseDatabases} from '../src/couchdb';
 import {
   addProjectRoleToUser,

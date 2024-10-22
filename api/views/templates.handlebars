@@ -1,0 +1,135 @@
+<div class="container">
+
+<h1>Templates</h1>
+
+  <p>Notebook templates are complete notebook specifications that can be used to create new
+  notebook.   Use templates if you want to use a consistent set of forms for many
+  site-specific data collection exercises.</p>
+
+  <p>Once you have uploaded a template, you can create one or more notebooks from it.  Visit
+  the link for the template below to view options.</p>
+
+  <p>At the moment, all templates are visible to anyone with permission to create notebooks on
+  this server. Don't use templates if you have sensitive information in your notebook.
+  </p>
+
+  {{#if can_create_notebooks}}
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+    New Template
+  </button>
+
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Add New Template</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+        <form id="upload-notebook-form">
+          <div class="modal-body">
+            <div class="mb-3">
+              Here you can create a new template by uploading a JSON 
+              notebook specification file.
+            </div>
+
+            <div class="mb-3">
+              <label for="templateName">Template Name</label>
+              <input id="templateName" name="name" class="form-control" placeholder="Template Name">
+              <div class="form-text">Optional, if not provided the name property from the file will be used.</div>
+            </div>
+
+            <div class="mb-3">
+              <input type="file" class="form-control" name="notebook" id="notebook">
+              <div class="form-text">Select a notebook file in JSON format.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <input type="submit" class="btn btn-primary" value="Upload Template">
+          </div>
+        </form>
+    </div>
+  </div>
+</div>
+
+  {{/if}}
+
+  <table class="table">
+      {{#each templates}}
+          <tr>
+            <td>
+              <a href="/templates/{{this.metadata.template_id}}">{{this.template_name}}</a>
+            </td>
+            <td>
+              {{this.metadata.project_lead}}
+            </td>
+            <td>
+              {{#if this.metadata.pre_description}}
+                {{markdown this.metadata.pre_description}}
+              {{/if}}
+            </td>
+          </tr>
+      {{/each}}
+  </table>
+
+
+
+</div>
+
+
+<script>
+  const uploadNotebookHandler = (event) => {
+    event.preventDefault();
+    const url = '/api/templates/';
+    const form = event.target;
+    const name = form.querySelector('[name="name"]').value;
+    const fileInput = form.querySelector('[name="notebook"]');
+    if (fileInput) {
+      // parse the contents of the uploaded file as JSON
+      const reader = new FileReader();
+      const filename = fileInput.files[0];
+      reader.readAsText(filename);
+      reader.onload = (evt) => {
+        try {
+          const data = JSON.parse(evt.target.result);
+          // a little bit of validation
+          if (!data.metadata || !data['ui-specification']) {
+            alert('Invalid notebook file');
+            return;
+          }
+          if (!data.metadata.name) {
+            alert('Invalid notebook file');
+            return;
+          }
+          const body = {
+            metadata: data.metadata,
+            'ui-specification': data['ui-specification'],
+            template_name: name || data.metadata.name,
+          }
+          fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data._id) {
+              // jump to the page for the new notebook
+              const url = `/templates/${data._id}`
+              window.location.href = url;
+            } else {
+              alert('Error uploading notebook');
+            }
+          });
+        } catch (e) {
+          alert('Invalid notebook file');
+          return;
+        }
+      }
+
+    }
+  }
+  document.getElementById('upload-notebook-form').onsubmit = uploadNotebookHandler;
+</script>

@@ -50,7 +50,7 @@ type RecordDeleteProps = {
   revision_id: RevisionID | null;
   draft_id: string | null;
   show_label: boolean;
-  handleRefresh: () => Promise<any>;
+  handleRefresh: () => void;
 };
 
 async function deleteFromDB(
@@ -59,8 +59,9 @@ async function deleteFromDB(
   revision_id: RevisionID | null,
   draft_id: string | null,
   userid: string,
-  callback: () => Promise<any>
+  callback: () => void
 ) {
+  console.log('deleting data from the db', draft_id);
   if (draft_id !== null) {
     await deleteStagedData(draft_id, null);
   } else {

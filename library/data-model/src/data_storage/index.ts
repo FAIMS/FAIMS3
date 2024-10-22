@@ -56,6 +56,8 @@ import {
 import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
 import {logError} from '../logging';
 
+export * from './authDB';
+
 export function generateFAIMSDataID(): RecordID {
   return 'rec-' + uuidv4();
 }
@@ -562,6 +564,7 @@ export async function getSomeRecords(
         record_id: doc.id,
         revision_id: doc.value._id,
         created: doc.value.created,
+        created_by: doc.value.created_by,
         conflict: doc.value.conflict,
         type: doc.value.type,
         revision: doc.doc,

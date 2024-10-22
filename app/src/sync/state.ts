@@ -18,10 +18,10 @@
  *   TODO
  */
 
-import {ListingsObject, ProjectID} from '@faims3/data-model';
+import {ProjectID} from '@faims3/data-model';
 import {ProjectObject} from './projects';
 import {ProjectMetaObject, isRecord, mergeHeads} from '@faims3/data-model';
-
+import {ListingsObject} from '@faims3/data-model/src/types';
 import {ActiveDoc, LocalDB} from './databases';
 import {DirectoryEmitter} from './events';
 import {logError} from '../logging';

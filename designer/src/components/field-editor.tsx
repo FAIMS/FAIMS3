@@ -26,6 +26,7 @@ import MuiAccordionSummary, {
   AccordionSummaryProps,
 } from '@mui/material/AccordionSummary';
 
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
@@ -70,6 +71,7 @@ type FieldEditorProps = {
   viewSetId?: string;
   viewId: string;
   expanded: boolean;
+  addFieldCallback: (fieldName: string) => void;
   handleExpandChange: (event: React.SyntheticEvent, newState: boolean) => void;
 };
 
@@ -77,6 +79,7 @@ export const FieldEditor = ({
   fieldName,
   viewId,
   expanded,
+  addFieldCallback,
   handleExpandChange,
 }: FieldEditorProps) => {
   const field = useAppSelector(
@@ -120,6 +123,11 @@ export const FieldEditor = ({
     });
   };
 
+  const addFieldBelow = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+    addFieldCallback(fieldName);
+  };
+
   return (
     <Accordion
       key={fieldName}
@@ -138,7 +146,9 @@ export const FieldEditor = ({
           display: 'none',
         },
       }}
-      TransitionProps={{unmountOnExit: true}}
+      slotProps={{
+        transition: {unmountOnExit: true},
+      }}
     >
       <AccordionSummary>
         <Grid container rowGap={1}>
@@ -213,6 +223,15 @@ export const FieldEditor = ({
                   size="small"
                 >
                   <DeleteRoundedIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Add Field Below">
+                <IconButton
+                  onClick={addFieldBelow}
+                  aria-label="add field"
+                  size="small"
+                >
+                  <PlaylistAddIcon />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Move up">
