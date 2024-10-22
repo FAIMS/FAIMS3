@@ -39,7 +39,7 @@ import {
 } from '@mui/x-data-grid';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
-import {RecordID, Record, ProjectUIModel} from '@faims3/data-model';
+import {RecordID, Record, ProjectUIModel, ProjectID} from '@faims3/data-model';
 import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from '@faims3/data-model';
 import {gridParamsDataType} from '../record_links';
@@ -159,7 +159,7 @@ export function DataGridFieldLinksComponent(
     null as null | GridRowParams['row']
   );
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [uiSpec, setUISpec] = React.useState<ProjectUIModel>({});
+  const [uiSpec, setUISpec] = React.useState<ProjectUIModel | null>(null);
 
   useEffect(() => {
     const get = async () => {
@@ -234,10 +234,9 @@ export function DataGridFieldLinksComponent(
         const rd = await getRecordInformation(props.child_record);
         setRecordData(rd);
 
-        if (rd?.latest_record)
+        if (uiSpec && rd?.latest_record)
           setDisplayFields(getSummaryFields(uiSpec, rd.latest_record.type));
       };
-
       fn();
     }, [props.child_record]);
 
@@ -259,7 +258,7 @@ export function DataGridFieldLinksComponent(
             if (typeof value === 'string')
               return (
                 <Typography key={fieldName} variant={'body2'}>
-                  {getFieldLabel(uiSpec, fieldName)}:{' '}
+                  {uiSpec ? getFieldLabel(uiSpec, fieldName) : fieldName}:{' '}
                   {recordData?.latest_record?.data[fieldName] || ''}
                 </Typography>
               );
