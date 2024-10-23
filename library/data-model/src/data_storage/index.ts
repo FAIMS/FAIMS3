@@ -63,6 +63,22 @@ export function generateFAIMSDataID(): RecordID {
 }
 
 /**
+ * Utility function to get the type of a record given an id via a
+ *  simple query, avoiding too many db lookups
+ *
+ * @param project_id project identifier
+ * @param record_id record identifier
+ * @returns the record type as a string
+ */
+export async function getRecordType(
+  project_id: ProjectID,
+  record_id: RecordID
+): Promise<string> {
+  const record = await getRecord(project_id, record_id);
+  return record.type;
+};
+
+/**
  * Get the revision id of the most recent revision of a record
  * @param project_id project identifier
  * @param record_id record identifier
