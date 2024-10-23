@@ -25,6 +25,7 @@ export interface ProjectExtended extends Project {
   listing: string;
   activated: boolean;
   sync: boolean;
+  last_synced: Date | null;
 }
 
 export interface ProjectInterface {
