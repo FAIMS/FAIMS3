@@ -61,12 +61,6 @@ export default function Notebook() {
     getInfo();
   }, [project_id]);
 
-  const breadcrumbs = [
-    {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
-    {
-      title: !loading ? project_info.name : '',
-    },
-  ];
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
 
@@ -173,11 +167,6 @@ export default function Notebook() {
           )}
         </Box>
       </Box>
-
-      {/* Breadcrumbs  - @TODO remove later */}
-      {/* <Box sx={{paddingLeft: '6px', marginTop: '2px'}}>
-        <Breadcrumbs data={breadcrumbs} />
-      </Box> */}
 
       <Box sx={{paddingTop: '16px'}}>
         {/* @TODO remove later

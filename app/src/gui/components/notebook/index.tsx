@@ -25,11 +25,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-  RECORD_LABEL,
-} from '../../../buildconfig';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import {bssTabStyling} from '../../themes';
 
 /**
@@ -150,7 +146,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           setLoading(false);
           setErr('');
 
-          // Dynamically set RECORD_LABEL based on uiSpec
+          // Dynamically set recordlabel based on uiSpec
           const visibleTypes = spec.visible_types;
           if (visibleTypes && visibleTypes.length === 1) {
             // Only one type, so we can use its label
