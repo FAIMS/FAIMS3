@@ -327,21 +327,6 @@ function get_notebook_name(): string {
 }
 
 /**
- * Retrieves the label to be used for records (record/site) from the environment variables.
- * If the environment variable is not set, it returns a default value 'record'.
- *
- * @returns {string} - The name of label.
- */
-function get_record_label_name(): string {
-  const record_label = import.meta.env.VITE_BSS_RECORDS_LABEL;
-  if (record_label) {
-    return record_label;
-  } else {
-    return 'site';
-  }
-}
-
-/**
  * Retrieves the name of the notebooks and capitalizes the first letter.
  *
  * @returns {string} - The capitalized name of notebooks.
@@ -372,4 +357,3 @@ export const BUGSNAG_KEY = get_bugsnag_key();
 export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
 export const NOTEBOOK_NAME = get_notebook_name();
 export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
-export const RECORD_LABEL = get_record_label_name();
