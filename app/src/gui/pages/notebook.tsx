@@ -13,19 +13,33 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: notebook.tsx
- * Description:
- *   TODO
+/**
+ * Description: 
+ * Name: Notebook component
+ * This component displays detailed information about a specific notebook
+ * in a project. It handles loading, error states, and fetches project
+ * information using the project ID from the URL. It also provides navigation
+ * back to the list of notebooks and displays the notebook's active status.
+ * 
+ * Dependencies:
+ * - React hooks: useState, useEffect
+ * - React Router: useParams, useNavigate
+ * - Material UI: Box, Typography, Chip, IconButton, CircularProgress
  */
 import {useContext} from 'react';
-import {useParams} from 'react-router-dom';
-import {Box, Grid, Typography} from '@mui/material';
-import FolderIcon from '@mui/icons-material/Folder';
+import {useNavigate, useParams} from 'react-router-dom';
+import {Box, Chip, Grid, IconButton, Typography} from '@mui/material';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import {CircularProgress} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {ProjectsContext} from '../../context/projects-context';
 import NotebookComponent from '../components/notebook';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ErrorIcon from '@mui/icons-material/Error';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import * as ROUTES from '../../constants/routes';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 export default function Notebook() {
   const {project_id} = useParams<{
@@ -41,9 +55,102 @@ export default function Notebook() {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
 
+  const history = useNavigate();
+  const isActive = project?.activated;
+
   return (
     <Box>
-      <Grid
+      {/* Back Button Section */}
+      <Box sx={{display: 'flex', alignItems: 'center', padding: '8px'}}>
+        <IconButton
+          onClick={() => history(ROUTES.INDEX)}
+          aria-label="back"
+          size="small"
+          sx={{color: 'black'}}
+        >
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography
+          variant="body1"
+          sx={{marginLeft: '8px', fontWeight: 'bold'}}
+        >
+          Back to {NOTEBOOK_NAME_CAPITALIZED}s
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 16px',
+        }}
+      >
+        <Box
+          sx={{display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0}}
+        >
+          <MenuBookIcon
+            color="primary"
+            fontSize={mq_above_md ? 'large' : 'medium'}
+            sx={{marginRight: '8px'}}
+          />
+          <Typography
+            variant={mq_above_md ? 'h4' : 'h5'}
+            component="div"
+            sx={{
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              fontSize: '1.6rem',
+            }}
+          >
+            {project.name}
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            textAlign: 'center',
+            marginLeft: {xs: '32px', sm: '24px', md: '20px'},
+          }}
+        >
+          {isActive ? (
+            <Chip
+              label="Active"
+              icon={<CheckCircleIcon />}
+              sx={{
+                backgroundColor: 'green',
+                color: 'white',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                '& .MuiChip-icon': {
+                  color: 'white',
+                },
+              }}
+            />
+          ) : (
+            <Chip
+              label="Not Active"
+              icon={<ErrorIcon sx={{color: 'white'}} />}
+              sx={{
+                backgroundColor: '#b62b2b',
+                color: 'white',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                '& .MuiChip-icon': {
+                  color: 'white',
+                },
+              }}
+            />
+          )}
+        </Box>
+      </Box>
+      {/* <Grid
         container
         direction="row"
         justifyContent="flex-start"
@@ -70,7 +177,7 @@ export default function Notebook() {
             </Grid>
           </Typography>
         </Grid>
-      </Grid>
+      </Grid> */}
       <NotebookComponent project={project} />
     </Box>
   );
