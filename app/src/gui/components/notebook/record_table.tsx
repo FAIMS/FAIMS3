@@ -285,7 +285,7 @@ function RecordsTable(props: RecordsTableProps) {
 
     // Send count to parent with callback  - onRecordsCountChangee
     if (onRecordsCountChange) {
-      onRecordsCountChange({total: totalRecords, myRecords, otherRecords});
+      onRecordsCountChange({total: totalRecords, myRecords});
     }
   }, [rows, currentUser, onRecordsCountChange]);
 
