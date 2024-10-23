@@ -427,10 +427,11 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       `/register-return/${handler}/`,
       (req: any, res: any, next: any) => {
         const redirect = req.session['redirect'] || '/send-token';
-        passport.authenticate(handler + '-register', {
-          successRedirect: redirect,
-          failureRedirect: '/auth',
-        })(req, res, next);
+        // need to add token to redirect
+        passport.authenticate(
+          handler + '-register',
+          authenticate_return(req, res, next, redirect)
+        )(req, res, next);
       }
     );
   }
