@@ -36,7 +36,6 @@ import {
   PostLocalAuthInputSchema,
   PostLocalAuthQuerySchema,
   PostRegisterLocalInputSchema,
-  PostRegisterLocalQuerySchema,
 } from '@faims3/data-model';
 
 interface RequestQueryRedirect {
@@ -293,7 +292,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     '/register/local',
     processRequest({
       body: PostRegisterLocalInputSchema,
-      query: PostRegisterLocalQuerySchema,
     }),
     // TODO move this validation to Zod - right now this is depended on by
     // handlebars since the errors are 'flashed' in the function below
@@ -301,7 +299,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       .isLength({min: 10})
       .withMessage('Must be at least 10 characters'),
     body('email').isEmail().withMessage('Must be a valid email address'),
-    async (req, res, next: NextFunction) => {
+    async (req: any, res: any, next: NextFunction) => {
       // create a new local account if we have a valid invite
 
       // In the form, the username is =
@@ -310,7 +308,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       const repeat = req.body.repeat;
       const name = req.body.name;
       const email = req.body.email;
-      const redirect = validateRedirect(req.query?.redirect || '/');
+      const redirect = validateRedirect(req.body.redirect || '/');
 
       // If the username was not provided, use the email
       if (username === undefined || username === null) {
@@ -379,7 +377,8 @@ export function add_auth_routes(app: Router, handlers: string[]) {
   // set up handlers for OAuth providers
   for (const handler of handlers) {
     app.get(`/auth/${handler}/`, (req: any, res: any, next: any) => {
-      const redirect = validateRedirect(req.query?.redirect || '/');
+      const redirect = validateRedirect(req.query?.redirect || '/send-token');
+      req.session['redirect'] = req.query.redirect;
       if (
         typeof req.query?.state === 'string' ||
         typeof req.query?.state === 'undefined'
@@ -400,17 +399,22 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     app.get(
       // This should line up with determine_callback_url above
       `/auth-return/${handler}/`,
-      passport.authenticate(handler + '-validate', {
-        successRedirect: '/send-token/',
-        failureRedirect: '/auth',
-        failureFlash: true,
-        successFlash: 'Welcome!',
-      })
+      (req: any, res: any, next: any) => {
+        const redirect = req.session['redirect'] || '/send-token';
+        passport.authenticate(handler + '-validate', {
+          successRedirect: redirect,
+          failureRedirect: '/auth',
+          failureFlash: true,
+          successFlash: 'Welcome!',
+        })(req, res, next);
+      }
     );
 
     console.log('adding route', `/register/${handler}/`);
     app.get(`/register/:id/${handler}/`, (req: any, res: any, next: any) => {
+      // save the invite and redirect in the session so we can refer to them later
       req.session['invite'] = req.params.id;
+      req.session['redirect'] = req.query.redirect;
       return passport.authenticate(handler + '-register', () => next())(
         req,
         res,
@@ -421,10 +425,13 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     app.get(
       // This should line up with determine_callback_url above
       `/register-return/${handler}/`,
-      passport.authenticate(handler + '-register', {
-        successRedirect: '/',
-        failureRedirect: '/auth',
-      })
+      (req: any, res: any, next: any) => {
+        const redirect = req.session['redirect'] || '/send-token';
+        passport.authenticate(handler + '-register', {
+          successRedirect: redirect,
+          failureRedirect: '/auth',
+        })(req, res, next);
+      }
     );
   }
 }

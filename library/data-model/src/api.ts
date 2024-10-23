@@ -63,6 +63,7 @@ export const PostRegisterLocalInputSchema = z.object({
     ),
   repeat: z.string(),
   name: z.string(),
+  redirect: z.string().trim().optional(),
 });
 export const PostRegisterLocalQuerySchema = OptionalRedirectQuery;
 export type PostRegisterLocalInput = z.infer<

@@ -10,7 +10,7 @@
   </div>
 
   {{#each providers}}
-  <p><a href="/register/{{../invite}}/{{ this.label }}/" class="w-100 btn btn-lg btn-primary"
+  <p><a href="/register/{{../invite}}/{{ this.label }}/?redirect={{ ../redirect }}" class="w-100 btn btn-lg btn-primary"
           style="background-color:#669911;">{{ this.name }}</a></p>
   {{/each}}
 

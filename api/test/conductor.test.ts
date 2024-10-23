@@ -85,6 +85,24 @@ describe('Auth', () => {
       });
   });
 
+  it('redirects with a token on login', done => {
+    const redirect = 'http://redirect.org/';
+    request(app)
+      .post(`/auth/local/?redirect=${redirect}`)
+      .send({username: 'admin', password: adminPassword})
+      .expect(302)
+      .then(response => {
+        const location = new URL(response.header.location);
+        expect(location.hostname).to.equal('redirect.org');
+        expect(location.search).to.match(/token/);
+        done();
+      });
+  });
+});
+
+describe('Pages', () => {
+  beforeEach(beforeApiTests);
+
   it('shows the notebooks page', async () => {
     const filename = 'notebooks/sample_notebook.json';
     const jsonText = fs.readFileSync(filename, 'utf-8');
