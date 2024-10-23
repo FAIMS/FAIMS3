@@ -220,7 +220,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           type
         );
         setRecordsInformation(records_info);
-      };
+      }
     })();
 
     return () => {
@@ -246,7 +246,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           type
         );
         setRecordsInformation(records_info);
-      };
+      }
     })();
 
     return () => {

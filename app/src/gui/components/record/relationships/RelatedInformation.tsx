@@ -313,11 +313,10 @@ function getRelatedFields(
   return fields;
 }
 
-
 /**
  * getRelatedRecords - get all records related to this one by a given relationship
  *  - takes the value of the field and turns it into an array of RecordInformation
- * 
+ *
  * @param values - current form values for this record
  * @param related_type - the type of the records we are looking for
  * @param relation_type_vocabPair - names of the relationships
@@ -327,7 +326,7 @@ function getRelatedFields(
  * @param related_type_label - label on the record type we're linking to
  * @param form_type - the type of this record
  * @param relation_type - the relationship we're looking for 'faims-core::Child' or 'faims-core::Linked'
- * @returns 
+ * @returns
  */
 export async function getRelatedRecords(
   values: {[field_name: string]: any},
@@ -392,7 +391,11 @@ export async function getRelatedRecords(
             '',
             field_name,
             field_label,
-            get_route_for_field(child_record.project_id, record_id, values['_current_revision_id']),
+            get_route_for_field(
+              child_record.project_id,
+              record_id,
+              values['_current_revision_id']
+            ),
             relation_type,
             latest_record?.deleted ?? false
           );
@@ -781,8 +784,6 @@ function getHRIDValue(
   else return record_id;
 }
 
-
-
 export async function getDetailRelatedInformation(
   ui_specification: ProjectUIModel,
   form_type: string,
@@ -840,7 +841,6 @@ export async function getDetailRelatedInformation(
   //get information for parent
   return record_to_field_links;
 }
-
 
 function get_last_updated(updated_by: string, updated: Date | undefined) {
   if (updated === undefined) return updated_by;

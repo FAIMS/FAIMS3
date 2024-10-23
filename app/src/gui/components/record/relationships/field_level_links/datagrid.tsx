@@ -49,7 +49,6 @@ import {
   getFieldLabel,
   getSummaryFields,
   getUiSpecForProject,
-  getViewsetForField,
 } from '../../../../../uiSpecification';
 
 const style = {

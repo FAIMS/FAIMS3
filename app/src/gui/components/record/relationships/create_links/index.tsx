@@ -37,7 +37,7 @@ interface CreateLinkComponentProps extends CreateRecordLinkProps {
 export default function CreateLinkComponent(
   props: CreateLinkComponentProps & CreateRecordLinkProps
 ) {
-  const {field_label, ...others} = props;
+  const {field_label} = props;
   // is the new link functionality visible
   const [expanded, setExpanded] = React.useState(false);
 

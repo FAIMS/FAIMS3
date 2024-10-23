@@ -36,7 +36,6 @@ import {ActionType} from '../../../context/actions';
 import {
   Annotations,
   getFullRecordData,
-  getRecordType,
   ProjectID,
   ProjectUIModel,
   RecordID,

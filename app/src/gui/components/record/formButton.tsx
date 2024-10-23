@@ -32,7 +32,7 @@ import {
 import CircularProgress from '@mui/material/CircularProgress';
 
 import {CustomMobileStepper} from './recordStepper';
-import {getRecordMetadata, getRecordType} from '@faims3/data-model';
+import {getRecordType} from '@faims3/data-model';
 import {useEffect, useState} from 'react';
 
 function FormSubmitButton(props: any) {

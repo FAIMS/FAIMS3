@@ -46,7 +46,6 @@ export interface RecordLinkProps extends RecordReference {
   relation_type?: string;
 }
 
-
 /**************need to be updated later */
 export interface ParentLinkProps {
   record_id: RecordID;
