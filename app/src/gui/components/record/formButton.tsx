@@ -32,6 +32,8 @@ import {
 import CircularProgress from '@mui/material/CircularProgress';
 
 import {CustomMobileStepper} from './recordStepper';
+import {getRecordMetadata, getRecordType} from '@faims3/data-model';
+import {useEffect, useState} from 'react';
 
 function FormSubmitButton(props: any) {
   const {is_final_view, disabled, formProps, handleFormSubmit, is_close, text} =
@@ -67,6 +69,8 @@ function FormSubmitButton(props: any) {
 
 export default function FormButtonGroup(props: any) {
   const {
+    project_id,
+    record_type,
     is_final_view,
     disabled,
     onChangeStepper,
@@ -76,8 +80,34 @@ export default function FormButtonGroup(props: any) {
     views,
     ui_specification,
     mq_above_md,
+    relationship,
     buttonRef,
   } = props;
+
+  const [labels, setLabels] = useState({
+    continue: 'Publish and continue editing',
+    close: 'Publish and close record',
+    new: 'Publish and new record',
+  });
+
+  useEffect(() => {
+    const get = async () => {
+      if (relationship.parent) {
+        const parentName = await getRecordType(
+          project_id,
+          relationship.parent.record_id
+        );
+
+        setLabels({
+          ...labels,
+          close: `Save and return to ${parentName}`,
+          new: `Publish and new ${record_type}`,
+        });
+      }
+    };
+    get();
+  }, []);
+
   return (
     <Grid item sm={12} xs={12} md={12}>
       {/* show mobile stepper for multiple section form ONLY */}
@@ -103,7 +133,7 @@ export default function FormButtonGroup(props: any) {
             <FormSubmitButton
               disabled={disabled}
               formProps={formProps}
-              text="Publish and continue editing"
+              text={labels.continue}
               is_close={'continue'}
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
@@ -112,7 +142,7 @@ export default function FormButtonGroup(props: any) {
               data-testid="publish-close-record"
               disabled={disabled}
               formProps={formProps}
-              text="Publish and Close Record"
+              text={labels.close}
               is_close={'close'}
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
@@ -120,7 +150,7 @@ export default function FormButtonGroup(props: any) {
             <FormSubmitButton
               disabled={disabled}
               formProps={formProps}
-              text="Publish and New Record"
+              text={labels.new}
               is_close={'new'}
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
