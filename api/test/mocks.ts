@@ -3,6 +3,7 @@ import PouchDB from 'pouchdb';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import {ProjectID, DBCallbackObject} from '@faims3/data-model';
 import {
+  getAuthDB,
   getProjectsDB,
   getTemplatesDb,
   getUsersDB,
@@ -56,6 +57,10 @@ export const resetDatabases = async () => {
   const usersDB = getUsersDB();
   if (usersDB) {
     await clearDB(usersDB);
+  }
+  const authDB = getAuthDB();
+  if (authDB) {
+    await clearDB(authDB);
   }
   const projectsDB = getProjectsDB();
   if (projectsDB) {

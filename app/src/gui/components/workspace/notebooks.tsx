@@ -28,7 +28,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import {grey} from '@mui/material/colors';
 import Tabs from '../ui/tab-grid';
-import HeadingGrid from '../ui/heading-grid';
+import HeadingProjectGrid from '../ui/heading-grid';
 import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import * as ROUTES from '../../../constants/routes';
@@ -63,7 +63,7 @@ export default function NoteBooks() {
               >
                 <FolderIcon
                   fontSize={'small'}
-                  color={activated ? 'secondary' : 'disabled'}
+                  color={activated ? 'primary' : 'disabled'}
                   sx={{mr: '3px'}}
                 />
                 <Typography
@@ -85,14 +85,6 @@ export default function NoteBooks() {
           minWidth: 160,
           flex: 0.2,
           valueGetter: ({value}) => value && new Date(value),
-        },
-        {
-          field: 'status',
-          headerName: 'Status',
-          type: 'string',
-          flex: 0.2,
-          minWidth: 160,
-          renderCell: ({row: {status}}) => <ProjectStatus status={status} />,
         },
         {
           field: 'actions',
@@ -177,7 +169,7 @@ export default function NoteBooks() {
         <Typography variant={'body1'} gutterBottom>
           You have {activatedProjects.length} {NOTEBOOK_NAME}
           {activatedProjects.length !== 1 ? 's' : ''} activated on this device.
-          To start syncing a {NOTEBOOK_NAME}, visit the{' '}
+          To start using a {NOTEBOOK_NAME}, visit the{' '}
           <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
             Available
           </Button>{' '}
@@ -200,11 +192,7 @@ export default function NoteBooks() {
             columns={columns}
           />
         ) : (
-          <HeadingGrid
-            pouchProjectList={projects}
-            loading={false}
-            columns={columns}
-          />
+          <HeadingProjectGrid projects={projects} columns={columns} />
         )}
       </Box>
     </Box>

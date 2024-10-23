@@ -1,46 +1,12 @@
----
-# Nightly compile for e2e testing
-name: Deploy to Google Play For Prod deploy
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the main branch
-# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 
-# TODO To be combined into human app build when it works.
+name: Deploy to Google Play For Prod deploy
 
 on:
-  # Trigger the workflow on push or pull request,
-  # but only for the main branch
-  # push:
-  #   branches:
-  #     - github-actions
-  #     - main
-
   workflow_dispatch:
 
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  check_date:
-    runs-on: ubuntu-latest
-    name: Check latest commit
-    outputs:
-      should_run: ${{ steps.should_run.outputs.should_run }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: print latest_commit
-        run: echo ${{ github.sha }}
-
-      - id: should_run
-        continue-on-error: true
-        name: check latest commit is less than a day
-        if: ${{ github.event_name == 'schedule' }}
-        run: test -z $(git rev-list  --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
-
   node-deb-gh-build-play:
-    # The type of runner that the job will run on
-    # https://github.com/Apple-Actions/Example-iOS/blob/master/.github/workflows/test.yml
     runs-on: ubuntu-latest
-    needs: check_date
     continue-on-error: true
     strategy:
       matrix:
@@ -63,6 +29,20 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+      - name: Configure Turborepo Remote Cache
+        run: |
+          mkdir -p .turbo
+          if [ -n "${{ vars.TURBO_API_URL }}" ]; then
+            echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
+            echo "Turborepo config file created at .turbo/config.json"
+          else
+            echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."
+          fi
+          if [ -n "$TURBO_TEAM" ] && [ -n "$TURBO_TOKEN" ]; then
+            echo "TURBO_TEAM and TURBO_TOKEN environment variables set"
+          else
+            echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
+          fi
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Cache Gradle packages
         uses: actions/cache@v3
@@ -123,13 +103,12 @@ jobs:
           export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh android)
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_MINIFAUXTON=false
-          export VITE_DIRECTORY_HOST=db.fieldmark.app
+          export VITE_DIRECTORY_HOST=${{vars.PRODUCTION_CONDUCTOR_URL}}
           export VITE_DIRECTORY_PORT=443
           export VITE_PRODUCTION_BUILD=true          
           export VITE_PROD_BUILD=true          
           export VITE_TAG=prodAndroid      
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
-          git clean -xfd
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
@@ -140,8 +119,10 @@ jobs:
         run: |
           cd android
           bundle install
-          bundle exec fastlane deploy_fieldmark_production
+          bundle exec fastlane deploy_fieldmark
         env:
+          ANDROID_APP_ID: ${{ vars.ANDROID_APP_ID }}
+          ANDROID_DEPLOY_TRACK: "production"
           JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
           JAVA_KEYSTORE_PASSWORD: ${{ secrets.JAVA_KEYSTORE_PASSWORD }}
           JAVA_KEY: ${{ secrets.JAVA_KEY}}
@@ -149,20 +130,3 @@ jobs:
           ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
           serverprefix: "fieldmark"
           prnum: ${{steps.prnum.outputs.value}}
-      # - run: cd android && ./gradlew assembleDebug
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: assets
-          path: |
-            ${{ github.workspace }}/android/app/build/outputs/bundle/release
-      # - uses: "marvinpinto/action-automatic-releases@latest"
-      #   with:
-      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
-      #     automatic_release_tag: "latest-android"
-      #     prerelease: true
-      #     title: "Android APK Development Build"
-      #     files: |
-      #       LICENSE
-      #       *.apk            
-  
