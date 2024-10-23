@@ -79,8 +79,8 @@ export default function NoteBooks() {
           ),
         },
         {
-          field: 'last_updated',
-          headerName: 'Last Updated',
+          field: 'last_synced',
+          headerName: 'Last Synced',
           type: 'dateTime',
           minWidth: 160,
           flex: 0.2,
@@ -137,8 +137,8 @@ export default function NoteBooks() {
           ),
         },
         {
-          field: 'last_updated',
-          headerName: 'Last Updated',
+          field: 'last_synced',
+          headerName: 'Last Synced',
           type: 'dateTime',
           minWidth: 100,
           flex: 0.3,

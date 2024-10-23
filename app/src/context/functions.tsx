@@ -103,6 +103,7 @@ export const getRemoteProjects = async () => {
         activated: false,
         sync: false,
         conductor_url,
+        last_synced: null,
       }))
     );
   }
