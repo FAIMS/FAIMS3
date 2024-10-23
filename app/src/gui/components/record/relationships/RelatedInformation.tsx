@@ -211,7 +211,7 @@ const linkExists = (
   return is_linked;
 };
 
-async function getRecordInformation(child_record: RecordReference) {
+export async function getRecordInformation(child_record: RecordReference) {
   let latest_record = null;
   let revision_id;
   if (child_record.project_id === undefined)
@@ -228,7 +228,8 @@ async function getRecordInformation(child_record: RecordReference) {
       false
     );
   } catch (error) {
-    throw Error('Error to get record information' + child_record.project_id);
+    logError(error);
+    throw Error(`Unable to find record with id: ${child_record.project_id}`);
   }
   return {latest_record, revision_id};
 }
@@ -312,7 +313,22 @@ function getRelatedFields(
   return fields;
 }
 
-export async function get_RelatedFields_for_field(
+/**
+ * getRelatedRecords - get all records related to this one by a given relationship
+ *  - takes the value of the field and turns it into an array of RecordInformation
+ *
+ * @param values - current form values for this record
+ * @param related_type - the type of the records we are looking for
+ * @param relation_type_vocabPair - names of the relationships
+ * @param field_name - the field name that will hold the relationship
+ * @param field_label - the label of that field
+ * @param multiple - do we allow multiple linked records?
+ * @param related_type_label - label on the record type we're linking to
+ * @param form_type - the type of this record
+ * @param relation_type - the relationship we're looking for 'faims-core::Child' or 'faims-core::Linked'
+ * @returns
+ */
+export async function getRelatedRecords(
   values: {[field_name: string]: any},
   related_type: string,
   relation_type_vocabPair: Array<string>,
@@ -321,16 +337,21 @@ export async function get_RelatedFields_for_field(
   multiple: boolean,
   related_type_label: string | undefined,
   form_type: string | undefined,
-  realtion_type: string
+  relation_type: string
 ) {
   const child_records = multiple ? values[field_name] : [values[field_name]];
   const records: RecordLinkProps[] = [];
   if (child_records && child_records.length === 0) return records;
+
+  // details of this record
   const record_id = values['_id'];
+  const hrid = getHRIDValue(record_id, values);
+
   for (const index in child_records) {
     const child_record = child_records[index];
 
     if (child_record && child_record.record_id) {
+      // get a label for the relationship from the child or default to the field setting
       let relationLabel = child_record.relation_type_vocabPair;
       if (
         relationLabel === undefined ||
@@ -338,7 +359,7 @@ export async function get_RelatedFields_for_field(
         relationLabel[0] === ''
       )
         relationLabel = relation_type_vocabPair;
-      const hrid = getHRIDValue(record_id, values);
+
       try {
         const {latest_record, revision_id} =
           await getRecordInformation(child_record);
@@ -375,7 +396,7 @@ export async function get_RelatedFields_for_field(
               record_id,
               values['_current_revision_id']
             ),
-            realtion_type,
+            relation_type,
             latest_record?.deleted ?? false
           );
           records.push(child);
@@ -397,7 +418,7 @@ export async function get_RelatedFields_for_field(
           field_name,
           field_label,
           '',
-          realtion_type
+          relation_type
         );
         records.push(child);
         logError(error);
@@ -442,7 +463,9 @@ function generate_RecordLink(
   parent_deleted = false
 ): RecordLinkProps {
   const child: RecordLinkProps = {
+    project_id: child_record.project_id,
     record_id: child_record.record_id,
+    record_label: child_record.record_label,
     hrid: child_record.record_label,
     type: type,
     route: child_route,
@@ -462,7 +485,6 @@ function generate_RecordLink(
     deleted: record_deleted,
     relation_type: relation_type,
   };
-  if (child_record.is_preferred === true) child['relation_preferred'] = true;
   return child;
 }
 
@@ -649,6 +671,7 @@ export async function addLinkedRecord(
   return newfields;
 }
 
+// get a label for the section of the form that this field is part of
 function get_section(
   ui_specification: ProjectUIModel,
   form_type: string,
@@ -675,15 +698,9 @@ function get_field_label(ui_specification: ProjectUIModel, field: string) {
     return {field_name, is_deleted};
   }
   try {
-    if (
-      ui_specification['fields'][field]['component-parameters'][
-        'InputLabelProps'
-      ]['label']
-    )
+    if (ui_specification['fields'][field]['component-parameters'].label)
       field_name =
-        ui_specification['fields'][field]['component-parameters'][
-          'InputLabelProps'
-        ]['label'];
+        ui_specification['fields'][field]['component-parameters'].label;
     return {field_name, is_deleted};
   } catch (error) {
     logError(error);
@@ -824,11 +841,13 @@ export async function getDetailRelatedInformation(
   //get information for parent
   return record_to_field_links;
 }
+
 function get_last_updated(updated_by: string, updated: Date | undefined) {
   if (updated === undefined) return updated_by;
   const update_time = getLocalDate(updated).replace('T', ' ');
   return updated_by + ' at ' + update_time;
 }
+
 export async function Update_New_Link(
   child_record: RecordReference,
   parent: LinkedRelation,
@@ -1287,6 +1306,7 @@ type remove_deleted_parent_props = {
   new_relation: Relationship;
   newRelationship: RecordLinkProps[];
 };
+
 export async function remove_deleted_parent(
   relation_type: string,
   project_id: string,
