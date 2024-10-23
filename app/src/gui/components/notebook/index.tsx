@@ -148,9 +148,11 @@ export default function NotebookComponent(props: NotebookComponentProps) {
 
           // Dynamically set recordlabel based on uiSpec
           const visibleTypes = spec.visible_types;
+          console.log('RAAANNNNNNNN777777Visibletypes', visibleTypes);
           if (visibleTypes && visibleTypes.length === 1) {
             // Only one type, so we can use its label
             const recordType = visibleTypes[0]; // e.g., "Site" or "Building"
+            console.log('RAAAANNNNNNNrecordtypeeeee****8', recordType);
             setRecordLabel(recordType); // setRecordLabel- set state
           } else {
             // Multiple types or none, default to "Records"

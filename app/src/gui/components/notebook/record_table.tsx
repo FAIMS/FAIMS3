@@ -271,7 +271,6 @@ function RecordsTable(props: RecordsTableProps) {
 
   useEffect(() => {
     if (!rows || rows.length === 0 || !currentUser) {
-      console.log('No records available or current user not set.');
       return;
     }
 
@@ -405,9 +404,6 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
 
   useEffect(() => {
     const getData = async () => {
-      if (DEBUG_APP) {
-        console.log('RecordsTable updating', props.project_id, query);
-      }
       try {
         if (query.length === 0) {
           const ma = await getMetadataForAllRecords(
