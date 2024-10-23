@@ -13,10 +13,20 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: notebook.tsx
- * Description:
- *   TODO
+/**
+ * Notebook component
+ * 
+ * This component displays detailed information about a specific notebook
+ * in a project. It handles loading, error states, and fetches project
+ * information using the project ID from the URL. It also provides navigation
+ * back to the list of notebooks and displays the notebook's active status.
+ * 
+ * Dependencies:
+ * - React hooks: useState, useEffect
+ * - React Router: useParams, useNavigate
+ * - Material UI: Box, Typography, Chip, IconButton, CircularProgress
  */
+
 import React, {useState, useEffect} from 'react';
 import {useParams, Navigate, useNavigate} from 'react-router-dom';
 import {Box, Chip, IconButton, Typography} from '@mui/material';
