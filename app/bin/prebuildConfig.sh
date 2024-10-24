@@ -23,9 +23,6 @@ sed -i -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" android/app/src/main/An
 
 # android/app/src/main/res/values/strings.xml
 
-# sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g"  ./android/app/src/main/res/values/strings.xml.dist |\
-#   sed -e "s/${APP_ID_PLACEHOLDER}/${VITE_APP_ID}/g" > ./android/app/src/main/res/values/strings.xml
-
 cat << EOT > ./android/app/src/main/res/values/strings.xml
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
@@ -39,6 +36,7 @@ EOT
 
 echo "Generating assets for ${VITE_THEME} theme"
 
-npx capacitor-assets generate --assetPath ./public/base-assets/${VITE_THEME} \
+npx capacitor-assets generate --assetPath "./public/base-assets/${VITE_THEME}" \
+  --pwaManifestPath ./public/manifest.json \
   --iconBackgroundColorDark '#001d34' \
   --splashBackgroundColorDark '#001d34'

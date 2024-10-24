@@ -131,7 +131,7 @@ jobs:
           export VITE_THEME=${{vars.THEME}}
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
           export VITE_APP_ID=${{vars.APP_ID}}
-          export VITE_APP_NAME=${{vars.APP_NAME}}
+          export VITE_APP_NAME="${{vars.APP_NAME}}"
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
