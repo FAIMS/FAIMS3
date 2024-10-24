@@ -1150,6 +1150,7 @@ class RecordForm extends React.Component<
         ui_specification,
         viewsetName
       );
+      const description = this.requireDescription(viewName);
 
       return (
         <Box>
@@ -1170,6 +1171,8 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
+                const layout =
+                  this.props.ui_specification.viewsets[viewsetName]?.layout;
                 const views = getViewsMatchingCondition(
                   this.props.ui_specification,
                   formProps.values,
@@ -1178,140 +1181,222 @@ class RecordForm extends React.Component<
                   formProps.touched
                 );
 
-                return (
-                  <div>
-                    {views.map((name: string, index: number) => {
-                      const description = this.requireDescription(name);
-                      const fieldNames = getFieldsMatchingCondition(
-                        this.props.ui_specification,
-                        formProps.values,
-                        [],
-                        name,
-                        formProps.touched
-                      );
+                if (layout === 'inline')
+                  return (
+                    <div>
+                      {views.map((name: string, index: number) => {
+                        const description = this.requireDescription(name);
+                        const fieldNames = getFieldsMatchingCondition(
+                          this.props.ui_specification,
+                          formProps.values,
+                          [],
+                          name,
+                          formProps.touched
+                        );
 
-                      return (
-                        <div>
-                          <div
-                            style={{
-                              fontSize: '29px',
-                              fontWeight: 'bold',
-                              padding: '10px',
-                            }}
-                          >
-                            {ui_specification.views[name].label}
-                          </div>
-                          <Form>
-                            {description !== '' && (
-                              <Box
-                                bgcolor={'#fafafa'}
-                                p={3}
-                                style={{border: '1px #eeeeee dashed'}}
-                              >
-                                <Typography>{description}</Typography>
-                              </Box>
-                            )}
-                            <br />
-
-                            <Grid container spacing={2}>
-                              <Grid item sm={12} xs={12}>
-                                <ViewComponent
-                                  viewName={name}
-                                  ui_specification={ui_specification}
-                                  formProps={formProps}
-                                  draftState={this.draftState}
-                                  annotation={this.state.annotation}
-                                  handleAnnotation={this.updateannotation}
-                                  isSyncing={this.props.isSyncing}
-                                  conflictfields={this.props.conflictfields}
-                                  handleChangeTab={this.props.handleChangeTab}
-                                  fieldNames={fieldNames}
-                                  disabled={this.props.disabled}
-                                  hideErrors={true}
-                                />
-                              </Grid>
-                              <br />
-                            </Grid>
-                            {this.state.revision_cached !== undefined && (
-                              <Box mt={3}>
-                                <Divider />
-                                <UGCReport
-                                  handleUGCReport={(value: string) => {
-                                    this.setState({ugc_comment: value});
-                                    this.save(
-                                      formProps.values,
-                                      'continue',
-                                      formProps.setSubmitting
-                                    );
-                                  }}
-                                />
-                              </Box>
-                            )}
-                          </Form>
-                        </div>
-                      );
-                    })}
-                    {!formProps.isValid &&
-                      Object.keys(formProps.errors).length > 0 && (
-                        <Alert severity="error">
-                          Form has errors, please scroll up and make changes
-                          before submitting.
+                        return (
                           <div>
-                            {Object.keys(formProps.errors).map(field => (
-                              <React.Fragment key={field}>
-                                <dt>
-                                  {getUsefulFieldNameFromUiSpec(
-                                    field,
-                                    viewName,
-                                    ui_specification
-                                  )}
-                                </dt>
-                                <dd>{formProps.errors[field]}</dd>
-                              </React.Fragment>
-                            ))}
+                            <div
+                              style={{
+                                fontSize: '29px',
+                                fontWeight: 'bold',
+                                padding: '10px',
+                              }}
+                            >
+                              {ui_specification.views[name].label}
+                            </div>
+                            <Form>
+                              {description !== '' && (
+                                <Box
+                                  bgcolor={'#fafafa'}
+                                  p={3}
+                                  style={{border: '1px #eeeeee dashed'}}
+                                >
+                                  <Typography>{description}</Typography>
+                                </Box>
+                              )}
+                              <br />
+
+                              <Grid container spacing={2}>
+                                <Grid item sm={12} xs={12}>
+                                  <ViewComponent
+                                    viewName={name}
+                                    ui_specification={ui_specification}
+                                    formProps={formProps}
+                                    draftState={this.draftState}
+                                    annotation={this.state.annotation}
+                                    handleAnnotation={this.updateannotation}
+                                    isSyncing={this.props.isSyncing}
+                                    conflictfields={this.props.conflictfields}
+                                    handleChangeTab={this.props.handleChangeTab}
+                                    fieldNames={fieldNames}
+                                    disabled={this.props.disabled}
+                                    hideErrors={true}
+                                  />
+                                </Grid>
+                                <br />
+                              </Grid>
+                              {this.state.revision_cached !== undefined && (
+                                <Box mt={3}>
+                                  <Divider />
+                                  <UGCReport
+                                    handleUGCReport={(value: string) => {
+                                      this.setState({ugc_comment: value});
+                                      this.save(
+                                        formProps.values,
+                                        'continue',
+                                        formProps.setSubmitting
+                                      );
+                                    }}
+                                  />
+                                </Box>
+                              )}
+                            </Form>
                           </div>
-                        </Alert>
-                      )}
-                    <FormButtonGroup
-                      is_final_view={true}
-                      disabled={this.props.disabled}
-                      onChangeStepper={this.onChangeStepper}
-                      viewName={viewName}
-                      view_index={0}
-                      formProps={formProps}
-                      ui_specification={ui_specification}
-                      views={views}
-                      mq_above_md={this.props.mq_above_md}
-                      handleFormSubmit={(is_close: string) => {
-                        formProps.setSubmitting(true);
-                        this.setTimeout(() => {
-                          this.save(
-                            formProps.values,
-                            is_close,
-                            formProps.setSubmitting
-                          );
-                        }, 500);
-                      }}
-                      hideNavigation={true}
-                    />
-                    {/* {UGCReport ONLY for the saved record} */}
-                    {this.state.revision_cached !== undefined && (
-                      <Box mt={3}>
-                        <Divider />
-                        <UGCReport
-                          handleUGCReport={(value: string) => {
-                            this.setState({ugc_comment: value});
+                        );
+                      })}
+                      {!formProps.isValid &&
+                        Object.keys(formProps.errors).length > 0 && (
+                          <Alert severity="error">
+                            Form has errors, please scroll up and make changes
+                            before submitting.
+                            <div>
+                              {Object.keys(formProps.errors).map(field => (
+                                <React.Fragment key={field}>
+                                  <dt>
+                                    {getUsefulFieldNameFromUiSpec(
+                                      field,
+                                      viewName,
+                                      ui_specification
+                                    )}
+                                  </dt>
+                                  <dd>{formProps.errors[field]}</dd>
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </Alert>
+                        )}
+                      <FormButtonGroup
+                        is_final_view={true}
+                        disabled={this.props.disabled}
+                        onChangeStepper={this.onChangeStepper}
+                        viewName={viewName}
+                        view_index={0}
+                        formProps={formProps}
+                        ui_specification={ui_specification}
+                        views={views}
+                        mq_above_md={this.props.mq_above_md}
+                        handleFormSubmit={(is_close: string) => {
+                          formProps.setSubmitting(true);
+                          this.setTimeout(() => {
                             this.save(
                               formProps.values,
-                              'continue',
+                              is_close,
                               formProps.setSubmitting
                             );
-                          }}
-                        />
+                          }, 500);
+                        }}
+                        hideNavigation={true}
+                      />
+                      {/* {UGCReport ONLY for the saved record} */}
+                      {this.state.revision_cached !== undefined && (
+                        <Box mt={3}>
+                          <Divider />
+                          <UGCReport
+                            handleUGCReport={(value: string) => {
+                              this.setState({ugc_comment: value});
+                              this.save(
+                                formProps.values,
+                                'continue',
+                                formProps.setSubmitting
+                              );
+                            }}
+                          />
+                        </Box>
+                      )}
+                      <DevTool formProps={formProps} state={this.state} />
+                    </div>
+                  );
+
+                this.draftState &&
+                  this.draftState.renderHook(
+                    formProps.values,
+                    this.state.annotation,
+                    this.state.relationship ?? {}
+                  );
+
+                const fieldNames = getFieldsMatchingCondition(
+                  this.props.ui_specification,
+                  formProps.values,
+                  [],
+                  viewName,
+                  formProps.touched
+                );
+                const view_index = views.indexOf(viewName);
+                const is_final_view = view_index + 1 === views.length;
+
+                return (
+                  <Form>
+                    {views.length > 1 && (
+                      <RecordStepper
+                        view_index={view_index}
+                        ui_specification={ui_specification}
+                        onChangeStepper={this.onChangeStepper}
+                        views={views}
+                      />
+                    )}
+
+                    {description !== '' && (
+                      <Box
+                        bgcolor={'#fafafa'}
+                        p={3}
+                        style={{border: '1px #eeeeee dashed'}}
+                      >
+                        <Typography>{description}</Typography>
                       </Box>
                     )}
-                    <DevTool formProps={formProps} state={this.state} />
-                  </div>
+                    <br />
+
+                    <Grid container spacing={2}>
+                      <Grid item sm={12} xs={12}>
+                        <ViewComponent
+                          viewName={viewName}
+                          ui_specification={ui_specification}
+                          formProps={formProps}
+                          draftState={this.draftState}
+                          annotation={this.state.annotation}
+                          handleAnnotation={this.updateannotation}
+                          isSyncing={this.props.isSyncing}
+                          conflictfields={this.props.conflictfields}
+                          handleChangeTab={this.props.handleChangeTab}
+                          fieldNames={fieldNames}
+                          disabled={this.props.disabled}
+                        />
+                      </Grid>
+                      <br />
+                      <FormButtonGroup
+                        is_final_view={is_final_view}
+                        disabled={this.props.disabled}
+                        onChangeStepper={this.onChangeStepper}
+                        viewName={viewName}
+                        view_index={view_index}
+                        formProps={formProps}
+                        ui_specification={ui_specification}
+                        views={views}
+                        mq_above_md={this.props.mq_above_md}
+                        handleFormSubmit={(is_close: string) => {
+                          formProps.setSubmitting(true);
+                          this.setTimeout(() => {
+                            this.save(
+                              formProps.values,
+                              is_close,
+                              formProps.setSubmitting
+                            );
+                          }, 500);
+                        }}
+                      />
+                    </Grid>
+                  </Form>
                 );
               }}
             </Formik>
