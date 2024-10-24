@@ -18,22 +18,22 @@
  *   Defines the SignIn component to present login and registration options
  */
 
-import {useState, useEffect} from 'react';
+import {ListingsObject} from '@faims3/data-model/src/types';
 import {Box, Grid, Typography} from '@mui/material';
 import ClusterCard from '../components/authentication/cluster_card';
 import {ListingsObject} from '@faims3/data-model/src/types';
+import {useEffect, useState} from 'react';
+import {NOTEBOOK_NAME} from '../../buildconfig';
+import * as ROUTES from '../../constants/routes';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {logError} from '../../logging';
-import {NOTEBOOK_NAME} from '../../buildconfig';
-import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
 import {isWeb} from '../../utils/helpers';
+import ClusterCard from '../components/authentication/cluster_card';
+import Breadcrumbs from '../components/ui/breadcrumbs';
+import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
 
-type SignInProps = {
-  setToken?: any;
-};
-
-export function SignIn(props: SignInProps) {
-  const [listings, setListings] = useState(null as null | ListingsObject[]);
+export function SignIn() {
+  const [listings, setListings] = useState<ListingsObject[] | null>(null);
 
   useEffect(() => {
     getSyncableListingsInfo().then(setListings).catch(logError);
@@ -58,7 +58,6 @@ export function SignIn(props: SignInProps) {
               listing_name={listing_info.name}
               listing_description={listing_info.description}
               conductor_url={listing_info.conductor_url}
-              setToken={props.setToken}
             />
           </Grid>
         ))}

@@ -40,7 +40,7 @@ export function listenDrafts(
       live: true,
     })
     .on('change', info => {
-      console.log(info);
+      console.log('change in drafts database', info);
       if (info.doc!.project_id === project_id) {
         runCallback();
       }

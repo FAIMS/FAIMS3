@@ -26,6 +26,8 @@ import {useGetTemplates} from '../../../utils/apiHooks/templates';
 import CircularLoading from '../ui/circular_loading';
 import useErrorPopup from '../ui/errorPopup';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {useRefreshToken} from '../../../utils/tokenHooks';
+import {parseToken, setTokenForCluster} from '../../../users';
 
 export interface NewNotebookForListingProps {
   listingObject: ListingsObject;
@@ -44,6 +46,11 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   // What survey name has user inputted, if any
   const [surveyName, setSurveyName] = useState<string | undefined>(undefined);
 
+  // Token refresh mutation using default active username for current listing
+  const refreshTokenMutation = useRefreshToken({
+    listingId: props.listingObject.id,
+  });
+
   // Mutation to create new survey
   const createNotebook = useCreateNotebookFromTemplate({
     listingId: props.listingObject.id,
@@ -51,7 +58,30 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
     templateId: selectedTemplate,
     // When we succeed, navigate back to home page
     options: {
-      onSuccess: () => {
+      onSuccess: async () => {
+        await refreshTokenMutation
+          .mutateAsync()
+          .then(async t => {
+            // parse the new token
+            const parsedToken = await parseToken(t);
+
+            // and update
+            await setTokenForCluster(
+              t,
+              parsedToken,
+              // use existing refresh token
+              undefined,
+              props.listingObject.id
+            );
+          })
+          .catch(e => {
+            console.error(
+              'Token refresh failed! User may not be able to see new survey.'
+            );
+            console.error(e);
+            return undefined;
+          });
+
         navigate('/');
         window.location.reload();
       },

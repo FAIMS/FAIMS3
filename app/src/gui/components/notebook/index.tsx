@@ -32,6 +32,8 @@ import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {useQuery} from '@tanstack/react-query';
+import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
 import RangeHeader from './range_header';
 
@@ -90,7 +92,6 @@ function a11yProps(index: number, id: string) {
  */
 type NotebookComponentProps = {
   project: ProjectExtended;
-  handleRefresh: () => Promise<any>;
 };
 
 /**
@@ -100,7 +101,7 @@ type NotebookComponentProps = {
  * @param {NotebookComponentProps} props - The properties for the NotebookComponent.
  * @returns {JSX.Element} - The JSX element for the NotebookComponent.
  */
-export default function NotebookComponent(props: NotebookComponentProps) {
+export default function NotebookComponent({project}: NotebookComponentProps) {
   const [notebookTabValue, setNotebookTabValue] = React.useState(0);
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
 
@@ -130,7 +131,6 @@ export default function NotebookComponent(props: NotebookComponentProps) {
     setNotebookTabValue(newValue);
   };
 
-  const {project} = props;
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
@@ -139,10 +139,23 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
 
+  const {data: template_id} = useQuery({
+    queryKey: ['project-template-id', project.project_id],
+    queryFn: () =>
+      getMetadataValue(project.project_id, 'template_id') as Promise<string>,
+  });
+
   /**
-   * Fetches the UI specification and viewsets for the project when the component mounts or the project changes.
+   * Fetches the UI specification and viewsets for the project
    */
-  useEffect(() => {
+  const pageLoader = () => {
+    // Starting state reset
+    setViewsets(null);
+    setUiSpec(null);
+    setErr('');
+    setLoading(true);
+
+    // Try to load details and records
     if (project.listing && project._id) {
       getUiSpecForProject(project.project_id)
         .then(spec => {
@@ -152,16 +165,25 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           setErr('');
         })
         .catch(err => {
+          setLoading(false);
           setErr(err.message);
         });
     }
-    return () => {
-      setViewsets(null);
-      setUiSpec(null);
-      setErr('');
-      setLoading(true);
-    };
+  };
+
+  /**
+   * Fetches the UI specification and viewsets for the project when the
+   * component mounts or the project changes.
+   */
+  useEffect(() => {
+    pageLoader();
   }, [project]);
+
+  // trigger a refresh of the content because something changed down below (a
+  // record or draft was deleted)
+  const handleRefresh = () => {
+    pageLoader();
+  };
 
   return (
     <Box>
@@ -169,7 +191,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
         <Alert severity="error">
           <AlertTitle>
             {' '}
-            {props.project.name} {NOTEBOOK_NAME} cannot sync right now.
+            {project.name} {NOTEBOOK_NAME} cannot sync right now.
           </AlertTitle>
           Your device may be offline.
           <br />
@@ -255,7 +277,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   maxRows={25}
                   viewsets={viewsets}
                   filter_deleted={true}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
               <TabPanel
@@ -267,7 +289,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
             </Box>
@@ -339,6 +361,16 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   chips={false}
                 />
               </Typography>
+              {template_id && (
+                <Typography
+                  variant="body1"
+                  gutterBottom
+                  sx={{marginBottom: '16px'}}
+                >
+                  <strong>Template Used: </strong>
+                  <span>{template_id}</span>
+                </Typography>
+              )}
               <Typography
                 variant="body1"
                 gutterBottom

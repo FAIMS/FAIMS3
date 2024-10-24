@@ -74,7 +74,7 @@ export function MapFormField({
 
   const mapCallback = (theFeatures: GeoJSONFeatureCollection) => {
     setDrawnFeatures(theFeatures);
-    form.setFieldValue(field.name, theFeatures);
+    form.setFieldValue(field.name, theFeatures, true);
   };
 
   // get the current GPS location if don't know the map center

@@ -1,9 +1,6 @@
-import React from 'react';
 import {Box} from '@mui/material';
-import MainAppBar from './appBar';
-import {TokenContents} from '@faims3/data-model';
-import Footer from '../components/footer';
 import {useTheme} from '@mui/material/styles';
+import React from 'react';
 import {ErrorBoundary, ErrorPage} from '../../logging';
 import TransparentButton from '../components/buttons/transparent-button';
 import ChevronLeft from '@mui/icons-material/ChevronLeft';
@@ -11,10 +8,14 @@ import {useNavigate, useLocation} from 'react-router-dom';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 
 const hideBackButtonPaths = ['/', '/signin/'];
+import {PossibleToken} from '../../types/misc';
+import Footer from '../components/footer';
+import MainAppBar from './appBar';
+import {useGetDefaultToken} from '../../utils/tokenHooks';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  token?: null | undefined | TokenContents;
+  token?: PossibleToken;
 }
 
 /**
@@ -27,6 +28,8 @@ interface MainLayoutProps {
  * @returns {JSX.Element} - The rendered MainLayout component.
  */
 export default function MainLayout(props: MainLayoutProps): JSX.Element {
+  const tokenQuery = useGetDefaultToken();
+  const token = tokenQuery.data?.parsedToken;
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,7 +41,7 @@ export default function MainLayout(props: MainLayoutProps): JSX.Element {
 
   return (
     <React.Fragment>
-      <MainAppBar token={props.token} />
+      <MainAppBar token={token} />
       <Box
         component="main"
         sx={{
@@ -76,7 +79,7 @@ export default function MainLayout(props: MainLayoutProps): JSX.Element {
           {props.children}
         </ErrorBoundary>
       </Box>
-      <Footer token={props.token} />
+      <Footer token={token} />
     </React.Fragment>
   );
 }

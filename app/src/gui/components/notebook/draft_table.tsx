@@ -47,7 +47,7 @@ type DraftsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
   viewsets?: ProjectUIViewsets | null;
-  handleRefresh: () => Promise<any>;
+  handleRefresh: () => void;
 };
 
 type DraftsRecordProps = {
@@ -56,7 +56,7 @@ type DraftsRecordProps = {
   rows: any;
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
-  handleRefresh: () => Promise<any>;
+  handleRefresh: () => void;
 };
 
 function DraftRecord(props: DraftsRecordProps) {

@@ -21,15 +21,15 @@
 
 import passport from 'passport';
 
-import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
-import {DoneFunction} from './types';
-import {getUserFromEmailOrUsername} from './couchdb/users';
-import {registerLocalUser} from './auth_providers/local';
-import {body, validationResult} from 'express-validator';
-import {getInvite} from './couchdb/invites';
-import {acceptInvite} from './registration';
-import {generateUserToken} from './authkeys/create';
 import {NextFunction, Request, Response, Router} from 'express';
+import {body, validationResult} from 'express-validator';
+import {registerLocalUser} from './auth_providers/local';
+import {generateUserToken} from './authkeys/create';
+import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
+import {getInvite} from './couchdb/invites';
+import {getUserFromEmailOrUsername} from './couchdb/users';
+import {acceptInvite} from './registration';
+import {DoneFunction} from './types';
 
 interface RequestQueryRedirect {
   redirect: string;
@@ -197,7 +197,10 @@ export function add_auth_routes(app: Router, handlers: string[]) {
   };
 
   /**
-   * Generate a redirect response with a token for a logged in user
+   * Generate a redirect response with a token and refresh token for a logged in
+   * user
+   *
+   * TODO restrict the generation of refresh tokens to initial login
    * @param res Express response
    * @param user Express user
    * @param redirect URL to redirect to
@@ -214,11 +217,11 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       return res.redirect(redirect);
     }
 
-    // Generate a token
-    const token = await generateUserToken(user);
+    // Generate a token (include refresh)
+    const token = await generateUserToken(user, true);
 
     // Append the token to the redirect URL
-    const redirectUrlWithToken = `${redirect}?token=${token.token}`;
+    const redirectUrlWithToken = `${redirect}?token=${token.token}&refreshToken=${token.refreshToken}`;
 
     // Redirect to the app with the token
     return res.redirect(redirectUrlWithToken);

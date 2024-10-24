@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
 import {
   AppBar,
@@ -87,6 +87,11 @@ import RecordData from '../components/record/RecordData';
 import getLocalDate from '../fields/LocalDate';
 import RecordDelete from '../components/notebook/delete';
 import {logError} from '../../logging';
+import ProgressBar from '../components/progress-bar';
+
+import {scrollToDiv} from '../../lib/navigation';
+import TransparentButton from '../components/buttons/transparent-button';
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -132,6 +137,8 @@ export default function Record() {
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
+  const [progress, setProgress] = useState<number>(0);
+  const buttonRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     getUiSpecForProject(project_id!).then(setUISpec, setError);
@@ -416,6 +423,9 @@ export default function Record() {
           )}
         </Grid>
       </Grid>
+      <div style={{padding: '10px'}}>
+        <ProgressBar percentage={progress} />
+      </div>
       {draft_id !== undefined && (
         <Alert severity={'warning'}>
           This record is currently a draft. The data is stored locally on your
@@ -431,7 +441,17 @@ export default function Record() {
         Edit data for this record. If you need to, you can also revisit previous
         revisions and resolve conflicts.
       </Typography>
-
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}
+      >
+        <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
+          <ArrowDropDown />
+          Jump to end
+        </TransparentButton>
+      </div>
       <Box mb={2} pr={1}>
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
@@ -579,11 +599,6 @@ export default function Record() {
                                 record_id={record_id!}
                                 hrid={hrid}
                                 record_type={record_type}
-                                // revision_id={
-                                //   selectrevision !== null
-                                //     ? selectrevision
-                                //     : updatedrevision_id
-                                // }
                                 revision_id={updatedrevision_id!}
                                 ui_specification={uiSpec}
                                 draft_id={draft_id}
@@ -602,6 +617,8 @@ export default function Record() {
                                 handleUnlink={handleUnlink}
                                 setRevision_id={setrevision_id}
                                 mq_above_md={mq_above_md}
+                                setProgress={setProgress}
+                                buttonRef={buttonRef}
                               />
                             )}
                           </Box>
@@ -630,6 +647,8 @@ export default function Record() {
                           handleUnlink={handleUnlink}
                           setRevision_id={setrevision_id}
                           mq_above_md={mq_above_md}
+                          setProgress={setProgress}
+                          buttonRef={buttonRef}
                         />
                       )}
                     </Box>

@@ -20,6 +20,18 @@ export const PostUpdateUserInputSchema = z.object({
 });
 export type PostUpdateUserInput = z.infer<typeof PostUpdateUserInputSchema>;
 
+export const PostRefreshTokenInputSchema = z.object({
+  refreshToken: z.string(),
+});
+export type PostRefreshTokenInput = z.infer<typeof PostRefreshTokenInputSchema>;
+export const PostRefreshTokenResponseSchema = z.object({
+  // fresh JWT
+  token: z.string(),
+});
+export type PostRefreshTokenResponse = z.infer<
+  typeof PostRefreshTokenResponseSchema
+>;
+
 // ==================
 // WIP NOTEBOOKS CRUD
 // ==================

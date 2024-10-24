@@ -1,0 +1,132 @@
+
+name: Deploy to Google Play For Prod deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  node-deb-gh-build-play:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        node-version: ['20']
+    outputs:
+      prnum: ${{ steps.prnum.outputs.value }}
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+      - name: Cache node modules
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Configure Turborepo Remote Cache
+        run: |
+          mkdir -p .turbo
+          if [ -n "${{ vars.TURBO_API_URL }}" ]; then
+            echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
+            echo "Turborepo config file created at .turbo/config.json"
+          else
+            echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."
+          fi
+          if [ -n "$TURBO_TEAM" ] && [ -n "$TURBO_TOKEN" ]; then
+            echo "TURBO_TEAM and TURBO_TOKEN environment variables set"
+          else
+            echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
+          fi
+      # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}            
+          cache: 'npm'
+      # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
+      - name: Set up adopt JDK 1.17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '17'
+      # https://www.runway.team/blog/ci-cd-pipeline-android-app-fastlane-github-actions
+      # Because fastlane stuff is in android, we need working-directory
+      - name: Set up ruby env
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.1
+          bundler-cache: true
+          working-directory: android
+      # We'll do this when we have android-specific tests...
+      # - name: Run tests
+      #   run: |
+      #     cd android 
+      #     bundle exec fastlane android test
+        # echo -n "::set-output name=value::$(git log --perl-regexp --pretty='%s' | grep 'Merge #' | head -n1 | cut -d'#' -f2)-$(git describe --long 2>/dev/null || git describe --all --long --always)"
+      - name: Get PR Number
+        id: prnum
+        run: |
+          echo -n "value=$(bin/getDescribeString.sh gh-play)" >> "$GITHUB_OUTPUT"        
+        shell: bash        
+      - name: Decode Service Account Key JSON File
+        uses: timheuer/base64-to-file@v1
+        id: service_account_json_file
+        with:
+          fileName: "fastlane-android-google-play-key.json"
+          encodedString: ${{ secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON }}     
+      - name: Decode Keystore File
+        uses: timheuer/base64-to-file@v1
+        id: android_keystore
+        with:
+          fileName: "android-signing-keystore.jks"
+          encodedString: ${{ secrets.KEYSTORE_FILE }}        
+      # https://github.com/android-actions/setup-android
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      - name: Building webapp
+        run: |
+          export platform="github-actions-play"
+          export serverprefix="fieldmark"
+          export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
+          export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh android)
+          export VITE_SHOW_WIPE=true
+          export VITE_SHOW_MINIFAUXTON=false
+          export VITE_DIRECTORY_HOST=${{vars.PRODUCTION_CONDUCTOR_URL}}
+          export VITE_DIRECTORY_PORT=443
+          export VITE_PRODUCTION_BUILD=true          
+          export VITE_PROD_BUILD=true          
+          export VITE_TAG=prodAndroid      
+          export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
+          npm ci
+          npm run build
+      # https://capacitorjs.com/docs/android
+      # The bundle install shouldn't be necessary, but given we've got ios and android in...      
+      - run: npx cap update android
+      - run: npx cap sync --deployment android
+      - name: Fastlane
+        run: |
+          cd android
+          bundle install
+          bundle exec fastlane deploy_fieldmark
+        env:
+          ANDROID_APP_ID: ${{ vars.ANDROID_APP_ID }}
+          ANDROID_DEPLOY_TRACK: "production"
+          JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
+          JAVA_KEYSTORE_PASSWORD: ${{ secrets.JAVA_KEYSTORE_PASSWORD }}
+          JAVA_KEY: ${{ secrets.JAVA_KEY}}
+          JAVA_KEY_PASSWORD: ${{ secrets.JAVA_KEY_PASSWORD }}
+          ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
+          serverprefix: "fieldmark"
+          prnum: ${{steps.prnum.outputs.value}}

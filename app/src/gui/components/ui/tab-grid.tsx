@@ -2,24 +2,26 @@ import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {Box, Tab} from '@mui/material';
-import {DataGrid, GridEventListener} from '@mui/x-data-grid';
+import {
+  DataGrid,
+  GridEventListener,
+  GridPaginationModel,
+} from '@mui/x-data-grid';
 import {ProjectExtended} from '../../../types/project';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
+import {useEffect, useState} from 'react';
 
 /**
  * Renders a tabbed grid component.
  *
- * @param pouchProjectList - The list of project information.
+ * @param projects - The list of project information.
  * @param tabID - The ID of the active tab.
  * @param handleChange - The event handler for tab change.
- * @param handleRowClick - The event handler for row click.
- * @param loading - A boolean indicating whether the grid is loading.
  * @param columns - The columns configuration for the grid.
- * @param sortModel - The sorting configuration for the grid.
  * @returns The rendered tabbed grid component.
  */
-export default function TabGrid({
+export default function TabProjectGrid({
   projects,
   tabID,
   handleChange,
@@ -33,13 +35,23 @@ export default function TabGrid({
   const activatedProjects = projects.filter(({activated}) => activated);
   const availableProjects = projects.filter(({activated}) => !activated);
 
+  // we need a state variable to track pagination model since we want to use a
+  // controlled component style to force pagination to behave how we want
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 1,
+    pageSize: projects.length,
+  });
+
+  // Update pagination settings when the projects changes
+  useEffect(() => {
+    setPaginationModel({page: 1, pageSize: projects.length});
+  }, [projects]);
+
   const history = useNavigate();
 
   const handleRowClick: GridEventListener<'rowClick'> = ({
     row: {activated, project_id},
   }) => {
-    console.log(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
-
     if (activated) history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
   };
   return (
@@ -73,6 +85,8 @@ export default function TabGrid({
               onRowClick={handleRowClick}
               getRowId={({_id}) => _id}
               hideFooter
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
             />
           </div>
         </TabPanel>

@@ -18,39 +18,41 @@
  *    Core functions to access the various databases used by the application
  */
 
-import PouchDB from 'pouchdb';
-import * as Exceptions from '../exceptions';
-
 import {
+  AuthDatabase,
   ProjectDataObject,
   ProjectID,
   ProjectMetaObject,
   ProjectObject,
   TemplateDetails,
 } from '@faims3/data-model';
+import PouchDB from 'pouchdb';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
   COUCHDB_INTERNAL_URL,
   COUCHDB_PUBLIC_URL,
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
+import * as Exceptions from '../exceptions';
 import {
+  initialiseAuthDb,
   initialiseDirectoryDB,
   initialiseProjectsDB,
   initialiseTemplatesDb,
   initialiseUserDB,
 } from './initialise';
-import {Express} from 'express';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
 const TEMPLATES_DB_NAME = 'templates';
+const AUTH_DB_NAME = 'auth';
 const PEOPLE_DB_NAME = 'people';
 const INVITE_DB_NAME = 'invites';
 
 let _directoryDB: PouchDB.Database | undefined;
 let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
 let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
+let _authDB: AuthDatabase | undefined;
 let _usersDB: PouchDB.Database<Express.User> | undefined;
 let _invitesDB: PouchDB.Database | undefined;
 
@@ -79,6 +81,21 @@ export const getDirectoryDB = (): PouchDB.Database | undefined => {
     }
   }
   return _directoryDB;
+};
+
+export const getAuthDB = (): AuthDatabase => {
+  if (!_authDB) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + AUTH_DB_NAME;
+    try {
+      _authDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting auth database.'
+      );
+    }
+  }
+  return _authDB;
 };
 
 /**
@@ -243,6 +260,15 @@ export const getDataDb = async (
 };
 
 export const initialiseDatabases = async () => {
+  // Setup the auth DB
+  const authDB = getAuthDB();
+  try {
+    await initialiseAuthDb(authDB);
+  } catch (error) {
+    console.log('Could not initialise the auth database', error);
+    throw error;
+  }
+
   const directoryDB = getDirectoryDB();
   try {
     await initialiseDirectoryDB(directoryDB);

@@ -71,10 +71,7 @@ export default function Notebook() {
           </Typography>
         </Grid>
       </Grid>
-      <NotebookComponent
-        project={project}
-        handleRefresh={() => new Promise(() => {})}
-      />
+      <NotebookComponent project={project} />
     </Box>
   );
 }
