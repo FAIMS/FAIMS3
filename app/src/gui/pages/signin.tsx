@@ -21,15 +21,11 @@
 import {ListingsObject} from '@faims3/data-model/src/types';
 import {Box, Grid, Typography} from '@mui/material';
 import ClusterCard from '../components/authentication/cluster_card';
-import {ListingsObject} from '@faims3/data-model/src/types';
 import {useEffect, useState} from 'react';
 import {NOTEBOOK_NAME} from '../../buildconfig';
-import * as ROUTES from '../../constants/routes';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {logError} from '../../logging';
 import {isWeb} from '../../utils/helpers';
-import ClusterCard from '../components/authentication/cluster_card';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
 
 export function SignIn() {

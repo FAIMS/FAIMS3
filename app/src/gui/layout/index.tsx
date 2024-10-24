@@ -12,6 +12,7 @@ import {PossibleToken} from '../../types/misc';
 import Footer from '../components/footer';
 import MainAppBar from './appBar';
 import {useGetDefaultToken} from '../../utils/tokenHooks';
+import {getParentPath} from '../../lib/navigation';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -60,12 +61,7 @@ export default function MainLayout(props: MainLayoutProps): JSX.Element {
         {navigation === 'back-button' &&
           !hideBackButtonPaths.includes(location.pathname) && (
             <TransparentButton
-              onClick={() =>
-                navigate(
-                  // Workaround for a bug causing multiple navigations when creating drafts
-                  location.pathname.includes('/draft/') ? -3 : -1
-                )
-              }
+              onClick={() => navigate(getParentPath(location.pathname))}
               style={{
                 fontSize: '16px',
                 paddingBottom: '16px',
