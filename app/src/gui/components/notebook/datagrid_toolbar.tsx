@@ -19,68 +19,204 @@
  */
 
 import React, {useEffect} from 'react';
-import {Divider, Box, Grid, TextField, Button} from '@mui/material';
+import {
+  Divider,
+  Box,
+  Grid,
+  TextField,
+  IconButton,
+  InputAdornment,
+  Paper,
+} from '@mui/material';
 import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
-import {usePrevious} from '../../../utils/customHooks';
+import ClearIcon from '@mui/icons-material/Clear';
+import TuneIcon from '@mui/icons-material/Tune';
+import {usePrevious} from '../../../utils/custom_hooks';
+import {theme} from '../../themes';
+
 interface ToolbarProps {
   handleQueryFunction: any;
 }
 
 export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
-  /**
-   * Only hoist query value when user presses submit or clear
-   */
   const [value, setValue] = React.useState('');
   const prevValue = usePrevious(value);
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    // Controlled state: user has keyed in a value
     setValue(event.target.value);
   };
+
   const handleSubmit = () => {
-    // Send value up to query function
     props.handleQueryFunction(value);
   };
+
   const handleClear = () => {
-    //  Clear the local query string
     setValue('');
   };
+
   useEffect(() => {
-    // if the value has changed AND it now is an empty string - submit with empty query (i.e., reset)
     if (prevValue !== value && value === '') {
       handleSubmit();
     }
   }, [value]);
 
   return (
-    <Box style={{marginTop: '4px'}} mr={1}>
-      <Grid container spacing={1}>
-        <Grid item alignItems="stretch" style={{display: 'flex'}}>
-          <Button
-            variant="text"
-            size={'small'}
-            onClick={handleClear}
-            data-testid="searchReset"
-          >
-            reset
-          </Button>
+    <Box
+      component={Paper}
+      elevation={0}
+      sx={{
+        mt: 1,
+        mr: 1,
+        borderRadius: '8px',
+        backgroundColor: 'transparent',
+      }}
+    >
+      <Grid container spacing={1} alignItems="center">
+        <Grid item xs={9} sm={10} md={11}>
           <TextField
-            label="Search record data (case sensitive)"
+            placeholder="Search record data (case sensitive)"
             value={value}
-            sx={{p: 0}}
             onChange={handleChange}
             variant="outlined"
-            size={'small'}
+            size="small"
+            fullWidth
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                transition: 'all 0.3s ease-in-out',
+                borderRadius: '8px',
+                boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
+                border: '1px solid #e0e0e0',
+                '&:hover': {
+                  borderColor: '#bdbdbd',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                },
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused': {
+                    boxShadow: '0 0 15px rgba(0, 0, 0, 0.4)',
+                  },
+                },
+                '&.Mui-focused': {
+                  borderColor: '#e0e0e0',
+                  boxShadow: 'none',
+                },
+              },
+              '& .MuiOutlinedInput-input': {
+                padding: '10px 14px',
+                fontSize: '0.9rem',
+                '&::placeholder': {
+                  color: '#757575',
+                  opacity: 0.8,
+                },
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IconButton
+                    onClick={handleSubmit}
+                    size="medium"
+                    data-testid="searchButton"
+                    sx={{
+                      color: theme => theme.palette.primary.main,
+                      transition: 'all 0.3s ease-in-out',
+                      '&:hover': {
+                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                        transform: 'scale(1.05)',
+                        boxShadow: '0 0 8px rgba(0, 0, 0, 0.3)',
+                      },
+                      '&:active': {
+                        transform: 'scale(0.95)',
+                        boxShadow: '0 0 12px rgba(0, 0, 0, 0.4)',
+                      },
+                    }}
+                  >
+                    <SearchIcon
+                      style={{
+                        color: theme.palette.primary.main,
+                        fontSize: '1.75rem',
+                        fontWeight: 'bold',
+                      }}
+                    />{' '}
+                  </IconButton>
+                </InputAdornment>
+              ),
+              endAdornment: value && (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={handleClear}
+                    size="medium"
+                    sx={{
+                      color: theme.palette.secondary.main,
+                      transition: 'all 0.3s',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                        color: '#424242',
+                      },
+                      '&:active': {
+                        transform: 'scale(0.95)',
+                      },
+                    }}
+                  >
+                    <ClearIcon
+                      style={{
+                        color: theme.palette.secondary.main,
+                        fontWeight: 'bold',
+                        fontSize: '1.60rem',
+                      }}
+                    />{' '}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
-          <Button
-            variant="outlined"
-            size={'small'}
-            onClick={handleSubmit}
-            sx={{ml: 1}}
-            data-testid="searchButton"
-          >
-            <SearchIcon />
-          </Button>
+        </Grid>
+
+        {/* Enhanced Filter Button */}
+        <Grid item xs={3} sm={2} md={1}>
+          <GridToolbarFilterButton
+            componentsProps={{
+              button: {
+                startIcon: (
+                  <TuneIcon
+                    style={{
+                      color: theme.palette.primary.main,
+                      fontSize: '1.85rem',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                ),
+              },
+            }}
+            sx={{
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: {xs: '0.9rem', sm: '1.2rem'},
+              fontWeight: 'bold',
+              color: '#424242',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e0e0e0',
+              transition: 'all 0.2s ease-in-out',
+              textTransform: 'none',
+              boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
+
+              '&:hover': {
+                backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                borderColor: theme => theme.palette.primary.main,
+              },
+              '&:active': {
+                boxShadow: '0 0 12px rgba(0, 0, 0, 0.4)',
+              },
+              '&.MuiButton-root': {
+                minWidth: 'auto',
+                whiteSpace: 'nowrap',
+              },
+              '& .MuiButton-startIcon': {
+                marginRight: '4px',
+              },
+            }}
+          />
         </Grid>
       </Grid>
     </Box>
@@ -89,30 +225,32 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
 
 export function NotebookDataGridToolbar(props: ToolbarProps) {
   return (
-    <GridToolbarContainer>
+    <GridToolbarContainer
+      sx={{
+        padding: '8px 16px',
+        borderBottom: '1px solid #e0e0e0',
+        backgroundColor: '#fafafa',
+      }}
+    >
       <Grid
         container
         spacing={1}
         justifyContent="space-between"
         alignItems="center"
       >
-        <Grid item alignItems={'stretch'}>
-          {/*<GridToolbarColumnsButton />*/}
-          <GridToolbarFilterButton sx={{ml: 1}} />
-          {/*<GridToolbarDensitySelector />*/}
-        </Grid>
-        <Grid item>
+        <Grid item xs={12}>
           <GridToolbarSearchRecordDataButton
             handleQueryFunction={props.handleQueryFunction}
           />
         </Grid>
-        <Grid item xs={12}>
-          <Divider />
-        </Grid>
+        {/* <Grid item xs={12}>
+          <Divider sx={{mt: 1}} />
+        </Grid> */}
       </Grid>
     </GridToolbarContainer>
   );
 }
+
 export function NotebookDraftDataGridToolbar() {
   return (
     <GridToolbarContainer>
