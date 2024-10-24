@@ -1180,13 +1180,13 @@ class RecordForm extends React.Component<
                 if (layout === 'inline')
                   return (
                     <div>
-                      {views.map((name: string, index: number) => {
-                        const description = this.requireDescription(name);
+                      {views.map(view => {
+                        const description = this.requireDescription(view);
                         const fieldNames = getFieldsMatchingCondition(
                           this.props.ui_specification,
                           formProps.values,
                           [],
-                          name,
+                          view,
                           formProps.touched
                         );
 
@@ -1199,7 +1199,7 @@ class RecordForm extends React.Component<
                                 padding: '10px',
                               }}
                             >
-                              {ui_specification.views[name].label}
+                              {ui_specification.views[view].label}
                             </div>
                             <Form>
                               {description !== '' && (
@@ -1216,7 +1216,7 @@ class RecordForm extends React.Component<
                               <Grid container spacing={2}>
                                 <Grid item sm={12} xs={12}>
                                   <ViewComponent
-                                    viewName={name}
+                                    viewName={view}
                                     ui_specification={ui_specification}
                                     formProps={formProps}
                                     draftState={this.draftState}

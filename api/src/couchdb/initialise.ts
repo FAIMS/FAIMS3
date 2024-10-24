@@ -240,7 +240,7 @@ export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
   } catch (err: any) {
     // 404 for not found
     if (err.status !== 404) {
-        console.log("Error was not 404")
+      console.log('Error was not 404');
       throw err;
     }
 
