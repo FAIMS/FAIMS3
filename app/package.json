@@ -19,9 +19,9 @@
         "node": "^20.9.0"
     },
     "scripts": {
-        "prestart": "npm run assets",
+        "prestart": "npm run runconfig",
         "start": "vite",
-        "prebuild": "npm run assets",
+        "prebuild": "npm run runconfig",
         "build": "tsc && vite build",
         "pretest": "npm run compile",
         "test": "vitest",
@@ -43,7 +43,7 @@
         "fix": "gts fix",
         "doc": "jsdoc -c ./jsdoc.config.json",
         "set-version": "./bin/setBuildVersion.sh",
-        "assets": "./bin/configureAppName.sh; ./bin/generate_assets.sh"
+        "runconfig": "env-cmd --use-shell ./bin/prebuildConfig.sh"
     },
     "dependencies": {
         "@bugsnag/js": "^7.20.2",
