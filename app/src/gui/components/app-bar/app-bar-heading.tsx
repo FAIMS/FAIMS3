@@ -13,23 +13,25 @@ interface AppBarHeadingProps {
  * @param {string} props.link - The link URL for the NavLink component.
  * @returns {JSX.Element} - The rendered AppBarHeading component.
  */
-export const AppBarHeading = ({link}: AppBarHeadingProps) =>
-  appBarHeading === 'bubble' ? (
-    <div
+export const AppBarHeading = ({link}: AppBarHeadingProps) => (
+  <>
+    <NavLink style={{flexGrow: 0}} to={link}>
+      <img
+        src="/assets/icons/icon-48.webp"
+        style={{maxWidth: '140px', flex: 1}}
+      />
+    </NavLink>
+    <NavLink to={link}
       style={{
         flexGrow: 1,
         fontSize: 32,
         fontWeight: 600,
-        textAlign: 'center',
+        textAlign: 'left',
+        textDecoration: 'none',
+        color: 'inherit'
       }}
     >
       {NOTEBOOK_NAME_CAPITALIZED}s
-    </div>
-  ) : (
-    <NavLink style={{flexGrow: 1}} to={link}>
-      <img
-        src="/static/logo/Fieldmark-Short-Green-NoBorder.png"
-        style={{maxWidth: '140px', flex: 1}}
-      />
     </NavLink>
-  );
+  </>
+);
