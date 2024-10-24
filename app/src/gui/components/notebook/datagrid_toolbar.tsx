@@ -38,22 +38,42 @@ interface ToolbarProps {
   handleQueryFunction: any;
 }
 
+/**
+ * Custom search button to search record data with filtering capability.
+ *
+ * @param {ToolbarProps} props - Properties passed to handle search query functionality.
+ * @returns {JSX.Element} The search input field with a clear and search button.
+ */
 export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
   const [value, setValue] = React.useState('');
   const prevValue = usePrevious(value);
 
+  /**
+   * Handles the input change event in the search field.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} event - The event for the search input field.
+   */
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(event.target.value);
   };
 
+  /**
+   * Handles search submission by invoking the query function with the current value.
+   */
   const handleSubmit = () => {
     props.handleQueryFunction(value);
   };
 
+  /**
+   * Clears the current search value and resets the search.
+   */
   const handleClear = () => {
     setValue('');
   };
 
+  /**
+   * Detects changes to the search input value and triggers the query if the input is cleared.
+   */
   useEffect(() => {
     if (prevValue !== value && value === '') {
       handleSubmit();
@@ -172,7 +192,6 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
           />
         </Grid>
 
-        {/* Enhanced Filter Button */}
         <Grid item xs={3} sm={2} md={1}>
           <GridToolbarFilterButton
             componentsProps={{
@@ -222,6 +241,13 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
   );
 }
 
+/**
+ * Main toolbar component for the DataGrid.
+ * This replaces the default toolbar to include custom search and filter functionalities.
+ *
+ * @param {ToolbarProps} props - Properties to handle search functionality.
+ * @returns {JSX.Element} Custom toolbar for the DataGrid.
+ */
 export function NotebookDataGridToolbar(props: ToolbarProps) {
   return (
     <GridToolbarContainer
@@ -242,14 +268,16 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
             handleQueryFunction={props.handleQueryFunction}
           />
         </Grid>
-        {/* <Grid item xs={12}>
-          <Divider sx={{mt: 1}} />
-        </Grid> */}
       </Grid>
     </GridToolbarContainer>
   );
 }
 
+/**
+ * Alternate toolbar for managing draft DataGrid, with basic functionality like filters.
+ *
+ * @returns {JSX.Element} A simple toolbar for drafts with filter options.
+ */
 export function NotebookDraftDataGridToolbar() {
   return (
     <GridToolbarContainer>
