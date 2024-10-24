@@ -37,7 +37,7 @@ type minimalCreatedListing =
   | createdListingsInterface
   | {
       listing: {
-        _id: string;
+        id: string;
         conductor_url: string;
       };
     };
@@ -54,8 +54,8 @@ export const fetchProjectMetadata = async (
   project_id: string
 ) => {
   const url = `${lst.listing.conductor_url}/api/notebooks/${project_id}`;
-  const jwt_token = await getTokenForCluster(lst.listing._id);
-  const full_project_id = resolve_project_id(lst.listing._id, project_id);
+  const jwt_token = await getTokenForCluster(lst.listing.id);
+  const full_project_id = resolve_project_id(lst.listing.id, project_id);
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${jwt_token}`,

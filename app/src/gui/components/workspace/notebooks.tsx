@@ -28,15 +28,18 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import {grey} from '@mui/material/colors';
 import Tabs from '../ui/tab-grid';
-import HeadingGrid from '../ui/heading-grid';
+import HeadingProjectGrid from '../ui/heading-grid';
 import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
+import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+import * as ROUTES from '../../../constants/routes';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
+import {useNavigate} from 'react-router-dom';
 
 export default function NoteBooks() {
   const [tabID, setTabID] = useState('1');
-
   const {projects} = useContext(ProjectsContext);
+  const history = useNavigate();
 
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
@@ -60,7 +63,7 @@ export default function NoteBooks() {
               >
                 <FolderIcon
                   fontSize={'small'}
-                  color={activated ? 'secondary' : 'disabled'}
+                  color={activated ? 'primary' : 'disabled'}
                   sx={{mr: '3px'}}
                 />
                 <Typography
@@ -82,14 +85,6 @@ export default function NoteBooks() {
           minWidth: 160,
           flex: 0.2,
           valueGetter: ({value}) => value && new Date(value),
-        },
-        {
-          field: 'status',
-          headerName: 'Status',
-          type: 'string',
-          flex: 0.2,
-          minWidth: 160,
-          renderCell: ({row: {status}}) => <ProjectStatus status={status} />,
         },
         {
           field: 'actions',
@@ -174,12 +169,21 @@ export default function NoteBooks() {
         <Typography variant={'body1'} gutterBottom>
           You have {activatedProjects.length} {NOTEBOOK_NAME}
           {activatedProjects.length !== 1 ? 's' : ''} activated on this device.
-          To start syncing a {NOTEBOOK_NAME}, visit the{' '}
+          To start using a {NOTEBOOK_NAME}, visit the{' '}
           <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
             Available
           </Button>{' '}
           tab and click the activate button.
         </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+          sx={{mb: 3, mt: 3}}
+          startIcon={<AddCircleSharpIcon />}
+        >
+          Create New Survey
+        </Button>
         {NOTEBOOK_LIST_TYPE === 'tabs' ? (
           <Tabs
             projects={projects}
@@ -188,11 +192,7 @@ export default function NoteBooks() {
             columns={columns}
           />
         ) : (
-          <HeadingGrid
-            pouchProjectList={projects}
-            loading={false}
-            columns={columns}
-          />
+          <HeadingProjectGrid projects={projects} columns={columns} />
         )}
       </Box>
     </Box>

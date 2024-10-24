@@ -19,17 +19,28 @@
  *   native parts of the system.
  */
 
-import {App as CapacitorApp} from '@capacitor/app';
+import {App as CapacitorApp, URLOpenListenerEvent} from '@capacitor/app';
+import {Browser} from '@capacitor/browser';
+import {useEffect} from 'react';
+import {useNavigate} from 'react-router-dom';
 
-import {getSyncableListingsInfo} from './databaseAccess';
-import {setTokenForCluster} from './users';
-import {reprocess_listing} from './sync/process-initialization';
+export function AppUrlListener() {
+  const navigate = useNavigate();
 
-interface TokenURLObject {
-  token: string;
-  pubkey: string;
-  pubalg: string;
-  origin: string;
+  useEffect(() => {
+    CapacitorApp.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
+      const url = new URL(event.url);
+      console.log('Event URL', url);
+      // grab the 'pathname' part of the URL, note that url.pathname
+      // is not correct on Safari so we go the long way around
+      const redirect = url.href.substring(url.protocol.length + 1);
+      Browser.close();
+      console.log('navigating from app url to', redirect);
+      navigate(redirect);
+    });
+  }, []);
+
+  return null;
 }
 
 export function addNativeHooks() {
@@ -37,63 +48,7 @@ export function addNativeHooks() {
     console.log('App state changed. Is active?', isActive);
   });
 
-  CapacitorApp.addListener('appUrlOpen', data => {
-    console.log('App opened with URL:', data);
-    parseAndHandleAppUrl(data.url);
-  });
-
   CapacitorApp.addListener('appRestoredResult', data => {
     console.log('Restored state:', data);
   });
-}
-
-async function getListingForConductorUrl(conductor_url: string) {
-  const origin = new URL(conductor_url).origin;
-  const listings = await getSyncableListingsInfo();
-  for (const l of listings) {
-    const possible_origin = new URL(l.conductor_url).origin;
-    if (possible_origin === origin) {
-      return l.id;
-    }
-  }
-  throw Error(`Unknown listing for conductor url ${conductor_url}`);
-}
-
-function processUrlPassedToken(token_obj: TokenURLObject) {
-  getListingForConductorUrl(token_obj.origin)
-    .then(async listing_id => {
-      console.log('Received token via url for:', listing_id);
-      await setTokenForCluster(
-        token_obj.token,
-        token_obj.pubkey,
-        token_obj.pubalg,
-        listing_id
-      );
-      return listing_id;
-    })
-    .then(async listing_id => {
-      reprocess_listing(listing_id);
-    })
-    .catch(err => {
-      console.warn('Failed to get token from url', err);
-    });
-}
-
-function parseAndHandleAppUrl(url_s: string) {
-  const url = new URL(url_s);
-  if (url.hostname === 'auth') {
-    // Drop / from pathname
-    const urlenc_token = url.pathname.substring(1);
-    const token = JSON.parse(decodeURIComponent(urlenc_token));
-    console.debug('Parsed url token', token);
-    processUrlPassedToken(token as TokenURLObject);
-  } else if (url.pathname.startsWith('//auth/')) {
-    // Drop //auth/ from pathname
-    const urlenc_token = url.pathname.substring(7);
-    const token = JSON.parse(decodeURIComponent(urlenc_token));
-    console.debug('Parsed url token', token);
-    processUrlPassedToken(token as TokenURLObject);
-  } else {
-    console.warn('App url not handled', url_s, url);
-  }
 }

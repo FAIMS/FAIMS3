@@ -99,8 +99,9 @@ export const addDesignDocsForNotebook = async (
                   if (doc.heads.length > 0) {
                       const conflict = doc.heads.length > 1;
                       const created = doc.created;
+                      const created_by = doc.created_by;
                       const type = doc.type;
-                      emit(doc._id, {_id: doc.heads[0], conflict, created, type});
+                      emit(doc._id, {_id: doc.heads[0], conflict, created, created_by, type});
                   }
               }`,
       },

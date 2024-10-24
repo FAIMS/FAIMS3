@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {BackupConstruct} from './components/backups';
 import {Construct} from 'constructs';
 import {FaimsConductor} from './components/conductor';
@@ -97,6 +98,8 @@ const CouchConfigSchema = z.object({
   monitoring: MonitoringConfigSchema.optional(),
   /** EC2 instance type for CouchDB */
   instanceType: z.string(),
+  /** The version to use of CouchDB - 3.3.3 is default */
+  couchVersionTag: z.string().default('3.3.3'),
 });
 
 const DomainsConfigSchema = z.object({
@@ -166,6 +169,15 @@ const BackupConfigSchema = z
     }
   );
 
+export const UiConfiguration = z.object({
+  /** The UI Theme for the app */
+  uiTheme: z.enum(['bubble', 'default']),
+  /** The notebook list type for the app */
+  notebookListType: z.enum(['tabs', 'headings']),
+  /** The display name for notebooks e.g. survey, notebook */
+  notebookName: z.string(),
+});
+
 // Define the schema
 export const ConfigSchema = z.object({
   /** The name of the stack to deploy to cloudformation. Note that changing
@@ -194,6 +206,8 @@ export const ConfigSchema = z.object({
     /** ARN of the public key secret */
     publicKey: z.string(),
   }),
+  /** UI Configuration values */
+  uiConfiguration: UiConfiguration,
   /** CouchDB configuration */
   couch: CouchConfigSchema,
   /** Backup configuration */
@@ -309,6 +323,20 @@ export class FaimsInfraStack extends cdk.Stack {
       certificate: primaryCert,
     });
 
+    // Cookie secret shared between couch and conductor
+
+    // Generate cookie auth secret at deploy time
+    const cookieSecret = new sm.Secret(this, 'conductor-cookie-secret', {
+      description:
+        'Contains a randomly generated string used for cookie auth in conductor and couch',
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      generateSecretString: {
+        includeSpace: false,
+        passwordLength: 25,
+        excludePunctuation: true,
+      },
+    });
+
     // COUCHDB
     // =======
 
@@ -323,6 +351,8 @@ export class FaimsInfraStack extends cdk.Stack {
       dataVolumeSize: config.couch.volumeSize,
       dataVolumeSnapshotId: config.couch.ebsRecoverySnapshotId,
       monitoring: config.couch.monitoring,
+      couchVersionTag: config.couch.couchVersionTag,
+      cookieSecret: cookieSecret,
     });
 
     // CONDUCTOR
@@ -343,6 +373,7 @@ export class FaimsInfraStack extends cdk.Stack {
       iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
       sharedBalancer: networking.sharedBalancer,
       config: config.conductor,
+      cookieSecret: cookieSecret,
     });
 
     // FRONT-END
@@ -360,6 +391,9 @@ export class FaimsInfraStack extends cdk.Stack {
       designerHz: hz,
       designerUsEast1Certificate: cfnCert,
       conductorUrl: conductor.conductorEndpoint,
+      uiTheme: config.uiConfiguration.uiTheme,
+      notebookListType: config.uiConfiguration.notebookListType,
+      notebookName: config.uiConfiguration.notebookName,
     });
 
     // Backup setup

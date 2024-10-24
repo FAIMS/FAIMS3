@@ -21,6 +21,8 @@
 
 import {SignJWT} from 'jose';
 import type {SigningKey} from '../services/keyService';
+import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
+import {createNewRefreshToken} from '../couchdb/refreshTokens';
 
 export async function createAuthKey(
   user: Express.User,
@@ -29,6 +31,7 @@ export async function createAuthKey(
   const jwt = await new SignJWT({
     '_couchdb.roles': user.roles ?? [],
     name: user.name,
+    server: CONDUCTOR_PUBLIC_URL,
   })
     .setProtectedHeader({
       alg: signingKey.alg,
@@ -38,7 +41,32 @@ export async function createAuthKey(
     .setIssuedAt()
     .setIssuer(signingKey.instanceName)
     // TODO reinstate expiration time
+    //
     //.setExpirationTime('2h')
     .sign(signingKey.privateKey);
   return jwt;
+}
+
+/**
+ * Generates a token for a user. Also generates a reusable refresh token.
+ * @param user The passport user
+ * @returns The generated token which is a payload containing the actual JWT + refresh token + other information
+ */
+export async function generateUserToken(user: Express.User, refresh = false) {
+  const signingKey = await KEY_SERVICE.getSigningKey();
+  if (signingKey === null || signingKey === undefined) {
+    throw new Error('No signing key is available, check configuration');
+  } else {
+    const token = await createAuthKey(user, signingKey);
+
+    return {
+      token: token,
+      // Provide a refresh token if necessary
+      refreshToken: refresh
+        ? (await createNewRefreshToken(user._id!)).token
+        : undefined,
+      pubkey: signingKey.publicKeyString,
+      pubalg: signingKey.alg,
+    };
+  }
 }

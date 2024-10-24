@@ -21,9 +21,11 @@
  */
 
 import {EventEmitter} from 'events';
+
 import {ListingID} from '@faims3/data-model';
+import {ListingsObject} from '@faims3/data-model/src/types';
 import {ProjectObject} from './projects';
-import {ListingsObject, ExistingActiveDoc} from './databases';
+import {ExistingActiveDoc} from './databases';
 import {createdListingsInterface} from './state';
 import {createdProjectsInterface} from './projects';
 

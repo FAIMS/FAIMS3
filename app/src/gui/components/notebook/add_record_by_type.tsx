@@ -34,7 +34,7 @@ export default function AddRecordButtons({
     RecordMetadata | undefined
   >(undefined);
 
-  getMetadataValue(_id, 'showQRCodeButton').then(value => {
+  getMetadataValue(project_id, 'showQRCodeButton').then(value => {
     setShowQRButton(value === true || value === 'true');
   });
 

@@ -19,14 +19,19 @@
  *   which server to use and whether to include test data
  */
 
-import express from 'express';
 import cookieSession from 'cookie-session';
 import cors from 'cors';
-import passport from 'passport';
-import morgan from 'morgan';
+import express, {
+  ErrorRequestHandler,
+  NextFunction,
+  Request,
+  Response,
+} from 'express';
 import {ExpressHandlebars} from 'express-handlebars';
-import handlebars from 'handlebars';
 import RateLimit from 'express-rate-limit';
+import handlebars from 'handlebars';
+import morgan from 'morgan';
+import passport from 'passport';
 import flash from 'req-flash';
 
 // use swaggerUI to display the UI documentation
@@ -46,18 +51,25 @@ const indexContent = readFileSync(
 
 // Workaround done
 
-import {COOKIE_SECRET} from './buildconfig';
-import {api} from './api/routes';
 import markdownit from 'markdown-it';
+import {api as notebookApi} from './api/notebooks';
+import {api as templatesApi} from './api/templates';
+import {api as usersApi} from './api/users';
+import {api as utilityApi} from './api/utilities';
+import {COOKIE_SECRET} from './buildconfig';
+import patch from './utils/patchExpressAsync';
+
+// This must occur before express app is used
+patch();
 
 export const app = express();
 app.use(morgan('combined'));
 
 if (process.env.NODE_ENV !== 'test') {
-  // set up rate limiter: maximum of 30 requests per minute
+  // set up rate limiter: maximum of 60 requests per minute
   const limiter = RateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 30,
+    max: 60,
     validate: true,
   });
   app.use(limiter);
@@ -78,13 +90,13 @@ app.use(
 // fix for bug in passport 0.7.0 and compatibility with cookie-session
 app.use((request, response, next) => {
   if (request.session && !request.session.regenerate) {
-    request.session.regenerate = cb => {
+    request.session.regenerate = (cb: any) => {
       if (cb) cb('');
       return request.session;
     };
   }
   if (request.session && !request.session.save) {
-    request.session.save = cb => {
+    request.session.save = (cb: any) => {
       if (cb) cb('');
       return request.session;
     };
@@ -115,7 +127,34 @@ app.use(passport.session());
 app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
 app.use(express.static('public'));
-app.use('/api', api);
+app.use('/api/notebooks', notebookApi);
+app.use('/api/templates', templatesApi);
+app.use('/api', utilityApi);
+app.use('/api/users', usersApi);
+
+// Custom error handler which returns a JSON description of error
+// TODO specify this interface in data models
+const errorHandler: ErrorRequestHandler = (
+  err: Error & {status?: number},
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  req: Request,
+  res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  next: NextFunction
+) => {
+  // Set the response status code
+  const statusCode = err.status || 500;
+  res.status(statusCode).json({
+    error: {
+      message: err.message,
+      status: statusCode,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    },
+  });
+};
+
+// Use custom error handler which intercepts with JSON
+app.use(errorHandler);
 
 // Swagger-UI Routes
 app.get('/apidoc/swagger-initializer.js', (req, res) => res.send(indexContent));

@@ -63,6 +63,9 @@ import {
   file_data_to_attachments,
   files_to_attachments,
 } from './data_storage/attachments';
+export * from './auth';
+
+export * from './data_storage/authDB';
 
 export {
   HRID_STRING,
@@ -102,6 +105,7 @@ export {
 
 export * from './datamodel/database';
 export * from './types';
+export * from './api';
 
 export type DBCallbackObject = {
   getDataDB: CallableFunction;

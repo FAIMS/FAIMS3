@@ -1,24 +1,12 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
-import React from 'react';
-import {Button, ButtonProps} from '@mui/material';
-import {Device} from '@capacitor/device';
 import {Browser} from '@capacitor/browser';
+import {Button, ButtonProps} from '@mui/material';
+import React from 'react';
 
-import {TokenContents} from '@faims3/data-model';
-import {setTokenForCluster, getTokenContentsForCluster} from '../../../users';
-import {reprocess_listing} from '../../../sync/process-initialization';
-import {logError} from '../../../logging';
-
-export async function isWeb(): Promise<boolean> {
-  const info = await Device.getInfo();
-  return info.platform === 'web';
-}
+import {isWeb} from '../../../utils/helpers';
 
 export type LoginButtonProps = {
-  listing_id: string;
   conductor_url: string;
-  listing_name: string;
-  setToken: React.Dispatch<React.SetStateAction<TokenContents | undefined>>;
   is_refresh: boolean;
   label?: string;
   size?: ButtonProps['size'];
@@ -41,40 +29,17 @@ export function LoginButton(props: LoginButtonProps) {
       }}
       startIcon={props.startIcon}
       onClick={async () => {
-        window.addEventListener(
-          'message',
-          async event => {
-            await setTokenForCluster(
-              event.data.token,
-              event.data.pubkey,
-              event.data.pubalg,
-              props.listing_id
-            )
-              .then(async () => {
-                const token = await getTokenContentsForCluster(
-                  props.listing_id
-                );
-                console.debug('token is', token);
-                props.setToken(token);
-                reprocess_listing(props.listing_id);
-
-                window.location.href = '/';
-              })
-              .catch(() => {
-                props.setToken(undefined);
-              });
-          },
-          false
-        );
-        if (await isWeb()) {
-          // Open a new window/tab on web
-          const oauth_window = window.open(props.conductor_url);
-          if (oauth_window === null) {
-            logError('Failed to open oauth window');
-          }
+        if (isWeb()) {
+          const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
+          window.location.href =
+            props.conductor_url + '/auth?redirect=' + redirect;
         } else {
           // Use the capacitor browser plugin in apps
-          await Browser.open({url: props.conductor_url});
+          await Browser.open({
+            url:
+              props.conductor_url +
+              '/auth?redirect=org.fedarch.faims3://auth-return',
+          });
         }
       }}
     >

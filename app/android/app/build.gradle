@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "au.edu.faims.fieldmark"
+    namespace System.getenv('ANDROID_APP_ID') ?: "au.edu.faims.fieldmark"
     //https://stackoverflow.com/a/69312217
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "au.edu.faims.fieldmark"
+        applicationId  System.getenv('ANDROID_APP_ID') ?: "au.edu.faims.fieldmark"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         //versionCode 1

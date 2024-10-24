@@ -1,17 +1,20 @@
-import React from 'react';
 import {Box} from '@mui/material';
-import MainAppBar from './appBar';
-import {TokenContents} from '@faims3/data-model';
-import Footer from '../components/footer';
 import {useTheme} from '@mui/material/styles';
+import React from 'react';
 import {ErrorBoundary, ErrorPage} from '../../logging';
+import {PossibleToken} from '../../types/misc';
+import Footer from '../components/footer';
+import MainAppBar from './appBar';
+import {useGetDefaultToken} from '../../utils/tokenHooks';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  token?: null | undefined | TokenContents;
+  token?: PossibleToken;
 }
 
 const MainLayout = (props: MainLayoutProps) => {
+  const tokenQuery = useGetDefaultToken();
+  const token = tokenQuery.data?.parsedToken;
   const theme = useTheme();
   const appbarHeight = 64;
   const minHeightMob = 128 + appbarHeight; // min height of footer in mobile mode + appbar height
@@ -19,7 +22,7 @@ const MainLayout = (props: MainLayoutProps) => {
 
   return (
     <React.Fragment>
-      <MainAppBar token={props.token} />
+      <MainAppBar token={token} />
       <Box
         component="main"
         sx={{
@@ -44,7 +47,7 @@ const MainLayout = (props: MainLayoutProps) => {
           {props.children}
         </ErrorBoundary>
       </Box>
-      <Footer token={props.token} />
+      <Footer token={token} />
     </React.Fragment>
   );
 };
