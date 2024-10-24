@@ -19,7 +19,9 @@
         "node": "^20.9.0"
     },
     "scripts": {
+        "prestart": "npm run assets",
         "start": "vite",
+        "prebuild": "npm run assets",
         "build": "tsc && vite build",
         "pretest": "npm run compile",
         "test": "vitest",
@@ -41,7 +43,7 @@
         "fix": "gts fix",
         "doc": "jsdoc -c ./jsdoc.config.json",
         "set-version": "./bin/setBuildVersion.sh",
-        "assets": "capacitor-assets generate --assetPath ./assets/${VITE_THEME} --iconBackgroundColorDark '#001d34' --splashBackgroundColorDark '#001d34'"
+        "assets": "./bin/generate_assets.sh"
     },
     "dependencies": {
         "@bugsnag/js": "^7.20.2",
