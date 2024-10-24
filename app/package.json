@@ -43,7 +43,7 @@
         "fix": "gts fix",
         "doc": "jsdoc -c ./jsdoc.config.json",
         "set-version": "./bin/setBuildVersion.sh",
-        "assets": "./bin/generate_assets.sh"
+        "assets": "./bin/configureAppName.sh; ./bin/generate_assets.sh"
     },
     "dependencies": {
         "@bugsnag/js": "^7.20.2",
