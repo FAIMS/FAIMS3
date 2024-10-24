@@ -19,44 +19,44 @@
  *   throughout the app.
  */
 
-import React, {useContext, useState} from 'react';
-import {Link as RouterLink} from 'react-router-dom';
-import {
-  AppBar as MuiAppBar,
-  CircularProgress,
-  IconButton,
-  Toolbar,
-  ListItemButton,
-  createTheme,
-} from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import {createUseStyles as makeStyles} from 'react-jss';
-import CssBaseline from '@mui/material/CssBaseline';
-import clsx from 'clsx';
-import Collapse from '@mui/material/Collapse';
-import Drawer from '@mui/material/Drawer';
-import Divider from '@mui/material/Divider';
-import List from '@mui/material/List';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import DescriptionIcon from '@mui/icons-material/Description';
-import ListItemIcon from '@mui/material/ListItemIcon';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import SettingsIcon from '@mui/icons-material/Settings';
+import AccountTree from '@mui/icons-material/AccountTree';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import DescriptionIcon from '@mui/icons-material/Description';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import AccountTree from '@mui/icons-material/AccountTree';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+import MenuIcon from '@mui/icons-material/Menu';
+import SettingsIcon from '@mui/icons-material/Settings';
+import {
+  CircularProgress,
+  IconButton,
+  ListItemButton,
+  AppBar as MuiAppBar,
+  Toolbar,
+  createTheme,
+} from '@mui/material';
+import Collapse from '@mui/material/Collapse';
+import CssBaseline from '@mui/material/CssBaseline';
+import Divider from '@mui/material/Divider';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import * as ROUTES from '../../constants/routes';
-import SystemAlert from '../components/alert';
-import AppBarAuth from '../components/authentication/appbarAuth';
-import {TokenContents} from '@faims3/data-model';
-import {checkToken} from '../../utils/helpers';
-import SyncStatus from '../components/sync';
+import clsx from 'clsx';
+import React, {useContext, useState} from 'react';
+import {createUseStyles as makeStyles} from 'react-jss';
+import {Link as RouterLink} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import {AppBarHeading} from '../components/app-bar/app-bar-heading';
+import * as ROUTES from '../../constants/routes';
 import {ProjectsContext} from '../../context/projects-context';
+import {PossibleToken} from '../../types/misc';
 import {ProjectExtended} from '../../types/project';
+import {checkToken} from '../../utils/helpers';
+import SystemAlert from '../components/alert';
+import {AppBarHeading} from '../components/app-bar/app-bar-heading';
+import AppBarAuth from '../components/authentication/appbarAuth';
+import SyncStatus from '../components/sync';
 
 /**
  * Represents the properties for a menu list item.
@@ -210,7 +210,7 @@ function getNestedProjects(pouchProjectList: ProjectExtended[]) {
 }
 
 type NavbarProps = {
-  token?: null | undefined | TokenContents;
+  token?: PossibleToken;
 };
 /**
  * MainAppBar component handles the display of the navigation drawer and the app bar.
@@ -222,6 +222,7 @@ type NavbarProps = {
  */
 export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
+  // get the current user token
 
   // get the list of activated projects
   const projectList = useContext(ProjectsContext).projects.filter(

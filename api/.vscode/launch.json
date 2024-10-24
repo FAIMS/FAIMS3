@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Mocha Tests",
+      "program": "${workspaceFolder}/../node_modules/mocha/bin/_mocha",
+      "args": [
+        "--require",
+        "dotenv/config",
+        "--timeout",
+        "999999",
+        "--colors",
+        "--exit",
+        "${workspaceFolder}/test/**/*.ts",
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "env": {
+        "NODE_ENV": "test"
+      }
+    }
+  ]
+}

@@ -1,5 +1,19 @@
 #!/bin/bash -e
 
+# Takes down any running docker compose in this project, then prunes volumes,
+# and starts again with new volumes
+manage_docker_volumes() {
+    docker_prefix="docker compose -f api/docker-compose.dev.yml"
+    echo "Stopping existing Docker containers..."
+    ${docker_prefix} down
+
+    echo "Pruning volumes related to this Docker Compose setup..."
+    docker volume prune -f --filter "label=com.docker.compose.project=$(${docker_prefix} config --services)"
+
+    echo "Starting Docker containers with new volumes..."
+    ${docker_prefix} up -d
+}
+
 wait_for_service() {
     local start_time
     local end_time
@@ -65,8 +79,7 @@ echo "> ./scripts/devbuild.sh"
 ./scripts/devbuild.sh
 
 echo "Starting docker service..."
-echo "> ./scripts/devup.sh"
-./scripts/devup.sh
+manage_docker_volumes
 
 echo "Waiting for service to become available at http://localhost:8080..."
 

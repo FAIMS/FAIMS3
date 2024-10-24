@@ -17,55 +17,53 @@
  * Description:
  *   TODO
  */
-import React, {useContext} from 'react';
-import {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {logError} from '../../../logging';
-
-import {
-  Autocomplete,
-  Button,
-  Divider,
-  Grid,
-  Box,
-  Typography,
-  Chip,
-  TextField,
-} from '@mui/material';
+import {Browser} from '@capacitor/browser';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
-import {LoginButton} from './login_form';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {
-  getTokenContentsForCluster,
+  Autocomplete,
+  Box,
+  Button,
+  Chip,
+  Divider,
+  Grid,
+  TextField,
+  Typography,
+} from '@mui/material';
+import React, {useContext, useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import * as ROUTES from '../../../constants/routes';
+import {ActionType} from '../../../context/actions';
+import {store} from '../../../context/store';
+import {logError} from '../../../logging';
+import {update_directory} from '../../../sync/process-initialization';
+import {PossibleToken} from '../../../types/misc';
+import {
   forgetCurrentToken,
-  getAllUsersForCluster,
+  getAllUsernamesForCluster,
+  getTokenContentsForCluster,
   switchUsername,
 } from '../../../users';
-import {update_directory} from '../../../sync/process-initialization';
-import {TokenContents} from '@faims3/data-model';
-import * as ROUTES from '../../../constants/routes';
-import MainCard from '../ui/main-card';
-import {store} from '../../../context/store';
-import {ActionType} from '../../../context/actions';
-import {Browser} from '@capacitor/browser';
 import {isWeb} from '../../../utils/helpers';
 import {APP_ID} from '../../../buildconfig';
+import MainCard from '../ui/main-card';
+import {LoginButton} from './login_form';
+import {useGetToken} from '../../../utils/tokenHooks';
 
 type ClusterCardProps = {
   listing_id: string;
   listing_name: string;
   listing_description: string;
   conductor_url: string;
-  setToken: Function;
 };
 
 type UserSwitcherProps = {
   listing_id: string;
   current_username: string;
-  setToken: Function;
+  onUpdated: (newToken: PossibleToken) => void;
 };
 
 function UserSwitcher(props: UserSwitcherProps) {
@@ -73,25 +71,33 @@ function UserSwitcher(props: UserSwitcherProps) {
    * Allow the user to switch to another locally-logged-in user
    * Autocomplete is controlled, switchUsername is called on button click
    */
-  const [userList, setUserList] = useState([] as TokenContents[]);
 
-  const [value, setValue] = React.useState<TokenContents | null | undefined>(
-    null
+  // List of tokens for this cluster
+  const [usernameList, setUsernameList] = useState<string[]>([]);
+  const [selectedUsername, setSelectedUsername] = useState<string | undefined>(
+    undefined
   );
 
   const {dispatch} = useContext(store);
+
+  // Fetch the user list for the given listing
   useEffect(() => {
     const getUserList = async () => {
-      setUserList(await getAllUsersForCluster(props.listing_id));
+      setUsernameList(await getAllUsernamesForCluster(props.listing_id));
     };
     getUserList();
   }, [props.listing_id]);
-  if (userList.length === 0) {
+
+  if (usernameList.length === 0) {
     return <p>No logged in users</p>;
   }
 
   const handleClick = () => {
-    switchUsername(props.listing_id, value?.username as string)
+    if (!selectedUsername) {
+      console.error('Trying to switch to undefined username.');
+      return;
+    }
+    switchUsername(props.listing_id, selectedUsername)
       .then(async r => {
         console.log('switchUsername returned', r);
         const token_contents = await getTokenContentsForCluster(
@@ -101,11 +107,11 @@ function UserSwitcher(props: UserSwitcherProps) {
           'awaiting getTokenContentsForCluster() returned',
           token_contents
         );
-        props.setToken(token_contents);
+        props.onUpdated(token_contents);
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: 'Switching user ' + value?.name,
+            message: 'Switching user ' + selectedUsername,
             severity: 'success',
           },
         });
@@ -127,43 +133,20 @@ function UserSwitcher(props: UserSwitcherProps) {
           <Autocomplete
             disablePortal
             id={`user-switcher-${props.listing_id}`}
-            options={userList}
-            getOptionLabel={option => {
-              if (option) return option.name ? option.name : option.username;
-              else return '';
-            }}
+            options={usernameList}
             renderOption={(props, option) => {
-              if (option) {
-                return (
-                  <Box component="li" {...props}>
-                    {option.name ? (
-                      <span>
-                        {option.name}{' '}
-                        <Chip size={'small'} label={option.username} />
-                      </span>
-                    ) : (
-                      option.username
-                    )}
-                  </Box>
-                );
-              } else {
-                return (
-                  <Box component="li" {...props}>
-                    Unknown User
-                  </Box>
-                );
-              }
+              return (
+                <Box component="li" {...props}>
+                  <span>
+                    <Chip size={'small'} label={option} />
+                  </span>
+                </Box>
+              );
             }}
-            value={value}
-            onChange={(
-              event: any,
-              newValue: TokenContents | null | undefined
-            ) => {
-              setValue(newValue);
+            value={selectedUsername}
+            onChange={(event: any, newValue: string | undefined | null) => {
+              setSelectedUsername(newValue ?? undefined);
             }}
-            isOptionEqualToValue={(option, value) =>
-              option && value ? option.username === value.username : false
-            }
             fullWidth
             renderInput={params => (
               <TextField {...params} label="Choose Active User" />
@@ -187,21 +170,15 @@ function UserSwitcher(props: UserSwitcherProps) {
 }
 
 export default function ClusterCard(props: ClusterCardProps) {
-  const [token, setToken] = useState(undefined as undefined | TokenContents);
   const history = useNavigate();
 
-  useEffect(() => {
-    const getToken = async () => {
-      const new_token = await getTokenContentsForCluster(props.listing_id);
-      setToken(new_token);
-    };
-    getToken();
-  }, [props.listing_id]);
+  // Get the token for this listing, if any
+  const tokenQuery = useGetToken({listingId: props.listing_id});
+
+  const token = tokenQuery.data;
 
   const handleLogout = () => {
     forgetCurrentToken(props.listing_id).then(async () => {
-      setToken(undefined);
-      props.setToken(undefined);
       update_directory();
 
       if (isWeb()) {
@@ -246,13 +223,10 @@ export default function ClusterCard(props: ClusterCardProps) {
         </Button>
       }
     >
-      {token === undefined ? (
+      {!token ? (
         <LoginButton
           key={props.listing_id}
-          listing_id={props.listing_id}
-          listing_name={props.listing_name}
           conductor_url={props.conductor_url}
-          setToken={setToken}
           is_refresh={false}
           startIcon={<LoginIcon />}
         />
@@ -270,7 +244,7 @@ export default function ClusterCard(props: ClusterCardProps) {
             </Grid>
             <Grid item sm={6} xs={12}>
               <Typography variant={'body2'} fontWeight={700}>
-                {token.username}
+                {token.parsedToken.username}
               </Typography>
             </Grid>
             <Grid item sm={3} xs={12}>
@@ -299,7 +273,7 @@ export default function ClusterCard(props: ClusterCardProps) {
             </Grid>
             <Grid item sm={6} xs={12}>
               <Box sx={{maxHeight: '400px', overflowY: 'scroll'}}>
-                {token.roles.map((group, index) => {
+                {token.parsedToken.roles.map((group, index) => {
                   return <Chip key={index} label={group} sx={{mb: 1}} />;
                 })}
               </Box>
@@ -315,10 +289,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                 <Grid item xs={12}>
                   <LoginButton
                     key={props.listing_id}
-                    listing_id={props.listing_id}
-                    listing_name={props.listing_name}
                     conductor_url={props.conductor_url}
-                    setToken={setToken}
                     is_refresh={true}
                     label={'refresh'}
                     size={'small'}
@@ -336,20 +307,18 @@ export default function ClusterCard(props: ClusterCardProps) {
           </Grid>
 
           <Divider sx={{my: 2}} />
-          {token.username ? (
+          {token.parsedToken.username ? (
             <React.Fragment>
               <UserSwitcher
                 listing_id={props.listing_id}
-                current_username={token.username}
-                setToken={props.setToken}
+                current_username={token.parsedToken.username}
+                // TODO should anything happen when the token/username changes?
+                onUpdated={() => {}}
               />
 
               <LoginButton
                 key={props.listing_id}
-                listing_id={props.listing_id}
-                listing_name={props.listing_name}
                 conductor_url={props.conductor_url}
-                setToken={setToken}
                 is_refresh={true}
                 label={'add another user'}
                 size={'small'}

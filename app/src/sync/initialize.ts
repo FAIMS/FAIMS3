@@ -26,33 +26,14 @@ import {update_directory} from './process-initialization';
 import {register_basic_automerge_resolver, register_sync_state} from './state';
 
 /**
- * To prevent initialize() being called multiple times
- * This is false when the app starts,
- * True when initialize() has finished, and
- * the initialize promise when it's still in the process of initializing
- */
-let initialize_state: boolean | Promise<void> = false;
-
-/**
  *
- * @returns Promise that resolve when all project PouchDB objects have been created and metadata DBs synced
+ * @returns creates all project PouchDB objects and metadata
+ * DBs synced
  */
-export function initialize() {
-  if (initialize_state === true) {
-    return Promise.resolve(); //Already initialized
-  } else if (initialize_state === false) {
-    // Real initialization
-    return (initialize_state = initializeNoCheck());
-  } else {
-    // Already initializing
-    return initialize_state;
-  }
-}
-
-async function initializeNoCheck() {
+export async function initialize() {
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
 
   register_sync_state(events);
   register_basic_automerge_resolver(events);
-  update_directory().catch(err => events.emit('directory_error', err));
+  await update_directory().catch(err => events.emit('directory_error', err));
 }

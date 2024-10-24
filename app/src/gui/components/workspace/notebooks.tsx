@@ -87,14 +87,6 @@ export default function NoteBooks() {
           valueGetter: ({value}) => value && new Date(value),
         },
         {
-          field: 'status',
-          headerName: 'Status',
-          type: 'string',
-          flex: 0.2,
-          minWidth: 160,
-          renderCell: ({row: {status}}) => <ProjectStatus status={status} />,
-        },
-        {
           field: 'actions',
           type: 'actions',
           flex: 0.2,
@@ -177,7 +169,7 @@ export default function NoteBooks() {
         <Typography variant={'body1'} gutterBottom>
           You have {activatedProjects.length} {NOTEBOOK_NAME}
           {activatedProjects.length !== 1 ? 's' : ''} activated on this device.
-          To start syncing a {NOTEBOOK_NAME}, visit the{' '}
+          To start using a {NOTEBOOK_NAME}, visit the{' '}
           <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
             Available
           </Button>{' '}

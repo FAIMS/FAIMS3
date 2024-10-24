@@ -1,18 +1,13 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
-import React from 'react';
-import {Button, ButtonProps} from '@mui/material';
 import {Browser} from '@capacitor/browser';
-
-import {TokenContents} from '@faims3/data-model';
+import {Button, ButtonProps} from '@mui/material';
+import React from 'react';
 
 import {isWeb} from '../../../utils/helpers';
 import {APP_ID} from '../../../buildconfig';
 
 export type LoginButtonProps = {
-  listing_id: string;
   conductor_url: string;
-  listing_name: string;
-  setToken: React.Dispatch<React.SetStateAction<TokenContents | undefined>>;
   is_refresh: boolean;
   label?: string;
   size?: ButtonProps['size'];

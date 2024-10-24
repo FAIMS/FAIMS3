@@ -20,13 +20,12 @@
  *    to the main page
  */
 
-import {decodeJwt} from 'jose';
+import {Button, Stack} from '@mui/material';
+import {useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
-import {setTokenForCluster} from '../../../users';
 import {getSyncableListingsInfo} from '../../../databaseAccess';
-import {Dispatch, SetStateAction, useEffect} from 'react';
-import {TokenContents} from '@faims3/data-model';
 import {update_directory} from '../../../sync/process-initialization';
+import {parseToken, setTokenForCluster} from '../../../users';
 
 async function getListingForConductorUrl(conductor_url: string) {
   const origin = new URL(conductor_url).origin;
@@ -40,51 +39,100 @@ async function getListingForConductorUrl(conductor_url: string) {
   throw Error(`Unknown listing for conductor url ${conductor_url}`);
 }
 
-interface AuthReturnProps {
-  setToken: Dispatch<SetStateAction<TokenContents | null | undefined>>;
-}
-
-export function AuthReturn(props: AuthReturnProps) {
+export function AuthReturn() {
   const navigate = useNavigate();
+  const [error, setError] = useState<string | undefined>(undefined);
 
+  // track if effect has already run - this should only happen once
+  const hasRun = useRef(false);
+
+  const setErrorAndReturnHome = (msg: string) => {
+    console.error(msg);
+    setError(msg);
+    const timeout = setTimeout(() => {
+      navigate('/');
+    }, 10000);
+    return () => {
+      clearTimeout(timeout);
+    };
+  };
+
+  // This effect runs when the component mounts - it looks for a token in the query string
   useEffect(() => {
-    const storeToken = async (token: string) => {
-      const token_obj = decodeJwt(decodeURIComponent(token));
+    // don't run this effect twice as it causes a local pouch DB conflict
+    if (hasRun.current) return;
+    hasRun.current = true;
 
-      console.log('decoded', token_obj);
+    const storeToken = async (
+      token: string,
+      refreshToken: string | undefined
+    ) => {
+      // Decode in case URI encoded
+      const decodedToken = decodeURIComponent(token);
+      const decodedRefreshToken = refreshToken
+        ? decodeURIComponent(refreshToken)
+        : undefined;
 
-      const listing_id = await getListingForConductorUrl(
-        token_obj.server as string
-      );
+      // Decode the JWT object into an untyped object
+      const parsedToken = await parseToken(decodedToken);
 
-      console.log('Received token via url for:', listing_id);
-      await setTokenForCluster(token, listing_id);
-      console.log('We have stored the token for ', listing_id);
+      // Get the listing for the server in the token
+      const listing_id = await getListingForConductorUrl(parsedToken.server);
+
+      // Store the token in the database
+      try {
+        await setTokenForCluster(
+          decodedToken,
+          parsedToken,
+          decodedRefreshToken,
+          listing_id
+        );
+      } catch (e) {
+        return setErrorAndReturnHome(
+          'Auth return route attempted to store token in local auth DB but encountered an error. ' +
+            e
+        );
+      }
+
       // this requires the token
       update_directory();
-      // generate the TokenContents object like parseToken does
-      const token_content = {
-        username: token_obj.sub as string,
-        roles: (token_obj['_couchdb.roles'] as string[]) || '',
-        name: token_obj.name as string,
-      };
-      console.log('%cToken content', 'background-color: green', token_content);
-      props.setToken(token_content);
       navigate('/');
     };
 
     const params = new URLSearchParams(window.location.search);
-    if (params.has('token')) {
-      const token = params.get('token');
-      if (token) {
-        storeToken(token).catch(err => {
-          console.error(err);
-        });
-      }
-    } else {
+
+    const rawToken = params.get('token');
+    const refreshToken = params.get('refreshToken') ?? undefined;
+    if (!rawToken) {
       navigate('/');
+      return;
     }
+
+    // Now try to decode and store it
+    storeToken(rawToken, refreshToken).catch(() => {
+      return setErrorAndReturnHome(
+        'An unhandled error occurred during token storage.'
+      );
+    });
   }, []);
 
-  return <h1>Auth Token</h1>;
+  return (
+    <div>
+      {error ? (
+        <Stack direction="column" spacing={2}>
+          <h1>Error occurred while logging in</h1>
+          <p>Error: {error}. You will be returned to home in 10 seconds.</p>
+          <Button
+            onClick={() => {
+              navigate('/');
+            }}
+          >
+            Return home
+          </Button>
+        </Stack>
+      ) : (
+        <h1>Logged in... please wait</h1>
+      )}
+    </div>
+  );
 }
