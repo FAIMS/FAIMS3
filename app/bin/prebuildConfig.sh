@@ -40,3 +40,9 @@ npx capacitor-assets generate --assetPath "./public/base-assets/${VITE_THEME}" \
   --pwaManifestPath ./public/manifest.json \
   --iconBackgroundColorDark '#001d34' \
   --splashBackgroundColorDark '#001d34'
+
+## capacitor-assets can put the pwa icons in the wrong place sometimes
+if test -f icons/icon-48.webp; then
+  echo "Moving icons into public"
+  mv icons public/assets/icons
+fi
