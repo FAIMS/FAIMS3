@@ -1,6 +1,5 @@
 import {NavLink} from 'react-router-dom';
-import {appBarHeading} from '../../themes/index';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {APP_NAME} from '../../../buildconfig';
 
 interface AppBarHeadingProps {
   link: string;
@@ -21,17 +20,19 @@ export const AppBarHeading = ({link}: AppBarHeadingProps) => (
         style={{maxWidth: '140px', flex: 1}}
       />
     </NavLink>
-    <NavLink to={link}
+    <NavLink
+      to={link}
       style={{
         flexGrow: 1,
         fontSize: 32,
         fontWeight: 600,
         textAlign: 'left',
         textDecoration: 'none',
-        color: 'inherit'
+        color: 'inherit',
+        fontVariant: 'small-caps',
       }}
     >
-      {NOTEBOOK_NAME_CAPITALIZED}s
+      {APP_NAME}
     </NavLink>
   </>
 );

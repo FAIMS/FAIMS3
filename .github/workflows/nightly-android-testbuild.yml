@@ -130,6 +130,8 @@ jobs:
           export VITE_NOTEBOOK_LIST_TYPE=tabs
           export VITE_THEME=${{vars.THEME}}
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
+          export VITE_APP_ID=${{vars.APP_ID}}
+          export VITE_APP_NAME=${{vars.APP_NAME}}
           npm ci
           npm run build
           npm run assets --workspace=@faims3/app
@@ -143,7 +145,7 @@ jobs:
           bundle install
           bundle exec fastlane deploy_fieldmark
         env:
-          ANDROID_APP_ID: ${{ vars.ANDROID_APP_ID }}
+          APP_ID: ${{ vars.APP_ID }}
           ANDROID_RELEASE_STATUS: ${{ vars.ANDROID_RELEASE_STATUS }}
           ANDROID_DEPLOY_TRACK: "internal"
           JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}

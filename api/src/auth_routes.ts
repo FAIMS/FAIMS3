@@ -21,7 +21,7 @@
 
 import passport from 'passport';
 
-import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
+import {APP_ID, CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
 import {DoneFunction} from './types';
 import {getUserFromEmailOrUsername} from './couchdb/users';
 import {registerLocalUser} from './auth_providers/local';
@@ -81,7 +81,7 @@ export function determine_callback_urls(provider_name: string): {
  * Mainly want to avoid a non-url redirect. Without a whitlist of
  * app URLs we can't really block any but check that it starts with 'http'
  * For mobile we redirect to the custom URL scheme for the app
- * currently hard-coded as `org.fedarch.faims3` but should be configurable
+ * configured via VITE_APP_ID
  *
  * @param redirect URL to redirect to
  * @returns a valid URl to redirect to, default to '/' if
@@ -91,10 +91,7 @@ function validateRedirect(redirect: string) {
   if (redirect.startsWith('http')) {
     // could match against a whitelist of allowed URLs but for now...
     return redirect;
-  } else if (
-    redirect.startsWith('/') ||
-    redirect.startsWith('org.fedarch.faims3://')
-  ) {
+  } else if (redirect.startsWith('/') || redirect.startsWith(`${APP_ID}://`)) {
     return redirect;
   } else {
     return '/';

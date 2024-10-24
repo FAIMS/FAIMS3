@@ -1,6 +1,6 @@
 {
-  "short_name": "Fieldmark",
-  "name": "Fieldmark app",
+  "short_name": "APPNAME",
+  "name": "APPNAME app",
   "icons": [
     {
       "src": "assets/icons/icon-48.webp",

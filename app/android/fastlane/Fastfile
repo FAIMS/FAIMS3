@@ -46,7 +46,7 @@ platform :android do
             }
       )
       upload_to_play_store(json_key: ENV["ANDROID_JSON_KEY_FILE"],
-                           package_name: ENV["ANDROID_APP_ID"],
+                           package_name: ENV["APP_ID"],
                            track: ENV["ANDROID_DEPLOY_TRACK"],
                            release_status: RELEASE_STATUS,
                            skip_upload_metadata: true,

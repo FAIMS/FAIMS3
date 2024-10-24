@@ -34,6 +34,7 @@ import {
   DEVELOPER_MODE,
   CONDUCTOR_AUTH_PROVIDERS,
   KEY_SERVICE,
+  APP_ID,
 } from './buildconfig';
 import {
   requireAuthentication,
@@ -273,6 +274,7 @@ app.get('/send-token/', (req, res) => {
       web_url: WEBAPP_PUBLIC_URL,
       android_url: ANDROID_APP_URL,
       ios_url: IOS_APP_URL,
+      app_id: APP_ID,
     });
   } else {
     res.redirect('/');

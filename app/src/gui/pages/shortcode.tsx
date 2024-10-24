@@ -24,7 +24,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import {isWeb} from '../../utils/helpers';
 import {Browser} from '@capacitor/browser';
 import MainCard from '../components/ui/main-card';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {APP_ID, NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
 import {ActionType} from '../../context/actions';
 import {store} from '../../context/store';
@@ -74,7 +74,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
       } else {
         // Use the capacitor browser plugin in apps
         await Browser.open({
-          url: url + '?redirect=org.fedarch.faims3://auth-return',
+          url: `${url}?redirect=${APP_ID}://auth-return`,
         });
       }
     };
@@ -149,7 +149,7 @@ export function QRCodeRegistration(props: ShortCodeProps) {
     if (url.match(valid_re)) {
       // Use the capacitor browser plugin in apps
       await Browser.open({
-        url: url + '?redirect=org.fedarch.faims3://auth-return',
+        url: `${url}?redirect=${APP_ID}://auth-return`,
       });
     } else {
       dispatch({

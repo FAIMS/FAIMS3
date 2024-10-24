@@ -1,6 +1,6 @@
 {
   "appId": "org.fedarch.faims3",
-  "appName": "Fieldmark",
+  "appName": "APPNAME",
   "npmClient": "npm",
   "webDir": "build",
   "plugins": {

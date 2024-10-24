@@ -117,11 +117,11 @@ we will be updating.  Both of these come from the environment in our
 
 ```ruby
 json_key_file(ENV["ANDROID_JSON_KEY_FILE"])
-package_name(ENV["ANDROID_APP_ID"])
+package_name(ENV["APP_ID"])
 
 for_platform :android do
   for_lane :deploy_fieldmark do
-    package_name(ENV["ANDROID_APP_ID"])
+    package_name(ENV["APP_ID"])
   end
 end
 ```
@@ -173,7 +173,8 @@ where these workflows will run.
 - `vars.PRODUCTION_CONDUCTOR_URL` - URL setting for production build
 - `vars.TURBO_TEAM` - Turbo cache team name for authentication
 - `vars.TURBO_API_URL` - Turbo cache URL
-- `vars.ANDROID_APP_ID` - the id of the app on the app store, eg. 'au.edu.faims.fieldmark', needs to be unique per deployment
+- `vars.APP_ID` - the id of the app on the app store, eg. 'au.edu.faims.fieldmark', needs to be unique per deployment
+- `vars.APP_NAME` - the app name that appears in various places
 = `vars.ANDROID_RELEASE_STATUS` - the release status, normally 'completed' but for a draft (not yet reviewed) app this could be 'draft'
 
 Secrets will not be visible once added so we need to keep copies somewhere safe.
