@@ -94,7 +94,7 @@ function RecordsTable(props: RecordsTableProps) {
 
   // Determine whether the view is mobile or desktop based on screen size
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
-  const mobileView: boolean = !not_xs;
+  const mobileView = !not_xs;
   const defaultMaxRowsMobile = 10;
 
   /**

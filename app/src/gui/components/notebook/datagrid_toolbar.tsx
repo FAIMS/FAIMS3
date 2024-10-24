@@ -20,7 +20,6 @@
 
 import React, {useEffect} from 'react';
 import {
-  Divider,
   Box,
   Grid,
   TextField,
