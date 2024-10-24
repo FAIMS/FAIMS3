@@ -99,20 +99,12 @@ type RecordsBrowseTableProps = {
  */
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
-
-  // default for mobileView is on (collapsed table)
-  const [mobileViewSwitchValue, setMobileViewSwitchValue] =
-    React.useState(true);
-
   const theme = useTheme();
   const history = useNavigate();
 
   // Determine whether the view is mobile or desktop based on screen size
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
-
-  // if screensize is > mobile, always set to false i.e., no mobile view. If mobile, allow control via the switch
-  const mobileView: boolean = not_xs ? false : mobileViewSwitchValue;
-
+  const mobileView: boolean = !not_xs;
   const defaultMaxRowsMobile = 10;
 
   /**
@@ -537,18 +529,6 @@ function RecordsTable(props: RecordsTableProps) {
           }}
         />
       </Box>
-      {not_xs ? (
-        ''
-      ) : (
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Switch checked={mobileView} onChange={handleToggleMobileView} />
-            }
-            label={'Toggle Mobile View'}
-          />
-        </FormGroup>
-      )}
     </React.Fragment>
   );
 }
