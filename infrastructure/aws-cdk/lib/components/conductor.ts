@@ -130,6 +130,7 @@ export class FaimsConductor extends Construct {
         ],
         environment: {
           PROFILE_NAME: 'default',
+          APP_ID: 'au.edu.faims.bss',
           CONDUCTOR_INSTANCE_NAME: 'AWS FAIMS 3 Deployment',
           COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
           COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
