@@ -401,27 +401,119 @@ function RecordsTable(props: RecordsTableProps) {
 
   return (
     <React.Fragment>
-      <Box component={Paper} elevation={0}>
+      <Box
+        component={Paper}
+        elevation={3}
+        sx={{
+          borderRadius: '8px',
+          overflow: 'hidden',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+          '& .MuiDataGrid-root': {
+            border: 'none',
+          },
+        }}
+      >
+        {' '}
         <DataGrid
           rows={rows}
           loading={loading}
           getRowId={r => r.record_id}
           columns={columns}
           autoHeight
-          sx={{cursor: 'pointer'}}
+          sx={{
+            cursor: 'pointer',
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              color: theme.palette.text.primary,
+              visibility: 'visible',
+            },
+            '& .MuiDataGrid-main': {
+              px: 2,
+            },
+            '& .MuiDataGrid-row': {
+              height: 'auto',
+              minHeight: '64px',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
+                transition: 'all 0.2s ease-in-out',
+              },
+            },
+            '&:focus': {
+              outline: '2px solid #DFA75998',
+              backgroundColor: '#e3f2fd',
+            },
+            '& .MuiDataGrid-cell': {
+              padding: '14px 20px',
+              borderBottom: `2px solid ${theme.palette.divider}`,
+              fontSize: '0.97rem',
+              whiteSpace: 'normal',
+              overflow: 'visible',
+              color: theme.palette.text.primary,
+              '&:focus': {
+                outline: 'none',
+              },
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: theme.palette.background.default,
+              borderBottom: `2px solid ${theme.palette.divider}`,
+              '& .MuiDataGrid-columnHeader': {
+                padding: '12px 16px',
+                '&:focus': {
+                  outline: 'none',
+                },
+                '& .MuiDataGrid-sortIcon': {
+                  opacity: 1,
+                  color: theme.palette.text.secondary,
+                  visibility: 'visible',
+                },
+              },
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: `1px solid ${theme.palette.divider}`,
+              backgroundColor: theme.palette.background.default,
+              minHeight: '52px',
+            },
+            '& .MuiTablePagination-root': {
+              color: theme.palette.text.secondary,
+              '& .MuiTablePagination-select': {
+                marginRight: 2,
+              },
+            },
+            [theme.breakpoints.down('sm')]: {
+              '& .MuiDataGrid-cell': {
+                padding: '8px 14px',
+              },
+              '& .MuiDataGrid-columnHeaders': {
+                '& .MuiDataGrid-columnHeader': {
+                  padding: '8px 14px',
+                },
+              },
+            },
+            '& .conflict-row': {
+              backgroundColor: `${theme.palette.warning.light}!important`,
+              '&:hover': {
+                backgroundColor: `${theme.palette.warning.light}!important`,
+                opacity: 0.9,
+              },
+            },
+          }}
           getRowHeight={() => 'auto'}
           pageSizeOptions={[10, 25, 50, 100]}
-          density={'standard'}
+          density={not_xs ? 'standard' : 'comfortable'}
           disableRowSelectionOnClick
           onRowClick={handleRowClick}
-          getRowClassName={params => {
-            return `${params.row.conflicts ? 'bg-warning' : ''}`;
-          }}
+          getRowClassName={params =>
+            params.row.conflicts ? 'conflict-row' : ''
+          }
           slots={{
             toolbar: NotebookDataGridToolbar,
           }}
           slotProps={{
-            filterPanel: {sx: {maxWidth: '96vw'}},
+            filterPanel: {
+              sx: {maxWidth: '96vw'},
+            },
             toolbar: {
               handleQueryFunction: props.handleQueryFunction,
             },
