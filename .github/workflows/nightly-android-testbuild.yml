@@ -134,7 +134,6 @@ jobs:
           export VITE_APP_NAME=${{vars.APP_NAME}}
           npm ci
           npm run build
-          npm run assets --workspace=@faims3/app
       # https://capacitorjs.com/docs/android
       # The bundle install shouldn't be necessary, but given we've got ios and android in...      
       - run: npm run app-update android --workspace=@faims3/app
