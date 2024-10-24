@@ -23,7 +23,7 @@ sed -i -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" android/app/src/main/An
 
 # android/app/src/main/res/values/strings.xml
 
-sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g"  ./android/app/src/main/res/values/strings.dist.xml |\
+sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g"  ./android/app/src/main/res/values/strings.xml.dist |\
   sed -e "s/${APP_ID_PLACEHOLDER}/${VITE_APP_ID}/g" > ./android/app/src/main/res/values/strings.xml
 
 
