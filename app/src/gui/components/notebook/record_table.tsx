@@ -51,6 +51,18 @@ import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
 import {logError} from '../../../logging';
 
+/**
+ * Props for the RecordsTable component
+ *
+ * @typedef {Object} RecordsTableProps
+ * @property {ProjectID} project_id - The ID of the project.
+ * @property {number|null} maxRows - Max rows to display, or null for unlimited.
+ * @property {RecordMetadata[]} rows - Array of record metadata objects.
+ * @property {boolean} loading - Whether the table is in a loading state.
+ * @property {ProjectUIViewsets|null} [viewsets] - Optional viewsets configuration for the table.
+ * @property {Function} handleQueryFunction - Function to handle query changes.
+ * @property {Function} handleRefresh - Function to handle table refresh.
+ */
 type RecordsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
@@ -61,6 +73,16 @@ type RecordsTableProps = {
   handleRefresh: () => void;
 };
 
+/**
+ * Props for the RecordsBrowseTable component
+ *
+ * @typedef {Object} RecordsBrowseTableProps
+ * @property {ProjectID} project_id - The ID of the project.
+ * @property {number|null} maxRows - Max rows to display, or null for unlimited.
+ * @property {ProjectUIViewsets|null} [viewsets] - Optional viewsets configuration for the table.
+ * @property {boolean} filter_deleted - Whether to filter deleted records.
+ * @property {Function} handleRefresh - Function to handle table refresh.
+ */
 type RecordsBrowseTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
@@ -69,6 +91,12 @@ type RecordsBrowseTableProps = {
   handleRefresh: () => void;
 };
 
+/**
+ * Component to render the records in a DataGrid table.
+ *
+ * @param {RecordsTableProps} props - The properties passed to the RecordsTable.
+ * @returns {JSX.Element} The rendered DataGrid with record metadata.
+ */
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
 
@@ -78,6 +106,8 @@ function RecordsTable(props: RecordsTableProps) {
 
   const theme = useTheme();
   const history = useNavigate();
+
+  // Determine whether the view is mobile or desktop based on screen size
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   // if screensize is > mobile, always set to false i.e., no mobile view. If mobile, allow control via the switch
@@ -85,14 +115,11 @@ function RecordsTable(props: RecordsTableProps) {
 
   const defaultMaxRowsMobile = 10;
 
-  const handleToggleMobileView = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setMobileViewSwitchValue(event.target.checked);
-  };
-
-  // The entire row is clickable to the record
-  const handleRowClick: GridEventListener<'rowClick'> = params => {
+  /**
+   * Redirects to the record detail view when a row is clicked.
+   *
+   * @param {GridEventListener<'rowClick'>} params - The row click event params.
+   */ const handleRowClick: GridEventListener<'rowClick'> = params => {
     history(
       ROUTES.getRecordRoute(
         project_id || 'dummy',
@@ -102,6 +129,12 @@ function RecordsTable(props: RecordsTableProps) {
     );
   };
 
+  /**
+   * Retrieves a prettified label for the row type based on the viewset configuration.
+   *
+   * @param {GridCellParams} params - Parameters from the DataGrid cell.
+   * @returns {string} The prettified row type or the original type if no viewset label is found.
+   */
   function getRowType(params: GridCellParams) {
     // The type (or Kind) is prettified and should be filterable as such.
     return props.viewsets !== null &&
@@ -112,6 +145,12 @@ function RecordsTable(props: RecordsTableProps) {
       ? (props.viewsets[params.row.type.toString()].label ?? params.row.type)
       : params.row.type;
   }
+
+  /**
+   * Defines columns for the DataGrid, separate for mobile and desktop views.
+   * - Desktop view has more columns and visual elements.
+   * - Mobile view simplifies the table for smaller screens.
+   */
   const columns = !mobileView
     ? [
         {
@@ -226,6 +265,8 @@ function RecordsTable(props: RecordsTableProps) {
         },
       ]
     : [
+        // Simplified mobile view with fewer columns
+
         {
           field: 'type',
           headerName: 'Kind',
@@ -420,12 +461,21 @@ function RecordsTable(props: RecordsTableProps) {
   );
 }
 
+/**
+ * Component to handle browsing records and querying with search.
+ *
+ * @param {RecordsBrowseTableProps} props - The properties passed to RecordsBrowseTable.
+ * @returns {JSX.Element} The rendered table for browsing records.
+ */
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const [query, setQuery] = React.useState('');
   const [pouchData, setPouchData] = React.useState(
     undefined as RecordMetadata[] | undefined
   );
 
+  /**
+   * Fetches metadata for all records or filtered records based on the query.
+   */
   useEffect(() => {
     const getData = async () => {
       try {
