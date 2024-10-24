@@ -282,15 +282,6 @@ function developer_mode(): any {
   }
 }
 
-/**
- * Retrieves the configured app identifier for Android/IOS
- * @returns {string} - the app id
- */
-function get_app_id(): string {
-  const appid = process.env.APP_ID;
-  return appid || 'org.fedarch.faims3';
-}
-
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -314,7 +305,6 @@ export const EMAIL_TRANSPORTER = email_transporter();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
-export const APP_ID = get_app_id();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
