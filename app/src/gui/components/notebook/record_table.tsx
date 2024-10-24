@@ -22,17 +22,7 @@ import React, {useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-import {
-  Typography,
-  Box,
-  Paper,
-  Alert,
-  Grid,
-  FormGroup,
-  FormControlLabel,
-  Switch,
-  Link,
-} from '@mui/material';
+import {Typography, Box, Paper, Alert, Grid, Link} from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArticleIcon from '@mui/icons-material/Article';
 import {useTheme} from '@mui/material/styles';
@@ -150,7 +140,11 @@ function RecordsTable(props: RecordsTableProps) {
           headerName: '',
           type: 'string',
           width: 40,
-          renderCell: () => <ArticleIcon sx={{my: 2}} />,
+          renderCell: () => (
+            <Box sx={{display: 'flex', alignItems: 'center', height: '100%'}}>
+              <ArticleIcon color="primary" />
+            </Box>
+          ),
           hide: false,
           sortable: false,
           filterable: false,
@@ -162,6 +156,11 @@ function RecordsTable(props: RecordsTableProps) {
           type: 'string',
           width: 200,
           valueGetter: getRowType,
+          renderCell: (params: GridCellParams) => (
+            <Typography variant="body1" fontWeight="500">
+              {getRowType(params)}
+            </Typography>
+          ),
         },
         {
           field: 'hrid',
@@ -171,7 +170,16 @@ function RecordsTable(props: RecordsTableProps) {
           width: 200,
           minWidth: 200,
           renderCell: (params: GridCellParams) => (
-            <Link underline={'none'} sx={{fontWeight: 'bold'}}>
+            <Link
+              underline="hover"
+              sx={{
+                fontWeight: 500,
+                color: theme.palette.primary.main,
+                '&:hover': {
+                  color: theme.palette.primary.dark,
+                },
+              }}
+            >
               {params.row.hrid}
             </Link>
           ),
@@ -182,6 +190,12 @@ function RecordsTable(props: RecordsTableProps) {
           field: 'updated',
           headerName: 'Last Updated',
           type: 'dateTime',
+          renderCell: (params: GridCellParams) => (
+            <Typography>
+              {params.row.updated &&
+                getLocalDate(params.row.updated).replace('T', ' ')}
+            </Typography>
+          ),
           width: 200,
           filterable: false,
         },
@@ -190,6 +204,9 @@ function RecordsTable(props: RecordsTableProps) {
           headerName: 'Last Updated',
           type: 'date',
           width: 200,
+          renderCell: (params: GridCellParams) => (
+            <Typography>{params.row.updated_by}</Typography>
+          ),
           filterable: true,
           valueGetter: (params: GridCellParams) => {
             return params.row.updated;
@@ -201,6 +218,9 @@ function RecordsTable(props: RecordsTableProps) {
           headerName: 'Last Updated By',
           type: 'string',
           width: 200,
+          renderCell: (params: GridCellParams) => (
+            <Typography>{params.row.updated_by}</Typography>
+          ),
         },
         {
           field: 'conflicts',
@@ -208,13 +228,11 @@ function RecordsTable(props: RecordsTableProps) {
           type: 'boolean',
           width: 120,
           renderCell: (params: GridCellParams) => (
-            <div>
-              {params.row.conflicts ? (
-                <WarningAmberIcon color={'warning'} />
-              ) : (
-                ''
+            <Box sx={{display: 'flex', alignItems: 'center'}}>
+              {params.row.conflicts && (
+                <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
               )}
-            </div>
+            </Box>
           ),
         },
         {
@@ -275,59 +293,70 @@ function RecordsTable(props: RecordsTableProps) {
           type: 'string',
           minWidth: 150,
           filterable: true,
-          renderCell: (params: GridCellParams) => {
-            return (
-              <Box sx={{width: '100%', my: 1}}>
-                <Grid
-                  container
-                  direction="row"
-                  justifyContent="flex-start"
-                  alignItems="center"
-                  spacing={0}
-                >
-                  <Grid item>
-                    <Typography>Kind: {getRowType(params)}</Typography>
-                  </Grid>
+          renderCell: (params: GridCellParams) => (
+            <Box
+              sx={{
+                py: 2,
+                px: 1,
+                width: '100%',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                },
+              }}
+            >
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight="500"
+                    color="primary"
+                  >
+                    {getRowType(params)}
+                  </Typography>
                 </Grid>
-
-                <Typography color="textSecondary">
-                  HRID/UUID: {JSON.stringify(params.value)}
-                </Typography>
-                {/*  If updated isn't present, then show created meta */}
-                {params.row.updated === undefined ? (
-                  <Typography
-                    color="textSecondary"
-                    variant="subtitle2"
-                    gutterBottom
-                    component="div"
-                  >
-                    Created{' '}
-                    {params.row.created !== undefined &&
-                      params.row.created !== '' &&
-                      getLocalDate(params.row.created).replace('T', ' ')}{' '}
-                    by {params.row.created_by}
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    HRID/UUID: {params.row.hrid}
                   </Typography>
-                ) : (
-                  <Typography
-                    color="textSecondary"
-                    variant="subtitle2"
-                    gutterBottom
-                    component="div"
-                  >
-                    Updated{' '}
-                    {params.row.updated !== undefined &&
-                      params.row.updated !== '' &&
-                      getLocalDate(params.row.updated).replace('T', ' ')}{' '}
-                    by {params.row.updated_by}
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    {params.row.updated ? (
+                      <>
+                        Updated{' '}
+                        {getLocalDate(params.row.updated).replace('T', ' ')}
+                        <br />
+                        by {params.row.updated_by}
+                      </>
+                    ) : (
+                      <>
+                        Created{' '}
+                        {getLocalDate(params.row.created).replace('T', ' ')}
+                        <br />
+                        by {params.row.created_by}
+                      </>
+                    )}
                   </Typography>
+                </Grid>
+                {params.row.conflicts && (
+                  <Grid item xs={12}>
+                    <Alert
+                      severity="warning"
+                      icon={<WarningAmberIcon />}
+                      sx={{
+                        py: 0,
+                        '& .MuiAlert-message': {
+                          padding: '8px 0',
+                        },
+                      }}
+                    >
+                      Record has conflicts
+                    </Alert>
+                  </Grid>
                 )}
-
-                {params.row.conflicts === true && (
-                  <Alert severity={'warning'}>Record has conflicts</Alert>
-                )}
-              </Box>
-            );
-          },
+              </Grid>
+            </Box>
+          ),
         },
         {
           field: 'delete',
