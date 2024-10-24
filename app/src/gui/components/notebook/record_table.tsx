@@ -43,6 +43,7 @@ import {
   ProjectID,
   ProjectUIViewsets,
   RecordMetadata,
+  getFullRecordData,
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '@faims3/data-model';
@@ -50,6 +51,10 @@ import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
 import {logError} from '../../../logging';
+import ProgressBar from '../progress-bar';
+import {percentComplete, requiredFields} from '../../../lib/form-utils';
+import {getUiSpecForProject} from '../../../uiSpecification';
+import {useQuery} from '@tanstack/react-query';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -71,6 +76,11 @@ type RecordsBrowseTableProps = {
 
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
+
+  const {data: uiSpec} = useQuery({
+    queryKey: ['uiSpec', project_id],
+    queryFn: () => getUiSpecForProject(project_id),
+  });
 
   // default for mobileView is on (collapsed table)
   const [mobileViewSwitchValue, setMobileViewSwitchValue] =
@@ -243,6 +253,14 @@ function RecordsTable(props: RecordsTableProps) {
           minWidth: 150,
           filterable: true,
           renderCell: (params: GridCellParams) => {
+            const {project_id, record_id, revision_id} = params.row;
+
+            const {data: record} = useQuery({
+              queryKey: ['recordData', project_id, record_id, revision_id],
+              queryFn: () =>
+                getFullRecordData(project_id, record_id, revision_id),
+            });
+
             return (
               <Box sx={{width: '100%', my: 1}}>
                 <Grid
@@ -292,6 +310,16 @@ function RecordsTable(props: RecordsTableProps) {
                 {params.row.conflicts === true && (
                   <Alert severity={'warning'}>Record has conflicts</Alert>
                 )}
+                <ProgressBar
+                  percentage={
+                    uiSpec && record
+                      ? percentComplete(
+                          requiredFields(uiSpec.fields),
+                          record.data
+                        )
+                      : 0
+                  }
+                />
               </Box>
             );
           },

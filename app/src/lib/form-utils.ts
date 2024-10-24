@@ -1,12 +1,12 @@
-import {ProjectUIModel} from '@faims3/data-model/build/src/types';
+import {ProjectUIFields} from '@faims3/data-model/build/src/types';
 
 /**
  * Retrieves the keys of fields that are marked as required from the given project UI model.
  *
- * @param {ProjectUIModel} fields - An object representing the project's UI model fields, where each field contains component parameters.
+ * @param {ProjectUIFields} fields - An object representing the project's UI model fields, where each field contains component parameters.
  * @returns {string[]} An array of keys representing the fields that are marked as required.
  */
-export const requiredFields = (fields: ProjectUIModel): string[] =>
+export const requiredFields = (fields: ProjectUIFields): string[] =>
   Object.entries(fields)
     .filter(([, value]) => value['component-parameters'].required)
     .map(([key]) => key);
