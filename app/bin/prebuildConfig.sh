@@ -44,5 +44,6 @@ npx capacitor-assets generate --assetPath "./public/base-assets/${VITE_THEME}" \
 ## capacitor-assets can put the pwa icons in the wrong place sometimes
 if test -f icons/icon-48.webp; then
   echo "Moving icons into public"
-  mv icons public/assets/icons
+  mkdir -p ./public/assets
+  mv icons ./public/assets/icons
 fi
