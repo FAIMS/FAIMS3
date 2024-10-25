@@ -11,7 +11,7 @@ on:
 # image that this workflow builds.
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{github.repository_owner}}/faims3-api
+  IMAGE_NAME: FAIMS/faims3-api
 
 jobs:
   build-and-push:
