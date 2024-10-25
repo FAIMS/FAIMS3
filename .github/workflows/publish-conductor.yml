@@ -12,7 +12,6 @@ on:
 # image that this workflow builds.
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: nbic-bss/faims3-api
 
 jobs:
   build-and-push:
@@ -44,7 +43,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ vars.CONDUCTOR_IMAGE_NAME }}
           tags: |
             type=sha,prefix=sha-
             type=ref,event=branch
