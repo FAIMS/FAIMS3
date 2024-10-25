@@ -4,6 +4,7 @@ import {Button, ButtonProps} from '@mui/material';
 import React from 'react';
 
 import {isWeb} from '../../../utils/helpers';
+import {APP_ID} from '../../../buildconfig';
 
 export type LoginButtonProps = {
   conductor_url: string;
@@ -36,9 +37,7 @@ export function LoginButton(props: LoginButtonProps) {
         } else {
           // Use the capacitor browser plugin in apps
           await Browser.open({
-            url:
-              props.conductor_url +
-              '/auth?redirect=org.fedarch.faims3://auth-return',
+            url: `${props.conductor_url}/auth?redirect=${APP_ID}://auth-return`,
           });
         }
       }}

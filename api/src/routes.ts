@@ -270,6 +270,7 @@ app.get('/send-token/', (req, res) => {
       web_url: WEBAPP_PUBLIC_URL,
       android_url: ANDROID_APP_URL,
       ios_url: IOS_APP_URL,
+      app_id: 'org.fedarch.faims3', // only needed for compatibility with old versions of the app
     });
   } else {
     res.redirect('/');

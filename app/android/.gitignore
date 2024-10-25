@@ -91,3 +91,6 @@ capacitor-cordova-android-plugins
 
 # Copied web assets
 app/src/main/assets/public
+app/src/main/res/drawable*
+app/src/main/res/mipmap*
+app/src/main/res/values/strings.xml

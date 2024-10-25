@@ -48,6 +48,7 @@ import {
   switchUsername,
 } from '../../../users';
 import {isWeb} from '../../../utils/helpers';
+import {APP_ID} from '../../../buildconfig';
 import MainCard from '../ui/main-card';
 import {LoginButton} from './login_form';
 import {useGetToken} from '../../../utils/tokenHooks';
@@ -187,9 +188,7 @@ export default function ClusterCard(props: ClusterCardProps) {
       } else {
         // Use the capacitor browser plugin in apps
         await Browser.open({
-          url:
-            props.conductor_url +
-            '/logout?redirect=org.fedarch.faims3://auth-return',
+          url: `${props.conductor_url}/logout?redirect=${APP_ID}://auth-return`,
         });
       }
     });
