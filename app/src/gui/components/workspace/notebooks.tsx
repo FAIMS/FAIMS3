@@ -78,14 +78,15 @@ export default function NoteBooks() {
             </Box>
           ),
         },
-        {
-          field: 'last_updated',
-          headerName: 'Last Updated',
-          type: 'dateTime',
-          minWidth: 160,
-          flex: 0.2,
-          valueGetter: ({value}) => value && new Date(value),
-        },
+        // commenting this untill the functionality is fixed for this column.
+        // {
+        //   field: 'last_updated',
+        //   headerName: 'Last Updated',
+        //   type: 'dateTime',
+        //   minWidth: 160,
+        //   flex: 0.2,
+        //   valueGetter: ({value}) => value && new Date(value),
+        // },
         {
           field: 'actions',
           type: 'actions',
@@ -136,14 +137,16 @@ export default function NoteBooks() {
             </div>
           ),
         },
-        {
-          field: 'last_updated',
-          headerName: 'Last Updated',
-          type: 'dateTime',
-          minWidth: 100,
-          flex: 0.3,
-          valueGetter: ({value}) => value && new Date(value),
-        },
+        // commenting this untill the functionality is fixed for this column.
+
+        // {
+        //   field: 'last_updated',
+        //   headerName: 'Last Updated',
+        //   type: 'dateTime',
+        //   minWidth: 100,
+        //   flex: 0.3,
+        //   valueGetter: ({value}) => value && new Date(value),
+        // },
         {
           field: 'actions',
           type: 'actions',
