@@ -17,6 +17,7 @@
  *   Setup helper functions for the api tests
  */
 
+import request from 'supertest';
 import {NOTEBOOK_CREATOR_GROUP_NAME} from '@faims3/data-model';
 import {expect} from 'chai';
 import PouchDB from 'pouchdb';
@@ -37,6 +38,7 @@ export let adminToken = '';
 export let localUserToken = '';
 export let notebookUserToken = '';
 
+export const adminUserName = 'admin';
 export const localUserName = 'bobalooba';
 export const localUserPassword = 'bobalooba';
 export const notebookUserName = 'notebook';
@@ -62,7 +64,7 @@ export const beforeApiTests = async () => {
   const signingKey = await KEY_SERVICE.getSigningKey();
 
   // get the admin user - this should exist at this point
-  const possibleAdminUser = await getUserFromEmailOrUsername('admin');
+  const possibleAdminUser = await getUserFromEmailOrUsername(adminUserName);
 
   // If this is null then the admin user wasn't seeded properly
   expect(possibleAdminUser, 'Admin user was null from the database.').to.not.be
@@ -97,4 +99,19 @@ export const beforeApiTests = async () => {
   addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
   await addLocalPasswordForUser(nbUser, notebookPassword);
   notebookUserToken = await createAuthKey(nbUser, signingKey);
+};
+
+/**
+ * Wraps a test request object with necessary authentication (admin) and JSON
+ * content type
+ * @param request The test request object to wrap
+ * @returns The wrapped request object
+ */
+export const requestAuthAndType = (
+  request: request.Test,
+  token: string = adminToken
+) => {
+  return request
+    .set('Authorization', `Bearer ${token}`)
+    .set('Content-Type', 'application/json');
 };

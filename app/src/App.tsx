@@ -18,36 +18,31 @@
  *   TODO
  */
 
-import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
+import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {Route, BrowserRouter as Router, Routes} from 'react-router-dom';
 import './App.css';
-import * as ROUTES from './constants/routes';
 import {PrivateRoute} from './constants/privateRouter';
-import {SignIn} from './gui/pages/signin';
+import * as ROUTES from './constants/routes';
+import {StateProvider} from './context/store';
+import MainLayout from './gui/layout';
 import AboutBuild from './gui/pages/about-build';
-import Workspace from './gui/pages/workspace';
 import Notebook from './gui/pages/notebook';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
-import {StateProvider} from './context/store';
-import MainLayout from './gui/layout';
-import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {SignIn} from './gui/pages/signin';
+import Workspace from './gui/pages/workspace';
 
 // import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@mui/material';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 
 import {theme} from './gui/themes';
-import {getTokenContentsForCurrentUser} from './users';
-
-import {useEffect, useState} from 'react';
-
-import {TokenContents} from '@faims3/data-model';
-import NotFound404 from './gui/pages/404';
-import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
-import {AuthReturn} from './gui/components/authentication/auth_return';
-import {AppUrlListener} from './native_hooks';
 import {ProjectsProvider} from './context/projects-context';
+import {AuthReturn} from './gui/components/authentication/auth_return';
+import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
+import NotFound404 from './gui/pages/404';
+import {AppUrlListener} from './native_hooks';
 
 // type AppProps = {};
 
@@ -87,20 +82,7 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
-  const [token, setToken] = useState(null as null | undefined | TokenContents);
-
-  // TODO: Rather than returning the contents of a token, we should work out
-  // what details are actually needed.
-  useEffect(() => {
-    const getToken = async () => {
-      setToken(await getTokenContentsForCurrentUser());
-    };
-    getToken();
-  }, []);
-
-  return token === null ? (
-    <></>
-  ) : (
+  return (
     <StateProvider>
       <ProjectsProvider>
         <QueryClientProvider client={queryClient}>
@@ -108,28 +90,14 @@ export default function App() {
             <ThemeProvider theme={theme}>
               <Router>
                 <AppUrlListener></AppUrlListener>
-                <MainLayout token={token}>
+                <MainLayout>
                   <Routes>
-                    <Route
-                      path={ROUTES.SIGN_IN}
-                      element={
-                        <PrivateRoute allowed>
-                          <SignIn setToken={setToken} />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path={ROUTES.AUTH_RETURN}
-                      element={
-                        <PrivateRoute allowed>
-                          <AuthReturn setToken={setToken} />
-                        </PrivateRoute>
-                      }
-                    />
+                    <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
+                    <Route path={ROUTES.AUTH_RETURN} element={<AuthReturn />} />
                     <Route
                       path={ROUTES.INDEX}
                       element={
-                        <PrivateRoute allowed={Boolean(token)}>
+                        <PrivateRoute>
                           <Workspace />
                         </PrivateRoute>
                       }
@@ -137,7 +105,7 @@ export default function App() {
                     <Route
                       path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
                       element={
-                        <PrivateRoute allowed={Boolean(token)}>
+                        <PrivateRoute>
                           <Notebook />
                         </PrivateRoute>
                       }
@@ -145,7 +113,7 @@ export default function App() {
                     <Route
                       path={ROUTES.CREATE_NEW_SURVEY}
                       element={
-                        <PrivateRoute allowed={token !== undefined}>
+                        <PrivateRoute>
                           <CreateNewSurvey />
                         </PrivateRoute>
                       }
@@ -166,7 +134,7 @@ export default function App() {
                         ':record_id'
                       }
                       element={
-                        <PrivateRoute allowed={Boolean(token)}>
+                        <PrivateRoute>
                           <RecordCreate />
                         </PrivateRoute>
                       }
@@ -179,7 +147,7 @@ export default function App() {
                         ':type_name'
                       }
                       element={
-                        <PrivateRoute allowed={Boolean(token)}>
+                        <PrivateRoute>
                           <RecordCreate />
                         </PrivateRoute>
                       }
@@ -202,7 +170,7 @@ export default function App() {
                         ':revision_id'
                       }
                       element={
-                        <PrivateRoute allowed={Boolean(token)}>
+                        <PrivateRoute>
                           <Record />
                         </PrivateRoute>
                       }
@@ -219,7 +187,7 @@ export default function App() {
                         ':draft_id'
                       }
                       element={
-                        <PrivateRoute allowed={Boolean(token)}>
+                        <PrivateRoute>
                           <Record />
                         </PrivateRoute>
                       }

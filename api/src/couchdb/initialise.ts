@@ -18,18 +18,24 @@
  *   Functions to initialise the databases required for FAIMS in couchdb
  */
 
+import {
+  AuthDatabaseSecurityDocument,
+  CLUSTER_ADMIN_GROUP_NAME,
+  permissionDocument,
+  viewsDocument,
+} from '@faims3/data-model';
 import {registerLocalUser} from '../auth_providers/local';
 import {
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
+import {safeWriteDocument} from './helpers';
 import {
   addOtherRoleToUser,
   getUserFromEmailOrUsername,
   saveUser,
 } from './users';
-import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
 
 /**
  * A helper to 1) clear out admins/members 2) add the specified roles 3) save
@@ -204,5 +210,75 @@ export const initialiseUserDB = async (db: PouchDB.Database | undefined) => {
     } else {
       console.error(error);
     }
+  }
+};
+
+// ============
+// AUTH DB
+// ============
+
+/**
+ * Initialises the Auth DB by injecting a security document, and design
+ * documents from the data model.
+ *
+ * Will perform no-op if the permission and design docs are in place.
+ *
+ * TODO have an admin only initialisation endpoint which can be used to update
+ * existing documents.
+ *
+ * @param db The database to initialise, intentionally not typed so as to not
+ * include type errors for interacting with permission and security documents.
+ */
+export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
+  // To check if we are initialised - we check for presence of expected
+  // documents
+  let initialised = false;
+
+  try {
+    db.get(permissionDocument._id);
+    db.get(viewsDocument._id);
+  } catch (err: any) {
+    // 404 for not found
+    if (err.status !== 404) {
+        console.log("Error was not 404")
+      throw err;
+    }
+
+    // item was not found - so not initialised
+    initialised = true;
+  }
+
+  if (initialised) {
+    return;
+  }
+
+  // can't save security on an in-memory database so skip if testing
+  if (process.env.NODE_ENV !== 'test') {
+    try {
+      await db.security(AuthDatabaseSecurityDocument).save();
+    } catch (e) {
+      console.error(
+        'Failed to save security document into Auth DB. Error: ' + e
+      );
+      throw e;
+    }
+  }
+
+  // Next setup the permissions document - overwrite if existing
+  try {
+    await safeWriteDocument(db, permissionDocument);
+  } catch (e) {
+    console.error(
+      'Failed to upsert permission document into Auth DB. Error: ' + e
+    );
+    throw e;
+  }
+
+  // Next setup the index document - overwrite if existing
+  try {
+    await safeWriteDocument(db, viewsDocument);
+  } catch (e) {
+    console.error('Failed to upsert index document into Auth DB. Error: ' + e);
+    throw e;
   }
 };

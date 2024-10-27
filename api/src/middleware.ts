@@ -23,6 +23,29 @@ import Express from 'express';
 import {validateToken} from './authkeys/read';
 import {userHasPermission, userIsClusterAdmin} from './couchdb/users';
 
+/**
+ * Extracts the Bearer token from the Authorization header of an Express
+ * request.
+ *
+ * @param req - The Express request object
+ * @returns The Bearer token without the 'Bearer ' prefix if present, otherwise
+ * undefined
+ */
+export function extractBearerToken(req: Express.Request): string | undefined {
+  // Get the Authorization header from the request
+  const authHeader = req.headers.authorization;
+
+  // Check if the Authorization header exists and starts with 'Bearer '
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    // Extract the token by removing the 'Bearer ' prefix
+    const token = authHeader.substring(7);
+    return token;
+  }
+
+  // Return undefined if no valid Bearer token is found
+  return undefined;
+}
+
 /*
  * Middleware to ensure that the route is only accessible to logged in users
  */
@@ -50,20 +73,70 @@ export async function requireAuthenticationAPI(
   if (req.user) {
     next();
     return;
-  } else if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer ')
-  ) {
-    const token = req.headers.authorization.substring(7);
+  } else {
+    const token = extractBearerToken(req);
+
+    if (!token) {
+      res.status(401).json({error: 'authentication required'});
+      return;
+    }
+
     const user = await validateToken(token);
-    if (user) {
-      // insert user into the request
-      req.user = user;
+
+    if (!user) {
+      res.status(401).json({error: 'authentication required'});
+      return;
+    }
+
+    // insert user into the request
+    req.user = user;
+    next();
+  }
+}
+
+/**
+ * Opportunistically parses the user and populates req.user from DB if JWT is
+ * valid. If not, then passes through with no-op.
+ *
+ * NOTE not to be used for endpoint which **requires** JWT auth - intended to be
+ * used to enhance open endpoints with user information where available, or
+ * where authorisation logic is more complex and must be handled within the
+ * route.
+ *
+ * @param req The express request
+ * @param res The express response - not necessary here
+ * @param next The next function to pass through
+ * @returns A req.user which is populated iff the JWT is valid and relevant for
+ * user in DB
+ */
+export async function optionalAuthenticationJWT(
+  req: Express.Request,
+  res: Express.Response,
+  next: Express.NextFunction
+) {
+  if (req.user) {
+    next();
+    return;
+  } else {
+    const token = extractBearerToken(req);
+
+    // just pass through if no token - no op
+    if (!token) {
       next();
       return;
     }
+
+    const user = await validateToken(token);
+
+    if (!user) {
+      next();
+      return;
+    }
+
+    // insert user into the request
+    req.user = user;
+    next();
   }
-  res.status(401).json({error: 'authentication required'});
 }
 
 export function requireNotebookMembership(

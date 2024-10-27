@@ -28,6 +28,8 @@ import {
   getInvitesForNotebook,
 } from '../src/couchdb/invites';
 import {initialiseDatabases} from '../src/couchdb';
+import request from 'supertest';
+import {app} from '../src/routes';
 
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
@@ -84,6 +86,45 @@ describe('Invites', () => {
       expect(invite1._id).to.equal(invite2._id);
     } else {
       assert.fail('could not create notebook');
+    }
+  });
+});
+
+describe('Registration', () => {
+  it('redirects with a token on registration', async () => {
+    const payload = {
+      email: 'bob@here.com',
+      password: 'bobbyTables',
+      repeat: 'bobbyTables',
+      name: 'Bob Bobalooba',
+      redirect: 'http://redirect.org/',
+    };
+
+    const project_id = await createNotebook('Test Notebook', uispec, {});
+    const role = 'user';
+
+    if (project_id) {
+      const invite = await createInvite(project_id, role);
+      const code = invite._id;
+
+      const agent = request.agent(app);
+
+      await agent
+        .get(`/register/${code}?redirect=${payload.redirect}`)
+        .expect(200);
+
+      return agent
+        .post('/register/local/')
+        .send(payload)
+        .expect(302)
+        .then(response => {
+          // this would be an error condition, redirect to home
+          expect(response.header.location[0]).not.to.equal('/');
+          // check correct redirect
+          const location = new URL(response.header.location);
+          expect(location.hostname).to.equal('redirect.org');
+          expect(location.search).to.match(/token/);
+        });
     }
   });
 });
