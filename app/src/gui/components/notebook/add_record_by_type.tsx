@@ -93,6 +93,14 @@ export default function AddRecordButtons({
                 ROUTES.RECORD_CREATE +
                 visible_types
               }
+              sx={{
+                fontWeight: 'bold',
+                backgroundColor: theme.palette.secondary.main,
+                color: '#FFFFFF',
+                '&:hover': {
+                  backgroundColor: theme.palette.secondary.dark,
+                },
+              }}
             >
               New Record
             </Button>
