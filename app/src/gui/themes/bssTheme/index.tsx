@@ -1,25 +1,52 @@
-import {createTheme, colors} from '@mui/material';
+import {createTheme} from '@mui/material';
 import typography from '../default/typography';
 
-//BSS theme color values - @todo Tested by Ranisa
+const primaryMainColor = '#000000';
+
 const theme = createTheme({
   palette: {
     background: {
-      default: 'white',
+      default: '#FAFAFB',
+      paper: '#FFFFFF',
+      draftBackground: '#F4F4F4',
     },
     primary: {
-      main: 'black',
-      light: '#B10000',
-      dark: '#141E03',
+      main: primaryMainColor,
+      light: 'white',
+    },
+    highlightColor: {
+      main: '#D10202',
     },
     secondary: {
-      main: '#12B0FB',
-      contrastText: '#B10000',
+      main: '#197A01',
+      contrastText: '#000000',
     },
     text: {
-      //@todo ranisa to udate these as per new elements
-      primary: colors.blueGrey[900],
-      secondary: colors.blueGrey[600],
+      primary: '#000000FF',
+      secondary: '#000000',
+      // helpicon and other icons : '#12B0FB',
+      // second primary : '#197A01',
+      // required field: #D10202,
+      // survey card bg: #F4F4F4,
+      // chip bg : #8B8B8B,
+    },
+    alert: {
+      warningBackground: '#FFFFFF',
+      warningText: '#5F370E',
+      infoBackground: '#E5F6FD',
+      infoText: '#084C61',
+    },
+    dailogButton: {
+      cancel: '#606060',
+      confirm: '#BC0505',
+      confirmText: '#FFFFFF',
+    },
+    progressBar: {
+      background: '#edeeeb',
+      complete: '#EA6216',
+    },
+    icon: {
+      main: '#12B0FB',
     },
   },
   typography,
@@ -32,8 +59,8 @@ const theme = createTheme({
           },
         },
         colorPrimary: {
-          backgroundColor: '#edeeeb',
-          color: '#324C08',
+          backgroundColor: '#FFFFFF',
+          color: '#000000FF',
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',
@@ -56,7 +83,7 @@ const theme = createTheme({
           '&.Mui-selected': {
             fontWeight: '700 !important',
             color: 'white',
-            backgroundColor: '#DA9449',
+            backgroundColor: '#35CFCFFF',
           },
         },
       },
@@ -64,8 +91,15 @@ const theme = createTheme({
     MuiTab: {
       styleOverrides: {
         root: {
-          '&.MuiTab-root': {
-            fontWeight: 'bold',
+          fontWeight: 'bold',
+          color: '#000000',
+          '&.Mui-selected': {
+            color: '#FFFFFF',
+            backgroundColor: primaryMainColor,
+            fontWeight: '700',
+          },
+          '&:not(.Mui-selected)': {
+            color: '#000000',
           },
         },
       },

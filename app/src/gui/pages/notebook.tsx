@@ -61,7 +61,7 @@ export default function Notebook() {
             >
               <Grid item>
                 <FolderIcon
-                  color={'secondary'}
+                  sx={{color: theme.palette.icon.main}}
                   fontSize={mq_above_md ? 'large' : 'medium'}
                   style={{verticalAlign: 'middle'}}
                 />
