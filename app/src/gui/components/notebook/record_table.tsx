@@ -22,17 +22,7 @@ import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-import {
-  Typography,
-  Box,
-  Paper,
-  Alert,
-  Grid,
-  FormGroup,
-  FormControlLabel,
-  Switch,
-  Link,
-} from '@mui/material';
+import {Typography, Box, Paper, Alert, Grid, Link} from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArticleIcon from '@mui/icons-material/Article';
 import {useTheme} from '@mui/material/styles';
