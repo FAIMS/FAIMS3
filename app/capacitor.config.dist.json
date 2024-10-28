@@ -1,0 +1,22 @@
+{
+  "appId": "org.fedarch.faims3",
+  "appName": "APPNAME",
+  "npmClient": "npm",
+  "webDir": "build",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    },
+    "CapacitorHttp": {
+      "enabled": false
+    }
+  },
+  "server": {
+    "allowNavigation": [],
+    "iosScheme": "org.fedarch.faims3"
+  },
+  "android": {
+    "webContentsDebuggingEnabled": true
+  },
+  "cordova": {}
+}

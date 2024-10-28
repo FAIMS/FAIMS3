@@ -30,6 +30,7 @@ import React from 'react';
 import {registerClient} from '@faims3/data-model';
 import {getDataDB, getProjectDB} from './sync';
 import {shouldDisplayRecord} from './users';
+import {APP_NAME} from './buildconfig';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
@@ -37,6 +38,13 @@ registerClient({
   getProjectDB: getProjectDB,
   shouldDisplayRecord: shouldDisplayRecord,
 });
+
+// Change the page title to configured app name
+document.getElementsByTagName('title')[0].innerText = APP_NAME;
+// and the meta description tag
+document
+  .querySelector('meta[name=description]')
+  ?.setAttribute('content', `${APP_NAME} app`);
 
 addNativeHooks();
 const root = ReactDOM.createRoot(
