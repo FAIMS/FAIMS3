@@ -134,6 +134,7 @@ export class FaimsConductor extends Construct {
           COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
           COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
           COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
+          CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
           // Conductor API URLs
           CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
           CONDUCTOR_URL: this.conductorEndpoint,
