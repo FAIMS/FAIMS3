@@ -12,15 +12,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
- *
+ */
+
 /**
- * Description: 
+ * Description:
  * Name: Notebook component
  * This component displays detailed information about a specific notebook
  * in a project. It handles loading, error states, and fetches project
  * information using the project ID from the URL. It also provides navigation
  * back to the list of notebooks and displays the notebook's active status.
- * 
+ *
  * Dependencies:
  * - React hooks: useState, useEffect
  * - React Router: useParams, useNavigate
@@ -28,7 +29,7 @@
  */
 import {useContext} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {Box, Chip, Grid, IconButton, Typography} from '@mui/material';
+import {Box, Chip, IconButton, Typography} from '@mui/material';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import {CircularProgress} from '@mui/material';
 import {useTheme} from '@mui/material/styles';

@@ -21,16 +21,7 @@
 import React, {useEffect, useState} from 'react';
 import _ from 'lodash';
 import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-import {
-  Typography,
-  Box,
-  Paper,
-  Grid,
-  FormGroup,
-  FormControlLabel,
-  Switch,
-  Link,
-} from '@mui/material';
+import {Typography, Box, Paper, Grid, Link} from '@mui/material';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {useNavigate} from 'react-router-dom';
 import {useTheme} from '@mui/material/styles';
