@@ -24,7 +24,11 @@ import LoginIcon from '@mui/icons-material/Login';
 import {isWeb} from '../../utils/helpers';
 import {Browser} from '@capacitor/browser';
 import MainCard from '../components/ui/main-card';
-import {APP_ID, NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {
+  APP_ID,
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../buildconfig';
 import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
 import {ActionType} from '../../context/actions';
 import {store} from '../../context/store';
