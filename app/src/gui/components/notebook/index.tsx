@@ -273,7 +273,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              backgroundColor: '#f5f5f5',
+              backgroundColor: '#EDEEEB',
               padding: '12px 16px',
               borderRadius: '4px',
               marginBottom: '16px',
