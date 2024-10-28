@@ -138,6 +138,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
+  const [recordLabel, setRecordLabel] = useState('RRecord');
 
   const {data: template_id} = useQuery({
     queryKey: ['project-template-id', project.project_id],
@@ -161,9 +162,22 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         .then(spec => {
           setUiSpec(spec);
           setViewsets(spec.viewsets);
+          // Set record label based on visible_types
+          if (spec.visible_types && spec.visible_types.length === 1) {
+            const recordType = spec.visible_types[0];
+            console.log('RRRRRRRR-111', recordType);
+            const typeLabel = spec.viewsets[recordType]?.label || recordType;
+            console.log('RRRRRRRR-2222', typeLabel);
+
+            setRecordLabel(typeLabel);
+          } else {
+            setRecordLabel('Record');
+          }
           setLoading(false);
           setErr('');
         })
+
+        //todoranisa
         .catch(err => {
           setLoading(false);
           setErr(err.message);
@@ -235,8 +249,16 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
+                // sx={{
+                //   '& .MuiTabs-indicator': {
+                //     ...bssTabStyling.indicator,
+                //   },
+                // }}
               >
-                <Tab label="Records" {...a11yProps(0, NOTEBOOK_NAME)} />
+                <Tab
+                  label={`${recordLabel}s`}
+                  {...a11yProps(0, NOTEBOOK_NAME)}
+                />
                 <Tab label="Details" {...a11yProps(1, NOTEBOOK_NAME)} />
                 <Tab label="Settings" {...a11yProps(2, NOTEBOOK_NAME)} />
               </Tabs>
@@ -244,10 +266,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           </Box>
           <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
             <Box>
-              <Typography variant={'overline'} sx={{marginTop: '-8px'}}>
-                Add New Record
-              </Typography>
-              <AddRecordButtons project={project} />
+              <AddRecordButtons project={project} recordLabel={recordLabel} />
             </Box>
             {/* Records/Drafts */}
             <Box mt={2}>
@@ -258,7 +277,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   aria-label={`${NOTEBOOK_NAME}-records`}
                 >
                   <Tab
-                    label="Records"
+                    label={`My ${recordLabel}s`}
                     {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
                   />
                   <Tab

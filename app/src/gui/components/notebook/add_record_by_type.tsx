@@ -20,10 +20,12 @@ import {ProjectExtended} from '../../../types/project';
 
 type AddRecordButtonsProps = {
   project: ProjectExtended;
+  recordLabel: string;
 };
 
 export default function AddRecordButtons({
   project: {_id, project_id},
+  recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
@@ -40,7 +42,9 @@ export default function AddRecordButtons({
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(u => setUiSpec(u));
-  }, []);
+  }, [project_id]);
+
+  const buttonLabel = `New ${recordLabel}`;
 
   if (uiSpec === undefined) {
     return <CircularProgress thickness={2} size={12} />;
@@ -75,26 +79,49 @@ export default function AddRecordButtons({
         <ButtonGroup
           fullWidth={mq_above_md ? false : true}
           orientation={mq_above_sm ? 'horizontal' : 'vertical'}
-          sx={{maxHeight: '400px', overflowY: 'scroll'}}
+          sx={{
+            maxHeight: '400px',
+            justifyContent: mq_above_sm ? 'flex-start' : 'center',
+          }}
         >
           {/*If the list of views hasn't loaded yet*/}
           {/*we can still show this button, except it will*/}
           {/*redirect to the Record creation without known type*/}
-          {visible_types.length === 1 ? (
+          {uiSpec?.visible_types.length === 1 ? (
             <Button
               variant="outlined"
               color="primary"
-              startIcon={<AddIcon />}
               component={RouterLink}
               key="newRecord"
-              to={
-                ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                project_id +
-                ROUTES.RECORD_CREATE +
-                visible_types
-              }
+              to={`${ROUTES.RECORD_CREATE}${project_id}/${uiSpec.visible_types[0]}`}
+              sx={{
+                backgroundColor: 'green',
+                color: 'white',
+                borderRadius: '8px',
+                padding: '10px 15px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                width: mq_above_sm ? 'auto' : '50%',
+                '&:hover': {
+                  backgroundColor: 'darkgreen',
+                },
+              }}
             >
-              New Record
+              <Box
+                sx={{
+                  backgroundColor: 'white',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  width: 24,
+                  height: 24,
+                  marginRight: 1,
+                }}
+              >
+                <AddIcon sx={{fontSize: '1.2rem', color: 'green'}} />
+              </Box>
+              {buttonLabel} {/* Dynamic label based on recordLabel */}
             </Button>
           ) : (
             visible_types.map(
@@ -110,8 +137,20 @@ export default function AddRecordButtons({
                     }
                     key={viewset_name}
                     startIcon={<AddIcon />}
+                    sx={{
+                      backgroundColor: 'green',
+                      color: 'white',
+                      borderRadius: '8px',
+                      padding: '10px 15px',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      width: mq_above_sm ? 'auto' : '50%',
+                      '&:hover': {
+                        backgroundColor: 'darkgreen',
+                      },
+                    }}
                   >
-                    {viewsets[viewset_name].label || viewset_name}
+                    {viewsets[viewset_name].label || `New ${viewset_name}`}
                   </Button>
                 )
             )
