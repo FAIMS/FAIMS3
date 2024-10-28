@@ -104,7 +104,8 @@ type NotebookComponentProps = {
 export default function NotebookComponent({project}: NotebookComponentProps) {
   const [notebookTabValue, setNotebookTabValue] = React.useState(0);
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
-
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [myRecords, setMyRecords] = useState(0);
   /**
    * Handles the change event when the user switches between the Records and Drafts tabs.
    *
@@ -199,6 +200,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     pageLoader();
   };
 
+  // Callback to handle counts from RecordsTable
+  const handleCountChange = (counts: {total: number; myRecords: number}) => {
+    setTotalRecords(counts.total);
+    setMyRecords(counts.myRecords);
+  };
+
   return (
     <Box>
       {err ? (
@@ -249,11 +256,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
-                // sx={{
-                //   '& .MuiTabs-indicator': {
-                //     ...bssTabStyling.indicator,
-                //   },
-                // }}
               >
                 <Tab
                   label={`${recordLabel}s`}
@@ -264,6 +266,28 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               </Tabs>
             </AppBar>
           </Box>
+
+          {/* Records count summary */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#f5f5f5',
+              padding: '12px 16px',
+              borderRadius: '4px',
+              marginBottom: '16px',
+            }}
+          >
+            <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
+              <strong>My {recordLabel}s:</strong> {myRecords}
+            </Typography>
+
+            <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
+              <strong>Total:</strong> {totalRecords}
+            </Typography>
+          </Box>
+
           <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
             <Box>
               <AddRecordButtons project={project} recordLabel={recordLabel} />
@@ -297,6 +321,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   viewsets={viewsets}
                   filter_deleted={true}
                   handleRefresh={handleRefresh}
+                  onRecordsCountChange={handleCountChange}
                 />
               </TabPanel>
               <TabPanel

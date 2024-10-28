@@ -18,7 +18,7 @@
  *   Components for displaying record metadata in a table.
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
@@ -50,6 +50,8 @@ import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
 import {logError} from '../../../logging';
+import {getCurrentUserId} from '../../../users';
+import {getTotalRecordCount} from './record_summary';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -59,6 +61,7 @@ type RecordsTableProps = {
   viewsets?: ProjectUIViewsets | null;
   handleQueryFunction: Function;
   handleRefresh: () => void;
+  onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
 };
 
 type RecordsBrowseTableProps = {
@@ -67,10 +70,12 @@ type RecordsBrowseTableProps = {
   viewsets?: ProjectUIViewsets | null;
   filter_deleted: boolean;
   handleRefresh: () => void;
+  onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
 };
 
 function RecordsTable(props: RecordsTableProps) {
-  const {project_id, maxRows, rows, loading} = props;
+  const {project_id, maxRows, rows, loading, onRecordsCountChange} = props;
+  const [currentUser, setCurrentUser] = useState<string>('');
 
   // default for mobileView is on (collapsed table)
   const [mobileViewSwitchValue, setMobileViewSwitchValue] =
@@ -358,16 +363,93 @@ function RecordsTable(props: RecordsTableProps) {
         },
       ];
 
+  // Fetch the current user when the component mounts
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userId = await getCurrentUserId(project_id);
+        setCurrentUser(userId);
+      } catch (error) {
+        console.error('Error fetching user ID:', error);
+      }
+    };
+    fetchUser();
+  }, [project_id]);
+
+  useEffect(() => {
+    if (!rows || rows.length === 0 || !currentUser) {
+      return;
+    }
+
+    const totalRecords = getTotalRecordCount(rows);
+
+    const myRecords = rows.filter(
+      record =>
+        getRowType({row: record} as GridCellParams) === 'Site' &&
+        record.created_by === currentUser
+    ).length;
+
+    // Send count to parent with callback  - onRecordsCountChangee
+    if (onRecordsCountChange) {
+      onRecordsCountChange({total: totalRecords, myRecords});
+    }
+  }, [rows, currentUser, onRecordsCountChange]);
+
   return (
     <React.Fragment>
-      <Box component={Paper} elevation={0}>
+      <Box
+        component={Paper}
+        elevation={3}
+        sx={{
+          borderRadius: '4px',
+          boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.2)',
+          padding: '4px',
+        }}
+      >
+        {' '}
         <DataGrid
           rows={rows}
           loading={loading}
           getRowId={r => r.record_id}
           columns={columns}
           autoHeight
-          sx={{cursor: 'pointer'}}
+          sx={{
+            cursor: 'pointer',
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 'bold',
+              fontSize: '1.1rem',
+            },
+            '& .MuiDataGrid-row': {
+              height: 80,
+              '&:hover': {
+                backgroundColor: '#f0f0f0',
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+                transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
+              },
+            },
+            '& .MuiDataGrid-cell': {
+              padding: '0 10px',
+              borderBottom: '1px solid #424242',
+              fontSize: '1rem',
+              fontWeight: 400,
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: '#f9f9f9',
+              borderBottom: '1px solid #424242',
+              '& .MuiDataGrid-columnHeader': {
+                '& .MuiDataGrid-sortIcon': {
+                  opacity: 1,
+                  visibility: 'visible',
+                },
+              },
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: '1px solid #424242',
+            },
+            '& .MuiDataGrid-root': {
+              border: 'none',
+            },
+          }}
           getRowHeight={() => 'auto'}
           pageSizeOptions={[10, 25, 50, 100]}
           density={'standard'}
@@ -387,7 +469,7 @@ function RecordsTable(props: RecordsTableProps) {
           }}
           initialState={{
             sorting: {
-              sortModel: [{field: 'updated', sort: 'desc'}],
+              sortModel: [{field: 'created', sort: 'desc'}],
             },
             pagination: {
               paginationModel: {
@@ -463,6 +545,7 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
       viewsets={props.viewsets}
       handleQueryFunction={setQuery}
       handleRefresh={props.handleRefresh}
+      onRecordsCountChange={props.onRecordsCountChange}
     />
   );
 }
