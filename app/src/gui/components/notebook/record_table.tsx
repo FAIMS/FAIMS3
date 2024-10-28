@@ -77,9 +77,7 @@ function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading, onRecordsCountChange} = props;
   const [currentUser, setCurrentUser] = useState<string>('');
 
-  // default for mobileView is on (collapsed table)
-  const [mobileViewSwitchValue, setMobileViewSwitchValue] =
-    React.useState(true);
+  const [mobileViewSwitchValue] = React.useState(true);
 
   const theme = useTheme();
   const history = useNavigate();
@@ -89,12 +87,6 @@ function RecordsTable(props: RecordsTableProps) {
   const mobileView: boolean = not_xs ? false : mobileViewSwitchValue;
 
   const defaultMaxRowsMobile = 10;
-
-  const handleToggleMobileView = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setMobileViewSwitchValue(event.target.checked);
-  };
 
   // The entire row is clickable to the record
   const handleRowClick: GridEventListener<'rowClick'> = params => {
@@ -486,18 +478,6 @@ function RecordsTable(props: RecordsTableProps) {
           }}
         />
       </Box>
-      {not_xs ? (
-        ''
-      ) : (
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Switch checked={mobileView} onChange={handleToggleMobileView} />
-            }
-            label={'Toggle Mobile View'}
-          />
-        </FormGroup>
-      )}
     </React.Fragment>
   );
 }
