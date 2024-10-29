@@ -29,6 +29,7 @@ import {
   LocationState,
   RecordReference,
   getPossibleRelatedRecords,
+  RecordMetadata,
 } from '@faims3/data-model';
 import {useLocation} from 'react-router-dom';
 import {Grid, Typography} from '@mui/material';
@@ -145,7 +146,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     ? location.search.replace('?', '')
     : '';
   const [recordsInformation, setRecordsInformation] = React.useState<
-    RecordLinkProps[] | null
+    RecordMetadata[] | null
   >(null);
   const type = props.relation_type.replace('faims-core::', '');
   const lastvaluePair = get_default_relation_label(
@@ -215,6 +216,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           field_name,
           multiple
         );
+
         setRecordsInformation(records_info);
       }
     })();
@@ -231,15 +233,10 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       // this is for conflict only
       if (project_id !== undefined && mounted && props.isconflict === true) {
         const records_info = await getRelatedRecords(
+          project_id,
           props.form.values,
-          props.related_type,
-          relationshipPair,
           field_name,
-          field_name,
-          multiple,
-          props.related_type_label,
-          props.current_form,
-          type
+          multiple
         );
         setRecordsInformation(records_info);
       }

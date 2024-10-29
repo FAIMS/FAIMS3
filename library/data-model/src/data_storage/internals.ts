@@ -222,6 +222,26 @@ export async function getHRID(
   }
 }
 
+export async function getRecordFields(
+  project_id: ProjectID,
+  revision: Revision
+) {
+  const result: {[key: string]: any} = {};
+  for (const field_name in revision.avps) {
+    try {
+      const avp = await getAttributeValuePair(
+        project_id,
+        revision.avps[field_name]
+      );
+      result[field_name] = avp.data;
+    } catch (err) {
+      console.warn('Failed to load HRID AVP:', project_id, field_name);
+      return undefined;
+    }
+  };
+  return result;
+}
+
 /**
  * Returns a list of not deleted records
  * @param project_id Project ID to get list of record for
@@ -258,6 +278,8 @@ export async function listRecordMetadata(
         ? ((await getHRID(project_id, revision)) ?? record_id)
         : record_id;
 
+      const summary_fields = await getRecordFields(project_id, revision);
+
       out[record_id] = {
         project_id: project_id,
         record_id: record_id,
@@ -271,6 +293,7 @@ export async function listRecordMetadata(
         hrid: hrid,
         type: record.type,
         relationship: revision.relationship,
+        data: summary_fields,
       };
     }
     return out;
@@ -368,9 +391,13 @@ function recordToRecordMap(recordsObject: RecordMap): EncodedRecordMap {
   return recordMap;
 }
 
-export async function getAllRecords(
-  project_id: ProjectID
-): Promise<EncodedRecordMap> {
+/**
+ * getAllRecords - get all of the raw record documents from the db
+ *
+ * @param project_id project identifier
+ * @returns an EncodedRecordMap
+ */
+async function getAllRecords(project_id: ProjectID): Promise<EncodedRecordMap> {
   const dataDB = await getDataDB(project_id);
   const res = await dataDB.find({
     selector: {

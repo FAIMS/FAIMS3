@@ -222,23 +222,19 @@ export function DataGridFieldLinksComponent(
     >();
 
     const [displayFields, setDisplayFields] = useState<Array<string>>([]);
+    useEffect(() => {
+      const fn = async () => {
+        if (uiSpec)
+          setDisplayFields(getSummaryFields(uiSpec, props.child_record.type));
+      };
+      fn();
+    }, [props.child_record]);
 
     const route = getRecordRoute(
       props.child_record.project_id,
       props.child_record.record_id,
       props.child_record.revision_id
     );
-    // useEffect(() => {
-    //   const fn = async () => {
-    //     // get the record so we can display some fields
-    //     const rd = await getRecordInformation(props.child_record);
-    //     setRecordData(rd);
-
-    //     if (uiSpec && rd?.latest_record)
-    //       setDisplayFields(getSummaryFields(uiSpec, rd.latest_record.type));
-    //   };
-    //   fn();
-    // }, [props.child_record]);
 
     if (props.child_record.record_id === props.current_record_id) {
       return <RecordRouteDisplay>This record</RecordRouteDisplay>;
@@ -254,15 +250,19 @@ export function DataGridFieldLinksComponent(
             </RecordRouteDisplay>
           </Typography>
           {displayFields.map(fieldName => {
-            const value = recordData?.latest_record?.data[fieldName];
-            if (typeof value === 'string')
-              return (
-                <Typography key={fieldName} variant={'body2'}>
-                  {uiSpec ? getFieldLabel(uiSpec, fieldName) : fieldName}:{' '}
-                  {recordData?.latest_record?.data[fieldName] || ''}
-                </Typography>
-              );
-            else return <></>;
+            if (props.child_record.data) {
+              const value = props.child_record.data[fieldName];
+              if (typeof value === 'string')
+                return (
+                  <Typography key={fieldName} variant={'body2'}>
+                    {uiSpec ? getFieldLabel(uiSpec, fieldName) : fieldName}:{' '}
+                    {props.child_record.data
+                      ? props.child_record.data[fieldName]
+                      : ''}
+                  </Typography>
+                );
+            }
+            return <></>;
           })}
         </Stack>
       );

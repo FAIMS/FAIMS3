@@ -542,6 +542,7 @@ export interface RecordMetadata {
   hrid: string;
   type: FAIMSTypeName;
   relationship?: Relationship;
+  data?: {[key: string]: any};
 }
 
 export type RecordMetadataList = {
