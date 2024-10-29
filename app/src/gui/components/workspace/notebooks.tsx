@@ -191,7 +191,7 @@ export default function NoteBooks() {
           variant="contained"
           color="primary"
           onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
-          sx={{mb: 3, mt: 3}}
+          sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
           startIcon={<AddCircleSharpIcon />}
         >
           Create New Survey
