@@ -54,9 +54,6 @@ export default function NotebookSyncSwitch({
   const {setProjectSync} = useContext(ProjectsContext);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-  console.log('RAAAAAAAAAAAAAAA', theme.palette.dialogButton.confirm);
-  console.log('RAAAAAAAAAAAAAAA', theme.palette.progressBar.background);
-  console.log('RAAAAAAAAAAAAAAA', theme.palette.primary.main);
 
   return ['published', 'archived'].includes(String(project.status)) ? (
     <Box>
