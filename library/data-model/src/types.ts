@@ -521,7 +521,7 @@ export interface ProjectUIModel extends ProjectUIModelDetails {
   _rev?: string; // optional as we may want to include the raw json in places
 }
 export interface RecordReference {
-  project_id?: ProjectID;
+  project_id: ProjectID;
   record_id: RecordID;
   // This is for HRIDs or other non ID descriptions of reference
   record_label: RecordID | string;

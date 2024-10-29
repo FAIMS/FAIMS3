@@ -34,8 +34,9 @@ import {useLocation} from 'react-router-dom';
 import {Grid, Typography} from '@mui/material';
 import {
   getRelatedRecords,
-  Update_New_Link,
+  addRecordLink,
   remove_link_from_list,
+  removeRecordLink,
 } from '../components/record/relationships/RelatedInformation';
 import {DataGridFieldLinksComponent} from '../components/record/relationships/field_level_links/datagrid';
 import {RecordLinkProps} from '../components/record/relationships/types';
@@ -335,7 +336,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       field_id: field_name,
       relation_type_vocabPair: relationshipPair,
     };
-    Update_New_Link(
+    addRecordLink(
       selectedRecord,
       current_record,
       field_name,
@@ -344,8 +345,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       props.form.values['hrid' + props.current_form] ?? record_id,
       props.form.values['_current_revision_id'],
       type,
-      relationshipPair,
-      true
+      relationshipPair
     )
       .then(child_record => {
         if (child_record !== null) {
@@ -357,7 +357,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           }
         } else
           logError(
-            `Child record is null after Update_New_Link ${selectedRecord}`
+            `Child record is null after addRecordLink ${selectedRecord}`
           );
       })
       .catch(error => logError(error));
@@ -416,39 +416,31 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     };
     //set the form value
     props.form.setFieldValue(props.field.name, newValue, true);
-    let revision_id = props.form.values['_current_revision_id'];
     try {
-      revision_id = await props.form.submitForm();
+      await props.form.submitForm();
     } catch (error) {
       logError(error);
     }
 
     try {
-      const new_child_record = await Update_New_Link(
+      const child_record_id = await removeRecordLink(
         child_record,
         current_record,
-        field_name,
-        props.related_type_label ?? props.related_type,
-        props.current_form,
-        props.form.values['hrid' + props.current_form] ?? record_id,
-        revision_id,
-        type,
-        relationshipPair,
-        false
+        type
       );
-      if (new_child_record !== null) {
+      if (child_record_id !== null) {
         if (!multiple)
           setRecordsInformation([]); // fix multiple child parent issue
         else {
           const new_records = remove_link_from_list(
             recordsInformation ?? [],
-            new_child_record
+            child_record_id
           );
           setRecordsInformation(new_records);
         }
       } else {
         logError(
-          `Child record is null after Update_New_Link ${selectedRecord}`
+          `Child record is null after addRecordLink ${selectedRecord}`
         );
         return '';
       }

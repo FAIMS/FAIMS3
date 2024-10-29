@@ -26,6 +26,7 @@ import {
   LinkedRelation,
   LocationState,
   Relationship,
+  RecordID,
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
@@ -55,9 +56,9 @@ export async function generateLocationState(
       field_id: parentLink.field_id,
       parent: latest_record?.relationship?.parent,
       parent_link: ROUTES.getRecordRoute(
-        project_id ?? '',
-        (parentLink.record_id || '').toString(),
-        (revision_id || '').toString()
+        project_id,
+        parentLink.record_id,
+        revision_id
       ),
       parent_record_id: parentLink.record_id,
       type: 'Child',
@@ -213,7 +214,7 @@ const linkExists = (
 
 export async function getRecordInformation(child_record: RecordReference) {
   let latest_record = null;
-  let revision_id;
+  let revision_id = '';
   if (child_record.project_id === undefined)
     return {latest_record, revision_id};
   try {
@@ -370,7 +371,8 @@ export async function getRelatedRecords(
             latest_record.data
           );
 
-        if (revision_id !== undefined) {
+        if (revision_id !== undefined && values['_current_revision_id']) {
+          const current_revision_id = values['_current_revision_id'];
           const child = generate_RecordLink(
             child_record,
             get_last_updated(
@@ -378,9 +380,9 @@ export async function getRelatedRecords(
               latest_record?.updated
             ),
             ROUTES.getRecordRoute(
-              child_record.project_id ?? '',
-              (child_record.record_id || '').toString(),
-              (revision_id || '').toString()
+              child_record.project_id,
+              child_record.record_id,
+              revision_id
             ),
             relationLabel,
             record_id,
@@ -391,10 +393,10 @@ export async function getRelatedRecords(
             '',
             field_name,
             field_label,
-            get_route_for_field(
+            ROUTES.getRecordRoute(
               child_record.project_id,
               record_id,
-              values['_current_revision_id']
+              current_revision_id
             ),
             relation_type,
             latest_record?.deleted ?? false
@@ -428,22 +430,10 @@ export async function getRelatedRecords(
   return records;
 }
 
-function get_route_for_field(
-  project_id: string,
-  record_id: string,
-  current_revision_id: string
-) {
-  try {
-    return ROUTES.getRecordRoute(
-      project_id ?? '',
-      (record_id || '').toString(),
-      (current_revision_id || '').toString()
-    );
-  } catch (error) {
-    return project_id + record_id + current_revision_id;
-  }
-}
-
+/**
+ * Generate a RecordLinkProps object given it's many properties
+ * @returns a RecordLinkProps object
+ */
 function generate_RecordLink(
   child_record: RecordReference,
   lastUpdatedBy: string,
@@ -538,9 +528,9 @@ async function get_field_RelatedFields(
             latest_record?.updated
           ),
           ROUTES.getRecordRoute(
-            child_record.project_id ?? '',
-            (child_record.record_id || '').toString(),
-            (revision_id || '').toString()
+            child_record.project_id,
+            child_record.record_id,
+            revision_id
           ),
           linked_vocab,
           record_id,
@@ -551,8 +541,8 @@ async function get_field_RelatedFields(
           section_label,
           field,
           field_name,
-          get_route_for_field(
-            child_record?.project_id ?? '',
+          ROUTES.getRecordRoute(
+            child_record?.project_id,
             record_id,
             current_revision_id
           ),
@@ -640,9 +630,9 @@ export async function addLinkedRecord(
         latest_record?.deleted === true
           ? ''
           : ROUTES.getRecordRoute(
-              child_record.project_id ?? '',
-              (child_record.record_id || '').toString(),
-              (current_revision_id || '').toString()
+              child_record.project_id,
+              child_record.record_id,
+              current_revision_id
             ),
         linked_vocab,
         parent_link.record_id,
@@ -655,10 +645,10 @@ export async function addLinkedRecord(
         field_name,
         latest_record?.deleted === true
           ? ''
-          : get_route_for_field(
+          : ROUTES.getRecordRoute(
               child_record.project_id,
               parent_link.record_id,
-              revision_id ?? ''
+              revision_id
             ),
         has_parent === true && index === '0' ? 'Child' : 'Linked',
         false,
@@ -756,8 +746,8 @@ export async function getParentPersistenceData(
           field_label: parent.parent.field_id,
           route: ROUTES.getRecordRoute(
             project_id,
-            (parent.parent.record_id || '').toString(),
-            (revision_id || '').toString()
+            parent.parent.record_id,
+            revision_id
           ),
           type: type,
           children: [],
@@ -848,17 +838,91 @@ function get_last_updated(updated_by: string, updated: Date | undefined) {
   return updated_by + ' at ' + update_time;
 }
 
-export async function Update_New_Link(
+/**
+ * removeRecordLink - remove a link between two records
+ * The parent/source record is updated and saved. Returns the child
+ * record id, the caller is responsible for updating the child record
+ *
+ * @param child_record - the record to be linked to
+ * @param parent - a LinkedRelation object including the record being linked from and the link type
+ * @param relation_type - 'Child' or 'Linked'
+ * @returns the new child record object
+ */
+export async function removeRecordLink(
+  child_record: RecordReference,
+  parent: LinkedRelation,
+  relation_type: string
+): Promise<RecordID | null> {
+  let result = null;
+
+  try {
+    // retrieve information about the child record
+    const {latest_record} = await getRecordInformation(child_record);
+
+    // Find the relation object (if any) and then
+    // remove the parent/link as appropriate
+    // Since there can only be one parent, that is done directly
+    // but links use RemoveLink because they can be many-many
+    const relation = latest_record?.relationship ?? {};
+    if (relation_type === 'Child') delete relation.parent;
+    else if (relation_type === 'Linked')
+      relation['linked'] = RemoveLink(relation, parent);
+    else {
+      logError(`Error: unknown relation type ${relation_type}`);
+      return null;
+    }
+
+    // create a new version of latest_record to add the relation data
+    const now = new Date();
+    if (
+      latest_record !== null &&
+      child_record.project_id !== undefined &&
+      latest_record.deleted !== true
+    ) {
+      const new_doc = latest_record;
+      new_doc['relationship'] = relation;
+      new_doc['updated'] = now;
+      new_doc['deleted'] = latest_record.deleted;
+      await upsertFAIMSData(child_record.project_id, new_doc);
+    }
+
+    // now update the child record, removing the relation info from the
+    // relevant field
+    result = child_record.record_id;
+  } catch (error) {
+    logError(error);
+  }
+
+  return result;
+}
+
+/**
+ * addRecordLink - either add or remove a link between two records
+ * The parent/source record is updated and saved, the child record is
+ * updated and returned so must be saved by the caller
+ *
+ * @param child_record - the record to be linked to
+ * @param parent - a LinkedRelation object including the record being linked from and the link type
+ * @param field_label - the field in the parent that will hold this relation
+ * @param related_type_label - the name of the type of child record
+ * @param form_type - the type of the parent record
+ * @param hrid - hrid of parent record
+ * @param form_revision_id - revision id of parent from the form
+ * @param relation_type - 'Child' or 'Linked'
+ * @param relation_type_vocabPair - relation descriptors, eg. ['parent', 'child']
+ * @param is_add - true to add the relation, false to delete it
+ * @returns the new child record object
+ */
+export async function addRecordLink(
   child_record: RecordReference,
   parent: LinkedRelation,
   field_label: string,
   related_type_label: string,
   form_type: string | undefined,
   hrid: string,
-  form_revision_id: string | undefined,
+  form_revision_id: string,
   relation_type: string,
-  relation_type_vocabPair: string[],
-  is_add: boolean
+  relation_type_vocabPair: string[]
 ): Promise<RecordLinkProps | null> {
   let new_child_record: RecordLinkProps = generate_RecordLink(
     child_record,
@@ -878,20 +942,25 @@ export async function Update_New_Link(
   );
 
   try {
+    // retrieve information about the child record
     const {latest_record, revision_id} =
       await getRecordInformation(child_record);
     let current_revision_id = revision_id;
+
+    // Find the relation object (if any) and then either add or
+    // remove the parent/link as appropriate
+    // Since there can only be one parent, that is done directly
+    // but links use AddLink/RemoveLink because they can be many-many
     const relation = latest_record?.relationship ?? {};
-    if (relation_type === 'Child' && is_add) relation['parent'] = parent;
-    else if (relation_type === 'Linked' && is_add)
+    if (relation_type === 'Child') relation['parent'] = parent;
+    else if (relation_type === 'Linked')
       relation['linked'] = AddLink(relation, parent);
-    else if (relation_type === 'Child' && !is_add) delete relation.parent;
-    else if (relation_type === 'Linked' && !is_add)
-      relation['linked'] = RemoveLink(relation, parent);
     else {
       logError(`Error: unknown relation type ${relation_type}`);
       return null;
     }
+
+    // create a new version of latest_record to add the relation data
     const now = new Date();
     if (
       latest_record !== null &&
@@ -907,13 +976,15 @@ export async function Update_New_Link(
         new_doc
       );
     }
-    let route = ROUTES.getRecordRoute(
-      child_record.project_id ?? '',
-      (child_record.record_id || '').toString(),
-      (current_revision_id || '').toString()
+
+    // now update the child record, inserting the relation into the relevant
+    // field
+    const route = ROUTES.getRecordRoute(
+      child_record.project_id,
+      child_record.record_id,
+      current_revision_id
     );
-    if (current_revision_id === undefined && is_add) return null;
-    if (current_revision_id === undefined && !is_add) route = '';
+    if (current_revision_id === undefined) return null;
     new_child_record = generate_RecordLink(
       child_record,
       get_last_updated(latest_record?.updated_by ?? '', now),
@@ -927,10 +998,10 @@ export async function Update_New_Link(
       '',
       parent.field_id,
       field_label,
-      get_route_for_field(
-        child_record.project_id ?? '',
+      ROUTES.getRecordRoute(
+        child_record.project_id,
         parent.record_id,
-        form_revision_id ?? ''
+        form_revision_id
       ),
       relation_type
     );
@@ -943,19 +1014,19 @@ export async function Update_New_Link(
 
 export function remove_link_from_list(
   link_records: RecordLinkProps[],
-  child_record: RecordLinkProps
+  child_record_id: RecordID
 ) {
   if (link_records.length === 0) return link_records;
   const new_link_records: RecordLinkProps[] = [];
   link_records.map((linkRecord: RecordLinkProps) =>
-    linkRecord.record_id !== child_record.record_id
+    linkRecord.record_id !== child_record_id
       ? new_link_records.push(linkRecord)
       : linkRecord
   );
   return new_link_records;
 }
 
-export function AddLink(
+function AddLink(
   relation: Relationship,
   linked: LinkedRelation
 ): LinkedRelation[] {
@@ -967,7 +1038,7 @@ export function AddLink(
   return new_linked;
 }
 
-export function RemoveLink(relation: Relationship, linked: LinkedRelation) {
+function RemoveLink(relation: Relationship, linked: LinkedRelation) {
   if (relation === undefined || relation.linked === undefined) return [];
 
   const new_linked: LinkedRelation[] = [];
@@ -1256,7 +1327,7 @@ async function conflict_update_child_record(
 }
 
 // function to get all child record information, child records could be duplicated
-export function get_all_child_records(conflictA: any, conflictB: any) {
+function get_all_child_records(conflictA: any, conflictB: any) {
   if (
     conflictA === null ||
     conflictA === '' ||
