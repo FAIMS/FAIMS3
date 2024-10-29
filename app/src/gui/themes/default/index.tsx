@@ -25,7 +25,9 @@ const theme = createTheme({
   palette: {
     background: {
       default: '#FAFAFB',
+      paper: '#FFFFFF',
       draftBackground: '#FFFFFFFF',
+      lightBackground: '#edeeeb',
     },
     primary: {
       main: '#669911',
@@ -34,6 +36,7 @@ const theme = createTheme({
     },
     highlightColor: {
       main: '#E18200',
+      contrastText: '#141E03',
     },
     secondary: {
       main: '#E18200',
@@ -49,10 +52,11 @@ const theme = createTheme({
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
     },
-    dailogButton: {
+    dialogButton: {
       cancel: '#669907',
       confirm: '#669911',
-      confirmText: '#FFFFFF',
+      dialogText: '#FFFFFF',
+      hoverBackground: '#50790DFF',
     },
     progressBar: {
       background: '#edeeeb',
@@ -60,6 +64,12 @@ const theme = createTheme({
     },
     icon: {
       main: '#E18200',
+      light: '#edeeeb',
+    },
+    table: {
+      divider: '#828789FF',
+      rowBorder: '#D3D1D1FF',
+      columnSeparator: '#828789FF',
     },
   },
   typography,

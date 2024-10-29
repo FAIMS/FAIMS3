@@ -9,20 +9,23 @@ const theme = createTheme({
       default: '#FAFAFB',
       paper: '#FFFFFF',
       draftBackground: '#F4F4F4',
+      lightBackground: '#f3f3f3',
     },
     primary: {
       main: primaryMainColor,
-      light: 'white',
+      light: '#FFFFFF',
     },
     highlightColor: {
-      main: '#D10202',
+      main: '#B10000',
+      contrastText: 'F4F4F4',
     },
     secondary: {
       main: '#197A01',
-      contrastText: '#000000',
+      contrastText: '#F4F4F4',
     },
     text: {
       primary: '#000000FF',
+      // primaryLight: '#F4F4F4',
       secondary: '#000000',
       // helpicon and other icons : '#12B0FB',
       // second primary : '#197A01',
@@ -32,14 +35,15 @@ const theme = createTheme({
     },
     alert: {
       warningBackground: '#FFFFFF',
-      warningText: '#5F370E',
+      warningText: '#BC0505',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
     },
-    dailogButton: {
+    dialogButton: {
       cancel: '#606060',
-      confirm: '#BC0505',
-      confirmText: '#FFFFFF',
+      confirm: '#B10000',
+      dialogText: '#FFFFFF',
+      hoverBackground: '#711111FF',
     },
     progressBar: {
       background: '#edeeeb',
@@ -47,6 +51,12 @@ const theme = createTheme({
     },
     icon: {
       main: '#12B0FB',
+      light: '#EAEAEA',
+    },
+    table: {
+      divider: '#828789FF',
+      rowBorder: '#D3D1D1FF',
+      columnSeparator: '#828789FF',
     },
   },
   typography,
