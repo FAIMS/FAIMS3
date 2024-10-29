@@ -20,6 +20,59 @@ export const PostUpdateUserInputSchema = z.object({
 });
 export type PostUpdateUserInput = z.infer<typeof PostUpdateUserInputSchema>;
 
+// Optional redirect
+
+export const OptionalRedirectQuery = z.object({
+  redirect: z.string().optional(),
+});
+
+// Local login POST
+// Body
+export const PostLocalAuthInputSchema = z.object({
+  username: z.string(),
+  password: z.string().min(1),
+});
+// Query
+export const PostLocalAuthQuerySchema = z.object({
+  redirect: z.string().optional(),
+});
+export type PostLocalAuthQuery = z.infer<typeof PostLocalAuthQuerySchema>;
+export type PostLocalAuthInput = z.infer<typeof PostLocalAuthInputSchema>;
+
+// Register by invite ID
+// Body
+export const GetRegisterByInviteQuerySchema = OptionalRedirectQuery;
+export type GetRegisterByInviteQuery = z.infer<
+  typeof GetRegisterByInviteQuerySchema
+>;
+
+// Local register
+export const PostRegisterLocalInputSchema = z.object({
+  // Username optional - email used if not provided
+  username: z
+    .string()
+    .trim()
+    .min(5, 'Must provide a username of at least length 5.')
+    .optional(),
+  password: z.string().trim(),
+  email: z
+    .string()
+    .trim()
+    .email(
+      'Email provided during user registration is not a valid email address.'
+    ),
+  repeat: z.string(),
+  name: z.string(),
+  redirect: z.string().trim().optional(),
+});
+export const PostRegisterLocalQuerySchema = OptionalRedirectQuery;
+export type PostRegisterLocalInput = z.infer<
+  typeof PostRegisterLocalInputSchema
+>;
+export type PostRegisterLocalQuery = z.infer<
+  typeof PostRegisterLocalQuerySchema
+>;
+
 export const PostRefreshTokenInputSchema = z.object({
   refreshToken: z.string(),
 });

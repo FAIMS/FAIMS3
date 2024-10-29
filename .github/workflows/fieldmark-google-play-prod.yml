@@ -121,7 +121,7 @@ jobs:
           bundle install
           bundle exec fastlane deploy_fieldmark
         env:
-          ANDROID_APP_ID: ${{ vars.ANDROID_APP_ID }}
+          APP_ID: ${{ vars.APP_ID }}
           ANDROID_DEPLOY_TRACK: "production"
           JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
           JAVA_KEYSTORE_PASSWORD: ${{ secrets.JAVA_KEYSTORE_PASSWORD }}

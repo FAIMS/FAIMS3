@@ -127,3 +127,12 @@ local_auth
 doc
 
 .vite
+
+# generated icons etc
+
+public/assets/icons/
+ios/App/App/Assets.xcassets/AppIcon.appiconset
+ios/App/App/Assets.xcassets/Splash.imageset
+
+# files that we generate
+capacitor.config.json
