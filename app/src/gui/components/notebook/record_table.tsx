@@ -410,7 +410,18 @@ function RecordsTable(props: RecordsTableProps) {
         <FormGroup>
           <FormControlLabel
             control={
-              <Switch checked={mobileView} onChange={handleToggleMobileView} />
+              <Switch
+                checked={mobileView}
+                onChange={handleToggleMobileView}
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: theme.palette.icon.main,
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: theme.palette.icon.main,
+                  },
+                }}
+              />
             }
             label={'Toggle Mobile View'}
           />
