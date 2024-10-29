@@ -225,6 +225,7 @@ export async function getHRID(
 /**
  * Returns a list of not deleted records
  * @param project_id Project ID to get list of record for
+ * @param record_ids List of record ids to fetch
  * @returns key: record id, value: record (NOT NULL)
  */
 export async function listRecordMetadata(

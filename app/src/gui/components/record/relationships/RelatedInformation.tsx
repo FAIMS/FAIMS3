@@ -27,6 +27,8 @@ import {
   LocationState,
   Relationship,
   RecordID,
+  getMetadataForSomeRecords,
+  ProjectID,
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
@@ -316,117 +318,24 @@ function getRelatedFields(
 
 /**
  * getRelatedRecords - get all records related to this one by a given relationship
- *  - takes the value of the field and turns it into an array of RecordInformation
+ *  - takes the value of the field and turns it into an array of RecordMetadata
  *
+ * @param project_id - project identifier
  * @param values - current form values for this record
- * @param related_type - the type of the records we are looking for
- * @param relation_type_vocabPair - names of the relationships
  * @param field_name - the field name that will hold the relationship
- * @param field_label - the label of that field
  * @param multiple - do we allow multiple linked records?
- * @param related_type_label - label on the record type we're linking to
- * @param form_type - the type of this record
- * @param relation_type - the relationship we're looking for 'faims-core::Child' or 'faims-core::Linked'
- * @returns
+ * @returns an array of RecordMetadata for the linked records
  */
 export async function getRelatedRecords(
+  project_id: ProjectID,
   values: {[field_name: string]: any},
-  related_type: string,
-  relation_type_vocabPair: Array<string>,
   field_name: string,
-  field_label: string,
-  multiple: boolean,
-  related_type_label: string | undefined,
-  form_type: string | undefined,
-  relation_type: string
+  multiple: boolean
 ) {
-  const child_records = multiple ? values[field_name] : [values[field_name]];
-  const records: RecordLinkProps[] = [];
-  if (child_records && child_records.length === 0) return records;
+  const links = multiple ? values[field_name] : [values[field_name]];
+  const record_ids = links.map((link: any) => link.record_id);
+  const records = await getMetadataForSomeRecords(project_id, record_ids, true);
 
-  // details of this record
-  const record_id = values['_id'];
-  const hrid = getHRIDValue(record_id, values);
-
-  for (const index in child_records) {
-    const child_record = child_records[index];
-
-    if (child_record && child_record.record_id) {
-      // get a label for the relationship from the child or default to the field setting
-      let relationLabel = child_record.relation_type_vocabPair;
-      if (
-        relationLabel === undefined ||
-        relationLabel[0] === undefined ||
-        relationLabel[0] === ''
-      )
-        relationLabel = relation_type_vocabPair;
-
-      try {
-        const {latest_record, revision_id} =
-          await getRecordInformation(child_record);
-
-        if (latest_record !== null)
-          child_record['record_label'] = getHRIDValue(
-            child_record['record_id'],
-            latest_record.data
-          );
-
-        if (revision_id !== undefined && values['_current_revision_id']) {
-          const current_revision_id = values['_current_revision_id'];
-          const child = generate_RecordLink(
-            child_record,
-            get_last_updated(
-              latest_record?.updated_by ?? '',
-              latest_record?.updated
-            ),
-            ROUTES.getRecordRoute(
-              child_record.project_id,
-              child_record.record_id,
-              revision_id
-            ),
-            relationLabel,
-            record_id,
-            hrid,
-            form_type ?? '',
-            related_type_label ?? related_type,
-            '',
-            '',
-            field_name,
-            field_label,
-            ROUTES.getRecordRoute(
-              child_record.project_id,
-              record_id,
-              current_revision_id
-            ),
-            relation_type,
-            latest_record?.deleted ?? false
-          );
-          records.push(child);
-        }
-      } catch (error) {
-        child_record['record_label'] =
-          child_record['record_label'] ?? '' + '!!BROKEN';
-        const child = generate_RecordLink(
-          child_record,
-          '',
-          '',
-          relationLabel,
-          record_id,
-          hrid,
-          form_type ?? '',
-          related_type_label ?? related_type,
-          '',
-          '',
-          field_name,
-          field_label,
-          '',
-          relation_type
-        );
-        records.push(child);
-        logError(error);
-      }
-    }
-  }
   return records;
 }
 

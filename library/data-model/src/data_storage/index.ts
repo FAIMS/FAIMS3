@@ -491,6 +491,27 @@ function sortByLastUpdated(record_list: RecordMetadata[]): RecordMetadata[] {
   });
 }
 
+export async function getMetadataForSomeRecords(
+  project_id: ProjectID,
+  record_ids: RecordID[],
+  filter_deleted: boolean
+): Promise<RecordMetadata[]> {
+  try {
+    const record_list = Object.values(
+      await listRecordMetadata(project_id, record_ids)
+    );
+    return await filterRecordMetadata(
+      project_id,
+      sortByLastUpdated(record_list),
+      filter_deleted
+    );
+  } catch (error) {
+    console.debug('Failed to get record metadata for', project_id);
+    logError(error);
+    return [];
+  }
+}
+
 export async function getMetadataForAllRecords(
   project_id: ProjectID,
   filter_deleted: boolean

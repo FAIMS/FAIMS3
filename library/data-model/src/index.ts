@@ -46,6 +46,7 @@ import {
   notebookRecordIterator,
   setRecordAsDeleted,
   upsertFAIMSData,
+  getMetadataForSomeRecords,
 } from './data_storage';
 import {addDesignDocsForNotebook} from './data_storage/databases';
 import {
@@ -84,6 +85,7 @@ export {
   getHRIDforRecordID,
   getInitialMergeDetails,
   getMetadataForAllRecords,
+  getMetadataForSomeRecords,
   getRecordMetadata,
   getPossibleRelatedRecords,
   getRecordsWithRegex,

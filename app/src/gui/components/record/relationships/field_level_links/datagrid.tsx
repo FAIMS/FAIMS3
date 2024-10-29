@@ -39,7 +39,7 @@ import {
 } from '@mui/x-data-grid';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
-import {RecordID, Record, ProjectUIModel, ProjectID} from '@faims3/data-model';
+import {RecordID, Record, ProjectUIModel, ProjectID, RecordMetadata} from '@faims3/data-model';
 import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from '@faims3/data-model';
 import {gridParamsDataType} from '../record_links';
@@ -50,6 +50,7 @@ import {
   getSummaryFields,
   getUiSpecForProject,
 } from '../../../../../uiSpecification';
+import {getRecordRoute} from '../../../../../constants/routes';
 
 const style = {
   position: 'absolute' as const,
@@ -173,12 +174,7 @@ export function DataGridFieldLinksComponent(
     /***
      * Provide a unique row id for each row
      */
-    return (
-      row.record_id +
-      row.relation_type_vocabPair[0] +
-      row.link.record_id +
-      row.link.field_id
-    );
+    return row.record_id;
   }
   const handleModalClose = () => {
     // Close the modal, remove the focused link
@@ -212,7 +208,7 @@ export function DataGridFieldLinksComponent(
 
   function ChildRecordDisplay(props: {
     current_record_id: RecordID;
-    child_record: RecordLinkProps;
+    child_record: RecordMetadata;
   }) {
     const [recordData, setRecordData] = useState<
       | {
@@ -227,17 +223,22 @@ export function DataGridFieldLinksComponent(
 
     const [displayFields, setDisplayFields] = useState<Array<string>>([]);
 
-    useEffect(() => {
-      const fn = async () => {
-        // get the record so we can display some fields
-        const rd = await getRecordInformation(props.child_record);
-        setRecordData(rd);
+    const route = getRecordRoute(
+      props.child_record.project_id,
+      props.child_record.record_id,
+      props.child_record.revision_id
+    );
+    // useEffect(() => {
+    //   const fn = async () => {
+    //     // get the record so we can display some fields
+    //     const rd = await getRecordInformation(props.child_record);
+    //     setRecordData(rd);
 
-        if (uiSpec && rd?.latest_record)
-          setDisplayFields(getSummaryFields(uiSpec, rd.latest_record.type));
-      };
-      fn();
-    }, [props.child_record]);
+    //     if (uiSpec && rd?.latest_record)
+    //       setDisplayFields(getSummaryFields(uiSpec, rd.latest_record.type));
+    //   };
+    //   fn();
+    // }, [props.child_record]);
 
     if (props.child_record.record_id === props.current_record_id) {
       return <RecordRouteDisplay>This record</RecordRouteDisplay>;
@@ -246,7 +247,7 @@ export function DataGridFieldLinksComponent(
         <Stack>
           <Typography variant={'body2'} fontWeight={'bold'}>
             <RecordRouteDisplay
-              link={props.child_record.deleted ? '' : props.child_record.route}
+              link={props.child_record.deleted ? '' : route}
               deleted={props.child_record.deleted}
             >
               {props.child_record.type + ': ' + props.child_record.hrid}
@@ -299,7 +300,7 @@ export function DataGridFieldLinksComponent(
     headerClassName: 'faims-record-link--header',
     minWidth: 150,
     flex: 0.2,
-    valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
+    valueGetter: (params: GridCellParams) => params.row.updated_by,
   };
 
   const columns: any =
