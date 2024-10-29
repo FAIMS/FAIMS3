@@ -78,7 +78,7 @@ export default function NotebookSyncSwitch({
                     color: theme.palette.icon.main,
                   },
                   '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: theme.palette.icon.main, // Set track color when checked
+                    backgroundColor: theme.palette.icon.main,
                   },
                 }}
               />
