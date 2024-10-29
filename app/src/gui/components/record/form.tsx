@@ -1192,26 +1192,11 @@ class RecordForm extends React.Component<
 
                         return (
                           <div>
-                            <div
-                              style={{
-                                fontSize: '29px',
-                                fontWeight: 'bold',
-                                padding: '10px',
-                              }}
-                            >
-                              {ui_specification.views[view].label}
-                            </div>
+                            <h2>{ui_specification.views[view].label}</h2>
                             <Form>
                               {description !== '' && (
-                                <Box
-                                  bgcolor={'#fafafa'}
-                                  p={3}
-                                  style={{border: '1px #eeeeee dashed'}}
-                                >
-                                  <Typography>{description}</Typography>
-                                </Box>
+                                <Typography>{description}</Typography>
                               )}
-                              <br />
 
                               <Grid container spacing={2}>
                                 <Grid item sm={12} xs={12}>
@@ -1232,25 +1217,25 @@ class RecordForm extends React.Component<
                                 </Grid>
                                 <br />
                               </Grid>
-                              {this.state.revision_cached !== undefined && (
-                                <Box mt={3}>
-                                  <Divider />
-                                  <UGCReport
-                                    handleUGCReport={(value: string) => {
-                                      this.setState({ugc_comment: value});
-                                      this.save(
-                                        formProps.values,
-                                        'continue',
-                                        formProps.setSubmitting
-                                      );
-                                    }}
-                                  />
-                                </Box>
-                              )}
                             </Form>
                           </div>
                         );
                       })}
+                      {this.state.revision_cached !== undefined && (
+                        <Box mt={3}>
+                          <Divider />
+                          <UGCReport
+                            handleUGCReport={(value: string) => {
+                              this.setState({ugc_comment: value});
+                              this.save(
+                                formProps.values,
+                                'continue',
+                                formProps.setSubmitting
+                              );
+                            }}
+                          />
+                        </Box>
+                      )}
                       {!formProps.isValid &&
                         Object.keys(formProps.errors).length > 0 && (
                           <Alert severity="error">
