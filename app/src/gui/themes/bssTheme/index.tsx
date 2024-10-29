@@ -27,11 +27,6 @@ const theme = createTheme({
     text: {
       primary: '#000000FF',
       secondary: '#000000',
-      // helpicon and other icons : '#12B0FB',
-      // second primary : '#197A01',
-      // required field: #D10202,
-      // survey card bg: #F4F4F4,
-      // chip bg : #8B8B8B,
     },
     alert: {
       warningBackground: '#FFFFFF',
