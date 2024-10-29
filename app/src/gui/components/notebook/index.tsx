@@ -157,18 +157,16 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     setErr('');
     setLoading(true);
 
-    // Try to load details and records
     if (project.listing && project._id) {
       getUiSpecForProject(project.project_id)
         .then(spec => {
           setUiSpec(spec);
           setViewsets(spec.viewsets);
+
           // Set record label based on visible_types
           if (spec.visible_types && spec.visible_types.length === 1) {
             const recordType = spec.visible_types[0];
-            console.log('RRRRRRRR-111', recordType);
             const typeLabel = spec.viewsets[recordType]?.label || recordType;
-            console.log('RRRRRRRR-2222', typeLabel);
 
             setRecordLabel(typeLabel);
           } else {
@@ -178,7 +176,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           setErr('');
         })
 
-        //todoranisa
         .catch(err => {
           setLoading(false);
           setErr(err.message);
