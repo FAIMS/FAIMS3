@@ -28,15 +28,18 @@ import DoneIcon from '@mui/icons-material/Done';
 import IconButton from '@mui/material/IconButton';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {DiscardDialog} from './conflictDialog';
+import {theme} from '../../../themes';
 export function ResolveButton(props: any) {
   return (
     <Button
-      // variant="contained"
-      color={'primary'}
       variant={'outlined'}
       size={'small'}
       disableElevation={true}
       onClick={event => props.handleChange(event, '4')}
+      sx={{
+        backgroundColor: theme.palette.highlightColor.main,
+        color: theme.palette.highlightColor.contrastText,
+      }}
     >
       RESOLVE CONFLICTS
     </Button>

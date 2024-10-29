@@ -60,6 +60,7 @@ import {
 } from '../relationships/RelatedInformation';
 import {ConflictHelpDialog} from './conflictDialog';
 import {logError} from '../../../../logging';
+import {theme} from '../../../themes';
 
 type ConflictFormProps = {
   project_id: ProjectID;
@@ -807,6 +808,15 @@ export default function ConflictForm(props: ConflictFormProps) {
                   control={
                     <Switch
                       checked={istoggleAll}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: theme.palette.icon.main,
+                        },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track':
+                          {
+                            backgroundColor: theme.palette.icon.main,
+                          },
+                      }}
                       onChange={async (event, checked) => {
                         setIstoggleAll(checked);
                       }}
