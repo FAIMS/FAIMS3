@@ -1,5 +1,4 @@
 import {PaletteOptions, TypeBackground} from '@mui/material/styles';
-import {S} from 'vitest/dist/reporters-5f784f42';
 
 declare module '@mui/material/styles' {
   interface TypeBackground {
