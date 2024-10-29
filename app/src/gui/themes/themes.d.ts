@@ -1,8 +1,10 @@
 import {PaletteOptions, TypeBackground} from '@mui/material/styles';
+import {S} from 'vitest/dist/reporters-5f784f42';
 
 declare module '@mui/material/styles' {
   interface TypeBackground {
     draftBackground: string;
+    lightBackground: string;
   }
 
   interface Palette {
@@ -19,13 +21,21 @@ declare module '@mui/material/styles' {
     dialogButton: {
       cancel: string;
       confirm: string;
-      confirmText: string;
+      dialogText: string;
+      hoverBackground: string;
     };
     highlightColor: {
       main: string;
+      contrastText: string;
     };
     icon: {
       main: string;
+      light: string;
+    };
+    table?: {
+      divider: string;
+      rowBorder: string;
+      columnSeparator: string;
     };
   }
 
@@ -39,10 +49,12 @@ declare module '@mui/material/styles' {
 
     highlightColor?: {
       main: string;
+      contrastText: string;
     };
 
     icon?: {
       main: string;
+      light: string;
     };
 
     progressBar?: {
@@ -52,15 +64,22 @@ declare module '@mui/material/styles' {
 
     alert?: {
       warningBackground: string;
-      warningText: string; // Text color for warning alerts
-      infoBackground: string; // Background color for info alerts
+      warningText: string;
+      infoBackground: string;
       infoText: string;
     };
 
-    dailogButton?: {
-      cancel: string; // Color for Cancel button
-      confirm: string; // Color for Confirm/Stop Sync button
-      confirmText: string; // Text color for Confirm button
+    dialogButton?: {
+      cancel: string;
+      confirm: string;
+      dialogText: string;
+      hoverBackground: string;
+    };
+
+    table?: {
+      divider: string;
+      rowBorder: string;
+      columnSeparator: string;
     };
   }
 }
