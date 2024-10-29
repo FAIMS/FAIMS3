@@ -139,7 +139,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
-  const [recordLabel, setRecordLabel] = useState('RRecord');
+  const [recordLabel, setRecordLabel] = useState('Record');
 
   const {data: template_id} = useQuery({
     queryKey: ['project-template-id', project.project_id],
