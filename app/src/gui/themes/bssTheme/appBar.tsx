@@ -5,7 +5,6 @@ const theme = createTheme();
 
 const drawerWidth = 240;
 
-// bss theme related elements to be tested  - @todo RAnisa
 export default makeStyles({
   root: {
     display: 'flex',
