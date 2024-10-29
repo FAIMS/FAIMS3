@@ -185,7 +185,11 @@ function DraftRecord(props: DraftsRecordProps) {
                 <Grid item>
                   <ArticleOutlinedIcon
                     fontSize={'small'}
-                    sx={{verticalAlign: 'middle', marginRight: '4px'}}
+                    sx={{
+                      verticalAlign: 'middle',
+                      marginRight: '4px',
+                      color: theme.palette.secondary.main,
+                    }}
                   />
                 </Grid>
                 <Grid item>
@@ -243,7 +247,25 @@ function DraftRecord(props: DraftsRecordProps) {
           getRowId={r => r._id}
           columns={columns}
           autoHeight
-          sx={{cursor: 'pointer'}}
+          sx={{
+            cursor: 'pointer',
+            padding: '8px',
+            backgroundColor: theme.palette.background.tabsBackground,
+            borderRadius: '4px',
+            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+            mb: 2,
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: theme.palette.background.default,
+              borderBottom: '1px solid #ccc',
+            },
+            '& .MuiDataGrid-columnSeparator': {
+              visibility: 'visible',
+              color: '#ccc',
+            },
+            '& .MuiDataGrid-cell': {
+              borderBottom: '1px solid #eee',
+            },
+          }}
           getRowHeight={() => 'auto'}
           disableRowSelectionOnClick
           onRowClick={handleRowClick}
@@ -278,7 +300,18 @@ function DraftRecord(props: DraftsRecordProps) {
         <FormGroup>
           <FormControlLabel
             control={
-              <Switch checked={mobileView} onChange={handleToggleMobileView} />
+              <Switch
+                checked={mobileView}
+                onChange={handleToggleMobileView}
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: theme.palette.icon.main,
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: theme.palette.icon.main,
+                  },
+                }}
+              />
             }
             label={'Toggle Mobile View'}
           />
