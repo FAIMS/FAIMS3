@@ -288,8 +288,8 @@ function DraftEdit(props: DraftEditProps) {
               sx={{backgroundColor: theme.palette.background.tabsBackground}}
               textColor="secondary"
             >
-              <Tab label="Create" value="1" sx={{color: '#c2c2c2'}} />
-              <Tab label="Meta" value="2" sx={{color: '#C13E3EFF'}} />
+              <Tab label="Create" value="1" />
+              <Tab label="Meta" value="2" />
             </TabList>
           </AppBar>
           <TabPanel value="1" sx={{p: 0}}>
