@@ -10,6 +10,7 @@ const theme = createTheme({
       paper: '#FFFFFF',
       draftBackground: '#F4F4F4',
       lightBackground: '#f3f3f3',
+      tabsBackground: '#F0F0F0FF',
     },
     primary: {
       main: primaryMainColor,
@@ -20,12 +21,11 @@ const theme = createTheme({
       contrastText: 'F4F4F4',
     },
     secondary: {
-      main: '#197A01',
+      main: '#12B0FB',
       contrastText: '#F4F4F4',
     },
     text: {
       primary: '#000000FF',
-      // primaryLight: '#F4F4F4',
       secondary: '#000000',
       // helpicon and other icons : '#12B0FB',
       // second primary : '#197A01',
@@ -50,7 +50,7 @@ const theme = createTheme({
       complete: '#EA6216',
     },
     icon: {
-      main: '#12B0FB',
+      main: '#197A01',
       light: '#EAEAEA',
     },
     table: {
@@ -93,7 +93,7 @@ const theme = createTheme({
           '&.Mui-selected': {
             fontWeight: '700 !important',
             color: 'white',
-            backgroundColor: '#35CFCFFF',
+            backgroundColor: '#FFFFFF',
           },
         },
       },

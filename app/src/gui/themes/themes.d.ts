@@ -5,6 +5,7 @@ declare module '@mui/material/styles' {
   interface TypeBackground {
     draftBackground: string;
     lightBackground: string;
+    tabsBackground: string;
   }
 
   interface Palette {

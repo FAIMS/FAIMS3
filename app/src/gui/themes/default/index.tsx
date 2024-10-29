@@ -28,6 +28,7 @@ const theme = createTheme({
       paper: '#FFFFFF',
       draftBackground: '#FFFFFFFF',
       lightBackground: '#edeeeb',
+      tabsBackground: '#edeeeb',
     },
     primary: {
       main: '#669911',
@@ -40,7 +41,7 @@ const theme = createTheme({
     },
     secondary: {
       main: '#E18200',
-      contrastText: '#fff',
+      contrastText: '#E18200',
     },
     text: {
       primary: colors.blueGrey[900],
