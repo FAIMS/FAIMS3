@@ -23,6 +23,8 @@ import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../../utils/helpers';
+import {Person} from '@mui/icons-material';
+import {theme} from '../../themes';
 
 interface AppBarAuthProps {
   token?: null | undefined | TokenContents;
@@ -41,6 +43,7 @@ export default function AppBarAuth(props: AppBarAuthProps) {
         to={ROUTES.SIGN_IN}
         variant={'outlined'}
         color={'primary'}
+        startIcon={<Person style={{color: theme.palette.background.default}} />}
         disableElevation
       >
         {props.token!.username}
@@ -53,6 +56,7 @@ export default function AppBarAuth(props: AppBarAuthProps) {
         to={ROUTES.SIGN_IN}
         variant={'contained'}
         color={'primary'}
+        startIcon={<Person style={{color: theme.palette.background.default}} />}
         disableElevation
       >
         Sign In
