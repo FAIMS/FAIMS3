@@ -95,7 +95,7 @@ export default function AddRecordButtons({
               }
               sx={{
                 fontWeight: 'bold',
-                backgroundColor: theme.palette.secondary.main,
+                backgroundColor: theme.palette.icon.main,
                 color: '#FFFFFF',
                 '&:hover': {
                   backgroundColor: theme.palette.secondary.dark,
