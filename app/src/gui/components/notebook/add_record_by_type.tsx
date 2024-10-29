@@ -75,7 +75,7 @@ export default function AddRecordButtons({
         <ButtonGroup
           fullWidth={mq_above_md ? false : true}
           orientation={mq_above_sm ? 'horizontal' : 'vertical'}
-          sx={{maxHeight: '400px', overflowY: 'scroll'}}
+          sx={{maxHeight: '400px'}}
         >
           {/*If the list of views hasn't loaded yet*/}
           {/*we can still show this button, except it will*/}
@@ -97,6 +97,7 @@ export default function AddRecordButtons({
                 fontWeight: 'bold',
                 backgroundColor: theme.palette.icon.main,
                 color: '#FFFFFF',
+
                 '&:hover': {
                   backgroundColor: theme.palette.secondary.dark,
                 },
