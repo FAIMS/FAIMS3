@@ -238,7 +238,7 @@ export async function getRecordFields(
       console.warn('Failed to load HRID AVP:', project_id, field_name);
       return undefined;
     }
-  };
+  }
   return result;
 }
 

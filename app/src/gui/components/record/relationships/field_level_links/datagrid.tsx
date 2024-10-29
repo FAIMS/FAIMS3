@@ -39,12 +39,17 @@ import {
 } from '@mui/x-data-grid';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
-import {RecordID, Record, ProjectUIModel, ProjectID, RecordMetadata} from '@faims3/data-model';
+import {
+  RecordID,
+  Record,
+  ProjectUIModel,
+  ProjectID,
+  RecordMetadata,
+} from '@faims3/data-model';
 import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from '@faims3/data-model';
 import {gridParamsDataType} from '../record_links';
 import {RecordLinkProps} from '../types';
-import {getRecordInformation} from '../RelatedInformation';
 import {
   getFieldLabel,
   getSummaryFields,

@@ -40,7 +40,6 @@ import {
   removeRecordLink,
 } from '../components/record/relationships/RelatedInformation';
 import {DataGridFieldLinksComponent} from '../components/record/relationships/field_level_links/datagrid';
-import {RecordLinkProps} from '../components/record/relationships/types';
 import {SelectChangeEvent} from '@mui/material';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {logError} from '../../logging';
@@ -518,26 +517,3 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     </div>
   );
 }
-
-// Note: recordsInformation is of type RecordLinkProps[] and is passed in
-// to DataGridFieldLinksComponent as the 'rows' parameter, inside there
-// we use:
-// rec.deleted
-// rec.route = getRecordRoute(project_id, record_id, revision_id)
-// rec.type
-// rec.hrid
-// rec.record_id
-// rec.lastUpdatedBy
-// rec.record_label ?? rec.record_id - displayed record label
-// - the following just to create a unique id for the row
-//  rec.relation_type_vocabPair[0]
-//  rec.link.record_id
-//  rec.link.field_id
-//
-// all of these are present (or can be derived from) properties of
-// RecordMetadata
-// apart from relation_type_vocabPair although that may be present
-// in the `relationship` property.
-//
-// So, use a version of getMetadataForAllRecords instead, one that takes a
-// list of record ids to get just the linked records
