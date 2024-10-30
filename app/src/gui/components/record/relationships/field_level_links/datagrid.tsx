@@ -139,7 +139,7 @@ export function DataGridNoLink(props: {
 
 interface DataGridLinksComponentProps {
   project_id: ProjectID;
-  links: Array<RecordLinkProps> | null;
+  links: Array<RecordMetadata> | null;
   record_id: RecordID;
   record_hrid: string;
   record_type: string;
@@ -189,6 +189,7 @@ export function DataGridFieldLinksComponent(
 
   const handleModalOpen = React.useCallback(
     (row: typeof GridRow) => () => {
+      console.log('modal link', row);
       setModalOpen(true);
       setModalLink(row);
     },
@@ -215,17 +216,6 @@ export function DataGridFieldLinksComponent(
     current_record_id: RecordID;
     child_record: RecordMetadata;
   }) {
-    const [recordData, setRecordData] = useState<
-      | {
-          latest_record: null;
-          revision_id: undefined;
-        }
-      | {
-          latest_record: Record | null;
-          revision_id: string;
-        }
-    >();
-
     const [displayFields, setDisplayFields] = useState<Array<string>>([]);
     useEffect(() => {
       const fn = async () => {
@@ -280,7 +270,23 @@ export function DataGridFieldLinksComponent(
     headerClassName: 'faims-record-link--header',
     minWidth: 200,
     flex: 0.2,
-    valueGetter: (params: gridParamsDataType) => params.value[1],
+    valueGetter: (params: gridParamsDataType) => {
+      console.log('params', params);
+      const rel = params.row.relationship;
+      if (rel.linked && rel.linked.length > 0) {
+        // find the link that is back to us
+        const links_to_us = rel.linked.filter(
+          (link: any) => link.record_id === params.id
+        );
+        console.log('links_to_us', links_to_us);
+        if (links_to_us && links_to_us.length > 0) {
+          const rvp = links_to_us[0].relation_type_vocabPair;
+          console.log('rvp', rvp);
+          return (rvp && rvp.length > 0 && rvp[1]) || 'linked';
+        } else if (links_to_us.parent) return 'parent';
+        else return 'linked';
+      };
+    },
   };
 
   const record_column = {
@@ -360,8 +366,8 @@ export function DataGridFieldLinksComponent(
                     >
                       Do you wish to remove the link <br />
                       <br />
-                      <strong>Field: {modalLink.link.field_name} </strong>
-                      {modalLink.relation_type_vocabPair[1]}{' '}
+                      <strong>Field: {props.field_name} </strong>
+                      {props.relation_type}
                       <RecordRouteDisplay>
                         {modalLink.type} {modalLink.hrid}
                       </RecordRouteDisplay>

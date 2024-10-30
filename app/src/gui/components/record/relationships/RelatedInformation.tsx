@@ -29,6 +29,8 @@ import {
   RecordID,
   getMetadataForSomeRecords,
   ProjectID,
+  RecordMetadata,
+  getRecordMetadata,
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
@@ -332,7 +334,11 @@ export async function getRelatedRecords(
   field_name: string,
   multiple: boolean
 ) {
+  console.log('getRelatedRecords', values, field_name);
   const links = multiple ? values[field_name] : [values[field_name]];
+  if (!links) {
+    return [];
+  }
   const record_ids = links.map((link: any) => link.record_id);
   const records = await getMetadataForSomeRecords(project_id, record_ids, true);
 
@@ -819,42 +825,26 @@ export async function removeRecordLink(
  * @param form_revision_id - revision id of parent from the form
  * @param relation_type - 'Child' or 'Linked'
  * @param relation_type_vocabPair - relation descriptors, eg. ['parent', 'child']
- * @param is_add - true to add the relation, false to delete it
  * @returns the new child record object
  */
 export async function addRecordLink(
   child_record: RecordReference,
   parent: LinkedRelation,
-  field_label: string,
-  related_type_label: string,
-  form_type: string | undefined,
-  hrid: string,
-  form_revision_id: string,
-  relation_type: string,
-  relation_type_vocabPair: string[]
-): Promise<RecordLinkProps | null> {
-  let new_child_record: RecordLinkProps = generate_RecordLink(
-    child_record,
-    '',
-    '',
-    relation_type_vocabPair,
-    parent.record_id,
-    hrid,
-    form_type ?? '',
-    related_type_label,
-    '',
-    '',
-    parent.field_id,
-    field_label,
-    '',
-    relation_type
+  relation_type: string
+): Promise<RecordMetadata | null> {
+  const child_revision = await getFirstRecordHead(
+    child_record.project_id,
+    child_record.record_id
+  );
+  const child_record_meta = await getRecordMetadata(
+    child_record.project_id,
+    child_record.record_id,
+    child_revision
   );
 
   try {
     // retrieve information about the child record
-    const {latest_record, revision_id} =
-      await getRecordInformation(child_record);
-    let current_revision_id = revision_id;
+    const {latest_record} = await getRecordInformation(child_record);
 
     // Find the relation object (if any) and then either add or
     // remove the parent/link as appropriate
@@ -880,54 +870,22 @@ export async function addRecordLink(
       new_doc['relationship'] = relation;
       new_doc['updated'] = now;
       new_doc['deleted'] = latest_record.deleted;
-      current_revision_id = await upsertFAIMSData(
-        child_record.project_id,
-        new_doc
-      );
+      await upsertFAIMSData(child_record.project_id, new_doc);
     }
-
-    // now update the child record, inserting the relation into the relevant
-    // field
-    const route = ROUTES.getRecordRoute(
-      child_record.project_id,
-      child_record.record_id,
-      current_revision_id
-    );
-    if (current_revision_id === undefined) return null;
-    new_child_record = generate_RecordLink(
-      child_record,
-      get_last_updated(latest_record?.updated_by ?? '', now),
-      route,
-      relation_type_vocabPair,
-      parent.record_id,
-      hrid,
-      form_type ?? '',
-      related_type_label,
-      '',
-      '',
-      parent.field_id,
-      field_label,
-      ROUTES.getRecordRoute(
-        child_record.project_id,
-        parent.record_id,
-        form_revision_id
-      ),
-      relation_type
-    );
   } catch (error) {
     logError(error);
   }
-
-  return new_child_record;
+  // just return the child record we fetched
+  return child_record_meta;
 }
 
 export function remove_link_from_list(
-  link_records: RecordLinkProps[],
+  link_records: RecordMetadata[],
   child_record_id: RecordID
 ) {
   if (link_records.length === 0) return link_records;
-  const new_link_records: RecordLinkProps[] = [];
-  link_records.map((linkRecord: RecordLinkProps) =>
+  const new_link_records: RecordMetadata[] = [];
+  link_records.map((linkRecord: RecordMetadata) =>
     linkRecord.record_id !== child_record_id
       ? new_link_records.push(linkRecord)
       : linkRecord
