@@ -65,6 +65,7 @@ export interface TokenContents {
   username: string;
   roles: string[];
   name?: string;
+  server: string;
 }
 
 export type ProjectRole = string;

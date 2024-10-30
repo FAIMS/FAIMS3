@@ -28,7 +28,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import {grey} from '@mui/material/colors';
 import Tabs from '../ui/tab-grid';
-import HeadingGrid from '../ui/heading-grid';
+import HeadingProjectGrid from '../ui/heading-grid';
 import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import * as ROUTES from '../../../constants/routes';
@@ -53,23 +53,28 @@ export default function NoteBooks() {
           flex: 0.4,
           minWidth: 200,
           renderCell: ({row: {activated, name, description}}) => (
-            <Box my={1}>
+            <Box my={3}>
               <span
                 style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
+                  alignItems: 'center',
                   flexWrap: 'nowrap',
+                  padding: '12px 0',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
-                  color={activated ? 'secondary' : 'disabled'}
-                  sx={{mr: '3px'}}
+                  color={activated ? 'primary' : 'disabled'}
+                  sx={{mr: '8px'}}
                 />
                 <Typography
-                  variant={'body2'}
+                  variant={'body1'}
                   fontWeight={activated ? 'bold' : 'normal'}
                   color={activated ? 'black' : grey[800]}
+                  sx={{
+                    padding: '4px 0',
+                    lineHeight: 1,
+                  }}
                 >
                   {name}
                 </Typography>
@@ -85,14 +90,6 @@ export default function NoteBooks() {
           minWidth: 160,
           flex: 0.2,
           valueGetter: ({value}) => value && new Date(value),
-        },
-        {
-          field: 'status',
-          headerName: 'Status',
-          type: 'string',
-          flex: 0.2,
-          minWidth: 160,
-          renderCell: ({row: {status}}) => <ProjectStatus status={status} />,
         },
         {
           field: 'actions',
@@ -122,22 +119,29 @@ export default function NoteBooks() {
               <div
                 style={{
                   display: 'flex',
+                  alignItems: 'flex-start',
+                  padding: '12px 0',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
                   color={activated ? 'secondary' : 'disabled'}
-                  sx={{mr: '3px'}}
+                  sx={{mr: '4px'}}
                 />
                 <Typography
                   variant={'body2'}
                   fontWeight={activated ? 'bold' : 'normal'}
                   color={activated ? 'black' : grey[800]}
+                  sx={{
+                    padding: '4px 0',
+                  }}
                 >
                   {name}
                 </Typography>
               </div>
-              <Typography variant={'caption'}>{description}</Typography>
+              <Typography variant={'caption'} sx={{paddingTop: '4px'}}>
+                {description}
+              </Typography>
               <div>
                 <ProjectStatus status={status} />
               </div>
@@ -177,7 +181,7 @@ export default function NoteBooks() {
         <Typography variant={'body1'} gutterBottom>
           You have {activatedProjects.length} {NOTEBOOK_NAME}
           {activatedProjects.length !== 1 ? 's' : ''} activated on this device.
-          To start syncing a {NOTEBOOK_NAME}, visit the{' '}
+          To start using a {NOTEBOOK_NAME}, visit the{' '}
           <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
             Available
           </Button>{' '}
@@ -187,7 +191,7 @@ export default function NoteBooks() {
           variant="contained"
           color="primary"
           onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
-          sx={{mb: 3, mt: 3}}
+          sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
           startIcon={<AddCircleSharpIcon />}
         >
           Create New Survey
@@ -200,11 +204,7 @@ export default function NoteBooks() {
             columns={columns}
           />
         ) : (
-          <HeadingGrid
-            pouchProjectList={projects}
-            loading={false}
-            columns={columns}
-          />
+          <HeadingProjectGrid projects={projects} columns={columns} />
         )}
       </Box>
     </Box>

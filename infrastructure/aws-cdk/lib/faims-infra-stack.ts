@@ -120,6 +120,8 @@ const ConductorConfigSchema = z.object({
   conductorDockerImage: z.string(),
   /** Conductor docker image e.g. latest, sha-123456 */
   conductorDockerImageTag: z.string().default('latest'),
+  /** The prefix to use for the short codes in the app */
+  shortCodePrefix: z.string().default('FAIMS'),
   /** The number of CPU units for the Fargate task */
   cpu: z.number().int().positive(),
   /** The amount of memory (in MiB) for the Fargate task */
@@ -171,7 +173,7 @@ const BackupConfigSchema = z
 
 export const UiConfiguration = z.object({
   /** The UI Theme for the app */
-  uiTheme: z.enum(['bubble', 'default']),
+  uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
   /** The notebook list type for the app */
   notebookListType: z.enum(['tabs', 'headings']),
   /** The display name for notebooks e.g. survey, notebook */
@@ -327,7 +329,8 @@ export class FaimsInfraStack extends cdk.Stack {
 
     // Generate cookie auth secret at deploy time
     const cookieSecret = new sm.Secret(this, 'conductor-cookie-secret', {
-      description: 'Contains a randomly generated string used for cookie auth in conductor and couch',
+      description:
+        'Contains a randomly generated string used for cookie auth in conductor and couch',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       generateSecretString: {
         includeSpace: false,
@@ -351,7 +354,7 @@ export class FaimsInfraStack extends cdk.Stack {
       dataVolumeSnapshotId: config.couch.ebsRecoverySnapshotId,
       monitoring: config.couch.monitoring,
       couchVersionTag: config.couch.couchVersionTag,
-      cookieSecret: cookieSecret
+      cookieSecret: cookieSecret,
     });
 
     // CONDUCTOR
@@ -372,7 +375,7 @@ export class FaimsInfraStack extends cdk.Stack {
       iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
       sharedBalancer: networking.sharedBalancer,
       config: config.conductor,
-      cookieSecret: cookieSecret
+      cookieSecret: cookieSecret,
     });
 
     // FRONT-END

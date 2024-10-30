@@ -28,11 +28,11 @@ import express, {
   Response,
 } from 'express';
 import {ExpressHandlebars} from 'express-handlebars';
+import RateLimit from 'express-rate-limit';
 import handlebars from 'handlebars';
 import morgan from 'morgan';
 import passport from 'passport';
 import flash from 'req-flash';
-import RateLimit from 'express-rate-limit';
 
 // use swaggerUI to display the UI documentation
 // need this workaround to have the swagger-ui-dist package
@@ -57,20 +57,19 @@ import {api as templatesApi} from './api/templates';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
 import {COOKIE_SECRET} from './buildconfig';
+import patch from './utils/patchExpressAsync';
 
-// See https://github.com/davidbanham/express-async-errors - this patches
-// express to handle async errors without hanging or needing an explicit try
-// catch block
-require('express-async-errors');
+// This must occur before express app is used
+patch();
 
 export const app = express();
 app.use(morgan('combined'));
 
 if (process.env.NODE_ENV !== 'test') {
-  // set up rate limiter: maximum of 30 requests per minute
+  // set up rate limiter: maximum of 60 requests per minute
   const limiter = RateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 30,
+    max: 60,
     validate: true,
   });
   app.use(limiter);

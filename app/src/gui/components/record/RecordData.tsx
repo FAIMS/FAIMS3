@@ -62,6 +62,8 @@ interface RecordDataTypes {
   handleUnlink: Function;
   setRevision_id?: Function;
   mq_above_md: boolean;
+  setProgress: React.Dispatch<React.SetStateAction<number>>;
+  buttonRef: React.RefObject<HTMLDivElement>;
 }
 
 export default function RecordData(props: RecordDataTypes) {
@@ -81,7 +83,15 @@ export default function RecordData(props: RecordDataTypes) {
   return (
     <Box bgcolor={grey[100]}>
       <TabContext value={dataTab}>
-        <TabList onChange={handleDataTabChange}>
+        <TabList
+          onChange={handleDataTabChange}
+          TabIndicatorProps={{
+            style: {
+              backgroundColor: theme.palette.secondary.contrastText,
+            },
+          }}
+          sx={{backgroundColor: theme.palette.background.tabsBackground}}
+        >
           <Tab label={'Data'} value={'1'} />
           <Tab label={'Review'} value={'2'} />
         </TabList>
@@ -147,6 +157,8 @@ export default function RecordData(props: RecordDataTypes) {
                         draftLastSaved={props.draftLastSaved}
                         mq_above_md={props.mq_above_md}
                         navigate={navigate}
+                        setProgress={props.setProgress}
+                        buttonRef={props.buttonRef}
                       />
                     ) : (
                       <CircularProgress size={24} />
@@ -204,6 +216,8 @@ export default function RecordData(props: RecordDataTypes) {
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                       handleSetDraftError={props.handleSetDraftError}
                       navigate={navigate}
+                      setProgress={props.setProgress}
+                      buttonRef={props.buttonRef}
                     />
                   </Box>
                 </Grid>

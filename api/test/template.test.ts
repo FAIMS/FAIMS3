@@ -41,7 +41,12 @@ import PouchDB from 'pouchdb';
 import request from 'supertest';
 import {app} from '../src/routes';
 import {NOTEBOOKS_API_BASE} from './api.test';
-import {adminToken, beforeApiTests, localUserToken} from './utils';
+import {
+  adminToken,
+  beforeApiTests,
+  localUserToken,
+  requestAuthAndType,
+} from './utils';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
 
@@ -98,7 +103,7 @@ const createSampleTemplate = async (
 };
 
 // list and see the new template
-const listTemplates = async (
+export const listTemplates = async (
   app: Express,
   token: string = adminToken
 ): Promise<GetListTemplatesResponse> => {
@@ -177,21 +182,6 @@ const getATemplate = async (
       // Parse the response body against model
       return GetTemplateByIdResponseSchema.parse(res.body);
     });
-};
-
-/**
- * Wraps a test request object with necessary authentication (admin) and JSON
- * content type
- * @param request The test request object to wrap
- * @returns The wrapped request object
- */
-const requestAuthAndType = (
-  request: request.Test,
-  token: string = adminToken
-) => {
-  return request
-    .set('Authorization', `Bearer ${token}`)
-    .set('Content-Type', 'application/json');
 };
 
 describe('template API tests', () => {

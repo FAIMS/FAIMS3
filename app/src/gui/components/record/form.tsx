@@ -68,6 +68,7 @@ import {
 
 import {generateFAIMSDataID, getFirstRecordHead} from '@faims3/data-model';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
+import {percentComplete, requiredFields} from '../../../lib/form-utils';
 import {logError} from '../../../logging';
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup from './formButton';
@@ -1114,16 +1115,6 @@ class RecordForm extends React.Component<
   }
 
   isReady(): boolean {
-    // if (DEBUG_APP) {
-    //   if (!this.state.type_cached)
-    //     console.debug('isReady false because type_cached is false');
-    //   if (!this.state.initialValues)
-    //     console.debug('isReady false because initialValues is false');
-    //   if (!this.props.ui_specification)
-    //     console.debug('isReady false because ui_specification is false');
-    //   if (!this.state.view_cached)
-    //     console.debug('isReady false because view_cached is false');
-    // }
     return Boolean(
       this.state.type_cached &&
         this.state.initialValues &&
@@ -1145,39 +1136,6 @@ class RecordForm extends React.Component<
   }
 
   render() {
-    // we can't do this here because it changes state and forces a redraw
-    // if (this.state.draft_created !== null) {
-    //   // If a draft was created, that implies this form started from
-    //   // a non draft, so it must have been an existing record (see props
-    //   // as it's got a type {existing record} | {draft already created}
-    //   (this.context as any).dispatch({
-    //     type: ActionType.ADD_CUSTOM_ALERT,
-    //     payload: {
-    //       severity: 'success',
-    //       element: (
-    //         <React.Fragment>
-    //           <Link
-    //             component={RouterLink}
-    //             to={
-    //               ROUTES.NOTEBOOK +
-    //               this.props.project_id +
-    //               ROUTES.RECORD_EXISTING +
-    //               this.props.record_id! +
-    //               ROUTES.REVISION +
-    //               this.props.revision_id! +
-    //               ROUTES.RECORD_DRAFT +
-    //               this.state.draft_created
-    //             }
-    //           >
-    //             Created new draft
-    //           </Link>
-    //         </React.Fragment>
-    //       ),
-    //     },
-    //   });
-    //   this.setState({draft_created: null});
-    // }
-
     if (this.isReady()) {
       const viewName = this.requireView();
       const viewsetName = this.requireViewsetName();
@@ -1220,6 +1178,13 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
+                this.props.setProgress?.(
+                  percentComplete(
+                    requiredFields(this.props.ui_specification.fields),
+                    formProps.values
+                  )
+                );
+
                 //ONLY update if the updated field is the controller field
                 fieldNames = getFieldsMatchingCondition(
                   this.props.ui_specification,

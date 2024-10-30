@@ -59,4 +59,12 @@ jobs:
         
       - name: Build
         run: npm run build
+
+      - name: API Unit tests
+        run: |
+          cd api
+          cp .env.dist .env
+          ./keymanagement/makeInstanceKeys.sh
+          cd ..
+          npx turbo run test --filter=@faims3/api
  

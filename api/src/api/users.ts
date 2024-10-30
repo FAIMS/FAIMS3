@@ -31,10 +31,10 @@ import {processRequest} from 'zod-express-middleware';
 import {z} from 'zod';
 import {PostUpdateUserInputSchema} from '@faims3/data-model';
 
-// See https://github.com/davidbanham/express-async-errors - this patches
-// express to handle async errors without hanging or needing an explicit try
-// catch block
-require('express-async-errors');
+import patch from '../utils/patchExpressAsync';
+
+// This must occur before express api is used
+patch();
 
 export const api = express.Router();
 

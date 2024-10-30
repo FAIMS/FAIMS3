@@ -39,10 +39,7 @@ export default function LoadingApp() {
         style={{marginTop: '5vh', minHeight: '50%'}}
       >
         <Grid item xs={8} sm={3} md={3}>
-          <img
-            src="/static/logo/Fieldmark-Portrait-Margin@4x.png"
-            style={{maxWidth: '100%'}}
-          />
+          <img src="/assets/icons/icon-192.webp" style={{maxWidth: '100%'}} />
         </Grid>
       </Grid>
       <Grid

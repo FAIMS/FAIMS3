@@ -26,7 +26,7 @@ export interface FaimsFrontEndProps {
   faimsDomainNames: Array<string>;
 
   // customisation
-  uiTheme: 'bubble' | 'default';
+  uiTheme: 'bubble' | 'default' | 'bssTheme';
   notebookListType: 'tabs' | 'headings';
   notebookName: string;
 

@@ -20,22 +20,57 @@
 
 import {createTheme} from '@mui/material';
 import typography from './typography';
+const primaryMainColor = '#000000';
 
 const theme = createTheme({
   palette: {
     background: {
-      default: '#FFFFFF',
+      default: '#FAFAFB',
+      paper: '#FFFFFF',
+      draftBackground: '#F4F4F4',
+      lightBackground: '#f3f3f3',
+      tabsBackground: '#F0F0F0FF',
     },
     primary: {
-      main: '#000000',
+      main: primaryMainColor,
+      light: '#FFFFFF',
+    },
+    highlightColor: {
+      main: '#B10000',
+      contrastText: 'F4F4F4',
     },
     secondary: {
-      main: '#FFFFFF',
-      contrastText: '#000000',
+      main: '#12B0FB',
+      contrastText: '#F4F4F4',
     },
     text: {
-      primary: '#000000',
+      primary: '#000000FF',
       secondary: '#000000',
+    },
+    alert: {
+      warningBackground: '#FFFFFF',
+      warningText: '#BC0505',
+      infoBackground: '#E5F6FD',
+      infoText: '#084C61',
+    },
+    dialogButton: {
+      cancel: '#606060',
+      confirm: '#B10000',
+      dialogText: '#FFFFFF',
+      hoverBackground: '#711111FF',
+    },
+    progressBar: {
+      background: '#edeeeb',
+      complete: '#EA6216',
+    },
+    icon: {
+      main: '#197A01',
+      light: '#EAEAEA',
+    },
+    table: {
+      divider: '#828789FF',
+      rowBorder: '#D3D1D1FF',
+      columnSeparator: '#828789FF',
     },
   },
   typography,

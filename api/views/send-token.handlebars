@@ -39,7 +39,7 @@ fetch(
             }
             // use app url
             const urlenc_token = encodeURIComponent(token_str);
-            window.location = "org.fedarch.faims3://auth/" + urlenc_token;
+            window.location = "{{app_id}}://auth/" + urlenc_token;
         }
     }
 ).catch(console.error);
