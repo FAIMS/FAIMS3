@@ -859,15 +859,7 @@ export async function addRecordLink(
   parent: LinkedRelation,
   relation_type: string
 ): Promise<RecordMetadata | null> {
-  const child_revision = await getFirstRecordHead(
-    child_record.project_id,
-    child_record.record_id
-  );
-  const child_record_meta = await getRecordMetadata(
-    child_record.project_id,
-    child_record.record_id,
-    child_revision
-  );
+  let child_record_meta = null;
 
   try {
     // retrieve information about the child record
@@ -878,8 +870,8 @@ export async function addRecordLink(
     // Since there can only be one parent, that is done directly
     // but links use AddLink/RemoveLink because they can be many-many
     const relation = latest_record?.relationship ?? {};
-    if (relation_type === 'Child') relation['parent'] = parent;
-    else if (relation_type === 'Linked')
+    if (relation_type === 'faims-core::Child') relation['parent'] = parent;
+    else if (relation_type === 'faims-core::Linked')
       relation['linked'] = AddLink(relation, parent);
     else {
       logError(`Error: unknown relation type ${relation_type}`);
@@ -899,6 +891,14 @@ export async function addRecordLink(
       new_doc['deleted'] = latest_record.deleted;
       await upsertFAIMSData(child_record.project_id, new_doc);
     }
+    // here we are trusting that Record has enough of the fields of RecordMetadata
+    // for the purposes of the caller until such time as we rationalise the Record types
+    child_record_meta = latest_record as unknown as RecordMetadata;
+    // it's missing the HRID so grab it here
+    child_record_meta.hrid = getHRIDValue(
+      child_record_meta.record_id,
+      child_record_meta.data
+    );
   } catch (error) {
     logError(error);
   }

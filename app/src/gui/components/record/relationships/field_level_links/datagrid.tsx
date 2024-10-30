@@ -187,7 +187,6 @@ export function DataGridFieldLinksComponent(
 
   const handleModalOpen = React.useCallback(
     (row: typeof GridRow) => () => {
-      console.log('modal link', row);
       setModalOpen(true);
       setModalLink(row);
     },
@@ -269,17 +268,14 @@ export function DataGridFieldLinksComponent(
     minWidth: 200,
     flex: 0.2,
     valueGetter: (params: gridParamsDataType) => {
-      console.log('params', params);
       const rel = params.row.relationship;
       if (rel.linked && rel.linked.length > 0) {
         // find the link that is back to us
         const links_to_us = rel.linked.filter(
           (link: any) => link.record_id === params.id
         );
-        console.log('links_to_us', links_to_us);
         if (links_to_us && links_to_us.length > 0) {
           const rvp = links_to_us[0].relation_type_vocabPair;
-          console.log('rvp', rvp);
           return (rvp && rvp.length > 0 && rvp[1]) || 'linked';
         } else if (links_to_us.parent) return 'parent';
         else return 'linked';

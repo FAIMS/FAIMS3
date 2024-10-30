@@ -332,11 +332,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       field_id: field_name,
       relation_type_vocabPair: relationshipPair,
     };
-    addRecordLink(
-      selectedRecord,
-      current_record,
-      props.related_type_label ?? props.related_type
-    )
+    addRecordLink(selectedRecord, current_record, props.relation_type)
       .then(child_record => {
         if (child_record !== null) {
           if (!multiple) setRecordsInformation([child_record]);
