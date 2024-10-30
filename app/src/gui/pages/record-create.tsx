@@ -280,10 +280,16 @@ function DraftEdit(props: DraftEditProps) {
               onChange={handleChange}
               aria-label="simple tabs example"
               indicatorColor={'secondary'}
+              TabIndicatorProps={{
+                style: {
+                  backgroundColor: theme.palette.secondary.contrastText,
+                },
+              }}
+              sx={{backgroundColor: theme.palette.background.tabsBackground}}
               textColor="secondary"
             >
-              <Tab label="Create" value="1" sx={{color: '#c2c2c2'}} />
-              <Tab label="Meta" value="2" sx={{color: '#c2c2c2'}} />
+              <Tab label="Create" value="1" />
+              <Tab label="Meta" value="2" />
             </TabList>
           </AppBar>
           <TabPanel value="1" sx={{p: 0}}>

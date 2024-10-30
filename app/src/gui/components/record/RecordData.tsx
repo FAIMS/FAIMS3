@@ -83,7 +83,15 @@ export default function RecordData(props: RecordDataTypes) {
   return (
     <Box bgcolor={grey[100]}>
       <TabContext value={dataTab}>
-        <TabList onChange={handleDataTabChange}>
+        <TabList
+          onChange={handleDataTabChange}
+          TabIndicatorProps={{
+            style: {
+              backgroundColor: theme.palette.secondary.contrastText,
+            },
+          }}
+          sx={{backgroundColor: theme.palette.background.tabsBackground}}
+        >
           <Tab label={'Data'} value={'1'} />
           <Tab label={'Review'} value={'2'} />
         </TabList>

@@ -9,6 +9,7 @@ import {ProjectExtended} from '../../../types/project';
 import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
+import {theme} from '../../themes';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -61,7 +62,25 @@ export default function HeadingProjectGrid({
         columns={columns}
         onRowClick={handleRowClick}
         autoHeight
-        sx={{cursor: 'pointer'}}
+        sx={{
+          cursor: 'pointer',
+          padding: '8px',
+          backgroundColor: theme.palette.background.lightBackground,
+          borderRadius: '4px',
+          boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+          mb: 2,
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: theme.palette.background.default,
+            borderBottom: '1px solid #ccc',
+          },
+          '& .MuiDataGrid-columnSeparator': {
+            visibility: 'visible',
+            color: '#ccc',
+          },
+          '& .MuiDataGrid-cell': {
+            borderBottom: '1px solid #eee',
+          },
+        }}
         getRowId={({_id}) => _id}
         hideFooter={true}
         getRowHeight={() => 'auto'}
@@ -84,7 +103,25 @@ export default function HeadingProjectGrid({
         rows={availableProjects}
         columns={columns}
         autoHeight
-        sx={{cursor: 'pointer'}}
+        sx={{
+          cursor: 'pointer',
+          padding: '8px',
+          backgroundColor: theme.palette.background.lightBackground,
+          borderRadius: '4px',
+          boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+          mb: 2,
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: theme.palette.background.default,
+            borderBottom: '1px solid #ccc',
+          },
+          '& .MuiDataGrid-columnSeparator': {
+            visibility: 'visible',
+            color: '#ccc',
+          },
+          '& .MuiDataGrid-cell': {
+            borderBottom: '1px solid #eee',
+          },
+        }}
         onRowClick={handleRowClick}
         getRowId={({_id}) => _id}
         getRowHeight={() => 'auto'}

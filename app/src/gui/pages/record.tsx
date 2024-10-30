@@ -545,11 +545,22 @@ export default function Record() {
       </Box>
       <Paper square elevation={0} variant={'outlined'}>
         <TabContext value={value}>
-          <AppBar position="static" color="primary">
+          <AppBar
+            position="static"
+            sx={{
+              backgroundColor: theme.palette.background.lightBackground,
+              color: theme.palette.text.primary,
+            }}
+          >
             <TabList
               onChange={handleChange}
               aria-label="Record Form Tab"
               indicatorColor="secondary"
+              TabIndicatorProps={{
+                style: {
+                  backgroundColor: theme.palette.secondary.contrastText,
+                },
+              }}
               textColor="inherit"
               variant="scrollable"
               scrollButtons="auto"
