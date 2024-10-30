@@ -232,7 +232,7 @@ export const initialiseUserDB = async (db: PouchDB.Database | undefined) => {
 export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
   // To check if we are initialised - we check for presence of expected
   // documents
-  let initialised = false;
+  let initialised = true;
 
   try {
     await db.get(permissionDocument._id);
