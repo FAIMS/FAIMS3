@@ -36,31 +36,16 @@ export default function AppBarAuth(props: AppBarAuthProps) {
    */
   const isAuthenticated = checkToken(props.token);
 
-  if (isAuthenticated) {
-    return (
-      <Button
-        component={NavLink}
-        to={ROUTES.SIGN_IN}
-        variant={'outlined'}
-        color={'primary'}
-        startIcon={<Person style={{color: theme.palette.background.default}} />}
-        disableElevation
-      >
-        {props.token!.username}
-      </Button>
-    );
-  } else {
-    return (
-      <Button
-        component={NavLink}
-        to={ROUTES.SIGN_IN}
-        variant={'contained'}
-        color={'primary'}
-        startIcon={<Person style={{color: theme.palette.background.default}} />}
-        disableElevation
-      >
-        Sign In
-      </Button>
-    );
-  }
+  return (
+    <Button
+      component={NavLink}
+      to={ROUTES.SIGN_IN}
+      variant={'contained'}
+      color={'primary'}
+      startIcon={<Person style={{color: theme.palette.background.default}} />}
+      disableElevation
+    >
+      {isAuthenticated ? props.token!.username : 'Sign In'}
+    </Button>
+  );
 }
