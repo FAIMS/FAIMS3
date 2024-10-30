@@ -57,14 +57,19 @@ export default function NotebookActivationSwitch({
       >
         <Box mb={2}>
           <Typography variant="body2" paragraph>
-            When a {NOTEBOOK_NAME} is “Active” you are safe to work offline at
-            any point because all the data is saved to your device. To activate
-            your {NOTEBOOK_NAME}, click the "Activate" button below.
+            When a {NOTEBOOK_NAME_CAPITALIZED} is “Active” you are safe to work
+            offline at any point because all the data you collect will be saved
+            to your device. To activate your {NOTEBOOK_NAME_CAPITALIZED}, click
+            the "Activate" button below.
           </Typography>
           <Typography variant="body2" paragraph>
-            <b>Warning</b>: activating a {NOTEBOOK_NAME} will start the downloading
-            of existing records onto your device. We recommend you complete this
-            procedure while you have a stable internet connection.
+            <b>Warning</b>: activating a {NOTEBOOK_NAME_CAPITALIZED} will start
+            the downloading of existing records onto your device. We recommend
+            you complete this procedure while you have a stable internet
+            connection. Currently, you cannot de-activate a survey, this is
+            something we will be adding soon. If you need to make space on your
+            device you can clear the application storage or remove and reinstall
+            the application.
           </Typography>
           {/*
           <Typography variant="subtitle1" fontWeight="bold">
