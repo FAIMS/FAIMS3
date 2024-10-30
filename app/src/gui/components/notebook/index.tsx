@@ -139,7 +139,13 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
-  const [recordLabel, setRecordLabel] = useState('Record');
+
+  // recordLabel based on viewsets
+  const recordLabel =
+    uiSpec?.visible_types?.length === 1
+      ? uiSpec.viewsets[uiSpec.visible_types[0]]?.label ||
+        uiSpec.visible_types[0]
+      : 'Record';
 
   const {data: template_id} = useQuery({
     queryKey: ['project-template-id', project.project_id],
@@ -162,16 +168,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         .then(spec => {
           setUiSpec(spec);
           setViewsets(spec.viewsets);
-
-          // Set record label based on visible_types
-          if (spec.visible_types && spec.visible_types.length === 1) {
-            const recordType = spec.visible_types[0];
-            const typeLabel = spec.viewsets[recordType]?.label || recordType;
-
-            setRecordLabel(typeLabel);
-          } else {
-            setRecordLabel('Record');
-          }
           setLoading(false);
           setErr('');
         })
