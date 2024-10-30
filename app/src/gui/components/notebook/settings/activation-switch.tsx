@@ -62,7 +62,7 @@ export default function NotebookActivationSwitch({
             your {NOTEBOOK_NAME}, click the "Activate" button below.
           </Typography>
           <Typography variant="body2" paragraph>
-            <b>Note</b>: activating a {NOTEBOOK_NAME} will start the downloading
+            <b>Warning</b>: activating a {NOTEBOOK_NAME} will start the downloading
             of existing records onto your device. We recommend you complete this
             procedure while you have a stable internet connection.
           </Typography>
