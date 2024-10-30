@@ -40,8 +40,6 @@ import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
 import {logError} from '../../../logging';
-import {getCurrentUserId} from '../../../users';
-import {getTotalRecordCount} from '../../../utils/record_summary';
 import {useGetCurrentUser} from '../../../utils/useGetCurrentUser';
 
 type RecordsTableProps = {
@@ -110,12 +108,27 @@ function RecordsTable(props: RecordsTableProps) {
       : params.row.type;
   }
 
-  // helper function using dynamic recordLabel
+  /**
+   * Counts the records filtering by record label and current user
+   * @param records The list of records
+   * @returns Count filterd by type and current user
+   */
   const getUserRecordCount = (records: RecordMetadata[]) => {
     return records.filter(
       record =>
         getRowType({row: record} as GridCellParams) === recordLabel &&
         record.created_by === currentUser
+    ).length;
+  };
+
+  /**
+   * Counts the records filtering by record label
+   * @param records The list of records
+   * @returns A count which is records of the current recordLabel type
+   */
+  const getTotalRecordCount = (records: RecordMetadata[]) => {
+    return records.filter(
+      record => getRowType({row: record} as GridCellParams) === recordLabel
     ).length;
   };
 

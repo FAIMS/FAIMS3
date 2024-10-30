@@ -74,6 +74,12 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
             variant="outlined"
             size="small"
             fullWidth
+            // When the enter key is pressed, handle submit
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                handleSubmit();
+              }
+            }}
             sx={{
               p: 0,
               backgroundColor: '#f0f0f0',
