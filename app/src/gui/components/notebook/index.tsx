@@ -283,7 +283,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             </Typography>
 
             <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
-              <strong>Total:</strong> {totalRecords}
+              <strong>Total {recordLabel}s:</strong> {totalRecords}
             </Typography>
           </Box>
 
