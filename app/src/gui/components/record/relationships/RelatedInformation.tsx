@@ -334,13 +334,41 @@ export async function getRelatedRecords(
   field_name: string,
   multiple: boolean
 ) {
-  const links = multiple ? values[field_name] : [values[field_name]];
-  if (!links) {
+  const fieldValue = values[field_name];
+
+  // Handle undefined/null cases
+  if (fieldValue == null) {
     return [];
   }
+
+  // Type check based on multiple flag
+  if (multiple) {
+    if (!Array.isArray(fieldValue)) {
+      throw new Error(
+        `Field ${field_name} must be an array when multiple is true, got ${typeof fieldValue}`
+      );
+    }
+  } else {
+    if (Array.isArray(fieldValue)) {
+      throw new Error(
+        `Field ${field_name} must be a single value when multiple is false, got array`
+      );
+    }
+  }
+
+  // Convert to array for processing
+  const links = multiple ? fieldValue : [fieldValue];
+  // Validate each link has record_id
+  links.forEach((link: any, index: number) => {
+    if (!link || typeof link !== 'object' || !('record_id' in link)) {
+      throw new Error(
+        `Invalid link at ${multiple ? `index ${index}` : 'value'}: must be an object with record_id property`
+      );
+    }
+  });
+
   const record_ids = links.map((link: any) => link.record_id);
   const records = await getMetadataForSomeRecords(project_id, record_ids, true);
-
   return records;
 }
 
