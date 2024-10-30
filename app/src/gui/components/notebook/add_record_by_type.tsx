@@ -1,22 +1,19 @@
-import React, {useEffect, useState} from 'react';
-import {Link as RouterLink, Navigate} from 'react-router-dom';
-
-import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
-import useMediaQuery from '@mui/material/useMediaQuery';
-
-import {useTheme} from '@mui/material/styles';
-import AddIcon from '@mui/icons-material/Add';
-
-import * as ROUTES from '../../../constants/routes';
-import {getUiSpecForProject} from '../../../uiSpecification';
-import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {
   getRecordsWithRegex,
-  RecordMetadata,
   ProjectUIModel,
+  RecordMetadata,
 } from '@faims3/data-model';
+import AddIcon from '@mui/icons-material/Add';
+import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useEffect, useState} from 'react';
+import {Navigate, Link as RouterLink} from 'react-router-dom';
+import * as ROUTES from '../../../constants/routes';
 import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
+import {getUiSpecForProject} from '../../../uiSpecification';
+import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 
 type AddRecordButtonsProps = {
   project: ProjectExtended;
@@ -109,7 +106,7 @@ export default function AddRecordButtons({
                 },
               }}
             >
-              New Record
+              {buttonLabel}
             </Button>
           ) : (
             visible_types.map(

@@ -18,17 +18,6 @@
  *   Components for displaying record metadata in a table.
  */
 
-import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-
-import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-import {Typography, Box, Paper, Alert, Grid, Link} from '@mui/material';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import ArticleIcon from '@mui/icons-material/Article';
-import {useTheme} from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
-
-import * as ROUTES from '../../../constants/routes';
 import {
   ProjectID,
   ProjectUIViewsets,
@@ -36,11 +25,20 @@ import {
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '@faims3/data-model';
-import {NotebookDataGridToolbar} from './datagrid_toolbar';
-import RecordDelete from './delete';
-import getLocalDate from '../../fields/LocalDate';
+import ArticleIcon from '@mui/icons-material/Article';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import {Alert, Box, Grid, Link, Paper, Typography} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
+import React, {useEffect} from 'react';
+import {useNavigate} from 'react-router-dom';
+import * as ROUTES from '../../../constants/routes';
 import {logError} from '../../../logging';
 import {useGetCurrentUser} from '../../../utils/useGetCurrentUser';
+import getLocalDate from '../../fields/LocalDate';
+import {NotebookDataGridToolbar} from './datagrid_toolbar';
+import RecordDelete from './delete';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -73,7 +71,7 @@ function RecordsTable(props: RecordsTableProps) {
     onRecordsCountChange,
     recordLabel,
   } = props;
-  const {data: currentUser, isLoading, isError} = useGetCurrentUser(project_id);
+  const {data: currentUser} = useGetCurrentUser(project_id);
 
   const [mobileViewSwitchValue] = React.useState(true);
 
@@ -489,16 +487,7 @@ function RecordsTable(props: RecordsTableProps) {
 }
 
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
-  const {
-    project_id,
-    maxRows,
-    viewsets,
-    filter_deleted,
-    handleRefresh,
-    onRecordsCountChange,
-    recordLabel,
-  } = props;
-
+  const {recordLabel} = props;
   const [query, setQuery] = React.useState('');
   const [pouchData, setPouchData] = React.useState(
     undefined as RecordMetadata[] | undefined
