@@ -337,7 +337,7 @@ export async function getRelatedRecords(
   const fieldValue = values[field_name];
 
   // Handle undefined/null cases
-  if (fieldValue == null) {
+  if (fieldValue === null) {
     return [];
   }
 
