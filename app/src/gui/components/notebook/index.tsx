@@ -246,6 +246,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 onChange={handleNotebookTabChange}
                 aria-label={`${NOTEBOOK_NAME} tabs`}
                 indicatorColor="secondary"
+                TabIndicatorProps={{
+                  style: {
+                    backgroundColor: theme.palette.secondary.contrastText,
+                  },
+                }}
+                sx={{backgroundColor: theme.palette.background.tabsBackground}}
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
@@ -292,6 +298,9 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   value={recordDraftTabValue}
                   onChange={handleRecordDraftTabChange}
                   aria-label={`${NOTEBOOK_NAME}-records`}
+                  sx={{
+                    backgroundColor: theme.palette.background.tabsBackground,
+                  }}
                 >
                   <Tab
                     label={`My ${recordLabel}s`}

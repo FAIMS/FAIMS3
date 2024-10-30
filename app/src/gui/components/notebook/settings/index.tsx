@@ -47,6 +47,7 @@ import {ProjectUIModel} from '@faims3/data-model';
 import {logError} from '../../../../logging';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
 import {ProjectsContext} from '../../../../context/projects-context';
+import {theme} from '../../../themes';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -111,6 +112,15 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                   control={
                     <Switch
                       checked={isSyncing}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: theme.palette.icon.main,
+                        },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track':
+                          {
+                            backgroundColor: theme.palette.icon.main,
+                          },
+                      }}
                       onChange={async (event, checked) => {
                         await setSyncingProjectAttachments(
                           project_id!,

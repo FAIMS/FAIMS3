@@ -4,6 +4,7 @@ import defaultAppBarStyling from './default/appBar';
 import bubbleAppBarStyling from './bubble/appBar';
 import defaultProjectListLayout from './default/noteBook';
 import bubbleProjectListLayout from './bubble/noteBook';
+import bssTheme from './bssTheme';
 
 /**
  * Exports the theme based on the environment variable VITE_THEME.
@@ -12,6 +13,8 @@ import bubbleProjectListLayout from './bubble/noteBook';
  */
 const exportTheme = () => {
   switch (import.meta.env.VITE_THEME) {
+    case 'bssTheme':
+      return bssTheme;
     case 'bubble':
       return bubbleTheme;
     default:
@@ -26,6 +29,8 @@ const exportTheme = () => {
  */
 const exportAppBarStyling = () => {
   switch (import.meta.env.VITE_THEME) {
+    case 'bssTheme':
+      return defaultAppBarStyling;
     case 'bubble':
       return bubbleAppBarStyling;
     default:
@@ -40,6 +45,8 @@ const exportAppBarStyling = () => {
  */
 const exportProjectListLayout = () => {
   switch (import.meta.env.VITE_THEME) {
+    case 'bssTheme':
+      return defaultProjectListLayout;
     case 'bubble':
       return bubbleProjectListLayout;
     default:
@@ -54,6 +61,8 @@ const exportProjectListLayout = () => {
  */
 const exportProjectListVerbose = () => {
   switch (import.meta.env.VITE_THEME) {
+    case 'bssTheme':
+      return true;
     case 'bubble':
       return false;
     default:
@@ -68,6 +77,8 @@ const exportProjectListVerbose = () => {
  */
 const exportAppBarHeading = () => {
   switch (import.meta.env.VITE_THEME) {
+    case 'bssTheme':
+      return 'bssTheme';
     case 'bubble':
       return 'bubble';
     default:

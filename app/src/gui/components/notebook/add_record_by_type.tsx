@@ -93,35 +93,23 @@ export default function AddRecordButtons({
               color="primary"
               component={RouterLink}
               key="newRecord"
-              to={`${ROUTES.RECORD_CREATE}${project_id}/${uiSpec.visible_types[0]}`}
+              to={
+                ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                project_id +
+                ROUTES.RECORD_CREATE +
+                visible_types
+              }
               sx={{
-                backgroundColor: 'green',
-                color: 'white',
-                borderRadius: '8px',
-                padding: '10px 15px',
-                fontSize: '14px',
                 fontWeight: 'bold',
-                width: mq_above_sm ? 'auto' : '50%',
+                backgroundColor: theme.palette.icon.main,
+                color: '#FFFFFF',
+
                 '&:hover': {
-                  backgroundColor: 'darkgreen',
+                  backgroundColor: theme.palette.secondary.dark,
                 },
               }}
             >
-              <Box
-                sx={{
-                  backgroundColor: 'white',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  width: 24,
-                  height: 24,
-                  marginRight: 1,
-                }}
-              >
-                <AddIcon sx={{fontSize: '1.2rem', color: 'green'}} />
-              </Box>
-              {buttonLabel} {/* Dynamic label based on recordLabel */}
+              New Record
             </Button>
           ) : (
             visible_types.map(
