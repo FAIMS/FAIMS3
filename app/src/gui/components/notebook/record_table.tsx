@@ -41,7 +41,7 @@ import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
 import {logError} from '../../../logging';
 import {getCurrentUserId} from '../../../users';
-import {getTotalRecordCount} from './record_summary';
+import {getTotalRecordCount} from '../../../utils/record_summary';
 
 type RecordsTableProps = {
   project_id: ProjectID;
