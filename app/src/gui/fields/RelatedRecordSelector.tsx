@@ -316,7 +316,6 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
    * add_related_child - callback for CreateLinkComponent to add the selected record
    *  as a child of the current record.
    *  looks at `selectedRecord` to get the child
-   * @returns 
    */
   const add_related_child = () => {
     // skip the null value
@@ -339,9 +338,6 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       props.related_type_label ?? props.related_type
     )
       .then(child_record => {
-        // TODO: here we have child_record which is RecordLinkProps and we want to update
-        // recordsInformation which is RecordMetadata[]
-        // 
         if (child_record !== null) {
           if (!multiple) setRecordsInformation([child_record]);
           else {

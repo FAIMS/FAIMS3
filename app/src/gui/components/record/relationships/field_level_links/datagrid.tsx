@@ -41,7 +41,6 @@ import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
 import {
   RecordID,
-  Record,
   ProjectUIModel,
   ProjectID,
   RecordMetadata,
@@ -49,7 +48,6 @@ import {
 import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from '@faims3/data-model';
 import {gridParamsDataType} from '../record_links';
-import {RecordLinkProps} from '../types';
 import {
   getFieldLabel,
   getSummaryFields,
@@ -285,7 +283,7 @@ export function DataGridFieldLinksComponent(
           return (rvp && rvp.length > 0 && rvp[1]) || 'linked';
         } else if (links_to_us.parent) return 'parent';
         else return 'linked';
-      };
+      }
     },
   };
 

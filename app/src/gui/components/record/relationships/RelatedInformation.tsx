@@ -334,7 +334,6 @@ export async function getRelatedRecords(
   field_name: string,
   multiple: boolean
 ) {
-  console.log('getRelatedRecords', values, field_name);
   const links = multiple ? values[field_name] : [values[field_name]];
   if (!links) {
     return [];
