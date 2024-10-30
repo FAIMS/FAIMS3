@@ -324,7 +324,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   filter_deleted={true}
                   handleRefresh={handleRefresh}
                   onRecordsCountChange={handleCountChange}
-                  recordLabel={recordLabel} // Pass recordLabel to RecordsBrowseTable
+                  recordLabel={recordLabel}
                 />
               </TabPanel>
               <TabPanel

@@ -42,6 +42,7 @@ import getLocalDate from '../../fields/LocalDate';
 import {logError} from '../../../logging';
 import {getCurrentUserId} from '../../../users';
 import {getTotalRecordCount} from '../../../utils/record_summary';
+import {useGetCurrentUser} from '../../../utils/useGetCurrentUser';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -52,7 +53,7 @@ type RecordsTableProps = {
   handleQueryFunction: Function;
   handleRefresh: () => void;
   onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
-  recordLabel: string; // Add recordLabel prop
+  recordLabel: string;
 };
 
 type RecordsBrowseTableProps = {
@@ -62,7 +63,7 @@ type RecordsBrowseTableProps = {
   filter_deleted: boolean;
   handleRefresh: () => void;
   onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
-  recordLabel: string; // Add recordLabel prop
+  recordLabel: string;
 };
 
 function RecordsTable(props: RecordsTableProps) {
@@ -74,7 +75,7 @@ function RecordsTable(props: RecordsTableProps) {
     onRecordsCountChange,
     recordLabel,
   } = props;
-  const [currentUser, setCurrentUser] = useState<string>('');
+  const {data: currentUser, isLoading, isError} = useGetCurrentUser(project_id);
 
   const [mobileViewSwitchValue] = React.useState(true);
 
@@ -109,7 +110,7 @@ function RecordsTable(props: RecordsTableProps) {
       : params.row.type;
   }
 
-  // Updated helper function using dynamic recordLabel
+  // helper function using dynamic recordLabel
   const getUserRecordCount = (records: RecordMetadata[]) => {
     return records.filter(
       record =>
@@ -364,19 +365,6 @@ function RecordsTable(props: RecordsTableProps) {
         },
       ];
 
-  // Fetch the current user when the component mounts
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const userId = await getCurrentUserId(project_id);
-        setCurrentUser(userId);
-      } catch (error) {
-        console.error('Error fetching user ID:', error);
-      }
-    };
-    fetchUser();
-  }, [project_id]);
-
   useEffect(() => {
     if (!rows || rows.length === 0) {
       if (onRecordsCountChange) onRecordsCountChange({total: 0, myRecords: 0});
@@ -384,7 +372,7 @@ function RecordsTable(props: RecordsTableProps) {
     }
 
     const totalRecords = getTotalRecordCount(rows);
-    const myRecords = getUserRecordCount(rows);
+    const myRecords = currentUser ? getUserRecordCount(rows) : 0;
 
     // Send count to parent with callback  - onRecordsCountChangee
     if (onRecordsCountChange) {
@@ -521,7 +509,7 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
           setPouchData(ra);
         }
       } catch (err) {
-        logError(err); // unable to load records
+        logError(err);
         setPouchData(undefined);
       }
     };
@@ -541,7 +529,7 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
       handleQueryFunction={setQuery}
       handleRefresh={props.handleRefresh}
       onRecordsCountChange={props.onRecordsCountChange}
-      recordLabel={recordLabel} // Pass recordLabel to RecordsTable
+      recordLabel={recordLabel}
     />
   );
 }
