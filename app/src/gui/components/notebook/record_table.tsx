@@ -52,6 +52,7 @@ type RecordsTableProps = {
   handleQueryFunction: Function;
   handleRefresh: () => void;
   onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
+  recordLabel: string; // Add recordLabel prop
 };
 
 type RecordsBrowseTableProps = {
@@ -61,10 +62,18 @@ type RecordsBrowseTableProps = {
   filter_deleted: boolean;
   handleRefresh: () => void;
   onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
+  recordLabel: string; // Add recordLabel prop
 };
 
 function RecordsTable(props: RecordsTableProps) {
-  const {project_id, maxRows, rows, loading, onRecordsCountChange} = props;
+  const {
+    project_id,
+    maxRows,
+    rows,
+    loading,
+    onRecordsCountChange,
+    recordLabel,
+  } = props;
   const [currentUser, setCurrentUser] = useState<string>('');
 
   const [mobileViewSwitchValue] = React.useState(true);
@@ -99,6 +108,16 @@ function RecordsTable(props: RecordsTableProps) {
       ? (props.viewsets[params.row.type.toString()].label ?? params.row.type)
       : params.row.type;
   }
+
+  // Updated helper function using dynamic recordLabel
+  const getUserRecordCount = (records: RecordMetadata[]) => {
+    return records.filter(
+      record =>
+        getRowType({row: record} as GridCellParams) === recordLabel &&
+        record.created_by === currentUser
+    ).length;
+  };
+
   const columns = !mobileView
     ? [
         {
@@ -359,17 +378,13 @@ function RecordsTable(props: RecordsTableProps) {
   }, [project_id]);
 
   useEffect(() => {
-    if (!rows || rows.length === 0 || !currentUser) {
+    if (!rows || rows.length === 0) {
+      if (onRecordsCountChange) onRecordsCountChange({total: 0, myRecords: 0});
       return;
     }
 
     const totalRecords = getTotalRecordCount(rows);
-
-    const myRecords = rows.filter(
-      record =>
-        getRowType({row: record} as GridCellParams) === 'Site' &&
-        record.created_by === currentUser
-    ).length;
+    const myRecords = getUserRecordCount(rows);
 
     // Send count to parent with callback  - onRecordsCountChangee
     if (onRecordsCountChange) {
@@ -473,6 +488,16 @@ function RecordsTable(props: RecordsTableProps) {
 }
 
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
+  const {
+    project_id,
+    maxRows,
+    viewsets,
+    filter_deleted,
+    handleRefresh,
+    onRecordsCountChange,
+    recordLabel,
+  } = props;
+
   const [query, setQuery] = React.useState('');
   const [pouchData, setPouchData] = React.useState(
     undefined as RecordMetadata[] | undefined
@@ -516,6 +541,7 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
       handleQueryFunction={setQuery}
       handleRefresh={props.handleRefresh}
       onRecordsCountChange={props.onRecordsCountChange}
+      recordLabel={recordLabel} // Pass recordLabel to RecordsTable
     />
   );
 }
