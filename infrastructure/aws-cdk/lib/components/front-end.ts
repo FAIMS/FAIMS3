@@ -151,7 +151,8 @@ export class FaimsFrontEnd extends Construct {
       VITE_NOTEBOOK_LIST_TYPE: props.notebookListType,
       // e.g. survey, notebook
       VITE_NOTEBOOK_NAME: props.notebookName,
-
+      // Include record summary counts
+      VITE_SHOW_RECORD_SUMMARY_COUNTS: 'true',
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
       VITE_PRODUCTION_BUILD: 'true',

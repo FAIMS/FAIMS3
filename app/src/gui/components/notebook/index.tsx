@@ -31,7 +31,11 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+  SHOW_RECORD_SUMMARY_COUNTS,
+} from '../../../buildconfig';
 import {useQuery} from '@tanstack/react-query';
 import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
@@ -266,26 +270,28 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             </AppBar>
           </Box>
 
-          {/* Records count summary */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              backgroundColor: '#EDEEEB',
-              padding: '12px 16px',
-              borderRadius: '4px',
-              marginBottom: '16px',
-            }}
-          >
-            <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
-              <strong>My {recordLabel}s:</strong> {myRecords}
-            </Typography>
+          {/* Records count summary - only if configured with VITE_SHOW_RECORD_SUMMARY_COUNTS */}
+          {SHOW_RECORD_SUMMARY_COUNTS && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#EDEEEB',
+                padding: '12px 16px',
+                borderRadius: '4px',
+                marginBottom: '16px',
+              }}
+            >
+              <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
+                <strong>My {recordLabel}s:</strong> {myRecords}
+              </Typography>
 
-            <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
-              <strong>Total {recordLabel}s:</strong> {totalRecords}
-            </Typography>
-          </Box>
+              <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
+                <strong>Total {recordLabel}s:</strong> {totalRecords}
+              </Typography>
+            </Box>
+          )}
 
           <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
             <Box>
