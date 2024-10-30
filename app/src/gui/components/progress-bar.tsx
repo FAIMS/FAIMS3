@@ -1,3 +1,6 @@
+import {useTheme} from '@mui/material/styles';
+import theme from '../themes/default';
+
 interface ProgressBarProps {
   percentage: number;
   style?: React.CSSProperties;
@@ -13,6 +16,7 @@ interface ProgressBarProps {
  */
 export default function ProgressBar({percentage, style}: ProgressBarProps) {
   const rounded = Math.round(percentage * 100);
+  const theme = useTheme(); // Use the current active theme
 
   return (
     <div
@@ -25,7 +29,7 @@ export default function ProgressBar({percentage, style}: ProgressBarProps) {
     >
       <div
         style={{
-          backgroundColor: '#edeeeb',
+          backgroundColor: theme.palette.progressBar.background,
           borderRadius: '6px',
         }}
       >
@@ -33,7 +37,7 @@ export default function ProgressBar({percentage, style}: ProgressBarProps) {
           style={{
             width: `${rounded}%`,
             height: '32px',
-            backgroundColor: '#669911',
+            backgroundColor: theme.palette.progressBar.complete,
             borderRadius: '6px',
           }}
         ></div>

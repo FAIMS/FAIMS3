@@ -25,7 +25,7 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
       <Box
         sx={{
           width: '100%',
-          backgroundColor: '#f5f5f5',
+          backgroundColor: theme.palette.background.lightBackground,
           padding: isMobile ? '14px' : '15px',
           textAlign: 'center',
           display: 'flex',
@@ -41,7 +41,7 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
               sx={{
                 fontSize: isMobile ? '2.1875rem' : '2.1975rem', // Increase size for both mobile and desktop
                 marginBottom: '2px', //  Space between icon and title
-                color: '#E18200',
+                color: theme.palette.icon.main,
               }}
             />
           </Grid>

@@ -173,7 +173,7 @@ const BackupConfigSchema = z
 
 export const UiConfiguration = z.object({
   /** The UI Theme for the app */
-  uiTheme: z.enum(['bubble', 'default']),
+  uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
   /** The notebook list type for the app */
   notebookListType: z.enum(['tabs', 'headings']),
   /** The display name for notebooks e.g. survey, notebook */

@@ -25,19 +25,52 @@ const theme = createTheme({
   palette: {
     background: {
       default: '#FAFAFB',
+      paper: '#FFFFFF',
+      draftBackground: '#FFFFFFFF',
+      lightBackground: '#edeeeb',
+      tabsBackground: '#edeeeb',
     },
     primary: {
       main: '#669911',
       light: '#a7e938',
       dark: '#141E03',
     },
+    highlightColor: {
+      main: '#E18200',
+      contrastText: '#141E03',
+    },
     secondary: {
       main: '#E18200',
-      contrastText: '#fff',
+      contrastText: '#E18200',
     },
     text: {
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
+    },
+    alert: {
+      warningBackground: '#FFF4E5',
+      warningText: '#5F370E',
+      infoBackground: '#E5F6FD',
+      infoText: '#084C61',
+    },
+    dialogButton: {
+      cancel: '#669907',
+      confirm: '#669911',
+      dialogText: '#FFFFFF',
+      hoverBackground: '#50790DFF',
+    },
+    progressBar: {
+      background: '#edeeeb',
+      complete: '#669911',
+    },
+    icon: {
+      main: '#E18200',
+      light: '#edeeeb',
+    },
+    table: {
+      divider: '#828789FF',
+      rowBorder: '#D3D1D1FF',
+      columnSeparator: '#828789FF',
     },
   },
   typography,
@@ -51,7 +84,7 @@ const theme = createTheme({
         },
         colorPrimary: {
           backgroundColor: '#edeeeb',
-          color: '#324C08',
+          color: '#324C08', //tab text color
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',
