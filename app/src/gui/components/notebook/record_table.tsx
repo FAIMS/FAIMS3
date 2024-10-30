@@ -42,6 +42,7 @@ import * as ROUTES from '../../../constants/routes';
 import {
   ProjectID,
   ProjectUIViewsets,
+  Record,
   RecordMetadata,
   getFullRecordData,
   getMetadataForAllRecords,
@@ -55,6 +56,7 @@ import ProgressBar from '../progress-bar';
 import {percentComplete, requiredFields} from '../../../lib/form-utils';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {useQuery} from '@tanstack/react-query';
+import {useGetUISpec} from '../../../lib/queries';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -77,10 +79,7 @@ type RecordsBrowseTableProps = {
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
 
-  const {data: uiSpec} = useQuery({
-    queryKey: ['uiSpec', project_id],
-    queryFn: () => getUiSpecForProject(project_id),
-  });
+  const {data: uiSpec} = useGetUISpec(project_id);
 
   // default for mobileView is on (collapsed table)
   const [mobileViewSwitchValue, setMobileViewSwitchValue] =
@@ -253,14 +252,6 @@ function RecordsTable(props: RecordsTableProps) {
           minWidth: 150,
           filterable: true,
           renderCell: (params: GridCellParams) => {
-            const {project_id, record_id, revision_id} = params.row;
-
-            const {data: record} = useQuery({
-              queryKey: ['recordData', project_id, record_id, revision_id],
-              queryFn: () =>
-                getFullRecordData(project_id, record_id, revision_id),
-            });
-
             return (
               <Box sx={{width: '100%', my: 1}}>
                 <Grid
@@ -312,10 +303,10 @@ function RecordsTable(props: RecordsTableProps) {
                 )}
                 <ProgressBar
                   percentage={
-                    uiSpec && record
+                    uiSpec && params.row.record
                       ? percentComplete(
                           requiredFields(uiSpec.fields),
-                          record.data
+                          params.row.record.data
                         )
                       : 0
                   }
@@ -448,29 +439,45 @@ function RecordsTable(props: RecordsTableProps) {
   );
 }
 
+interface RecordMetaDataExtended extends RecordMetadata {
+  record: Record;
+}
+
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const [query, setQuery] = React.useState('');
-  const [pouchData, setPouchData] = React.useState(
-    undefined as RecordMetadata[] | undefined
-  );
+  const [pouchData, setPouchData] = React.useState<
+    RecordMetaDataExtended[] | undefined
+  >(undefined);
 
   useEffect(() => {
     const getData = async () => {
       try {
-        if (query.length === 0) {
-          const ma = await getMetadataForAllRecords(
-            props.project_id,
-            props.filter_deleted
+        const records = (
+          query.length === 0
+            ? await getMetadataForAllRecords(
+                props.project_id,
+                props.filter_deleted
+              )
+            : await getRecordsWithRegex(
+                props.project_id,
+                query,
+                props.filter_deleted
+              )
+        ) as RecordMetaDataExtended[];
+
+        for (const record of records) {
+          const data = await getFullRecordData(
+            record.project_id,
+            record.record_id,
+            record.revision_id
           );
-          setPouchData(ma);
-        } else {
-          const ra = await getRecordsWithRegex(
-            props.project_id,
-            query,
-            props.filter_deleted
-          );
-          setPouchData(ra);
+
+          if (!data) continue;
+
+          record.record = data;
         }
+
+        setPouchData(records);
       } catch (err) {
         logError(err); // unable to load records
         setPouchData(undefined);
