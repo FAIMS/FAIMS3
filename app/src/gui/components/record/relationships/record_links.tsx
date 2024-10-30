@@ -13,6 +13,7 @@ import {RecordID} from '@faims3/data-model';
 import RecordRouteDisplay from '../../ui/record_link';
 import {grey} from '@mui/material/colors';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import {theme} from '../../../themes';
 
 interface SortedDataType {
   [key: string]: Array<RecordLinkProps>;
@@ -256,7 +257,12 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                 params.row.link.deleted ? (
                   <DeleteForeverIcon color={'error'} />
                 ) : (
-                  <EditIcon color={'primary'} />
+                  <EditIcon
+                    sx={{
+                      backgroundColor: theme.palette.icon.main,
+                      color: theme.palette.text.primary,
+                    }}
+                  />
                 )
               }
               onClick={() => {

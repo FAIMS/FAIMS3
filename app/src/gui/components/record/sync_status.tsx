@@ -31,7 +31,11 @@ export default function DraftSyncStatus(props: DraftSyncStatusProps) {
         </Alert>
       ) : (
         <Box
-          sx={{backgroundColor: theme.palette.primary.main, color: 'white'}}
+          sx={{
+            backgroundColor: theme.palette.background.draftBackground, // Use the new color
+            color: theme.palette.text.primary,
+            fontWeight: 'bold',
+          }}
           p={1}
         >
           {props.is_saving ? (

@@ -53,23 +53,28 @@ export default function NoteBooks() {
           flex: 0.4,
           minWidth: 200,
           renderCell: ({row: {activated, name, description}}) => (
-            <Box my={1}>
+            <Box my={3}>
               <span
                 style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
+                  alignItems: 'center',
                   flexWrap: 'nowrap',
+                  padding: '12px 0',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
                   color={activated ? 'primary' : 'disabled'}
-                  sx={{mr: '3px'}}
+                  sx={{mr: '8px'}}
                 />
                 <Typography
-                  variant={'body2'}
+                  variant={'body1'}
                   fontWeight={activated ? 'bold' : 'normal'}
                   color={activated ? 'black' : grey[800]}
+                  sx={{
+                    padding: '4px 0',
+                    lineHeight: 1,
+                  }}
                 >
                   {name}
                 </Typography>
@@ -114,22 +119,29 @@ export default function NoteBooks() {
               <div
                 style={{
                   display: 'flex',
+                  alignItems: 'flex-start',
+                  padding: '12px 0',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
                   color={activated ? 'secondary' : 'disabled'}
-                  sx={{mr: '3px'}}
+                  sx={{mr: '4px'}}
                 />
                 <Typography
                   variant={'body2'}
                   fontWeight={activated ? 'bold' : 'normal'}
                   color={activated ? 'black' : grey[800]}
+                  sx={{
+                    padding: '4px 0',
+                  }}
                 >
                   {name}
                 </Typography>
               </div>
-              <Typography variant={'caption'}>{description}</Typography>
+              <Typography variant={'caption'} sx={{paddingTop: '4px'}}>
+                {description}
+              </Typography>
               <div>
                 <ProjectStatus status={status} />
               </div>
@@ -179,7 +191,7 @@ export default function NoteBooks() {
           variant="contained"
           color="primary"
           onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
-          sx={{mb: 3, mt: 3}}
+          sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
           startIcon={<AddCircleSharpIcon />}
         >
           Create New Survey
