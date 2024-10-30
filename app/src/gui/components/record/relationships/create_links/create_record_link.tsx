@@ -99,8 +99,6 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     project_id,
   } = props;
 
-  console.log('CreateRecordLink', relatedRecords);
-
   // default relationship to the first option
   const relationshipLabel =
     props.relationshipLabel || props.relation_linked_vocabPair[0][1];

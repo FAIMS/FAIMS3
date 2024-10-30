@@ -106,7 +106,7 @@ export default function FormButtonGroup(props: any) {
       }
     };
     get();
-  }, []);
+  }, [project_id, relationship]);
 
   return (
     <Grid item sm={12} xs={12} md={12}>
