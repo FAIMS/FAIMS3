@@ -66,10 +66,13 @@ export default function NotebookActivationSwitch({
             <b>Warning</b>: activating a {NOTEBOOK_NAME_CAPITALIZED} will start
             the downloading of existing records onto your device. We recommend
             you complete this procedure while you have a stable internet
-            connection. Currently, you cannot de-activate a survey, this is
-            something we will be adding soon. If you need to make space on your
-            device you can clear the application storage or remove and reinstall
-            the application.
+            connection.
+            <br />
+            <br />
+            Currently, you cannot de-activate a survey, this is something we
+            will be adding soon. If you need to make space on your device you
+            can clear the application storage or remove and reinstall the
+            application.
           </Typography>
           {/*
           <Typography variant="subtitle1" fontWeight="bold">
