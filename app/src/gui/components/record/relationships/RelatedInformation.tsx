@@ -30,7 +30,6 @@ import {
   getMetadataForSomeRecords,
   ProjectID,
   RecordMetadata,
-  getRecordMetadata,
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
