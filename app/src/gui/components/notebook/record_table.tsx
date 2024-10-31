@@ -176,7 +176,7 @@ function RecordsTable(props: RecordsTableProps) {
 
   const deleteColumn = {
     field: 'delete',
-    headerName: 'Actions',
+    headerName: 'Delete',
     type: 'actions',
     renderCell: (params: GridCellParams) => {
       return (
@@ -302,6 +302,7 @@ function RecordsTable(props: RecordsTableProps) {
           type: 'string',
           filterable: true,
           minWidth: 70,
+          flex: 1,
           renderCell: (params: GridCellParams) => {
             return (
               <Typography>
