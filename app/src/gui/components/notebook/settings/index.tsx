@@ -97,7 +97,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             mb={{xs: 1, sm: 2, md: 3}}
           >
             <Typography variant={'h6'} sx={{mb: 2}}>
-              Sync ${NOTEBOOK_NAME_CAPITALIZED}
+              Sync {NOTEBOOK_NAME_CAPITALIZED}
             </Typography>
             <NotebookSyncSwitch project={project} showHelperText={true} />
           </Box>
