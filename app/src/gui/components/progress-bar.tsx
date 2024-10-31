@@ -1,5 +1,4 @@
 import {useTheme} from '@mui/material/styles';
-import theme from '../themes/default';
 
 interface ProgressBarProps {
   percentage: number;

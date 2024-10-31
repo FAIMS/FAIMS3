@@ -311,6 +311,23 @@ function get_notebook_list_type(): 'tabs' | 'headings' {
 }
 
 /**
+ * Is the VITE_SHOW_RECORD_SUMMARY_COUNTS env variable present and not falsey
+ * @returns The notebook list type, which can be either "tabs" or "headings".
+ */
+function showRecordCounts(): boolean {
+  const val = import.meta.env.VITE_SHOW_RECORD_SUMMARY_COUNTS as
+    | string
+    | undefined;
+  if (!val) {
+    return false;
+  }
+  if (['false', 'f'].includes(val.toLowerCase())) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * Retrieves the name of notebooks from the environment variables.
  * If the environment variable is not set, it returns a default value 'notebook'.
  *
@@ -376,3 +393,4 @@ export const NOTEBOOK_NAME = get_notebook_name();
 export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
 export const APP_NAME = get_app_name();
 export const APP_ID = get_app_id();
+export const SHOW_RECORD_SUMMARY_COUNTS = showRecordCounts();

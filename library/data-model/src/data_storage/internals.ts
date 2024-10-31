@@ -245,8 +245,8 @@ export async function getRecordFields(
 /**
  * Returns a list of not deleted records
  * @param project_id Project ID to get list of record for
- * @param record_ids List of record ids to fetch
- * @returns key: record id, value: record (NOT NULL)
+ * @param record_ids Optional set of record IDs to specifically fetch
+ * @returns Object with {key: record id, value: record (NOT NULL)}
  */
 export async function listRecordMetadata(
   project_id: ProjectID,

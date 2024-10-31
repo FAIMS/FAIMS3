@@ -80,6 +80,7 @@ export default function FormButtonGroup(props: any) {
     views,
     ui_specification,
     mq_above_md,
+    hideNavigation,
     relationship,
     buttonRef,
   } = props;
@@ -111,7 +112,7 @@ export default function FormButtonGroup(props: any) {
   return (
     <Grid item sm={12} xs={12} md={12}>
       {/* show mobile stepper for multiple section form ONLY */}
-      {views.length > 1 && (
+      {!hideNavigation && views.length > 1 && (
         <Grid item>
           <CustomMobileStepper
             views={views}
