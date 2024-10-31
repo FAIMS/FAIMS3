@@ -27,8 +27,7 @@ import RecordForm from './form';
 import {ProjectID, RecordID, RevisionID} from '@faims3/data-model';
 import {ProjectUIModel} from '@faims3/data-model';
 import {useTheme} from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import {Box, Grid, Typography, Paper, Tab} from '@mui/material';
+import {Box, Typography, Tab} from '@mui/material';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -78,7 +77,6 @@ export default function RecordData(props: RecordDataTypes) {
     setDataTab(newValue);
   };
   const theme = useTheme();
-  const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
 
   return (
     <Box bgcolor={grey[100]}>

@@ -78,8 +78,6 @@ export default function FormButtonGroup(props: any) {
     handleFormSubmit,
     views,
     ui_specification,
-    mq_above_md,
-    buttonRef,
   } = props;
   return (
     <div

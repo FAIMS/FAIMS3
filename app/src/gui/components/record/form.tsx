@@ -21,7 +21,7 @@
 import {Form, Formik} from 'formik';
 import React from 'react';
 
-import {Box, Divider, Typography} from '@mui/material';
+import {Box, Divider, Typography, Alert} from '@mui/material';
 
 import {
   getFieldsMatchingCondition,
@@ -29,7 +29,7 @@ import {
 } from './branchingLogic';
 import {firstDefinedFromList} from './helpers';
 
-import {ViewComponent} from './view';
+import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
 
 import {ActionType} from '../../../context/actions';
 
@@ -491,8 +491,7 @@ class RecordForm extends React.Component<
             logError(
               `Error in formChanged, data not saved, child_record_id is not record_id ${this.props.record_id} != ${location.state.child_record_id}`
             );
-          } else
-            this.save(this.state.initialValues, false, 'continue', () => {});
+          } else this.save(this.state.initialValues, 'continue', () => {});
         }
       }
     } catch (err: any) {
@@ -766,12 +765,7 @@ class RecordForm extends React.Component<
   // - - publish and new:  - close the current record and create new record when current record has no parent relationship
   //                    - when current record has parent: close current record, add new record into parent record, open the new record with parent
 
-  save(
-    values: object,
-    is_final_view: boolean,
-    is_close: string,
-    setSubmitting: any
-  ) {
+  save(values: object, is_close: string, setSubmitting: any) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
     //save state into persistent data
@@ -1141,25 +1135,16 @@ class RecordForm extends React.Component<
       const viewsetName = this.requireViewsetName();
       const initialValues = this.requireInitialValues();
       const ui_specification = this.props.ui_specification;
-      //fields list and views list could be updated depends on values user choose
-      let fieldNames: string[] = [];
-      let views: string[] = [];
       const validationSchema = getValidationSchemaForViewset(
         ui_specification,
         viewsetName
       );
-      let view_index = 0;
-      let is_final_view = true;
-      // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
+
       return (
         <Box>
-          {/* {this.state.revision_cached} */}
-          {/* remove the tab for edit ---Jira 530 */}
-          {/* add padding for form only */}
           <div>
             <Formik
-              // enableReinitialize
               initialValues={initialValues}
               validationSchema={validationSchema}
               validateOnMount={true}
@@ -1167,14 +1152,11 @@ class RecordForm extends React.Component<
               validateOnBlur={true}
               onSubmit={(values, {setSubmitting}) => {
                 setSubmitting(true);
-                return this.save(
-                  values,
-                  is_final_view,
-                  'continue',
-                  setSubmitting
-                ).then(result => {
-                  return result;
-                });
+                return this.save(values, 'continue', setSubmitting).then(
+                  result => {
+                    return result;
+                  }
+                );
               }}
             >
               {formProps => {
@@ -1185,29 +1167,149 @@ class RecordForm extends React.Component<
                   )
                 );
 
-                //ONLY update if the updated field is the controller field
-                fieldNames = getFieldsMatchingCondition(
+                const layout =
+                  this.props.ui_specification.viewsets[viewsetName]?.layout;
+                const views = getViewsMatchingCondition(
                   this.props.ui_specification,
                   formProps.values,
-                  fieldNames,
-                  viewName,
-                  formProps.touched
-                );
-                views = getViewsMatchingCondition(
-                  this.props.ui_specification,
-                  formProps.values,
-                  views,
+                  [],
                   viewsetName,
                   formProps.touched
                 );
-                view_index = views.indexOf(viewName);
-                is_final_view = view_index + 1 === views.length;
+
+                if (layout === 'inline')
+                  return (
+                    <div>
+                      {views.map(view => {
+                        const description = this.requireDescription(view);
+                        const fieldNames = getFieldsMatchingCondition(
+                          this.props.ui_specification,
+                          formProps.values,
+                          [],
+                          view,
+                          formProps.touched
+                        );
+
+                        return (
+                          <div>
+                            <h2>{ui_specification.views[view].label}</h2>
+                            <Form>
+                              {description !== '' && (
+                                <Typography>{description}</Typography>
+                              )}
+
+                              <ViewComponent
+                                viewName={view}
+                                ui_specification={ui_specification}
+                                formProps={formProps}
+                                draftState={this.draftState}
+                                annotation={this.state.annotation}
+                                handleAnnotation={this.updateannotation}
+                                isSyncing={this.props.isSyncing}
+                                conflictfields={this.props.conflictfields}
+                                handleChangeTab={this.props.handleChangeTab}
+                                fieldNames={fieldNames}
+                                disabled={this.props.disabled}
+                                hideErrors={true}
+                              />
+                            </Form>
+                          </div>
+                        );
+                      })}
+                      {this.state.revision_cached !== undefined && (
+                        <Box mt={3}>
+                          <Divider />
+                          <UGCReport
+                            handleUGCReport={(value: string) => {
+                              this.setState({ugc_comment: value});
+                              this.save(
+                                formProps.values,
+                                'continue',
+                                formProps.setSubmitting
+                              );
+                            }}
+                          />
+                        </Box>
+                      )}
+                      {!formProps.isValid &&
+                        Object.keys(formProps.errors).length > 0 && (
+                          <Alert severity="error">
+                            Form has errors, please scroll up and make changes
+                            before submitting.
+                            <div>
+                              {Object.keys(formProps.errors).map(field => (
+                                <React.Fragment key={field}>
+                                  <dt>
+                                    {getUsefulFieldNameFromUiSpec(
+                                      field,
+                                      viewName,
+                                      ui_specification
+                                    )}
+                                  </dt>
+                                  <dd>{formProps.errors[field]}</dd>
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </Alert>
+                        )}
+                      <FormButtonGroup
+                        is_final_view={true}
+                        disabled={this.props.disabled}
+                        onChangeStepper={this.onChangeStepper}
+                        viewName={viewName}
+                        view_index={0}
+                        formProps={formProps}
+                        ui_specification={ui_specification}
+                        views={views}
+                        mq_above_md={this.props.mq_above_md}
+                        handleFormSubmit={(is_close: string) => {
+                          formProps.setSubmitting(true);
+                          this.setTimeout(() => {
+                            this.save(
+                              formProps.values,
+                              is_close,
+                              formProps.setSubmitting
+                            );
+                          }, 500);
+                        }}
+                        hideNavigation={true}
+                      />
+                      {/* {UGCReport ONLY for the saved record} */}
+                      {this.state.revision_cached !== undefined && (
+                        <Box mt={3}>
+                          <Divider />
+                          <UGCReport
+                            handleUGCReport={(value: string) => {
+                              this.setState({ugc_comment: value});
+                              this.save(
+                                formProps.values,
+                                'continue',
+                                formProps.setSubmitting
+                              );
+                            }}
+                          />
+                        </Box>
+                      )}
+                    </div>
+                  );
+
                 this.draftState &&
                   this.draftState.renderHook(
                     formProps.values,
                     this.state.annotation,
                     this.state.relationship ?? {}
                   );
+
+                const fieldNames = getFieldsMatchingCondition(
+                  this.props.ui_specification,
+                  formProps.values,
+                  [],
+                  viewName,
+                  formProps.touched
+                );
+                const view_index = views.indexOf(viewName);
+                const is_final_view = view_index + 1 === views.length;
+
                 return (
                   <Form>
                     {views.length > 1 && (
@@ -1256,7 +1358,6 @@ class RecordForm extends React.Component<
                         this.setTimeout(() => {
                           this.save(
                             formProps.values,
-                            is_final_view,
                             is_close,
                             formProps.setSubmitting
                           );
@@ -1271,7 +1372,6 @@ class RecordForm extends React.Component<
                             this.setState({ugc_comment: value});
                             this.save(
                               formProps.values,
-                              is_final_view,
                               'continue',
                               formProps.setSubmitting
                             );
