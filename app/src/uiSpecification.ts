@@ -155,6 +155,15 @@ export function getFieldLabel(
   }
 }
 
+export function getVisibleTypes(ui_specification: ProjectUIModel) {
+  if (ui_specification)
+    return (
+      ui_specification.visible_types ||
+      Object.getOwnPropertyNames(ui_specification.viewsets)
+    );
+  else return [];
+}
+
 export function getSummaryFields(
   ui_specification: ProjectUIModel,
   viewset_name: string

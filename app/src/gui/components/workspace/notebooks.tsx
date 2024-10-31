@@ -143,9 +143,6 @@ export default function NoteBooks() {
               <Typography variant={'caption'} sx={{paddingTop: '4px'}}>
                 {description}
               </Typography>
-              <div>
-                <ProjectStatus status={status} />
-              </div>
             </div>
           ),
         },
