@@ -18,27 +18,6 @@
  *   Components for displaying record metadata in a table.
  */
 
-import React, {useEffect} from 'react';
-import {useNavigate} from 'react-router-dom';
-
-import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-import {
-  Typography,
-  Box,
-  Paper,
-  Alert,
-  Grid,
-  FormGroup,
-  FormControlLabel,
-  Switch,
-  Link,
-} from '@mui/material';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import ArticleIcon from '@mui/icons-material/Article';
-import {useTheme} from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
-
-import * as ROUTES from '../../../constants/routes';
 import {
   ProjectID,
   ProjectUIViewsets,
@@ -46,6 +25,16 @@ import {
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '@faims3/data-model';
+import ArticleIcon from '@mui/icons-material/Article';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import {Alert, Box, Grid, Link, Paper, Typography} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
+import React, {useEffect} from 'react';
+import {useNavigate} from 'react-router-dom';
+import * as ROUTES from '../../../constants/routes';
+import {useGetCurrentUser} from '../../../utils/useGetCurrentUser';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
@@ -59,6 +48,8 @@ type RecordsTableProps = {
   viewsets?: ProjectUIViewsets | null;
   handleQueryFunction: Function;
   handleRefresh: () => void;
+  onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
+  recordLabel: string;
 };
 
 type RecordsBrowseTableProps = {
@@ -67,14 +58,22 @@ type RecordsBrowseTableProps = {
   viewsets?: ProjectUIViewsets | null;
   filter_deleted: boolean;
   handleRefresh: () => void;
+  onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
+  recordLabel: string;
 };
 
 function RecordsTable(props: RecordsTableProps) {
-  const {project_id, maxRows, rows, loading} = props;
+  const {
+    project_id,
+    maxRows,
+    rows,
+    loading,
+    onRecordsCountChange,
+    recordLabel,
+  } = props;
+  const {data: currentUser} = useGetCurrentUser(project_id);
 
-  // default for mobileView is on (collapsed table)
-  const [mobileViewSwitchValue, setMobileViewSwitchValue] =
-    React.useState(true);
+  const [mobileViewSwitchValue] = React.useState(true);
 
   const theme = useTheme();
   const history = useNavigate();
@@ -84,12 +83,6 @@ function RecordsTable(props: RecordsTableProps) {
   const mobileView: boolean = not_xs ? false : mobileViewSwitchValue;
 
   const defaultMaxRowsMobile = 10;
-
-  const handleToggleMobileView = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setMobileViewSwitchValue(event.target.checked);
-  };
 
   // The entire row is clickable to the record
   const handleRowClick: GridEventListener<'rowClick'> = params => {
@@ -112,6 +105,31 @@ function RecordsTable(props: RecordsTableProps) {
       ? (props.viewsets[params.row.type.toString()].label ?? params.row.type)
       : params.row.type;
   }
+
+  /**
+   * Counts the records filtering by record label and current user
+   * @param records The list of records
+   * @returns Count filterd by type and current user
+   */
+  const getUserRecordCount = (records: RecordMetadata[]) => {
+    return records.filter(
+      record =>
+        getRowType({row: record} as GridCellParams) === recordLabel &&
+        record.created_by === currentUser
+    ).length;
+  };
+
+  /**
+   * Counts the records filtering by record label
+   * @param records The list of records
+   * @returns A count which is records of the current recordLabel type
+   */
+  const getTotalRecordCount = (records: RecordMetadata[]) => {
+    return records.filter(
+      record => getRowType({row: record} as GridCellParams) === recordLabel
+    ).length;
+  };
+
   const columns = !mobileView
     ? [
         {
@@ -358,9 +376,33 @@ function RecordsTable(props: RecordsTableProps) {
         },
       ];
 
+  useEffect(() => {
+    if (!rows || rows.length === 0) {
+      if (onRecordsCountChange) onRecordsCountChange({total: 0, myRecords: 0});
+      return;
+    }
+
+    const totalRecords = getTotalRecordCount(rows);
+    const myRecords = currentUser ? getUserRecordCount(rows) : 0;
+
+    // Send count to parent with callback  - onRecordsCountChangee
+    if (onRecordsCountChange) {
+      onRecordsCountChange({total: totalRecords, myRecords});
+    }
+  }, [rows, currentUser, onRecordsCountChange]);
+
   return (
     <React.Fragment>
-      <Box component={Paper} elevation={0}>
+      <Box
+        component={Paper}
+        elevation={3}
+        sx={{
+          borderRadius: '4px',
+          boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.2)',
+          padding: '4px',
+        }}
+      >
+        {' '}
         <DataGrid
           // if rows are undefined - don't display any
           rows={rows ?? []}
@@ -368,7 +410,43 @@ function RecordsTable(props: RecordsTableProps) {
           getRowId={r => r.record_id}
           columns={columns}
           autoHeight
-          sx={{cursor: 'pointer'}}
+          sx={{
+            cursor: 'pointer',
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 'bold',
+              fontSize: '1.1rem',
+            },
+            '& .MuiDataGrid-row': {
+              height: 80,
+              '&:hover': {
+                backgroundColor: '#f0f0f0',
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+                transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
+              },
+            },
+            '& .MuiDataGrid-cell': {
+              padding: '0 10px',
+              borderBottom: '1px solid #424242',
+              fontSize: '1rem',
+              fontWeight: 400,
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: '#f9f9f9',
+              borderBottom: '1px solid #424242',
+              '& .MuiDataGrid-columnHeader': {
+                '& .MuiDataGrid-sortIcon': {
+                  opacity: 1,
+                  visibility: 'visible',
+                },
+              },
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: '1px solid #424242',
+            },
+            '& .MuiDataGrid-root': {
+              border: 'none',
+            },
+          }}
           getRowHeight={() => 'auto'}
           pageSizeOptions={[10, 25, 50, 100]}
           density={'standard'}
@@ -388,7 +466,7 @@ function RecordsTable(props: RecordsTableProps) {
           }}
           initialState={{
             sorting: {
-              sortModel: [{field: 'updated', sort: 'desc'}],
+              sortModel: [{field: 'created', sort: 'desc'}],
             },
             pagination: {
               paginationModel: {
@@ -405,34 +483,12 @@ function RecordsTable(props: RecordsTableProps) {
           }}
         />
       </Box>
-      {not_xs ? (
-        ''
-      ) : (
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={mobileView}
-                onChange={handleToggleMobileView}
-                sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: theme.palette.icon.main,
-                  },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: theme.palette.icon.main,
-                  },
-                }}
-              />
-            }
-            label={'Toggle Mobile View'}
-          />
-        </FormGroup>
-      )}
     </React.Fragment>
   );
 }
 
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
+  const {recordLabel} = props;
   const [query, setQuery] = React.useState('');
   const {data: records, isLoading: recordsLoading} = useQuery({
     queryKey: ['allrecords', query, props.project_id],
@@ -465,6 +521,8 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
       viewsets={props.viewsets}
       handleQueryFunction={setQuery}
       handleRefresh={props.handleRefresh}
+      onRecordsCountChange={props.onRecordsCountChange}
+      recordLabel={recordLabel}
     />
   );
 }

@@ -4,10 +4,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import {ProjectExtended} from '../../../../types/project';
 import {ProjectsContext} from '../../../../context/projects-context';
 import FaimsDialog from '../../ui/Faims_Dialog';
-import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-} from '../../../../buildconfig';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
 
 type NotebookActivationSwitchProps = {
   project: ProjectExtended;
