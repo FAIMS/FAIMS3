@@ -77,8 +77,10 @@ export default function FormButtonGroup(props: any) {
     formProps,
     handleFormSubmit,
     views,
+    viewName,
     ui_specification,
   } = props;
+
   return (
     <div
       style={{
@@ -96,20 +98,12 @@ export default function FormButtonGroup(props: any) {
         />
       )}
       <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-        {/* <FormSubmitButton
-          disabled={disabled}
-          formProps={formProps}
-          text="Publish and continue editing"
-          is_close={'continue'}
-          handleFormSubmit={handleFormSubmit}
-          is_final_view={is_final_view}
-        /> */}
         <FormSubmitButton
           color="primary"
           data-testid="publish-close-record"
           disabled={disabled}
           formProps={formProps}
-          text="Publish and Close Record"
+          text={`Publish and Close ${viewName.split('-').at(0)}`}
           is_close={'close'}
           handleFormSubmit={handleFormSubmit}
           is_final_view={is_final_view}
@@ -118,7 +112,7 @@ export default function FormButtonGroup(props: any) {
           color="secondary"
           disabled={disabled}
           formProps={formProps}
-          text="Publish and New Record"
+          text={`Publish and New ${viewName.split('-').at(0)}`}
           is_close={'new'}
           handleFormSubmit={handleFormSubmit}
           is_final_view={is_final_view}
