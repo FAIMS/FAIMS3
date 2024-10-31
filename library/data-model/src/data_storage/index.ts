@@ -63,6 +63,22 @@ export function generateFAIMSDataID(): RecordID {
 }
 
 /**
+ * Utility function to get the type of a record given an id via a
+ *  simple query, avoiding too many db lookups
+ *
+ * @param project_id project identifier
+ * @param record_id record identifier
+ * @returns the record type as a string
+ */
+export async function getRecordType(
+  project_id: ProjectID,
+  record_id: RecordID
+): Promise<string> {
+  const record = await getRecord(project_id, record_id);
+  return record.type;
+}
+
+/**
  * Get the revision id of the most recent revision of a record
  * @param project_id project identifier
  * @param record_id record identifier
@@ -350,7 +366,19 @@ export async function getHRIDforRecordID(
   }
 }
 
-export async function getRecordsByType(
+/**
+ * getPossibleRelatedRecords - get all records of a given type but remove any that
+ *   are already children of some parent if relation_type is Child
+ *
+ * @param project_id - project identifier
+ * @param type - type of record we are looking for
+ * @param relation_type - 'faims-core::Child' or 'faims-core::Linked'
+ * @param record_id - record id that might be the parent/source of this link
+ * @param field_id - field that will hold the relationship
+ * @param relation_linked_vocabPair - names of the relationship
+ * @returns  a promise resolving to an array of RecordReference objects
+ */
+export async function getPossibleRelatedRecords(
   project_id: ProjectID,
   type: FAIMSTypeName,
   relation_type: string,
@@ -371,6 +399,7 @@ export async function getRecordsByType(
       )
         relation_vocab = relation_linked_vocabPair; //get the name from relation_linked_vocabPair
     }
+
     const records: RecordReference[] = [];
     await listRecordMetadata(project_id).then(record_list => {
       for (const key in record_list) {
@@ -460,6 +489,27 @@ function sortByLastUpdated(record_list: RecordMetadata[]): RecordMetadata[] {
     }
     return 0;
   });
+}
+
+export async function getMetadataForSomeRecords(
+  project_id: ProjectID,
+  record_ids: RecordID[],
+  filter_deleted: boolean
+): Promise<RecordMetadata[]> {
+  try {
+    const record_list = Object.values(
+      await listRecordMetadata(project_id, record_ids)
+    );
+    return await filterRecordMetadata(
+      project_id,
+      sortByLastUpdated(record_list),
+      filter_deleted
+    );
+  } catch (error) {
+    console.debug('Failed to get record metadata for', project_id);
+    logError(error);
+    return [];
+  }
 }
 
 export async function getMetadataForAllRecords(

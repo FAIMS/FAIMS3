@@ -36,10 +36,21 @@ import {
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '@faims3/data-model';
+import ArticleIcon from '@mui/icons-material/Article';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import {Alert, Box, Grid, Link, Paper, Typography} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
+import React, {useEffect} from 'react';
+import {useNavigate} from 'react-router-dom';
+import * as ROUTES from '../../../constants/routes';
+import {useGetCurrentUser} from '../../../utils/useGetCurrentUser';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
 import {logError} from '../../../logging';
+import {useQuery} from '@tanstack/react-query';
 
 /**
  * Props for the RecordsTable component
@@ -56,11 +67,13 @@ import {logError} from '../../../logging';
 type RecordsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
-  rows: RecordMetadata[];
+  rows: RecordMetadata[] | undefined;
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
   handleQueryFunction: Function;
   handleRefresh: () => void;
+  onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
+  recordLabel: string;
 };
 
 /**
@@ -88,7 +101,18 @@ type RecordsBrowseTableProps = {
  * @returns {JSX.Element} The rendered DataGrid with record metadata.
  */
 function RecordsTable(props: RecordsTableProps) {
-  const {project_id, maxRows, rows, loading} = props;
+  const {
+    project_id,
+    maxRows,
+    rows,
+    loading,
+    onRecordsCountChange,
+    recordLabel,
+  } = props;
+  const {data: currentUser} = useGetCurrentUser(project_id);
+
+  const [mobileViewSwitchValue] = React.useState(true);
+
   const theme = useTheme();
   const history = useNavigate();
 
@@ -127,6 +151,31 @@ function RecordsTable(props: RecordsTableProps) {
       ? (props.viewsets[params.row.type.toString()].label ?? params.row.type)
       : params.row.type;
   }
+
+  /**
+   * Counts the records filtering by record label and current user
+   * @param records The list of records
+   * @returns Count filterd by type and current user
+   */
+  const getUserRecordCount = (records: RecordMetadata[]) => {
+    return records.filter(
+      record =>
+        getRowType({row: record} as GridCellParams) === recordLabel &&
+        record.created_by === currentUser
+    ).length;
+  };
+
+  /**
+   * Counts the records filtering by record label
+   * @param records The list of records
+   * @returns A count which is records of the current recordLabel type
+   */
+  const getTotalRecordCount = (records: RecordMetadata[]) => {
+    return records.filter(
+      record => getRowType({row: record} as GridCellParams) === recordLabel
+    ).length;
+  };
+
 
   /**
    * Defines columns for the DataGrid, separate for mobile and desktop views.
@@ -420,6 +469,21 @@ function RecordsTable(props: RecordsTableProps) {
         },
       ];
 
+  useEffect(() => {
+    if (!rows || rows.length === 0) {
+      if (onRecordsCountChange) onRecordsCountChange({total: 0, myRecords: 0});
+      return;
+    }
+
+    const totalRecords = getTotalRecordCount(rows);
+    const myRecords = currentUser ? getUserRecordCount(rows) : 0;
+
+    // Send count to parent with callback  - onRecordsCountChangee
+    if (onRecordsCountChange) {
+      onRecordsCountChange({total: totalRecords, myRecords});
+    }
+  }, [rows, currentUser, onRecordsCountChange]);
+
   return (
     <React.Fragment>
       <Box
@@ -436,7 +500,8 @@ function RecordsTable(props: RecordsTableProps) {
       >
         {' '}
         <DataGrid
-          rows={rows}
+          // if rows are undefined - don't display any
+          rows={rows ?? []}
           loading={loading}
           getRowId={r => r.record_id}
           columns={columns}
@@ -541,7 +606,7 @@ function RecordsTable(props: RecordsTableProps) {
           }}
           initialState={{
             sorting: {
-              sortModel: [{field: 'updated', sort: 'desc'}],
+              sortModel: [{field: 'created', sort: 'desc'}],
             },
             pagination: {
               paginationModel: {
@@ -569,6 +634,7 @@ function RecordsTable(props: RecordsTableProps) {
  * @returns {JSX.Element} The rendered table for browsing records.
  */
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
+  const {recordLabel} = props;
   const [query, setQuery] = React.useState('');
   const [pouchData, setPouchData] = React.useState(
     undefined as RecordMetadata[] | undefined
@@ -609,11 +675,13 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
     <RecordsTable
       project_id={props.project_id}
       maxRows={props.maxRows}
-      rows={rows}
-      loading={loading}
+      rows={records}
+      loading={recordsLoading}
       viewsets={props.viewsets}
       handleQueryFunction={setQuery}
       handleRefresh={props.handleRefresh}
+      onRecordsCountChange={props.onRecordsCountChange}
+      recordLabel={recordLabel}
     />
   );
 }

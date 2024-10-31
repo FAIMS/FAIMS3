@@ -232,11 +232,11 @@ export const initialiseUserDB = async (db: PouchDB.Database | undefined) => {
 export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
   // To check if we are initialised - we check for presence of expected
   // documents
-  let initialised = false;
+  let initialised = true;
 
   try {
-    db.get(permissionDocument._id);
-    db.get(viewsDocument._id);
+    await db.get(permissionDocument._id);
+    await db.get(viewsDocument._id);
   } catch (err: any) {
     // 404 for not found
     if (err.status !== 404) {
@@ -245,7 +245,7 @@ export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
     }
 
     // item was not found - so not initialised
-    initialised = true;
+    initialised = false;
   }
 
   if (initialised) {

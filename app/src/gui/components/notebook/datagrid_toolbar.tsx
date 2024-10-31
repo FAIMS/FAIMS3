@@ -20,12 +20,12 @@
 
 import React, {useEffect} from 'react';
 import {
+  Divider,
   Box,
   Grid,
   TextField,
-  IconButton,
   InputAdornment,
-  Paper,
+  IconButton,
 } from '@mui/material';
 import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';

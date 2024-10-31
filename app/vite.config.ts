@@ -41,7 +41,7 @@ export default defineConfig({
     },
     preserveSymlinks: true,
   },
-  plugins: [react()],
+  plugins: [react({jsxImportSource: '@emotion/react'})],
   define: {
     global: global,
     'process.env': {} /* some libraries check this */,
