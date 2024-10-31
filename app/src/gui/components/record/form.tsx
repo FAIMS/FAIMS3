@@ -21,7 +21,7 @@
 import {Form, Formik} from 'formik';
 import React from 'react';
 
-import {Box, Divider, Grid, Typography, Alert} from '@mui/material';
+import {Box, Divider, Typography, Alert} from '@mui/material';
 
 import {
   getFieldsMatchingCondition,
@@ -1202,25 +1202,20 @@ class RecordForm extends React.Component<
                                 <Typography>{description}</Typography>
                               )}
 
-                              <Grid container spacing={2}>
-                                <Grid item sm={12} xs={12}>
-                                  <ViewComponent
-                                    viewName={view}
-                                    ui_specification={ui_specification}
-                                    formProps={formProps}
-                                    draftState={this.draftState}
-                                    annotation={this.state.annotation}
-                                    handleAnnotation={this.updateannotation}
-                                    isSyncing={this.props.isSyncing}
-                                    conflictfields={this.props.conflictfields}
-                                    handleChangeTab={this.props.handleChangeTab}
-                                    fieldNames={fieldNames}
-                                    disabled={this.props.disabled}
-                                    hideErrors={true}
-                                  />
-                                </Grid>
-                                <br />
-                              </Grid>
+                              <ViewComponent
+                                viewName={view}
+                                ui_specification={ui_specification}
+                                formProps={formProps}
+                                draftState={this.draftState}
+                                annotation={this.state.annotation}
+                                handleAnnotation={this.updateannotation}
+                                isSyncing={this.props.isSyncing}
+                                conflictfields={this.props.conflictfields}
+                                handleChangeTab={this.props.handleChangeTab}
+                                fieldNames={fieldNames}
+                                disabled={this.props.disabled}
+                                hideErrors={true}
+                              />
                             </Form>
                           </div>
                         );
@@ -1264,6 +1259,7 @@ class RecordForm extends React.Component<
                       <FormButtonGroup
                         is_final_view={true}
                         disabled={this.props.disabled}
+                        record_type={this.state.type_cached}
                         onChangeStepper={this.onChangeStepper}
                         viewName={viewName}
                         view_index={0}
@@ -1339,52 +1335,44 @@ class RecordForm extends React.Component<
                         <Typography>{description}</Typography>
                       </Box>
                     )}
-                    <br />
-
-                    <Grid container spacing={2}>
-                      <Grid item sm={12} xs={12}>
-                        <ViewComponent
-                          viewName={viewName}
-                          ui_specification={ui_specification}
-                          formProps={formProps}
-                          draftState={this.draftState}
-                          annotation={this.state.annotation}
-                          handleAnnotation={this.updateannotation}
-                          isSyncing={this.props.isSyncing}
-                          conflictfields={this.props.conflictfields}
-                          handleChangeTab={this.props.handleChangeTab}
-                          fieldNames={fieldNames}
-                          disabled={this.props.disabled}
-                        />
-                      </Grid>
-                      <br />
-                      <FormButtonGroup
-                        project_id={this.props.project_id}
-                        record_type={this.state.type_cached}
-                        is_final_view={is_final_view}
-                        disabled={this.props.disabled}
-                        onChangeStepper={this.onChangeStepper}
-                        viewName={viewName}
-                        view_index={view_index}
-                        formProps={formProps}
-                        ui_specification={ui_specification}
-                        views={views}
-                        mq_above_md={this.props.mq_above_md}
-                        relationship={this.state.relationship}
-                        handleFormSubmit={(is_close: string) => {
-                          formProps.setSubmitting(true);
-                          this.setTimeout(() => {
-                            this.save(
-                              formProps.values,
-                              is_close,
-                              formProps.setSubmitting
-                            );
-                          }, 500);
-                        }}
-                        buttonRef={this.props.buttonRef}
-                      />
-                    </Grid>
-                    {/* {UGCReport ONLY for the saved record} */}
+                    <ViewComponent
+                      viewName={viewName}
+                      ui_specification={ui_specification}
+                      formProps={formProps}
+                      draftState={this.draftState}
+                      annotation={this.state.annotation}
+                      handleAnnotation={this.updateannotation}
+                      isSyncing={this.props.isSyncing}
+                      conflictfields={this.props.conflictfields}
+                      handleChangeTab={this.props.handleChangeTab}
+                      fieldNames={fieldNames}
+                      disabled={this.props.disabled}
+                    />
+                    <FormButtonGroup
+                      project_id={this.props.project_id}
+                      record_type={this.state.type_cached}
+                      is_final_view={is_final_view}
+                      disabled={this.props.disabled}
+                      onChangeStepper={this.onChangeStepper}
+                      viewName={viewName}
+                      view_index={view_index}
+                      formProps={formProps}
+                      ui_specification={ui_specification}
+                      views={views}
+                      mq_above_md={this.props.mq_above_md}
+                      relationship={this.state.relationship}
+                      handleFormSubmit={(is_close: string) => {
+                        formProps.setSubmitting(true);
+                        this.setTimeout(() => {
+                          this.save(
+                            formProps.values,
+                            is_close,
+                            formProps.setSubmitting
+                          );
+                        }, 500);
+                      }}
+                      buttonRef={this.props.buttonRef}
+                    />
                     {this.state.revision_cached !== undefined && (
                       <Box mt={3}>
                         <Divider />
