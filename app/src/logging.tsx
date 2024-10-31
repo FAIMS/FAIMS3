@@ -106,10 +106,13 @@ export const ErrorPage = () => {
           </Typography>
           <Button
             variant="contained"
-            color={'secondary'}
             disableElevation
             onClick={navigateWS}
-            sx={{mr: 1}}
+            sx={{
+              backgroundColor: theme.palette.highlightColor.main,
+              color: theme.palette.highlightColor.contrastText,
+              mr: 1,
+            }}
             startIcon={<DashboardIcon />}
           >
             Workspace

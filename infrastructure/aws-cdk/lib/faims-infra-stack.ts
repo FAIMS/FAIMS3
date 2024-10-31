@@ -120,6 +120,8 @@ const ConductorConfigSchema = z.object({
   conductorDockerImage: z.string(),
   /** Conductor docker image e.g. latest, sha-123456 */
   conductorDockerImageTag: z.string().default('latest'),
+  /** The prefix to use for the short codes in the app */
+  shortCodePrefix: z.string().default('FAIMS'),
   /** The number of CPU units for the Fargate task */
   cpu: z.number().int().positive(),
   /** The amount of memory (in MiB) for the Fargate task */
@@ -171,7 +173,7 @@ const BackupConfigSchema = z
 
 export const UiConfiguration = z.object({
   /** The UI Theme for the app */
-  uiTheme: z.enum(['bubble', 'default']),
+  uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
   /** The notebook list type for the app */
   notebookListType: z.enum(['tabs', 'headings']),
   /** The display name for notebooks e.g. survey, notebook */
