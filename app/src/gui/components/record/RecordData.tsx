@@ -126,46 +126,30 @@ export default function RecordData(props: RecordDataTypes) {
             <AccordionDetails
               sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
             >
-              <Grid
-                container
-                direction="row"
-                justifyContent="flex-start"
-                alignItems="stretch"
-              >
-                <Grid item lg={12}>
-                  <Box
-                    component={Paper}
-                    elevation={0}
-                    p={{xs: 1, sm: 1, md: 2, lg: 2}}
-                    variant={is_mobile ? undefined : 'outlined'}
-                  >
-                    {props.is_link_ready ? (
-                      <RecordForm
-                        project_id={props.project_id}
-                        record_id={props.record_id}
-                        revision_id={props.revision_id}
-                        ui_specification={props.ui_specification}
-                        draft_id={props.draft_id}
-                        handleChangeTab={props.handleChangeTab}
-                        conflictfields={props.conflictfields}
-                        isSyncing={props.isSyncing}
-                        handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-                        handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-                        handleSetDraftError={props.handleSetDraftError}
-                        setRevision_id={props.setRevision_id}
-                        ViewName={ViewName}
-                        draftLastSaved={props.draftLastSaved}
-                        mq_above_md={props.mq_above_md}
-                        navigate={navigate}
-                        setProgress={props.setProgress}
-                        buttonRef={props.buttonRef}
-                      />
-                    ) : (
-                      <CircularProgress size={24} />
-                    )}
-                  </Box>
-                </Grid>
-              </Grid>
+              {props.is_link_ready ? (
+                <RecordForm
+                  project_id={props.project_id}
+                  record_id={props.record_id}
+                  revision_id={props.revision_id}
+                  ui_specification={props.ui_specification}
+                  draft_id={props.draft_id}
+                  handleChangeTab={props.handleChangeTab}
+                  conflictfields={props.conflictfields}
+                  isSyncing={props.isSyncing}
+                  handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+                  handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+                  handleSetDraftError={props.handleSetDraftError}
+                  setRevision_id={props.setRevision_id}
+                  ViewName={ViewName}
+                  draftLastSaved={props.draftLastSaved}
+                  mq_above_md={props.mq_above_md}
+                  navigate={navigate}
+                  setProgress={props.setProgress}
+                  buttonRef={props.buttonRef}
+                />
+              ) : (
+                <CircularProgress size={24} />
+              )}
             </AccordionDetails>
           </Accordion>
         </TabPanel>
@@ -192,36 +176,20 @@ export default function RecordData(props: RecordDataTypes) {
             <AccordionDetails
               sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
             >
-              <Grid
-                container
-                direction="row"
-                justifyContent="flex-start"
-                alignItems="stretch"
-              >
-                <Grid item lg={12}>
-                  <Box
-                    component={Paper}
-                    elevation={0}
-                    p={{xs: 1, sm: 1, md: 2, lg: 2}}
-                    variant={is_mobile ? undefined : 'outlined'}
-                  >
-                    <RecordForm
-                      project_id={props.project_id}
-                      record_id={props.record_id}
-                      revision_id={props.revision_id}
-                      ui_specification={props.ui_specification}
-                      draft_id={props.draft_id}
-                      disabled={true} // for view of the forms
-                      handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-                      handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-                      handleSetDraftError={props.handleSetDraftError}
-                      navigate={navigate}
-                      setProgress={props.setProgress}
-                      buttonRef={props.buttonRef}
-                    />
-                  </Box>
-                </Grid>
-              </Grid>
+              <RecordForm
+                project_id={props.project_id}
+                record_id={props.record_id}
+                revision_id={props.revision_id}
+                ui_specification={props.ui_specification}
+                draft_id={props.draft_id}
+                disabled={true} // for view of the forms
+                handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+                handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+                handleSetDraftError={props.handleSetDraftError}
+                navigate={navigate}
+                setProgress={props.setProgress}
+                buttonRef={props.buttonRef}
+              />
             </AccordionDetails>
           </Accordion>
         </TabPanel>
