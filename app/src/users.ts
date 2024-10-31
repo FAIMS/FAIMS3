@@ -415,10 +415,15 @@ export async function shouldDisplayRecord(
   if (roles === undefined) {
     return false;
   }
-  for (const role in roles) {
+  for (const projectId of Object.keys(roles)) {
     if (
-      role === split_id.project_id &&
-      roles[role].includes(CLUSTER_ADMIN_GROUP_NAME)
+      projectId === split_id.project_id &&
+      // TODO BSS-453 consider how we handle this
+
+      // This currently hard-codes admin as a special role which allows visibility of all records but
+      // a) why is this necessary on client side?
+      // b) isn't this configurable in the notebook designer?
+      roles[projectId].includes('admin')
     ) {
       return true;
     }

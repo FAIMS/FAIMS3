@@ -1273,7 +1273,7 @@ afterEach(() => {
 
 vi.mock('@faims3/data-model', () => ({
   getFirstRecordHead: mockGetFirstRecordHead,
-  getRecordsByType: mockGetRecordsByType,
+  getPossibleRelatedRecords: mockGetRecordsByType,
   getFullRecordData: vi.fn(() => {}).mockReturnValue(undefined),
   setAttachmentLoaderForType: vi.fn(() => {}),
   setAttachmentDumperForType: vi.fn(() => {}),
@@ -1303,7 +1303,7 @@ vi.mock('./fieldPersistentSetting', () => ({
 vi.mock('./relationships/RelatedInformation', () => ({
   getParentLink_from_relationship: vi.fn(() => {}),
   getParentlinkInfo: vi.fn(() => {}),
-  get_RelatedFields_for_field: vi.fn(() => {}),
+  getRelatedRecords: vi.fn(() => {}),
 }));
 
 vi.mock('../../../users', () => ({

@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 /**
  * Converts a JavaScript function to a CouchDB-compatible string representation.
  */
@@ -17,9 +19,9 @@ export const viewsDocument = {
   views: {
     // All refresh tokens by _id
     refreshTokens: {
-      map: convertToCouchDBString(function (doc) {
-        var DOCUMENT_TYPE = 'refresh';
-        var ID_PREFIX = 'refresh_';
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'refresh';
+        const ID_PREFIX = 'refresh_';
 
         // Check that document type is defined and that the type is refresh and the prefix is correct
         if (
@@ -34,9 +36,9 @@ export const viewsDocument = {
     },
     // Refresh tokens for a specific user (by user id)
     refreshTokensByUserId: {
-      map: convertToCouchDBString(function (doc) {
-        var DOCUMENT_TYPE = 'refresh';
-        var ID_PREFIX = 'refresh_';
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'refresh';
+        const ID_PREFIX = 'refresh_';
 
         // Check that document type is defined and that the type is refresh and
         // the prefix is correct
@@ -53,9 +55,9 @@ export const viewsDocument = {
     },
     // Refresh tokens by token
     refreshTokensByToken: {
-      map: convertToCouchDBString(function (doc) {
-        var DOCUMENT_TYPE = 'refresh';
-        var ID_PREFIX = 'refresh_';
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'refresh';
+        const ID_PREFIX = 'refresh_';
 
         // Check that document type is defined and that the type is refresh and the prefix is correct
         if (
@@ -74,15 +76,13 @@ export const viewsDocument = {
 
 export const permissionDocument = {
   _id: '_design/permissionDocument',
-  validate_doc_update: convertToCouchDBString(
-    function (newDoc, oldDoc, userCtx) {
-      var ADMIN_ROLE = '_admin';
-      // Reject update if user does not have an _admin role
-      if (userCtx.roles.indexOf(ADMIN_ROLE) < 0) {
-        throw {
-          unauthorized: `Access denied for ${userCtx.roles}. Only the Fieldmark server may interact with the Authorisation database.`,
-        };
-      }
+  validate_doc_update: convertToCouchDBString((newDoc, oldDoc, userCtx) => {
+    const ADMIN_ROLE = '_admin';
+    // Reject update if user does not have an _admin role
+    if (userCtx.roles.indexOf(ADMIN_ROLE) < 0) {
+      throw {
+        unauthorized: `Access denied for ${userCtx.roles}. Only the Fieldmark server may interact with the Authorisation database.`,
+      };
     }
-  ),
+  }),
 };

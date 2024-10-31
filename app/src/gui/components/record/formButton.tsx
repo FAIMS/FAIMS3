@@ -23,7 +23,6 @@
 
 import {Button} from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-
 import {CustomMobileStepper} from './recordStepper';
 
 function FormSubmitButton(props: any) {
@@ -70,6 +69,7 @@ function FormSubmitButton(props: any) {
 
 export default function FormButtonGroup(props: any) {
   const {
+    record_type,
     is_final_view,
     disabled,
     onChangeStepper,
@@ -77,7 +77,6 @@ export default function FormButtonGroup(props: any) {
     formProps,
     handleFormSubmit,
     views,
-    viewName,
     ui_specification,
   } = props;
 
@@ -103,7 +102,7 @@ export default function FormButtonGroup(props: any) {
           data-testid="publish-close-record"
           disabled={disabled}
           formProps={formProps}
-          text={`Publish and Close ${viewName.split('-').at(0)}`}
+          text={`Save and close ${record_type}`}
           is_close={'close'}
           handleFormSubmit={handleFormSubmit}
           is_final_view={is_final_view}
@@ -112,7 +111,7 @@ export default function FormButtonGroup(props: any) {
           color="secondary"
           disabled={disabled}
           formProps={formProps}
-          text={`Publish and New ${viewName.split('-').at(0)}`}
+          text={`Publish and new ${record_type}`}
           is_close={'new'}
           handleFormSubmit={handleFormSubmit}
           is_final_view={is_final_view}
