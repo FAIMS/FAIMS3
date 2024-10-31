@@ -49,12 +49,12 @@ import {
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
-import {logError} from '../../../logging';
+import {useQuery} from '@tanstack/react-query';
 
 type RecordsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
-  rows: RecordMetadata[];
+  rows: RecordMetadata[] | undefined;
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
   handleQueryFunction: Function;
@@ -362,7 +362,8 @@ function RecordsTable(props: RecordsTableProps) {
     <React.Fragment>
       <Box component={Paper} elevation={0}>
         <DataGrid
-          rows={rows}
+          // if rows are undefined - don't display any
+          rows={rows ?? []}
           loading={loading}
           getRowId={r => r.record_id}
           columns={columns}
@@ -433,44 +434,34 @@ function RecordsTable(props: RecordsTableProps) {
 
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const [query, setQuery] = React.useState('');
-  const [pouchData, setPouchData] = React.useState(
-    undefined as RecordMetadata[] | undefined
-  );
-
-  useEffect(() => {
-    const getData = async () => {
-      try {
-        if (query.length === 0) {
-          const ma = await getMetadataForAllRecords(
-            props.project_id,
-            props.filter_deleted
-          );
-          setPouchData(ma);
-        } else {
-          const ra = await getRecordsWithRegex(
-            props.project_id,
-            query,
-            props.filter_deleted
-          );
-          setPouchData(ra);
-        }
-      } catch (err) {
-        logError(err); // unable to load records
-        setPouchData(undefined);
+  const {data: records, isLoading: recordsLoading} = useQuery({
+    queryKey: ['allrecords', query, props.project_id],
+    queryFn: async () => {
+      if (query.length === 0) {
+        return await getMetadataForAllRecords(
+          props.project_id,
+          props.filter_deleted
+        );
+      } else {
+        return await getRecordsWithRegex(
+          props.project_id,
+          query,
+          props.filter_deleted
+        );
       }
-    };
-    getData();
-  }, [props.project_id, query]);
-
-  const rows = pouchData ?? [];
-  const loading = pouchData === undefined;
+    },
+    // TODO if we are seeing performance issues, really we should get told when
+    // to invalidate this cache. To be extra careful to keep records up to date
+    // we force a refresh on remount
+    refetchOnMount: true,
+  });
 
   return (
     <RecordsTable
       project_id={props.project_id}
       maxRows={props.maxRows}
-      rows={rows}
-      loading={loading}
+      rows={records}
+      loading={recordsLoading}
       viewsets={props.viewsets}
       handleQueryFunction={setQuery}
       handleRefresh={props.handleRefresh}
