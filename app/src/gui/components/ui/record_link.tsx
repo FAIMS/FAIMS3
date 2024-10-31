@@ -3,12 +3,14 @@ import ArticleIcon from '@mui/icons-material/Article';
 import {Typography, Link} from '@mui/material';
 import {NavLink} from 'react-router-dom';
 import Chip from '@mui/material/Chip';
-interface RecordLinkProps {
+
+interface PropsType {
   link?: any;
   children: React.ReactNode;
   deleted?: boolean;
 }
-export default function RecordRouteDisplay(props: RecordLinkProps) {
+
+export default function RecordRouteDisplay(props: PropsType) {
   const inner = (
     <span
       style={{

@@ -19,13 +19,16 @@
  */
 
 import {test, fc} from '@fast-check/jest';
-import {registerClient} from '../src';
-import {Record} from '../src/types';
+import {getDataDB, registerClient} from '../src';
+import {Record, RecordMetadata} from '../src/types';
 import {
   deleteFAIMSDataForID,
   generateFAIMSDataID,
   getFirstRecordHead,
   getFullRecordData,
+  getMetadataForAllRecords,
+  getMetadataForSomeRecords,
+  getRecordsWithRegex,
   listFAIMSProjectRevisions,
   notebookRecordIterator,
   undeleteFAIMSDataForID,
@@ -362,31 +365,134 @@ describe('record iterator', () => {
   });
 });
 
-// describe('record queries', () => {
-//   test('map-reduce query', async () => {
-//     const viewID = 'Test';
-//     const project_id = 'test';
+describe('record retrieval', () => {
+  test('get records with regex', async () => {
+    const viewID = 'Test';
+    const project_id = 'test';
 
-//     await cleanDataDBS();
-//     await createNRecords(project_id, viewID, 10);
+    await cleanDataDBS();
+    await createNRecords(project_id, viewID, 10);
 
-//     const db = await getDataDB(project_id);
-//     if (db) {
-//       const result = await db
-//         .query(
-//           {
-//             map: (doc: any, emit: CallableFunction) => {
-//               emit(doc.record_format_version, doc);
-//             },
-//           },
-//           {key: 1}
-//         )
-//         .catch((err: any) => {
-//           console.log('query failed', err);
-//         });
-//       console.log('query result: ', result);
-//     } else {
-//       fail('Failed to get database');
-//     }
-//   });
-// });
+    const db = await getDataDB(project_id);
+    if (db) {
+      const records = await getRecordsWithRegex(project_id, '.*', true);
+      expect(records.length).toBe(10);
+      // check a few properties
+      expect(records[0].created_by).toBe('user');
+      expect(records[0].type).toBe('Test');
+    } else {
+      fail('Failed to get database');
+    }
+  });
+
+  test('get all record metadata', async () => {
+    const viewID = 'Test';
+    const project_id = 'test';
+
+    await cleanDataDBS();
+    await createNRecords(project_id, viewID, 10);
+
+    const db = await getDataDB(project_id);
+    if (db) {
+      const records = await getMetadataForAllRecords(project_id, true);
+      expect(records.length).toBe(10);
+      // // check a few properties
+      expect(records[0].created_by).toBe('user');
+      expect(records[0].type).toBe('Test');
+    } else {
+      fail('Failed to get database');
+    }
+  });
+
+  test('get some record metadata', async () => {
+    const viewID = 'Test';
+    const project_id = 'test';
+
+    await cleanDataDBS();
+    await createNRecords(project_id, viewID, 10);
+
+    const db = await getDataDB(project_id);
+    if (db) {
+      const all_records = await getMetadataForAllRecords(project_id, true);
+      const record_ids = all_records.map((r: RecordMetadata) => r.record_id);
+
+      const records = await getMetadataForSomeRecords(
+        project_id,
+        record_ids.slice(5),
+        true
+      );
+      expect(records.length).toBe(5);
+      // // check a few properties
+      expect(records[0].created_by).toBe('user');
+      expect(records[0].type).toBe('Test');
+    } else {
+      fail('Failed to get database');
+    }
+  });
+});
+
+// this is really just an experiment in writing queries...
+describe.skip('record queries', () => {
+  test('map-reduce query', async () => {
+    const viewID = 'Test';
+    const project_id = 'test';
+
+    await cleanDataDBS();
+    await createNRecords(project_id, viewID, 10);
+
+    const db = await getDataDB(project_id);
+    if (db) {
+      const result = await db
+        .query(
+          {
+            map: (doc: any, emit: CallableFunction) => {
+              if (doc.record_format_version === 1) {
+                if (doc.heads.length > 0) {
+                  const conflict = doc.heads.length > 1;
+                  const created = doc.created;
+                  const created_by = doc.created_by;
+                  const type = doc.type;
+                  emit([doc._id, 'revision'], {
+                    _id: doc.heads[0],
+                    conflict,
+                    created,
+                    created_by,
+                    type,
+                  });
+                }
+              } else if (doc.avp_format_version === 1) {
+                emit([doc._id, 'avp']);
+              }
+            },
+          },
+          {
+            include_docs: true,
+          }
+        )
+        .catch((err: any) => {
+          console.log('query failed', err);
+        });
+
+      const avps = new Map();
+      result.rows
+        .filter((r: any) => r.key[1] === 'avp')
+        .forEach((a: any) => {
+          avps.set(a.id, a.doc.data);
+        });
+
+      const revisions = result.rows
+        .filter((r: any) => r.key[1] === 'revision')
+        .map((r: any) => {
+          const data: {[key: string]: string} = {};
+          for (const a in r.doc.avps) {
+            data[a as string] = avps.get(r.doc.avps[a as string]);
+          }
+          return {...r.doc, data};
+        });
+
+      console.log('query result: ', JSON.stringify(revisions, null, 2));
+    } else {
+      fail('Failed to get database');
+    }
+  });
+});

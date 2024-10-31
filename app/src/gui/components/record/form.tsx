@@ -619,12 +619,14 @@ class RecordForm extends React.Component<
         this.draftState.data.relationship !== undefined
       )
         parent = fromdb.relationship?.parent;
+
       if (
         parent !== null &&
         parent !== undefined &&
         parent.record_id !== undefined
-      )
+      ) {
         related['parent'] = parent;
+      }
 
       let linked = null;
       if (
@@ -778,8 +780,8 @@ class RecordForm extends React.Component<
     );
     return (
       getCurrentUserId(this.props.project_id)
+        // prepare the record for saving
         .then(userid => {
-          // prepare the record for saving
           const now = new Date();
           const doc = {
             record_id: this.props.record_id,
@@ -799,8 +801,8 @@ class RecordForm extends React.Component<
           };
           return doc;
         })
+        // store the record
         .then(doc => {
-          // store the record
           return upsertFAIMSData(this.props.project_id, doc).then(
             revision_id => {
               // update the component state with the new revision id and notify the parent
@@ -823,6 +825,7 @@ class RecordForm extends React.Component<
             }
           );
         })
+        // generate a success alert
         .then(hrid => {
           const message = 'Record successfully saved';
           (this.context as any).dispatch({
@@ -834,9 +837,10 @@ class RecordForm extends React.Component<
           });
           return hrid;
         })
+        // Could not save record error
+        // TODO: this is actually very serious and we should work out how
+        // to never get here or provide a good reason if we do
         .catch(err => {
-          // TODO: this is actually very serious and we should work out how
-          // to never get here or provide a good reason if we do
           const message = 'Could not save record';
           console.error('Could not save record:', err);
           (this.context as any).dispatch({
@@ -848,13 +852,13 @@ class RecordForm extends React.Component<
           });
           logError('Unsaved record error:' + err);
         })
-        //Clear the current draft area (Possibly after redirecting back to project page)
+        // Clear the current draft area (Possibly after redirecting back to project page)
         .then(async revision_id => {
           this.draftState && (await this.draftState.clear());
           return revision_id;
         })
+        // publish and continue editing
         .then(hrid => {
-          // publish and continue editing
           if (is_close === 'continue') {
             setSubmitting(false);
             return hrid;
@@ -1355,6 +1359,8 @@ class RecordForm extends React.Component<
                       </Grid>
                       <br />
                       <FormButtonGroup
+                        project_id={this.props.project_id}
+                        record_type={this.state.type_cached}
                         is_final_view={is_final_view}
                         disabled={this.props.disabled}
                         onChangeStepper={this.onChangeStepper}
@@ -1364,6 +1370,7 @@ class RecordForm extends React.Component<
                         ui_specification={ui_specification}
                         views={views}
                         mq_above_md={this.props.mq_above_md}
+                        relationship={this.state.relationship}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {

@@ -144,6 +144,31 @@ export function getFieldsForViewSet(
   return fields;
 }
 
+export function getFieldLabel(
+  ui_specification: ProjectUIModel,
+  field_name: string
+) {
+  if (field_name in ui_specification.fields) {
+    return ui_specification.fields[field_name]['component-parameters'].label;
+  } else {
+    return field_name;
+  }
+}
+
+export function getSummaryFields(
+  ui_specification: ProjectUIModel,
+  viewset_name: string
+) {
+  if (
+    ui_specification &&
+    ui_specification.viewsets &&
+    viewset_name &&
+    viewset_name in ui_specification.viewsets
+  )
+    return ui_specification.viewsets[viewset_name].summary_fields || [];
+  else return [];
+}
+
 export function getFieldsForView(
   ui_specification: ProjectUIModel,
   view_name: string
@@ -166,6 +191,23 @@ export function getViewsForViewSet(
   viewset_name: string
 ) {
   return ui_specification.viewsets[viewset_name].views;
+}
+
+export function getViewsetForField(
+  ui_specification: ProjectUIModel,
+  field_name: string
+) {
+  // find which section (view) it is in
+  for (const section in ui_specification.views) {
+    if (ui_specification.views[section].fields.indexOf(field_name) >= 0) {
+      // now which form (viewset) is that part of
+      for (const form in ui_specification.viewsets) {
+        if (ui_specification.viewsets[form].views.indexOf(section) >= 0) {
+          return form;
+        }
+      }
+    }
+  }
 }
 
 export function getReturnedTypesForViewSet(
