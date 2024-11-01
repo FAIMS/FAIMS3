@@ -17,21 +17,34 @@
  *   Defines the component to allow entering short codes for notebook registration
  */
 
-import React, {useContext, useState} from 'react';
-import {Typography, TextField, Button, Stack, Grid, Alert} from '@mui/material';
+import {Browser} from '@capacitor/browser';
 import {ListingsObject} from '@faims3/data-model/src/types';
 import LoginIcon from '@mui/icons-material/Login';
-import {isWeb} from '../../utils/helpers';
-import {Browser} from '@capacitor/browser';
-import MainCard from '../components/ui/main-card';
+import {
+  Button,
+  FormControl,
+  Grid,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import React, {useContext, useState} from 'react';
 import {
   APP_ID,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../buildconfig';
-import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
 import {ActionType} from '../../context/actions';
 import {store} from '../../context/store';
+import {isWeb} from '../../utils/helpers';
+import MainCard from '../components/ui/main-card';
+import usePopup from '../components/ui/usePopup';
+import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
 
 type ShortCodeProps = {
   listings: ListingsObject[];
@@ -39,98 +52,161 @@ type ShortCodeProps = {
 
 /**
  * Component to render a control to register for a notebook via a short-code
+ * Handles automatic prefix detection and selection while typing
  *
  * @param props component properties include only `listings`
  */
 export function ShortCodeRegistration(props: ShortCodeProps) {
   const [shortCode, setShortCode] = useState('');
-  const [message, setMessage] = useState('');
+  const {showSuccess, showError, showInfo, PopupRenderer} = usePopup();
+  const [selectedPrefix, setSelectedPrefix] = useState(
+    props.listings[0]?.prefix || ''
+  );
 
-  // pattern for allowed short codes
+  // pattern for allowed short codes (excluding prefix, 0, O, and dash)
   const codeChars = '^[ABCDEFGHIJKLMNPQRSTUVWXYZ123456789]*$';
+
+  /**
+   * Processes input to handle prefixes and maintain valid short code format
+   * @param input The raw input string to process
+   * @returns The cleaned short code without prefix
+   */
+  const processInput = (input: string): string => {
+    const upperInput = input.toUpperCase();
+
+    // Check if input starts with any known prefix (including potential dash)
+    for (const prefix of props.listings.map(listing => listing.prefix)) {
+      const prefixPattern = new RegExp(`^${prefix}-?`);
+      if (prefixPattern.test(upperInput)) {
+        // If found, update selected prefix and remove it from input
+        setSelectedPrefix(prefix);
+        showInfo(`Prefix "${prefix}" detected and selected automatically`);
+        return upperInput.replace(prefixPattern, '');
+      }
+    }
+
+    return upperInput;
+  };
 
   const updateShortCode = (event: {
     target: {value: React.SetStateAction<string>};
   }) => {
-    // codes are always 6 chars and uppercase
-    const value = (event.target.value as string).toUpperCase();
-    if (value.length <= 6 && value.match(codeChars)) {
-      setShortCode(value);
-      setMessage('');
-    } else
-      setMessage(
-        'Code must be exactly six characters. Do not include the prefix or dash character.'
-      );
+    const rawValue = event.target.value as string;
+    const processedValue = processInput(rawValue);
+
+    if (processedValue.length > 6) {
+      showError('Code must be exactly six characters');
+    } else if (!processedValue.match(codeChars)) {
+      showError('Invalid characters detected');
+    } else {
+      setShortCode(processedValue);
+    }
   };
 
-  const handleRegister = (listing_info: ListingsObject) => {
-    return async () => {
-      const url =
-        listing_info.conductor_url +
-        '/register/' +
-        listing_info.prefix +
-        '-' +
-        shortCode;
+  const handlePrefixChange = (event: SelectChangeEvent<string>) => {
+    setSelectedPrefix(event.target.value);
+  };
 
-      if (isWeb()) {
-        const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-        window.location.href = url + '?redirect=' + redirect;
-      } else {
-        // Use the capacitor browser plugin in apps
-        await Browser.open({
-          url: `${url}?redirect=${APP_ID}://auth-return`,
-        });
-      }
-    };
+  const handleRegister = async () => {
+    if (shortCode.length !== 6) {
+      showError('Please enter a valid 6-character code');
+      return;
+    }
+
+    const listing_info = props.listings.find(
+      listing => listing.prefix === selectedPrefix
+    );
+
+    if (!listing_info) {
+      showError('Invalid prefix selected');
+      return;
+    }
+
+    const url =
+      listing_info.conductor_url +
+      '/register/' +
+      listing_info.prefix +
+      '-' +
+      shortCode;
+
+    showSuccess('Initiating registration...');
+
+    if (isWeb()) {
+      const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
+      window.location.href = url + '?redirect=' + redirect;
+    } else {
+      await Browser.open({
+        url: `${url}?redirect=${APP_ID}://auth-return`,
+      });
+    }
   };
 
   return (
-    <MainCard
-      title={
-        <Grid container>
-          <Grid item xs>
-            <Typography variant={'overline'}>
-              Register for {NOTEBOOK_NAME_CAPITALIZED}s
-            </Typography>
-            <Typography variant={'body2'} fontWeight={700} sx={{mb: 0}}>
-              Enter a short code to get access to a {NOTEBOOK_NAME}.
-            </Typography>
-            <Typography variant={'body2'} sx={{mb: 0}}>
-              The short code will have a short prefix and six letters or
-              numbers. The prefix must match one shown below. Enter the six
-              letters or numbers and click 'Register'.
-            </Typography>
-          </Grid>
-        </Grid>
-      }
-    >
-      {props.listings.map(listing_info => (
-        <Stack key={listing_info.id}>
-          <Stack direction="row">
-            <TextField
-              disabled={true}
-              sx={{width: '4em'}}
-              value={listing_info.prefix}
-            />
-            <TextField
-              value={shortCode}
-              label="Short Code"
-              name="short-code"
-              variant="outlined"
-              onChange={updateShortCode}
-            />
-            <Button
-              onClick={handleRegister(listing_info)}
-              variant="outlined"
-              startIcon={<LoginIcon />}
-              color="primary"
+    <MainCard>
+      <Stack spacing={2} sx={{p: 2}}>
+        <Typography variant="h6" gutterBottom>
+          Register for {NOTEBOOK_NAME_CAPITALIZED}s
+        </Typography>
+        <Typography variant="body1" gutterBottom>
+          Enter the short code which was shared with you to get access to a{' '}
+          {NOTEBOOK_NAME_CAPITALIZED}.
+        </Typography>
+
+        <Stack direction="row" spacing={1} alignItems="center">
+          <FormControl sx={{minWidth: 80, maxWidth: 120}}>
+            <InputLabel
+              id="prefix-label"
+              sx={{backgroundColor: 'white', px: 1}}
             >
-              Register
-            </Button>
-          </Stack>
-          {message ? <Alert severity="warning">{message}</Alert> : <></>}
+              Prefix
+            </InputLabel>
+            <Select
+              labelId="prefix-label"
+              value={selectedPrefix}
+              onChange={handlePrefixChange}
+              size="small"
+            >
+              {props.listings.map(listing => (
+                <MenuItem key={listing.prefix} value={listing.prefix}>
+                  {listing.prefix}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <TextField
+            value={shortCode}
+            placeholder="Enter code"
+            variant="outlined"
+            onChange={updateShortCode}
+            size="small"
+            fullWidth
+            InputProps={{
+              sx: {fontFamily: 'monospace'},
+              startAdornment: (
+                <InputAdornment position="start">
+                  {selectedPrefix}-
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          <Button
+            onClick={handleRegister}
+            variant="outlined"
+            startIcon={<LoginIcon />}
+            disabled={shortCode.length !== 6}
+            sx={{
+              minWidth: '100px',
+              height: '40px',
+              bgcolor: 'grey.100',
+            }}
+          >
+            Register
+          </Button>
         </Stack>
-      ))}
+      </Stack>
+      <PopupRenderer />
     </MainCard>
   );
 }
