@@ -18,23 +18,24 @@
  *   TODO
  */
 
-import {useContext, useState} from 'react';
-import {Box, Paper, Typography, Button} from '@mui/material';
-import FolderIcon from '@mui/icons-material/Folder';
-import {GridColDef} from '@mui/x-data-grid';
-import ProjectStatus from '../notebook/settings/status';
-import NotebookSyncSwitch from '../notebook/settings/sync_switch';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
-import {grey} from '@mui/material/colors';
-import Tabs from '../ui/tab-grid';
-import HeadingProjectGrid from '../ui/heading-grid';
-import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+import FolderIcon from '@mui/icons-material/Folder';
+import {Box, Button, Paper, Typography} from '@mui/material';
+import {grey} from '@mui/material/colors';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {GridColDef} from '@mui/x-data-grid';
+import {useContext, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
-import {useNavigate} from 'react-router-dom';
+import {CREATE_NOTEBOOK_ROLES, userHasRoleInAnyListing} from '../../../users';
+import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
+import NotebookSyncSwitch from '../notebook/settings/sync_switch';
+import HeadingProjectGrid from '../ui/heading-grid';
+import Tabs from '../ui/tab-grid';
 
 export default function NoteBooks() {
   const [tabID, setTabID] = useState('1');
@@ -175,6 +176,12 @@ export default function NoteBooks() {
 
   const activatedProjects = projects.filter(({activated}) => activated);
 
+  // fetch all user info then determine if any listing has permission to create notebooks
+  const allUserInfo = useGetAllUserInfo();
+  const showCreateNewNotebookButton = allUserInfo?.data
+    ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
+    : false;
+
   return (
     <Box>
       <Box component={Paper} elevation={0} p={2}>
@@ -187,15 +194,17 @@ export default function NoteBooks() {
           </Button>{' '}
           tab and click the activate button.
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
-          sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
-          startIcon={<AddCircleSharpIcon />}
-        >
-          Create New Survey
-        </Button>
+        {showCreateNewNotebookButton && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+            sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
+            startIcon={<AddCircleSharpIcon />}
+          >
+            Create New {NOTEBOOK_NAME}
+          </Button>
+        )}
         {NOTEBOOK_LIST_TYPE === 'tabs' ? (
           <Tabs
             projects={projects}
