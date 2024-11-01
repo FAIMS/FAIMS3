@@ -25,12 +25,15 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // Get all user info from local auth DB
   const allUserInfo = useGetAllUserInfo();
 
+  // Loading or error states from either fetch
   const loading = listings.isLoading || allUserInfo.isLoading;
   const error = listings.isError || allUserInfo.isError;
   const errorMessage = listings.error?.message ?? allUserInfo.error?.message;
 
+  // Only show listings for which the current active user has create permissions
   const allowedListings = allUserInfo.data
     ? (listings.data ?? []).filter(listing => {
         return userHasRoleInSpecificListing(
