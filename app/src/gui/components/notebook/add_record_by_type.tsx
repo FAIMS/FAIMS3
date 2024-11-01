@@ -41,7 +41,7 @@ export default function AddRecordButtons({
     getUiSpecForProject(project_id).then(u => setUiSpec(u));
   }, [project_id]);
 
-  const buttonLabel = `New ${recordLabel}`;
+  const buttonLabel = `Add new ${recordLabel}`;
 
   if (uiSpec === undefined) {
     return <CircularProgress thickness={2} size={12} />;
