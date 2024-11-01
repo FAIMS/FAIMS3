@@ -43,8 +43,8 @@ import {ActionType} from '../../context/actions';
 import {store} from '../../context/store';
 import {isWeb} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
-import usePopup from '../components/ui/usePopup';
 import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
+import {useNotification} from '../../context/popup';
 
 type ShortCodeProps = {
   listings: ListingsObject[];
@@ -58,7 +58,7 @@ type ShortCodeProps = {
  */
 export function ShortCodeRegistration(props: ShortCodeProps) {
   const [shortCode, setShortCode] = useState('');
-  const {showSuccess, showError, showInfo, PopupRenderer} = usePopup();
+  const {showSuccess, showError, showInfo} = useNotification();
   const [selectedPrefix, setSelectedPrefix] = useState(
     props.listings[0]?.prefix || ''
   );
@@ -206,7 +206,6 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
           </Button>
         </Stack>
       </Stack>
-      <PopupRenderer />
     </MainCard>
   );
 }

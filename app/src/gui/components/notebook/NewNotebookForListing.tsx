@@ -27,14 +27,14 @@ import {useCreateNotebookFromTemplate} from '../../../utils/apiHooks/notebooks';
 import {useGetTemplates} from '../../../utils/apiHooks/templates';
 import {useRefreshToken} from '../../../utils/tokenHooks';
 import CircularLoading from '../ui/circular_loading';
-import usePopup from '../ui/usePopup';
+import {useNotification} from '../../../context/popup';
 
 export interface NewNotebookForListingProps {
   listingObject: ListingsObject;
 }
 const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   // Popup manager
-  const popup = usePopup();
+  const popup = useNotification();
 
   // Use custom hook to get template list
   const templates = useGetTemplates({listingId: props.listingObject.id});
@@ -148,7 +148,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
 
   return (
     <>
-      {popup.PopupRenderer()}
       <Box
         sx={{
           width: '100%',
