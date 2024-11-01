@@ -88,7 +88,7 @@ const usePopup = () => {
   }, []);
 
   /**
-   * Renderer function for the ErrorPopup component
+   * Renderer function for the Popup component
    * @returns JSX.Element | null
    */
   const PopupRenderer = useCallback((): JSX.Element | null => {
