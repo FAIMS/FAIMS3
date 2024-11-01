@@ -70,6 +70,75 @@ export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
   return token_contents.username;
 }
 
+// These are the roles which allow a user to create a notebook
+export const CREATE_NOTEBOOK_ROLES = [
+  CLUSTER_ADMIN_GROUP_NAME,
+  NOTEBOOK_CREATOR_GROUP_NAME,
+];
+
+/**
+ * @returns All documents from the local auth DB keyed by the project ID
+ */
+export async function getAllUserInfo() {
+  return (await local_auth_db.allDocs({include_docs: true})).rows
+    .map(d => d.doc)
+    .filter(d => !!d);
+}
+
+/**
+ * Checks if any of the sufficient roles are present in any of the user's active tokens
+ * @param allUserInfo All local auth docs in the DB
+ * @param roles The role to check for
+ * @returns if ANY is present in ANY active token, returns true
+ */
+export function userHasRoleInAnyListing(
+  allUserInfo: LocalAuthDoc[],
+  roles: string[]
+) {
+  // For all auth records, check active user
+  for (const authRecord of allUserInfo) {
+    const activeToken = ObjectMap.get(
+      authRecord.available_tokens,
+      authRecord.current_username
+    );
+    if (roles.some(r => activeToken?.parsedToken.roles.includes(r))) {
+      return true;
+    }
+  }
+  // did not find fitting token
+  return false;
+}
+
+/**
+ * Checks if any of the sufficient roles are present in a specific listing of the user's active tokens
+ * @param allUserInfo All local auth docs in the DB
+ * @param listingId The listing to check
+ * @param roles The role to check for
+ * @returns if ANY is present in ANY active token, returns true
+ */
+export function userHasRoleInSpecificListing(
+  allUserInfo: LocalAuthDoc[],
+  listingId: string,
+  roles: string[]
+) {
+  // For all auth records, check active user
+  const specificListing = allUserInfo.find(
+    authDoc => authDoc._id === listingId
+  );
+  if (!specificListing) {
+    return false;
+  }
+  const activeToken = ObjectMap.get(
+    specificListing.available_tokens,
+    specificListing.current_username
+  );
+  if (roles.some(r => activeToken?.parsedToken.roles.includes(r))) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Store a token for a server (cluster)
  * @param token new authentication token
