@@ -68,24 +68,27 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
 
   /**
    * Processes input to handle prefixes and maintain valid short code format
+   *
+   * Also strips any whitespace.
+   *
    * @param input The raw input string to process
-   * @returns The cleaned short code without prefix
+   * @returns The cleaned short code without prefix or whitespace
    */
   const processInput = (input: string): string => {
-    const upperInput = input.toUpperCase();
+    const cleanInput = input.toUpperCase().trim();
 
     // Check if input starts with any known prefix (including potential dash)
     for (const prefix of props.listings.map(listing => listing.prefix)) {
       const prefixPattern = new RegExp(`^${prefix}-?`);
-      if (prefixPattern.test(upperInput)) {
+      if (prefixPattern.test(cleanInput)) {
         // If found, update selected prefix and remove it from input
         setSelectedPrefix(prefix);
         showInfo(`Prefix "${prefix}" detected and selected automatically`);
-        return upperInput.replace(prefixPattern, '');
+        return cleanInput.replace(prefixPattern, '');
       }
     }
 
-    return upperInput;
+    return cleanInput;
   };
 
   const updateShortCode = (event: {
