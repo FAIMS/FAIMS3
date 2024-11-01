@@ -1,17 +1,22 @@
 import DescriptionIcon from '@mui/icons-material/Description';
 import {
-  Grid,
-  useMediaQuery,
-  Typography,
-  useTheme,
   Box,
+  Grid,
   Stack,
+  Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import React from 'react';
+import {NOTEBOOK_NAME} from '../../../buildconfig';
+import {
+  CREATE_NOTEBOOK_ROLES,
+  userHasRoleInSpecificListing,
+} from '../../../users';
 import useGetListings from '../../../utils/custom_hooks';
+import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
 import NewNotebookForListing from '../notebook/NewNotebookForListing';
 import CircularLoading from '../ui/circular_loading';
-import {NOTEBOOK_NAME} from '../../../buildconfig';
 
 export interface CreateNewSurveyProps {}
 const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
@@ -19,6 +24,25 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
   const listings = useGetListings();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Get all user info from local auth DB
+  const allUserInfo = useGetAllUserInfo();
+
+  // Loading or error states from either fetch
+  const loading = listings.isLoading || allUserInfo.isLoading;
+  const error = listings.isError || allUserInfo.isError;
+  const errorMessage = listings.error?.message ?? allUserInfo.error?.message;
+
+  // Only show listings for which the current active user has create permissions
+  const allowedListings = allUserInfo.data
+    ? (listings.data ?? []).filter(listing => {
+        return userHasRoleInSpecificListing(
+          allUserInfo.data,
+          listing.id,
+          CREATE_NOTEBOOK_ROLES
+        );
+      })
+    : [];
 
   return (
     <>
@@ -68,14 +92,22 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
         spacing={theme.spacing(2)}
         padding={theme.spacing(3)}
       >
-        {listings.isLoading ? (
-          <CircularLoading label={'Loading servers...'}></CircularLoading>
+        {loading ? (
+          <CircularLoading label="Loading servers..." />
+        ) : error ? (
+          <p>
+            An error occurred: {errorMessage || 'Unknown error'}. Please contact
+            a system administrator.
+          </p>
+        ) : allowedListings.length !== 0 ? (
+          allowedListings.map(listing => (
+            <NewNotebookForListing listingObject={listing} key={listing.id} />
+          ))
         ) : (
-          listings.data?.map(listing => {
-            return (
-              <NewNotebookForListing listingObject={listing} key={listing.id} />
-            );
-          })
+          // The user should not get here
+          <p>
+            You do not have permission to create notebooks in any active server.
+          </p>
         )}
       </Stack>
     </>
