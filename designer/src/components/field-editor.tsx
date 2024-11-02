@@ -22,9 +22,7 @@ import {
   Grid,
   Chip,
 } from '@mui/material';
-import MuiAccordionSummary, {
-  AccordionSummaryProps,
-} from '@mui/material/AccordionSummary';
+import MuiAccordionSummary from '@mui/material/AccordionSummary';
 
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
@@ -47,24 +45,6 @@ import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 
-import {styled} from '@mui/material/styles';
-
-// customise the accordion summary a little
-const AccordionSummary = styled((props: AccordionSummaryProps) => (
-  <MuiAccordionSummary
-    expandIcon={<ArrowForwardIosRoundedIcon sx={{fontSize: '1rem'}} />}
-    {...props}
-  />
-))(({theme}) => ({
-  backgroundColor: '#EEF1F0',
-  flexDirection: 'row-reverse',
-  '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
-    transform: 'rotate(90deg)',
-  },
-  '& .MuiAccordionSummary-content': {
-    marginLeft: theme.spacing(1.5),
-  },
-}));
 
 type FieldEditorProps = {
   fieldName: string;
@@ -150,7 +130,19 @@ export const FieldEditor = ({
         transition: {unmountOnExit: true},
       }}
     >
-      <AccordionSummary>
+      <MuiAccordionSummary
+        expandIcon={<ArrowForwardIosRoundedIcon sx={{fontSize: '1rem'}} />}
+        sx={{
+          backgroundColor: '#EEF1F0',
+          flexDirection: 'row-reverse',
+          '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
+            transform: 'rotate(90deg)',
+          },
+          '& .MuiAccordionSummary-content': {
+            marginLeft: '10px',
+          },
+        }}
+      >
         <Grid container rowGap={1}>
           <Grid
             container
@@ -251,7 +243,7 @@ export const FieldEditor = ({
             </Stack>
           </Grid>
         </Grid>
-      </AccordionSummary>
+      </MuiAccordionSummary>
 
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
         {(fieldComponent === 'MultipleTextField' && (
