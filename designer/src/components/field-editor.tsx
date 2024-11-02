@@ -45,7 +45,6 @@ import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 
-
 type FieldEditorProps = {
   fieldName: string;
   viewSetId?: string;
