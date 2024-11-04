@@ -12,38 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
+import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
+import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
+import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import {
   Accordion,
   AccordionDetails,
-  Stack,
-  Typography,
-  IconButton,
-  Tooltip,
-  Grid,
+  AccordionSummary,
   Chip,
+  Grid,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
 } from '@mui/material';
-import MuiAccordionSummary from '@mui/material/AccordionSummary';
-
-import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
-import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
-import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
-
-import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
-import {BaseFieldEditor} from './Fields/BaseFieldEditor';
-import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
-import {TextFieldEditor} from './Fields/TextFieldEditor';
-import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
-import {OptionsEditor} from './Fields/OptionsEditor';
-import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
-import {RandomStyleEditor} from './Fields/RandomStyleEditor';
-import {RichTextEditor} from './Fields/RichTextEditor';
-import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
-import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
-import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
-import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
+import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
+import {BaseFieldEditor} from './Fields/BaseFieldEditor';
+import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
+import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
+import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
+import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
+import {OptionsEditor} from './Fields/OptionsEditor';
+import {RandomStyleEditor} from './Fields/RandomStyleEditor';
+import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
+import {RichTextEditor} from './Fields/RichTextEditor';
+import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
+import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
+import {TextFieldEditor} from './Fields/TextFieldEditor';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -129,7 +127,7 @@ export const FieldEditor = ({
         transition: {unmountOnExit: true},
       }}
     >
-      <MuiAccordionSummary
+      <AccordionSummary
         expandIcon={<ArrowForwardIosRoundedIcon sx={{fontSize: '1rem'}} />}
         sx={{
           backgroundColor: '#EEF1F0',
@@ -242,7 +240,7 @@ export const FieldEditor = ({
             </Stack>
           </Grid>
         </Grid>
-      </MuiAccordionSummary>
+      </AccordionSummary>
 
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
         {(fieldComponent === 'MultipleTextField' && (
