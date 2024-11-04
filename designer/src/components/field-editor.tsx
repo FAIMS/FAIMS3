@@ -123,9 +123,6 @@ export const FieldEditor = ({
           display: 'none',
         },
       }}
-      slotProps={{
-        transition: {unmountOnExit: true},
-      }}
     >
       <AccordionSummary
         expandIcon={<ArrowForwardIosRoundedIcon sx={{fontSize: '1rem'}} />}
