@@ -4,6 +4,7 @@ import {
   RecordMetadata,
 } from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
+import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -86,8 +87,19 @@ export default function AddRecordButtons({
           {/*redirect to the Record creation without known type*/}
           {uiSpec?.visible_types.length === 1 ? (
             <Button
-              variant="outlined"
+              variant="contained"
               color="primary"
+              sx={{
+                mb: 3,
+                mt: 3,
+                fontWeight: 'bold',
+                backgroundColor: theme.palette.icon.main,
+                color: theme.palette.primary.light,
+                '&:hover': {
+                  backgroundColor: theme.palette.secondary.dark,
+                },
+              }}
+              startIcon={<AddCircleSharpIcon />}
               component={RouterLink}
               key="newRecord"
               to={
@@ -96,15 +108,6 @@ export default function AddRecordButtons({
                 ROUTES.RECORD_CREATE +
                 visible_types
               }
-              sx={{
-                fontWeight: 'bold',
-                backgroundColor: theme.palette.icon.main,
-                color: '#FFFFFF',
-
-                '&:hover': {
-                  backgroundColor: theme.palette.secondary.dark,
-                },
-              }}
             >
               {buttonLabel}
             </Button>

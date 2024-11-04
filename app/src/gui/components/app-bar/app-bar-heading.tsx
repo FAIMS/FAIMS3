@@ -1,5 +1,5 @@
 import {NavLink} from 'react-router-dom';
-import {APP_NAME} from '../../../buildconfig';
+import {HEADING_APP_NAME} from '../../../buildconfig';
 
 interface AppBarHeadingProps {
   link: string;
@@ -24,6 +24,6 @@ export const AppBarHeading = ({link}: AppBarHeadingProps) => (
     }}
   >
     <img src="/assets/icons/icon-48.webp" />
-    <h1>{APP_NAME}</h1>
+    <h1>{HEADING_APP_NAME}</h1>
   </NavLink>
 );

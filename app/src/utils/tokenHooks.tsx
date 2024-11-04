@@ -1,5 +1,5 @@
 import {useQuery, useMutation} from '@tanstack/react-query';
-import {getDefaultToken, getToken} from '../context/functions';
+import {getAnyToken, getDefaultToken, getToken} from '../context/functions';
 import {local_auth_db} from '../sync/databases';
 import {requestTokenRefresh} from './apiOperations/auth';
 import ObjectMap from './ObjectMap';
@@ -46,6 +46,28 @@ export const useGetDefaultToken = () => {
     },
     // The query key, which includes the listing ID to ensure proper caching
     queryKey: ['get default token'],
+  });
+
+  // Return an object with the token and query state
+  return query;
+};
+
+/**
+ * Custom hook to fetch ANY token (by current username) for any
+ * listing ID. This is cached but you can refetch on demand if needed.
+ *
+ * @returns An object containing the token data and query state.
+ */
+export const useGetAnyToken = () => {
+  // Use react-query's useQuery hook to handle the API call
+  const query = useQuery({
+    // The query function that fetches the token
+    queryFn: async () => {
+      return await getAnyToken();
+    },
+    // The query key, which includes the listing ID to ensure proper caching
+    queryKey: ['get any token'],
+    refetchOnMount: true,
   });
 
   // Return an object with the token and query state
