@@ -22,8 +22,11 @@ const getListings = async () => {
  * Retrieves the token associated with the specified ID by getting the token for
  * the current username.
  *
+ * This will throw an error if there is no token for the given ID.
+ *
  * @param id - The ID of the listing to get the token for
  * @returns The token associated with the specified ID.
+ * @throws 404 error from pouch if not found
  */
 export const getToken = async (id: string) => {
   const {available_tokens, current_username} = await local_auth_db.get(id);
@@ -43,6 +46,31 @@ export const getDefaultToken = async (): Promise<JWTTokenInfo | undefined> => {
   // If there is an entry, use first
   if (listings.length > 0) {
     return getToken(listings[0]._id);
+  }
+
+  // Otherwise no tokens
+  return undefined;
+};
+
+/**
+ * Fetches the listings and looks for any listing which has a token
+ * @returns Unparsed, unvalidated JWT
+ */
+export const getAnyToken = async (): Promise<JWTTokenInfo | undefined> => {
+  // Get listings
+  const listings = await getListings();
+  console.log(listings);
+
+  // If there is an entry, use first
+  for (const listing of listings) {
+    try {
+      const possibleToken = await getToken(listing._id);
+      if (possibleToken !== undefined) {
+        return possibleToken;
+      }
+    } catch {
+      continue;
+    }
   }
 
   // Otherwise no tokens

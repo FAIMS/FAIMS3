@@ -5,7 +5,7 @@ import {ErrorBoundary, ErrorPage} from '../../logging';
 import {PossibleToken} from '../../types/misc';
 import Footer from '../components/footer';
 import MainAppBar from './appBar';
-import {useGetDefaultToken} from '../../utils/tokenHooks';
+import {useGetAnyToken} from '../../utils/tokenHooks';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -13,7 +13,8 @@ interface MainLayoutProps {
 }
 
 const MainLayout = (props: MainLayoutProps) => {
-  const tokenQuery = useGetDefaultToken();
+  // TODO active user refactor
+  const tokenQuery = useGetAnyToken();
   const token = tokenQuery.data?.parsedToken;
   const theme = useTheme();
   const appbarHeight = 64;
