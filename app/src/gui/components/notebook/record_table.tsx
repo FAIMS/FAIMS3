@@ -26,7 +26,6 @@ import {
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '@faims3/data-model';
-import ArticleIcon from '@mui/icons-material/Article';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {Alert, Box, Grid, Link, Paper, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';

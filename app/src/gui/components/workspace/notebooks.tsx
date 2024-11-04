@@ -122,7 +122,7 @@ export default function NoteBooks() {
           type: 'string',
           flex: 0.4,
           minWidth: 160,
-          renderCell: ({row: {activated, name, description, status}}) => (
+          renderCell: ({row: {activated, name, description}}) => (
             <div>
               <div
                 style={{
