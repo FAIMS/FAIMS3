@@ -371,6 +371,15 @@ function get_app_name(): string {
   return appid || 'Fieldmark';
 }
 
+/**
+ * Retrieves the configured heading app name or falls back to APP_NAME
+ * @returns {string} - the app name
+ */
+function get_heading_app_name(): string {
+  const appid = import.meta.env.VITE_HEADING_APP_NAME;
+  return appid || get_app_name();
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -392,5 +401,6 @@ export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
 export const NOTEBOOK_NAME = get_notebook_name();
 export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
 export const APP_NAME = get_app_name();
+export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();
 export const SHOW_RECORD_SUMMARY_COUNTS = showRecordCounts();

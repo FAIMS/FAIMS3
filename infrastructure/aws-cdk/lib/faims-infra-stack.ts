@@ -116,6 +116,10 @@ const DomainsConfigSchema = z.object({
 });
 
 const ConductorConfigSchema = z.object({
+  /** The title for this conductor instance, shown on listings page */
+  name: z.string(),
+  /** The description shown underneath as a sub heading */
+  description: z.string(),
   /** Conductor docker image e.g. org/faims3-api */
   conductorDockerImage: z.string(),
   /** Conductor docker image e.g. latest, sha-123456 */
@@ -178,6 +182,10 @@ export const UiConfiguration = z.object({
   notebookListType: z.enum(['tabs', 'headings']),
   /** The display name for notebooks e.g. survey, notebook */
   notebookName: z.string(),
+  /** The name of the App in app store etc - heading by default */
+  appName: z.string(),
+  /** Override the heading text in banner */
+  headingAppName: z.string().optional(),
 });
 
 // Define the schema
@@ -396,6 +404,8 @@ export class FaimsInfraStack extends cdk.Stack {
       uiTheme: config.uiConfiguration.uiTheme,
       notebookListType: config.uiConfiguration.notebookListType,
       notebookName: config.uiConfiguration.notebookName,
+      appName: config.uiConfiguration.appName,
+      headingAppName: config.uiConfiguration.headingAppName,
     });
 
     // Backup setup
