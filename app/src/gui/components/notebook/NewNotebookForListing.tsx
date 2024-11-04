@@ -430,7 +430,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
                 textAlign: 'center',
               }}
             >
-              Create New {NOTEBOOK_NAME}
+              Create New {NOTEBOOK_NAME_CAPITALIZED}
             </Typography>
           </Box>
         </DialogTitle>
