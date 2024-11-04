@@ -13,6 +13,7 @@ import {RecordID} from '@faims3/data-model';
 import RecordRouteDisplay from '../../ui/record_link';
 import {grey} from '@mui/material/colors';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import {theme} from '../../../themes';
 
 interface SortedDataType {
   [key: string]: Array<RecordLinkProps>;
@@ -80,21 +81,6 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
       const linksFromRecord: Array<RecordLinkProps> = [];
       const linksToRecord: Array<RecordLinkProps> = [];
       props.record_links.map(l => {
-        // dummyRecordLinks.map(l => {
-        // const key = JSON.stringify(l.relation_type_vocabPair);
-        // if (l.record_id === props.record_id) {
-        //   // link to this record from another field, push to dummySortObjectToRecord
-        //   // if the array hasn't been previously set, create it
-        //   if (linksToRecord[key] === undefined) {
-        //     linksToRecord[key] = [];
-        //   }
-        //   linksToRecord[key].push(l);
-        // } else {
-        //   if (linksFromRecord[key] === undefined) {
-        //     linksFromRecord[key] = [];
-        //   }
-        //   linksFromRecord[key].push(l);
-        // }
         if (l.record_id === props.record_id) {
           linksToRecord.push(l);
         } else {
@@ -256,7 +242,12 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                 params.row.link.deleted ? (
                   <DeleteForeverIcon color={'error'} />
                 ) : (
-                  <EditIcon color={'primary'} />
+                  <EditIcon
+                    sx={{
+                      backgroundColor: theme.palette.icon.main,
+                      color: theme.palette.text.primary,
+                    }}
+                  />
                 )
               }
               onClick={() => {
@@ -364,32 +355,6 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                                 params.row.route,
                                 params.row.deleted
                               ),
-                          },
-                          {
-                            field: 'lastUpdatedBy',
-                            headerName: 'Last Updated By',
-                            headerClassName: 'faims-record-link--header',
-                            minWidth: 300,
-                            flex: 0.2,
-                          },
-                          {
-                            field: 'actions',
-                            type: 'actions',
-                            headerName: 'Actions',
-                            headerClassName: 'faims-record-link--header',
-                            flex: 0.1,
-                            minWidth: 100,
-                            getActions: (params: GridRowParams) => [
-                              <GridActionsCellItem
-                                icon={<EditIcon color={'primary'} />}
-                                onClick={() => {
-                                  alert('go to Form and update in Field');
-                                  console.debug(params);
-                                }}
-                                label="Edit link"
-                                showInMenu
-                              />,
-                            ],
                           },
                         ]
                   }

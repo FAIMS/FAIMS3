@@ -286,11 +286,11 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
     if (props.valuetype === 'child') {
       let newvalue = name;
       if (type === 'image') newvalue = label + '(' + name + ')';
-      props.form.setFieldValue(props.field.name, newvalue);
+      props.form.setFieldValue(props.field.name, newvalue, true);
 
       return;
     }
-    props.form.setFieldValue(props.field.name, newvalue);
+    props.form.setFieldValue(props.field.name, newvalue, true);
 
     return;
   };

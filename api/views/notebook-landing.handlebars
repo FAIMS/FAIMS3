@@ -116,7 +116,7 @@
   <script>
   const addRecords = (e) => {
     e.preventDefault();
-    const count = document.querySelector('input[name="number"]').value;
+    const count = parseInt(document.querySelector('input[name="number"]').value);
     console.log('count', count);
     fetch('/api/notebooks/{{notebook.project_id}}/generate', {
       method: 'POST',

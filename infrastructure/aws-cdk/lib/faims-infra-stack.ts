@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {BackupConstruct} from './components/backups';
 import {Construct} from 'constructs';
 import {FaimsConductor} from './components/conductor';
@@ -97,6 +98,8 @@ const CouchConfigSchema = z.object({
   monitoring: MonitoringConfigSchema.optional(),
   /** EC2 instance type for CouchDB */
   instanceType: z.string(),
+  /** The version to use of CouchDB - 3.3.3 is default */
+  couchVersionTag: z.string().default('3.3.3'),
 });
 
 const DomainsConfigSchema = z.object({
@@ -113,10 +116,16 @@ const DomainsConfigSchema = z.object({
 });
 
 const ConductorConfigSchema = z.object({
+  /** The title for this conductor instance, shown on listings page */
+  name: z.string(),
+  /** The description shown underneath as a sub heading */
+  description: z.string(),
   /** Conductor docker image e.g. org/faims3-api */
   conductorDockerImage: z.string(),
   /** Conductor docker image e.g. latest, sha-123456 */
   conductorDockerImageTag: z.string().default('latest'),
+  /** The prefix to use for the short codes in the app */
+  shortCodePrefix: z.string().default('FAIMS'),
   /** The number of CPU units for the Fargate task */
   cpu: z.number().int().positive(),
   /** The amount of memory (in MiB) for the Fargate task */
@@ -166,6 +175,19 @@ const BackupConfigSchema = z
     }
   );
 
+export const UiConfiguration = z.object({
+  /** The UI Theme for the app */
+  uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
+  /** The notebook list type for the app */
+  notebookListType: z.enum(['tabs', 'headings']),
+  /** The display name for notebooks e.g. survey, notebook */
+  notebookName: z.string(),
+  /** The name of the App in app store etc - heading by default */
+  appName: z.string(),
+  /** Override the heading text in banner */
+  headingAppName: z.string().optional(),
+});
+
 // Define the schema
 export const ConfigSchema = z.object({
   /** The name of the stack to deploy to cloudformation. Note that changing
@@ -194,6 +216,8 @@ export const ConfigSchema = z.object({
     /** ARN of the public key secret */
     publicKey: z.string(),
   }),
+  /** UI Configuration values */
+  uiConfiguration: UiConfiguration,
   /** CouchDB configuration */
   couch: CouchConfigSchema,
   /** Backup configuration */
@@ -309,6 +333,20 @@ export class FaimsInfraStack extends cdk.Stack {
       certificate: primaryCert,
     });
 
+    // Cookie secret shared between couch and conductor
+
+    // Generate cookie auth secret at deploy time
+    const cookieSecret = new sm.Secret(this, 'conductor-cookie-secret', {
+      description:
+        'Contains a randomly generated string used for cookie auth in conductor and couch',
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      generateSecretString: {
+        includeSpace: false,
+        passwordLength: 25,
+        excludePunctuation: true,
+      },
+    });
+
     // COUCHDB
     // =======
 
@@ -323,6 +361,8 @@ export class FaimsInfraStack extends cdk.Stack {
       dataVolumeSize: config.couch.volumeSize,
       dataVolumeSnapshotId: config.couch.ebsRecoverySnapshotId,
       monitoring: config.couch.monitoring,
+      couchVersionTag: config.couch.couchVersionTag,
+      cookieSecret: cookieSecret,
     });
 
     // CONDUCTOR
@@ -343,6 +383,7 @@ export class FaimsInfraStack extends cdk.Stack {
       iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
       sharedBalancer: networking.sharedBalancer,
       config: config.conductor,
+      cookieSecret: cookieSecret,
     });
 
     // FRONT-END
@@ -360,6 +401,11 @@ export class FaimsInfraStack extends cdk.Stack {
       designerHz: hz,
       designerUsEast1Certificate: cfnCert,
       conductorUrl: conductor.conductorEndpoint,
+      uiTheme: config.uiConfiguration.uiTheme,
+      notebookListType: config.uiConfiguration.notebookListType,
+      notebookName: config.uiConfiguration.notebookName,
+      appName: config.uiConfiguration.appName,
+      headingAppName: config.uiConfiguration.headingAppName,
     });
 
     // Backup setup

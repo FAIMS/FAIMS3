@@ -85,7 +85,7 @@ export function FileUploader(props: FieldProps & Props) {
       );
       setfiles(newfiles);
       console.log(current_files);
-      props.form.setFieldValue(props.field.name, newfiles);
+      props.form.setFieldValue(props.field.name, newfiles, true);
     }
   };
   return (
@@ -103,7 +103,7 @@ export function FileUploader(props: FieldProps & Props) {
           onDrop={files => {
             const newfiles = current_files.concat(files);
             setfiles(newfiles);
-            props.form.setFieldValue(props.field.name, newfiles);
+            props.form.setFieldValue(props.field.name, newfiles, true);
           }}
         >
           {({getRootProps, getInputProps}) => (

@@ -25,6 +25,13 @@ export interface FaimsFrontEndProps {
   // Domain name
   faimsDomainNames: Array<string>;
 
+  // customisation
+  uiTheme: 'bubble' | 'default' | 'bssTheme';
+  notebookListType: 'tabs' | 'headings';
+  notebookName: string;
+  appName: string;
+  headingAppName?: string;
+
   // Designer standalone website
   designerHz: IHostedZone;
   designerUsEast1Certificate: ICertificate;
@@ -138,11 +145,21 @@ export class FaimsFrontEnd extends Construct {
       VITE_SHOW_WIPE: 'true',
       VITE_SHOW_NEW_NOTEBOOK: 'true',
       VITE_SHOW_MINIFAUXTON: 'true',
+      VITE_APP_NAME: props.appName,
+      VITE_HEADING_APP_NAME: props.headingAppName ?? props.appName,
 
+      // Theme: default or bubble
+      VITE_THEME: props.uiTheme,
+
+      // tabs or headings
+      VITE_NOTEBOOK_LIST_TYPE: props.notebookListType,
+      // e.g. survey, notebook
+      VITE_NOTEBOOK_NAME: props.notebookName,
+      // Include record summary counts
+      VITE_SHOW_RECORD_SUMMARY_COUNTS: 'true',
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
       VITE_PRODUCTION_BUILD: 'true',
-      VITE_SERVICES: 'FAIMSTEXT',
       VITE_TAG: 'CDKDeployment',
     };
 

@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Button,
-  Divider,
   Grid,
   Typography,
   ButtonProps,
@@ -12,7 +11,6 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {styled} from '@mui/material/styles';
 
 import {CreateRecordLink, AddNewRecordButton} from './create_record_link';
-import LinkIcon from '@mui/icons-material/Link';
 import {CreateRecordLinkProps} from '../types';
 interface ExpandMoreProps extends ButtonProps {
   expand: boolean;
@@ -32,14 +30,14 @@ export const ExpandMoreButton = styled((props: ExpandMoreProps) => {
   },
 }));
 
-interface CreateLinkComponentProps {
+interface CreateLinkComponentProps extends CreateRecordLinkProps {
   field_label: string;
 }
 
 export default function CreateLinkComponent(
   props: CreateLinkComponentProps & CreateRecordLinkProps
 ) {
-  const {field_label, ...others} = props;
+  const {field_label} = props;
   // is the new link functionality visible
   const [expanded, setExpanded] = React.useState(false);
 
@@ -51,20 +49,15 @@ export default function CreateLinkComponent(
     <React.Fragment>
       <Grid
         container
-        direction="row"
+        direction="column"
         justifyContent="space-between"
-        alignItems="center"
+        alignItems="left"
         spacing={1}
       >
-        <Grid item>
-          <LinkIcon fontSize={'inherit'} sx={{mt: '3px'}} />
-        </Grid>
         <Grid item xs={'auto'}>
-          <Typography variant={'h6'}>{field_label}</Typography>
+          <Typography variant={'h3'}>{field_label}</Typography>
         </Grid>
-        <Grid item xs>
-          <Divider />
-        </Grid>
+
         <Grid item>
           <ButtonGroup variant={'outlined'} size={'medium'}>
             {props.relation_type === 'Child' && props.disabled !== true && (
@@ -76,7 +69,7 @@ export default function CreateLinkComponent(
                 }
                 pathname={props.pathname}
                 state={props.state}
-                text={'Add Child Record'}
+                text={`Add New ${props.related_type}`}
                 handleSubmit={props.handleSubmit}
                 project_id={props.project_id}
                 save_new_record={props.save_new_record}
@@ -97,7 +90,13 @@ export default function CreateLinkComponent(
                   : props.disabled
               } // add to disable add/link record feature
             >
-              Add Link
+              {props.relation_type === 'Linked' ? (
+                <span>Add a link to a {props.related_type_label}</span>
+              ) : (
+                <span>
+                  Add a link to an existing {props.related_type_label}
+                </span>
+              )}
             </ExpandMoreButton>
           </ButtonGroup>
         </Grid>
@@ -105,7 +104,7 @@ export default function CreateLinkComponent(
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <Collapse in={expanded} timeout="auto" unmountOnExit sx={{mt: 1}}>
-            <CreateRecordLink {...others} />
+            <CreateRecordLink {...props} />
           </Collapse>
         </Grid>
       </Grid>

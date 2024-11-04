@@ -109,7 +109,7 @@ export function QRCodeFormField({
 
   const updateField = (value: any) => {
     setState(value);
-    form.setFieldValue(field.name, value);
+    form.setFieldValue(field.name, value, true);
   };
 
   // a string version of the value

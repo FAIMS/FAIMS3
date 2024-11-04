@@ -16,6 +16,7 @@
     ],
     "scripts": {
         "build": "tsc -p tsconfig.json",
+        "watch": "tsc -p tsconfig.json --watch",
         "test": "NODE_ENV=test jest",
         "test:watch": "NODE_ENV=test jest --watchAll=true",
         "coverage": "NODE_ENV=test jest --coverage --watchAll=false",
@@ -29,7 +30,7 @@
         "url": "https://github.com/FAIMS/faims3-data-model"
     },
     "peerDependencies": {
-        "pouchdb": "^7.3.0"
+        "pouchdb": "^7.3.1"
     },
     "dependencies": {
         "@demvsystems/yup-ast": "^1.2.2",

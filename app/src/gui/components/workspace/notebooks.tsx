@@ -18,23 +18,24 @@
  *   TODO
  */
 
-import {useContext, useState} from 'react';
-import {Box, Paper, Typography, Button} from '@mui/material';
-import FolderIcon from '@mui/icons-material/Folder';
-import {GridColDef} from '@mui/x-data-grid';
-import ProjectStatus from '../notebook/settings/status';
-import NotebookSyncSwitch from '../notebook/settings/sync_switch';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
-import {grey} from '@mui/material/colors';
-import Tabs from '../ui/tab-grid';
-import HeadingGrid from '../ui/heading-grid';
-import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+import FolderIcon from '@mui/icons-material/Folder';
+import {Box, Button, Paper, Typography} from '@mui/material';
+import {grey} from '@mui/material/colors';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {GridColDef} from '@mui/x-data-grid';
+import {useContext, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
-import {useNavigate} from 'react-router-dom';
+import {CREATE_NOTEBOOK_ROLES, userHasRoleInAnyListing} from '../../../users';
+import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
+import NotebookSyncSwitch from '../notebook/settings/sync_switch';
+import HeadingProjectGrid from '../ui/heading-grid';
+import Tabs from '../ui/tab-grid';
 
 export default function NoteBooks() {
   const [tabID, setTabID] = useState('1');
@@ -53,23 +54,28 @@ export default function NoteBooks() {
           flex: 0.4,
           minWidth: 200,
           renderCell: ({row: {activated, name, description}}) => (
-            <Box my={1}>
+            <Box my={3}>
               <span
                 style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
+                  alignItems: 'center',
                   flexWrap: 'nowrap',
+                  padding: '12px 0',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
-                  color={activated ? 'secondary' : 'disabled'}
-                  sx={{mr: '3px'}}
+                  color={activated ? 'primary' : 'disabled'}
+                  sx={{mr: '8px'}}
                 />
                 <Typography
-                  variant={'body2'}
+                  variant={'body1'}
                   fontWeight={activated ? 'bold' : 'normal'}
                   color={activated ? 'black' : grey[800]}
+                  sx={{
+                    padding: '4px 0',
+                    lineHeight: 1,
+                  }}
                 >
                   {name}
                 </Typography>
@@ -78,22 +84,15 @@ export default function NoteBooks() {
             </Box>
           ),
         },
-        {
-          field: 'last_updated',
-          headerName: 'Last Updated',
-          type: 'dateTime',
-          minWidth: 160,
-          flex: 0.2,
-          valueGetter: ({value}) => value && new Date(value),
-        },
-        {
-          field: 'status',
-          headerName: 'Status',
-          type: 'string',
-          flex: 0.2,
-          minWidth: 160,
-          renderCell: ({row: {status}}) => <ProjectStatus status={status} />,
-        },
+        // commenting this untill the functionality is fixed for this column.
+        // {
+        //   field: 'last_updated',
+        //   headerName: 'Last Updated',
+        //   type: 'dateTime',
+        //   minWidth: 160,
+        //   flex: 0.2,
+        //   valueGetter: ({value}) => value && new Date(value),
+        // },
         {
           field: 'actions',
           type: 'actions',
@@ -117,41 +116,47 @@ export default function NoteBooks() {
           type: 'string',
           flex: 0.4,
           minWidth: 160,
-          renderCell: ({row: {activated, name, description, status}}) => (
+          renderCell: ({row: {activated, name, description}}) => (
             <div>
               <div
                 style={{
                   display: 'flex',
+                  alignItems: 'flex-start',
+                  padding: '12px 0',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
                   color={activated ? 'secondary' : 'disabled'}
-                  sx={{mr: '3px'}}
+                  sx={{mr: '4px'}}
                 />
                 <Typography
                   variant={'body2'}
                   fontWeight={activated ? 'bold' : 'normal'}
                   color={activated ? 'black' : grey[800]}
+                  sx={{
+                    padding: '4px 0',
+                  }}
                 >
                   {name}
                 </Typography>
               </div>
-              <Typography variant={'caption'}>{description}</Typography>
-              <div>
-                <ProjectStatus status={status} />
-              </div>
+              <Typography variant={'caption'} sx={{paddingTop: '4px'}}>
+                {description}
+              </Typography>
             </div>
           ),
         },
-        {
-          field: 'last_updated',
-          headerName: 'Last Updated',
-          type: 'dateTime',
-          minWidth: 100,
-          flex: 0.3,
-          valueGetter: ({value}) => value && new Date(value),
-        },
+        // commenting this untill the functionality is fixed for this column.
+
+        // {
+        //   field: 'last_updated',
+        //   headerName: 'Last Updated',
+        //   type: 'dateTime',
+        //   minWidth: 100,
+        //   flex: 0.3,
+        //   valueGetter: ({value}) => value && new Date(value),
+        // },
         {
           field: 'actions',
           type: 'actions',
@@ -171,27 +176,35 @@ export default function NoteBooks() {
 
   const activatedProjects = projects.filter(({activated}) => activated);
 
+  // fetch all user info then determine if any listing has permission to create notebooks
+  const allUserInfo = useGetAllUserInfo();
+  const showCreateNewNotebookButton = allUserInfo?.data
+    ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
+    : false;
+
   return (
     <Box>
       <Box component={Paper} elevation={0} p={2}>
         <Typography variant={'body1'} gutterBottom>
           You have {activatedProjects.length} {NOTEBOOK_NAME}
           {activatedProjects.length !== 1 ? 's' : ''} activated on this device.
-          To start syncing a {NOTEBOOK_NAME}, visit the{' '}
+          To start using a {NOTEBOOK_NAME}, visit the{' '}
           <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
             Available
           </Button>{' '}
           tab and click the activate button.
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
-          sx={{mb: 3, mt: 3}}
-          startIcon={<AddCircleSharpIcon />}
-        >
-          Create New Survey
-        </Button>
+        {showCreateNewNotebookButton && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+            sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
+            startIcon={<AddCircleSharpIcon />}
+          >
+            Create New {NOTEBOOK_NAME}
+          </Button>
+        )}
         {NOTEBOOK_LIST_TYPE === 'tabs' ? (
           <Tabs
             projects={projects}
@@ -200,11 +213,7 @@ export default function NoteBooks() {
             columns={columns}
           />
         ) : (
-          <HeadingGrid
-            pouchProjectList={projects}
-            loading={false}
-            columns={columns}
-          />
+          <HeadingProjectGrid projects={projects} columns={columns} />
         )}
       </Box>
     </Box>

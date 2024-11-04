@@ -18,22 +18,15 @@
  *   Creates the footer with version number and debug data on all pages.
  */
 
-import React, {useContext} from 'react';
+import React from 'react';
 import {useLocation} from 'react-router-dom';
-import {Box, Grid, Typography} from '@mui/material';
-import packageJson from '../../../../package.json';
 
-import {COMMIT_VERSION} from '../../../buildconfig';
-import {store} from '../../../context/store';
-import InProgress from '../ui/inProgress';
-import BoxTab from '../ui/boxTab';
 import FullFooter from './fullFooter';
 import SlimFooter from './slimFooter';
 // import {EHTML} from './footerEHTML';
 
-import {grey} from '@mui/material/colors';
-import * as ROUTES from '../../../constants/routes';
 import {TokenContents} from '@faims3/data-model';
+import * as ROUTES from '../../../constants/routes';
 interface FooterProps {
   token?: null | undefined | TokenContents;
 }
@@ -41,7 +34,6 @@ export default function Footer(props: FooterProps) {
   /**
    * Display a large footer for INDEX and WORKSPACE routes
    * Show only the SlimFooter otherwise
-   * Optional byline if import.meta.env.VITE_SERVICES === 'FAIMSTEXT'
    */
   // This is a MASSIVE hack because react-router is dumb and can't seem to work
   // out that shadowing a web API and doing it wrong is a bad idea...
@@ -61,60 +53,6 @@ export default function Footer(props: FooterProps) {
       ) : (
         <SlimFooter token={props.token} />
       )}
-      {/*{import.meta.env.VITE_SERVICES === 'FAIMSTEXT' && <EHTML />}*/}
-      {import.meta.env.VITE_SERVER === 'developer' && <DevelopTool />}
     </React.Fragment>
-  );
-}
-
-function DevelopTool() {
-  const globalState = useContext(store);
-  return (
-    <Grid container spacing={2} sx={{width: '100vh', overflow: 'scroll'}}>
-      <Grid item xs={12} sm={12}>
-        <hr />
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <code>
-          {import.meta.env.VITE_TAG}: {packageJson.name} v{packageJson.version}{' '}
-          ({COMMIT_VERSION})
-        </code>
-        {packageJson.name}
-        <Box mt={2}>
-          <Typography variant={'h6'}>Key</Typography>
-          <InProgress />
-        </Box>
-      </Grid>
-      <Grid item xs={12} sm={6}>
-        <BoxTab
-          title={'Developer tool: react GlobalState'}
-          bgcolor={grey[100]}
-        />
-        <Box
-          bgcolor={grey[100]}
-          p={2}
-          style={{width: '90vh', overflowX: 'scroll'}}
-        >
-          <pre>
-            {JSON.stringify(
-              {
-                ...globalState.state,
-                alerts: globalState.state.alerts.map(alert => {
-                  if ('element' in alert) {
-                    // Alerts made with custom elements aren't JSON-stringifiable
-                    return alert.toString();
-                  } else {
-                    return alert; //Regular alert
-                  }
-                }),
-              },
-              null,
-              2
-            )}
-          </pre>
-          Current URL: <pre>{window.location.href}</pre>
-        </Box>
-      </Grid>
-    </Grid>
   );
 }
