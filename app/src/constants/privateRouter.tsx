@@ -24,7 +24,7 @@ export const PrivateRoute = (props: PrivateRouteProps): React.ReactElement => {
 
   // The token is being retrieved
   if (anyToken.isFetching) {
-    return <LoadingApp></LoadingApp>;
+    return <LoadingApp />;
   }
 
   const {children} = props;
