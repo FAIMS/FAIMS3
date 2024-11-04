@@ -1278,6 +1278,7 @@ class RecordForm extends React.Component<
                           }, 500);
                         }}
                         hideNavigation={true}
+                        layout={layout}
                       />
                       {/* {UGCReport ONLY for the saved record} */}
                       {this.state.revision_cached !== undefined && (
@@ -1372,6 +1373,7 @@ class RecordForm extends React.Component<
                         }, 500);
                       }}
                       buttonRef={this.props.buttonRef}
+                      layout={layout}
                     />
                     {this.state.revision_cached !== undefined && (
                       <Box mt={3}>
