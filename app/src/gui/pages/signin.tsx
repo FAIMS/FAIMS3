@@ -51,7 +51,7 @@ export function SignIn() {
       <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={4}>
         {listings.map((listing_info, index) => (
-          <Grid item lg={4} md={6} sm={8} xs={12} key={index}>
+          <Grid item lg={4} md={6} sm={12} xs={12} key={index}>
             <ClusterCard
               key={listing_info.id}
               listing_id={listing_info.id}

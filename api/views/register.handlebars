@@ -24,25 +24,26 @@
     <legend>Register Local Account</legend>
     <div class="mb-3">
       <label for="EmailInput" class="form-label">Email</label>
-      <input type="text" name="email" class="form-control" id="EmailInput" value="{{messages.email}}">
+      <input type="text" autocomplete="email" name="email" class="form-control" id="EmailInput" value="{{messages.email}}">
       {{#if messages.error.email}}
       <div class="alert alert-danger">{{messages.error.email.msg}}</div>
       {{/if}}
     </div>
     <div class="mb-3">
       <label for="NameInput" class="form-label">Full Name</label>
-      <input type="text" name="name" class="form-control" id="NameInput" value="{{messages.name}}">
+      <input type="text" autocomplete="name" name="name" class="form-control" id="NameInput" value="{{messages.name}}">
     </div>
     <div class="mb-3">
       <label for="InputPassword" class="form-label">Password</label>
-      <input type="password" name="password" class="form-control" id="InputPassword">
+      <p style="font-style: italic;">Choose a password with at least 10 characters.</p>
+      <input type="password" autocomplete="new-password" name="password" class="form-control" id="InputPassword">
       {{#if messages.error.password}}
       <div class="alert alert-danger">{{messages.error.password.msg}}</div>
       {{/if}}
     </div>
     <div class="mb-3">
       <label for="RepeatPassword" class="form-label">Repeat Password</label>
-      <input type="password" name="repeat" class="form-control" id="RepeatPassword">
+      <input type="password" autocomplete="new-password" name="repeat" class="form-control" id="RepeatPassword">
       {{#if messages.error.repeat}}
       <div class="alert alert-danger">{{messages.error.repeat.msg}}</div>
       {{/if}}
