@@ -57,7 +57,6 @@ import {
   requireAuthentication,
   requireClusterAdmin,
   requireNotebookMembership,
-  validateDatabases,
 } from './middleware';
 import {validateProjectDatabase} from './couchdb/devtools';
 
