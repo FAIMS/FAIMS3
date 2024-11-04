@@ -303,6 +303,7 @@ app.get('/notebooks/:id/users', requireClusterAdmin, async (req, res) => {
     const notebook = await getNotebookMetadata(project_id);
 
     const userList = await getUserInfoForNotebook(project_id);
+
     res.render('users', {
       roles: userList.roles,
       users: userList.users,
@@ -320,17 +321,22 @@ app.get('/users', requireClusterAdmin, async (req, res) => {
   if (req.user) {
     const id = req.user._id;
     const userList = await getUsers();
+
+    const userListFiltered = userList
+      .filter(user => user._id !== id)
+      .map(user => {
+        return {
+          username: user._id,
+          name: user.name,
+          can_create_notebooks: userCanCreateNotebooks(user),
+          is_cluster_admin: userIsClusterAdmin(user),
+        };
+      });
+
     res.render('cluster-users', {
       cluster_admin: userIsClusterAdmin(req.user),
       can_create_notebooks: userCanCreateNotebooks(req.user),
-      users: userList
-        .filter(user => user._id !== id)
-        .map(user => {
-          return {
-            username: user._id,
-            name: user.name,
-          };
-        }),
+      users: userListFiltered,
     });
   } else {
     res.status(401).end();
