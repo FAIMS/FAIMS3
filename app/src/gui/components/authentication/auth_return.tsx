@@ -21,11 +21,12 @@
  */
 
 import {Button, Stack} from '@mui/material';
-import {useEffect, useRef, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {getSyncableListingsInfo} from '../../../databaseAccess';
 import {update_directory} from '../../../sync/process-initialization';
 import {parseToken, setTokenForCluster} from '../../../users';
+import {ProjectsContext} from '../../../context/projects-context';
 
 async function getListingForConductorUrl(conductor_url: string) {
   const origin = new URL(conductor_url).origin;
@@ -42,6 +43,8 @@ async function getListingForConductorUrl(conductor_url: string) {
 export function AuthReturn() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | undefined>(undefined);
+
+  const {initProjects} = useContext(ProjectsContext);
 
   // track if effect has already run - this should only happen once
   const hasRun = useRef(false);
@@ -96,6 +99,7 @@ export function AuthReturn() {
 
       // this requires the token
       update_directory();
+      initProjects();
       navigate('/');
     };
 

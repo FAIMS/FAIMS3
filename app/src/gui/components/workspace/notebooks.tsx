@@ -36,10 +36,16 @@ import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
+import {RefreshOutlined} from '@mui/icons-material';
 
 export default function NoteBooks() {
-  const [tabID, setTabID] = useState('1');
-  const {projects} = useContext(ProjectsContext);
+  const [refresh, setRefresh] = useState(false);
+  const {projects, syncRemoteProjects} = useContext(ProjectsContext);
+
+  const activatedProjects = projects.filter(({activated}) => activated);
+
+  const [tabID, setTabID] = useState(activatedProjects.length > 0 ? '1' : '2');
+
   const history = useNavigate();
 
   const theme = useTheme();
@@ -174,8 +180,6 @@ export default function NoteBooks() {
         },
       ];
 
-  const activatedProjects = projects.filter(({activated}) => activated);
-
   // fetch all user info then determine if any listing has permission to create notebooks
   const allUserInfo = useGetAllUserInfo();
   const showCreateNewNotebookButton = allUserInfo?.data
@@ -194,17 +198,35 @@ export default function NoteBooks() {
           </Button>{' '}
           tab and click the activate button.
         </Typography>
-        {showCreateNewNotebookButton && (
+        <div
+          style={{display: 'flex', justifyContent: 'space-between', gap: '8px'}}
+        >
+          {showCreateNewNotebookButton ? (
+            <Button
+              variant="contained"
+              onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+              sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
+              startIcon={<AddCircleSharpIcon />}
+            >
+              Create New {NOTEBOOK_NAME}
+            </Button>
+          ) : (
+            <div />
+          )}
           <Button
             variant="contained"
-            color="primary"
-            onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+            disabled={refresh}
             sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
-            startIcon={<AddCircleSharpIcon />}
+            startIcon={<RefreshOutlined />}
+            onClick={async () => {
+              setRefresh(true);
+              await syncRemoteProjects();
+              setRefresh(false);
+            }}
           >
-            Create New {NOTEBOOK_NAME}
+            Sync {NOTEBOOK_NAME}s
           </Button>
-        )}
+        </div>
         {NOTEBOOK_LIST_TYPE === 'tabs' ? (
           <Tabs
             projects={projects}
