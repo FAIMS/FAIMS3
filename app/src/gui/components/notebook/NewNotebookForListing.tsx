@@ -281,7 +281,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           </Select>
         )}
       </FormControl>
-
       {/* <Box
         sx={{
           fontSize: '1.1rem',
@@ -317,7 +316,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           />
         </Typography>
       </Box> */}
-
       <Box>
         {/* <Box
           sx={{
@@ -354,7 +352,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           />
         </Box> */}
       </Box>
-
       <Button
         variant="contained"
         startIcon={
@@ -369,28 +366,21 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           />
         }
         sx={{
-          width: '40%',
+          width: '50%',
           alignSelf: 'left',
           mt: '120px',
           textTransform: 'none',
           fontSize: '1.2em',
           backgroundColor:
             !createNotebook.mutation?.isPending && selectedTemplate
-              ? '#669911'
-              : '#d2e2b9', // Enabled and disabled color
-          color:
-            !createNotebook.mutation?.isPending && selectedTemplate
-              ? '#fff'
-              : 'darkgrey', // Enabled and disabled text color
+              ? theme.palette.primary.main
+              : theme.palette.alert.warningText,
+          color: theme.palette.dialogButton.dialogText,
           '&:hover': {
             backgroundColor:
               !createNotebook.mutation?.isPending && selectedTemplate
-                ? '#1976d2'
-                : '#d2e2b9', // Adjust hover color
-          },
-          '&.Mui-disabled': {
-            backgroundColor: '#d2e2b9', // Override the default disabled color
-            color: 'darkgrey', // Override the default disabled text color
+                ? theme.palette.secondary.main
+                : theme.palette.secondary.light,
           },
         }}
         onClick={handleInstantiateSurvey}
@@ -400,7 +390,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           ? `Creating ${NOTEBOOK_NAME}...`
           : `Create ${NOTEBOOK_NAME}`}
       </Button>
-
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
@@ -409,8 +398,8 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
         disableScrollLock={true}
         sx={{
           '& .MuiDialog-paper': {
-            width: isMobile ? '90%' : '60%', // Adjust width for mobile and desktop
-            margin: 'auto', // Center the dialog
+            width: isMobile ? '90%' : '60%',
+            margin: 'auto',
             fontStyle: 'bold',
           },
         }}
@@ -441,7 +430,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
                 textAlign: 'center',
               }}
             >
-              Instantiate {NOTEBOOK_NAME}
+              Create New {NOTEBOOK_NAME}
             </Typography>
           </Box>
         </DialogTitle>
@@ -489,6 +478,10 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             onClick={handleCloseDialog}
             color="primary"
             variant="outlined"
+            sx={{
+              backgroundColor: theme.palette.dialogButton.cancel,
+              color: theme.palette.dialogButton.dialogText,
+            }}
           >
             Cancel
           </Button>
@@ -496,6 +489,10 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             onClick={handleSubmitSurvey}
             color="primary"
             variant="contained"
+            sx={{
+              backgroundColor: theme.palette.dialogButton.confirm,
+              color: theme.palette.dialogButton.dialogText,
+            }}
             disabled={createNotebook.mutation?.isPending || !surveyName}
           >
             {createNotebook.mutation?.isPending ? 'Creating...' : 'Submit'}
