@@ -358,7 +358,15 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
       <Button
         variant="contained"
         startIcon={
-          <AddCircleSharpIcon sx={{fontSize: '1.6em', color: 'orange'}} />
+          <AddCircleSharpIcon
+            sx={{
+              fontSize: '1.6em',
+              color:
+                createNotebook.mutation?.isPending || !selectedTemplate
+                  ? theme.palette.primary.main
+                  : theme.palette.background.lightBackground,
+            }}
+          />
         }
         sx={{
           width: '40%',
