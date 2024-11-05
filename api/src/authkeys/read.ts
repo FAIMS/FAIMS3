@@ -29,13 +29,10 @@ import {KEY_SERVICE} from '../buildconfig';
  */
 export const validateToken = async (token: string) => {
   const signingKey = await KEY_SERVICE.getSigningKey();
-  //console.log(`verifying token: '${token}'`);
   try {
     const {payload} = await jwtVerify(token, signingKey.publicKey, {
       algorithms: [signingKey.alg],
     });
-
-    //console.log('Token Payload', payload);
 
     if (payload.sub) {
       const user = await getUserFromEmailOrUsername(payload.sub);

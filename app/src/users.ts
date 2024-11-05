@@ -23,26 +23,30 @@
  */
 import {decodeJwt} from 'jose';
 
-import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
-import {LocalAuthDoc, JWTTokenMap, local_auth_db} from './sync/databases';
-import {reprocess_listing} from './sync/process-initialization';
 import {
   ClusterProjectRoles,
+  NOTEBOOK_CREATOR_GROUP_NAME,
   ProjectID,
   ProjectRole,
+  RecordMetadata,
   split_full_project_id,
   TokenContents,
 } from '@faims3/data-model';
-import {RecordMetadata} from '@faims3/data-model';
+import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
 import {logError} from './logging';
+import {
+  JWTTokenInfo,
+  JWTTokenMap,
+  local_auth_db,
+  LocalAuthDoc,
+} from './sync/databases';
+import {reprocess_listing} from './sync/process-initialization';
+import {PossibleToken} from './types/misc';
+import ObjectMap from './utils/ObjectMap';
 
 interface SplitCouchDBRole {
   project_id: ProjectID;
   project_role: ProjectRole;
-}
-
-interface TokenInfo {
-  token: string;
 }
 
 /**
@@ -66,69 +70,156 @@ export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
   return token_contents.username;
 }
 
+// These are the roles which allow a user to create a notebook
+export const CREATE_NOTEBOOK_ROLES = [
+  CLUSTER_ADMIN_GROUP_NAME,
+  NOTEBOOK_CREATOR_GROUP_NAME,
+];
+
+/**
+ * @returns All documents from the local auth DB keyed by the project ID
+ */
+export async function getAllUserInfo() {
+  return (await local_auth_db.allDocs({include_docs: true})).rows
+    .map(d => d.doc)
+    .filter(d => !!d);
+}
+
+/**
+ * Checks if any of the sufficient roles are present in any of the user's active tokens
+ * @param allUserInfo All local auth docs in the DB
+ * @param roles The role to check for
+ * @returns if ANY is present in ANY active token, returns true
+ */
+export function userHasRoleInAnyListing(
+  allUserInfo: LocalAuthDoc[],
+  roles: string[]
+) {
+  // For all auth records, check active user
+  for (const authRecord of allUserInfo) {
+    const activeToken = ObjectMap.get(
+      authRecord.available_tokens,
+      authRecord.current_username
+    );
+    if (roles.some(r => activeToken?.parsedToken.roles.includes(r))) {
+      return true;
+    }
+  }
+  // did not find fitting token
+  return false;
+}
+
+/**
+ * Checks if any of the sufficient roles are present in a specific listing of the user's active tokens
+ * @param allUserInfo All local auth docs in the DB
+ * @param listingId The listing to check
+ * @param roles The role to check for
+ * @returns if ANY is present in ANY active token, returns true
+ */
+export function userHasRoleInSpecificListing(
+  allUserInfo: LocalAuthDoc[],
+  listingId: string,
+  roles: string[]
+) {
+  // For all auth records, check active user
+  const specificListing = allUserInfo.find(
+    authDoc => authDoc._id === listingId
+  );
+  if (!specificListing) {
+    return false;
+  }
+  const activeToken = ObjectMap.get(
+    specificListing.available_tokens,
+    specificListing.current_username
+  );
+  if (roles.some(r => activeToken?.parsedToken.roles.includes(r))) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Store a token for a server (cluster)
  * @param token new authentication token
+ * @param parsedToken the already parsed JWT
+ * @param refreshToken the refresh token, if provided, will be stored alongside tokens
  * @param cluster_id server identifier that this token is for
  */
-export async function setTokenForCluster(token: string, cluster_id: string) {
+export async function setTokenForCluster(
+  token: string,
+  parsedToken: TokenContents,
+  refreshToken: string | undefined,
+  cluster_id: string
+) {
   if (token === undefined) throw Error('Token undefined in setTokenForCluster');
-  try {
-    const doc = await local_auth_db.get(cluster_id);
-    const new_doc = await addTokenToDoc(token, cluster_id, doc);
 
-    try {
-      await local_auth_db.put(new_doc);
-      console.log('Document stored');
-    } catch (err_conflict) {
-      console.warn(
-        'Failed to set token when conflicting for',
-        cluster_id,
-        err_conflict
-      );
-      throw Error(`Failed to set token when conflicting for: ${cluster_id}`);
-    }
-  } catch (err) {
-    console.debug('No existing token for', cluster_id);
-    try {
-      const doc = await addTokenToDoc(token, cluster_id, null);
-      console.debug('Initial token info is:', doc);
-      await local_auth_db.put(doc);
-    } catch (err_initial: any) {
-      console.warn('Failed to set initial token for', cluster_id, err_initial);
-      throw Error(`Failed to set initial token for: ${cluster_id}`);
-    }
+  // Then see if we have a doc -> return null if get throws
+  const doc = await local_auth_db.get(cluster_id).catch(() => null);
+  const newDoc = await addTokenToDoc(
+    token,
+    parsedToken,
+    refreshToken,
+    cluster_id,
+    doc
+  );
+
+  try {
+    await local_auth_db.put(newDoc);
+  } catch (err_conflict) {
+    console.error(
+      'Failed to set token when conflicting for',
+      cluster_id,
+      err_conflict
+    );
+    throw Error(`Failed to set token when conflicting for: ${cluster_id}`);
   }
 }
 
 /**
  * Add a token to an auth object or create a new one
  * @param token auth token
+ * @param parsedToken the parsed token contents
+ * @param refreshToken refresh token, if any
  * @param cluster_id server identifier
  * @param current_doc current auth doc if any
  * @returns a promise resolving to a new or updated auth document
  */
 async function addTokenToDoc(
   token: string,
+  parsedToken: TokenContents,
+  refreshToken: string | undefined,
   cluster_id: string,
   current_doc: LocalAuthDoc | null
 ): Promise<LocalAuthDoc> {
-  const new_username = await getUsernameFromToken(token);
+  const new_username = parsedToken.username;
   if (current_doc === null) {
     const available_tokens: JWTTokenMap = {};
-    available_tokens[new_username] = {
+    ObjectMap.set(available_tokens, new_username, {
       token,
-    };
+      parsedToken,
+      refreshToken,
+    });
     return {
       _id: cluster_id,
       available_tokens: available_tokens,
       current_username: new_username,
     };
   }
+
+  // Does the current doc have a refresh token already?
+  const currentRefreshToken = ObjectMap.get(
+    current_doc.available_tokens,
+    current_doc.current_username
+  )?.refreshToken;
+
   current_doc.current_username = new_username;
-  current_doc.available_tokens[new_username] = {
+  ObjectMap.set(current_doc.available_tokens, new_username, {
     token,
-  };
+    parsedToken,
+    // Use the provided, then as a fall back the previous
+    refreshToken: refreshToken ?? currentRefreshToken,
+  });
   return current_doc;
 }
 
@@ -136,17 +227,19 @@ async function removeTokenFromDoc(
   username: string,
   current_doc: LocalAuthDoc
 ): Promise<LocalAuthDoc | null> {
-  if (current_doc.available_tokens[username] === undefined) {
+  if (ObjectMap.get(current_doc.available_tokens, username) === undefined) {
     throw Error(`${username} is not in doc`);
   }
-  if (Object.keys(current_doc.available_tokens).length < 2) {
+  if (ObjectMap.size(current_doc.available_tokens) < 2) {
     // Removing last user results in an empty doc
     return null;
   }
-  delete current_doc.available_tokens[username];
+  ObjectMap.delete(current_doc.available_tokens, username);
   if (current_doc.current_username === username) {
     // Choose first username if removed user is current user
-    current_doc.current_username = Object.keys(current_doc.available_tokens)[0];
+    current_doc.current_username = ObjectMap.keys<string>(
+      current_doc.available_tokens
+    )[0];
   }
   return current_doc;
 }
@@ -156,7 +249,7 @@ export async function getTokenForCluster(
 ): Promise<string | undefined> {
   try {
     const doc = await local_auth_db.get(cluster_id);
-    return doc.available_tokens[doc.current_username].token;
+    return ObjectMap.get(doc.available_tokens, doc.current_username)?.token;
   } catch (err) {
     return undefined;
   }
@@ -204,15 +297,33 @@ export async function switchUsername(cluster_id: string, new_username: string) {
   }
 }
 
-export async function getAllUsersForCluster(
-  cluster_id: string
-): Promise<TokenContents[]> {
-  const token_contents = [];
+export async function getCurrentUsername(cluster_id: string): Promise<string> {
   const doc = await local_auth_db.get(cluster_id);
-  for (const token_details of Object.values(doc.available_tokens)) {
-    token_contents.push(await parseToken(token_details.token));
+  return doc.current_username;
+}
+
+export async function getAllParsedTokensForCluster(
+  cluster_id: string
+): Promise<JWTTokenInfo[]> {
+  let doc;
+  try {
+    doc = await local_auth_db.get(cluster_id);
+  } catch (e) {
+    console.error(
+      'Failed to get all token info from DB. Cluster ID record probalby not present.',
+      e
+    );
+    return [];
   }
-  return token_contents;
+
+  return ObjectMap.values(doc.available_tokens);
+}
+
+export async function getAllUsernamesForCluster(
+  cluster_id: string
+): Promise<string[]> {
+  const tokens = await getAllParsedTokensForCluster(cluster_id);
+  return tokens.map(({parsedToken}) => parsedToken.username);
 }
 
 export async function deleteAllTokensForCluster(cluster_id: string) {
@@ -224,20 +335,13 @@ export async function deleteAllTokensForCluster(cluster_id: string) {
   }
 }
 
-async function getUsernameFromToken(token: string): Promise<string> {
-  return (await parseToken(token)).username;
-}
-
 async function getTokenInfoForCluster(
   cluster_id: string
-): Promise<TokenInfo | undefined> {
+): Promise<JWTTokenInfo | undefined> {
   try {
     const doc = await local_auth_db.get(cluster_id);
     const username = doc.current_username;
-    const token_details = doc.available_tokens[username];
-    return {
-      token: token_details.token,
-    };
+    return ObjectMap.get(doc.available_tokens, username);
   } catch (err) {
     return undefined;
   }
@@ -251,32 +355,38 @@ async function getTokenInfoForCluster(
  */
 export async function getTokenContentsForCluster(
   cluster_id: string
-): Promise<TokenContents | undefined> {
-  const token_info = await getTokenInfoForCluster(cluster_id);
-  if (token_info === undefined) {
-    return undefined;
-  }
-  try {
-    return await parseToken(token_info.token);
-  } catch (err: any) {
-    console.debug('Failed to parse token', token_info.token, cluster_id);
-    return undefined;
-  }
+): Promise<PossibleToken> {
+  return (await getTokenInfoForCluster(cluster_id))?.parsedToken;
 }
 
-async function parseToken(token: string): Promise<TokenContents> {
+/**
+ * Decodes JWT ready for use in app.
+ *
+ * NOTE: This does not validate the token. This does not check expiry. Decodes
+ * the token and puts into TokenContents.
+ *
+ * @param token The raw JWT
+ * @returns The parsed token as a TokenContents object
+ */
+export async function parseToken(token: string): Promise<TokenContents> {
   const payload = await decodeJwt(token);
 
   const username = payload.sub ?? undefined;
+  const server = payload['server'] as string | undefined;
+  if (!server) {
+    throw Error('Server not specified in token');
+  }
   if (username === undefined) {
     throw Error('Username not specified in token');
   }
   const roles = (payload['_couchdb.roles'] as string[]) ?? [];
   const name = (payload['name'] as string) ?? undefined;
+
   return {
     username: username,
     roles: roles,
     name: name,
+    server: server,
   };
 }
 
@@ -374,10 +484,15 @@ export async function shouldDisplayRecord(
   if (roles === undefined) {
     return false;
   }
-  for (const role in roles) {
+  for (const projectId of Object.keys(roles)) {
     if (
-      role === split_id.project_id &&
-      roles[role].includes(CLUSTER_ADMIN_GROUP_NAME)
+      projectId === split_id.project_id &&
+      // TODO BSS-453 consider how we handle this
+
+      // This currently hard-codes admin as a special role which allows visibility of all records but
+      // a) why is this necessary on client side?
+      // b) isn't this configurable in the notebook designer?
+      roles[projectId].includes('admin')
     ) {
       return true;
     }
@@ -400,4 +515,44 @@ export async function getTokenContentsForCurrentUser(): Promise<
     const cluster_id = docs.rows[0].id;
     return getTokenContentsForCluster(cluster_id);
   }
+}
+
+export async function getClusterId(): Promise<string | undefined> {
+  try {
+    const docs = await local_auth_db.allDocs();
+    if (docs.total_rows > 0) {
+      return docs.rows[0].id; // Returns the cluster_id found
+    }
+    return undefined;
+  } catch (error) {
+    console.error('Error fetching cluster_id:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Check whether the current user can create notebooks on a server
+ *
+ * @param cluster_id - the cluster identifier
+ * @returns true if the user is allowed to create notebooks
+ */
+
+export async function userCanCreateNotebooks(cluster_id: string) {
+  const token_contents = await getTokenContentsForCluster(cluster_id);
+  if (token_contents === undefined) {
+    return undefined;
+  }
+
+  const couch_roles = token_contents.roles;
+
+  // cluster admin can do anything
+  if (couch_roles.indexOf(CLUSTER_ADMIN_GROUP_NAME) >= 0) {
+    return true;
+  }
+
+  // explicit notebook creator permssions
+  if (couch_roles.indexOf(NOTEBOOK_CREATOR_GROUP_NAME) >= 0) {
+    return true;
+  }
+  return false;
 }

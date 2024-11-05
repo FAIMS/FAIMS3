@@ -31,7 +31,13 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularLoading from '../ui/circular_loading';
 import * as ROUTES from '../../../constants/routes';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+  SHOW_RECORD_SUMMARY_COUNTS,
+} from '../../../buildconfig';
+import {useQuery} from '@tanstack/react-query';
+import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
 import RangeHeader from './range_header';
 
@@ -90,7 +96,6 @@ function a11yProps(index: number, id: string) {
  */
 type NotebookComponentProps = {
   project: ProjectExtended;
-  handleRefresh: () => Promise<any>;
 };
 
 /**
@@ -100,10 +105,11 @@ type NotebookComponentProps = {
  * @param {NotebookComponentProps} props - The properties for the NotebookComponent.
  * @returns {JSX.Element} - The JSX element for the NotebookComponent.
  */
-export default function NotebookComponent(props: NotebookComponentProps) {
+export default function NotebookComponent({project}: NotebookComponentProps) {
   const [notebookTabValue, setNotebookTabValue] = React.useState(0);
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
-
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [myRecords, setMyRecords] = useState(0);
   /**
    * Handles the change event when the user switches between the Records and Drafts tabs.
    *
@@ -130,7 +136,6 @@ export default function NotebookComponent(props: NotebookComponentProps) {
     setNotebookTabValue(newValue);
   };
 
-  const {project} = props;
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
@@ -139,10 +144,29 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
 
+  // recordLabel based on viewsets
+  const recordLabel =
+    uiSpec?.visible_types?.length === 1
+      ? uiSpec.viewsets[uiSpec.visible_types[0]]?.label ||
+        uiSpec.visible_types[0]
+      : 'Record';
+
+  const {data: template_id} = useQuery({
+    queryKey: ['project-template-id', project.project_id],
+    queryFn: () =>
+      getMetadataValue(project.project_id, 'template_id') as Promise<string>,
+  });
+
   /**
-   * Fetches the UI specification and viewsets for the project when the component mounts or the project changes.
+   * Fetches the UI specification and viewsets for the project
    */
-  useEffect(() => {
+  const pageLoader = () => {
+    // Starting state reset
+    setViewsets(null);
+    setUiSpec(null);
+    setErr('');
+    setLoading(true);
+
     if (project.listing && project._id) {
       getUiSpecForProject(project.project_id)
         .then(spec => {
@@ -151,17 +175,33 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           setLoading(false);
           setErr('');
         })
+
         .catch(err => {
+          setLoading(false);
           setErr(err.message);
         });
     }
-    return () => {
-      setViewsets(null);
-      setUiSpec(null);
-      setErr('');
-      setLoading(true);
-    };
+  };
+
+  /**
+   * Fetches the UI specification and viewsets for the project when the
+   * component mounts or the project changes.
+   */
+  useEffect(() => {
+    pageLoader();
   }, [project]);
+
+  // trigger a refresh of the content because something changed down below (a
+  // record or draft was deleted)
+  const handleRefresh = () => {
+    pageLoader();
+  };
+
+  // Callback to handle counts from RecordsTable
+  const handleCountChange = (counts: {total: number; myRecords: number}) => {
+    setTotalRecords(counts.total);
+    setMyRecords(counts.myRecords);
+  };
 
   return (
     <Box>
@@ -169,7 +209,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
         <Alert severity="error">
           <AlertTitle>
             {' '}
-            {props.project.name} {NOTEBOOK_NAME} cannot sync right now.
+            {project.name} {NOTEBOOK_NAME} cannot sync right now.
           </AlertTitle>
           Your device may be offline.
           <br />
@@ -210,22 +250,52 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 onChange={handleNotebookTabChange}
                 aria-label={`${NOTEBOOK_NAME} tabs`}
                 indicatorColor="secondary"
+                TabIndicatorProps={{
+                  style: {
+                    backgroundColor: theme.palette.secondary.contrastText,
+                  },
+                }}
+                sx={{backgroundColor: theme.palette.background.tabsBackground}}
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
               >
-                <Tab label="Records" {...a11yProps(0, NOTEBOOK_NAME)} />
+                <Tab
+                  label={`${recordLabel}s`}
+                  {...a11yProps(0, NOTEBOOK_NAME)}
+                />
                 <Tab label="Details" {...a11yProps(1, NOTEBOOK_NAME)} />
                 <Tab label="Settings" {...a11yProps(2, NOTEBOOK_NAME)} />
               </Tabs>
             </AppBar>
           </Box>
+
+          {/* Records count summary - only if configured with VITE_SHOW_RECORD_SUMMARY_COUNTS */}
+          {SHOW_RECORD_SUMMARY_COUNTS && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#EDEEEB',
+                padding: '12px 16px',
+                borderRadius: '4px',
+                marginBottom: '16px',
+              }}
+            >
+              <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
+                <strong>My {recordLabel}s:</strong> {myRecords}
+              </Typography>
+
+              <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
+                <strong>Total {recordLabel}s:</strong> {totalRecords}
+              </Typography>
+            </Box>
+          )}
+
           <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
             <Box>
-              <Typography variant={'overline'} sx={{marginTop: '-8px'}}>
-                Add New Record
-              </Typography>
-              <AddRecordButtons project={project} />
+              <AddRecordButtons project={project} recordLabel={recordLabel} />
             </Box>
             {/* Records/Drafts */}
             <Box mt={2}>
@@ -234,9 +304,12 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   value={recordDraftTabValue}
                   onChange={handleRecordDraftTabChange}
                   aria-label={`${NOTEBOOK_NAME}-records`}
+                  sx={{
+                    backgroundColor: theme.palette.background.tabsBackground,
+                  }}
                 >
                   <Tab
-                    label="Records"
+                    label={`My ${recordLabel}s`}
                     {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
                   />
                   <Tab
@@ -255,7 +328,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   maxRows={25}
                   viewsets={viewsets}
                   filter_deleted={true}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
+                  onRecordsCountChange={handleCountChange}
+                  recordLabel={recordLabel}
                 />
               </TabPanel>
               <TabPanel
@@ -267,7 +342,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
-                  handleRefresh={props.handleRefresh}
+                  handleRefresh={handleRefresh}
                 />
               </TabPanel>
             </Box>
@@ -339,6 +414,16 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   chips={false}
                 />
               </Typography>
+              {template_id && (
+                <Typography
+                  variant="body1"
+                  gutterBottom
+                  sx={{marginBottom: '16px'}}
+                >
+                  <strong>Template Used: </strong>
+                  <span>{template_id}</span>
+                </Typography>
+              )}
               <Typography
                 variant="body1"
                 gutterBottom

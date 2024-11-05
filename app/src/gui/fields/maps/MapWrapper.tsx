@@ -257,7 +257,7 @@ function MapWrapper(props: MapProps) {
   // render component
   return (
     <div>
-      <Button variant="outlined" onClick={handleClickOpen}>
+      <Button variant="outlined" fullWidth={true} onClick={handleClickOpen}>
         {props.label}
       </Button>
 

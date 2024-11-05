@@ -18,7 +18,6 @@
  *   Brian,please add html here
  */
 import React from 'react';
-// Brian,please replace below html here and in environment file VITE_SERVICES=XXX
 import {Container, Typography, Link, Box} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 
@@ -79,5 +78,3 @@ export function EHTML() {
     </React.Fragment>
   );
 }
-
-// export const EFooter = <EHTML />;

@@ -80,6 +80,7 @@ export function AddNewRecordButton(props: {
     </Button>
   );
 }
+
 export function CreateRecordLink(props: CreateRecordLinkProps) {
   /**
    * Allow users to add a link to a record from the current record
@@ -90,14 +91,18 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
 
   const {
     field_name,
-    options,
+    relatedRecords,
     handleChange,
-    relationshipLabel,
     SetSelectedRecord,
     selectedRecord,
     disabled,
     project_id,
   } = props;
+
+  // default relationship to the first option
+  const relationshipLabel =
+    props.relationshipLabel || props.relation_linked_vocabPair[0][1];
+
   const handleSubmit = () => {
     /**
      * Submit relationship to couchDB
@@ -128,7 +133,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: `Link between this record ${props.InputLabelProps.label} and ${selectedRecord.record_label} added`,
+            message: `Link between this record ${props.label} and ${selectedRecord.record_label} added`,
             severity: 'success',
           },
         });
@@ -149,11 +154,6 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       p={{xs: 1, sm: 1, md: 2}}
       sx={{width: '100%'}}
     >
-      <Box>
-        <Typography variant={'subtitle2'} sx={{mb: 1}}>
-          Add a link to an existing record.
-        </Typography>
-      </Box>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
         {props.relation_type === 'Linked' &&
           props.relation_linked_vocabPair !== undefined && (
@@ -206,7 +206,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             getOptionLabel={(option: RecordReference) =>
               option.record_label ?? ''
             }
-            options={options}
+            options={relatedRecords}
             defaultValue={undefined}
             disabled={disabled}
             onChange={(event: any, values: any) => {
@@ -217,7 +217,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             renderInput={(params: any) => (
               <TextField
                 {...params}
-                label={props.InputLabelProps.label}
+                label={props.related_type_label}
                 error={props.form.errors[props.id] === undefined ? false : true}
                 variant="outlined"
                 InputProps={{

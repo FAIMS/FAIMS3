@@ -24,14 +24,6 @@ import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import {MenuItem} from '@mui/material';
 import {ElementOption} from '@faims3/data-model';
 
-// import TextField from '@mui/material/TextField';
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// interface option {
-//   key: string;
-//   value: string;
-//   label: string;
-// }
-
 interface ElementProps {
   options: Array<ElementOption>;
 }
@@ -42,6 +34,10 @@ interface Props {
 }
 
 export class Select extends React.Component<TextFieldProps & Props> {
+  handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    this.props.form.setFieldValue(this.props.field.name, e.target.value, true);
+  }
+
   render() {
     const {ElementProps, children, ...textFieldProps} = this.props;
     /***make select not multiple to avoid error */
@@ -57,6 +53,7 @@ export class Select extends React.Component<TextFieldProps & Props> {
           SelectProps={{
             multiple: false,
           }}
+          onChange={e => this.handleChange(e)}
         >
           {children}
           {ElementProps.options.map((option: any) => (

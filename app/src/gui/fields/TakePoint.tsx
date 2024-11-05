@@ -83,8 +83,7 @@ export class TakePoint extends React.Component<
       const coordinates = capacitor_coordindates_to_faims_pos(
         await Geolocation.getCurrentPosition(this.getPositionOptions())
       );
-      console.debug('Take point coord', coordinates);
-      this.props.form.setFieldValue(this.props.field.name, coordinates);
+      this.props.form.setFieldValue(this.props.field.name, coordinates, true);
     } catch (err: any) {
       logError(err);
       this.props.form.setFieldError(this.props.field.name, err.message);
@@ -113,6 +112,7 @@ export class TakePoint extends React.Component<
         <span {...this.props['ErrorTextProps']}>{error.toString()}</span>
       );
     }
+
     return (
       <div>
         <p>
@@ -122,11 +122,9 @@ export class TakePoint extends React.Component<
         </p>
         <Button
           variant="outlined"
+          fullWidth={true}
           color={'primary'}
           style={{marginRight: '10px'}}
-          {...this.props}
-          // Props from the metadata db will overwrite the above
-          // style attributes, but not overwrite the below onclick.
           onClick={async () => {
             await this.takePoint();
           }}

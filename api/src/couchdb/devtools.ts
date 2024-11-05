@@ -27,11 +27,12 @@ import {
 import {getNotebookUISpec} from './notebooks';
 import {randomInt} from 'crypto';
 import {readFileSync} from 'node:fs';
+import * as Exceptions from '../exceptions';
 
 export const createManyRandomRecords = async (
   project_id: ProjectID,
   count: number
-) => {
+): Promise<string[]> => {
   console.log('creating', count, 'random records');
   const record_ids = [];
 
@@ -46,7 +47,9 @@ export const createManyRandomRecords = async (
  * Create a new record for this notebook with random data values for all fields
  * @param project_id Project id
  */
-export const createRandomRecord = async (project_id: ProjectID) => {
+export const createRandomRecord = async (
+  project_id: ProjectID
+): Promise<string> => {
   // get the project uiSpec
   // select one form from the notebook
   // get a list of fields and their types
@@ -54,52 +57,57 @@ export const createRandomRecord = async (project_id: ProjectID) => {
   // create the record object and call upsertFAIMSData
 
   const uiSpec = await getNotebookUISpec(project_id);
-  if (uiSpec) {
-    const forms = Object.keys(uiSpec.viewsets);
-    if (forms.length === 0) {
-      return;
-    }
-    const formName = forms[randomInt(forms.length)];
-    const form = uiSpec.viewsets[formName];
-    const views = form.views;
-    const fields: string[] = [];
-    views.map((view: string) => {
-      uiSpec.fviews[view].fields.map((f: string) => fields.push(f));
-    });
-    // get the types of the fields
-    const field_types: {[key: string]: string} = {};
-    fields.map((field: string) => {
-      field_types[field] =
-        uiSpec.fields[field]['type-returned'] || 'faims-core::String';
-    });
-    const values: {[key: string]: any} = {};
-    fields.map((field: string) => {
-      values[field] = generateValue(uiSpec.fields[field]);
-    });
-
-    const annotations: {[key: string]: any} = {};
-    fields.map((field: string) => {
-      annotations[field] = {annotations: '', uncertainty: false};
-    });
-
-    const newRecord: Record = {
-      record_id: generateFAIMSDataID(),
-      data: values,
-      type: formName,
-      updated_by: 'admin',
-      updated: new Date(),
-      field_types: field_types,
-      ugc_comment: '',
-      relationship: {},
-      deleted: false,
-      revision_id: null,
-      annotations: annotations,
-    };
-    const result = await upsertFAIMSData(project_id, newRecord);
-    return result;
-  } else {
-    throw new Error(`notebook not found with id ${project_id}`);
+  if (!uiSpec) {
+    throw new Exceptions.ItemNotFoundException(
+      `Notebook not found with id ${project_id}`
+    );
   }
+
+  const forms = Object.keys(uiSpec.viewsets);
+  if (forms.length === 0) {
+    throw new Exceptions.InvalidRequestException(
+      `The ui spec for project with id ${project_id} has no forms in the viewsets.`
+    );
+  }
+
+  const formName = forms[randomInt(forms.length)];
+  const form = uiSpec.viewsets[formName];
+  const views = form.views;
+  const fields: string[] = [];
+  views.map((view: string) => {
+    uiSpec.fviews[view].fields.map((f: string) => fields.push(f));
+  });
+  // get the types of the fields
+  const field_types: {[key: string]: string} = {};
+  fields.map((field: string) => {
+    field_types[field] =
+      uiSpec.fields[field]['type-returned'] || 'faims-core::String';
+  });
+  const values: {[key: string]: any} = {};
+  fields.map((field: string) => {
+    values[field] = generateValue(uiSpec.fields[field]);
+  });
+
+  const annotations: {[key: string]: any} = {};
+  fields.map((field: string) => {
+    annotations[field] = {annotations: '', uncertainty: false};
+  });
+
+  const newRecord: Record = {
+    record_id: generateFAIMSDataID(),
+    data: values,
+    type: formName,
+    updated_by: 'admin',
+    updated: new Date(),
+    field_types: field_types,
+    ugc_comment: '',
+    relationship: {},
+    deleted: false,
+    revision_id: null,
+    annotations: annotations,
+  };
+  const result = await upsertFAIMSData(project_id, newRecord);
+  return result;
 };
 
 const SAMPLE_IMAGE_FILE = 'test/test-attachment-image.jpg';

@@ -1,6 +1,7 @@
 {
   "metadata": {
     "project_status": "New",
+    "test_key": "test_value",
     "accesses": [
       "admin",
       "moderator",

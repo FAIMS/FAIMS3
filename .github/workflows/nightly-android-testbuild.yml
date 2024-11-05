@@ -1,10 +1,6 @@
 name: Nightly Android builds
 
 on:
-  push:
-    branches:
-      - main
-
   workflow_dispatch:
 
   schedule:
@@ -40,6 +36,18 @@ jobs:
       matrix:
         node-version: ['20']
     steps:
+      - uses: actions/checkout@v4
+      - name: Cache node modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
       - name: Configure Turborepo Remote Cache
         run: |
           mkdir -p .turbo
@@ -54,19 +62,6 @@ jobs:
           else
             echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
           fi
-      - uses: actions/checkout@v4
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
       - name: Install jq
         run: sudo apt-get install -y jq
 
@@ -128,13 +123,16 @@ jobs:
           export VITE_COMMIT_VERSION=${{env.version_string}}
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_MINIFAUXTON=true
-          export VITE_CONDUCTOR_URL=${{env.NIGHTLY_CONDUCTOR_URL}}
+          export VITE_CONDUCTOR_URL=${{vars.NIGHTLY_CONDUCTOR_URL}}
           export VITE_PRODUCTION_BUILD=true          
-          export VITE_SERVICES=FAIMSTEXT
           export VITE_PROD_BUILD=true 
-          export VITE_TAG=prodAndroid       
+          export VITE_TAG=prodAndroid
+          export VITE_NOTEBOOK_LIST_TYPE=tabs
+          export VITE_THEME=${{vars.THEME}}
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
-          git clean -xfd
+          export VITE_APP_ID=${{vars.APP_ID}}
+          export VITE_APP_NAME="${{vars.APP_NAME}}"
+          export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
@@ -145,8 +143,11 @@ jobs:
         run: |
           cd app/android
           bundle install
-          bundle exec fastlane deploy_fieldmark_closed_track
+          bundle exec fastlane deploy_fieldmark
         env:
+          APP_ID: ${{ vars.APP_ID }}
+          ANDROID_RELEASE_STATUS: ${{ vars.ANDROID_RELEASE_STATUS }}
+          ANDROID_DEPLOY_TRACK: "internal"
           JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
           JAVA_KEYSTORE_PASSWORD: ${{ secrets.JAVA_KEYSTORE_PASSWORD }}
           JAVA_KEY: ${{ secrets.JAVA_KEY}}
@@ -154,10 +155,3 @@ jobs:
           ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
           serverprefix: "testing"
           prnum: ${{env.version_string}}
-      # - run: cd android && ./gradlew assembleDebug
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: assets
-          path: |
-            ${{ github.workspace }}/app/android/app/build/outputs/bundle/release

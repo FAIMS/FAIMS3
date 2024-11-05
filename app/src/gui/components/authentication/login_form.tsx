@@ -1,17 +1,13 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
-import React from 'react';
-import {Button, ButtonProps} from '@mui/material';
 import {Browser} from '@capacitor/browser';
-
-import {TokenContents} from '@faims3/data-model';
+import {Button, ButtonProps} from '@mui/material';
+import React from 'react';
 
 import {isWeb} from '../../../utils/helpers';
+import {APP_ID} from '../../../buildconfig';
 
 export type LoginButtonProps = {
-  listing_id: string;
   conductor_url: string;
-  listing_name: string;
-  setToken: React.Dispatch<React.SetStateAction<TokenContents | undefined>>;
   is_refresh: boolean;
   label?: string;
   size?: ButtonProps['size'];
@@ -41,9 +37,7 @@ export function LoginButton(props: LoginButtonProps) {
         } else {
           // Use the capacitor browser plugin in apps
           await Browser.open({
-            url:
-              props.conductor_url +
-              '/auth?redirect=org.fedarch.faims3://auth-return',
+            url: `${props.conductor_url}/auth?redirect=${APP_ID}://auth-return`,
           });
         }
       }}

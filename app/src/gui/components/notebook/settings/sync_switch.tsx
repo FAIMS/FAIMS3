@@ -34,10 +34,10 @@ import {
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import NotebookActivationSwitch from './activation-switch';
-import LoadingButton from '@mui/lab/LoadingButton';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
 import {ProjectExtended} from '../../../../types/project';
 import {ProjectsContext} from '../../../../context/projects-context';
+import {theme} from '../../../themes';
 
 type NotebookSyncSwitchProps = {
   project: ProjectExtended;
@@ -51,9 +51,7 @@ export default function NotebookSyncSwitch({
   setTabID = () => {},
 }: NotebookSyncSwitchProps) {
   const [open, setOpen] = useState(false);
-
   const {setProjectSync} = useContext(ProjectsContext);
-
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
@@ -69,12 +67,20 @@ export default function NotebookSyncSwitch({
       ) : (
         <Box>
           <FormControlLabel
-            sx={{mr: 0}}
+            sx={{mr: 0, md: 2}}
             control={
               <Switch
                 checked={project.sync}
                 disabled={false}
                 onClick={handleOpen}
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: theme.palette.icon.main,
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: theme.palette.icon.main,
+                  },
+                }}
               />
             }
             label={
@@ -94,6 +100,9 @@ export default function NotebookSyncSwitch({
             open={open}
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
+            PaperProps={{
+              sx: {padding: 2},
+            }}
           >
             <Alert severity={project.sync ? 'warning' : 'info'}>
               <AlertTitle>Are you sure?</AlertTitle>
@@ -101,12 +110,24 @@ export default function NotebookSyncSwitch({
               {project.name} {NOTEBOOK_NAME} to your device?
             </Alert>
             <DialogActions style={{justifyContent: 'space-between'}}>
-              <Button onClick={handleClose} autoFocus>
+              <Button
+                variant="contained"
+                sx={{
+                  backgroundColor: theme.palette.dialogButton.cancel,
+                  color: theme.palette.dialogButton.dialogText,
+                }}
+                onClick={handleClose}
+                autoFocus
+              >
                 Cancel
               </Button>
               <Button
                 size={'small'}
                 variant="contained"
+                sx={{
+                  backgroundColor: theme.palette.dialogButton?.confirm,
+                  color: theme.palette.dialogButton.dialogText,
+                }}
                 disableElevation
                 onClick={async () => {
                   setProjectSync(project._id, project.listing, !project.sync);

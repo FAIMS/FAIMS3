@@ -15,7 +15,7 @@
  *
  * Filename: loadNotebooks.js
  * Description:
- *   Load notebooks into the running couchdb instance. 
+ *   Load notebooks into the running couchdb instance.
  *   All json files named on the command line will be loa`ded.
  *   eg. `node scripts/loadNotebooks.js notebooks/*.json`
  */
@@ -23,46 +23,78 @@
 const fs = require('fs');
 // how to import fetch in a node script...
 // needed to add this file to .eslintignore because it complains about 'import'
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args)); 
+const fetch = (...args) =>
+  import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const CONDUCTOR_URL = process.env.CONDUCTOR_PUBLIC_URL;
 
 if (!process.env.USER_TOKEN) {
-    console.log('USER_TOKEN not set in .env - login to Conductor and copy your user token');
-    process.exit();
+  console.log(
+    'USER_TOKEN not set in .env - login to Conductor and copy your user token'
+  );
+  process.exit();
 }
 
-const token = JSON.parse(Buffer.from(process.env.USER_TOKEN, 'base64').toString());
+const token = JSON.parse(
+  Buffer.from(process.env.USER_TOKEN, 'base64').toString()
+);
 
 const main = async filename => {
   console.log(filename);
   const jsonText = fs.readFileSync(filename, 'utf-8');
   const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
   const name = metadata.name;
+  // load notebook
   fetch(CONDUCTOR_URL + '/api/notebooks/', {
     method: 'POST',
-    headers: {'Authorization': `Bearer ${token.jwt_token}`, 'Content-Type': 'application/json'},
+    headers: {
+      Authorization: `Bearer ${token.jwt_token}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({metadata, 'ui-specification': uiSpec, name}),
   })
-  .then(response => response.json())
-  .then(data => {
-    console.log('data:', data);
+    .then(response => response.json())
+    .then(data => {
+      console.log('data:', data);
+    })
+    .catch(error => {
+      console.log(error);
+    });
+
+  // load template
+  fetch(CONDUCTOR_URL + '/api/templates/', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token.jwt_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      metadata,
+      ui_specification: uiSpec,
+      template_name: name,
+    }),
   })
-  .catch(error => {
-    console.log(error);
-  })
+    .then(response => response.json())
+    .then(data => {
+      console.log('data:', data);
+    })
+    .catch(error => {
+      console.log(error);
+    });
 };
 
-
-const extension = (filename) => {
-    return filename.substring(filename.lastIndexOf('.')+1, filename.length) || filename;
-}
+const extension = filename => {
+  return (
+    filename.substring(filename.lastIndexOf('.') + 1, filename.length) ||
+    filename
+  );
+};
 
 if (process.argv.length > 2) {
-    files = process.argv.slice(2);
-    files.forEach(filename => {
-      if (extension(filename) === 'json') {
-          main(filename);
-      }
+  files = process.argv.slice(2);
+  files.forEach(filename => {
+    if (extension(filename) === 'json') {
+      main(filename);
+    }
   });
 }

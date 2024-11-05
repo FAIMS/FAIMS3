@@ -1,6 +1,5 @@
 
 <div class="form-signin w-100 m-auto">
-
     {{#if messages.message}}
     <div class="alert alert-success">{{messages.message}}</div>
     {{/if}}
@@ -28,7 +27,7 @@
 <h2>Local Login</h2>
 <form method="post" action="/auth/local?redirect={{redirect}}">
   <div class="mb-3">
-    <label for="InputIdentifier" class="form-label">Username or Email address</label>
+    <label for="InputIdentifier" class="form-label">Email Address</label>
     <input type="text" name="username" class="form-control" id="InputIdentifier" autocomplete="email">
   </div>
   <div class="mb-3">

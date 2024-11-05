@@ -28,7 +28,7 @@ export const AUTH_RETURN = '/auth-return/';
 export const NOT_FOUND = '/not-found';
 
 export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${NOTEBOOK_NAME}s/`;
-export const NOTEBOOK_LIST_ROUTE = `/${NOTEBOOK_NAME}s`;
+export const NOTEBOOK_LIST_ROUTE = '/';
 
 export const RECORD_LIST = '/records';
 export const RECORD_EXISTING = '/records/';
@@ -41,6 +41,7 @@ export const AUTOINCREMENT = '/autoincrements/';
 export const PROJECT_ATTACHMENT = '/attachment/';
 export const SWITCH_ORG = '/switch-organisation';
 export const HELP = '/help';
+export const CREATE_NEW_SURVEY = '/create-new-survey';
 
 export function getRecordRoute(
   project_id: ProjectID,

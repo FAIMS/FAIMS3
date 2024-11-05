@@ -1,5 +1,19 @@
 #!/bin/bash -e
 
+# Takes down any running docker compose in this project, then prunes volumes,
+# and starts again with new volumes
+manage_docker_volumes() {
+    docker_prefix="docker compose -f api/docker-compose.dev.yml"
+    echo "Stopping existing Docker containers..."
+    ${docker_prefix} down
+
+    echo "Pruning volumes related to this Docker Compose setup..."
+    docker volume prune -f --filter "label=com.docker.compose.project=$(${docker_prefix} config --services)"
+
+    echo "Starting Docker containers with new volumes..."
+    ${docker_prefix} up -d
+}
+
 wait_for_service() {
     local start_time
     local end_time
@@ -65,8 +79,7 @@ echo "> ./scripts/devbuild.sh"
 ./scripts/devbuild.sh
 
 echo "Starting docker service..."
-echo "> ./scripts/devup.sh"
-./scripts/devup.sh
+manage_docker_volumes
 
 echo "Waiting for service to become available at http://localhost:8080..."
 
@@ -91,7 +104,7 @@ npm run build-data-model
 echo "> cd app && npm i && cd ../"
 cd app && npm i && cd ../
 
-echo "Service is setup, to load notebooks follow the below steps"
+echo "Service is setup, to load notebooks and templates follow the below steps"
 cat << EOF
 This script requires authentication, so you need to get a user token for the admin
 user. First, connect to the conductor instance on http://localhost:8080/ or whatever
@@ -103,6 +116,9 @@ value of USER_TOKEN.
 Then run: 
 
 $> npm run load-notebooks
+
+And:
+$> npm run load-templates
 EOF
 
 echo "To run the FAIMS app locally with live reload, run npm run start-app"

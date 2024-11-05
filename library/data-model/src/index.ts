@@ -37,14 +37,16 @@ import {
   getFirstRecordHead,
   getFullRecordData,
   getHRIDforRecordID,
+  getRecordType,
   getMetadataForAllRecords,
   getRecordMetadata,
-  getRecordsByType,
+  getPossibleRelatedRecords,
   getRecordsWithRegex,
   listFAIMSRecordRevisions,
   notebookRecordIterator,
   setRecordAsDeleted,
   upsertFAIMSData,
+  getMetadataForSomeRecords,
 } from './data_storage';
 import {addDesignDocsForNotebook} from './data_storage/databases';
 import {
@@ -63,6 +65,9 @@ import {
   file_data_to_attachments,
   files_to_attachments,
 } from './data_storage/attachments';
+export * from './auth';
+
+export * from './data_storage/authDB';
 
 export {
   HRID_STRING,
@@ -75,12 +80,14 @@ export {
   generateFAIMSDataID,
   getAllRecordsWithRegex,
   getFirstRecordHead,
+  getRecordType,
   getFullRecordData,
   getHRIDforRecordID,
   getInitialMergeDetails,
   getMetadataForAllRecords,
+  getMetadataForSomeRecords,
   getRecordMetadata,
-  getRecordsByType,
+  getPossibleRelatedRecords,
   getRecordsWithRegex,
   getMergeInformationForHead,
   isEqualFAIMS,
@@ -102,6 +109,7 @@ export {
 
 export * from './datamodel/database';
 export * from './types';
+export * from './api';
 
 export type DBCallbackObject = {
   getDataDB: CallableFunction;

@@ -1,9 +1,8 @@
-import {Typography} from '@mui/material';
-import Obfuscate from 'react-obfuscate';
-import React from 'react';
-import {COMMIT_VERSION, CONDUCTOR_URLS} from '../../../buildconfig';
 import {TokenContents} from '@faims3/data-model';
+import {Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
+import Obfuscate from 'react-obfuscate';
+import {COMMIT_VERSION, CONDUCTOR_URLS} from '../../../buildconfig';
 
 interface SupportEmailProps {
   token?: null | undefined | TokenContents;

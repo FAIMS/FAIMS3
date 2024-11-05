@@ -252,7 +252,7 @@ export class TakePhoto extends React.Component<
         this.props.field.value !== null
           ? this.props.field.value.concat(image)
           : [image];
-      this.props.form.setFieldValue(this.props.field.name, newimages);
+      this.props.form.setFieldValue(this.props.field.name, newimages, true);
     } catch (err: any) {
       logError(err);
       this.props.form.setFieldError(this.props.field.name, err.message);
@@ -274,7 +274,6 @@ export class TakePhoto extends React.Component<
     const error = this.props.form.errors[this.props.field.name];
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
-      console.log('PHOTO ERRORS', this.props.field.name, error);
       error_text = (
         <span {...this.props['ErrorTextProps']}>{error as string}</span>
       );
@@ -309,7 +308,11 @@ export class TakePhoto extends React.Component<
             this.setState({open: true, photopath: path})
           }
           setimage={(newfiles: Array<any>) => {
-            this.props.form.setFieldValue(this.props.field.name, newfiles);
+            this.props.form.setFieldValue(
+              this.props.field.name,
+              newfiles,
+              true
+            );
           }}
           disabled={this.props.disabled ?? false}
           fieldName={this.props.field.name}
