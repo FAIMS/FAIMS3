@@ -42,7 +42,9 @@ wait_for_service() {
     done
 }
 
-
+echo "Using docker build kit"
+echo "export DOCKER_BUILDKIT=1"
+export DOCKER_BUILDKIT=1
 
 echo "checking npm install"
 echo "> npm --version"

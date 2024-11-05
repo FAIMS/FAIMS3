@@ -27,7 +27,7 @@ FROM node:20 AS api
 WORKDIR /usr/src
 COPY --from=builder /usr/src .
 EXPOSE 8000
-CMD ["npm", "run", "start-api"]
+CMD ["npm", "run", "watch-api"]
 
 # App service
 FROM node:20 AS app
