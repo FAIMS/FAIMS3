@@ -44,6 +44,20 @@ export default function AppBarAuth(props: AppBarAuthProps) {
       color={'primary'}
       startIcon={<Person style={{color: theme.palette.background.default}} />}
       disableElevation
+      style={{
+        display: 'block',
+        alignItems: 'center',
+        justifyContent: 'center',
+        maxWidth: '150px',
+        width: 'fit-content',
+        height: 'auto',
+        minHeight: '50px',
+        maxHeight: '70px',
+        padding: '8px',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+      }}
     >
       {isAuthenticated ? props.token!.username : 'Sign In'}
     </Button>
