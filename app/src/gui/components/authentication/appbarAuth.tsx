@@ -18,7 +18,7 @@
  *   Provides a component to show either a link to sign-in or the username
  *   which links to the sign-in page
  */
-import {Button} from '@mui/material';
+import {Button, useMediaQuery} from '@mui/material';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {TokenContents} from '@faims3/data-model';
@@ -36,6 +36,11 @@ export default function AppBarAuth(props: AppBarAuthProps) {
    */
   const isAuthenticated = checkToken(props.token);
 
+  /**
+   * Determines if the screen width is 768px or wider (desktop view).
+   */
+  const isDesktop = useMediaQuery('(min-width:768px)');
+
   return (
     <Button
       component={NavLink}
@@ -48,8 +53,8 @@ export default function AppBarAuth(props: AppBarAuthProps) {
         display: 'block',
         alignItems: 'center',
         justifyContent: 'center',
-        maxWidth: '150px',
-        width: 'fit-content',
+        maxWidth: isDesktop ? '100%' : '150px',
+        width: isDesktop ? '100%' : 'fit-content',
         height: 'auto',
         minHeight: '50px',
         maxHeight: '70px',
