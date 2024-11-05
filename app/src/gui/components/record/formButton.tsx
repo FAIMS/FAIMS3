@@ -78,6 +78,7 @@ export default function FormButtonGroup(props: any) {
     handleFormSubmit,
     views,
     ui_specification,
+    layout,
   } = props;
 
   return (
@@ -88,7 +89,7 @@ export default function FormButtonGroup(props: any) {
         gap: '16px',
       }}
     >
-      {views.length > 1 && (
+      {views.length > 1 && layout !== 'inline' && (
         <CustomMobileStepper
           views={views}
           view_index={view_index}
