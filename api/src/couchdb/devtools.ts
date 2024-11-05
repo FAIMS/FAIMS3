@@ -176,49 +176,93 @@ const generateValue = (field: any) => {
 export const validateProjectDatabase = async (project_id: ProjectID) => {
   const dataDB = await getDataDB(project_id);
 
-  // get all record documents
-  // check that all revision documents (frev) are present
-  // for each revision
-  // check that every mentioned avp document is present
+  // get all docs and set up sets of each type that we'll use as a tally
+  const allDocs = await dataDB.allDocs();
+
+  // an array of records to drive the validation
+  const recordIDs = allDocs.rows
+    .filter((doc: any) => doc.id.startsWith('rec'))
+    .map((doc: any) => doc.id);
+
+  // these are all sets as we will remove ids as we see them
+  const revisionIDs = new Set<string>(
+    allDocs.rows
+      .filter((doc: any) => doc.id.startsWith('frev'))
+      .map((doc: any) => doc.id)
+  );
+  const avpIDs = new Set<string>(
+    allDocs.rows
+      .filter((doc: any) => doc.id.startsWith('avp'))
+      .map((doc: any) => doc.id)
+  );
+  const attIDs = new Set<string>(
+    allDocs.rows
+      .filter((doc: any) => doc.id.startsWith('att'))
+      .map((doc: any) => doc.id)
+  );
 
   const errors: string[] = [];
-  const records = await dataDB.find({selector: {record_format_version: 1}});
 
-  if (records) {
-    for (let i = 0; i < records.docs.length; i++) {
-      const doc = records.docs[i];
-      for (let j = 0; j < doc.revisions.length; j++) {
-        const rev = doc.revisions[j];
-        try {
-          const rev_doc = await dataDB.get(rev);
-          const avps = Object.values(rev_doc.avps);
-          for (let k = 0; k < avps.length; k++) {
-            try {
-              const avp_doc = await dataDB.get(avps[k]);
-              // check for any attachments
-              if (avp_doc.faims_attachments) {
-                for (let l = 0; l < avp_doc.faims_attachments.length; l++) {
-                  const att = avp_doc.faims_attachments[l];
-                  try {
-                    await dataDB.get(att.attachment_id);
-                  } catch {
-                    errors.push(
-                      `missing attachment ${att.attachment_id} on ${avps[k]} in ${rev} of ${doc._id}`
-                    );
+  if (recordIDs) {
+    for (let i = 0; i < recordIDs.length; i++) {
+      try {
+        const doc = await dataDB.get(recordIDs[i]);
+        for (let j = 0; j < doc.revisions.length; j++) {
+          const rev = doc.revisions[j];
+          try {
+            const rev_doc = await dataDB.get(rev);
+            revisionIDs.delete(rev);
+            const avps = Object.values(rev_doc.avps);
+            for (let k = 0; k < avps.length; k++) {
+              try {
+                const avp_doc = await dataDB.get(avps[k]);
+                avpIDs.delete(avp_doc._id);
+                // check for any attachments
+                if (avp_doc.faims_attachments) {
+                  for (let l = 0; l < avp_doc.faims_attachments.length; l++) {
+                    const att = avp_doc.faims_attachments[l];
+                    try {
+                      await dataDB.get(att.attachment_id);
+                      attIDs.delete(att.attachment_id);
+                    } catch {
+                      errors.push(
+                        `missing attachment ${att.attachment_id} on ${avps[k]} in ${rev} of ${doc._id}`
+                      );
+                    }
                   }
                 }
+              } catch {
+                errors.push(
+                  `missing avp document ${avps[k]} in ${rev} of ${doc._id}`
+                );
               }
-            } catch {
-              errors.push(
-                `missing avp document ${avps[k]} in ${rev} of ${doc._id}`
-              );
             }
+          } catch {
+            errors.push(
+              `missing revision document ${rev} in ${doc._id} which has ${doc.revisions.length} revisions`
+            );
           }
-        } catch {
-          errors.push(`missing revision document ${rev} in ${doc._id}`);
         }
+      } catch {
+        errors.push(`could not fetch details of record ${recordIDs[i]}`);
       }
     }
   }
+
+  if (revisionIDs.size > 0)
+    errors.push(
+      `found ${revisionIDs.size} revisions not referenced in any record: ${Array.from(revisionIDs)}`
+    );
+
+  if (avpIDs.size > 0)
+    errors.push(
+      `found ${avpIDs.size} AVP documents not referenced in any revision: ${Array.from(avpIDs)}`
+    );
+
+  if (attIDs.size > 0)
+    errors.push(
+      `found ${attIDs.size} attachment documents not referenced in any revision: ${Array.from(attIDs)}`
+    );
+
   return {errors: errors};
 };

@@ -27,8 +27,6 @@
       <h3>Download Notebook JSON definition</h3>
       <p><a download href="/api/notebooks/{{notebook.project_id}}">{{notebook.project_id}}.json</a></p>
 
-      <p><a href="/notebooks/{{notebook.project_id}}/validate">Validate Notebook Data</a></p>
-      
     </div>
 
     <div class="col">
@@ -113,6 +111,33 @@
 {{#if developer}}
 <li class="list-group-item">
   <h5>Developer Actions</h5>
+
+      <button class="btn btn-primary btn-sm" 
+              data-bs-toggle="modal" 
+              data-bs-target="#validateModal" 
+              onClick="doValidate()">Validate Notebook Data</button>
+      <div class="modal modal-fade" 
+           id="validateModal"
+           tabindex="-1" 
+           aria-labelledby="validateTitle"
+           aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="validateTitle">
+                  Notebook Database Validation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div id="validateTarget">Loading...</div>
+              </div>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+      </div>
+
+
   <script>
   const addRecords = (e) => {
     e.preventDefault();
@@ -130,7 +155,7 @@
 
   <form>
     <input type="number" value="10" name="number" id="number">
-    <button onClick="addRecords(event)">Add Random Records</button>
+    <button class="btn btn-secondary btn-sm" onClick="addRecords(event)">Add Random Records</button>
   </form>
   </li>
 {{/if}}
@@ -305,4 +330,24 @@ const copyToClipboard = (text) => {
     }
   }
   document.getElementById('upload-notebook-form').onsubmit = uploadNotebookHandler;
+
+  const doValidate = () => {
+    const url = "/notebooks/{{notebook.project_id}}/validate";
+
+    // send a GET request, display the resulting errors in a modal
+
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      console.log(data);
+
+      const target = document.querySelector('#validateTarget');
+      if(data.errors.length > 0)
+        target.innerHTML = `<ul>${data.errors.map(e => `<li>${e}</li>`).join('')}</ul>`;
+      else
+        target.innerHTML = '<p>No errors found.</p>';
+    });
+  }
+
+
 </script>
