@@ -4,3 +4,4 @@ build
 .turbo
 out
 app/public/manifest.json
+.env

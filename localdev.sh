@@ -3,7 +3,7 @@
 # Takes down any running docker compose in this project, then prunes volumes,
 # and starts again with new volumes
 manage_docker_volumes() {
-    docker_prefix="docker compose -f api/docker-compose.dev.yml"
+    docker_prefix="docker compose"
     echo "Stopping existing Docker containers..."
     ${docker_prefix} down
 
@@ -63,6 +63,9 @@ npm install
 
 # create .env files
 
+echo "> cp ./.env.dist ./.env"
+cp ./.env.dist ./.env
+
 echo "> cp ./api/.env.dist ./api/.env"
 cp ./api/.env.dist ./api/.env
 
@@ -97,17 +100,10 @@ echo "> npm run initdb"
 npm run initdb
 
 
-# installing dependencies and building locally to test FAIMS3 app
-echo "installing dependencies and building locally to test FAIMS3 app"
-echo "> npm run build-data-model"
-npm run build-data-model
-echo "> cd app && npm i && cd ../"
-cd app && npm i && cd ../
-
 echo "Service is setup, to load notebooks and templates follow the below steps"
 cat << EOF
 This script requires authentication, so you need to get a user token for the admin
-user. First, connect to the conductor instance on http://localhost:8080/ or whatever
+user. First, connect to the conductor instance on http://localhost:8080/ or whichever
 port you have configured. Login using the local 'admin' user and password.
 Now, from the Conductor home page (http://localhost:8080/) scroll down to "Copy
 Bearer Token to Clipboard". Paste this value into your .env file as the
@@ -121,4 +117,7 @@ And:
 $> npm run load-templates
 EOF
 
-echo "To run the FAIMS app locally with live reload, run npm run start-app"
+echo "Services running:"
+echo "API (live reloading /api): http://localhost:8080"
+echo "App (live reloading /app): http://localhost:3000"
+echo "CouchDB: http://localhost:5984/_utils"

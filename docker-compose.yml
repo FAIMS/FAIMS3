@@ -1,0 +1,56 @@
+services:
+  api:
+    env_file:
+      - ./api/.env
+    build:
+      target: api
+    ports:
+      - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
+    volumes:
+      - ./api/src:/usr/src/api/src
+      - ./api/views:/usr/src/api/views
+      - ./api/keys:/usr/src/api/keys
+      - ./api/public:/usr/src/api/public
+      - ./api/test:/usr/src/api/test
+      - ./api/.env:/usr/src/api/.env
+    command: npm run watch-api
+    depends_on:
+      - couchdb
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${CONDUCTOR_INTERNAL_PORT}/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  app:
+    env_file:
+      - ./app/.env
+    build:
+      target: app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app/assets:/usr/src/app/assets
+      - ./app/public:/usr/src/app/public
+      - ./app/.env:/usr/src/app/.env
+      - ./app/src:/usr/src/app/src
+    command: npm run start-app
+    depends_on:
+      - api
+
+  couchdb:
+    env_file:
+      - ./api/.env
+    build:
+      context: api/couchdb
+      dockerfile: Dockerfile
+    volumes:
+      - type: volume
+        source: couchdb_data
+        target: /opt/couchdb/data
+    ports:
+      - "0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984"
+
+volumes:
+  couchdb_data:
