@@ -38,7 +38,7 @@ export default function LoadingApp() {
         gap: '32px',
       }}
     >
-      <img src="/assets/icons/icon-192.webp" style={{maxWidth: '100%'}} />
+      <img src="/assets/icons/icon-512.webp" style={{maxWidth: '100%'}} />
       <div>Loading data</div>
       <CircularProgress color={'primary'} thickness={5} />
       <div>
