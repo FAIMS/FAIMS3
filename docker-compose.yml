@@ -35,7 +35,7 @@ services:
       - ./app/public:/usr/src/app/public
       - ./app/.env:/usr/src/app/.env
       - ./app/src:/usr/src/app/src
-    command: npm run start-app
+    command: npm run start-app -- --force
     depends_on:
       - api
 
