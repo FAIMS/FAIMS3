@@ -13,26 +13,17 @@ interface AppBarHeadingProps {
  * @returns {JSX.Element} - The rendered AppBarHeading component.
  */
 export const AppBarHeading = ({link}: AppBarHeadingProps) => (
-  <>
-    <NavLink style={{flexGrow: 0, paddingRight: 15}} to={link}>
-      <img
-        src="/assets/icons/icon-48.webp"
-        style={{maxWidth: '140px', flex: 1}}
-      />
-    </NavLink>
-    <NavLink
-      to={link}
-      style={{
-        flexGrow: 1,
-        fontSize: 32,
-        fontWeight: 600,
-        textAlign: 'left',
-        textDecoration: 'none',
-        color: 'inherit',
-        fontVariant: 'small-caps',
-      }}
-    >
-      {HEADING_APP_NAME}
-    </NavLink>
-  </>
+  <NavLink
+    to={link}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      flex: 1,
+      textDecoration: 'none',
+      color: 'black',
+    }}
+  >
+    <img src="/assets/icons/icon-48.webp" />
+    <h1>{HEADING_APP_NAME}</h1>
+  </NavLink>
 );

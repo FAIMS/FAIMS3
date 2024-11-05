@@ -18,57 +18,34 @@
  *   TODO
  */
 
-import React from 'react';
-import {
-  Box,
-  CircularProgress,
-  Typography,
-  Grid,
-  Container,
-} from '@mui/material';
+import {CircularProgress} from '@mui/material';
 import SystemAlert from './alert';
 
 export default function LoadingApp() {
   return (
-    <Container maxWidth={false}>
-      <Grid
-        container
-        spacing={0}
-        alignItems="center"
-        justifyContent="center"
-        style={{marginTop: '5vh', minHeight: '50%'}}
-      >
-        <Grid item xs={8} sm={3} md={3}>
-          <img src="/assets/icons/icon-192.webp" style={{maxWidth: '100%'}} />
-        </Grid>
-      </Grid>
-      <Grid
-        container
-        spacing={0}
-        alignItems="center"
-        justifyContent="center"
-        style={{minHeight: '50%'}}
-      >
-        <Grid item xs={8} sm={4}>
-          <Box mb={1} mt={2}>
-            <Typography variant="subtitle2" align={'center'}>
-              <p>Loading data</p>
-              <CircularProgress
-                color={'primary'}
-                size={'0.75rem'}
-                thickness={5}
-              />
-            </Typography>
-          </Box>
-          <Box mb={2}>
-            <Typography variant={'body2'} align={'center'}>
-              This may take some time on first load, depending on your
-              connection speed.
-            </Typography>
-          </Box>
-        </Grid>
-      </Grid>
+    <div
+      style={{
+        margin: 'auto',
+        padding: '32px',
+        display: 'flex',
+        flex: 1,
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        maxWidth: '256px',
+        height: '100%',
+        textAlign: 'center',
+        gap: '32px',
+      }}
+    >
+      <img src="/assets/icons/icon-512.webp" style={{maxWidth: '100%'}} />
+      <div>Loading data</div>
+      <CircularProgress color={'primary'} thickness={5} />
+      <div>
+        This may take some time on first load, depending on your connection
+        speed.
+      </div>
       <SystemAlert />
-    </Container>
+    </div>
   );
 }
