@@ -161,7 +161,9 @@ app.get(
         notebook: notebook,
         records: await countRecordsInNotebook(project_id),
         invites: invitesQR,
-        views: Object.keys(uiSpec.viewsets),
+        views: Object.keys(uiSpec.viewsets).map((key: string) => {
+          return {label: uiSpec.viewsets[key].label, id: key};
+        }),
         developer: DEVELOPER_MODE,
       });
     } else {

@@ -262,8 +262,22 @@ api.get(
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
-    res.setHeader('Content-Type', 'text/csv');
-    streamNotebookRecordsAsCSV(req.params.id, req.params.viewID, res);
+    // get the label for this form for the filename header
+    const uiSpec = await getNotebookUISpec(req.params.id);
+    if (uiSpec && req.params.viewID in uiSpec.viewsets) {
+      const label = uiSpec.viewsets[req.params.viewID].label;
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${label}.csv"`
+      );
+      streamNotebookRecordsAsCSV(req.params.id, req.params.viewID, res);
+    } else {
+      throw new Exceptions.ItemNotFoundException(
+        `Form with id ${req.params.viewID} not found in notebook`
+      );
+    }
   }
 );
 
@@ -277,8 +291,22 @@ api.get(
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
-    res.setHeader('Content-Type', 'application/zip');
-    streamNotebookFilesAsZip(req.params.id, req.params.viewID, res);
+    // get the label for this form for the filename header
+    const uiSpec = await getNotebookUISpec(req.params.id);
+    if (uiSpec && req.params.viewID in uiSpec.viewsets) {
+      const label = uiSpec.viewsets[req.params.viewID].label;
+
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${label}.zip"`
+      );
+      res.setHeader('Content-Type', 'application/zip');
+      streamNotebookFilesAsZip(req.params.id, req.params.viewID, res);
+    } else {
+      throw new Exceptions.ItemNotFoundException(
+        `Form with id ${req.params.viewID} not found in notebook`
+      );
+    }
   }
 );
 

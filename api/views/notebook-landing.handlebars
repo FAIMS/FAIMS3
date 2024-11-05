@@ -43,12 +43,12 @@
           </thead>
           {{#each views}}
           <tr>
-            <td>{{this}}</td>
+            <td>{{this.label}}</td>
             <td>
-              <a class="btn btn-primary" href="/api/notebooks/{{../notebook.project_id}}/{{this}}.csv">CSV</a>
+              <a class="btn btn-primary" href="/api/notebooks/{{../notebook.project_id}}/{{this.id}}.csv">CSV</a>
             </td>
             <td>
-              <a class="btn btn-primary" href="/api/notebooks/{{../notebook.project_id}}/{{this}}.zip">Zip</a>
+              <a class="btn btn-primary" href="/api/notebooks/{{../notebook.project_id}}/{{this.id}}.zip">Zip</a>
             </td>
           </tr>
           {{/each}}
