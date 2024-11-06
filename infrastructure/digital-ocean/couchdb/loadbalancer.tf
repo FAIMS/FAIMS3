@@ -1,13 +1,20 @@
+resource "digitalocean_certificate" "lb_certificate" {
+  name    = "lb-certificate-${var.subdomain}"
+  type    = "lets_encrypt"
+  domains = ["db.${var.subdomain}"]
+}
+
 resource "digitalocean_loadbalancer" "couchdb-lb" {
   name = "couchdb-lb"
   region = "syd1"
 
   forwarding_rule {
-    entry_port = 80
-    entry_protocol = "http"
+    entry_port = 443
+    entry_protocol = "https"
 
     target_port = 5984
     target_protocol = "http"
+    certificate_name = digitalocean_certificate.lb_certificate.name
   }
 
   healthcheck {
@@ -15,10 +22,11 @@ resource "digitalocean_loadbalancer" "couchdb-lb" {
     protocol = "tcp"
   }
 
+ 
   droplet_ids = digitalocean_droplet.couchdb.*.id
 }
 
 resource "digitalocean_domain" "couchdb" {
   name       = "db.${var.subdomain}"
-  ip_address = digitalocean_loadbalancer.couchdb-lb.ipv4_address
+  ip_address = digitalocean_loadbalancer.couchdb-lb.ip
 }

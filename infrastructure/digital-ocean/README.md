@@ -26,7 +26,6 @@ To validate the configuration and view the plan:
 ```bash
 terraform plan \
   -var "do_token=${DO_PAT}" \
-  -var "pvt_key=./id_rsa" \
   -var "subdomain=${SUBDOMAIN}"
 ```
 
@@ -45,7 +44,6 @@ To destroy the cluster `terraform destroy`
 ```bash
 terraform plan \
   -var "do_token=${DO_PAT}" \
-  -var "pvt_key=./id_rsa" \
   -var "subdomain=demo.fieldmark.app" \
   -var "contact_email=me@here.com"
 ```

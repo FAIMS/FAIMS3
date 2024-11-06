@@ -52,7 +52,6 @@ services:
 
       # public URL for accessing Conductor & CouchDB
       - CONDUCTOR_PUBLIC_URL
-      - COMMIT_VERSION
 
       - CONDUCTOR_AUTH_PROVIDERS
  

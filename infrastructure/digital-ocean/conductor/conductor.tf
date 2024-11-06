@@ -12,7 +12,7 @@ data "cloudinit_config" "conductor_config" {
                 name = "conductor"
                 shell = "/bin/bash"
                 sudo = "ALL=(ALL) NOPASSWD:ALL"
-                ssh_import_id = ["gh:stevecassidy"]
+                ssh_authorized_keys = [var.authorized_key]
             }
         ]
         disable_root = true
@@ -39,24 +39,24 @@ EOT
             },
             {
                 encoding = "b64"
-                content = base64encode(file("../.env"))
-                path = "/opt/conductor/.env"
-            },
-            {
-                encoding = "b64"
-                content = base64encode(file("./conductor.sh"))
+                content = filebase64("${path.module}/conductor.sh")
                 path = "/opt/conductor/conductor.sh"
                 permissions = "0755"
             },
             {
                 encoding = "b64"
-                content = base64encode(file("../../../api/keys/local-dev_private_key.pem"))
-                path = "/opt/conductor/keys/local-dev_private_key.pem"
+                content = var.conductor_env_b64
+                path = "/opt/conductor/.env"
             },
             {
                 encoding = "b64"
-                content = base64encode(file("../../../api/keys/local-dev_private_key.pem"))
-                path = "/opt/conductor/keys/local-dev_public_key.pem"
+                content = var.conductor_pvt_key_b64
+                path = "/opt/conductor/keys/${var.profile_name}_private_key.pem"
+            },
+            {
+                encoding = "b64"
+                content = var.conductor_pub_key_b64
+                path = "/opt/conductor/keys/${var.profile_name}_public_key.pem"
             }
         ]
         runcmd = [
@@ -79,13 +79,6 @@ resource "digitalocean_droplet" "conductor-droplet" {
     ssh_keys = [
         data.digitalocean_ssh_key.terraform.id
     ]
-    connection {
-        host = self.ipv4_address
-        user = "root"
-        type = "ssh"
-        private_key = file(var.pvt_key)
-        timeout = "2m"
-    }    
     user_data = data.cloudinit_config.conductor_config.rendered
 }
 

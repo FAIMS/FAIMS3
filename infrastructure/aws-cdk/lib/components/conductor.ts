@@ -142,8 +142,6 @@ export class FaimsConductor extends Construct {
           WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
           ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
           IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
-          // TODO Setup git revision properly
-          COMMIT_VERSION: 'todo',
           KEY_SOURCE: 'AWS_SM',
           AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         },

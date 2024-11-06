@@ -23,30 +23,9 @@ import {v4 as uuidv4} from 'uuid';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
-const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
 // If a URL for the conductor instance is not provided this will be used as a fall-through
 const DEFAULT_CONDUCTOR_URL = 'http://localhost:8080';
-
-/*
- * This is designed to get useful commit information data from
- * environment variables for the testing server. While more sophisticated
- * iterations of this can use extra node modules to get git data directly,
- * passing environment variables seems like the safest first path.
- */
-
-function commit_version(): string {
-  const commitver = process.env.COMMIT_VERSION;
-  if (
-    commitver === '' ||
-    commitver === undefined ||
-    FALSEY_STRINGS.includes(commitver.toLowerCase())
-  ) {
-    return 'unknown dev';
-  } else {
-    return commitver;
-  }
-}
 
 /*
   conductor_url - returns the base URL of this Conductor server
@@ -266,7 +245,6 @@ export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
 export const LOCAL_COUCHDB_AUTH = local_couchdb_auth();
 export const RUNNING_UNDER_TEST = is_testing();
-export const COMMIT_VERSION = commit_version();
 export const CONDUCTOR_PUBLIC_URL = conductor_url();
 export const CONDUCTOR_INTERNAL_PORT = conductor_internal_port();
 export const CONDUCTOR_KEY_ID = signing_key_id();

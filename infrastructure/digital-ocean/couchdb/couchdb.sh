@@ -1,7 +1,12 @@
 #!/bin/bash
 
+# get configuration
+env_file=/opt/couchdb/.env
+source $env_file
+
 tag=3.3.3
 configdir=/opt/couchdb/etc/local.d
+volume=/mnt/couchdb_data
 
 case "${1}" in
 
@@ -13,8 +18,10 @@ case "${1}" in
   start)
     echo 'starting couchdb'
     docker run -d -p 5984:5984 \
+    -e COUCHDB_USER=admin \
+    -e COUCHDB_PASSWORD=${COUCHDB_PASSWORD} \
     -v "${configdir}:/opt/couchdb/etc/local.d" \
-    -v "/mnt/couchdb_data:/opt/couchdb/data" \
+    -v "${volume}:/opt/couchdb/data" \
     --restart unless-stopped\
     --name couchdb\
     "couchdb:${tag}"
@@ -34,6 +41,7 @@ case "${1}" in
   stop)
     echo 'stopping couchdb'
     docker stop couchdb
+    docker rm couchdb
   ;;
 
   *)

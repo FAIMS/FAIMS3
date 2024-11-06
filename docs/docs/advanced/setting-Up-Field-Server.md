@@ -508,11 +508,6 @@ example.
 <td><p>Either "datacentral", "datacentral,google" or "google".</p>
 <p>Determines some other variables below that you may need to set - see below.</p></td>
 </tr>
-<tr class="odd">
-<td>COMMIT_VERSION</td>
-<td>&lt;&lt;From command&gt;&gt;</td>
-<td>From output of 'git rev-parse HEAD'</td>
-</tr>
 <tr class="even">
 <td>FAIMS_COOKIE_SECRET</td>
 <td>&lt;&lt;From command&gt;&gt;</td>

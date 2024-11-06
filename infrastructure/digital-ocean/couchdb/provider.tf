@@ -11,8 +11,6 @@ terraform {
     }
 }
 
-variable "do_token" {}
-variable "pvt_key" {}
 
 provider digitalocean {
     token = var.do_token

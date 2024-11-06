@@ -10,11 +10,16 @@ data "cloudinit_config" "couchdb_config" {
                 name = "couchdb"
                 shell = "/bin/bash"
                 sudo = "ALL=(ALL) NOPASSWD:ALL"
-                ssh_import_id = ["gh:stevecassidy"]
+                ssh_authorized_keys = [var.authorized_key]
             }
         ]
         disable_root = true
         write_files = [
+            {
+                encoding = "b64"
+                path = "/opt/couchdb/.env"
+                content = var.couchdb_env_b64
+            },
             {
                 encoding = "b64"
                 content = var.local_ini_b64
@@ -22,7 +27,7 @@ data "cloudinit_config" "couchdb_config" {
             },
             {
                 encoding = "b64"
-                content =  base64encode(file("./couchdb.sh"))
+                content =  base64encode(file("${path.module}/couchdb.sh"))
                 path =  "/opt/couchdb/couchdb.sh"
                 permissions = "0755"
             }
@@ -54,13 +59,6 @@ resource "digitalocean_droplet" "couchdb" {
     ssh_keys = [
         data.digitalocean_ssh_key.terraform.id
     ]
-    connection {
-        host = self.ipv4_address
-        user = "root"
-        type = "ssh"
-        private_key = file(var.pvt_key)
-        timeout = "2m"
-    }    
     user_data = data.cloudinit_config.couchdb_config.rendered
     volume_ids = [digitalocean_volume.couchdb-volume[count.index].id]
 }
