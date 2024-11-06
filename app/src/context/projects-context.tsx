@@ -13,13 +13,13 @@ export const ProjectsContext = createContext<{
   projects: ProjectExtended[];
   activateProject: (id: string, listing: string) => void;
   setProjectSync: (id: string, listing: string, sync: boolean) => void;
-  syncRemoteProjects: () => Promise<void>;
+  syncProjects: () => Promise<void>;
   initProjects: () => Promise<void>;
 }>({
   projects: [],
   activateProject: () => {},
   setProjectSync: () => {},
-  syncRemoteProjects: () => new Promise(() => {}),
+  syncProjects: () => new Promise(() => {}),
   initProjects: () => new Promise(() => {}),
 });
 
@@ -45,53 +45,38 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
    * @returns {Promise<void>} Resolves when initialization is complete.
    */
   const initProjects = async () => {
-    await syncLocalProjects();
-    await syncRemoteProjects();
-  };
+    const localProjects = await getProjectsDB();
 
-  /**
-   * Synchronizes remote projects with the local state and database.
-   * Fetches projects from a remote source, merges with the local project data
-   * to retain activation and sync status, then updates the project state and database.
-   *
-   * @async
-   * @function syncRemoteProjects
-   * @returns {Promise<void>} Resolves when synchronization is complete.
-   */
-  const syncRemoteProjects = async () => {
+    const newProjectsMap = new Map(
+      localProjects.map(project => [project._id, project])
+    );
+
     const remoteProjects = await getRemoteProjects();
 
-    if (!remoteProjects.length) return;
+    for (const remoteProject of remoteProjects) {
+      newProjectsMap.set(remoteProject._id, remoteProject);
+    }
 
-    const currentProjectsMap = new Map(
+    setProjects([...newProjectsMap.values()]);
+  };
+
+  const syncProjects = async () => {
+    const newProjectsMap = new Map(
       projects.map(project => [project._id, project])
     );
 
-    const newProjects = remoteProjects.map(project => {
-      return {
-        ...project,
-        activated: !!currentProjectsMap.get(project._id)?.activated,
-        sync: !!currentProjectsMap.get(project._id)?.sync,
-      };
-    });
+    const remoteProjects = await getRemoteProjects();
 
-    setProjects(newProjects);
+    for (const remoteProject of remoteProjects) {
+      newProjectsMap.set(remoteProject._id, remoteProject);
+    }
 
-    await updateProjectsDB(newProjects);
-  };
-
-  /**
-   * Synchronizes local projects by fetching them from the database
-   * and updating the project state.
-   *
-   * @async
-   * @function syncLocalProjects
-   * @returns {Promise<void>} Resolves when local projects are synchronized.
-   */
-  const syncLocalProjects = async () => {
-    const localProjects = await getProjectsDB();
-
-    setProjects(localProjects);
+    for (const project of projects) {
+      newProjectsMap.set(
+        project._id,
+        newProjectsMap.get(project._id) ?? project
+      );
+    }
   };
 
   /**
@@ -145,7 +130,7 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
         projects,
         activateProject,
         setProjectSync,
-        syncRemoteProjects,
+        syncProjects,
         initProjects,
       }}
     >
