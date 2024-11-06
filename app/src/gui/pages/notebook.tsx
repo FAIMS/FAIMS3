@@ -91,9 +91,8 @@ export default function Notebook() {
           sx={{display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0}}
         >
           <MenuBookIcon
-            color="primary"
             fontSize={mq_above_md ? 'large' : 'medium'}
-            sx={{marginRight: '8px'}}
+            sx={{marginRight: '8px', color: theme.palette.secondary.main}}
           />
           <Typography
             variant={mq_above_md ? 'h4' : 'h5'}
