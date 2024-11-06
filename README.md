@@ -22,7 +22,7 @@ Ensure you have uuid installed e.g.
 sudo apt-get install uuid
 ```
 
-Also check you have a modern npm installed, ideally v10.x.y.
+Also check you have a modern npm installed, ideally v10.x.y and node v20+.
 
 We recommend using [`nvm`](https://github.com/nvm-sh/nvm) (node version manager). To set this up
 
@@ -50,6 +50,12 @@ Now run the script to get a docker service running locally.
 ```bash
 ./localdev.sh
 ```
+
+This spins up three services
+
+- conductor API (/api) live reloading on http://localhost:8080
+- FAIMS3 app (/app) live reloading on http://localhost:3000
+- couchDB on http://localhost:5984/_utils
 
 ## Initial step-by step setup
 

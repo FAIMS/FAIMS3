@@ -1,7 +1,13 @@
 infrastructure/
 docs/
-node_modules/
 tests/
 .env
 Dockerfile.build
 out
+node_modules
+.git
+*.log
+dist
+build
+coverage
+.turbo
