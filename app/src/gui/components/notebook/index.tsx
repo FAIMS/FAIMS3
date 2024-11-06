@@ -242,8 +242,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           >
             <AppBar
               position="static"
-              color="primary"
-              sx={{paddingLeft: '16px'}}
+              sx={{
+                paddingLeft: '16px',
+                backgroundColor: theme.palette.background.tabsBackground,
+              }}
             >
               <Tabs
                 value={notebookTabValue}
@@ -256,8 +258,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   },
                 }}
                 sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
                   backgroundColor: theme.palette.background.tabsBackground,
-                  marginTop: '12px',
+                  width: '100%',
+                  padding: '0 16px',
                 }}
                 textColor="inherit"
                 variant="scrollable"
