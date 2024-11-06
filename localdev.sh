@@ -54,9 +54,9 @@ echo "checking docker install"
 echo "> docker --version"
 docker --version
 
-echo "checking uuid install"
-echo "> uuid"
-uuid
+echo "checking uuidgen install"
+echo "> uuidgen"
+uuidgen
 
 # install dependencies
 echo "Installing monorepo dependencies"
