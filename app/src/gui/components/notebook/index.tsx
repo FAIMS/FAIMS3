@@ -255,7 +255,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                     backgroundColor: theme.palette.secondary.contrastText,
                   },
                 }}
-                sx={{backgroundColor: theme.palette.background.tabsBackground}}
+                sx={{
+                  backgroundColor: theme.palette.background.tabsBackground,
+                  marginTop: '12px',
+                }}
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
