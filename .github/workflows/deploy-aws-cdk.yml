@@ -2,6 +2,15 @@ name: CDK Deploy FAIMS3 to AWS
 on:
   # Manually run deploy
   workflow_dispatch:
+    inputs:
+      action:
+        description: 'Choose CDK action to perform'
+        required: true
+        default: 'diff'
+        type: choice
+        options:
+          - deploy
+          - diff
 
 permissions:
   id-token: write
@@ -55,4 +64,8 @@ jobs:
           cd infrastructure/aws-cdk
           npm install
           export CONFIG_FILE_NAME=${{ vars.CDK_DEPLOY_ENVIRONMENT }}.json
-          npx cdk deploy --require-approval never
+          if [ "${{ github.event.inputs.action }}" = "deploy" ]; then
+            npx cdk deploy --require-approval never
+          else
+            npx cdk diff
+          fi
