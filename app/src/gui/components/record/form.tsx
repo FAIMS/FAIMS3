@@ -1164,13 +1164,6 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
-                this.props.setProgress?.(
-                  percentComplete(
-                    requiredFields(this.props.ui_specification.fields),
-                    formProps.values
-                  )
-                );
-
                 const layout =
                   this.props.ui_specification.viewsets[viewsetName]?.layout;
                 const views = getViewsMatchingCondition(
@@ -1179,6 +1172,17 @@ class RecordForm extends React.Component<
                   [],
                   viewsetName,
                   formProps.touched
+                );
+
+                // update the progress bar
+                this.props.setProgress?.(
+                  percentComplete(
+                    requiredFields(
+                      this.getViewsetName(),
+                      this.props.ui_specification
+                    ),
+                    formProps.values
+                  )
                 );
 
                 if (layout === 'inline')
@@ -1195,7 +1199,7 @@ class RecordForm extends React.Component<
                         );
 
                         return (
-                          <div>
+                          <div key={`form-${view}`}>
                             <h2>{ui_specification.views[view].label}</h2>
                             <Form>
                               {description !== '' && (
