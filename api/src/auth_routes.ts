@@ -380,9 +380,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         passport.authenticate(
           handler + '-validate',
           authenticate_return(req, res, next, redirect)
-          //          HANDLER_OPTIONS[handler]
         )(req, res, next);
-        console.log('TODO: may need to insert:', HANDLER_OPTIONS[handler]);
       } else {
         throw Error(
           `state must be a string, or not set, not ${typeof req.query?.state}`
@@ -395,12 +393,10 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       `/auth-return/${handler}/`,
       (req: any, res: any, next: any) => {
         const redirect = req.session['redirect'] || '/send-token';
-        passport.authenticate(handler + '-validate', {
-          successRedirect: redirect,
-          failureRedirect: '/auth',
-          failureFlash: true,
-          successFlash: 'Welcome!',
-        })(req, res, next);
+        passport.authenticate(
+          handler + '-validate',
+          authenticate_return(req, res, next, redirect)
+        )(req, res, next);
       }
     );
 
