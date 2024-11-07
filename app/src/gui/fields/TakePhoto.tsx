@@ -197,6 +197,7 @@ const FAIMSImageList = (props: ImageListProps) => {
         ) : (
           // ?? not allow user to delete image if the image is not download yet
           <FAIMSImageIconList
+            key={`${fieldName}-image-${index}`}
             index={index}
             setopen={setopen}
             fieldName={fieldName}
