@@ -97,10 +97,13 @@ export function AuthReturn() {
         );
       }
 
-      // this requires the token
-      update_directory();
-      initProjects();
-      navigate('/');
+      const login = async () => {
+        await update_directory();
+        await initProjects();
+        navigate('/');
+      };
+
+      login();
     };
 
     const params = new URLSearchParams(window.location.search);
