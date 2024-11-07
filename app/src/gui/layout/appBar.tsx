@@ -309,9 +309,7 @@ export default function MainAppBar(props: NavbarProps) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                marginLeft: 'auto',
-                gap: '4px',
-                maxWidth: '100%',
+                gap: '6px',
                 overflow: 'hidden',
               }}
             >

@@ -18,7 +18,7 @@
  *   Provides a component to show either a link to sign-in or the username
  *   which links to the sign-in page
  */
-import {Button, useMediaQuery} from '@mui/material';
+import {Button, Tooltip} from '@mui/material';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {TokenContents} from '@faims3/data-model';
@@ -37,34 +37,82 @@ export default function AppBarAuth(props: AppBarAuthProps) {
   const isAuthenticated = checkToken(props.token);
 
   /**
-   * Determines if the screen width is 768px or wider (desktop view).
+   * Extract the first initial of the username
    */
-  const isDesktop = useMediaQuery('(min-width:768px)');
+  const userInitial = isAuthenticated
+    ? props.token!.username.charAt(0).toUpperCase()
+    : '';
 
   return (
     <Button
       component={NavLink}
       to={ROUTES.SIGN_IN}
-      variant={'contained'}
-      color={'primary'}
-      startIcon={<Person style={{color: theme.palette.background.default}} />}
+      variant="contained"
+      color="primary"
       disableElevation
       style={{
-        display: 'block',
+        display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        maxWidth: isDesktop ? '100%' : '150px',
-        width: isDesktop ? '100%' : 'fit-content',
-        height: 'auto',
-        minHeight: '50px',
-        maxHeight: '70px',
+        width: '60px',
+        height: '60px',
+        borderRadius: '50%',
         padding: '8px',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
+        transition: 'background-color 0.3s ease, transform 0.2s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.secondary.main;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.primary.main;
       }}
     >
-      {isAuthenticated ? props.token!.username : 'Sign In'}
+      {isAuthenticated ? (
+        <Tooltip
+          title={
+            <span style={{fontWeight: 'bold', fontSize: '1rem'}}>
+              {props.token!.username}
+            </span>
+          }
+          arrow
+          placement="bottom"
+          sx={{
+            tooltip: {
+              backgroundColor: theme.palette.background.lightBackground,
+              color: theme.palette.text.primary,
+              padding: '10px 15px',
+              borderRadius: '8px',
+            },
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <Person
+              style={{
+                fontSize: '1.5rem',
+                color: theme.palette.background.paper,
+              }}
+            />
+            <span
+              style={{
+                fontWeight: 'bold',
+                fontSize: '1.5rem',
+                color: theme.palette.background.paper,
+              }}
+            >
+              {userInitial}
+            </span>
+          </div>
+        </Tooltip>
+      ) : (
+        'Sign In'
+      )}
     </Button>
   );
 }
