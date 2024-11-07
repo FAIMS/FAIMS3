@@ -40,7 +40,7 @@ import {RefreshOutlined} from '@mui/icons-material';
 
 export default function NoteBooks() {
   const [refresh, setRefresh] = useState(false);
-  const {projects, syncRemoteProjects} = useContext(ProjectsContext);
+  const {projects, syncProjects} = useContext(ProjectsContext);
 
   const activatedProjects = projects.filter(({activated}) => activated);
 
@@ -220,11 +220,11 @@ export default function NoteBooks() {
             startIcon={<RefreshOutlined />}
             onClick={async () => {
               setRefresh(true);
-              await syncRemoteProjects();
+              await syncProjects();
               setRefresh(false);
             }}
           >
-            Sync {NOTEBOOK_NAME}s
+            Refresh {NOTEBOOK_NAME}s
           </Button>
         </div>
         {NOTEBOOK_LIST_TYPE === 'tabs' ? (

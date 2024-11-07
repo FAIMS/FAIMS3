@@ -109,3 +109,12 @@ export const getRemoteProjects = async () => {
 
   return projects;
 };
+
+/**
+ * Converts an array of projects into a Map where each project's ID is the key, and the project object is the value.
+ *
+ * @param {ProjectExtended[]} projects - An array of project objects with unique IDs.
+ * @returns {Map<string, ProjectExtended>} A Map with project IDs as keys and project objects as values.
+ */
+export const getProjectMap = (projects: ProjectExtended[]) =>
+  new Map(projects.map(project => [project._id, project]));

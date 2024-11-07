@@ -3,11 +3,10 @@ import {
   activateProjectDB,
   getProjectsDB,
   setSyncProjectDB,
-  updateProjectsDB,
 } from '../dbs/projects-db';
 import {activate_project} from '../sync/process-initialization';
 import {ProjectExtended} from '../types/project';
-import {getRemoteProjects} from './functions';
+import {getProjectMap, getRemoteProjects} from './functions';
 
 export const ProjectsContext = createContext<{
   projects: ProjectExtended[];
@@ -46,37 +45,48 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
    */
   const initProjects = async () => {
     const localProjects = await getProjectsDB();
-
-    const newProjectsMap = new Map(
-      localProjects.map(project => [project._id, project])
-    );
-
     const remoteProjects = await getRemoteProjects();
 
+    const localProjectsMap = getProjectMap(localProjects);
+    const newProjectsMap = getProjectMap(localProjects);
+
     for (const remoteProject of remoteProjects) {
-      newProjectsMap.set(remoteProject._id, remoteProject);
+      const activated =
+        localProjectsMap.get(remoteProject._id)?.activated ?? false;
+
+      newProjectsMap.set(remoteProject._id, {
+        ...remoteProject,
+        activated,
+      });
     }
 
     setProjects([...newProjectsMap.values()]);
   };
 
+  /**
+   * Synchronizes the list of projects with remote projects, updating the local project list
+   * to include any remote project updates while preserving the activation state.
+   *
+   * @async
+   * @function syncProjects
+   * @returns {Promise<void>} Resolves when the project synchronization is complete.
+   */
   const syncProjects = async () => {
-    const newProjectsMap = new Map(
-      projects.map(project => [project._id, project])
-    );
-
     const remoteProjects = await getRemoteProjects();
 
+    const projectsMap = getProjectMap(projects);
+    const newProjectsMap = getProjectMap(projects);
+
     for (const remoteProject of remoteProjects) {
-      newProjectsMap.set(remoteProject._id, remoteProject);
+      const activated = projectsMap.get(remoteProject._id)?.activated ?? false;
+
+      newProjectsMap.set(remoteProject._id, {
+        ...remoteProject,
+        activated,
+      });
     }
 
-    for (const project of projects) {
-      newProjectsMap.set(
-        project._id,
-        newProjectsMap.get(project._id) ?? project
-      );
-    }
+    setProjects([...newProjectsMap.values()]);
   };
 
   /**
