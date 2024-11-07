@@ -18,13 +18,135 @@
  *   Provides a component to show either a link to sign-in or the username
  *   which links to the sign-in page
  */
-import {Button} from '@mui/material';
+import {Button, Tooltip} from '@mui/material';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../../utils/helpers';
 import {Person} from '@mui/icons-material';
 import {theme} from '../../themes';
+
+interface SignInButtonComponentProps {}
+const SignInButtonComponent = (props: SignInButtonComponentProps) => {
+  /**
+    Component: SignInButtonComponent
+    
+    */
+  return (
+    <Button
+      component={NavLink}
+      to={ROUTES.SIGN_IN}
+      variant="contained"
+      color="primary"
+      disableElevation
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: undefined,
+        height: undefined,
+        borderRadius: '10%',
+        transition: 'background-color 0.3s ease, transform 0.2s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.secondary.main;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.primary.main;
+      }}
+    >
+      Sign In
+    </Button>
+  );
+};
+
+interface AuthenticatedDisplayComponentProps {
+  token: TokenContents;
+}
+const AuthenticatedDisplayComponent = (
+  props: AuthenticatedDisplayComponentProps
+) => {
+  /**
+    Component: AuthenticatedDisplayComponent
+    
+    */
+
+  /**
+   * Extract the first initial of the username
+   */
+  const userInitial = props.token!.username.charAt(0).toUpperCase();
+  return (
+    <Button
+      component={NavLink}
+      to={ROUTES.SIGN_IN}
+      variant="contained"
+      color="primary"
+      disableElevation
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: '55px',
+        width: '55px',
+        minHeight: '55px',
+        height: '55px',
+        borderRadius: '50%',
+        padding: '8px',
+        transition: 'background-color 0.3s ease, transform 0.2s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.secondary.main;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.primary.main;
+      }}
+    >
+      <Tooltip
+        title={
+          <span style={{fontWeight: 'bold', fontSize: '1rem'}}>
+            {props.token!.username}
+          </span>
+        }
+        arrow
+        placement="bottom"
+        sx={{
+          tooltip: {
+            backgroundColor: theme.palette.background.lightBackground,
+            color: theme.palette.text.primary,
+            padding: '10px 15px',
+            borderRadius: '8px',
+          },
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+        >
+          <Person
+            style={{
+              fontSize: '1.25rem',
+              color: theme.palette.background.paper,
+            }}
+          />
+          <span
+            style={{
+              fontWeight: 'bold',
+              fontSize: '1.25rem',
+              color: theme.palette.background.paper,
+            }}
+          >
+            {userInitial}
+          </span>
+        </div>
+      </Tooltip>
+    </Button>
+  );
+};
 
 interface AppBarAuthProps {
   token?: null | undefined | TokenContents;
@@ -36,16 +158,11 @@ export default function AppBarAuth(props: AppBarAuthProps) {
    */
   const isAuthenticated = checkToken(props.token);
 
-  return (
-    <Button
-      component={NavLink}
-      to={ROUTES.SIGN_IN}
-      variant={'contained'}
-      color={'primary'}
-      startIcon={<Person style={{color: theme.palette.background.default}} />}
-      disableElevation
-    >
-      {isAuthenticated ? props.token!.username : 'Sign In'}
-    </Button>
+  return isAuthenticated ? (
+    <AuthenticatedDisplayComponent
+      token={props.token!}
+    ></AuthenticatedDisplayComponent>
+  ) : (
+    <SignInButtonComponent />
   );
 }
