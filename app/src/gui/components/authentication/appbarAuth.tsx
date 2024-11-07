@@ -26,23 +26,12 @@ import {checkToken} from '../../../utils/helpers';
 import {Person} from '@mui/icons-material';
 import {theme} from '../../themes';
 
-interface AppBarAuthProps {
-  token?: null | undefined | TokenContents;
-}
-
-export default function AppBarAuth(props: AppBarAuthProps) {
+interface SignInButtonComponentProps {}
+const SignInButtonComponent = (props: SignInButtonComponentProps) => {
   /**
-   * Show username and auth menu if authenticated, otherwise render login button
-   */
-  const isAuthenticated = checkToken(props.token);
-
-  /**
-   * Extract the first initial of the username
-   */
-  const userInitial = isAuthenticated
-    ? props.token!.username.charAt(0).toUpperCase()
-    : '';
-
+    Component: SignInButtonComponent
+    
+    */
   return (
     <Button
       component={NavLink}
@@ -54,8 +43,54 @@ export default function AppBarAuth(props: AppBarAuthProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        width: '60px',
-        height: '60px',
+        width: undefined,
+        height: undefined,
+        borderRadius: '10%',
+        transition: 'background-color 0.3s ease, transform 0.2s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.secondary.main;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.primary.main;
+      }}
+    >
+      Sign In
+    </Button>
+  );
+};
+
+interface AuthenticatedDisplayComponentProps {
+  token: TokenContents;
+}
+const AuthenticatedDisplayComponent = (
+  props: AuthenticatedDisplayComponentProps
+) => {
+  /**
+    Component: AuthenticatedDisplayComponent
+    
+    */
+
+  /**
+   * Extract the first initial of the username
+   */
+  const userInitial = props.token!.username.charAt(0).toUpperCase();
+  return (
+    <Button
+      component={NavLink}
+      to={ROUTES.SIGN_IN}
+      variant="contained"
+      color="primary"
+      disableElevation
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: '55px',
+        width: '55px',
+        minHeight: '55px',
+        height: '55px',
         borderRadius: '50%',
         padding: '8px',
         transition: 'background-color 0.3s ease, transform 0.2s ease',
@@ -68,51 +103,66 @@ export default function AppBarAuth(props: AppBarAuthProps) {
         e.currentTarget.style.backgroundColor = theme.palette.primary.main;
       }}
     >
-      {isAuthenticated ? (
-        <Tooltip
-          title={
-            <span style={{fontWeight: 'bold', fontSize: '1rem'}}>
-              {props.token!.username}
-            </span>
-          }
-          arrow
-          placement="bottom"
-          sx={{
-            tooltip: {
-              backgroundColor: theme.palette.background.lightBackground,
-              color: theme.palette.text.primary,
-              padding: '10px 15px',
-              borderRadius: '8px',
-            },
+      <Tooltip
+        title={
+          <span style={{fontWeight: 'bold', fontSize: '1rem'}}>
+            {props.token!.username}
+          </span>
+        }
+        arrow
+        placement="bottom"
+        sx={{
+          tooltip: {
+            backgroundColor: theme.palette.background.lightBackground,
+            color: theme.palette.text.primary,
+            padding: '10px 15px',
+            borderRadius: '8px',
+          },
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
           }}
         >
-          <div
+          <Person
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
+              fontSize: '1.25rem',
+              color: theme.palette.background.paper,
+            }}
+          />
+          <span
+            style={{
+              fontWeight: 'bold',
+              fontSize: '1.25rem',
+              color: theme.palette.background.paper,
             }}
           >
-            <Person
-              style={{
-                fontSize: '1.5rem',
-                color: theme.palette.background.paper,
-              }}
-            />
-            <span
-              style={{
-                fontWeight: 'bold',
-                fontSize: '1.5rem',
-                color: theme.palette.background.paper,
-              }}
-            >
-              {userInitial}
-            </span>
-          </div>
-        </Tooltip>
-      ) : (
-        'Sign In'
-      )}
+            {userInitial}
+          </span>
+        </div>
+      </Tooltip>
     </Button>
+  );
+};
+
+interface AppBarAuthProps {
+  token?: null | undefined | TokenContents;
+}
+
+export default function AppBarAuth(props: AppBarAuthProps) {
+  /**
+   * Show username and auth menu if authenticated, otherwise render login button
+   */
+  const isAuthenticated = checkToken(props.token);
+
+  return isAuthenticated ? (
+    <AuthenticatedDisplayComponent
+      token={props.token!}
+    ></AuthenticatedDisplayComponent>
+  ) : (
+    <SignInButtonComponent />
   );
 }
