@@ -553,29 +553,35 @@ const hydrateRecord = async (
   project_id: string,
   record: any // return type of getSomeRecords
 ) => {
-  const hrid = await getHRID(project_id, record.revision);
-  const formData: FormData = await getFormDataFromRevision(
-    project_id,
-    record.revision
-  );
-  const result = {
-    project_id: project_id,
-    record_id: record.record_id,
-    revision_id: record.revision_id,
-    created_by: record.created_by,
-    updated: new Date(record.revision.created),
-    updated_by: record.revision.created_by,
-    deleted: record.revision.deleted ? true : false,
-    hrid: hrid,
-    relationship: record.revision.relationship,
-    data: formData.data,
-    annotations: formData.annotations,
-    types: formData.types,
-    created: new Date(record.created),
-    conflicts: record.conflict,
-    type: record.revision.type,
-  };
-  return result;
+  try {
+    const hrid = await getHRID(project_id, record.revision);
+    const formData: FormData = await getFormDataFromRevision(
+      project_id,
+      record.revision
+    );
+    const result = {
+      project_id: project_id,
+      record_id: record.record_id,
+      revision_id: record.revision_id,
+      created_by: record.created_by,
+      updated: new Date(record.revision.created),
+      updated_by: record.revision.created_by,
+      deleted: record.revision.deleted ? true : false,
+      hrid: hrid,
+      relationship: record.revision.relationship,
+      data: formData.data,
+      annotations: formData.annotations,
+      types: formData.types,
+      created: new Date(record.created),
+      conflicts: record.conflict,
+      type: record.revision.type,
+    };
+    return result;
+  } catch {
+    throw new Error(
+      `Failed to get HRID of record ${record.record_id} revision ${record.revision}`
+    );
+  }
 };
 
 export async function getSomeRecords(
@@ -667,8 +673,13 @@ export const notebookRecordIterator = async (
         }
       }
       if (record) {
-        const data = await hydrateRecord(project_id, record);
-        return {record: data, done: false};
+        try {
+          const data = await hydrateRecord(project_id, record);
+          return {record: data, done: false};
+        } catch (error) {
+          console.error(error);
+          return {record: null, done: false};
+        }
       } else {
         return {record: null, done: true};
       }
