@@ -3,20 +3,23 @@ import {
   activateProjectDB,
   getProjectsDB,
   setSyncProjectDB,
-  updateProjectsDB,
 } from '../dbs/projects-db';
 import {activate_project} from '../sync/process-initialization';
 import {ProjectExtended} from '../types/project';
-import {getRemoteProjects} from './functions';
+import {getProjectMap, getRemoteProjects} from './functions';
 
 export const ProjectsContext = createContext<{
   projects: ProjectExtended[];
   activateProject: (id: string, listing: string) => void;
   setProjectSync: (id: string, listing: string, sync: boolean) => void;
+  syncProjects: () => Promise<void>;
+  initProjects: () => Promise<void>;
 }>({
   projects: [],
   activateProject: () => {},
   setProjectSync: () => {},
+  syncProjects: () => new Promise(() => {}),
+  initProjects: () => new Promise(() => {}),
 });
 
 /**
@@ -28,34 +31,63 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
   const [projects, setProjects] = useState<ProjectExtended[]>([]);
 
   useEffect(() => {
-    const init = async () => {
-      const localProjects = await getProjectsDB();
-
-      setProjects(localProjects);
-
-      const remoteProjects = await getRemoteProjects();
-
-      if (!remoteProjects.length) return;
-
-      const localProjectsMap = new Map(
-        localProjects.map(project => [project._id, project])
-      );
-
-      const newProjects = remoteProjects.map(project => {
-        return {
-          ...project,
-          activated: !!localProjectsMap.get(project._id)?.activated,
-          sync: !!localProjectsMap.get(project._id)?.sync,
-        };
-      });
-
-      setProjects(newProjects);
-
-      await updateProjectsDB(newProjects);
-    };
-
-    init();
+    initProjects();
   }, []);
+
+  /**
+   * Initializes the application by synchronizing local and remote projects.
+   * First, it fetches projects from the local database and sets them in the project state,
+   * then it synchronizes with remote projects to update the local state and database as needed.
+   *
+   * @async
+   * @function init
+   * @returns {Promise<void>} Resolves when initialization is complete.
+   */
+  const initProjects = async () => {
+    const localProjects = await getProjectsDB();
+    const remoteProjects = await getRemoteProjects();
+
+    const localProjectsMap = getProjectMap(localProjects);
+    const newProjectsMap = getProjectMap(localProjects);
+
+    for (const remoteProject of remoteProjects) {
+      const activated =
+        localProjectsMap.get(remoteProject._id)?.activated ?? false;
+
+      newProjectsMap.set(remoteProject._id, {
+        ...remoteProject,
+        activated,
+      });
+    }
+
+    setProjects([...newProjectsMap.values()]);
+  };
+
+  /**
+   * Synchronizes the list of projects with remote projects, updating the local project list
+   * to include any remote project updates while preserving the activation state.
+   *
+   * @async
+   * @function syncProjects
+   * @returns {Promise<void>} Resolves when the project synchronization is complete.
+   */
+  const syncProjects = async () => {
+    const remoteProjects = await getRemoteProjects();
+
+    const projectsMap = getProjectMap(projects);
+    const newProjectsMap = getProjectMap(projects);
+
+    for (const remoteProject of remoteProjects) {
+      const activated = projectsMap.get(remoteProject._id)?.activated ?? false;
+
+      newProjectsMap.set(remoteProject._id, {
+        ...remoteProject,
+        activated,
+      });
+    }
+
+    setProjects([...newProjectsMap.values()]);
+  };
 
   /**
    * Activates a project.
@@ -104,7 +136,13 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
 
   return (
     <ProjectsContext.Provider
-      value={{projects, activateProject, setProjectSync}}
+      value={{
+        projects,
+        activateProject,
+        setProjectSync,
+        syncProjects,
+        initProjects,
+      }}
     >
       {children}
     </ProjectsContext.Provider>
