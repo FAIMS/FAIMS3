@@ -60,6 +60,7 @@ interface MapProps extends ButtonProps {
   zoom: number;
   center: Array<number>;
   callbackFn: (features: object) => void;
+  setNoPermission: (flag: boolean) => void;
 }
 
 import {AppBar, Dialog, IconButton, Toolbar, Typography} from '@mui/material';
@@ -234,8 +235,10 @@ function MapWrapper(props: MapProps) {
     // only show the map if we have a center
     if (props.center[0] !== 0 && props.center[1] !== 0) {
       setMapOpen(true);
+      // reset this in case we set it before
+      props.setNoPermission(false);
     } else {
-      console.log('no center defined');
+      props.setNoPermission(true);
     }
     // TODO: should do something to inform the user here...
   };
