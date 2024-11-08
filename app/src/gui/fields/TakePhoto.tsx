@@ -18,23 +18,31 @@
  *   TODO : to add function check if photo be downloaded
  */
 
-import React from 'react';
-import {FieldProps} from 'formik';
-import Button, {ButtonProps} from '@mui/material/Button';
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import Button, {ButtonProps} from '@mui/material/Button';
+import {FieldProps} from 'formik';
+import React from 'react';
 
 // import ImageList from '@mui/material/ImageList';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ImageIcon from '@mui/icons-material/Image';
+import {List, ListItem, Typography, useMediaQuery} from '@mui/material';
+import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
-import IconButton from '@mui/material/IconButton';
-import ImageIcon from '@mui/icons-material/Image';
-import {Box, InputAdornment, Typography, useMediaQuery} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
 import {createTheme, styled} from '@mui/material/styles';
-import {List, ListItem} from '@mui/material';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
+
+interface MediaQueryWrapperProps {
+  children: (isMobile: boolean) => React.ReactNode;
+}
+
+function MediaQueryWrapper({children}: MediaQueryWrapperProps) {
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  return children(isMobile);
+}
 
 function base64image_to_blob(image: Photo): Blob {
   if (image.base64String === undefined) {
@@ -290,51 +298,55 @@ export class TakePhoto extends React.Component<
     // It also looks like we don't have multiple photos being returned...
 
     // We have two properties available here - both are optional
-    const buttonLabel = this.props.label ?? 'Take Photo';
+    const title = this.props.label;
     const helperText =
       this.props.helpertext ?? this.props.helperText ?? undefined;
 
     return (
-      <div>
-        <h3>{buttonLabel}</h3>
-        {helperText && <p>{helperText}</p>}
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth={false}
-          onClick={this.takePhoto}
-        >
-          Take photo
-          <span style={{width: 10}} />
-          <CameraAltIcon />
-        </Button>
-        <FAIMSImageList
-          images={this.state.images}
-          setopen={(path: string) =>
-            this.setState({open: true, photopath: path})
-          }
-          setimage={(newfiles: Array<any>) => {
-            this.props.form.setFieldValue(
-              this.props.field.name,
-              newfiles,
-              true
-            );
-          }}
-          disabled={this.props.disabled ?? false}
-          fieldName={this.props.field.name}
-        />
-        <Typography variant="caption" color="textSecondary">
-          {error_text}{' '}
-        </Typography>
-        <FaimsAttachmentManagerDialog
-          project_id={this.props.form.values['_project_id']}
-          open={this.state.open}
-          setopen={() => this.setState({open: false})}
-          filedId={this.props.id}
-          path={this.state.photopath}
-          isSyncing={this.props.issyncing}
-        />
-      </div>
+      <MediaQueryWrapper>
+        {isMobile => (
+          <div>
+            {title && <h3>{title}</h3>}
+            {helperText && <p>{helperText}</p>}
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth={isMobile ? true : false}
+              onClick={this.takePhoto}
+            >
+              Take photo
+              <span style={{width: 10}} />
+              <CameraAltIcon />
+            </Button>
+            <FAIMSImageList
+              images={this.state.images}
+              setopen={(path: string) =>
+                this.setState({open: true, photopath: path})
+              }
+              setimage={(newfiles: Array<any>) => {
+                this.props.form.setFieldValue(
+                  this.props.field.name,
+                  newfiles,
+                  true
+                );
+              }}
+              disabled={this.props.disabled ?? false}
+              fieldName={this.props.field.name}
+            />
+            <Typography variant="caption" color="textSecondary">
+              {error_text}{' '}
+            </Typography>
+            <FaimsAttachmentManagerDialog
+              project_id={this.props.form.values['_project_id']}
+              open={this.state.open}
+              setopen={() => this.setState({open: false})}
+              filedId={this.props.id}
+              path={this.state.photopath}
+              isSyncing={this.props.issyncing}
+            />
+          </div>
+        )}
+      </MediaQueryWrapper>
     );
   }
 }
