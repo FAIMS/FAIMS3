@@ -154,7 +154,7 @@ export function MapFormField({
         {noPermission && Capacitor.getPlatform() === 'ios' && (
           <Alert severity="error" sx={{width: '100%'}}>
             Please enable location permissions for {APP_NAME}. Go to your device
-            Settings &gt; Privacy & Security &gt; Location Services &gt;{' '}
+            Settings &gt; Privacy & Security &gt; Location Services &gt;
             {APP_NAME} and select "While Using the App".
           </Alert>
         )}
