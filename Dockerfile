@@ -34,4 +34,4 @@ FROM node:20 AS app
 WORKDIR /usr/src
 COPY --from=builder /usr/src .
 EXPOSE 3000
-CMD ["npm", "run", "start-app"]
+CMD ["npm", "run", "force-start-app"]

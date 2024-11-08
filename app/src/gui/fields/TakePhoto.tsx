@@ -22,13 +22,14 @@ import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@mui/material/Button';
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 
 // import ImageList from '@mui/material/ImageList';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 import IconButton from '@mui/material/IconButton';
 import ImageIcon from '@mui/icons-material/Image';
-import {Typography} from '@mui/material';
+import {Box, InputAdornment, Typography, useMediaQuery} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {createTheme, styled} from '@mui/material/styles';
 import {List, ListItem} from '@mui/material';
@@ -287,21 +288,25 @@ export class TakePhoto extends React.Component<
     // But it doesn't look like we support masonry right now.
     //
     // It also looks like we don't have multiple photos being returned...
+
+    // We have two properties available here - both are optional
+    const buttonLabel = this.props.label ?? 'Take Photo';
+    const helperText =
+      this.props.helpertext ?? this.props.helperText ?? undefined;
+
     return (
       <div>
-        {this.props.helpertext || this.props.helperText}
+        <h3>{buttonLabel}</h3>
+        {helperText && <p>{helperText}</p>}
         <Button
-          variant="outlined"
-          color={'primary'}
-          style={{marginRight: '10px'}}
-          fullWidth={true}
-          onClick={async () => {
-            await this.takePhoto();
-          }}
+          variant="contained"
+          color="primary"
+          fullWidth={false}
+          onClick={this.takePhoto}
         >
-          {this.props.label !== undefined && this.props.label !== ''
-            ? this.props.label
-            : 'Take Photo'}
+          Take photo
+          <span style={{width: 10}} />
+          <CameraAltIcon />
         </Button>
         <FAIMSImageList
           images={this.state.images}
