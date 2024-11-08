@@ -305,7 +305,14 @@ export default function MainAppBar(props: NavbarProps) {
               <MenuIcon />
             </IconButton>
             <AppBarHeading link={ROUTES.INDEX} />
-            <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                overflow: 'hidden',
+              }}
+            >
               {isAuthenticated ? <SyncStatus /> : ''}
               <AppBarAuth token={props.token} />
             </div>

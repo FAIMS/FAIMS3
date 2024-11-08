@@ -72,13 +72,12 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
 
           <Grid item>
             <Typography
-              variant={isMobile ? 'h4' : 'h3'} // Make title larger
+              variant={isMobile ? 'h4' : 'h3'}
               component="div"
               sx={{
                 fontWeight: 'bold',
-                fontSize: isMobile ? '20px' : '24px', // Font size for both mobile and desktop
+                fontSize: isMobile ? '20px' : '24px',
                 marginBottom: '5px',
-                color: '#263238', // Darker text for better contrast
               }}
             >
               Create New {NOTEBOOK_NAME}

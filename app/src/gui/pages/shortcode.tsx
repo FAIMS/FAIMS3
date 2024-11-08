@@ -144,6 +144,9 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
     }
   };
 
+  // only show the prefix selection dropdown if
+  const showPrefixSelector = props.listings.length > 1;
+
   return (
     <MainCard>
       <Stack spacing={2} sx={{p: 2}}>
@@ -156,26 +159,31 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
         </Typography>
 
         <Stack direction="row" spacing={1} alignItems="center">
-          <FormControl sx={{minWidth: 80, maxWidth: 120}}>
-            <InputLabel
-              id="prefix-label"
-              sx={{backgroundColor: 'white', px: 1}}
-            >
-              Prefix
-            </InputLabel>
-            <Select
-              labelId="prefix-label"
-              value={selectedPrefix}
-              onChange={handlePrefixChange}
-              size="small"
-            >
-              {props.listings.map(listing => (
-                <MenuItem key={listing.prefix} value={listing.prefix}>
-                  {listing.prefix}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {
+            // Only show selector if condition is true i.e. more than one listing
+          }
+          {showPrefixSelector && (
+            <FormControl sx={{minWidth: 80, maxWidth: 120}}>
+              <InputLabel
+                id="prefix-label"
+                sx={{backgroundColor: 'white', px: 1}}
+              >
+                Prefix
+              </InputLabel>
+              <Select
+                labelId="prefix-label"
+                value={selectedPrefix}
+                onChange={handlePrefixChange}
+                size="small"
+              >
+                {props.listings.map(listing => (
+                  <MenuItem key={listing.prefix} value={listing.prefix}>
+                    {listing.prefix}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           <TextField
             value={shortCode}
@@ -188,7 +196,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
               sx: {fontFamily: 'monospace'},
               startAdornment: (
                 <InputAdornment position="start">
-                  {selectedPrefix}-
+                  {selectedPrefix} -
                 </InputAdornment>
               ),
             }}

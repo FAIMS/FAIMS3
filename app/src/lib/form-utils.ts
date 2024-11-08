@@ -2,14 +2,28 @@ import {ProjectUIModel} from '@faims3/data-model/build/src/types';
 
 /**
  * Retrieves the keys of fields that are marked as required from the given project UI model.
- *
- * @param {ProjectUIModel} fields - An object representing the project's UI model fields, where each field contains component parameters.
+ * @param {string} viewset - name of the viewset we are interested in
+ * @param {ProjectUIModel} uiSpec - The project UI Spec
  * @returns {string[]} An array of keys representing the fields that are marked as required.
  */
-export const requiredFields = (fields: ProjectUIModel): string[] =>
-  Object.entries(fields)
-    .filter(([, value]) => value['component-parameters'].required)
-    .map(([key]) => key);
+export const requiredFields = (
+  viewset: string,
+  uiSpec: ProjectUIModel
+): string[] => {
+  const required: string[] = [];
+  if (viewset in uiSpec.viewsets) {
+    const views = uiSpec.viewsets[viewset].views;
+
+    views.forEach((view: string) => {
+      const fields = uiSpec.views[view].fields;
+      fields.forEach((fieldname: string) => {
+        if (uiSpec.fields[fieldname]['component-parameters'].required)
+          required.push(fieldname);
+      });
+    });
+  }
+  return required;
+};
 
 /**
  * Determines whether a given value is considered "empty".

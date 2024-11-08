@@ -18,22 +18,35 @@
  *   TODO : to add function check if photo be downloaded
  */
 
-import React from 'react';
-import {FieldProps} from 'formik';
-import Button, {ButtonProps} from '@mui/material/Button';
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import Button, {ButtonProps} from '@mui/material/Button';
+import {FieldProps} from 'formik';
+import React from 'react';
 
 // import ImageList from '@mui/material/ImageList';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ImageIcon from '@mui/icons-material/Image';
+import {List, ListItem, Typography, useMediaQuery} from '@mui/material';
+import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
-import IconButton from '@mui/material/IconButton';
-import ImageIcon from '@mui/icons-material/Image';
-import {Typography} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
 import {createTheme, styled} from '@mui/material/styles';
-import {List, ListItem} from '@mui/material';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
+
+/**
+ * This functional component provides a isMobile flag which can be used in class
+ * components to dynamically style the component.
+ */
+function MediaQueryWrapper({
+  children,
+}: {
+  children: (isMobile: boolean) => React.ReactNode;
+}) {
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  return children(isMobile);
+}
 
 function base64image_to_blob(image: Photo): Blob {
   if (image.base64String === undefined) {
@@ -197,6 +210,7 @@ const FAIMSImageList = (props: ImageListProps) => {
         ) : (
           // ?? not allow user to delete image if the image is not download yet
           <FAIMSImageIconList
+            key={`${fieldName}-image-${index}`}
             index={index}
             setopen={setopen}
             fieldName={fieldName}
@@ -286,49 +300,57 @@ export class TakePhoto extends React.Component<
     // But it doesn't look like we support masonry right now.
     //
     // It also looks like we don't have multiple photos being returned...
+
+    // We have two properties available here - both are optional
+    const title = this.props.label;
+    const helperText =
+      this.props.helpertext ?? this.props.helperText ?? undefined;
+
     return (
-      <div>
-        {this.props.helpertext || this.props.helperText}
-        <Button
-          variant="outlined"
-          color={'primary'}
-          style={{marginRight: '10px'}}
-          fullWidth={true}
-          onClick={async () => {
-            await this.takePhoto();
-          }}
-        >
-          {this.props.label !== undefined && this.props.label !== ''
-            ? this.props.label
-            : 'Take Photo'}
-        </Button>
-        <FAIMSImageList
-          images={this.state.images}
-          setopen={(path: string) =>
-            this.setState({open: true, photopath: path})
-          }
-          setimage={(newfiles: Array<any>) => {
-            this.props.form.setFieldValue(
-              this.props.field.name,
-              newfiles,
-              true
-            );
-          }}
-          disabled={this.props.disabled ?? false}
-          fieldName={this.props.field.name}
-        />
-        <Typography variant="caption" color="textSecondary">
-          {error_text}{' '}
-        </Typography>
-        <FaimsAttachmentManagerDialog
-          project_id={this.props.form.values['_project_id']}
-          open={this.state.open}
-          setopen={() => this.setState({open: false})}
-          filedId={this.props.id}
-          path={this.state.photopath}
-          isSyncing={this.props.issyncing}
-        />
-      </div>
+      <MediaQueryWrapper>
+        {isMobile => (
+          <div>
+            {title && <h3>{title}</h3>}
+            {helperText && <p>{helperText}</p>}
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth={isMobile ? true : false}
+              onClick={this.takePhoto}
+            >
+              Take photo
+              <span style={{width: 10}} />
+              <CameraAltIcon />
+            </Button>
+            <FAIMSImageList
+              images={this.state.images}
+              setopen={(path: string) =>
+                this.setState({open: true, photopath: path})
+              }
+              setimage={(newfiles: Array<any>) => {
+                this.props.form.setFieldValue(
+                  this.props.field.name,
+                  newfiles,
+                  true
+                );
+              }}
+              disabled={this.props.disabled ?? false}
+              fieldName={this.props.field.name}
+            />
+            <Typography variant="caption" color="textSecondary">
+              {error_text}{' '}
+            </Typography>
+            <FaimsAttachmentManagerDialog
+              project_id={this.props.form.values['_project_id']}
+              open={this.state.open}
+              setopen={() => this.setState({open: false})}
+              filedId={this.props.id}
+              path={this.state.photopath}
+              isSyncing={this.props.issyncing}
+            />
+          </div>
+        )}
+      </MediaQueryWrapper>
     );
   }
 }

@@ -209,12 +209,11 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
             }}
             sx={{
               borderRadius: '8px',
-              padding: '8px 16px',
-              fontSize: {xs: '0.9rem', sm: '1.2rem'},
+              padding: {xs: '6px 8px', sm: '8px 16px'},
+              fontSize: {xs: '0.8rem', sm: '1.2rem'},
               fontWeight: 'bold',
-              color: '#424242',
-              backgroundColor: '#ffffff',
-              border: '1px solid #e0e0e0',
+              backgroundColor: theme.palette.background.default,
+              border: '2px solid #e0e0e0',
               transition: 'all 0.2s ease-in-out',
               textTransform: 'none',
               boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
