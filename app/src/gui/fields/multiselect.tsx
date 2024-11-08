@@ -70,6 +70,10 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
           <MenuItem
             key={option.key ? option.key : option.value}
             value={option.value}
+            sx={{
+              whiteSpace: 'normal',
+              wordWrap: 'break-word',
+            }}
           >
             <Checkbox checked={props.field.value.includes(option.value)} />
             <ListItemText primary={option.label} />

@@ -68,6 +68,10 @@ export const Select = (props: Props & TextFieldProps) => {
           <MenuItem
             key={option.key ? option.key : option.value}
             value={option.value}
+            sx={{
+              whiteSpace: 'normal',
+              wordWrap: 'break-word',
+            }}
           >
             <ListItemText primary={option.label} />
           </MenuItem>
