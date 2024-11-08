@@ -196,7 +196,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
               sx: {fontFamily: 'monospace'},
               startAdornment: (
                 <InputAdornment position="start">
-                  {selectedPrefix}-
+                  {selectedPrefix} -
                 </InputAdornment>
               ),
             }}
