@@ -35,11 +35,15 @@ import {createTheme, styled} from '@mui/material/styles';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 
-interface MediaQueryWrapperProps {
+/**
+ * This functional component provides a isMobile flag which can be used in class
+ * components to dynamically style the component.
+ */
+function MediaQueryWrapper({
+  children,
+}: {
   children: (isMobile: boolean) => React.ReactNode;
-}
-
-function MediaQueryWrapper({children}: MediaQueryWrapperProps) {
+}) {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   return children(isMobile);
 }
