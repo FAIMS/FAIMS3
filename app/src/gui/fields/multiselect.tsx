@@ -18,11 +18,19 @@
  *   TODO
  */
 
-import React from 'react';
-import MuiTextField from '@mui/material/TextField';
-import {fieldToTextField, TextFieldProps} from 'formik-mui';
-import {MenuItem} from '@mui/material';
 import {ElementOption} from '@faims3/data-model';
+import {
+  Checkbox,
+  FormControl,
+  FormHelperText,
+  InputLabel,
+  ListItemText,
+  MenuItem,
+  OutlinedInput,
+  Select,
+} from '@mui/material';
+import {FieldProps} from 'formik';
+import {TextFieldProps} from 'formik-mui';
 
 interface ElementProps {
   options: Array<ElementOption>;
@@ -33,37 +41,45 @@ interface Props {
   select_others?: string;
 }
 
-export class MultiSelect extends React.Component<TextFieldProps & Props> {
-  handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    this.props.form.setFieldValue(this.props.field.name, e.target.value, true);
-  }
+import {useTheme} from '@mui/material/styles';
 
-  render() {
-    const {ElementProps, children, ...textFieldProps} = this.props;
-    return (
-      <>
-        <MuiTextField
-          {...fieldToTextField(textFieldProps)}
-          select={true}
-          SelectProps={{
-            multiple: true,
-          }}
-          onChange={e => this.handleChange(e)}
-        >
-          {children}
-          {ElementProps.options.map((option: any) => (
-            <MenuItem
-              key={option.key ? option.key : option.value}
-              value={option.value}
-            >
-              {option.label}
-            </MenuItem>
-          ))}
-        </MuiTextField>
-      </>
-    );
-  }
-}
+export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
+  const theme = useTheme();
+  const handleChange = (e: any) => {
+    props.form.setFieldValue(props.field.name, e.target.value, true);
+  };
+
+  return (
+    <FormControl sx={{m: 1, width: '100%'}}>
+      <InputLabel
+        id="multi-select-label"
+        style={{backgroundColor: theme.palette.background.default}}
+      >
+        {props.label}
+      </InputLabel>
+      <Select
+        labelId="multi-select-label"
+        multiple
+        label={props.label}
+        onChange={handleChange}
+        value={props.field.value}
+        input={<OutlinedInput label={props.label} />}
+        renderValue={selected => selected.join(', ')}
+      >
+        {props.ElementProps.options.map((option: any) => (
+          <MenuItem
+            key={option.key ? option.key : option.value}
+            value={option.value}
+          >
+            <Checkbox checked={props.field.value.includes(option.value)} />
+            <ListItemText primary={option.label} />
+          </MenuItem>
+        ))}
+      </Select>
+      {props.helperText && <FormHelperText>{props.helperText}</FormHelperText>}
+    </FormControl>
+  );
+};
 
 // const uiSpec = {
 //   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
