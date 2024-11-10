@@ -21,7 +21,7 @@
 import {RefreshOutlined} from '@mui/icons-material';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import FolderIcon from '@mui/icons-material/Folder';
-import {Box, Button, Paper, Typography} from '@mui/material';
+import {Alert, AlertTitle, Box, Button, Paper, Typography} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -44,8 +44,12 @@ import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
 
 // What do we call notebooks which are not active?
-export const NOT_ACTIVATED_LABEL = 'Available';
+export const NOT_ACTIVATED_LABEL = 'Not Active';
+export const ACTIVATED_LABEL = 'Active';
+export const ACTIVATED_VERB_PAST = 'Activated';
 export const ACTIVATE_VERB_LABEL = 'Activate';
+export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
+export const DE_ACTIVATE_VERB = 'De-activate';
 
 export default function NoteBooks() {
   const [refresh, setRefresh] = useState(false);
@@ -162,7 +166,7 @@ export default function NoteBooks() {
             </div>
           ),
         },
-        // commenting this untill the functionality is fixed for this column.
+        // commenting this until the functionality is fixed for this column.
 
         // {
         //   field: 'last_updated',
@@ -195,32 +199,49 @@ export default function NoteBooks() {
     ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
     : false;
 
-  /**
-   * Determines the label for the button based on the notebook list type.
-   * If the notebook list type is 'headings', the label will be 'Not Active'.
-   * If the notebook list type is 'tabs', the label will be 'Available'.
-   */
+  // What type of layout are we using?
+  const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
+  const sectionLabel = isTabs ? 'tab' : 'section';
 
-  const isTabs = NOTEBOOK_LIST_TYPE === 'headings';
+  const buildTabLink = (target: 'active' | 'not active') => {
+    switch (target) {
+      case 'active':
+        return (
+          <Button variant="text" size={'medium'} onClick={() => setTabID('1')}>
+            "{ACTIVATED_LABEL}" tab
+          </Button>
+        );
+      case 'not active':
+        return (
+          <Button variant="text" size={'medium'} onClick={() => setTabID('2')}>
+            {NOT_ACTIVATED_LABEL} tab
+          </Button>
+        );
+    }
+  };
 
   const notActivatedAdvice = (
     <>
       You have {activatedProjects.length} {NOTEBOOK_NAME}
-      {activatedProjects.length !== 1 ? 's' : ''} currently activated on this
-      device. To start using a {NOTEBOOK_NAME}, visit the{' '}
+      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
+      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
       {isTabs ? (
-        // In the tab case, link directly to tab
-        <>
-          <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
-            {NOT_ACTIVATED_LABEL}
-          </Button>{' '}
-          tab
-        </>
+        <>{buildTabLink('not active')}</>
       ) : (
-        // In the section case, just reference the section
-        <>'{NOT_ACTIVATED_LABEL}' section</>
+        <>
+          "{NOT_ACTIVATED_LABEL}" {sectionLabel}
+        </>
+      )}
+      need to be {ACTIVATED_VERB_PAST.toLowerCase()} before they can be used. To
+      start using a {NOTEBOOK_NAME_CAPITALIZED} in the{' '}
+      {isTabs ? (
+        <>{buildTabLink('not active')}</>
+      ) : (
+        <>
+          "{NOT_ACTIVATED_LABEL}" {sectionLabel}
+        </>
       )}{' '}
-      and click the '{ACTIVATE_VERB_LABEL}' button.
+      click the "{ACTIVATE_VERB_LABEL}" button.
     </>
   );
 
@@ -281,6 +302,21 @@ export default function NoteBooks() {
         ) : (
           <HeadingProjectGrid projects={projects} columns={columns} />
         )}
+        <Alert severity="info">
+          <AlertTitle>
+            What does {ACTIVATED_LABEL} and {NOT_ACTIVATED_LABEL} mean?
+          </AlertTitle>
+          When a {NOTEBOOK_NAME} is “{ACTIVATED_LABEL}” you are safe to work
+          offline at any point because all the data you collect will be saved to
+          your device. {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} will start
+          the downloading of existing {NOTEBOOK_NAME} records onto your device.
+          We recommend you complete this procedure while you have a stable
+          internet connection. Currently, you cannot {DE_ACTIVATE_VERB.toLowerCase()} a{' '}
+          {NOTEBOOK_NAME}, this is something we will be adding soon. If you need
+          to make space on your device you can clear the application storage or
+          delete the application. If a {NOTEBOOK_NAME} is "{NOT_ACTIVATED_LABEL}
+          " you are unable to start using it.
+        </Alert>
       </Box>
     </Box>
   );

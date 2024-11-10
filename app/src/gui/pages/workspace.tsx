@@ -23,14 +23,20 @@ import {Typography, Grid} from '@mui/material';
 import Notebooks from '../components/workspace/notebooks';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {useTheme} from '@mui/material/styles';
 
 export default function Workspace() {
+  const theme = useTheme();
   return (
     <React.Fragment>
       <Breadcrumbs data={[{title: 'Workspace'}]} />
       <Grid container spacing={3}>
         <Grid item xs={12} md={12} lg={8}>
-          <Typography variant="h6" color="textSecondary">
+          <Typography
+            variant="h1"
+            color="textSecondary"
+            style={{marginBottom: theme.spacing(2)}}
+          >
             My {NOTEBOOK_NAME_CAPITALIZED}s
           </Typography>
           <Notebooks />

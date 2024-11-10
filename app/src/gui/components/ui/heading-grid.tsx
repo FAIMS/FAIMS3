@@ -10,6 +10,7 @@ import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
 import {theme} from '../../themes';
+import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -53,7 +54,7 @@ export default function HeadingProjectGrid({
   return (
     <div style={{display: 'flex', flexDirection: 'column'}}>
       <div style={{padding: '6px', fontSize: '18px', fontWeight: 'bold'}}>
-        Active
+        {ACTIVATED_LABEL}
       </div>
 
       <DataGrid
@@ -96,7 +97,7 @@ export default function HeadingProjectGrid({
       />
       <div style={{height: '16px'}} />
       <div style={{padding: '6px', fontSize: '18px', fontWeight: 'bold'}}>
-        Not active
+        {NOT_ACTIVATED_LABEL}
       </div>
       <DataGrid
         key={'notebook_list_datagrid_not_activated'}

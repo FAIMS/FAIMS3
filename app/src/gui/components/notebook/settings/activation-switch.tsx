@@ -4,7 +4,16 @@ import InfoIcon from '@mui/icons-material/Info';
 import {ProjectExtended} from '../../../../types/project';
 import {ProjectsContext} from '../../../../context/projects-context';
 import FaimsDialog from '../../ui/Faims_Dialog';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../../buildconfig';
+import {
+  ACTIVATE_ACTIVE_VERB_LABEL,
+  ACTIVATE_VERB_LABEL,
+  ACTIVATED_LABEL,
+  DE_ACTIVATE_VERB,
+} from '../../workspace/notebooks';
 
 type NotebookActivationSwitchProps = {
   project: ProjectExtended;
@@ -38,15 +47,15 @@ export default function NotebookActivationSwitch({
         variant="outlined"
         disableElevation
       >
-        Activate
+        {ACTIVATE_VERB_LABEL}
       </Button>
       <FaimsDialog
         open={open}
-        title={`Activating ${NOTEBOOK_NAME_CAPITALIZED}s`}
+        title={`${ACTIVATE_ACTIVE_VERB_LABEL} ${NOTEBOOK_NAME_CAPITALIZED}s`}
         icon={<InfoIcon style={{fontSize: 40, color: '#1976d2'}} />}
         onClose={handleClose}
         onPrimaryAction={handleActivationClick}
-        primaryActionText="Activate"
+        primaryActionText={ACTIVATE_VERB_LABEL}
         primaryActionLoading={isWorking}
         primaryActionColor="primary"
         primaryActionVariant="contained"
@@ -54,22 +63,23 @@ export default function NotebookActivationSwitch({
       >
         <Box mb={2}>
           <Typography variant="body2" paragraph>
-            When a {NOTEBOOK_NAME_CAPITALIZED} is “Active” you are safe to work
-            offline at any point because all the data you collect will be saved
-            to your device. To activate your {NOTEBOOK_NAME_CAPITALIZED}, click
-            the "Activate" button below.
+            When a {NOTEBOOK_NAME_CAPITALIZED} is “{ACTIVATED_LABEL}” you are
+            safe to work offline at any point because all the data you collect
+            will be saved to your device. To {ACTIVATE_VERB_LABEL.toLowerCase()}{' '}
+            your {NOTEBOOK_NAME_CAPITALIZED}, click the "{ACTIVATE_VERB_LABEL}"
+            button below.
           </Typography>
           <Typography variant="body2" paragraph>
-            <b>Warning</b>: activating a {NOTEBOOK_NAME_CAPITALIZED} will start
-            the downloading of existing records onto your device. We recommend
-            you complete this procedure while you have a stable internet
-            connection.
+            <b>Warning</b>: {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()} a{' '}
+            {NOTEBOOK_NAME_CAPITALIZED} will start the downloading of existing
+            records onto your device. We recommend you complete this procedure
+            while you have a stable internet connection.
             <br />
             <br />
-            Currently, you cannot de-activate a survey, this is something we
-            will be adding soon. If you need to make space on your device you
-            can clear the application storage or remove and reinstall the
-            application.
+            Currently, you cannot {DE_ACTIVATE_VERB.toLowerCase()} a{' '}
+            {NOTEBOOK_NAME}, this is something we will be adding soon. If you
+            need to make space on your device you can clear the application
+            storage or remove and reinstall the application.
           </Typography>
           {/*
           <Typography variant="subtitle1" fontWeight="bold">
