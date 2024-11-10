@@ -186,6 +186,14 @@ export default function NoteBooks() {
     ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
     : false;
 
+  /**
+   * Determines the label for the button based on the notebook list type.
+   * If the notebook list type is 'headings', the label will be 'Not Active'.
+   * If the notebook list type is 'tabs', the label will be 'Available'.
+   */
+  const buttonLabel =
+    NOTEBOOK_LIST_TYPE === 'headings' ? 'Not Active' : 'Available';
+
   return (
     <Box>
       <Box component={Paper} elevation={0} p={2}>
@@ -194,7 +202,7 @@ export default function NoteBooks() {
           {activatedProjects.length !== 1 ? 's' : ''} activated on this device.
           To start using a {NOTEBOOK_NAME}, visit the{' '}
           <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
-            Available
+            {buttonLabel}
           </Button>{' '}
           tab and click the activate button.
         </Typography>
