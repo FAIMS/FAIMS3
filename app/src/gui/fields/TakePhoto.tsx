@@ -316,7 +316,9 @@ export class TakePhoto extends React.Component<
               variant="contained"
               color="primary"
               fullWidth={isMobile ? true : false}
-              onClick={this.takePhoto}
+              onClick={async () => {
+                await this.takePhoto();
+              }}
             >
               Take photo
               <span style={{width: 10}} />
