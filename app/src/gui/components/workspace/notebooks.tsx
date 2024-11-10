@@ -27,7 +27,11 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
 import {useContext, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
+import {
+  NOTEBOOK_LIST_TYPE,
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
@@ -37,6 +41,7 @@ import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
 import {RefreshOutlined} from '@mui/icons-material';
+import {useNotification} from '../../../context/popup';
 
 export default function NoteBooks() {
   const [refresh, setRefresh] = useState(false);
@@ -186,6 +191,9 @@ export default function NoteBooks() {
     ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
     : false;
 
+  // use notification service
+  const notify = useNotification();
+
   return (
     <Box>
       <Box component={Paper} elevation={0} p={2}>
@@ -220,7 +228,16 @@ export default function NoteBooks() {
             startIcon={<RefreshOutlined />}
             onClick={async () => {
               setRefresh(true);
-              await syncProjects();
+              await syncProjects()
+                .then(() => {
+                  notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
+                })
+                .catch(e => {
+                  console.log(e);
+                  notify.showError(
+                    `Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`
+                  );
+                });
               setRefresh(false);
             }}
           >
