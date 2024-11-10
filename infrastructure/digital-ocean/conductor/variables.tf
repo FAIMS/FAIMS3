@@ -2,11 +2,6 @@ variable "do_token" {
   description = "digital ocean access token"
   type = string
 }
-variable "profile_name" {
-  description = "Profile name for this deployment - prefix for key files"
-  type = string
-  default = "default"
-}
 variable "subdomain" {
   description = "Subdomain for this deployment, eg. testing.fieldmark.app"
   type = string

@@ -51,18 +51,18 @@ EOT
             {
                 encoding = "b64"
                 content = var.conductor_pvt_key_b64
-                path = "/opt/conductor/keys/${var.profile_name}_private_key.pem"
+                path = "/opt/conductor/keys/default_private_key.pem"
             },
             {
                 encoding = "b64"
                 content = var.conductor_pub_key_b64
-                path = "/opt/conductor/keys/${var.profile_name}_public_key.pem"
+                path = "/opt/conductor/keys/default_public_key.pem"
             }
         ]
         runcmd = [
             "service nginx restart",
             "snap install --classic certbot",
-            "sudo certbot --nginx -m ${var.contact_email} --agree-tos -d conductor.${var.subdomain} -n",
+            "certbot --nginx -m ${var.contact_email} --agree-tos -d conductor.${var.subdomain} -n",
             "curl -fsSL https://get.docker.com | sh",
             "/opt/conductor/conductor.sh init",
             "/opt/conductor/conductor.sh start"
@@ -73,7 +73,7 @@ EOT
 
 resource "digitalocean_droplet" "conductor-droplet" {
     image = "ubuntu-22-04-x64"
-    name = "conductor"
+    name = "conductor.${var.subdomain}"
     region = "syd1"
     size = "s-1vcpu-1gb"
     ssh_keys = [

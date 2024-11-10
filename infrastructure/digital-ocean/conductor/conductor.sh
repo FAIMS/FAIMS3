@@ -4,7 +4,7 @@
 env_file=/opt/conductor/.env
 source $env_file
 
-image=ghcr.io/faims/faims3-conductor:main
+image=ghcr.io/faims/faims3-api:main
 keydir=/opt/conductor/keys
 
 case "${1}" in
@@ -18,6 +18,7 @@ case "${1}" in
     echo 'starting conductor'
     docker run -d -p ${CONDUCTOR_INTERNAL_PORT}:8000 \
     --env-file ${env_file} \
+    -e PROFILE_NAME=default \
     -e COUCHDB_INTERNAL_URL=https://db.$SUBDOMAIN \
     -e COUCHDB_PUBLIC_URL=https://db.$SUBDOMAIN \
     -e CONDUCTOR_PUBLIC_URL=https://conductor.$SUBDOMAIN \

@@ -4,6 +4,11 @@ resource "digitalocean_certificate" "lb_certificate" {
   domains = ["db.${var.subdomain}"]
 }
 
+resource "digitalocean_domain" "couchdb" {
+  name       = "db.${var.subdomain}"
+  ip_address = digitalocean_loadbalancer.couchdb-lb.ip
+  depends_on = [ digitalocean_certificate.lb_certificate ]
+}
 resource "digitalocean_loadbalancer" "couchdb-lb" {
   name = "couchdb-lb"
   region = "syd1"
@@ -24,9 +29,4 @@ resource "digitalocean_loadbalancer" "couchdb-lb" {
 
  
   droplet_ids = digitalocean_droplet.couchdb.*.id
-}
-
-resource "digitalocean_domain" "couchdb" {
-  name       = "db.${var.subdomain}"
-  ip_address = digitalocean_loadbalancer.couchdb-lb.ip
 }

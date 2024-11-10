@@ -7,7 +7,7 @@ data "cloudinit_config" "couchdb_config" {
     content = yamlencode({
         users = [
             {
-                name = "couchdb"
+                name = "couchdb.${var.subdomain}"
                 shell = "/bin/bash"
                 sudo = "ALL=(ALL) NOPASSWD:ALL"
                 ssh_authorized_keys = [var.authorized_key]
