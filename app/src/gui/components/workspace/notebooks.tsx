@@ -25,9 +25,13 @@ import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
-import {useContext, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
+import {
+  NOTEBOOK_LIST_TYPE,
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
@@ -37,6 +41,11 @@ import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
 import {RefreshOutlined} from '@mui/icons-material';
+import {useNotification} from '../../../context/popup';
+
+// What do we call notebooks which are not active?
+export const NOT_ACTIVATED_LABEL = 'Available';
+export const ACTIVATE_VERB_LABEL = 'Activate';
 
 export default function NoteBooks() {
   const [refresh, setRefresh] = useState(false);
@@ -191,20 +200,38 @@ export default function NoteBooks() {
    * If the notebook list type is 'headings', the label will be 'Not Active'.
    * If the notebook list type is 'tabs', the label will be 'Available'.
    */
-  const buttonLabel =
-    NOTEBOOK_LIST_TYPE === 'headings' ? 'Not Active' : 'Available';
+
+  const isTabs = NOTEBOOK_LIST_TYPE === 'headings';
+
+  const notActivatedAdvice = (
+    <>
+      You have {activatedProjects.length} {NOTEBOOK_NAME}
+      {activatedProjects.length !== 1 ? 's' : ''} currently activated on this
+      device. To start using a {NOTEBOOK_NAME}, visit the{' '}
+      {isTabs ? (
+        // In the tab case, link directly to tab
+        <>
+          <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
+            {NOT_ACTIVATED_LABEL}
+          </Button>{' '}
+          tab
+        </>
+      ) : (
+        // In the section case, just reference the section
+        <>'{NOT_ACTIVATED_LABEL}' section</>
+      )}{' '}
+      and click the '{ACTIVATE_VERB_LABEL}' button.
+    </>
+  );
+
+  // use notification service
+  const notify = useNotification();
 
   return (
     <Box>
       <Box component={Paper} elevation={0} p={2}>
         <Typography variant={'body1'} gutterBottom>
-          You have {activatedProjects.length} {NOTEBOOK_NAME}
-          {activatedProjects.length !== 1 ? 's' : ''} currently activated on
-          this device. To start using a {NOTEBOOK_NAME}, visit the{' '}
-          <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
-            {buttonLabel}
-          </Button>{' '}
-          tab and click the 'Activate' button.
+          {notActivatedAdvice}
         </Typography>
         <div
           style={{display: 'flex', justifyContent: 'space-between', gap: '8px'}}
@@ -228,7 +255,16 @@ export default function NoteBooks() {
             startIcon={<RefreshOutlined />}
             onClick={async () => {
               setRefresh(true);
-              await syncProjects();
+              await syncProjects()
+                .then(() => {
+                  notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
+                })
+                .catch(e => {
+                  console.log(e);
+                  notify.showError(
+                    `Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`
+                  );
+                });
               setRefresh(false);
             }}
           >

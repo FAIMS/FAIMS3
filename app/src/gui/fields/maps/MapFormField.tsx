@@ -18,7 +18,7 @@
  *   Implement MapFormField for entry of data via maps in FAIMS
  */
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import './MapFormField.css';
 import MapWrapper from './MapWrapper';
 
@@ -27,6 +27,8 @@ import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 
 import {FieldProps} from 'formik';
 import {Alert} from '@mui/material';
+import {Capacitor} from '@capacitor/core';
+import {APP_NAME} from '../../../buildconfig';
 export interface MapFieldProps extends FieldProps {
   label?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
@@ -48,7 +50,8 @@ export function MapFormField({
     initialFeatures = form.values[field.name];
   }
 
-  const [isAlert, setIsAlert] = useState(false);
+  // flag set if we find we don't have location permission
+  const [noPermission, setNoPermission] = useState(false);
 
   const [drawnFeatures, setDrawnFeatures] =
     useState<GeoJSONFeatureCollection>(initialFeatures);
@@ -84,7 +87,7 @@ export function MapFormField({
         setCenter([result.coords.longitude, result.coords.latitude]);
       })
       .catch(() => {
-        setIsAlert(true);
+        setNoPermission(true);
       });
   }
 
@@ -121,10 +124,33 @@ export function MapFormField({
           callbackFn={mapCallback}
           geoTiff={props.geoTiff}
           projection={props.projection}
+          setNoPermission={setNoPermission}
         />
-        {isAlert && (
+        {noPermission && (
           <Alert severity="error" sx={{width: '100%'}}>
-            Please enable location permissions for this app.
+            {Capacitor.getPlatform() === 'web' && (
+              <>
+                Please enable location permissions for this page. In your
+                browser, look to the left of the web address bar for a button
+                that gives access to browser settings for this page.
+              </>
+            )}
+            {Capacitor.getPlatform() === 'android' && (
+              <>
+                Please enable location permissions for {APP_NAME}. Go to your
+                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
+                Location and select "Allow all the time" or "Allow only while
+                using the app".
+              </>
+            )}
+            {Capacitor.getPlatform() === 'ios' && (
+              <>
+                Please enable location permissions for {APP_NAME}. Go to your
+                device Settings &gt; Privacy & Security &gt; Location Services
+                &gt;
+                {APP_NAME} and select "While Using the App".
+              </>
+            )}
           </Alert>
         )}
         <p>{valueText}</p>
