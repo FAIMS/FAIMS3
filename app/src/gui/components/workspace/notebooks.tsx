@@ -199,12 +199,12 @@ export default function NoteBooks() {
       <Box component={Paper} elevation={0} p={2}>
         <Typography variant={'body1'} gutterBottom>
           You have {activatedProjects.length} {NOTEBOOK_NAME}
-          {activatedProjects.length !== 1 ? 's' : ''} activated on this device.
-          To start using a {NOTEBOOK_NAME}, visit the{' '}
+          {activatedProjects.length !== 1 ? 's' : ''} currently activated on
+          this device. To start using a {NOTEBOOK_NAME}, visit the{' '}
           <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
             {buttonLabel}
           </Button>{' '}
-          tab and click the activate button.
+          tab and click the 'Activate' button.
         </Typography>
         <div
           style={{display: 'flex', justifyContent: 'space-between', gap: '8px'}}
