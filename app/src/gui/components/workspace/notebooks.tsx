@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import {RefreshOutlined} from '@mui/icons-material';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import FolderIcon from '@mui/icons-material/Folder';
 import {Box, Button, Paper, Typography} from '@mui/material';
@@ -25,7 +26,7 @@ import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
-import React, {useContext, useState} from 'react';
+import {useContext, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {
   NOTEBOOK_LIST_TYPE,
@@ -33,6 +34,7 @@ import {
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import {useNotification} from '../../../context/popup';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
 import {CREATE_NOTEBOOK_ROLES, userHasRoleInAnyListing} from '../../../users';
@@ -40,8 +42,6 @@ import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
-import {RefreshOutlined} from '@mui/icons-material';
-import {useNotification} from '../../../context/popup';
 
 // What do we call notebooks which are not active?
 export const NOT_ACTIVATED_LABEL = 'Available';
