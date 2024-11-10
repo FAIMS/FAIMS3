@@ -21,6 +21,7 @@
 
 import {v4 as uuidv4} from 'uuid';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
+import {existsSync} from 'fs';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
@@ -135,12 +136,36 @@ function signing_key_id(): string {
 
 // Generate public and private keys file names in the same way as makeInstanceKeys.sh
 
+function key_file_path(): string {
+  let path = process.env.KEY_FILE_PATH;
+  if (path === '' || path === undefined) {
+    console.log('KEY_FILE_PATH not set, using default');
+    return '.';
+  } else {
+    if (existsSync(path)) {
+      return path;
+    } else {
+      console.log('KEY_FILE_PATH does not exist, using default');
+      return '.';
+    }
+  }
+}
+
 function private_key_path(): string {
   let host = process.env.PROFILE_NAME;
   if (host === '' || host === undefined) {
     host = 'conductor';
   }
-  return `keys/${host}_private_key.pem`;
+  const path = key_file_path();
+  const keyfile = `${path}/keys/${host}_private_key.pem`;
+  if (existsSync(keyfile)) {
+    console.log(`Private key file ${keyfile} exists.`);
+    return keyfile;
+  } else {
+    throw new Error(
+      `Private key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
+    );
+  }
 }
 
 function public_key_path(): string {
@@ -148,7 +173,16 @@ function public_key_path(): string {
   if (host === '' || host === undefined) {
     host = 'conductor';
   }
-  return `keys/${host}_public_key.pem`;
+  const path = key_file_path();
+  const keyfile = `${path}/keys/${host}_public_key.pem`;
+  if (existsSync(keyfile)) {
+    console.log(`Public key file ${keyfile} exists.`);
+    return keyfile;
+  } else {
+    throw new Error(
+      `Public key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
+    );
+  }
 }
 
 function instance_name(): string {
