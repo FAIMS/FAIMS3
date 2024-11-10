@@ -69,6 +69,41 @@ const pouchOptions = () => {
   return options;
 };
 
+export const verifyCouchDBConnection = async () => {
+  const pouch_options = pouchOptions();
+  const result = {
+    valid: true,
+    server_msg: '',
+    database_msg: '',
+    validate_error: '',
+  };
+
+  const url = COUCHDB_INTERNAL_URL;
+  try {
+    console.log('Checking connection to CouchDB server at', url);
+    // can we reach the couchdb server?
+    const response = await fetch(url, {
+      method: 'HEAD',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      result.valid = false;
+      console.log('CouchDB server at', url, 'is not available');
+      result.server_msg = `CouchDB server at ${url} is not available`;
+      return result;
+    }
+    console.log('CouchDB server at', url, 'is available');
+    return result;
+  } catch {
+    console.log('Error connecting to CouchDB server at', url);
+    result.valid = false;
+    result.server_msg = `Error connecting to CouchDB server at ${url}`;
+    return result;
+  }
+};
+
 export const getDirectoryDB = (): PouchDB.Database | undefined => {
   if (!_directoryDB) {
     const pouch_options = pouchOptions();
@@ -96,14 +131,6 @@ export const getAuthDB = (): AuthDatabase => {
     }
   }
   return _authDB;
-};
-
-/**
- * getPublicUserDbURL -
- * @returns a URL that can be used externaly to access the user database
- */
-export const getPublicUserDbURL = (): string => {
-  return COUCHDB_PUBLIC_URL + PEOPLE_DB_NAME;
 };
 
 export const getUsersDB = (): PouchDB.Database<Express.User> | undefined => {
