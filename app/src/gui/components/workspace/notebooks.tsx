@@ -43,12 +43,24 @@ import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
 
-// What do we call notebooks which are not active?
+// Survey status naming conventions
+
+// E.g. "This survey is not active"
 export const NOT_ACTIVATED_LABEL = 'Not Active';
+
+// E.g. "This survey is active"
 export const ACTIVATED_LABEL = 'Active';
+
+// E.g. "This survey has been activated"
 export const ACTIVATED_VERB_PAST = 'Activated';
+
+// E.g. "Please activate this survey"
 export const ACTIVATE_VERB_LABEL = 'Activate';
+
+// E.g. "This survey is currently activating" or "Before activating, consider ..."
 export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
+
+// E.g. "You cannot currently de-activate a survey"
 export const DE_ACTIVATE_VERB = 'De-activate';
 
 export default function NoteBooks() {
@@ -311,11 +323,12 @@ export default function NoteBooks() {
           your device. {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} will start
           the downloading of existing {NOTEBOOK_NAME} records onto your device.
           We recommend you complete this procedure while you have a stable
-          internet connection. Currently, you cannot {DE_ACTIVATE_VERB.toLowerCase()} a{' '}
-          {NOTEBOOK_NAME}, this is something we will be adding soon. If you need
-          to make space on your device you can clear the application storage or
-          delete the application. If a {NOTEBOOK_NAME} is "{NOT_ACTIVATED_LABEL}
-          " you are unable to start using it.
+          internet connection. Currently, you cannot{' '}
+          {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}, this is something
+          we will be adding soon. If you need to make space on your device you
+          can clear the application storage or delete the application. If a{' '}
+          {NOTEBOOK_NAME} is "{NOT_ACTIVATED_LABEL}" you are unable to start
+          using it.
         </Alert>
       </Box>
     </Box>
