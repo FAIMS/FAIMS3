@@ -243,7 +243,7 @@ export default function NoteBooks() {
         <>
           "{NOT_ACTIVATED_LABEL}" {sectionLabel}
         </>
-      )}
+      )}{' '}
       need to be {ACTIVATED_VERB_PAST.toLowerCase()} before they can be used. To
       start using a {NOTEBOOK_NAME_CAPITALIZED} in the{' '}
       {isTabs ? (
