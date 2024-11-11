@@ -12,6 +12,7 @@ import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
 import {theme} from '../../themes';
+import { ACTIVATED_LABEL, NOT_ACTIVATED_LABEL } from '../workspace/notebooks';
 
 /**
  * Renders a tabbed grid component.
@@ -72,8 +73,8 @@ export default function TabProjectGrid({
               key={tab}
               label={
                 tab === '1'
-                  ? `Activated (${activatedProjects.length})`
-                  : `Available (${availableProjects.length})`
+                  ? `${ACTIVATED_LABEL} (${activatedProjects.length})`
+                  : `${NOT_ACTIVATED_LABEL} (${availableProjects.length})`
               }
               value={tab}
               disabled={
