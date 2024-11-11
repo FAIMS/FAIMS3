@@ -28,11 +28,7 @@ import {
 } from '@faims3/data-model';
 import PouchDB from 'pouchdb';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
-import {
-  COUCHDB_INTERNAL_URL,
-  COUCHDB_PUBLIC_URL,
-  LOCAL_COUCHDB_AUTH,
-} from '../buildconfig';
+import {COUCHDB_INTERNAL_URL, LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {
   initialiseAuthDb,

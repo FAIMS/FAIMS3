@@ -21,7 +21,6 @@
 import {
   AuthDatabaseSecurityDocument,
   CLUSTER_ADMIN_GROUP_NAME,
-  getProjectDB,
   permissionDocument,
   viewsDocument,
 } from '@faims3/data-model';
@@ -37,7 +36,6 @@ import {
   getUserFromEmailOrUsername,
   saveUser,
 } from './users';
-import {getUsersDB} from '.';
 
 /**
  * A helper to 1) clear out admins/members 2) add the specified roles 3) save

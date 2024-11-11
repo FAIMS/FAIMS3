@@ -47,12 +47,6 @@ const AVAILABLE_AUTH_PROVIDER_DISPLAY_INFO: {[name: string]: any} = {
   },
 };
 
-const HANDLER_OPTIONS: {[name: string]: any} = {
-  google: {
-    prompt: 'select_account',
-  },
-};
-
 passport.serializeUser((user: Express.User, done: DoneFunction) => {
   done(null, user.user_id);
 });

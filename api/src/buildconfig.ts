@@ -137,7 +137,7 @@ function signing_key_id(): string {
 // Generate public and private keys file names in the same way as makeInstanceKeys.sh
 
 function key_file_path(): string {
-  let path = process.env.KEY_FILE_PATH;
+  const path = process.env.KEY_FILE_PATH;
   if (path === '' || path === undefined) {
     console.log('KEY_FILE_PATH not set, using default');
     return '.';

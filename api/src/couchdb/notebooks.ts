@@ -772,7 +772,6 @@ export const streamNotebookRecordsAsCSV = async (
   while (!done) {
     // record might be null if there was an invalid db entry
     if (record) {
-      
       const hrid = getRecordHRID(record);
       const row = [
         hrid,

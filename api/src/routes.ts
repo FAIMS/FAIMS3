@@ -60,7 +60,11 @@ import {
   requireNotebookMembership,
 } from './middleware';
 import {validateProjectDatabase} from './couchdb/devtools';
-import {databaseValidityReport, initialiseDatabases, verifyCouchDBConnection} from './couchdb';
+import {
+  databaseValidityReport,
+  initialiseDatabases,
+  verifyCouchDBConnection,
+} from './couchdb';
 
 export {app};
 
@@ -76,7 +80,9 @@ app.get('/', async (req, res) => {
     if (req.user && req.user._id) {
       // Handlebars is pretty useless at including render logic in templates, just
       // parse the raw, pre-processed string in...
-      const rendered_project_roles = render_project_roles(req.user.project_roles);
+      const rendered_project_roles = render_project_roles(
+        req.user.project_roles
+      );
       const provider = Object.keys(req.user.profiles)[0];
       // No need for a refresh here
       const token = await generateUserToken(req.user, false);
@@ -112,7 +118,6 @@ app.get('/', async (req, res) => {
  *   even call initialiseDatabases, just redirect home
  */
 app.post('/fallback-initialise', async (req, res) => {
-
   if (!databaseValidityReport.valid) {
     console.log('running initialise');
     await initialiseDatabases();
