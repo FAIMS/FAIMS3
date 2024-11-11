@@ -6,7 +6,7 @@ import {
 } from '../dbs/projects-db';
 import {activate_project} from '../sync/process-initialization';
 import {ProjectExtended} from '../types/project';
-import {getProjectMap, getRemoteProjects} from './functions';
+import {getLocalActiveMap, getProjectMap, getRemoteProjects} from './functions';
 
 export const ProjectsContext = createContext<{
   projects: ProjectExtended[];
@@ -50,13 +50,23 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
     const localProjectsMap = getProjectMap(localProjects);
     const newProjectsMap = getProjectMap(localProjects);
 
+    const localActiveMap = await getLocalActiveMap();
+
     for (const remoteProject of remoteProjects) {
       const activated =
-        localProjectsMap.get(remoteProject._id)?.activated ?? false;
+        localProjectsMap.get(remoteProject._id)?.activated ??
+        localActiveMap.has(remoteProject._id) ??
+        false;
+
+      const sync =
+        localProjectsMap.get(remoteProject._id)?.sync ??
+        localActiveMap.get(remoteProject._id)?.sync ??
+        false;
 
       newProjectsMap.set(remoteProject._id, {
         ...remoteProject,
         activated,
+        sync,
       });
     }
 
@@ -77,12 +87,12 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
     const projectsMap = getProjectMap(projects);
     const newProjectsMap = getProjectMap(projects);
 
+    // update project list, preserve activated and sync states from existing list
     for (const remoteProject of remoteProjects) {
-      const activated = projectsMap.get(remoteProject._id)?.activated ?? false;
-
       newProjectsMap.set(remoteProject._id, {
         ...remoteProject,
-        activated,
+        activated: projectsMap.get(remoteProject._id)?.activated ?? false,
+        sync: projectsMap.get(remoteProject._id)?.sync ?? false,
       });
     }
 
