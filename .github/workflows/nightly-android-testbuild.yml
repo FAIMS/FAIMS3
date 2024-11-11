@@ -127,7 +127,8 @@ jobs:
           export VITE_PRODUCTION_BUILD=true          
           export VITE_PROD_BUILD=true 
           export VITE_TAG=prodAndroid
-          export VITE_NOTEBOOK_LIST_TYPE=tabs
+          export VITE_NOTEBOOK_LIST_TYPE=${{vars.NOTEBOOK_LIST_TYPE}}
+          export VITE_NOTEBOOK_NAME=${{vars.NOTEBOOK_NAME}}
           export VITE_THEME=${{vars.THEME}}
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
           export VITE_APP_ID=${{vars.APP_ID}}
