@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import {PaletteOptions, TypeBackground} from '@mui/material/styles';
+
 declare module '@mui/material/styles' {
   interface TypeBackground {
     draftBackground: string;
