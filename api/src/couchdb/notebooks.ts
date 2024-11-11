@@ -204,6 +204,10 @@ export const validateDatabases = async () => {
   try {
     const report = await verifyCouchDBConnection();
 
+    if (!report.valid) {
+      return report;
+    }
+
     const projects_db = getProjectsDB();
     if (projects_db) {
       const res = await projects_db.allDocs({
@@ -226,7 +230,6 @@ export const validateDatabases = async () => {
     return report;
   } catch (e) {
     console.log('validateDatabases: error', e);
-    //report.validate_error = e;
     return {valid: false, validate_error: e};
   }
 };

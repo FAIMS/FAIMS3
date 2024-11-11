@@ -51,7 +51,10 @@ PouchDB.plugin(PouchDBFind);
 
 // on startup, run a validation of the databases that can perform
 // any required migrations
-const valid = validateDatabases();
+validateDatabases()
+  .then((valid) => {
+    console.log('Database validation', valid);
+  });
 
 app.listen(CONDUCTOR_INTERNAL_PORT, '0.0.0.0', () => {
   console.log('COUCHDB_INTERNAL_URL', COUCHDB_INTERNAL_URL);

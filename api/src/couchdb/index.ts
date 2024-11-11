@@ -79,27 +79,26 @@ export const verifyCouchDBConnection = async () => {
   };
 
   const url = COUCHDB_INTERNAL_URL;
-  try {
-    console.log('Checking connection to CouchDB server at', url);
-    // can we reach the couchdb server?
-    const response = await fetch(url, {
-      method: 'HEAD',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!response.ok) {
-      result.valid = false;
-      console.log('CouchDB server at', url, 'is not available');
-      result.server_msg = `CouchDB server at ${url} is not available`;
-      return result;
-    }
-    console.log('CouchDB server at', url, 'is available');
-    return result;
-  } catch {
+
+  console.log('Checking connection to CouchDB server at', url);
+  // can we reach the couchdb server?
+  const response = await fetch(url, {
+    method: 'HEAD',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).catch(() => {
+    console.log('Catching error');
+    return null;
+  });
+
+  if (!response) {
     console.log('Error connecting to CouchDB server at', url);
     result.valid = false;
     result.server_msg = `Error connecting to CouchDB server at ${url}`;
+    return result;
+  } else {
+    console.log('CouchDB server at', url, 'is available');
     return result;
   }
 };
