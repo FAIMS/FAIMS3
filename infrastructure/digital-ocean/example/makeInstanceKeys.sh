@@ -12,20 +12,14 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # Path to create keys at
 ASSET_PATH="./assets"
 
-if test "$#" -ne 1; then
-    echo "Pass .env file as first argument: ${0} xyzzy.env"
-    exit
-fi
-
-rm -rf assets
+rm -rf $ASSET_PATH
 
 # Read the first argument as the env file
-ENV_FILE=${1}
+ENV_FILE=conductor.env
 if [ -f $ENV_FILE ]; then
     # Load Environment Variables
     export $(cat $ENV_FILE | grep -v '#' | sed 's/\r$//' | awk '/=/ {print $1}' )
 fi
-
 
 export HOST_TARGET="${PROFILE_NAME:-conductor}"
 

@@ -63,3 +63,8 @@ resource "digitalocean_droplet" "couchdb" {
     volume_ids = [digitalocean_volume.couchdb-volume[count.index].id]
 }
 
+resource "digitalocean_domain" "couchdb" {
+  name       = "couchdb-${count.index}.${var.subdomain}"
+  ip_address = digitalocean_droplet.couchdb-droplet[count.index].ipv4_address
+  count = var.instance_count
+}
