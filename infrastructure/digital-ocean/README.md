@@ -24,4 +24,3 @@ The `example` folder contains a Terraform configuration that uses the two module
 above to deploy a full FAIMS3 server configuration.  To manage a deployment, create
 a private repository and copy the `example` folder to it.  Further instructions
 are in the README.md file in the `example` folder.
-
