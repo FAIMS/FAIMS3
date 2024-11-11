@@ -226,11 +226,9 @@ export const validateDatabases = async () => {
         await addDesignDocsForNotebook(dataDB);
       }
     }
-    console.log('validateDatabases: done', report);
     return report;
   } catch (e) {
-    console.log('validateDatabases: error', e);
-    return {valid: false, validate_error: e};
+    return {valid: false};
   }
 };
 

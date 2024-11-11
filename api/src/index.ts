@@ -51,15 +51,17 @@ PouchDB.plugin(PouchDBFind);
 
 // on startup, run a validation of the databases that can perform
 // any required migrations
-validateDatabases()
-  .then((valid) => {
-    console.log('Database validation', valid);
-  });
 
-app.listen(CONDUCTOR_INTERNAL_PORT, '0.0.0.0', () => {
-  console.log('COUCHDB_INTERNAL_URL', COUCHDB_INTERNAL_URL);
-  console.log('CONDUCTOR_PUBLIC_URL', CONDUCTOR_PUBLIC_URL);
-  console.log(
-    `Conductor is listening on port http://0.0.0.0:${CONDUCTOR_INTERNAL_PORT}/`
-  );
-});
+const startup = async () => {
+  await validateDatabases().then(() => {
+    app.listen(CONDUCTOR_INTERNAL_PORT, '0.0.0.0', () => {
+      console.log('COUCHDB_INTERNAL_URL', COUCHDB_INTERNAL_URL);
+      console.log('CONDUCTOR_PUBLIC_URL', CONDUCTOR_PUBLIC_URL);
+      console.log(
+        `Conductor is listening on port http://0.0.0.0:${CONDUCTOR_INTERNAL_PORT}/`
+      );
+    });
+  });
+};
+
+startup();

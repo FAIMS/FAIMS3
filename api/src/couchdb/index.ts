@@ -69,18 +69,24 @@ const pouchOptions = () => {
   return options;
 };
 
-export const verifyCouchDBConnection = async () => {
-  const pouch_options = pouchOptions();
-  const result = {
-    valid: true,
-    server_msg: '',
-    database_msg: '',
-    validate_error: '',
-  };
+export type CouchDBConnectionResult = {
+  valid: boolean;
+  server_msg?: string;
+  database_errors?: string[];
+  validate_error?: string;
+};
 
+export const databaseValidityReport: CouchDBConnectionResult = {
+  valid: true,
+  server_msg: '',
+  database_errors: [],
+  validate_error: '',
+};
+
+export const verifyCouchDBConnection = async () => {
+  const result = databaseValidityReport;
   const url = COUCHDB_INTERNAL_URL;
 
-  console.log('Checking connection to CouchDB server at', url);
   // can we reach the couchdb server?
   const response = await fetch(url, {
     method: 'HEAD',
@@ -93,14 +99,41 @@ export const verifyCouchDBConnection = async () => {
   });
 
   if (!response) {
-    console.log('Error connecting to CouchDB server at', url);
     result.valid = false;
-    result.server_msg = `Error connecting to CouchDB server at ${url}`;
-    return result;
-  } else {
-    console.log('CouchDB server at', url, 'is available');
+    result.server_msg = `Unable to connect to CouchDB server at ${url}`;
     return result;
   }
+
+  // reset valid to true here, will set to falsel below if something is missing
+  result.valid = true;
+
+  // now we know we can connect to the server, but can we connect to the database?
+  const pouch_options = pouchOptions();
+  // don't create databases if they don't exist
+  pouch_options.skip_setup = true;
+
+  // check for all required databases
+  const required = ['people', 'projects', 'templates', 'auth'];
+
+  for (let i = 0; i < required.length; i++) {
+    const db = required[i];
+    const dbName = COUCHDB_INTERNAL_URL + '/' + db;
+    try {
+      const dbInstance = new PouchDB(dbName, pouch_options);
+      const info = (await dbInstance.info()) as any; // type does not include error
+      if (info.error === 'not_found') {
+        result.valid = false;
+        result.database_errors?.push(`Database ${db} not found`);
+      }
+    } catch {
+      result.valid = false;
+      result.database_errors?.push(
+        `Unable to connect to CouchDB database ${db}`
+      );
+    }
+  }
+
+  return result;
 };
 
 export const getDirectoryDB = (): PouchDB.Database | undefined => {
