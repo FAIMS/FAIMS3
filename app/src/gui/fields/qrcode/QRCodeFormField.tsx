@@ -137,6 +137,9 @@ export function QRCodeFormField({
 export interface QRCodeButtonProps {
   label?: string;
   onScanResult: (value: string) => void;
+  // If you want to pass through props to the button to override styling etc -
+  // provide here - directly spread into button
+  buttonProps?: any;
 }
 
 export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
@@ -261,7 +264,7 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
     if (canScanMsg !== '') {
       return (
         <div>
-          <Button variant="outlined" disabled={true}>
+          <Button variant="outlined" disabled={true} {...props.buttonProps}>
             {props.label}
           </Button>
           <div>{canScanMsg}</div>
@@ -270,7 +273,11 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
     } else {
       return (
         <div>
-          <Button variant="outlined" onClick={startScan}>
+          <Button
+            variant={props.buttonProps?.variant ?? 'outlined'}
+            onClick={startScan}
+            {...props.buttonProps}
+          >
             {props.label}
           </Button>
         </div>
