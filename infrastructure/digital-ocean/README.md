@@ -1,54 +1,27 @@
 # Deploy Fieldmark to Digital Ocean via Terraform
 
+This folder contains two Terraform modules to configure and deploy both CouchDB
+and the Conductor server to Digital Ocean.   It also contains an example deployment
+project that can be used as a template for an individual deployment.
+
 ## CouchDB
 
-Create a three node cluster with a front end load balancer. Configure
-as a CouchDB cluster.  
+The CouchDB module creates a cluster of droplets running the CouchDB docker image, each
+with an attached volume for persistent storage. A load balancer is configured as a front
+end to the cluster and an SSL certificate is created to allow HTTPS access.
 
-Partly based on this tutorial:
-[How To Use Terraform with DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-use-terraform-with-digitalocean).
-
-## Configuration
-
-```bash
-export DO_PAT="digital ocean personal access token"
-export COUCHDB_PASSWORD="secret admin password"
-export COUCHDB_SECRET="cookie secret"
-```
-
-I created a new SSH key in the current directory using `ssh-keygen` but you could
-also use an existing key in the path below.  DO needs to know about this key.
-
-## Build the cluster
-
-To validate the configuration and view the plan:
-
-```bash
-terraform plan \
-  -var "do_token=${DO_PAT}" \
-  -var "subdomain=${SUBDOMAIN}"
-```
-
-To create the cluster substitute `terraform apply`.
-
-To destroy the cluster `terraform destroy`
-
-### TODO
-
-- copy in properly configured local.ini file for cluster configuration
-- make this a terrform module that we can include from a 'real' deployment config
-  - <https://developer.hashicorp.com/terraform/language/modules/sources#github>
+TODO: currently only a single node is tested, more nodes can be created but the configuration
+doesn't set up CouchDB clustering so they would be independent nodes.
 
 ## Conductor
 
-```bash
-terraform plan \
-  -var "do_token=${DO_PAT}" \
-  -var "subdomain=demo.fieldmark.app" \
-  -var "contact_email=me@here.com"
-```
+Conductor is deployed on a single droplet configured to use HTTPS and connect to the CouchDB
+cluster.
 
-### TODO
+## Example Deployment
 
-- set up nginx to proxy traffic to port 80
-- set up let's encrypt to generate a certificate, needs the domain in place
+The `example` folder contains a Terraform configuration that uses the two modules
+above to deploy a full FAIMS3 server configuration.  To manage a deployment, create
+a private repository and copy the `example` folder to it.  Further instructions
+are in the README.md file in the `example` folder.
+
