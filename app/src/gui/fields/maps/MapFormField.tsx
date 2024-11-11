@@ -32,6 +32,7 @@ import {APP_NAME} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 
 // If no center is available - pass this through
+// Sydney CBD
 const FALLBACK_CENTER = [151.2093, -33.8688];
 
 export interface MapFieldProps extends FieldProps {
@@ -51,10 +52,10 @@ export function MapFormField({
 }: MapFieldProps): JSX.Element {
   // State
 
-  // center to show on map - use provided center if any
+  // center location of map - use provided center if any
   const [center, setCenter] = useState<number[] | undefined>(props.center);
 
-  // and a ref to track if gps center has already been requested
+  // and a ref to track if gps location has already been requested
   const gpsCenterRequested = useRef<boolean>(false);
 
   // flag set if we find we don't have location permission
