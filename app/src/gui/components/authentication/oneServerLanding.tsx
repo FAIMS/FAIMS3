@@ -44,7 +44,7 @@ const OnboardingComponent = ({
         elevation={2}
         sx={{
           width: '100%',
-          maxWidth: 380,
+          maxWidth: 420,
           padding: '32px 24px',
           borderRadius: '28px',
           display: 'flex',
