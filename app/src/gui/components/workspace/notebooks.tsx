@@ -71,15 +71,6 @@ export default function NoteBooks() {
 
   const [tabID, setTabID] = useState('1');
 
-  useEffect(() => {
-    // If there are activated projects, set the tab to the first 'Activated' tab
-    if (activatedProjects.length > 0) {
-      setTabID('1');
-    } else {
-      setTabID('2');
-    }
-  }, [activatedProjects]);
-
   const history = useNavigate();
 
   const theme = useTheme();
