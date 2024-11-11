@@ -1,5 +1,7 @@
 import {
+  active_db,
   directory_db_pouch,
+  ExistingActiveDoc,
   JWTTokenInfo,
   local_auth_db,
 } from '../sync/databases';
@@ -146,3 +148,24 @@ export const getRemoteProjects = async () => {
  */
 export const getProjectMap = (projects: ProjectExtended[]) =>
   new Map(projects.map(project => [project._id, project]));
+
+/**
+ * Retrieves the locally active projects from the active database.
+ */
+export const getLocalActiveMap = async () => {
+  const locallyActive = await active_db.allDocs({include_docs: true});
+  const localActiveMap = new Map<
+    string,
+    {sync: boolean; sync_attachments: boolean}
+  >();
+  if (locallyActive.rows.length > 0) {
+    locallyActive.rows.forEach(record => {
+      const project = record.doc as ExistingActiveDoc;
+      localActiveMap.set(project.project_id, {
+        sync: project.is_sync,
+        sync_attachments: project.is_sync_attachments,
+      });
+    });
+  }
+  return localActiveMap;
+};

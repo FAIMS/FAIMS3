@@ -18,7 +18,7 @@
  *   Implement MapFormField for entry of data via maps in FAIMS
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import './MapFormField.css';
 import MapWrapper from './MapWrapper';
 
@@ -29,6 +29,12 @@ import {FieldProps} from 'formik';
 import {Alert} from '@mui/material';
 import {Capacitor} from '@capacitor/core';
 import {APP_NAME} from '../../../buildconfig';
+import {useNotification} from '../../../context/popup';
+
+// If no center is available - pass this through
+// Sydney CBD
+const FALLBACK_CENTER = [151.2093, -33.8688];
+
 export interface MapFieldProps extends FieldProps {
   label?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
@@ -44,52 +50,66 @@ export function MapFormField({
   form,
   ...props
 }: MapFieldProps): JSX.Element {
-  // get previous form state if available
-  let initialFeatures = {};
-  if (form.values[field.name]) {
-    initialFeatures = form.values[field.name];
-  }
+  // State
+
+  // center location of map - use provided center if any
+  const [center, setCenter] = useState<number[] | undefined>(props.center);
+
+  // and a ref to track if gps location has already been requested
+  const gpsCenterRequested = useRef<boolean>(false);
 
   // flag set if we find we don't have location permission
   const [noPermission, setNoPermission] = useState(false);
 
-  const [drawnFeatures, setDrawnFeatures] =
-    useState<GeoJSONFeatureCollection>(initialFeatures);
+  // Use form value as default field features - otherwise empty {}
+  const [drawnFeatures, setDrawnFeatures] = useState<GeoJSONFeatureCollection>(
+    form.values[field.name] ?? {}
+  );
 
-  // default props.center if not defined
-  if (!props.center) {
-    props.center = [0, 0];
-  }
-  const [center, setCenter] = useState(props.center);
-
-  if (!props.zoom) {
-    props.zoom = 14;
-  }
+  // Default zoom level
+  const zoom = props.zoom ?? 14;
 
   // default to point if not specified
-  if (!props.featureType) {
-    props.featureType = 'Point';
-  }
+  const featureType = props.featureType ?? 'Point';
 
-  if (!props.label) {
-    props.label = `Get ${props.featureType}`;
-  }
+  // default label
+  const label = props.label ?? `Get ${props.featureType}`;
 
   const mapCallback = (theFeatures: GeoJSONFeatureCollection) => {
     setDrawnFeatures(theFeatures);
     form.setFieldValue(field.name, theFeatures, true);
   };
 
-  // get the current GPS location if don't know the map center
-  if (center[0] === 0 && center[1] === 0) {
-    Geolocation.getCurrentPosition()
-      .then(result => {
-        setCenter([result.coords.longitude, result.coords.latitude]);
-      })
-      .catch(() => {
-        setNoPermission(true);
-      });
-  }
+  // notification manager
+  const notify = useNotification();
+
+  useEffect(() => {
+    const getCoords = async () => {
+      // Always get current position on component mount - this forces a permission
+      // request
+      if (!gpsCenterRequested.current) {
+        // Mark that we've requested already
+        gpsCenterRequested.current = true;
+        Geolocation.getCurrentPosition()
+          .then(result => {
+            // Only store the center result if we actually need it
+            if (center === undefined) {
+              setCenter([result.coords.longitude, result.coords.latitude]);
+            }
+            // Since we use a ref to track this running, we can safely run a state
+            // update here without infinite loop
+            setNoPermission(false);
+          })
+          .catch(() => {
+            notify.showWarning(
+              'We were unable to access your current location. Map fields may not work as expected.'
+            );
+            setNoPermission(true);
+          });
+      }
+    };
+    getCoords();
+  }, []);
 
   let valueText = '';
   if (drawnFeatures.features && drawnFeatures.features.length > 0) {
@@ -114,13 +134,12 @@ export function MapFormField({
     <div>
       <div>
         <MapWrapper
-          label={
-            props.label ? props.label : 'Get ' + props.featureType + ' from Map'
-          }
-          featureType={props.featureType}
+          label={label}
+          featureType={featureType}
           features={drawnFeatures}
-          zoom={props.zoom}
-          center={center}
+          zoom={zoom}
+          center={center ?? FALLBACK_CENTER}
+          fallbackCenter={center === undefined}
           callbackFn={mapCallback}
           geoTiff={props.geoTiff}
           projection={props.projection}

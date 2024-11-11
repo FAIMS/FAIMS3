@@ -297,10 +297,8 @@ export async function activate_project(
   }
   const active_id = resolve_project_id(listing_id, project_id);
   if (await project_is_active(active_id)) {
-    console.debug('Have already activated', active_id);
     return active_id;
   } else {
-    console.debug('%cActivating', 'background-color: pink;', active_id);
     const active_doc = {
       _id: active_id,
       listing_id: listing_id,
@@ -315,11 +313,6 @@ export async function activate_project(
       const project_object = await get_project_from_directory(
         active_doc.listing_id,
         project_id
-      );
-      console.log(
-        '%cProject Object',
-        'background-color: pink;',
-        project_object
       );
       if (project_object)
         await ensure_project_databases(

@@ -18,17 +18,23 @@
  *   TODO
  */
 
+import {RefreshOutlined} from '@mui/icons-material';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import FolderIcon from '@mui/icons-material/Folder';
-import {Box, Button, Paper, Typography} from '@mui/material';
+import {Alert, AlertTitle, Box, Button, Paper, Typography} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
-import {useContext, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
+import {
+  NOTEBOOK_LIST_TYPE,
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import {useNotification} from '../../../context/popup';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
 import {CREATE_NOTEBOOK_ROLES, userHasRoleInAnyListing} from '../../../users';
@@ -36,7 +42,26 @@ import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
-import {RefreshOutlined} from '@mui/icons-material';
+
+// Survey status naming conventions
+
+// E.g. "This survey is not active"
+export const NOT_ACTIVATED_LABEL = 'Not Active';
+
+// E.g. "This survey is active"
+export const ACTIVATED_LABEL = 'Active';
+
+// E.g. "This survey has been activated"
+export const ACTIVATED_VERB_PAST = 'Activated';
+
+// E.g. "Please activate this survey"
+export const ACTIVATE_VERB_LABEL = 'Activate';
+
+// E.g. "This survey is currently activating" or "Before activating, consider ..."
+export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
+
+// E.g. "You cannot currently de-activate a survey"
+export const DE_ACTIVATE_VERB = 'De-activate';
 
 export default function NoteBooks() {
   const [refresh, setRefresh] = useState(false);
@@ -44,7 +69,16 @@ export default function NoteBooks() {
 
   const activatedProjects = projects.filter(({activated}) => activated);
 
-  const [tabID, setTabID] = useState(activatedProjects.length > 0 ? '1' : '2');
+  const [tabID, setTabID] = useState('1');
+
+  useEffect(() => {
+    // If there are activated projects, set the tab to the first 'Activated' tab
+    if (activatedProjects.length > 0) {
+      setTabID('1');
+    } else {
+      setTabID('2');
+    }
+  }, [activatedProjects]);
 
   const history = useNavigate();
 
@@ -153,7 +187,7 @@ export default function NoteBooks() {
             </div>
           ),
         },
-        // commenting this untill the functionality is fixed for this column.
+        // commenting this until the functionality is fixed for this column.
 
         // {
         //   field: 'last_updated',
@@ -186,17 +220,60 @@ export default function NoteBooks() {
     ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
     : false;
 
+  // What type of layout are we using?
+  const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
+  const sectionLabel = isTabs ? 'tab' : 'section';
+
+  const buildTabLink = (target: 'active' | 'not active') => {
+    switch (target) {
+      case 'active':
+        return (
+          <Button variant="text" size={'medium'} onClick={() => setTabID('1')}>
+            "{ACTIVATED_LABEL}" tab
+          </Button>
+        );
+      case 'not active':
+        return (
+          <Button variant="text" size={'medium'} onClick={() => setTabID('2')}>
+            {NOT_ACTIVATED_LABEL} tab
+          </Button>
+        );
+    }
+  };
+
+  const notActivatedAdvice = (
+    <>
+      You have {activatedProjects.length} {NOTEBOOK_NAME}
+      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
+      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
+      {isTabs ? (
+        <>{buildTabLink('not active')}</>
+      ) : (
+        <>
+          "{NOT_ACTIVATED_LABEL}" {sectionLabel}
+        </>
+      )}{' '}
+      need to be {ACTIVATED_VERB_PAST.toLowerCase()} before they can be used. To
+      start using a {NOTEBOOK_NAME_CAPITALIZED} in the{' '}
+      {isTabs ? (
+        <>{buildTabLink('not active')}</>
+      ) : (
+        <>
+          "{NOT_ACTIVATED_LABEL}" {sectionLabel}
+        </>
+      )}{' '}
+      click the "{ACTIVATE_VERB_LABEL}" button.
+    </>
+  );
+
+  // use notification service
+  const notify = useNotification();
+
   return (
     <Box>
       <Box component={Paper} elevation={0} p={2}>
         <Typography variant={'body1'} gutterBottom>
-          You have {activatedProjects.length} {NOTEBOOK_NAME}
-          {activatedProjects.length !== 1 ? 's' : ''} activated on this device.
-          To start using a {NOTEBOOK_NAME}, visit the{' '}
-          <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
-            Available
-          </Button>{' '}
-          tab and click the activate button.
+          {notActivatedAdvice}
         </Typography>
         <div
           style={{display: 'flex', justifyContent: 'space-between', gap: '8px'}}
@@ -220,7 +297,16 @@ export default function NoteBooks() {
             startIcon={<RefreshOutlined />}
             onClick={async () => {
               setRefresh(true);
-              await syncProjects();
+              await syncProjects()
+                .then(() => {
+                  notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
+                })
+                .catch(e => {
+                  console.log(e);
+                  notify.showError(
+                    `Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`
+                  );
+                });
               setRefresh(false);
             }}
           >
@@ -237,6 +323,22 @@ export default function NoteBooks() {
         ) : (
           <HeadingProjectGrid projects={projects} columns={columns} />
         )}
+        <Alert severity="info">
+          <AlertTitle>
+            What does {ACTIVATED_LABEL} and {NOT_ACTIVATED_LABEL} mean?
+          </AlertTitle>
+          When a {NOTEBOOK_NAME} is “{ACTIVATED_LABEL}” you are safe to work
+          offline at any point because all the data you collect will be saved to
+          your device. {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} will start
+          the downloading of existing {NOTEBOOK_NAME} records onto your device.
+          We recommend you complete this procedure while you have a stable
+          internet connection. Currently, you cannot{' '}
+          {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}, this is something
+          we will be adding soon. If you need to make space on your device you
+          can clear the application storage or delete the application. If a{' '}
+          {NOTEBOOK_NAME} is "{NOT_ACTIVATED_LABEL}" you are unable to start
+          using it.
+        </Alert>
       </Box>
     </Box>
   );
