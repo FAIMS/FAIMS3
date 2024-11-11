@@ -59,6 +59,7 @@ interface MapProps extends ButtonProps {
   featureType: 'Point' | 'Polygon' | 'LineString';
   zoom: number;
   center: Array<number>;
+  fallbackCenter: boolean;
   callbackFn: (features: object) => void;
   setNoPermission: (flag: boolean) => void;
 }
@@ -67,6 +68,7 @@ import {AppBar, Dialog, IconButton, Toolbar, Typography} from '@mui/material';
 import Feature from 'ol/Feature';
 import {Geometry} from 'ol/geom';
 import {createCenterControl} from '../../components/map/center-control';
+import {useNotification} from '../../../context/popup';
 
 const styles = {
   mapContainer: {
@@ -85,6 +87,9 @@ function MapWrapper(props: MapProps) {
     useState<VectorLayer<Feature<Geometry>>>();
   const defaultMapProjection = 'EPSG:3857';
   const geoJson = new GeoJSON();
+
+  // notifications
+  const notify = useNotification();
 
   // create state ref that can be accessed in OpenLayers onclick callback function
   //  https://stackoverflow.com/a/60643670
@@ -232,15 +237,13 @@ function MapWrapper(props: MapProps) {
   };
 
   const handleClickOpen = () => {
-    // only show the map if we have a center
-    if (props.center[0] !== 0 && props.center[1] !== 0) {
-      setMapOpen(true);
-      // reset this in case we set it before
-      props.setNoPermission(false);
-    } else {
-      props.setNoPermission(true);
+    if (props.fallbackCenter) {
+      notify.showWarning(
+        'Using default map location - unable to determine current location and no center location configured.'
+      );
     }
-    // TODO: should do something to inform the user here...
+    // We always provide a center, so it's always safe to open the map
+    setMapOpen(true);
   };
 
   const refCallback = (element: HTMLElement | null) => {

@@ -29,9 +29,10 @@ import {FieldProps} from 'formik';
 import {Alert} from '@mui/material';
 import {Capacitor} from '@capacitor/core';
 import {APP_NAME} from '../../../buildconfig';
+import {useNotification} from '../../../context/popup';
 
 // If no center is available - pass this through
-const FALLBACK_CENTER = [0, 0];
+const FALLBACK_CENTER = [151.2093, -33.8688];
 
 export interface MapFieldProps extends FieldProps {
   label?: string;
@@ -78,6 +79,9 @@ export function MapFormField({
     form.setFieldValue(field.name, theFeatures, true);
   };
 
+  // notification manager
+  const notify = useNotification();
+
   useEffect(() => {
     const getCoords = async () => {
       // Always get current position on component mount - this forces a permission
@@ -96,6 +100,9 @@ export function MapFormField({
             setNoPermission(false);
           })
           .catch(() => {
+            notify.showWarning(
+              'We were unable to access your current location. Map fields may not work as expected.'
+            );
             setNoPermission(true);
           });
       }
@@ -131,6 +138,7 @@ export function MapFormField({
           features={drawnFeatures}
           zoom={zoom}
           center={center ?? FALLBACK_CENTER}
+          fallbackCenter={center === undefined}
           callbackFn={mapCallback}
           geoTiff={props.geoTiff}
           projection={props.projection}
