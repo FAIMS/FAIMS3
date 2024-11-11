@@ -73,7 +73,7 @@ export function MapFormField({
   const featureType = props.featureType ?? 'Point';
 
   // default label
-  const label = `Get ${props.featureType}`;
+  const label = props.label ?? `Get ${props.featureType}`;
 
   const mapCallback = (theFeatures: GeoJSONFeatureCollection) => {
     setDrawnFeatures(theFeatures);
