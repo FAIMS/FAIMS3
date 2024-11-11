@@ -25,7 +25,7 @@ import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
-import {useContext, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {
   NOTEBOOK_LIST_TYPE,
@@ -49,7 +49,16 @@ export default function NoteBooks() {
 
   const activatedProjects = projects.filter(({activated}) => activated);
 
-  const [tabID, setTabID] = useState(activatedProjects.length > 0 ? '1' : '2');
+  const [tabID, setTabID] = useState('1');
+
+  useEffect(() => {
+    // If there are activated projects, set the tab to the first 'Activated' tab
+    if (activatedProjects.length > 0) {
+      setTabID('1');
+    } else {
+      setTabID('2');
+    }
+  }, [activatedProjects]);
 
   const history = useNavigate();
 
