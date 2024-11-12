@@ -1,6 +1,5 @@
 import {Navigate} from 'react-router-dom';
 
-import {DISABLE_SIGNIN_REDIRECT} from '../buildconfig';
 import * as ROUTES from './routes';
 import {useGetAnyToken} from '../utils/tokenHooks';
 import LoadingApp from '../gui/components/loadingApp';

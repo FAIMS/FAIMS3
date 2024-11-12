@@ -26,11 +26,9 @@ import {checkToken} from '../../../utils/helpers';
 import {Person} from '@mui/icons-material';
 import {theme} from '../../themes';
 
-interface SignInButtonComponentProps {}
-const SignInButtonComponent = (props: SignInButtonComponentProps) => {
+const SignInButtonComponent = () => {
   /**
     Component: SignInButtonComponent
-    
     */
   return (
     <Button
@@ -69,7 +67,6 @@ const AuthenticatedDisplayComponent = (
 ) => {
   /**
     Component: AuthenticatedDisplayComponent
-    
     */
 
   /**

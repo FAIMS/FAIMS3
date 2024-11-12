@@ -88,7 +88,6 @@ interface ShortCodeOnlyComponentProps {
 export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
   /**
     Component: ShortCodeOnlyComponent
-    
     */
 
   const [shortCode, setShortCode] = useState('');

@@ -43,7 +43,7 @@ import {AuthReturn} from './gui/components/authentication/auth_return';
 import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
 import {AppUrlListener} from './native_hooks';
-import { NotificationProvider } from './context/popup';
+import {NotificationProvider} from './context/popup';
 
 // type AppProps = {};
 
