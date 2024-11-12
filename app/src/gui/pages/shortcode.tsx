@@ -213,7 +213,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
               bgcolor: 'grey.100',
             }}
           >
-            Register
+            Submit
           </Button>
         </Stack>
       </Stack>
