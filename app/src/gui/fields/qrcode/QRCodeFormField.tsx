@@ -28,8 +28,9 @@ import {FieldProps} from 'formik';
 import ReactDOM from 'react-dom';
 import {Capacitor} from '@capacitor/core';
 import {createUseStyles} from 'react-jss';
-import {Box} from '@mui/material';
+import {Alert, Box} from '@mui/material';
 import {Camera} from '@capacitor/camera';
+import {APP_NAME} from '../../../buildconfig';
 
 const useStyles = createUseStyles({
   container: {
@@ -143,9 +144,7 @@ export interface QRCodeButtonProps {
 export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
   const [scanning, setScanning] = useState(false);
   const runningInBrowser = Capacitor.getPlatform() === 'web';
-  const [canScanMsg, setCanScanMsg] = useState(
-    runningInBrowser ? 'Scanning not supported in browsers, mobile only' : ''
-  );
+  const [canScan, setCanScan] = useState(true);
 
   const classes = useStyles();
 
@@ -154,11 +153,15 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
   };
 
   const startScan = async () => {
+    // Ask for permission to use the camera, the explicit call here
+    // allows us to provide a more useful message to the user if they
+    // say no or have said no before
     const permissions = await Camera.requestPermissions({
       permissions: ['camera'],
     });
-    if (permissions.camera === 'denied') {
-      setCanScanMsg('Camera permission has been denied by the user.');
+    console.log('permissions', permissions);
+    if (permissions.camera !== 'granted') {
+      setCanScan(false);
       return;
     }
     setScanning(true);
@@ -260,13 +263,39 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
       return <div>Something went wrong</div>;
     }
   } else {
-    if (canScanMsg !== '') {
+    if (runningInBrowser) {
       return (
         <div>
           <Button variant="outlined" disabled={true}>
             {props.label}
           </Button>
-          <div>{canScanMsg}</div>
+          <div>Scanning not supported in browsers, mobile only</div>
+        </div>
+      );
+    }
+    if (canScan) {
+      return (
+        <div>
+          <Button variant="outlined" disabled={true}>
+            {props.label}
+          </Button>
+          <Alert severity="error" sx={{width: '100%'}}>
+            {Capacitor.getPlatform() === 'android' && (
+              <>
+                Please enable camera permissions for {APP_NAME}. Go to your
+                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
+                Camera and select "Ask every time" or "Allow only while using
+                the app".
+              </>
+            )}
+            {Capacitor.getPlatform() === 'ios' && (
+              <>
+                Please enable camera permissions for {APP_NAME}. Go to your
+                device Settings &gt; Privacy & Security &gt; Camera &gt; and
+                ensure that {APP_NAME} is enabled.
+              </>
+            )}
+          </Alert>
         </div>
       );
     } else {
