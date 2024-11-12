@@ -61,7 +61,6 @@ export const getDefaultToken = async (): Promise<JWTTokenInfo | undefined> => {
 export const getAnyToken = async (): Promise<JWTTokenInfo | undefined> => {
   // Get listings
   const listings = await getListings();
-  console.log(listings);
 
   // If there is an entry, use first
   for (const listing of listings) {

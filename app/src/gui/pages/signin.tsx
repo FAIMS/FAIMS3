@@ -31,9 +31,7 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
 import OnboardingComponent from '../components/authentication/oneServerLanding';
 import {Capacitor} from '@capacitor/core';
-import {useGetDefaultToken} from '../../utils/tokenHooks';
-import {getAnyToken, getDefaultToken} from '../../context/functions';
-import {useQuery} from '@tanstack/react-query';
+import {useGetAnyToken} from '../../utils/tokenHooks';
 
 export function SignIn() {
   const [listings, setListings] = useState<ListingsObject[] | null>(null);
@@ -41,12 +39,8 @@ export function SignIn() {
   const platform = Capacitor.getPlatform();
   const allowQr = platform === 'ios' || platform === 'android';
 
-  // This will always fetch the token on first load of component
-  const tokenQuery = useQuery({
-    queryKey: ['forceful token fetch'],
-    queryFn: getAnyToken,
-    refetchOnMount: true,
-  });
+  // Get the current login token if any
+  const tokenQuery = useGetAnyToken();
 
   useEffect(() => {
     getSyncableListingsInfo().then(setListings).catch(logError);
