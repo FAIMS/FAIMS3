@@ -29,6 +29,7 @@ import ReactDOM from 'react-dom';
 import {Capacitor} from '@capacitor/core';
 import {createUseStyles} from 'react-jss';
 import {Box} from '@mui/material';
+import {Camera} from '@capacitor/camera';
 
 const useStyles = createUseStyles({
   container: {
@@ -153,12 +154,13 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
   };
 
   const startScan = async () => {
-    const permissions = await BarcodeScanner.checkPermissions();
-    if (permissions.camera !== 'granted') {
-      setCanScanMsg('Camera permission not granted.');
+    const permissions = await Camera.requestPermissions({
+      permissions: ['camera'],
+    });
+    if (permissions.camera === 'denied') {
+      setCanScanMsg('Camera permission has been denied by the user.');
       return;
     }
-
     setScanning(true);
     hideBackground();
 

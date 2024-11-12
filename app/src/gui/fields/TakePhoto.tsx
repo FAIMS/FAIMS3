@@ -252,6 +252,16 @@ export class TakePhoto extends React.Component<
     };
   }
   async takePhoto() {
+    const permissions = await Camera.requestPermissions({
+      permissions: ['camera'],
+    });
+    if (permissions.camera === 'denied') {
+      this.props.form.setFieldError(
+        this.props.field.name,
+        'Camera permission has been denied by the user.'
+      );
+    }
+
     try {
       const image = base64image_to_blob(
         await Camera.getPhoto({
