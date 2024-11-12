@@ -27,26 +27,15 @@ import React from 'react';
 // import ImageList from '@mui/material/ImageList';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
-import {List, ListItem, Typography, useMediaQuery} from '@mui/material';
+import {Alert, List, ListItem, Typography, useMediaQuery} from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {createTheme, styled} from '@mui/material/styles';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
-
-/**
- * This functional component provides a isMobile flag which can be used in class
- * components to dynamically style the component.
- */
-function MediaQueryWrapper({
-  children,
-}: {
-  children: (isMobile: boolean) => React.ReactNode;
-}) {
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  return children(isMobile);
-}
+import {Capacitor} from '@capacitor/core';
+import {APP_NAME} from '../../buildconfig';
 
 function base64image_to_blob(image: Photo): Blob {
   if (image.base64String === undefined) {
@@ -95,15 +84,6 @@ const ImageGalleryList = styled('ul')(() => ({
     gridTemplateColumns: 'repeat(5, 1fr)',
   },
 }));
-
-// function srcset(image: string, size: number, rows = 1, cols = 1) {
-//   return {
-//     src: `${image}?w=${size * cols}&h=${size * rows}&fit=crop&auto=format`,
-//     srcSet: `${image}?w=${size * cols}&h=${
-//       size * rows
-//     }&fit=crop&auto=format&dpr=2 2x`,
-//   };
-// }
 
 const FAIMSViewImageList = (props: {
   images: Array<any>;
@@ -220,46 +200,51 @@ const FAIMSImageList = (props: ImageListProps) => {
     </ImageGalleryList>
   );
 };
-interface State {
-  open: boolean;
-  photopath: string | null;
-  images: Array<any>;
-}
-export class TakePhoto extends React.Component<
+
+export const TakePhoto: React.FC<
   FieldProps &
     Props &
     ButtonProps & {
       ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
       ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
       NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
-    },
-  State
-> {
-  constructor(
-    props: FieldProps &
-      Props &
-      ButtonProps & {
-        ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
-        ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
-        NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
+    }
+> = props => {
+  const [open, setOpen] = React.useState(false);
+  const [photoPath, setPhotoPath] = React.useState<string | null>(null);
+  const [noPermission, setNoPermission] = React.useState<boolean>(false);
+  const [images, setImages] = React.useState<Array<any>>(
+    props.form.values[props.field.name] ?? []
+  );
+
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  React.useEffect(() => {
+    const value = props.form.values[props.field.name];
+    if (value !== null && value !== undefined) {
+      setImages(value);
+    }
+  }, [props.form.values[props.field.name]]);
+
+  const takePhoto = async () => {
+    if (Capacitor.getPlatform() === 'web') {
+      const permission = await navigator.permissions.query({
+        name: 'camera' as PermissionName,
+      });
+      console.log('camera permission', permission);
+      if (permission.state === 'denied') {
+        setNoPermission(true);
+        return;
       }
-  ) {
-    super(props);
-    this.state = {
-      open: false,
-      photopath: null,
-      images: this.props.form.values[this.props.field.name] ?? [],
-    };
-  }
-  async takePhoto() {
-    const permissions = await Camera.requestPermissions({
-      permissions: ['camera'],
-    });
-    if (permissions.camera === 'denied') {
-      this.props.form.setFieldError(
-        this.props.field.name,
-        'Camera permission has been denied by the user.'
-      );
+    } else {
+      const permissions = await Camera.requestPermissions({
+        permissions: ['camera'],
+      });
+
+      if (permissions.camera === 'denied') {
+        setNoPermission(true);
+        return;
+      }
     }
 
     try {
@@ -272,100 +257,90 @@ export class TakePhoto extends React.Component<
           promptLabelHeader: 'Take/Select a photo (drag to view more)',
         })
       );
-      const newimages =
-        this.props.field.value !== null
-          ? this.props.field.value.concat(image)
-          : [image];
-      this.props.form.setFieldValue(this.props.field.name, newimages, true);
+      const newImages =
+        props.field.value !== null ? props.field.value.concat(image) : [image];
+      props.form.setFieldValue(props.field.name, newImages, true);
     } catch (err: any) {
       logError(err);
-      this.props.form.setFieldError(this.props.field.name, err.message);
+      props.form.setFieldError(props.field.name, err.message);
     }
-  }
+  };
 
-  componentDidUpdate(prevProps: FieldProps & Props) {
-    if (
-      prevProps.form.values[this.props.field.name] !==
-      this.props.form.values[this.props.field.name]
-    ) {
-      const value = this.props.form.values[this.props.field.name];
-      if (value !== null && value !== undefined) this.setState({images: value});
-    }
-  }
+  const error = props.form.errors[props.field.name];
+  const errorText = error ? (
+    <span {...props.ErrorTextProps}>{error as string}</span>
+  ) : (
+    <span {...props.NoErrorTextProps}></span>
+  );
 
-  render() {
-    //const images = this.props.field.value;
-    const error = this.props.form.errors[this.props.field.name];
-    let error_text = <span {...this.props['NoErrorTextProps']}></span>;
-    if (error) {
-      error_text = (
-        <span {...this.props['ErrorTextProps']}>{error as string}</span>
-      );
-    }
+  const title = props.label;
+  const helperText = props.helpertext ?? props.helperText ?? undefined;
 
-    // https://mui.com/components/image-list/#masonry-image-list
-    // Masonry image lists use dynamically sized container heights
-    // that reflect the aspect ratio of each image. This image list
-    // is best used for browsing uncropped peer content.
-    // But it doesn't look like we support masonry right now.
-    //
-    // It also looks like we don't have multiple photos being returned...
-
-    // We have two properties available here - both are optional
-    const title = this.props.label;
-    const helperText =
-      this.props.helpertext ?? this.props.helperText ?? undefined;
-
-    return (
-      <MediaQueryWrapper>
-        {isMobile => (
-          <div>
-            {title && <h3>{title}</h3>}
-            {helperText && <p>{helperText}</p>}
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth={isMobile ? true : false}
-              onClick={async () => {
-                await this.takePhoto();
-              }}
-            >
-              Take photo
-              <span style={{width: 10}} />
-              <CameraAltIcon />
-            </Button>
-            <FAIMSImageList
-              images={this.state.images}
-              setopen={(path: string) =>
-                this.setState({open: true, photopath: path})
-              }
-              setimage={(newfiles: Array<any>) => {
-                this.props.form.setFieldValue(
-                  this.props.field.name,
-                  newfiles,
-                  true
-                );
-              }}
-              disabled={this.props.disabled ?? false}
-              fieldName={this.props.field.name}
-            />
-            <Typography variant="caption" color="textSecondary">
-              {error_text}{' '}
-            </Typography>
-            <FaimsAttachmentManagerDialog
-              project_id={this.props.form.values['_project_id']}
-              open={this.state.open}
-              setopen={() => this.setState({open: false})}
-              filedId={this.props.id}
-              path={this.state.photopath}
-              isSyncing={this.props.issyncing}
-            />
-          </div>
-        )}
-      </MediaQueryWrapper>
-    );
-  }
-}
+  return (
+    <div>
+      {title && <h3>{title}</h3>}
+      {helperText && <p>{helperText}</p>}
+      <Button
+        variant="contained"
+        color="primary"
+        fullWidth={isMobile ? true : false}
+        onClick={takePhoto}
+      >
+        Take photo
+        <span style={{width: 10}} />
+        <CameraAltIcon />
+      </Button>
+      {noPermission && (
+        <Alert severity="error" sx={{width: '100%'}}>
+          {Capacitor.getPlatform() === 'web' && (
+            <>
+              Please enable camera permissions this page. In your browser, look
+              to the left of the web address bar for a button that gives access
+              to browser settings for this page.
+            </>
+          )}
+          {Capacitor.getPlatform() === 'android' && (
+            <>
+              Please enable camera permissions for {APP_NAME}. Go to your device
+              Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt; Camera
+              and select "Ask every time" or "Allow only while using the app".
+            </>
+          )}
+          {Capacitor.getPlatform() === 'ios' && (
+            <>
+              Please enable camera permissions for {APP_NAME}. Go to your device
+              Settings &gt; Privacy & Security &gt; Camera &gt; and ensure that{' '}
+              {APP_NAME} is enabled.
+            </>
+          )}
+        </Alert>
+      )}
+      <FAIMSImageList
+        images={images}
+        setopen={(path: string) => {
+          setOpen(true);
+          setPhotoPath(path);
+        }}
+        setimage={(newfiles: Array<any>) => {
+          props.form.setFieldValue(props.field.name, newfiles, true);
+        }}
+        disabled={props.disabled ?? false}
+        fieldName={props.field.name}
+      />
+      <Typography variant="caption" color="textSecondary">
+        {errorText}
+      </Typography>
+      <FaimsAttachmentManagerDialog
+        project_id={props.form.values['_project_id']}
+        open={open}
+        setopen={() => setOpen(false)}
+        filedId={props.id}
+        path={photoPath}
+        isSyncing={props.issyncing}
+      />
+    </div>
+  );
+};
 
 // const uiSpec = {
 //   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
