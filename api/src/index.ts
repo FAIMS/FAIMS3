@@ -22,7 +22,11 @@
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 
-import {CONDUCTOR_INTERNAL_PORT, CONDUCTOR_PUBLIC_URL, COUCHDB_INTERNAL_URL} from './buildconfig';
+import {
+  CONDUCTOR_INTERNAL_PORT,
+  CONDUCTOR_PUBLIC_URL,
+  COUCHDB_INTERNAL_URL,
+} from './buildconfig';
 
 import {app} from './routes';
 
