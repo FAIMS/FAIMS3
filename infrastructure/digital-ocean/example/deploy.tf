@@ -12,7 +12,7 @@ module "couchdb" {
 module "conductor" {
   source = "../conductor"
   subdomain = "demo.fieldmark.app"
-  contact_email = "steve@fieldnote.au"
+  contact_email = var.contact_email
   do_token = var.do_token
   conductor_env_b64 = filebase64("./conductor.env")
   conductor_pub_key_b64 = filebase64("./assets/public_key.pem")
@@ -24,4 +24,7 @@ variable "do_token" {
   description = "digital ocean access token"
   type = string
 }
-
+variable "contact_email" {
+  description = "contact email for Lets Encrypt SSL certificate"
+  type = string
+}

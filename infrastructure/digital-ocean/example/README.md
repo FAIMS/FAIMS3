@@ -18,8 +18,8 @@ This folder contains the Terraform configuration for deploying FAIMS3 to Digital
 
 Configure your deployment by copying the file `terraform.tfvars.dist` as
 `terraform.tfvars`.  Edit this file to add your Digital Ocean
-credentials and other deployment details.  These settings relate to the deployment
-process.
+credentials and a contact email address for the Let's Encrypt SSL certificate.
+These settings relate to the deployment process.
 
 Create `conductor.env` by copying `conductor.env.dist` and adding your configuration
 for the server deployment. This file is copied to the server and contains
