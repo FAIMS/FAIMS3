@@ -56,28 +56,6 @@ function commit_version(): string {
   }
 }
 
-function prod_build(): boolean {
-  const productionBuild = import.meta.env.VITE_PRODUCTION_BUILD;
-  if (
-    productionBuild === '' ||
-    productionBuild === undefined ||
-    TRUTHY_STRINGS.includes(productionBuild.toLowerCase())
-  ) {
-    return true;
-  } else if (FALSEY_STRINGS.includes(productionBuild.toLowerCase())) {
-    return false;
-  } else {
-    logError('VITE_PRODUCTION_BUILD badly defined, assuming false');
-    return false;
-  }
-}
-/*
- * This isn't exported, instead to help reduce the number of environment
- * variables to set to get a production build for real users. Can be used in the
- * rest of the configuration.
- */
-const PROD_BUILD = prod_build();
-
 function include_pouchdb_debugging(): boolean {
   const debug_pouch = import.meta.env.VITE_DEBUG_POUCHDB;
   if (debug_pouch === '' || debug_pouch === undefined) {
@@ -213,32 +191,6 @@ function cluster_admin_group_name(): string {
     return 'cluster-admin';
   }
   return name;
-}
-
-function disable_signin_redirect(): boolean {
-  const disable_signin = import.meta.env.VITE_DISABLE_SIGNIN_REDIRECT;
-  if (disable_signin === '' || disable_signin === undefined) {
-    return false;
-  }
-  if (FALSEY_STRINGS.includes(disable_signin.toLowerCase())) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(disable_signin.toLowerCase())) {
-    return true;
-  } else {
-    logError('VITE_DISABLE_SIGNIN_REDIRECT badly defined, assuming false');
-    return false;
-  }
-}
-
-function get_login_token(): string | undefined {
-  const login_token = import.meta.env.VITE_LOGIN_TOKEN;
-  if (login_token === '' || login_token === undefined) {
-    return undefined;
-  }
-  if (PROD_BUILD) {
-    logError('Production builds should not set login token, except under test');
-  }
-  return login_token;
 }
 
 // If VITE_BUGSNAG_KEY is not defined then we don't use Bugsnag
@@ -394,8 +346,6 @@ export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
 export const SHOW_MINIFAUXTON = show_minifauxton();
 export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
-export const DISABLE_SIGNIN_REDIRECT = disable_signin_redirect();
-export const BUILT_LOGIN_TOKEN = get_login_token();
 export const BUGSNAG_KEY = get_bugsnag_key();
 export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
 export const NOTEBOOK_NAME = get_notebook_name();

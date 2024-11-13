@@ -29,14 +29,43 @@ import {isWeb} from '../../utils/helpers';
 import ClusterCard from '../components/authentication/cluster_card';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
+import OnboardingComponent from '../components/authentication/oneServerLanding';
+import {Capacitor} from '@capacitor/core';
+import {useGetAnyToken} from '../../utils/tokenHooks';
 
 export function SignIn() {
   const [listings, setListings] = useState<ListingsObject[] | null>(null);
   const breadcrumbs = [{link: ROUTES.INDEX, title: 'Home'}, {title: 'Sign In'}];
+  const platform = Capacitor.getPlatform();
+  const allowQr = platform === 'ios' || platform === 'android';
+
+  // Get the current login token if any
+  const tokenQuery = useGetAnyToken();
 
   useEffect(() => {
     getSyncableListingsInfo().then(setListings).catch(logError);
   }, []);
+
+  // The conditions for this to show are to simplify onboarding in the most
+  // common case i.e. one listing - check we are not already logged in and only
+  // one loaded listing
+  if (
+    // One listing
+    listings?.length === 1 &&
+    // It's well defined
+    !!listings[0] &&
+    // Tokens are not loading
+    !tokenQuery.isLoading &&
+    // Token is not present
+    !tokenQuery.data?.token
+  ) {
+    return (
+      <OnboardingComponent
+        scanQr={allowQr}
+        listings={listings}
+      ></OnboardingComponent>
+    );
+  }
 
   if (listings === null) {
     return (

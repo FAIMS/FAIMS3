@@ -63,11 +63,22 @@ export const useGetAnyToken = () => {
   const query = useQuery({
     // The query function that fetches the token
     queryFn: async () => {
-      return await getAnyToken();
+      const result = await getAnyToken();
+      // can't return undefined or useQuery thinks it's an error
+      if (result === undefined) {
+        // this looks enough like TokenContents to fool the callers
+        return {token: undefined, parsedToken: undefined};
+      } else {
+        return result;
+      }
     },
-    // The query key, which includes the listing ID to ensure proper caching
+    // we don't want this to be cached since then logout would break
     queryKey: ['get any token'],
+    refetchOnWindowFocus: true,
     refetchOnMount: true,
+    gcTime: 0, // don't cache it
+    staleTime: 0, // no really, please don't
+    enabled: true, // always refetch
   });
 
   // Return an object with the token and query state
