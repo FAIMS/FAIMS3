@@ -21,33 +21,12 @@
 
 import {v4 as uuidv4} from 'uuid';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
-import nodemailer from 'nodemailer';
+import {existsSync} from 'fs';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
-const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
 // If a URL for the conductor instance is not provided this will be used as a fall-through
 const DEFAULT_CONDUCTOR_URL = 'http://localhost:8080';
-
-/*
- * This is designed to get useful commit information data from
- * environment variables for the testing server. While more sophisticated
- * iterations of this can use extra node modules to get git data directly,
- * passing environment variables seems like the safest first path.
- */
-
-function commit_version(): string {
-  const commitver = process.env.COMMIT_VERSION;
-  if (
-    commitver === '' ||
-    commitver === undefined ||
-    FALSEY_STRINGS.includes(commitver.toLowerCase())
-  ) {
-    return 'unknown dev';
-  } else {
-    return commitver;
-  }
-}
 
 /*
   conductor_url - returns the base URL of this Conductor server
@@ -157,12 +136,36 @@ function signing_key_id(): string {
 
 // Generate public and private keys file names in the same way as makeInstanceKeys.sh
 
+function key_file_path(): string {
+  const path = process.env.KEY_FILE_PATH;
+  if (path === '' || path === undefined) {
+    console.log('KEY_FILE_PATH not set, using default');
+    return '.';
+  } else {
+    if (existsSync(path)) {
+      return path;
+    } else {
+      console.log('KEY_FILE_PATH does not exist, using default');
+      return '.';
+    }
+  }
+}
+
 function private_key_path(): string {
   let host = process.env.PROFILE_NAME;
   if (host === '' || host === undefined) {
     host = 'conductor';
   }
-  return `keys/${host}_private_key.pem`;
+  const path = key_file_path();
+  const keyfile = `${path}/keys/${host}_private_key.pem`;
+  if (existsSync(keyfile)) {
+    console.log(`Private key file ${keyfile} exists.`);
+    return keyfile;
+  } else {
+    throw new Error(
+      `Private key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
+    );
+  }
 }
 
 function public_key_path(): string {
@@ -170,7 +173,16 @@ function public_key_path(): string {
   if (host === '' || host === undefined) {
     host = 'conductor';
   }
-  return `keys/${host}_public_key.pem`;
+  const path = key_file_path();
+  const keyfile = `${path}/keys/${host}_public_key.pem`;
+  if (existsSync(keyfile)) {
+    console.log(`Public key file ${keyfile} exists.`);
+    return keyfile;
+  } else {
+    throw new Error(
+      `Public key file ${keyfile} does not exist. Please run makeInstanceKeys.sh to generate keys.`
+    );
+  }
 }
 
 function instance_name(): string {
@@ -253,26 +265,6 @@ function conductor_internal_port(): number {
   return parseInt(port);
 }
 
-function email_from_address(): string {
-  const hostname = process.env.CONDUCTOR_EMAIL_FROM_ADDRESS;
-  if (hostname === '' || hostname === undefined) {
-    throw Error(
-      'CONDUCTOR_EMAIL_FROM_ADDRESS must be set to send email invites'
-    );
-  }
-  return hostname;
-}
-
-function email_transporter(): any {
-  const config = process.env.CONDUCTOR_EMAIL_HOST_CONFIG;
-  if (config === '' || config === undefined) {
-    throw Error(
-      'CONDUCTOR_EMAIL_HOST_CONFIG must be set to send email invites'
-    );
-  }
-  return nodemailer.createTransport(config);
-}
-
 function developer_mode(): any {
   const develop = process.env.DEVELOPER_MODE;
   if (develop) {
@@ -287,7 +279,6 @@ export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
 export const LOCAL_COUCHDB_AUTH = local_couchdb_auth();
 export const RUNNING_UNDER_TEST = is_testing();
-export const COMMIT_VERSION = commit_version();
 export const CONDUCTOR_PUBLIC_URL = conductor_url();
 export const CONDUCTOR_INTERNAL_PORT = conductor_internal_port();
 export const CONDUCTOR_KEY_ID = signing_key_id();
@@ -300,8 +291,6 @@ export const COOKIE_SECRET = cookie_secret();
 export const GOOGLE_CLIENT_ID = google_client_id();
 export const GOOGLE_CLIENT_SECRET = google_client_secret();
 export const CONDUCTOR_AUTH_PROVIDERS = get_providers_to_use();
-export const EMAIL_FROM_ADDRESS = email_from_address();
-export const EMAIL_TRANSPORTER = email_transporter();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();

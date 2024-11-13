@@ -32,7 +32,7 @@ import {
 import archiver from 'archiver';
 import PouchDB from 'pouchdb';
 import {Stream} from 'stream';
-import {getMetadataDb, getProjectsDB} from '.';
+import {getMetadataDb, getProjectsDB, verifyCouchDBConnection} from '.';
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {
   PROJECT_METADATA_PREFIX,
@@ -200,27 +200,36 @@ const getAutoIncrementers = (uiSpec: EncodedProjectUIModel) => {
  *  properly, add design documents if they are missing
  */
 export const validateDatabases = async () => {
-  const output: any[] = [];
   const projects: ProjectObject[] = [];
-  const projects_db = getProjectsDB();
-  if (projects_db) {
-    const res = await projects_db.allDocs({
-      include_docs: true,
-    });
-    res.rows.forEach(e => {
-      if (e.doc !== undefined && !e.id.startsWith('_')) {
-        projects.push(e.doc as unknown as ProjectObject);
-      }
-    });
+  try {
+    const report = await verifyCouchDBConnection();
 
-    for (const project of projects) {
-      const project_id = project._id;
-      const dataDB = await getDataDB(project_id);
-      // ensure that design documents are here
-      await addDesignDocsForNotebook(dataDB);
+    if (!report.valid) {
+      return report;
     }
+
+    const projects_db = getProjectsDB();
+    if (projects_db) {
+      const res = await projects_db.allDocs({
+        include_docs: true,
+      });
+      res.rows.forEach(e => {
+        if (e.doc !== undefined && !e.id.startsWith('_')) {
+          projects.push(e.doc as unknown as ProjectObject);
+        }
+      });
+
+      for (const project of projects) {
+        const project_id = project._id;
+        const dataDB = await getDataDB(project_id);
+        // ensure that design documents are here
+        await addDesignDocsForNotebook(dataDB);
+      }
+    }
+    return report;
+  } catch (e) {
+    return {valid: false};
   }
-  return output;
 };
 
 /**

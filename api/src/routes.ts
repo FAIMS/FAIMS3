@@ -33,6 +33,7 @@ import {
   ANDROID_APP_URL,
   CONDUCTOR_AUTH_PROVIDERS,
   CONDUCTOR_PUBLIC_URL,
+  COUCHDB_INTERNAL_URL,
   DEVELOPER_MODE,
   IOS_APP_URL,
   WEBAPP_PUBLIC_URL,
@@ -59,11 +60,72 @@ import {
   requireNotebookMembership,
 } from './middleware';
 import {validateProjectDatabase} from './couchdb/devtools';
+import {
+  databaseValidityReport,
+  initialiseDatabases,
+  verifyCouchDBConnection,
+} from './couchdb';
 
 export {app};
 
 add_auth_providers(CONDUCTOR_AUTH_PROVIDERS);
 add_auth_routes(app, CONDUCTOR_AUTH_PROVIDERS);
+
+/**
+ * Home Page
+ *
+ */
+app.get('/', async (req, res) => {
+  if (databaseValidityReport.valid) {
+    if (req.user && req.user._id) {
+      // Handlebars is pretty useless at including render logic in templates, just
+      // parse the raw, pre-processed string in...
+      const rendered_project_roles = render_project_roles(
+        req.user.project_roles
+      );
+      const provider = Object.keys(req.user.profiles)[0];
+      // No need for a refresh here
+      const token = await generateUserToken(req.user, false);
+
+      res.render('home', {
+        user: req.user,
+        token: token.token,
+        project_roles: rendered_project_roles,
+        other_roles: req.user.other_roles,
+        cluster_admin: userIsClusterAdmin(req.user),
+        can_create_notebooks: userCanCreateNotebooks(req.user),
+        provider: provider,
+        developer: DEVELOPER_MODE,
+      });
+    } else {
+      res.redirect('/auth/');
+    }
+  } else {
+    res.render('fallback', {
+      report: databaseValidityReport,
+      couchdb_url: COUCHDB_INTERNAL_URL,
+      layout: 'fallback',
+    });
+  }
+});
+
+/**
+ * POST to /fallback-initialise does initialisation on the databases
+ * - this does not have any auth requirement because it should be used
+ *   to set up the users database and create the admin user
+ *   if databases exist, this is a no-op
+ *   Extra guard, if the db report says everything is ok we don't
+ *   even call initialiseDatabases, just redirect home
+ */
+app.post('/fallback-initialise', async (req, res) => {
+  if (!databaseValidityReport.valid) {
+    console.log('running initialise');
+    await initialiseDatabases();
+    const vv = await verifyCouchDBConnection();
+    console.log('updated valid', databaseValidityReport, vv);
+  }
+  res.redirect('/');
+});
 
 app.get('/notebooks/:id/invite/', requireAuthentication, async (req, res) => {
   if (await userHasPermission(req.user, req.params.id, 'modify')) {
@@ -237,34 +299,6 @@ function render_project_roles(roles: AllProjectRoles): handlebars.SafeString {
   }
   return new handlebars.SafeString(all_project_sections.join(''));
 }
-
-/**
- * Handlebars route which returns information about the logged in user
- *
- */
-app.get('/', async (req, res) => {
-  if (req.user && req.user._id) {
-    // Handlebars is pretty useless at including render logic in templates, just
-    // parse the raw, pre-processed string in...
-    const rendered_project_roles = render_project_roles(req.user.project_roles);
-    const provider = Object.keys(req.user.profiles)[0];
-    // No need for a refresh here
-    const token = await generateUserToken(req.user, false);
-
-    res.render('home', {
-      user: req.user,
-      token: token.token,
-      project_roles: rendered_project_roles,
-      other_roles: req.user.other_roles,
-      cluster_admin: userIsClusterAdmin(req.user),
-      can_create_notebooks: userCanCreateNotebooks(req.user),
-      provider: provider,
-      developer: DEVELOPER_MODE,
-    });
-  } else {
-    res.redirect('/auth/');
-  }
-});
 
 app.get('/send-token/', (req, res) => {
   if (req.user) {

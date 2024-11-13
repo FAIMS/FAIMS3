@@ -52,11 +52,8 @@ services:
 
       # public URL for accessing Conductor & CouchDB
       - CONDUCTOR_PUBLIC_URL
-      - COMMIT_VERSION
 
       - CONDUCTOR_AUTH_PROVIDERS
-      - CONDUCTOR_EMAIL_HOST_NAME
-      - CONDUCTOR_EMAIL_HOST_CONFIG
  
       # https://faimsproject.atlassian.net/wiki/spaces/FAIMS3/pages/151846960/FAIMS3+Conductor+build+run+environment+variables#Authentication-Provider-Specific-environment-variables
       - DATACENTRAL_GROUP_PREFIX
@@ -66,9 +63,6 @@ services:
       - GOOGLE_CLIENT_ID
       - GOOGLE_CLIENT_SECRET
 
-      - CONDUCTOR_EMAIL_FROM_ADDRESS
-      - CONDUCTOR_EMAIL_TRANSPORTER
-        #
       # URLs for apps for this instance
       - WEB_APP_PUBLIC_URL
       - ANDROID_APP_PUBLIC_URL

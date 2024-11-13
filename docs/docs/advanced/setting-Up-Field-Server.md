@@ -508,23 +508,6 @@ example.
 <td><p>Either "datacentral", "datacentral,google" or "google".</p>
 <p>Determines some other variables below that you may need to set - see below.</p></td>
 </tr>
-<tr class="odd">
-<td>CONDUCTOR_EMAIL_FROM_ADDRESS</td>
-<td><p>noreply@localhost.test</p>
-<p>Proper value TBD</p></td>
-<td><em>Presumes we have an SMTP connection, not set up as yet.</em></td>
-</tr>
-<tr class="even">
-<td>CONDUCTOR_EMAIL_HOST_CONFIG</td>
-<td><p>smtps://<a href="mailto:tjf@smtp.aao.gov.au">tjf@smtp.aao.gov.au</a></p>
-<p>Proper value TBD</p></td>
-<td></td>
-</tr>
-<tr class="odd">
-<td>COMMIT_VERSION</td>
-<td>&lt;&lt;From command&gt;&gt;</td>
-<td>From output of 'git rev-parse HEAD'</td>
-</tr>
 <tr class="even">
 <td>FAIMS_COOKIE_SECRET</td>
 <td>&lt;&lt;From command&gt;&gt;</td>

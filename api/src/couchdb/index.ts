@@ -28,11 +28,7 @@ import {
 } from '@faims3/data-model';
 import PouchDB from 'pouchdb';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
-import {
-  COUCHDB_INTERNAL_URL,
-  COUCHDB_PUBLIC_URL,
-  LOCAL_COUCHDB_AUTH,
-} from '../buildconfig';
+import {COUCHDB_INTERNAL_URL, LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {
   initialiseAuthDb,
@@ -69,6 +65,73 @@ const pouchOptions = () => {
   return options;
 };
 
+export type CouchDBConnectionResult = {
+  valid: boolean;
+  server_msg?: string;
+  database_errors?: string[];
+  validate_error?: string;
+};
+
+export const databaseValidityReport: CouchDBConnectionResult = {
+  valid: true,
+  server_msg: '',
+  database_errors: [],
+  validate_error: '',
+};
+
+export const verifyCouchDBConnection = async () => {
+  const result = databaseValidityReport;
+  const url = COUCHDB_INTERNAL_URL;
+
+  // can we reach the couchdb server?
+  const response = await fetch(url, {
+    method: 'HEAD',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).catch(() => {
+    console.log('Catching error');
+    return null;
+  });
+
+  if (!response) {
+    result.valid = false;
+    result.server_msg = `Unable to connect to CouchDB server at ${url}`;
+    return result;
+  }
+
+  // reset valid to true here, will set to falsel below if something is missing
+  result.valid = true;
+
+  // now we know we can connect to the server, but can we connect to the database?
+  const pouch_options = pouchOptions();
+  // don't create databases if they don't exist
+  pouch_options.skip_setup = true;
+
+  // check for all required databases
+  const required = ['people', 'projects', 'templates', 'auth'];
+
+  for (let i = 0; i < required.length; i++) {
+    const db = required[i];
+    const dbName = COUCHDB_INTERNAL_URL + '/' + db;
+    try {
+      const dbInstance = new PouchDB(dbName, pouch_options);
+      const info = (await dbInstance.info()) as any; // type does not include error
+      if (info.error === 'not_found') {
+        result.valid = false;
+        result.database_errors?.push(`Database ${db} not found`);
+      }
+    } catch {
+      result.valid = false;
+      result.database_errors?.push(
+        `Unable to connect to CouchDB database ${db}`
+      );
+    }
+  }
+
+  return result;
+};
+
 export const getDirectoryDB = (): PouchDB.Database | undefined => {
   if (!_directoryDB) {
     const pouch_options = pouchOptions();
@@ -96,14 +159,6 @@ export const getAuthDB = (): AuthDatabase => {
     }
   }
   return _authDB;
-};
-
-/**
- * getPublicUserDbURL -
- * @returns a URL that can be used externaly to access the user database
- */
-export const getPublicUserDbURL = (): string => {
-  return COUCHDB_PUBLIC_URL + PEOPLE_DB_NAME;
 };
 
 export const getUsersDB = (): PouchDB.Database<Express.User> | undefined => {
