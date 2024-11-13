@@ -73,6 +73,13 @@ To login to the servers you can use the public key created earlier.
 ssh -i assets/private_key.pem conductor@conductor.faims.example.com
 ```
 
+The CouchDB nodes will have domain names of the form `couchdb-<number>.faims.example.com` and
+the username `couchdb` can be used to login, eg:
+
+```bash
+ssh -i assets/private_key.pem couchdb@couchdb-0.faims.example.com
+```
+
 ## State Management
 
 The Terraform state files (`.tfstate`) should be committed to this private
