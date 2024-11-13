@@ -73,6 +73,13 @@ To login to the servers you can use the public key created earlier.
 ssh -i assets/private_key.pem conductor@conductor.faims.example.com
 ```
 
+The CouchDB nodes will have domain names of the form `couchdb-<number>.faims.example.com` and
+the username `couchdb` can be used to login, eg:
+
+```bash
+ssh -i assets/private_key.pem couchdb@couchdb-0.faims.example.com
+```
+
 ## State Management
 
 The Terraform state files (`.tfstate`) should be committed to this private
@@ -91,3 +98,23 @@ Data for CouchDB is stored on a volume which should not change even if the Couch
 is updated.  However, backups before updating any infrastructure are recommended.
 
 Remember to run terraform plan before any changes to review potential impacts to your infrastructure.
+
+## Note on Destroying the Deployment
+
+At the moment there is a problem with `terraform destroy` that prevents a clean
+tear down. The problem is that the certificate on the load balancer depends
+on the domain so the domain can't be deleted until the certificate is removed. 
+Terraform can't work out how to do this (or I can't work out how to tell terraform
+to do this) so for now you need to manually delete the certificate.
+
+Go to the Digital Ocean control panel and select `Networking', open the load
+balancer and look at the Settings panel.  Under Forwarding Rules, first add
+an HTTP rule, then delete the HTTPS rule. Then delete the certificate
+via the doctl command line tool:
+
+```bash
+doctl compute certificate list # to get the ID
+doctl compute certificate delete <ID>
+```
+
+You can then run `terraform destroy` to remove the rest of the infrastructure.

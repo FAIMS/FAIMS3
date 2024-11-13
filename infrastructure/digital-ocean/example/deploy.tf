@@ -1,5 +1,8 @@
 
 module "couchdb" {
+  # in a separate git repo, refer to the module like this
+  # source = "git@github.com:FAIMS/FAIMS3.git//infrastructure/digital-ocean/couchdb"
+  # here we use a local reference
   source = "../couchdb"
 
   subdomain = "demo.fieldmark.app"
@@ -9,16 +12,17 @@ module "couchdb" {
   authorized_key = file("./assets/public_key.pub")
 }
 
-module "conductor" {
-  source = "../conductor"
-  subdomain = "demo.fieldmark.app"
-  contact_email = var.contact_email
-  do_token = var.do_token
-  conductor_env_b64 = filebase64("./conductor.env")
-  conductor_pub_key_b64 = filebase64("./assets/public_key.pem")
-  conductor_pvt_key_b64 = filebase64("./assets/private_key.pem")
-  authorized_key = file("./assets/public_key.pub")
-}
+# module "conductor" {
+#   # source = "git@github.com:FAIMS/FAIMS3.git//infrastructure/digital-ocean/conductor"
+#   source = "../conductor"
+#   subdomain = "demo.fieldmark.app"
+#   contact_email = var.contact_email
+#   do_token = var.do_token
+#   conductor_env_b64 = filebase64("./conductor.env")
+#   conductor_pub_key_b64 = filebase64("./assets/public_key.pem")
+#   conductor_pvt_key_b64 = filebase64("./assets/private_key.pem")
+#   authorized_key = file("./assets/public_key.pub")
+# }
 
 variable "do_token" {
   description = "digital ocean access token"
