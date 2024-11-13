@@ -213,25 +213,14 @@ export const TakePhoto: React.FC<
   const [open, setOpen] = React.useState(false);
   const [photoPath, setPhotoPath] = React.useState<string | null>(null);
   const [noPermission, setNoPermission] = React.useState<boolean>(false);
-  const [images, setImages] = React.useState<Array<any>>(
-    props.form.values[props.field.name] ?? []
-  );
 
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  React.useEffect(() => {
-    const value = props.form.values[props.field.name];
-    if (value !== null && value !== undefined) {
-      setImages(value);
-    }
-  }, [props.form.values[props.field.name]]);
 
   const takePhoto = async () => {
     if (Capacitor.getPlatform() === 'web') {
       const permission = await navigator.permissions.query({
         name: 'camera' as PermissionName,
       });
-      console.log('camera permission', permission);
       if (permission.state === 'denied') {
         setNoPermission(true);
         return;
@@ -316,7 +305,7 @@ export const TakePhoto: React.FC<
         </Alert>
       )}
       <FAIMSImageList
-        images={images}
+        images={props.form.values[props.field.name] ?? []}
         setopen={(path: string) => {
           setOpen(true);
           setPhotoPath(path);
