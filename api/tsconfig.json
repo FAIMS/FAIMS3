@@ -16,6 +16,7 @@
         "resolveJsonModule": true,
         "isolatedModules": true,
         "noEmit": false,
+        "typeRoots": ["../node_modules/@types", "./node_modules/@types", "./src/types"],
     },
     "ts-node": {
         "files": true

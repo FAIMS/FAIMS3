@@ -23,15 +23,17 @@ import {
   upsertFAIMSData,
   Record,
   generateFAIMSDataID,
+  getDataDB,
 } from '@faims3/data-model';
 import {getNotebookUISpec} from './notebooks';
 import {randomInt} from 'crypto';
 import {readFileSync} from 'node:fs';
+import * as Exceptions from '../exceptions';
 
 export const createManyRandomRecords = async (
   project_id: ProjectID,
   count: number
-) => {
+): Promise<string[]> => {
   console.log('creating', count, 'random records');
   const record_ids = [];
 
@@ -46,7 +48,9 @@ export const createManyRandomRecords = async (
  * Create a new record for this notebook with random data values for all fields
  * @param project_id Project id
  */
-export const createRandomRecord = async (project_id: ProjectID) => {
+export const createRandomRecord = async (
+  project_id: ProjectID
+): Promise<string> => {
   // get the project uiSpec
   // select one form from the notebook
   // get a list of fields and their types
@@ -54,52 +58,57 @@ export const createRandomRecord = async (project_id: ProjectID) => {
   // create the record object and call upsertFAIMSData
 
   const uiSpec = await getNotebookUISpec(project_id);
-  if (uiSpec) {
-    const forms = Object.keys(uiSpec.viewsets);
-    if (forms.length === 0) {
-      return;
-    }
-    const formName = forms[randomInt(forms.length)];
-    const form = uiSpec.viewsets[formName];
-    const views = form.views;
-    const fields: string[] = [];
-    views.map((view: string) => {
-      uiSpec.fviews[view].fields.map((f: string) => fields.push(f));
-    });
-    // get the types of the fields
-    const field_types: {[key: string]: string} = {};
-    fields.map((field: string) => {
-      field_types[field] =
-        uiSpec.fields[field]['type-returned'] || 'faims-core::String';
-    });
-    const values: {[key: string]: any} = {};
-    fields.map((field: string) => {
-      values[field] = generateValue(uiSpec.fields[field]);
-    });
-
-    const annotations: {[key: string]: any} = {};
-    fields.map((field: string) => {
-      annotations[field] = {annotations: '', uncertainty: false};
-    });
-
-    const newRecord: Record = {
-      record_id: generateFAIMSDataID(),
-      data: values,
-      type: formName,
-      updated_by: 'admin',
-      updated: new Date(),
-      field_types: field_types,
-      ugc_comment: '',
-      relationship: {},
-      deleted: false,
-      revision_id: null,
-      annotations: annotations,
-    };
-    const result = await upsertFAIMSData(project_id, newRecord);
-    return result;
-  } else {
-    throw new Error(`notebook not found with id ${project_id}`);
+  if (!uiSpec) {
+    throw new Exceptions.ItemNotFoundException(
+      `Notebook not found with id ${project_id}`
+    );
   }
+
+  const forms = Object.keys(uiSpec.viewsets);
+  if (forms.length === 0) {
+    throw new Exceptions.InvalidRequestException(
+      `The ui spec for project with id ${project_id} has no forms in the viewsets.`
+    );
+  }
+
+  const formName = forms[randomInt(forms.length)];
+  const form = uiSpec.viewsets[formName];
+  const views = form.views;
+  const fields: string[] = [];
+  views.map((view: string) => {
+    uiSpec.fviews[view].fields.map((f: string) => fields.push(f));
+  });
+  // get the types of the fields
+  const field_types: {[key: string]: string} = {};
+  fields.map((field: string) => {
+    field_types[field] =
+      uiSpec.fields[field]['type-returned'] || 'faims-core::String';
+  });
+  const values: {[key: string]: any} = {};
+  fields.map((field: string) => {
+    values[field] = generateValue(uiSpec.fields[field]);
+  });
+
+  const annotations: {[key: string]: any} = {};
+  fields.map((field: string) => {
+    annotations[field] = {annotations: '', uncertainty: false};
+  });
+
+  const newRecord: Record = {
+    record_id: generateFAIMSDataID(),
+    data: values,
+    type: formName,
+    updated_by: 'admin',
+    updated: new Date(),
+    field_types: field_types,
+    ugc_comment: '',
+    relationship: {},
+    deleted: false,
+    revision_id: null,
+    annotations: annotations,
+  };
+  const result = await upsertFAIMSData(project_id, newRecord);
+  return result;
 };
 
 const SAMPLE_IMAGE_FILE = 'test/test-attachment-image.jpg';
@@ -155,4 +164,105 @@ const generateValue = (field: any) => {
     default:
       return '';
   }
+};
+
+/**
+ * Validate the documents in a project database at a low level to spot
+ * any missing or incomplete records
+ *
+ * @param project_id Project id
+ * @returns {errors: string[]} an array of error strings if any found
+ */
+export const validateProjectDatabase = async (project_id: ProjectID) => {
+  const dataDB = await getDataDB(project_id);
+
+  // get all docs and set up sets of each type that we'll use as a tally
+  const allDocs = await dataDB.allDocs();
+
+  // an array of records to drive the validation
+  const recordIDs = allDocs.rows
+    .filter((doc: any) => doc.id.startsWith('rec'))
+    .map((doc: any) => doc.id);
+
+  // these are all sets as we will remove ids as we see them
+  const revisionIDs = new Set<string>(
+    allDocs.rows
+      .filter((doc: any) => doc.id.startsWith('frev'))
+      .map((doc: any) => doc.id)
+  );
+  const avpIDs = new Set<string>(
+    allDocs.rows
+      .filter((doc: any) => doc.id.startsWith('avp'))
+      .map((doc: any) => doc.id)
+  );
+  const attIDs = new Set<string>(
+    allDocs.rows
+      .filter((doc: any) => doc.id.startsWith('att'))
+      .map((doc: any) => doc.id)
+  );
+
+  const errors: string[] = [];
+
+  if (recordIDs) {
+    for (let i = 0; i < recordIDs.length; i++) {
+      try {
+        const doc = await dataDB.get(recordIDs[i]);
+        for (let j = 0; j < doc.revisions.length; j++) {
+          const rev = doc.revisions[j];
+          try {
+            const rev_doc = await dataDB.get(rev);
+            revisionIDs.delete(rev);
+            const avps = Object.values(rev_doc.avps);
+            for (let k = 0; k < avps.length; k++) {
+              try {
+                const avp_doc = await dataDB.get(avps[k]);
+                avpIDs.delete(avp_doc._id);
+                // check for any attachments
+                if (avp_doc.faims_attachments) {
+                  for (let l = 0; l < avp_doc.faims_attachments.length; l++) {
+                    const att = avp_doc.faims_attachments[l];
+                    try {
+                      await dataDB.get(att.attachment_id);
+                      attIDs.delete(att.attachment_id);
+                    } catch {
+                      errors.push(
+                        `missing attachment ${att.attachment_id} on ${avps[k]} in ${rev} of ${doc._id}`
+                      );
+                    }
+                  }
+                }
+              } catch {
+                errors.push(
+                  `missing avp document ${avps[k]} in ${rev} of ${doc._id}`
+                );
+              }
+            }
+          } catch {
+            errors.push(
+              `missing revision document ${rev} in ${doc._id} which has ${doc.revisions.length} revisions`
+            );
+          }
+        }
+      } catch {
+        errors.push(`could not fetch details of record ${recordIDs[i]}`);
+      }
+    }
+  }
+
+  if (revisionIDs.size > 0)
+    errors.push(
+      `found ${revisionIDs.size} revisions not referenced in any record: ${Array.from(revisionIDs)}`
+    );
+
+  if (avpIDs.size > 0)
+    errors.push(
+      `found ${avpIDs.size} AVP documents not referenced in any revision: ${Array.from(avpIDs)}`
+    );
+
+  if (attIDs.size > 0)
+    errors.push(
+      `found ${attIDs.size} attachment documents not referenced in any revision: ${Array.from(attIDs)}`
+    );
+
+  return {errors: errors};
 };

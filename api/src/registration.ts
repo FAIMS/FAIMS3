@@ -20,8 +20,7 @@
 
 import {RoleInvite, ConductorRole} from './datamodel/users';
 import {addProjectRoleToUser, saveUser} from './couchdb/users';
-import {saveInvite, deleteInvite} from './couchdb/invites';
-import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
+import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
 
 export function userCanAddOtherRole(user: Express.User | undefined): boolean {
   if (user === undefined) {
@@ -52,15 +51,6 @@ export function userCanRemoveOtherRole(
 export async function acceptInvite(user: Express.User, invite: RoleInvite) {
   addProjectRoleToUser(user, invite.project_id, invite.role);
   await saveUser(user);
-
-  if (!invite.unlimited) {
-    invite.number--;
-    if (invite.number === 0) {
-      await deleteInvite(invite);
-    } else {
-      await saveInvite(invite);
-    }
-  }
 }
 
 export async function rejectInvite(invite: RoleInvite) {

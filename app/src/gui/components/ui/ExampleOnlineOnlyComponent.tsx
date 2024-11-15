@@ -2,9 +2,7 @@ import {useIsOnline} from '../../../utils/customHooks';
 import {Typography, Button, Box} from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
-interface ExampleOnlineComponentProps {}
-
-const ExampleOnlineComponent = (props: ExampleOnlineComponentProps) => {
+const ExampleOnlineComponent = () => {
   /**
    * Component: ExampleOnlineComponent
    * Debugging example component which can be used to test areas of the app

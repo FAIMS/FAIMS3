@@ -46,12 +46,20 @@ import NotebookSyncSwitch from './sync_switch';
 import {ProjectUIModel} from '@faims3/data-model';
 import {logError} from '../../../../logging';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
+import {ProjectsContext} from '../../../../context/projects-context';
+import {theme} from '../../../themes';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
 
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
   const {dispatch} = useContext(store);
+
+  const project = useContext(ProjectsContext).projects.find(
+    project => project_id === project.project_id
+  );
+
+  if (!project) return <></>;
 
   useEffect(() => {
     try {
@@ -89,13 +97,9 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             mb={{xs: 1, sm: 2, md: 3}}
           >
             <Typography variant={'h6'} sx={{mb: 2}}>
-              Sync ${NOTEBOOK_NAME_CAPITALIZED}
+              Sync {NOTEBOOK_NAME_CAPITALIZED}
             </Typography>
-            <NotebookSyncSwitch
-              project={projectInfo}
-              showHelperText={true}
-              project_status={projectInfo?.status}
-            />
+            <NotebookSyncSwitch project={project} showHelperText={true} />
           </Box>
 
           <Box component={Paper} variant={'outlined'} elevation={0} p={2}>
@@ -108,6 +112,15 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                   control={
                     <Switch
                       checked={isSyncing}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: theme.palette.icon.main,
+                        },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track':
+                          {
+                            backgroundColor: theme.palette.icon.main,
+                          },
+                      }}
                       onChange={async (event, checked) => {
                         await setSyncingProjectAttachments(
                           project_id!,

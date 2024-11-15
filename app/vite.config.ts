@@ -33,7 +33,12 @@ export default defineConfig({
     outDir: 'build',
   },
   server: {
-    port: 5000,
+    port: 3000,
+    host: true,
+  },
+  preview: {
+    port: 3000,
+    host: true,
   },
   resolve: {
     alias: {
@@ -41,7 +46,7 @@ export default defineConfig({
     },
     preserveSymlinks: true,
   },
-  plugins: [react()],
+  plugins: [react({jsxImportSource: '@emotion/react'})],
   define: {
     global: global,
     'process.env': {} /* some libraries check this */,

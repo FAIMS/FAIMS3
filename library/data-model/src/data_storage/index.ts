@@ -56,8 +56,26 @@ import {
 import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
 import {logError} from '../logging';
 
+export * from './authDB';
+
 export function generateFAIMSDataID(): RecordID {
   return 'rec-' + uuidv4();
+}
+
+/**
+ * Utility function to get the type of a record given an id via a
+ *  simple query, avoiding too many db lookups
+ *
+ * @param project_id project identifier
+ * @param record_id record identifier
+ * @returns the record type as a string
+ */
+export async function getRecordType(
+  project_id: ProjectID,
+  record_id: RecordID
+): Promise<string> {
+  const record = await getRecord(project_id, record_id);
+  return record.type;
 }
 
 /**
@@ -348,7 +366,19 @@ export async function getHRIDforRecordID(
   }
 }
 
-export async function getRecordsByType(
+/**
+ * getPossibleRelatedRecords - get all records of a given type but remove any that
+ *   are already children of some parent if relation_type is Child
+ *
+ * @param project_id - project identifier
+ * @param type - type of record we are looking for
+ * @param relation_type - 'faims-core::Child' or 'faims-core::Linked'
+ * @param record_id - record id that might be the parent/source of this link
+ * @param field_id - field that will hold the relationship
+ * @param relation_linked_vocabPair - names of the relationship
+ * @returns  a promise resolving to an array of RecordReference objects
+ */
+export async function getPossibleRelatedRecords(
   project_id: ProjectID,
   type: FAIMSTypeName,
   relation_type: string,
@@ -369,6 +399,7 @@ export async function getRecordsByType(
       )
         relation_vocab = relation_linked_vocabPair; //get the name from relation_linked_vocabPair
     }
+
     const records: RecordReference[] = [];
     await listRecordMetadata(project_id).then(record_list => {
       for (const key in record_list) {
@@ -460,6 +491,27 @@ function sortByLastUpdated(record_list: RecordMetadata[]): RecordMetadata[] {
   });
 }
 
+export async function getMetadataForSomeRecords(
+  project_id: ProjectID,
+  record_ids: RecordID[],
+  filter_deleted: boolean
+): Promise<RecordMetadata[]> {
+  try {
+    const record_list = Object.values(
+      await listRecordMetadata(project_id, record_ids)
+    );
+    return await filterRecordMetadata(
+      project_id,
+      sortByLastUpdated(record_list),
+      filter_deleted
+    );
+  } catch (error) {
+    console.debug('Failed to get record metadata for', project_id);
+    logError(error);
+    return [];
+  }
+}
+
 export async function getMetadataForAllRecords(
   project_id: ProjectID,
   filter_deleted: boolean
@@ -501,29 +553,35 @@ export const hydrateRecord = async (
   project_id: string,
   record: any // return type of getSomeRecords
 ) => {
-  const hrid = await getHRID(project_id, record.revision);
-  const formData: FormData = await getFormDataFromRevision(
-    project_id,
-    record.revision
-  );
-  const result = {
-    project_id: project_id,
-    record_id: record.record_id,
-    revision_id: record.revision_id,
-    created_by: record.created_by,
-    updated: new Date(record.revision.created),
-    updated_by: record.revision.created_by,
-    deleted: record.revision.deleted ? true : false,
-    hrid: hrid,
-    relationship: record.revision.relationship,
-    data: formData.data,
-    annotations: formData.annotations,
-    types: formData.types,
-    created: new Date(record.created),
-    conflicts: record.conflict,
-    type: record.revision.type,
-  };
-  return result;
+  try {
+    const hrid = await getHRID(project_id, record.revision);
+    const formData: FormData = await getFormDataFromRevision(
+      project_id,
+      record.revision
+    );
+    const result = {
+      project_id: project_id,
+      record_id: record.record_id,
+      revision_id: record.revision_id,
+      created_by: record.created_by,
+      updated: new Date(record.revision.created),
+      updated_by: record.revision.created_by,
+      deleted: record.revision.deleted ? true : false,
+      hrid: hrid,
+      relationship: record.revision.relationship,
+      data: formData.data,
+      annotations: formData.annotations,
+      types: formData.types,
+      created: new Date(record.created),
+      conflicts: record.conflict,
+      type: record.revision.type,
+    };
+    return result;
+  } catch {
+    throw new Error(
+      `Failed to get HRID of record ${record.record_id} revision ${record.revision}`
+    );
+  }
 };
 
 export async function getSomeRecords(
@@ -548,6 +606,7 @@ export async function getSomeRecords(
         record_id: doc.id,
         revision_id: doc.value._id,
         created: doc.value.created,
+        created_by: doc.value.created_by,
         conflict: doc.value.conflict,
         type: doc.value.type,
         revision: doc.doc,
@@ -617,8 +676,13 @@ export const notebookRecordIterator = async (
         }
       }
       if (record) {
-        const data = await hydrateRecord(project_id, record);
-        return {record: data, done: false};
+        try {
+          const data = await hydrateRecord(project_id, record);
+          return {record: data, done: false};
+        } catch (error) {
+          console.error(error);
+          return {record: null, done: false};
+        }
       } else {
         return {record: null, done: true};
       }

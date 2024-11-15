@@ -18,8 +18,7 @@ services:
       - COUCHDB_PASSWORD
   conductor:
     platform: linux/amd64
-    image: ghcr.io/faims/faims3-conductor:main
-    command: "npm start" 
+    image: ghcr.io/faims/faims3-api:main
     ports:
       - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
     volumes:
@@ -49,18 +48,12 @@ services:
 
       # https://faimsproject.atlassian.net/wiki/spaces/FAIMS3/pages/151846960/FAIMS3+Conductor+build+run+environment+variables
 
-      # optional
-      - CLUSTER_ADMIN_GROUP_NAME
-
       - FAIMS_COOKIE_SECRET
 
       # public URL for accessing Conductor & CouchDB
       - CONDUCTOR_PUBLIC_URL
-      - COMMIT_VERSION
 
       - CONDUCTOR_AUTH_PROVIDERS
-      - CONDUCTOR_EMAIL_HOST_NAME
-      - CONDUCTOR_EMAIL_HOST_CONFIG
  
       # https://faimsproject.atlassian.net/wiki/spaces/FAIMS3/pages/151846960/FAIMS3+Conductor+build+run+environment+variables#Authentication-Provider-Specific-environment-variables
       - DATACENTRAL_GROUP_PREFIX
@@ -70,9 +63,6 @@ services:
       - GOOGLE_CLIENT_ID
       - GOOGLE_CLIENT_SECRET
 
-      - CONDUCTOR_EMAIL_FROM_ADDRESS
-      - CONDUCTOR_EMAIL_TRANSPORTER
-        #
       # URLs for apps for this instance
       - WEB_APP_PUBLIC_URL
       - ANDROID_APP_PUBLIC_URL

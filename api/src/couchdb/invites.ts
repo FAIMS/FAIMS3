@@ -21,30 +21,74 @@
 import {NonUniqueProjectID, ProjectID} from '@faims3/data-model';
 import {getInvitesDB} from '.';
 import {ConductorRole, RoleInvite} from '../datamodel/users';
-import {v4 as uuidv4} from 'uuid';
+import {CONDUCTOR_SHORT_CODE_PREFIX} from '../buildconfig';
 
+/**
+ * Create an invite for this project and role if there isn't already
+ * one.  If it already exists, return it.
+ * @param project_id Project identifier
+ * @param role Project role
+ * @returns A RoleInvite object
+ */
 export async function createInvite(
-  user: Express.User,
   project_id: NonUniqueProjectID,
-  role: ConductorRole,
-  number: number
+  role: ConductorRole
 ) {
-  const invite: RoleInvite = {
-    _id: uuidv4(),
-    requesting_user: user.user_id,
-    project_id: project_id,
-    role: role,
-    number: number,
-    unlimited: number === 0,
-  };
-  await saveInvite(invite);
-  return invite;
+  // if there is already an invite for this role,
+  // just return that
+  const allInvites = await getInvitesForNotebook(project_id);
+  const existing = allInvites.filter(
+    i => i.project_id === project_id && i.role === role
+  );
+
+  if (existing.length === 0) {
+    // make a new one
+    const invite: RoleInvite = {
+      _id: generateId(),
+      project_id: project_id,
+      role: role,
+    };
+    return await saveInvite(invite);
+  } else {
+    return existing[0];
+  }
 }
 
+/**
+ * Generate a short code identifier suitable for an invite, may not
+ * be unique.
+ * @returns a six character identifier
+ */
+function generateId() {
+  const INVITE_LENGTH = 6;
+  const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
+
+  let ident = '';
+  for (let i = 0; i < INVITE_LENGTH; i++) {
+    const char = chars[Math.floor(Math.random() * chars.length)];
+    ident = ident + char;
+  }
+  return CONDUCTOR_SHORT_CODE_PREFIX + '-' + ident;
+}
+
+/**
+ * Store an invite, ensure that the identifier is unique
+ * @param invite An invite object
+ * @returns The invite, possibly with a new identifier
+ */
 export async function saveInvite(invite: RoleInvite) {
   const invite_db = getInvitesDB();
   if (invite_db) {
-    await invite_db.put(invite);
+    let done = false;
+    while (!done) {
+      try {
+        await invite_db.put(invite);
+        done = true;
+      } catch {
+        invite._id = generateId();
+      }
+    }
+    return invite;
   } else {
     throw Error('Unable to connect to invites database');
   }

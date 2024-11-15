@@ -43,6 +43,7 @@ import {
 import {getCurrentUserId} from '../../../users';
 import {deleteStagedData} from '../../../sync/draft-storage';
 import {deleteDraftsForRecord} from '../../../drafts';
+import {theme} from '../../themes';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
@@ -50,7 +51,7 @@ type RecordDeleteProps = {
   revision_id: RevisionID | null;
   draft_id: string | null;
   show_label: boolean;
-  handleRefresh: () => Promise<any>;
+  handleRefresh: () => void;
 };
 
 async function deleteFromDB(
@@ -59,8 +60,9 @@ async function deleteFromDB(
   revision_id: RevisionID | null,
   draft_id: string | null,
   userid: string,
-  callback: () => Promise<any>
+  callback: () => void
 ) {
+  console.log('deleting data from the db', draft_id);
   if (draft_id !== null) {
     await deleteStagedData(draft_id, null);
   } else {
@@ -141,7 +143,14 @@ export default function RecordDelete(props: RecordDeleteProps) {
           variant="outlined"
           color="error"
           onClick={handleClickOpen}
-          startIcon={<DeleteIcon />}
+          startIcon={
+            <DeleteIcon
+              sx={{
+                backgroundColor: theme.palette.background.lightBackground,
+                color: theme.palette.highlightColor.main,
+              }}
+            />
+          }
         >
           {!is_draft ? 'Delete Record' : 'Discard Draft'}
         </Button>
@@ -150,6 +159,10 @@ export default function RecordDelete(props: RecordDeleteProps) {
           data-testid="delete-btn"
           aria-label="delete"
           onClick={handleClickOpen}
+          sx={{
+            backgroundColor: theme.palette.background.lightBackground,
+            color: theme.palette.highlightColor.main,
+          }}
         >
           <DeleteIcon />
         </IconButton>

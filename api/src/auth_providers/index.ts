@@ -30,6 +30,12 @@ const AVAILABLE_AUTH_PROVIDERS: {[name: string]: any} = {
   google: google_get_strategy,
 };
 
+/**
+ * Register auth providers using `passport.use`,
+ * provider identifiers must appear in the AVAILABLE_AUTH_PROVIDERS above
+ *
+ * @param providers_to_use array of provider identifiers
+ */
 export function add_auth_providers(providers_to_use: string[]) {
   for (const provider_name of providers_to_use) {
     const provider_gen = AVAILABLE_AUTH_PROVIDERS[provider_name];

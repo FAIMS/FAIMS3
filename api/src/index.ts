@@ -22,18 +22,22 @@
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 
-import {CONDUCTOR_INTERNAL_PORT} from './buildconfig';
+import {
+  CONDUCTOR_INTERNAL_PORT,
+  CONDUCTOR_PUBLIC_URL,
+  COUCHDB_INTERNAL_URL,
+} from './buildconfig';
 
 import {app} from './routes';
 
 import {registerClient} from '@faims3/data-model';
-import {getProjectDataDB, getProjectMetaDB} from './couchdb';
+import {getDataDb, getMetadataDb} from './couchdb';
 import {validateDatabases} from './couchdb/notebooks';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
-  getDataDB: getProjectDataDB,
-  getProjectDB: getProjectMetaDB,
+  getDataDB: getDataDb,
+  getProjectDB: getMetadataDb,
   shouldDisplayRecord: () => true,
 });
 
@@ -47,10 +51,17 @@ PouchDB.plugin(PouchDBFind);
 
 // on startup, run a validation of the databases that can perform
 // any required migrations
-validateDatabases();
 
-app.listen(CONDUCTOR_INTERNAL_PORT, '0.0.0.0', () => {
-  console.log(
-    `Conductor is listening on port http://0.0.0.0:${CONDUCTOR_INTERNAL_PORT}/`
-  );
-});
+const startup = async () => {
+  await validateDatabases().then(() => {
+    app.listen(CONDUCTOR_INTERNAL_PORT, '0.0.0.0', () => {
+      console.log('COUCHDB_INTERNAL_URL', COUCHDB_INTERNAL_URL);
+      console.log('CONDUCTOR_PUBLIC_URL', CONDUCTOR_PUBLIC_URL);
+      console.log(
+        `Conductor is listening on port http://0.0.0.0:${CONDUCTOR_INTERNAL_PORT}/`
+      );
+    });
+  });
+};
+
+startup();

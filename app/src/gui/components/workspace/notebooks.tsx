@@ -18,88 +18,65 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {Box, Paper, Typography, Button} from '@mui/material';
+import {RefreshOutlined} from '@mui/icons-material';
+import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import FolderIcon from '@mui/icons-material/Folder';
-
-import {GridColDef, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-
-import * as ROUTES from '../../../constants/routes';
-import {getAllProjectList} from '../../../databaseAccess';
-import {ProjectInformation, TokenContents} from '@faims3/data-model';
-import CircularLoading from '../ui/circular_loading';
-import ProjectStatus from '../notebook/settings/status';
-import NotebookSyncSwitch from '../notebook/settings/sync_switch';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
+import {Alert, AlertTitle, Box, Button, Paper, Typography} from '@mui/material';
 import {grey} from '@mui/material/colors';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {GridColDef} from '@mui/x-data-grid';
+import {useContext, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {
+  NOTEBOOK_LIST_TYPE,
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../buildconfig';
+import * as ROUTES from '../../../constants/routes';
+import {useNotification} from '../../../context/popup';
+import {ProjectsContext} from '../../../context/projects-context';
+import {ProjectExtended} from '../../../types/project';
+import {CREATE_NOTEBOOK_ROLES, userHasRoleInAnyListing} from '../../../users';
+import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
+import NotebookSyncSwitch from '../notebook/settings/sync_switch';
+import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
-import HeadingGrid from '../ui/heading-grid';
-import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
-import {getListing} from '../../../sync/state';
-import {projectListVerbose} from '../../themes';
 
-interface sortModel {
-  field: string;
-  sort: 'asc' | 'desc';
-}
-type NoteBookListProps = {
-  token?: null | undefined | TokenContents;
-  sortModel: sortModel; // {field: 'name', sort: 'asc'}
-};
+// Survey status naming conventions
 
-export default function NoteBooks(props: NoteBookListProps) {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [counter, setCounter] = React.useState(5);
-  const [tabID, setTabID] = React.useState('1');
+// E.g. "This survey is not active"
+export const NOT_ACTIVATED_LABEL = 'Not Active';
 
-  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
-    setTabID(newValue);
-  };
+// E.g. "This survey is active"
+export const ACTIVATED_LABEL = 'Active';
+
+// E.g. "This survey has been activated"
+export const ACTIVATED_VERB_PAST = 'Activated';
+
+// E.g. "Please activate this survey"
+export const ACTIVATE_VERB_LABEL = 'Activate';
+
+// E.g. "This survey is currently activating" or "Before activating, consider ..."
+export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
+
+// E.g. "You cannot currently de-activate a survey"
+export const DE_ACTIVATE_VERB = 'De-activate';
+
+export default function NoteBooks() {
+  const [refresh, setRefresh] = useState(false);
+  const {projects, syncProjects} = useContext(ProjectsContext);
+
+  const activatedProjects = projects.filter(({activated}) => activated);
+
+  const [tabID, setTabID] = useState('1');
 
   const history = useNavigate();
+
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
-  const [pouchProjectList, setPouchProjectList] = useState<
-    ProjectInformation[]
-  >([]);
-
-  const updateProjectList = () => {
-    getAllProjectList().then(projectList => {
-      setPouchProjectList(projectList);
-      setLoading(false);
-    });
-  };
-
-  useEffect(() => {
-    updateProjectList();
-
-    if (counter === 0) {
-      if (pouchProjectList.length === 0) {
-        updateProjectList();
-        // reset counter
-        setCounter(5);
-      }
-    } else if (loading) {
-      setTimeout(() => setCounter(counter - 1), 1000);
-    }
-  }, [counter]);
-
-  const handleNotebookActivation = () => {
-    updateProjectList();
-    setTabID('1'); // select the activated tab
-  };
-
-  const handleRowClick: GridEventListener<'rowClick'> = params => {
-    if (params.row.is_activated) {
-      history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + params.row.project_id);
-    } else {
-      // do nothing
-    }
-  };
-  const columns: GridColDef[] = not_xs
+  const columns: GridColDef<ProjectExtended>[] = not_xs
     ? [
         {
           field: 'name',
@@ -107,53 +84,46 @@ export default function NoteBooks(props: NoteBookListProps) {
           type: 'string',
           flex: 0.4,
           minWidth: 200,
-          renderCell: (params: GridCellParams) => (
-            <Box my={1}>
+          renderCell: ({row: {activated, name, description}}) => (
+            <Box my={3}>
               <span
                 style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
+                  alignItems: 'center',
                   flexWrap: 'nowrap',
+                  padding: '12px 0',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
-                  color={params.row.is_activated ? 'secondary' : 'disabled'}
-                  sx={{mr: '3px'}}
+                  color={activated ? 'primary' : 'disabled'}
+                  sx={{mr: '8px'}}
                 />
                 <Typography
-                  variant={'body2'}
-                  fontWeight={params.row.is_activated ? 'bold' : 'normal'}
-                  color={params.row.is_activated ? 'black' : grey[800]}
+                  variant={'body1'}
+                  fontWeight={activated ? 'bold' : 'normal'}
+                  color={activated ? 'black' : grey[800]}
+                  sx={{
+                    padding: '4px 0',
+                    lineHeight: 1,
+                  }}
                 >
-                  {params.row.name}
+                  {name}
                 </Typography>
               </span>
-              <Typography variant={'caption'}>
-                {getListing(params.row.listing_id).listing.name}
-                {params.row.description}
-              </Typography>
+              <Typography variant={'caption'}>{description}</Typography>
             </Box>
           ),
         },
-        {
-          field: 'last_updated',
-          headerName: 'Last Updated',
-          type: 'dateTime',
-          minWidth: 160,
-          flex: 0.2,
-          valueGetter: ({value}) => value && new Date(value),
-        },
-        {
-          field: 'status',
-          headerName: 'Status',
-          type: 'string',
-          flex: 0.2,
-          minWidth: 160,
-          renderCell: (params: GridCellParams) => (
-            <ProjectStatus status={params.row.status} />
-          ),
-        },
+        // commenting this untill the functionality is fixed for this column.
+        // {
+        //   field: 'last_updated',
+        //   headerName: 'Last Updated',
+        //   type: 'dateTime',
+        //   minWidth: 160,
+        //   flex: 0.2,
+        //   valueGetter: ({value}) => value && new Date(value),
+        // },
         {
           field: 'actions',
           type: 'actions',
@@ -161,12 +131,11 @@ export default function NoteBooks(props: NoteBookListProps) {
           minWidth: 160,
           headerName: 'Sync',
           description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
-          renderCell: (params: GridCellParams) => (
+          renderCell: ({row}) => (
             <NotebookSyncSwitch
-              project={params.row}
+              project={row}
               showHelperText={false}
-              project_status={params.row.status}
-              handleNotebookActivation={handleNotebookActivation}
+              setTabID={setTabID}
             />
           ),
         },
@@ -178,46 +147,47 @@ export default function NoteBooks(props: NoteBookListProps) {
           type: 'string',
           flex: 0.4,
           minWidth: 160,
-          renderCell: (params: GridCellParams) => (
-            <Box my={1}>
-              <span
+          renderCell: ({row: {activated, name, description}}) => (
+            <div>
+              <div
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  flexWrap: 'nowrap',
+                  padding: '12px 0',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
-                  color={params.row.is_activated ? 'secondary' : 'disabled'}
-                  sx={{mr: '3px'}}
+                  color={activated ? 'secondary' : 'disabled'}
+                  sx={{mr: '4px'}}
                 />
                 <Typography
                   variant={'body2'}
-                  fontWeight={params.row.is_activated ? 'bold' : 'normal'}
-                  color={params.row.is_activated ? 'black' : grey[800]}
+                  fontWeight={activated ? 'bold' : 'normal'}
+                  color={activated ? 'black' : grey[800]}
+                  sx={{
+                    padding: '4px 0',
+                  }}
                 >
-                  {params.row.name}
+                  {name}
                 </Typography>
-              </span>
-              <Typography variant={'caption'}>
-                {getListing(params.row.listing_id).listing.name}
-                {params.row.description}
+              </div>
+              <Typography variant={'caption'} sx={{paddingTop: '4px'}}>
+                {description}
               </Typography>
-              <Box my={1}>
-                <ProjectStatus status={params.row.status} />
-              </Box>
-            </Box>
+            </div>
           ),
         },
-        {
-          field: 'last_updated',
-          headerName: 'Last Updated',
-          type: 'dateTime',
-          minWidth: 100,
-          flex: 0.3,
-          valueGetter: ({value}) => value && new Date(value),
-        },
+        // commenting this until the functionality is fixed for this column.
+
+        // {
+        //   field: 'last_updated',
+        //   headerName: 'Last Updated',
+        //   type: 'dateTime',
+        //   minWidth: 100,
+        //   flex: 0.3,
+        //   valueGetter: ({value}) => value && new Date(value),
+        // },
         {
           field: 'actions',
           type: 'actions',
@@ -225,65 +195,142 @@ export default function NoteBooks(props: NoteBookListProps) {
           minWidth: 80,
           headerName: 'Sync',
           description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
-          renderCell: (params: GridCellParams) => (
+          renderCell: ({row}) => (
             <NotebookSyncSwitch
-              project={params.row}
+              project={row}
               showHelperText={false}
-              project_status={params.row.status}
-              handleNotebookActivation={handleNotebookActivation}
+              setTabID={setTabID}
             />
           ),
         },
       ];
 
+  // fetch all user info then determine if any listing has permission to create notebooks
+  const allUserInfo = useGetAllUserInfo();
+  const showCreateNewNotebookButton = allUserInfo?.data
+    ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
+    : false;
+
+  // What type of layout are we using?
+  const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
+  const sectionLabel = isTabs ? 'tab' : 'section';
+
+  const buildTabLink = (target: 'active' | 'not active') => {
+    switch (target) {
+      case 'active':
+        return (
+          <Button variant="text" size={'medium'} onClick={() => setTabID('1')}>
+            "{ACTIVATED_LABEL}" tab
+          </Button>
+        );
+      case 'not active':
+        return (
+          <Button variant="text" size={'medium'} onClick={() => setTabID('2')}>
+            {NOT_ACTIVATED_LABEL} tab
+          </Button>
+        );
+    }
+  };
+
+  const notActivatedAdvice = (
+    <>
+      You have {activatedProjects.length} {NOTEBOOK_NAME}
+      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
+      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
+      {isTabs ? (
+        <>{buildTabLink('not active')}</>
+      ) : (
+        <>
+          "{NOT_ACTIVATED_LABEL}" {sectionLabel}
+        </>
+      )}{' '}
+      need to be {ACTIVATED_VERB_PAST.toLowerCase()} before they can be used. To
+      start using a {NOTEBOOK_NAME_CAPITALIZED} in the{' '}
+      {isTabs ? (
+        <>{buildTabLink('not active')}</>
+      ) : (
+        <>
+          "{NOT_ACTIVATED_LABEL}" {sectionLabel}
+        </>
+      )}{' '}
+      click the "{ACTIVATE_VERB_LABEL}" button.
+    </>
+  );
+
+  // use notification service
+  const notify = useNotification();
+
   return (
     <Box>
-      {pouchProjectList.length === 0 ? (
-        <CircularLoading label={`Loading ${NOTEBOOK_NAME}s`} />
-      ) : (
-        <Box component={Paper} elevation={0} p={2}>
-          {projectListVerbose && (
-            <Typography variant={'body1'} gutterBottom>
-              You have {pouchProjectList.filter(r => r.is_activated).length}{' '}
-              {NOTEBOOK_NAME}
-              {pouchProjectList.filter(r => r.is_activated).length !== 1
-                ? 's'
-                : ''}{' '}
-              activated on this device. To start syncing a {NOTEBOOK_NAME},
-              visit the{' '}
-              <Button
-                variant="text"
-                size={'small'}
-                onClick={() => {
-                  setTabID('2');
-                }}
-              >
-                Available
-              </Button>{' '}
-              tab and click the activate button.
-            </Typography>
-          )}
-          {NOTEBOOK_LIST_TYPE === 'tabs' ? (
-            <Tabs
-              pouchProjectList={pouchProjectList}
-              tabID={tabID}
-              handleChange={handleChange}
-              handleRowClick={handleRowClick}
-              loading={loading}
-              columns={columns}
-              sortModel={props.sortModel}
-            />
+      <Box component={Paper} elevation={0} p={2}>
+        <Typography variant={'body1'} gutterBottom>
+          {notActivatedAdvice}
+        </Typography>
+        <div
+          style={{display: 'flex', justifyContent: 'space-between', gap: '8px'}}
+        >
+          {showCreateNewNotebookButton ? (
+            <Button
+              variant="contained"
+              onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+              sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
+              startIcon={<AddCircleSharpIcon />}
+            >
+              Create New {NOTEBOOK_NAME}
+            </Button>
           ) : (
-            <HeadingGrid
-              pouchProjectList={pouchProjectList}
-              handleRowClick={handleRowClick}
-              loading={loading}
-              columns={columns}
-              sortModel={props.sortModel}
-            />
+            <div />
           )}
-        </Box>
-      )}
+          <Button
+            variant="contained"
+            disabled={refresh}
+            sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
+            startIcon={<RefreshOutlined />}
+            onClick={async () => {
+              setRefresh(true);
+              await syncProjects()
+                .then(() => {
+                  notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
+                })
+                .catch(e => {
+                  console.log(e);
+                  notify.showError(
+                    `Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`
+                  );
+                });
+              setRefresh(false);
+            }}
+          >
+            Refresh {NOTEBOOK_NAME}s
+          </Button>
+        </div>
+        {NOTEBOOK_LIST_TYPE === 'tabs' ? (
+          <Tabs
+            projects={projects}
+            tabID={tabID}
+            handleChange={setTabID}
+            columns={columns}
+          />
+        ) : (
+          <HeadingProjectGrid projects={projects} columns={columns} />
+        )}
+        <Alert severity="info">
+          <AlertTitle>
+            What does {ACTIVATED_LABEL} and {NOT_ACTIVATED_LABEL} mean?
+          </AlertTitle>
+          When a {NOTEBOOK_NAME} is “{ACTIVATED_LABEL}” you are safe to work
+          offline at any point because all the data you collect will be saved to
+          your device. {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} will start
+          the downloading of existing {NOTEBOOK_NAME} records onto your device.
+          We recommend you complete this procedure while you have a stable
+          internet connection. Currently, you cannot{' '}
+          {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}, this is something
+          we will be adding soon. If you need to make space on your device you
+          can clear the application storage or delete the application. If a{' '}
+          {NOTEBOOK_NAME} is "{NOT_ACTIVATED_LABEL}" you are unable to start
+          using it.
+        </Alert>
+      </Box>
     </Box>
   );
 }

@@ -58,10 +58,10 @@ export default function AutoIncrementerSettingsList(
             : ai.form_id;
         const label =
           get_form(ai.form_id, props.uiSpec) +
-            ' <' +
-            section +
-            '> ' +
-            ai.label ?? '';
+          ' <' +
+          section +
+          '> ' +
+          (ai.label ?? '');
         return (
           <Grid
             item

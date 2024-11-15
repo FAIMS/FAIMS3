@@ -61,7 +61,7 @@ export function getComponentFromFieldConfig(
       onWheel={(event: any) => event.target.blur()}
       onChange={(event: any) => {
         formProps.handleChange(event);
-        formProps.setFieldValue('updateField', fieldName);
+        formProps.setFieldValue('updateField', fieldName, true);
       }}
       disabled={disabled}
     />
@@ -79,7 +79,7 @@ export function getComponentFromFieldConfig(
       onWheel={(event: any) => event.target.blur()}
       onChange={(event: any) => {
         formProps.handleChange(event);
-        formProps.setFieldValue('updateField', fieldName);
+        formProps.setFieldValue('updateField', fieldName, true);
       }}
       issyncing={isSyncing}
       disabled={disabled}

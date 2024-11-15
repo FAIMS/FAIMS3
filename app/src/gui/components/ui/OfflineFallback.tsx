@@ -7,7 +7,7 @@ import {createUseStyles as makeStyles} from 'react-jss';
 import {theme} from '../../themes';
 
 const useStyles = makeStyles({
-root: {
+  root: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',

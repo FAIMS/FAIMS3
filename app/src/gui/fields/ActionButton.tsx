@@ -31,7 +31,7 @@ export class ActionButton extends React.Component<
   FieldProps & Props & ButtonProps
 > {
   clickThis() {
-    this.props.form.setFieldValue(this.props.field.name, 'Change!');
+    this.props.form.setFieldValue(this.props.field.name, 'Change!', true);
   }
   render() {
     return (

@@ -1,0 +1,247 @@
+
+<div class="container">
+
+
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <h1>{{ template.template_name }}</h1>
+
+      <dl>
+          <dt>Template ID</dt><dd>{{ template.metadata.template_id}}</dd>
+          <dt>Notebook Version</dt><dd>{{template.metadata.notebook_version}}</dd>
+          <dt>Description</dt><dd>{{markdown template.metadata.pre_description }}</dd>
+      </dl>
+
+      <p><a download href="/api/templates/{{template.metadata.project_id}}">Download this template's JSON definition file.</a></p>
+
+    </div>
+
+    <div class="col">
+      <h2>Template Actions</h2>
+
+
+    <div class="btn-group-vertical">
+
+      <button class="btn btn-primary" 
+        data-bs-toggle="modal" 
+        data-bs-target="#createNotebookModal">
+        Create Notebook from Template
+      </button>
+
+      <button class="btn btn-warning" 
+        data-bs-toggle="modal" 
+        data-bs-target="#updateTemplateModal">
+        Update Template
+      </button>
+     
+      <button type="button" 
+        class="btn btn-danger" 
+        data-bs-toggle="modal" 
+        data-bs-target="#deleteTemplateModal">
+        Delete Template
+      </button>
+    </div>
+      
+
+
+  <div id="createNotebookModal" class="modal fade modal-xl" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Notebook</h5>
+        </div>
+
+        <div class="modal-body">
+          <p>This will create a new notebook based on this template.</p>
+
+          <form id="create-notebook-form">
+            <div class="mb-3">
+              <label for="notebookName">Notebook Name</label>
+              <input id="notebookName" name="name" class="form-control" placeholder="Notebook Name">
+              <div class="form-text">This will be the name of the new notebook as it will appear in the 
+                list of notebooks for users.
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-warning" onclick="createNotebookHandler()">Create Notebook</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="updateTemplateModal" class="modal fade modal-xl" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Update Template</h5>
+        </div>
+
+        <div class="modal-body">
+          <p>Uploading a new version of a template will not affect any 
+            notebooks that have been created from this template.
+          </p>
+          <form id="upload-template-form">
+            <div class="mb-3">
+              <input type="file" class="form-control" name="template" id="template">
+              <div class="form-text">Select a notebook file in JSON format.</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-warning" onclick="uploadTemplateHandler()">Update Template</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal fade" id="deleteTemplateModal" tabindex="-1" aria-labelledby="deleteTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteTemplateModalLabel">Delete Template "{{template.template_name}}"?</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div class="mb-3">
+              <p>Deleting this template cannot be recovered.
+              </p>
+              <label for="confirmationText{{template._id}}" class="form-label">
+                Type <span class="text-danger">delete template {{template.template_name}}</span> to confirm deletion
+              </label>
+              <input class="form-control" 
+                      onkeyup="updateDeleteButton()"
+                      id="confirmationText">
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button"
+                  id="deleteButton"
+                  disabled
+                  class="btn btn-danger" 
+                  onclick="deleteTemplate()">
+                  Confirm Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+    </div>
+  </div>
+</div>
+
+  <script>
+
+ const updateDeleteButton = (project_id, name) => {
+    const confirmationText = document.getElementById('confirmationText').value;
+    if (confirmationText === 'delete template {{template.template_name}}') {
+      document.getElementById('deleteButton').disabled = false;
+    } else {
+      document.getElementById('deleteButton').disabled = true;
+    }
+  }
+
+  const deleteTemplate = () => {
+
+    fetch('/api/templates/{{template.metadata.template_id}}/delete', {
+      method: 'POST',
+    })
+    .then(response => {
+      window.location = '/templates/';
+    });
+  }
+
+
+  const uploadTemplateHandler = () => {
+    const url = '/api/templates/{{template.metadata.template_id}}';
+    const form = document.querySelector('#upload-template-form');
+    const fileInput = form.querySelector('[name="template"]');
+    if (fileInput) {
+      // parse the contents of the uploaded file as JSON
+      const reader = new FileReader();
+      const filename = fileInput.files[0];
+      reader.readAsText(filename);
+      reader.onload = (evt) => {
+        try {
+          const data = JSON.parse(evt.target.result);
+          // a little bit of validation
+          if (!data.metadata || !data['ui-specification']) {
+            alert('Invalid notebook file');
+            return;
+          }
+          if (!data.metadata.name) {
+            alert('Invalid notebook file (missing name)');
+            return;
+          }
+          const body = {
+            metadata: data.metadata,
+            'ui-specification': data['ui-specification'],
+            template_name: '{{template.template_name}}',
+          }
+          fetch(url, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data._id) {
+              window.location.reload();
+            } else {
+              alert('Error uploading template');
+            }
+          });
+        } catch (e) {
+          alert('Invalid notebook file');
+          console.error(e);
+          return;
+        }
+      }
+
+    }
+  }
+  document.getElementById('upload-template-form').onsubmit = uploadTemplateHandler;
+
+  const createNotebookHandler = () => {
+    const url = '/api/notebooks/';
+    const form = document.querySelector('#create-notebook-form');
+    const name = form.querySelector('[name="name"]').value;
+    if (name) {
+        try {
+          const body = {
+            template_id: '{{template.metadata.template_id}}',
+            name: name || data.metadata.name,
+          }
+          fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.notebook) {
+              // jump to the page for the new notebook
+              const url = `/notebooks/${data.notebook}`
+              window.location.href = url;
+            } else {
+              alert('Error uploading notebook');
+            }
+          });
+        } catch (e) {
+          alert('Invalid notebook file');
+          return;
+        }
+    }
+  }
+</script>

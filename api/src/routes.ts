@@ -18,29 +18,35 @@
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data
  */
-import handlebars from 'handlebars';
+import {NonUniqueProjectID} from '@faims3/data-model';
 import {body, validationResult} from 'express-validator';
+import handlebars from 'handlebars';
 import QRCode from 'qrcode';
 import {app} from './core';
-import {NonUniqueProjectID} from '@faims3/data-model';
 import {AllProjectRoles} from './datamodel/users';
 
 // BBS 20221101 Adding this as a proxy for the pouch db url
+import {add_auth_providers} from './auth_providers';
+import {add_auth_routes} from './auth_routes';
+import {generateUserToken} from './authkeys/create';
 import {
-  WEBAPP_PUBLIC_URL,
-  IOS_APP_URL,
   ANDROID_APP_URL,
-  CONDUCTOR_PUBLIC_URL,
-  DEVELOPER_MODE,
   CONDUCTOR_AUTH_PROVIDERS,
-  KEY_SERVICE,
+  CONDUCTOR_PUBLIC_URL,
+  COUCHDB_INTERNAL_URL,
+  DEVELOPER_MODE,
+  IOS_APP_URL,
+  WEBAPP_PUBLIC_URL,
 } from './buildconfig';
-import {
-  requireAuthentication,
-  requireClusterAdmin,
-  requireNotebookMembership,
-} from './middleware';
 import {createInvite, getInvitesForNotebook} from './couchdb/invites';
+import {
+  countRecordsInNotebook,
+  getNotebookMetadata,
+  getNotebookUISpec,
+  getNotebooks,
+  getRolesForNotebook,
+} from './couchdb/notebooks';
+import {getTemplate, getTemplates} from './couchdb/templates';
 import {
   getUserInfoForNotebook,
   getUsers,
@@ -49,21 +55,77 @@ import {
   userIsClusterAdmin,
 } from './couchdb/users';
 import {
-  countRecordsInNotebook,
-  getNotebookMetadata,
-  getNotebookUISpec,
-  getNotebooks,
-  getRolesForNotebook,
-} from './couchdb/notebooks';
-import {createAuthKey} from './authkeys/create';
-import {getPublicUserDbURL} from './couchdb';
-import {add_auth_providers} from './auth_providers';
-import {add_auth_routes} from './auth_routes';
+  requireAuthentication,
+  requireClusterAdmin,
+  requireNotebookMembership,
+} from './middleware';
+import {validateProjectDatabase} from './couchdb/devtools';
+import {
+  databaseValidityReport,
+  initialiseDatabases,
+  verifyCouchDBConnection,
+} from './couchdb';
 
 export {app};
 
 add_auth_providers(CONDUCTOR_AUTH_PROVIDERS);
 add_auth_routes(app, CONDUCTOR_AUTH_PROVIDERS);
+
+/**
+ * Home Page
+ *
+ */
+app.get('/', async (req, res) => {
+  if (databaseValidityReport.valid) {
+    if (req.user && req.user._id) {
+      // Handlebars is pretty useless at including render logic in templates, just
+      // parse the raw, pre-processed string in...
+      const rendered_project_roles = render_project_roles(
+        req.user.project_roles
+      );
+      const provider = Object.keys(req.user.profiles)[0];
+      // No need for a refresh here
+      const token = await generateUserToken(req.user, false);
+
+      res.render('home', {
+        user: req.user,
+        token: token.token,
+        project_roles: rendered_project_roles,
+        other_roles: req.user.other_roles,
+        cluster_admin: userIsClusterAdmin(req.user),
+        can_create_notebooks: userCanCreateNotebooks(req.user),
+        provider: provider,
+        developer: DEVELOPER_MODE,
+      });
+    } else {
+      res.redirect('/auth/');
+    }
+  } else {
+    res.render('fallback', {
+      report: databaseValidityReport,
+      couchdb_url: COUCHDB_INTERNAL_URL,
+      layout: 'fallback',
+    });
+  }
+});
+
+/**
+ * POST to /fallback-initialise does initialisation on the databases
+ * - this does not have any auth requirement because it should be used
+ *   to set up the users database and create the admin user
+ *   if databases exist, this is a no-op
+ *   Extra guard, if the db report says everything is ok we don't
+ *   even call initialiseDatabases, just redirect home
+ */
+app.post('/fallback-initialise', async (req, res) => {
+  if (!databaseValidityReport.valid) {
+    console.log('running initialise');
+    await initialiseDatabases();
+    const vv = await verifyCouchDBConnection();
+    console.log('updated valid', databaseValidityReport, vv);
+  }
+  res.redirect('/');
+});
 
 app.get('/notebooks/:id/invite/', requireAuthentication, async (req, res) => {
   if (await userHasPermission(req.user, req.params.id, 'modify')) {
@@ -84,7 +146,6 @@ app.get('/notebooks/:id/invite/', requireAuthentication, async (req, res) => {
 app.post(
   '/notebooks/:id/invite/',
   requireAuthentication,
-  body('number').not().isEmpty(),
   body('role').not().isEmpty(),
   async (req, res) => {
     const errors = validationResult(req);
@@ -93,7 +154,6 @@ app.post(
     }
     const project_id: NonUniqueProjectID = req.params.id;
     const role: string = req.body.role;
-    const number: number = parseInt(req.body.number);
 
     if (!userHasPermission(req.user, project_id, 'modify')) {
       res.render('invite-error', {
@@ -106,7 +166,7 @@ app.post(
         ],
       });
     } else {
-      await createInvite(req.user as Express.User, project_id, role, number);
+      await createInvite(project_id, role);
       res.redirect('/notebooks/' + project_id);
     }
   }
@@ -116,9 +176,14 @@ app.get('/notebooks/', requireAuthentication, async (req, res) => {
   const user = req.user;
   if (user) {
     const notebooks = await getNotebooks(user);
+
+    const ownNotebooks = notebooks.filter(nb => nb.is_admin);
+    const otherNotebooks = notebooks.filter(nb => !nb.is_admin);
+
     res.render('notebooks', {
       user: user,
-      notebooks: notebooks,
+      ownNotebooks: ownNotebooks,
+      otherNotebooks: otherNotebooks,
       cluster_admin: userIsClusterAdmin(user),
       can_create_notebooks: userCanCreateNotebooks(user),
       developer: DEVELOPER_MODE,
@@ -153,10 +218,54 @@ app.get(
       }
       res.render('notebook-landing', {
         isAdmin: isAdmin,
+        cluster_admin: userIsClusterAdmin(user),
+        can_create_notebooks: userCanCreateNotebooks(req.user),
         notebook: notebook,
         records: await countRecordsInNotebook(project_id),
         invites: invitesQR,
-        views: Object.keys(uiSpec.viewsets),
+        views: Object.keys(uiSpec.viewsets).map((key: string) => {
+          return {label: uiSpec.viewsets[key].label, id: key};
+        }),
+        developer: DEVELOPER_MODE,
+      });
+    } else {
+      res.sendStatus(404);
+    }
+  }
+);
+
+app.get('/templates/', requireAuthentication, async (req, res) => {
+  const user = req.user;
+  if (userCanCreateNotebooks(user)) {
+    const templates = await getTemplates();
+    res.render('templates', {
+      user: user,
+      templates: templates,
+      cluster_admin: userIsClusterAdmin(user),
+      can_create_notebooks: userCanCreateNotebooks(req.user),
+      developer: DEVELOPER_MODE,
+    });
+  } else {
+    res.status(401).end();
+  }
+});
+
+app.get(
+  '/templates/:template_id/',
+  requireNotebookMembership,
+  async (req, res) => {
+    const user = req.user as Express.User; // requireAuthentication ensures user
+    if (!userCanCreateNotebooks(user)) {
+      res.status(401).end();
+    }
+    const template_id = req.params.template_id;
+    const template = await getTemplate(template_id);
+    if (template) {
+      res.render('template-landing', {
+        user: user,
+        cluster_admin: userIsClusterAdmin(user),
+        can_create_notebooks: userCanCreateNotebooks(user),
+        template: template,
         developer: DEVELOPER_MODE,
       });
     } else {
@@ -191,51 +300,6 @@ function render_project_roles(roles: AllProjectRoles): handlebars.SafeString {
   return new handlebars.SafeString(all_project_sections.join(''));
 }
 
-app.get('/', async (req, res) => {
-  if (req.user) {
-    // Handlebars is pretty useless at including render logic in templates, just
-    // parse the raw, pre-processed string in...
-    const rendered_project_roles = render_project_roles(req.user.project_roles);
-    const provider = Object.keys(req.user.profiles)[0];
-    // BBS 20221101 Adding token to here so we can support copy from conductor
-    const signingKey = await KEY_SERVICE.getSigningKey();
-    const jwt_token = await createAuthKey(req.user, signingKey);
-    const token = {
-      jwt_token: jwt_token,
-      public_key: signingKey.publicKeyString,
-      alg: signingKey.alg,
-      userdb: getPublicUserDbURL(), // query: is this actually needed?
-    };
-    if (signingKey === null || signingKey === undefined) {
-      res.status(500).send('Signing key not set up');
-    } else {
-      res.render('home', {
-        user: req.user,
-        token: Buffer.from(JSON.stringify(token)).toString('base64'),
-        project_roles: rendered_project_roles,
-        other_roles: req.user.other_roles,
-        cluster_admin: userIsClusterAdmin(req.user),
-        provider: provider,
-        public_key: signingKey.publicKey,
-        developer: DEVELOPER_MODE,
-      });
-    }
-  } else {
-    res.redirect('/auth/');
-  }
-});
-
-app.get('/logout/', (req, res, next) => {
-  if (req.user) {
-    req.logout(err => {
-      if (err) {
-        return next(err);
-      }
-    });
-  }
-  res.redirect('/');
-});
-
 app.get('/send-token/', (req, res) => {
   if (req.user) {
     res.render('send-token', {
@@ -243,25 +307,25 @@ app.get('/send-token/', (req, res) => {
       web_url: WEBAPP_PUBLIC_URL,
       android_url: ANDROID_APP_URL,
       ios_url: IOS_APP_URL,
+      app_id: 'org.fedarch.faims3', // only needed for compatibility with old versions of the app
     });
   } else {
     res.redirect('/');
   }
 });
 
+/**
+ *
+ * For a logged in user (via session), generates a new token and returns the result.
+ */
 app.get('/get-token/', async (req, res) => {
   if (req.user) {
-    const signingKey = await KEY_SERVICE.getSigningKey();
-    if (signingKey === null || signingKey === undefined) {
+    try {
+      // No need for a refresh here
+      const token = await generateUserToken(req.user, false);
+      res.send(token);
+    } catch {
       res.status(500).send('Signing key not set up');
-    } else {
-      const token = await createAuthKey(req.user, signingKey);
-
-      res.send({
-        token: token,
-        pubkey: signingKey.publicKeyString,
-        pubalg: signingKey.alg,
-      });
     }
   } else {
     res.status(403).end();
@@ -276,10 +340,14 @@ app.get('/notebooks/:id/users', requireClusterAdmin, async (req, res) => {
     const notebook = await getNotebookMetadata(project_id);
 
     const userList = await getUserInfoForNotebook(project_id);
+
     res.render('users', {
       roles: userList.roles,
       users: userList.users,
       notebook: notebook,
+      cluster_admin: userIsClusterAdmin(req.user),
+      can_create_notebooks: userCanCreateNotebooks(req.user),
+      developer: DEVELOPER_MODE,
     });
   } else {
     res.status(401).end();
@@ -290,31 +358,48 @@ app.get('/users', requireClusterAdmin, async (req, res) => {
   if (req.user) {
     const id = req.user._id;
     const userList = await getUsers();
+
+    const userListFiltered = userList
+      .filter(user => user._id !== id)
+      .map(user => {
+        return {
+          username: user._id,
+          name: user.name,
+          can_create_notebooks: userCanCreateNotebooks(user),
+          is_cluster_admin: userIsClusterAdmin(user),
+        };
+      });
+
     res.render('cluster-users', {
-      users: userList
-        .filter(user => user._id !== id)
-        .map(user => {
-          return {
-            username: user._id,
-            name: user.name,
-            is_cluster_admin: userIsClusterAdmin(user),
-            can_create_notebooks: userCanCreateNotebooks(user),
-          };
-        }),
+      cluster_admin: userIsClusterAdmin(req.user),
+      can_create_notebooks: userCanCreateNotebooks(req.user),
+      users: userListFiltered,
     });
   } else {
     res.status(401).end();
   }
 });
 
-if (DEVELOPER_MODE)
+if (DEVELOPER_MODE) {
   app.get('/restore/', requireClusterAdmin, async (req, res) => {
     if (req.user) {
-      res.render('restore');
+      res.render('restore', {
+        cluster_admin: userIsClusterAdmin(req.user),
+        can_create_notebooks: userCanCreateNotebooks(req.user),
+        developer: DEVELOPER_MODE,
+      });
     } else {
       res.status(401).end();
     }
   });
+
+  app.get('/notebooks/:id/validate', requireClusterAdmin, async (req, res) => {
+    if (req.user) {
+      const result = await validateProjectDatabase(req.params.id);
+      res.json(result);
+    }
+  });
+}
 
 app.get('/up/', (req, res) => {
   res.status(200).json({up: 'true'});

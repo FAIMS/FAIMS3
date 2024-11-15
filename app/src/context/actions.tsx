@@ -31,6 +31,12 @@ export enum ActionType {
   ADD_ALERT,
   DELETE_ALERT,
   ADD_CUSTOM_ALERT,
+  IS_INITIALIZED,
+}
+
+export interface IS_INITIALIZED {
+  type: ActionType.IS_INITIALIZED;
+  payload: boolean;
 }
 
 export interface IS_SYNCING_UP {

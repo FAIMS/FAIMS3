@@ -20,24 +20,30 @@
  */
 
 import passport from 'passport';
-
-import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
-import {DoneFunction} from './types';
-import {getUserFromEmailOrUsername} from './couchdb/users';
-import {registerLocalUser} from './auth_providers/local';
+import {z} from 'zod';
 import {body, validationResult} from 'express-validator';
+import {registerLocalUser} from './auth_providers/local';
+import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
 import {getInvite} from './couchdb/invites';
+import {getUserFromEmailOrUsername} from './couchdb/users';
 import {acceptInvite} from './registration';
+import {generateUserToken} from './authkeys/create';
+import {NextFunction, Request, Response, Router} from 'express';
+import {processRequest} from 'zod-express-middleware';
+import {
+  GetRegisterByInviteQuerySchema,
+  PostLocalAuthInputSchema,
+  PostLocalAuthQuerySchema,
+  PostRegisterLocalInputSchema,
+} from '@faims3/data-model';
+import {DoneFunction} from './types';
 
+interface RequestQueryRedirect {
+  redirect: string;
+}
 const AVAILABLE_AUTH_PROVIDER_DISPLAY_INFO: {[name: string]: any} = {
   google: {
     name: 'Google',
-  },
-};
-
-const HANDLER_OPTIONS: {[name: string]: any} = {
-  google: {
-    prompt: 'select_account',
   },
 };
 
@@ -63,9 +69,48 @@ export function determine_callback_urls(provider_name: string): {
   };
 }
 
-export function add_auth_routes(app: any, handlers: any) {
-  app.get('/auth/', (req: any, res: any) => {
-    // Allow the user to decide what auth mechanism to use
+/**
+ * Check that a redirect URL is one that we allow
+ * Mainly want to avoid a non-url redirect so just check
+ * that we can parse it as a URL.
+ * Could have a whitelist here but hard to manage in config
+ * and might restrict how we use auth in the project.
+ *
+ * @param redirect URL to redirect to
+ * @returns a valid URl to redirect to, default to '/' if
+ *   the one passed in is bad
+ */
+function validateRedirect(redirect: string) {
+  if (URL.canParse(redirect)) return redirect;
+  else return '/';
+}
+
+/**
+ * Add authentication routes for local and federated login
+ * The list of handlers are the ids of the configured federated handlers (eg. ['google'])
+ * routes will be set up for each of these for auth and registration
+ * See `auth_providers/index.ts` for registration of providers.
+ *
+ * @param app Express router
+ * @param handlers an array of login provider identifiers
+ */
+export function add_auth_routes(app: Router, handlers: string[]) {
+  // In the following generic type signatures for routes the
+  // order of types is:
+  //  <Params, ResBody, ReqBody, ReqQuery, Locals>
+  // Params: Route parameters
+  // ResBody: Response body
+  // ReqBody: Request body
+  // ReqQuery: Query string parameters
+  // Locals: Response local variables
+
+  app.get<{}, {}, {}, RequestQueryRedirect>('/auth/', async (req, res) => {
+    const redirect = validateRedirect(req.query?.redirect || '/');
+
+    if (req.user) {
+      await redirect_with_token(res, req.user, redirect);
+    }
+
     const available_provider_info = [];
     for (const handler of handlers) {
       available_provider_info.push({
@@ -77,69 +122,186 @@ export function add_auth_routes(app: any, handlers: any) {
       providers: available_provider_info,
       localAuth: true, // maybe make this configurable?
       messages: req.flash(),
+      redirect: redirect,
     });
   });
 
-  // handle local login post request
-  app.post(
-    '/auth/local',
-    passport.authenticate('local', {
-      successRedirect: '/send-token',
-      failureRedirect: '/auth',
-    })
-  );
+  /**
+   * Define the logout route. Optionally redirect to a given URL
+   * after logout to account for logout from the app
+   */
+  app.get<{}, {}, {}, RequestQueryRedirect>(
+    '/logout/',
+    (req, res, next: any) => {
+      const redirect = validateRedirect(req.query?.redirect || '/');
 
-  // accept an invite, auth not required, we invite them to
-  // register if they aren't already
-  app.get('/register/:invite_id/', async (req: any, res: any) => {
-    const invite_id = req.params.invite_id;
-    req.session['invite'] = invite_id;
-    const invite = await getInvite(invite_id);
-    if (!invite) {
-      res.sendStatus(404);
-      return;
-    }
-    if (req.user) {
-      // user already registered, sign them up for this notebook
-      // should there be conditions on this? Eg. check the email.
-      await acceptInvite(req.user, invite);
-      req.flash(
-        'message',
-        'You will now have access to the ${invite.notebook} notebook.'
-      );
-      res.redirect('/');
-    } else {
-      // need to sign up the user, show the registration page
-      const available_provider_info = [];
-      for (const handler of CONDUCTOR_AUTH_PROVIDERS) {
-        available_provider_info.push({
-          label: handler,
-          name: AVAILABLE_AUTH_PROVIDER_DISPLAY_INFO[handler].name,
+      if (req.user) {
+        req.logout((err: any) => {
+          if (err) {
+            return next(err);
+          }
         });
       }
-      res.render('register', {
-        invite: invite_id,
-        providers: available_provider_info,
-        localAuth: true, // maybe make this configurable?
-        messages: req.flash(),
-      });
+      res.redirect(redirect);
     }
-  });
+  );
+
+  /**
+   * Generate a function to handle logging in a user and returning
+   * a redirect with token
+   *
+   * @param req Express request
+   * @param res Express response
+   * @param next Express next function
+   * @param redirect URL to redirect to
+   * @returns a handler function
+   */
+  const authenticate_return = (
+    req: Request<any, any, any, any, Record<string, any>>,
+    res: Response,
+    next: NextFunction,
+    redirect: string
+  ) => {
+    return (err: any, user: Express.User) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        req.flash('message', 'Invalid email or password');
+        return res.redirect('/auth/?redirect=' + redirect);
+      }
+
+      req.login(user, async (loginErr: any) => {
+        if (loginErr) {
+          return next(loginErr);
+        }
+        return redirect_with_token(res, user, redirect);
+      });
+    };
+  };
+
+  /**
+   * Generate a redirect response with a token and refresh token for a logged in
+   * user
+   *
+   * TODO restrict the generation of refresh tokens to initial login
+   * @param res Express response
+   * @param user Express user
+   * @param redirect URL to redirect to
+   * @returns a redirect response with a suitable token
+   */
+  const redirect_with_token = async (
+    res: Response,
+    user: Express.User,
+    redirect: string
+  ) => {
+    // there is a case where the redirect url will already
+    // have a token (register >> login >>  register)
+    if (redirect.indexOf('?token=') >= 0) {
+      return res.redirect(redirect);
+    }
+
+    // Generate a token (include refresh)
+    const token = await generateUserToken(user, true);
+
+    // Append the token to the redirect URL
+    const redirectUrlWithToken = `${redirect}?token=${token.token}&refreshToken=${token.refreshToken}`;
+
+    // Redirect to the app with the token
+    return res.redirect(redirectUrlWithToken);
+  };
+
+  /**
+   * Handle local login request with username and password
+   */
+  app.post(
+    '/auth/local',
+    processRequest({
+      body: PostLocalAuthInputSchema,
+      query: PostLocalAuthQuerySchema,
+    }),
+    (req, res, next: NextFunction) => {
+      const redirect = validateRedirect(req.query.redirect || '/');
+      passport.authenticate(
+        'local',
+        authenticate_return(req, res, next, redirect)
+      )(req, res, next);
+    }
+  );
+
+  /**
+   * Register for a notebook using an invite, if no existing account
+   * then ask them to register.  User is authenticated in either case.
+   * Return a redirect response to the given URL
+   */
+  app.get(
+    '/register/:invite_id/',
+    processRequest({
+      params: z.object({invite_id: z.string()}),
+      query: GetRegisterByInviteQuerySchema,
+    }),
+    async (req, res) => {
+      const redirect = validateRedirect(req.query.redirect || '/');
+      const invite_id = req.params.invite_id;
+      req.session['invite'] = invite_id;
+      const invite = await getInvite(invite_id);
+      if (!invite) {
+        res.render('invite-error', {redirect});
+      } else if (req.user) {
+        // user already registered, sign them up for this notebook
+        // should there be conditions on this? Eg. check the email.
+        await acceptInvite(req.user, invite);
+        redirect_with_token(res, req.user, redirect);
+      } else {
+        // need to sign up the user, show the registration page
+        const available_provider_info = [];
+        for (const handler of CONDUCTOR_AUTH_PROVIDERS) {
+          available_provider_info.push({
+            label: handler,
+            name: AVAILABLE_AUTH_PROVIDER_DISPLAY_INFO[handler].name,
+          });
+        }
+        const encodedRedirect = encodeURIComponent(
+          `/register/${invite_id}?redirect=${redirect}`
+        );
+        res.render('register', {
+          invite: invite_id,
+          loginURL: `/auth?redirect=${encodedRedirect}`,
+          providers: available_provider_info,
+          redirect: redirect,
+          localAuth: true, // maybe make this configurable?
+          messages: req.flash(),
+        });
+      }
+    }
+  );
 
   app.post(
     '/register/local',
-    body('username').trim(),
+    processRequest({
+      body: PostRegisterLocalInputSchema,
+    }),
+    // TODO move this validation to Zod - right now this is depended on by
+    // handlebars since the errors are 'flashed' in the function below
     body('password')
       .isLength({min: 10})
       .withMessage('Must be at least 10 characters'),
     body('email').isEmail().withMessage('Must be a valid email address'),
-    async (req: any, res: any) => {
+    async (req: any, res: any, next: NextFunction) => {
       // create a new local account if we have a valid invite
-      const username = req.body.username;
+
+      // In the form, the username is =
+      let username = req.body.username;
       const password = req.body.password;
       const repeat = req.body.repeat;
       const name = req.body.name;
       const email = req.body.email;
+      const redirect = validateRedirect(req.body.redirect || '/');
+
+      // If the username was not provided, use the email
+      if (username === undefined || username === null) {
+        username = email;
+      }
 
       const errors = validationResult(req);
 
@@ -149,7 +311,9 @@ export function add_auth_routes(app: any, handlers: any) {
         req.flash('email', email);
         req.flash('name', name);
         res.status(400);
-        res.redirect('/register/' + req.session.invite);
+        res.redirect(
+          '/register/' + req.session.invite + `?redirect=${redirect}`
+        );
         return;
       }
 
@@ -169,14 +333,21 @@ export function add_auth_routes(app: any, handlers: any) {
         if (user) {
           await acceptInvite(user, invite);
           req.flash('message', 'Registration successful. Please login below.');
-          res.redirect('/');
+          req.login(user, (err: any) => {
+            if (err) {
+              return next(err);
+            }
+            return redirect_with_token(res, user, redirect);
+          });
         } else {
           req.flash('error', {registration: error});
           req.flash('username', username);
           req.flash('email', email);
           req.flash('name', name);
           res.status(400);
-          res.redirect('/register/' + req.session.invite);
+          res.redirect(
+            '/register/' + req.session.invite + `?redirect=${redirect}`
+          );
         }
       } else {
         req.flash('error', {repeat: {msg: "Password and repeat don't match."}});
@@ -184,29 +355,26 @@ export function add_auth_routes(app: any, handlers: any) {
         req.flash('email', email);
         req.flash('name', name);
         res.status(400);
-        res.redirect('/register/' + req.session.invite);
+        res.redirect(
+          '/register/' + req.session.invite + `?redirect=${redirect}`
+        );
       }
     }
   );
 
   // set up handlers for OAuth providers
   for (const handler of handlers) {
-    app.get(`/auth/${handler}/`, (req: any, res: any) => {
+    app.get(`/auth/${handler}/`, (req: any, res: any, next: any) => {
+      const redirect = validateRedirect(req.query?.redirect || '/send-token');
+      req.session['redirect'] = req.query.redirect;
       if (
         typeof req.query?.state === 'string' ||
         typeof req.query?.state === 'undefined'
       ) {
-        passport.authenticate(handler + '-validate', HANDLER_OPTIONS[handler])(
-          req,
-          res,
-          (err?: {}) => {
-            // Hack to avoid users getting caught when they're not in the right
-            // groups.
-            console.error('Authentication Error', err);
-            // res.redirect('https://auth.datacentral.org.au/cas/logout');
-            //throw err ?? Error('Authentication failed (next, no error)');
-          }
-        );
+        passport.authenticate(
+          handler + '-validate',
+          authenticate_return(req, res, next, redirect)
+        )(req, res, next);
       } else {
         throw Error(
           `state must be a string, or not set, not ${typeof req.query?.state}`
@@ -217,17 +385,20 @@ export function add_auth_routes(app: any, handlers: any) {
     app.get(
       // This should line up with determine_callback_url above
       `/auth-return/${handler}/`,
-      passport.authenticate(handler + '-validate', {
-        successRedirect: '/send-token/',
-        failureRedirect: '/auth',
-        failureFlash: true,
-        successFlash: 'Welcome!',
-      })
+      (req: any, res: any, next: any) => {
+        const redirect = req.session['redirect'] || '/send-token';
+        passport.authenticate(
+          handler + '-validate',
+          authenticate_return(req, res, next, redirect)
+        )(req, res, next);
+      }
     );
 
     console.log('adding route', `/register/${handler}/`);
     app.get(`/register/:id/${handler}/`, (req: any, res: any, next: any) => {
+      // save the invite and redirect in the session so we can refer to them later
       req.session['invite'] = req.params.id;
+      req.session['redirect'] = req.query.redirect;
       return passport.authenticate(handler + '-register', () => next())(
         req,
         res,
@@ -238,10 +409,14 @@ export function add_auth_routes(app: any, handlers: any) {
     app.get(
       // This should line up with determine_callback_url above
       `/register-return/${handler}/`,
-      passport.authenticate(handler + '-register', {
-        successRedirect: '/',
-        failureRedirect: '/auth',
-      })
+      (req: any, res: any, next: any) => {
+        const redirect = req.session['redirect'] || '/send-token';
+        // need to add token to redirect
+        passport.authenticate(
+          handler + '-register',
+          authenticate_return(req, res, next, redirect)
+        )(req, res, next);
+      }
     );
   }
 }

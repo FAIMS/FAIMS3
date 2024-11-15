@@ -15,25 +15,135 @@
  *
  * Filename: appbarAuth.tsx
  * Description:
- *   This contains the navbar React component, which allows users to navigate
- *   throughout the app.
+ *   Provides a component to show either a link to sign-in or the username
+ *   which links to the sign-in page
  */
-import React from 'react';
-import {
-  Button,
-  Menu,
-  MenuItem,
-  ListItemText,
-  ListItemIcon,
-} from '@mui/material';
-import {useNavigate} from 'react-router-dom';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import LogoutIcon from '@mui/icons-material/Logout';
-import GroupIcon from '@mui/icons-material/Group';
+import {Button, Tooltip} from '@mui/material';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {TokenContents} from '@faims3/data-model';
 import {checkToken} from '../../../utils/helpers';
+import {Person} from '@mui/icons-material';
+import {theme} from '../../themes';
+
+const SignInButtonComponent = () => {
+  /**
+    Component: SignInButtonComponent
+    */
+  return (
+    <Button
+      component={NavLink}
+      to={ROUTES.SIGN_IN}
+      variant="contained"
+      color="primary"
+      disableElevation
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: undefined,
+        height: undefined,
+        borderRadius: '10%',
+        transition: 'background-color 0.3s ease, transform 0.2s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.secondary.main;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.primary.main;
+      }}
+    >
+      Sign In
+    </Button>
+  );
+};
+
+interface AuthenticatedDisplayComponentProps {
+  token: TokenContents;
+}
+const AuthenticatedDisplayComponent = (
+  props: AuthenticatedDisplayComponentProps
+) => {
+  /**
+    Component: AuthenticatedDisplayComponent
+    */
+
+  /**
+   * Extract the first initial of the username
+   */
+  const userInitial = props.token!.username.charAt(0).toUpperCase();
+  return (
+    <Button
+      component={NavLink}
+      to={ROUTES.SIGN_IN}
+      variant="contained"
+      color="primary"
+      disableElevation
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: '55px',
+        width: '55px',
+        minHeight: '55px',
+        height: '55px',
+        borderRadius: '50%',
+        padding: '8px',
+        transition: 'background-color 0.3s ease, transform 0.2s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.secondary.main;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.backgroundColor = theme.palette.primary.main;
+      }}
+    >
+      <Tooltip
+        title={
+          <span style={{fontWeight: 'bold', fontSize: '1rem'}}>
+            {props.token!.username}
+          </span>
+        }
+        arrow
+        placement="bottom"
+        sx={{
+          tooltip: {
+            backgroundColor: theme.palette.background.lightBackground,
+            color: theme.palette.text.primary,
+            padding: '10px 15px',
+            borderRadius: '8px',
+          },
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+        >
+          <Person
+            style={{
+              fontSize: '1.25rem',
+              color: theme.palette.background.paper,
+            }}
+          />
+          <span
+            style={{
+              fontWeight: 'bold',
+              fontSize: '1.25rem',
+              color: theme.palette.background.paper,
+            }}
+          >
+            {userInitial}
+          </span>
+        </div>
+      </Tooltip>
+    </Button>
+  );
+};
 
 interface AppBarAuthProps {
   token?: null | undefined | TokenContents;
@@ -44,81 +154,12 @@ export default function AppBarAuth(props: AppBarAuthProps) {
    * Show username and auth menu if authenticated, otherwise render login button
    */
   const isAuthenticated = checkToken(props.token);
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const history = useNavigate();
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleRoutingAndClose = (route: string) => {
-    handleClose();
-    history(route);
-  };
-
-  if (isAuthenticated) {
-    return (
-      <React.Fragment>
-        <Button
-          size="large"
-          aria-label="account of current user"
-          aria-controls="menu-appbar"
-          aria-haspopup="true"
-          onClick={handleMenu}
-          color="inherit"
-        >
-          {props.token?.username}
-        </Button>
-        <Menu
-          id="menu-appbar"
-          anchorEl={anchorEl}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          keepMounted
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          open={Boolean(anchorEl)}
-          onClose={handleClose}
-        >
-          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.INDEX)}>
-            <ListItemIcon>
-              <DashboardIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Workspace</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.SIGN_IN)}>
-            <ListItemIcon>
-              <GroupIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Switch User</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.SIGN_IN)}>
-            <ListItemIcon>
-              <LogoutIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Log out {props.token!.username}</ListItemText>
-          </MenuItem>
-        </Menu>
-      </React.Fragment>
-    );
-  } else {
-    return (
-      <Button
-        component={NavLink}
-        to={ROUTES.SIGN_IN}
-        variant={'contained'}
-        color={'primary'}
-        disableElevation
-      >
-        Sign In
-      </Button>
-    );
-  }
+  return isAuthenticated ? (
+    <AuthenticatedDisplayComponent
+      token={props.token!}
+    ></AuthenticatedDisplayComponent>
+  ) : (
+    <SignInButtonComponent />
+  );
 }

@@ -28,7 +28,9 @@ import {FieldProps} from 'formik';
 import ReactDOM from 'react-dom';
 import {Capacitor} from '@capacitor/core';
 import {createUseStyles} from 'react-jss';
-import {Box} from '@mui/material';
+import {Alert, Box} from '@mui/material';
+import {Camera} from '@capacitor/camera';
+import {APP_NAME} from '../../../buildconfig';
 
 const useStyles = createUseStyles({
   container: {
@@ -109,7 +111,7 @@ export function QRCodeFormField({
 
   const updateField = (value: any) => {
     setState(value);
-    form.setFieldValue(field.name, value);
+    form.setFieldValue(field.name, value, true);
   };
 
   // a string version of the value
@@ -137,14 +139,15 @@ export function QRCodeFormField({
 export interface QRCodeButtonProps {
   label?: string;
   onScanResult: (value: string) => void;
+  // If you want to pass through props to the button to override styling etc -
+  // provide here - directly spread into button
+  buttonProps?: any;
 }
 
 export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
   const [scanning, setScanning] = useState(false);
   const runningInBrowser = Capacitor.getPlatform() === 'web';
-  const [canScanMsg, setCanScanMsg] = useState(
-    runningInBrowser ? 'Scanning not supported in browsers, mobile only' : ''
-  );
+  const [canScan, setCanScan] = useState(true);
 
   const classes = useStyles();
 
@@ -153,12 +156,17 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
   };
 
   const startScan = async () => {
-    const permissions = await BarcodeScanner.checkPermissions();
+    // Ask for permission to use the camera, the explicit call here
+    // allows us to provide a more useful message to the user if they
+    // say no or have said no before
+    const permissions = await Camera.requestPermissions({
+      permissions: ['camera'],
+    });
+    console.log('permissions', permissions);
     if (permissions.camera !== 'granted') {
-      setCanScanMsg('Camera permission not granted.');
+      setCanScan(false);
       return;
     }
-
     setScanning(true);
     hideBackground();
 
@@ -258,19 +266,49 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
       return <div>Something went wrong</div>;
     }
   } else {
-    if (canScanMsg !== '') {
+    if (runningInBrowser) {
+      return (
+        <div>
+          <Button variant="outlined" disabled={true} {...props.buttonProps}>
+            {props.label}
+          </Button>
+          <div>Scanning not supported in browsers, mobile only</div>
+        </div>
+      );
+    }
+    if (canScan) {
       return (
         <div>
           <Button variant="outlined" disabled={true}>
             {props.label}
           </Button>
-          <div>{canScanMsg}</div>
+          <Alert severity="error" sx={{width: '100%'}}>
+            {Capacitor.getPlatform() === 'android' && (
+              <>
+                Please enable camera permissions for {APP_NAME}. Go to your
+                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
+                Camera and select "Ask every time" or "Allow only while using
+                the app".
+              </>
+            )}
+            {Capacitor.getPlatform() === 'ios' && (
+              <>
+                Please enable camera permissions for {APP_NAME}. Go to your
+                device Settings &gt; Privacy & Security &gt; Camera &gt; and
+                ensure that {APP_NAME} is enabled.
+              </>
+            )}
+          </Alert>
         </div>
       );
     } else {
       return (
         <div>
-          <Button variant="outlined" onClick={startScan}>
+          <Button
+            variant={props.buttonProps?.variant ?? 'outlined'}
+            onClick={startScan}
+            {...props.buttonProps}
+          >
             {props.label}
           </Button>
         </div>

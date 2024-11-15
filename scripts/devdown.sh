@@ -1,1 +1,1 @@
-docker compose -f api/docker-compose.dev.yml down
+docker compose down

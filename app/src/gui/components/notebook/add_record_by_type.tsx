@@ -1,30 +1,30 @@
-import React, {useEffect, useState} from 'react';
-import {Link as RouterLink, Navigate} from 'react-router-dom';
-
-import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
-import useMediaQuery from '@mui/material/useMediaQuery';
-
-import {useTheme} from '@mui/material/styles';
+import {
+  getRecordsWithRegex,
+  ProjectUIModel,
+  RecordMetadata,
+} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
-
+import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useEffect, useState} from 'react';
+import {Navigate, Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
+import {getMetadataValue} from '../../../sync/metadata';
+import {ProjectExtended} from '../../../types/project';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
-import {
-  ProjectInformation,
-  getRecordsWithRegex,
-  RecordMetadata,
-  ProjectUIModel,
-} from '@faims3/data-model';
-import {getMetadataValue} from '../../../sync/metadata';
 
 type AddRecordButtonsProps = {
-  project: ProjectInformation;
+  project: ProjectExtended;
+  recordLabel: string;
 };
 
-export default function AddRecordButtons(props: AddRecordButtonsProps) {
-  const {project} = props;
-  const project_id = project.project_id;
+export default function AddRecordButtons({
+  project: {_id, project_id},
+  recordLabel,
+}: AddRecordButtonsProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
@@ -40,7 +40,9 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(u => setUiSpec(u));
-  }, []);
+  }, [project_id]);
+
+  const buttonLabel = `Add new ${recordLabel}`;
 
   if (uiSpec === undefined) {
     return <CircularProgress thickness={2} size={12} />;
@@ -50,7 +52,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
 
   const handleScanResult = (value: string) => {
     // find a record with this field value
-    getRecordsWithRegex(project_id, value, true).then(records => {
+    getRecordsWithRegex(_id, value, true).then(records => {
       // navigate to it
       // what should happen if there are more than one?
       for (const key in records) {
@@ -75,16 +77,29 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
         <ButtonGroup
           fullWidth={mq_above_md ? false : true}
           orientation={mq_above_sm ? 'horizontal' : 'vertical'}
-          sx={{maxHeight: '400px', overflowY: 'scroll'}}
+          sx={{
+            maxHeight: '400px',
+            justifyContent: mq_above_sm ? 'flex-start' : 'center',
+          }}
         >
           {/*If the list of views hasn't loaded yet*/}
           {/*we can still show this button, except it will*/}
           {/*redirect to the Record creation without known type*/}
-          {visible_types.length === 1 ? (
+          {uiSpec?.visible_types.length === 1 ? (
             <Button
-              variant="outlined"
+              variant="contained"
               color="primary"
-              startIcon={<AddIcon />}
+              sx={{
+                mb: 3,
+                mt: 3,
+                fontWeight: 'bold',
+                backgroundColor: theme.palette.icon.main,
+                color: theme.palette.primary.light,
+                '&:hover': {
+                  backgroundColor: theme.palette.secondary.dark,
+                },
+              }}
+              startIcon={<AddCircleSharpIcon />}
               component={RouterLink}
               key="newRecord"
               to={
@@ -94,7 +109,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
                 visible_types
               }
             >
-              New Record
+              {buttonLabel}
             </Button>
           ) : (
             visible_types.map(
@@ -104,14 +119,26 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
                     component={RouterLink}
                     to={
                       ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      project.project_id +
+                      project_id +
                       ROUTES.RECORD_CREATE +
                       viewset_name
                     }
                     key={viewset_name}
                     startIcon={<AddIcon />}
+                    sx={{
+                      backgroundColor: 'green',
+                      color: 'white',
+                      borderRadius: '8px',
+                      padding: '10px 15px',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      width: mq_above_sm ? 'auto' : '50%',
+                      '&:hover': {
+                        backgroundColor: 'darkgreen',
+                      },
+                    }}
                   >
-                    {viewsets[viewset_name].label || viewset_name}
+                    {viewsets[viewset_name].label || `New ${viewset_name}`}
                   </Button>
                 )
             )

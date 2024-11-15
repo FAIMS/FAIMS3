@@ -30,7 +30,8 @@
  */
 
 import {getAvailableProjectsFromListing} from './sync/projects';
-import {ProjectInformation, ListingInformation} from '@faims3/data-model';
+import {ProjectInformation} from '@faims3/data-model';
+import {ListingsObject} from '@faims3/data-model/src/types';
 import {getAllListingIDs} from './sync/state';
 import {events} from './sync/events';
 import {getAllListings} from './sync';
@@ -60,27 +61,19 @@ export function listenProjectList(listener: () => void): () => void {
   };
 }
 
-export async function getSyncableListingsInfo(): Promise<ListingInformation[]> {
+/**
+ * Retrieves listings from the local directory DB, and returns syncable listings
+ * (:= those with conductor URLs)
+ * @returns Current set of listings which have conductor urls that are not
+ * falsey
+ */
+export async function getSyncableListingsInfo(): Promise<ListingsObject[]> {
   const all_listings = await getAllListings();
-  const syncable_listings: ListingInformation[] = [];
-  for (const listing_object of all_listings) {
-    if (listing_object.local_only === true) {
-      console.debug('Skipping as local only', listing_object._id);
-      continue;
+  return all_listings.filter(listing => {
+    if (!listing.conductor_url) {
+      console.debug('Skipping as missing conductor url', listing.id);
+      return false;
     }
-    if (
-      listing_object.conductor_url === null ||
-      listing_object.conductor_url === undefined
-    ) {
-      console.debug('Skipping as missing conductor url', listing_object._id);
-      continue;
-    }
-    syncable_listings.push({
-      id: listing_object._id,
-      name: listing_object.name,
-      description: listing_object.description,
-      conductor_url: listing_object.conductor_url,
-    });
-  }
-  return syncable_listings;
+    return true;
+  });
 }

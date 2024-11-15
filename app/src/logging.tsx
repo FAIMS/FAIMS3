@@ -106,10 +106,13 @@ export const ErrorPage = () => {
           </Typography>
           <Button
             variant="contained"
-            color={'secondary'}
             disableElevation
             onClick={navigateWS}
-            sx={{mr: 1}}
+            sx={{
+              backgroundColor: theme.palette.highlightColor.main,
+              color: theme.palette.highlightColor.contrastText,
+              mr: 1,
+            }}
             startIcon={<DashboardIcon />}
           >
             Workspace
@@ -130,7 +133,7 @@ export const logError = (error: any) => {
 
 let bugsnag;
 
-if (BUGSNAG_KEY) {
+if (BUGSNAG_KEY && BUGSNAG_KEY !== '<your bugsnag API key>') {
   Bugsnag.start({
     apiKey: BUGSNAG_KEY,
     plugins: [new BugsnagPluginReact()],
