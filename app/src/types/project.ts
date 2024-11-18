@@ -18,7 +18,7 @@ export interface Project {
   status?: string;
   conductor_url: string;
   data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
+  // TODO metadata might need to add metadata here
 }
 
 export interface ProjectExtended extends Project {

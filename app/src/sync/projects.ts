@@ -35,7 +35,6 @@ import {
   data_dbs,
   ensure_local_db,
   ensure_synced_db,
-  metadata_dbs,
 } from './databases';
 import {getTokenForCluster, shouldDisplayProject} from '../users';
 import {all_projects_updated, getListing} from './state';
@@ -65,12 +64,13 @@ export interface ProjectObject {
   status?: string;
   conductor_url: string;
   data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
+  // TODO metadata might need to replace metadata here with Metadata
 }
 
 export type createdProjectsInterface = {
   project: ProjectObject;
   active: ExistingActiveDoc;
+  // TODO metadata we might need metadata info here
   meta: LocalDB<ProjectMetaObject>;
   data: LocalDB<ProjectDataObject>;
 };
@@ -224,17 +224,11 @@ export function delete_project(
   // Delete project from memory
   const project_id = active_doc.project_id;
 
-  if (metadata_dbs[project_id].remote?.connection !== null) {
-    metadata_dbs[project_id].local.removeAllListeners();
-    metadata_dbs[project_id].remote!.connection!.cancel();
-  }
-
   if (data_dbs[project_id].remote?.connection !== null) {
     data_dbs[project_id].local.removeAllListeners();
     data_dbs[project_id].remote!.connection!.cancel();
   }
 
-  delete metadata_dbs[active_doc._id];
   delete data_dbs[active_doc._id];
   delete createdProjects[active_doc._id];
 
@@ -272,15 +266,7 @@ export async function ensure_project_databases(
    */
   const active_id = active_doc._id;
 
-  // get meta and data databases for the active project
-  const [meta_did_change, meta_local] = ensure_local_db(
-    'metadata',
-    active_id,
-    active_doc.is_sync,
-    metadata_dbs,
-    true
-  );
-
+  // Check data DB
   const [data_did_change, data_local] = ensure_local_db(
     'data',
     active_id,
@@ -295,7 +281,6 @@ export async function ensure_project_databases(
   createdProjects[active_id] = {
     project: project_object,
     active: active_doc,
-    meta: meta_local,
     data: data_local,
   };
 

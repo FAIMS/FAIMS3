@@ -179,13 +179,6 @@ export const projects_dbs: LocalDBList<ProjectObject> = {};
 export const data_dbs: LocalDBList<ProjectDataObject> = {};
 
 /**
- * Synced from the project meta-database for each active project,
- * This has the metadata describing a database. Project Schemas,
- * GUI Models, and a People database.
- */
-export const metadata_dbs: LocalDBList<ProjectMetaObject> = {};
-
-/**
  * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
  * @param global_dbs projects_db
@@ -388,7 +381,6 @@ export async function wipe_all_pouch_databases() {
     projects_db,
   ];
   await delete_synced_dbs(data_dbs);
-  await delete_synced_dbs(metadata_dbs);
   await delete_synced_dbs(projects_dbs);
   await delete_synced_db('directory', directory_db);
   for (const db of local_only_dbs_to_wipe) {

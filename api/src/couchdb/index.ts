@@ -225,52 +225,6 @@ export const getInvitesDB = (): PouchDB.Database | undefined => {
 };
 
 /**
- * Returns the metadata DB for a given project - involves fetching the project
- * doc and then fetching the corresponding metadata db
- * @param projectID The project Id to use
- * @returns The metadata DB for this project
- */
-export const getMetadataDb = async (
-  projectID: ProjectID
-): Promise<PouchDB.Database<ProjectMetaObject>> => {
-  // Gets the projects DB
-  const projectsDB = getProjectsDB();
-  if (!projectsDB) {
-    throw new Exceptions.InternalSystemError(
-      'Could not fetch the projects DB. Contact system administrator.'
-    );
-  }
-
-  // Get the project doc for the given ID
-  const projectDoc = await projectsDB.get(projectID);
-
-  // 404 if project doc not found
-  if (!projectDoc) {
-    throw new Exceptions.ItemNotFoundException(
-      'Cannot find the given project ID in the projects database.'
-    );
-  }
-
-  // Now get the metadata DB from the project document
-  if (!projectDoc.metadata_db) {
-    throw new Exceptions.InternalSystemError(
-      "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
-    );
-  }
-
-  // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.metadata_db.db_name;
-  const pouch_options = pouchOptions();
-
-  // Authorise against this DB
-  if (LOCAL_COUCHDB_AUTH !== undefined) {
-    pouch_options.auth = LOCAL_COUCHDB_AUTH;
-  }
-
-  return new PouchDB(dbUrl, pouch_options);
-};
-
-/**
  * Returns the data DB for a given project - involves fetching the project
  * doc and then fetching the corresponding data db
  * @param projectID The project ID to use

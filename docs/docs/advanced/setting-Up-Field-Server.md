@@ -1384,9 +1384,6 @@ If you open the created document, its structure will be like this:
   "_id": "csiro_geochemistry",</p>
 <p> "_rev": "1-a2f25078c74b7dca51a1341994a1c7fd",<br />
   "name": "CSIRO-geochemistry",<br />
-  "metadata_db": {<br />
-    "db_name": "metadata-csiro_geochemistry"<br />
-  },<br />
   "data_db": {<br />
     "db_name": "data-csiro_geochemistry"<br />
   },<br />

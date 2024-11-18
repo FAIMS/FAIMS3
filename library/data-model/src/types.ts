@@ -135,10 +135,25 @@ export interface ProjectObject {
   // Was the project created from a template?
   template_id?: string;
   data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
+  // TODO metadata - might need to add metadata here
   last_updated?: string;
   created?: string;
   status?: string;
+  metadata: {
+    // This is a combination of UI spec, attachments, and 
+    namespace: string;
+    constants: FAIMSConstantCollection;
+    types: FAIMSTypeCollection;
+    fields: ProjectUIFields;
+    fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
+    viewsets: ProjectUIViewsets;
+    visible_types: string[];
+    _attachments?: PouchDB.Core.Attachments;
+    is_attachment: boolean;
+    metadata: any;
+    single_attachment?: boolean;
+    references: AutoIncrementReference[];
+  };
 }
 
 // TODO make this better, currently there is no real explanation for this

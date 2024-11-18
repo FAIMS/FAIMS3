@@ -32,7 +32,7 @@ import {
 import archiver from 'archiver';
 import PouchDB from 'pouchdb';
 import {Stream} from 'stream';
-import {getMetadataDb, getProjectsDB, verifyCouchDBConnection} from '.';
+import {getProjectsDB, verifyCouchDBConnection} from '.';
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {
   PROJECT_METADATA_PREFIX,
@@ -79,8 +79,6 @@ export const getProjects = async (
           delete doc._rev;
           const project = doc as unknown as ProjectObject;
           // add database connection details
-          if (project.metadata_db)
-            project.metadata_db.base_url = COUCHDB_PUBLIC_URL;
           if (project.data_db) project.data_db.base_url = COUCHDB_PUBLIC_URL;
           projects.push(project);
         }
@@ -250,13 +248,11 @@ export const createNotebook = async (
 
   const metaDBName = `metadata-${project_id}`;
   const dataDBName = `data-${project_id}`;
+  // TODO metadata add here
   const projectDoc = {
     _id: project_id,
     template_id: template_id,
     name: projectName.trim(),
-    metadata_db: {
-      db_name: metaDBName,
-    },
     data_db: {
       db_name: dataDBName,
     },
@@ -435,12 +431,8 @@ export const deleteNotebook = async (project_id: string) => {
     );
   }
 
-  // This gets the metadata DB
-  const metaDB = await getMetadataDb(project_id);
   // This gets the data DB
   const dataDB = await getDataDB(project_id);
-
-  await metaDB.destroy();
   await dataDB.destroy();
 
   // remove the project from the projectsDB
@@ -487,6 +479,7 @@ export const writeProjectMetadata = async (
 export const getNotebookMetadata = async (
   project_id: string
 ): Promise<ProjectMetadata | null> => {
+  // TODO metadata this uses metadata DB - how do we find metadata without it?
   const result: ProjectMetadata = {};
   const isValid = await validateNotebookID(project_id);
   if (isValid) {
@@ -978,6 +971,7 @@ export const getRolesForNotebook = async (
   metadata: ProjectMetadata | undefined = undefined
 ): Promise<string[]> => {
   // Either use provided metadata or fetch it
+  // TODO metadata where do we get metadata from?
   let meta: ProjectMetadata;
   if (metadata) {
     meta = metadata;

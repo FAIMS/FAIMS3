@@ -30,7 +30,7 @@ import {
   ProjectDataObject,
   ProjectMetaObject,
 } from '@faims3/data-model';
-import {data_dbs, metadata_dbs, directory_db} from './databases';
+import {data_dbs, directory_db} from './databases';
 
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(pouchdbDebug);
@@ -112,11 +112,13 @@ export async function getDataDB(
 export async function getProjectDB(
   active_id: ProjectID
 ): Promise<PouchDB.Database<ProjectMetaObject>> {
-  if (active_id in metadata_dbs) {
-    return metadata_dbs[active_id].local;
-  } else {
-    throw `Meta DB of project ${active_id} is not known`;
-  }
+  // TODO metadata how do we populate this MetaObject thing here without metadata db?
+  throw new Error('Not yet implemented.');
+  //if (active_id in metadata_dbs) {
+  //  return metadata_dbs[active_id].local;
+  //} else {
+  //  throw `Meta DB of project ${active_id} is not known`;
+  //}
 }
 
 // Get all 'listings' (conductor server links) from the local directory database

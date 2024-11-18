@@ -28,7 +28,6 @@ import {
   local_auth_db,
   getLocalStateDB,
   projects_dbs,
-  metadata_dbs,
   data_dbs,
 } from './databases';
 import {Share} from '@capacitor/share';
@@ -171,13 +170,14 @@ export async function progressiveSaveFiles(
   }
 
   start = 30;
-  size = Object.keys(metadata_dbs).length;
-  for (const [, db] of Object.entries(metadata_dbs)) {
-    end = start + 10 / size;
-    if (keepDumping)
-      keepDumping = await progressiveDump(db.local, writer(start, end));
-    start = end;
-  }
+  // TODO metadata used to dump metadata db here
+  //size = Object.keys(metadata_dbs).length;
+  //for (const [, db] of Object.entries(metadata_dbs)) {
+  //  end = start + 10 / size;
+  //  if (keepDumping)
+  //    keepDumping = await progressiveDump(db.local, writer(start, end));
+  //  start = end;
+  //}
 
   start = 40;
   size = Object.keys(data_dbs).length;
@@ -284,9 +284,10 @@ export async function doDumpDownload() {
     await streamedDumpDownload('proj' + name, await dumpDatabase(db.local));
   }
 
-  for (const [name, db] of Object.entries(metadata_dbs)) {
-    await streamedDumpDownload('meta' + name, await dumpDatabase(db.local));
-  }
+  // TODO metadata dump metadata here?
+  //for (const [name, db] of Object.entries(metadata_dbs)) {
+  //  await streamedDumpDownload('meta' + name, await dumpDatabase(db.local));
+  //}
 
   for (const [name, db] of Object.entries(data_dbs)) {
     await streamedDumpDownload('data' + name, await dumpDatabase(db.local));
