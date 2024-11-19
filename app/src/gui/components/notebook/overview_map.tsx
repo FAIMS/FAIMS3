@@ -53,6 +53,11 @@ interface FeatureProps {
   revision_id: string;
 }
 
+/**
+ * Create an overview map of the records in the notebook.
+ *
+ * @param props {uiSpec, project_id}
+ */
 export const OverviewMap = (props: OverviewMapProps) => {
   const [map, setMap] = useState<Map | undefined>();
   const defaultMapProjection = 'EPSG:3857';
@@ -60,16 +65,27 @@ export const OverviewMap = (props: OverviewMapProps) => {
     null
   );
 
-  const getGISFields = (uiSpec: ProjectUIModel) => {
-    const fields = Object.getOwnPropertyNames(uiSpec.fields);
+  /**
+   * Get the names of all GIS fields in this UI Specification
+   * @param uiSpec UI specification for the project
+   * @returns
+   */
+  const getGISFields = () => {
+    const fields = Object.getOwnPropertyNames(props.uiSpec.fields);
     return fields.filter(
       (field: string) =>
-        uiSpec.fields[field]['component-name'] === 'MapFormField' ||
-        uiSpec.fields[field]['component-name'] === 'TakePoint'
+        props.uiSpec.fields[field]['component-name'] === 'MapFormField' ||
+        props.uiSpec.fields[field]['component-name'] === 'TakePoint'
     );
   };
-  const gisFields = getGISFields(props.uiSpec);
+  const gisFields = getGISFields();
 
+  /**
+   * Extract all of the features from the records in the notebook that
+   * we will display on the map.  To be used in the useQuery hook below.
+   *
+   * @returns a FeatureProps object containing all of the features in the record
+   */
   const getFeatures = async () => {
     const f: FeatureProps[] = [];
     if (gisFields.length > 0) {
@@ -118,6 +134,9 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
   const map_center = [30, -10];
 
+  /**
+   * Create the OpenLayers map element
+   */
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
     const center = transform(map_center, 'EPSG:4326', defaultMapProjection);
 
@@ -153,6 +172,12 @@ export const OverviewMap = (props: OverviewMapProps) => {
     return theMap;
   }, []);
 
+  /**
+   * Add the features to the map and set the map view to
+   * encompass the features.
+   *
+   * @param map OpenLayers map object
+   */
   const addFeaturesToMap = (map: Map) => {
     const source = new VectorSource();
     const geoJson = new GeoJSON();
@@ -190,6 +215,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     map.addLayer(layer);
   };
 
+  // callback to add the map to the DOM
   const refCallback = (element: HTMLElement | null) => {
     if (element) {
       if (!map) {
