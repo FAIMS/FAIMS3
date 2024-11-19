@@ -40,7 +40,6 @@ import {useCallback, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
-import {load} from 'ol/Image';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -108,7 +107,13 @@ export const OverviewMap = (props: OverviewMapProps) => {
                     f.push(feature);
                   });
                 } else {
-                  f.push(record.data[field]);
+                  const feature = record.data[field];
+                  feature.properties = {
+                    name: record.hrid,
+                    record_id: record.record_id,
+                    revision_id: record.revision_id,
+                  };
+                  f.push(feature);
                 }
               }
             });
@@ -165,6 +170,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
       if (!feature) {
         return;
       }
+      console.log('selected feature', feature);
       setSelectedFeature(feature as FeatureProps);
       //(evt.coordinate);
     });
