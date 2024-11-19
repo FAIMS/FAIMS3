@@ -42,7 +42,6 @@ import {
   getRecordMetadata,
   getPossibleRelatedRecords,
   getRecordsWithRegex,
-  hydrateRecord,
   listFAIMSRecordRevisions,
   notebookRecordIterator,
   setRecordAsDeleted,
