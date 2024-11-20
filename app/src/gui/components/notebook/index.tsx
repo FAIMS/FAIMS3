@@ -154,8 +154,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
   const {data: template_id} = useQuery({
     queryKey: ['project-template-id', project.project_id],
-    queryFn: () =>
-      getMetadataValue(project.project_id, 'template_id') as Promise<string>,
+    queryFn: async () => {
+      // don't return undefined from queryFn
+      const id = await getMetadataValue(project.project_id, 'template_id');
+      if (id !== undefined) return id;
+      else return null;
+    },
   });
 
   /**
