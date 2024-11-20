@@ -36,7 +36,7 @@ import {OSM} from 'ol/source';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import {useCallback, useRef, useState} from 'react';
+import {useCallback, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
@@ -52,14 +52,15 @@ interface FeatureProps {
   revision_id: string;
 }
 
+const defaultMapProjection = 'EPSG:3857';
+
 /**
  * Create an overview map of the records in the notebook.
  *
  * @param props {uiSpec, project_id}
  */
 export const OverviewMap = (props: OverviewMapProps) => {
-  const [map, setMap] = useState<Map | undefined>();
-  const defaultMapProjection = 'EPSG:3857';
+  const [map, setMap] = useState<Map | undefined>(undefined);
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
@@ -77,7 +78,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         props.uiSpec.fields[field]['component-name'] === 'TakePoint'
     );
   };
-  const gisFields = getGISFields();
+  const gisFields = useMemo(getGISFields, [props.uiSpec]);
 
   /**
    * Extract all of the features from the records in the notebook that
@@ -107,13 +108,14 @@ export const OverviewMap = (props: OverviewMapProps) => {
                     f.push(feature);
                   });
                 } else {
-                  const feature = record.data[field];
-                  feature.properties = {
-                    name: record.hrid,
-                    record_id: record.record_id,
-                    revision_id: record.revision_id,
-                  };
-                  f.push(feature);
+                  f.push({
+                    ...record.data[field],
+                    properties: {
+                      name: record.hrid,
+                      record_id: record.record_id,
+                      revision_id: record.revision_id,
+                    },
+                  });
                 }
               }
             });
@@ -170,9 +172,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
       if (!feature) {
         return;
       }
-      console.log('selected feature', feature);
       setSelectedFeature(feature as FeatureProps);
-      //(evt.coordinate);
     });
 
     return theMap;
