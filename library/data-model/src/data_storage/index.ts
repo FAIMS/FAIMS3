@@ -549,7 +549,7 @@ export async function getRecordsWithRegex(
 
 import {FormData} from './internals';
 
-const hydrateRecord = async (
+export const hydrateRecord = async (
   project_id: string,
   record: any // return type of getSomeRecords
 ) => {

@@ -40,6 +40,7 @@ import {useQuery} from '@tanstack/react-query';
 import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
 import RangeHeader from './range_header';
+import {OverviewMap} from './overview_map';
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
@@ -153,8 +154,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
   const {data: template_id} = useQuery({
     queryKey: ['project-template-id', project.project_id],
-    queryFn: () =>
-      getMetadataValue(project.project_id, 'template_id') as Promise<string>,
+    queryFn: async () : Promise<string | null> => {
+      // don't return undefined from queryFn
+      const id = await getMetadataValue(project.project_id, 'template_id');
+      if (id !== undefined) return id as string;
+      else return null;
+    },
   });
 
   /**
@@ -274,6 +279,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 />
                 <Tab label="Details" {...a11yProps(1, NOTEBOOK_NAME)} />
                 <Tab label="Settings" {...a11yProps(2, NOTEBOOK_NAME)} />
+                <Tab label="Map" {...a11yProps(3, NOTEBOOK_NAME)} />
               </Tabs>
             </AppBar>
           </Box>
@@ -566,6 +572,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
           <TabPanel value={notebookTabValue} index={2} id={'notebook'}>
             {uiSpec !== null && <NotebookSettings uiSpec={uiSpec} />}
+          </TabPanel>
+
+          <TabPanel value={notebookTabValue} index={3} id={'notebook'}>
+            {uiSpec !== null && (
+              <OverviewMap project_id={project.project_id} uiSpec={uiSpec} />
+            )}
           </TabPanel>
         </Box>
       )}
