@@ -42,19 +42,19 @@ data "cloudinit_config" "couchdb_config" {
 }
 
 resource "digitalocean_volume" "couchdb-volume" {
-  region                  = "syd1"
+  region                  = var.region
   count                   = var.instance_count
-  name                    = "couchdb-data"
-  size                    = 100
+  name                    = "couchdb-data-${count.index}-${var.subdomain}"
+  size                    = var.couchdb_volume_size
   initial_filesystem_type = "ext4"
   description             = "couchdb storage"
 }
 
 resource "digitalocean_droplet" "couchdb" {
     image = "ubuntu-22-04-x64"
-    name = "couchdb-${count.index}"
-    region = "syd1"
-    size = "s-1vcpu-1gb"
+    name = "couchdb-${count.index}-${var.subdomain}"
+    region = var.region
+    size = var.droplet_size
     count = var.instance_count
     ssh_keys = [
         data.digitalocean_ssh_key.terraform.id

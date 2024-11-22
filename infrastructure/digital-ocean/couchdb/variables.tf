@@ -3,6 +3,24 @@ variable "do_token" {
   type = string
 }
 
+variable "region" {
+  description = "Region to deploy to"
+  type = string
+  default = "syd1"
+}
+
+variable "droplet_size" {
+  description = "Size of the droplet to provision for couchdb"
+  type = string
+  default = "s-1vcpu-1gb"
+}
+
+variable "couchdb_volume_size" {
+  description = "Size of the volume to attach to the couchdb droplet"
+  type = number
+  default = 100
+}
+
 variable "instance_count" {
   description = "Number of couchdb instances to provision."
   type        = number

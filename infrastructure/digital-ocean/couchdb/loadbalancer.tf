@@ -10,7 +10,7 @@ resource "digitalocean_domain" "couchdb" {
   depends_on = [ digitalocean_certificate.lb_certificate ]
 }
 resource "digitalocean_loadbalancer" "couchdb-lb" {
-  name = "couchdb-lb"
+  name = "couchdb-lb-${var.subdomain}"
   region = "syd1"
 
   forwarding_rule {
@@ -27,6 +27,7 @@ resource "digitalocean_loadbalancer" "couchdb-lb" {
     protocol = "tcp"
   }
 
- 
+  depends_on = [ digitalocean_certificate.lb_certificate ]
+
   droplet_ids = digitalocean_droplet.couchdb.*.id
 }
