@@ -22,6 +22,7 @@ case "${1}" in
     -e COUCHDB_INTERNAL_URL=https://db.$SUBDOMAIN \
     -e COUCHDB_PUBLIC_URL=https://db.$SUBDOMAIN \
     -e CONDUCTOR_PUBLIC_URL=https://conductor.$SUBDOMAIN \
+    -e KEY_FILE_PATH=/app\
     -v "${keydir}:/app/keys" \
     --restart unless-stopped\
     --name conductor\

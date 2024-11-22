@@ -74,8 +74,8 @@ EOT
 resource "digitalocean_droplet" "conductor-droplet" {
     image = "ubuntu-22-04-x64"
     name = "conductor.${var.subdomain}"
-    region = "syd1"
-    size = "s-1vcpu-1gb"
+    region = var.region
+    size = var.droplet_size
     ssh_keys = [
         data.digitalocean_ssh_key.terraform.id
     ]

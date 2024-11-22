@@ -26,3 +26,14 @@ variable "authorized_key" {
   description = "public key for ssh login, added to authorized_keys"
   type = string
 }
+variable "region" {
+  description = "Region to deploy to"
+  type = string
+  default = "syd1"
+}
+
+variable "droplet_size" {
+  description = "Size of the droplet to provision for conductor"
+  type = string
+  default = "s-1vcpu-1gb"
+}
