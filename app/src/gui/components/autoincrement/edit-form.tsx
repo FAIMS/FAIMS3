@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {Formik, Form, Field, yupToFormErrors} from 'formik';
 import {
   ButtonGroup,
@@ -28,6 +28,12 @@ import {
   LinearProgress,
   Grid,
   Divider,
+  Dialog,
+  DialogTitle,
+  Typography,
+  IconButton,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {TextField} from 'formik-mui';
@@ -41,12 +47,16 @@ import {
   setLocalAutoincrementRangesForField,
   createNewAutoincrementRange,
 } from '../../../local-data/autoincrement';
+import CloseIcon from '@mui/icons-material/Close';
+import {all} from 'ol/events/condition';
 
 interface Props {
   project_id: ProjectID;
   form_id: string;
   field_id: string;
   label: string;
+  open: boolean;
+  handleClose: () => void;
 }
 
 interface State {
@@ -59,97 +69,64 @@ const FORM_SCHEMA = yup.object().shape({
   stop: yup.number().required().positive().integer(),
 });
 
-export default class BasicAutoIncrementer extends React.Component<
-  Props,
-  State
-> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      ranges: null,
-      ranges_initialised: false,
-    };
-  }
+export const AutoIncrementEditForm = ({
+  project_id,
+  form_id,
+  field_id,
+  label,
+  open,
+  handleClose,
+}: Props) => {
+  const [ranges, setRanges] = useState<LocalAutoIncrementRange[] | null>(null);
+  const [rangesInitialised, setRangesInitialised] = useState(false);
+  const {dispatch} = useContext(store);
 
-  async ensure_ranges() {
-    if (this.state.ranges === null) {
-      const ranges = await getLocalAutoincrementRangesForField(
-        this.props.project_id,
-        this.props.form_id,
-        this.props.field_id
+  const ensureRanges = async () => {
+    if (ranges === null) {
+      const fetchedRanges = await getLocalAutoincrementRangesForField(
+        project_id,
+        form_id,
+        field_id
       );
-      this.setState({ranges: ranges});
+      setRanges(fetchedRanges);
     }
-  }
+  };
 
-  async add_new_range() {
-    await this.ensure_ranges();
-    const ranges = [
-      ...((this.state.ranges || []) as LocalAutoIncrementRange[]),
-    ];
-    ranges.push(createNewAutoincrementRange(0, 0));
-    this.setState({ranges: ranges});
-  }
+  const addNewRange = async () => {
+    await ensureRanges();
+    const updatedRanges = [...(ranges || [])];
+    updatedRanges.push(createNewAutoincrementRange(0, 0));
+    setRanges(updatedRanges);
+  };
 
-  cloned_ranges(): LocalAutoIncrementRange[] | null {
-    if (this.state.ranges === null) {
-      return null;
-    }
-    // react requires us to make deep copied if we want to modify state...
-    const ranges = [] as LocalAutoIncrementRange[];
-    for (const old_range of this.state.ranges) {
-      // This assumes we don't need to go another level down to deep clone
-      const new_range = {...old_range};
-      ranges.push(new_range);
-    }
-    return ranges;
-  }
+  const clonedRanges = (): LocalAutoIncrementRange[] | null => {
+    if (ranges === null) return null;
+    return ranges.map(range => ({...range}));
+  };
 
-  render_ranges() {
-    const ranges = this.cloned_ranges();
-    if (ranges === null || ranges.length === 0) {
-      return (
-        <Alert severity={'info'} sx={{mb: 1}}>
-          No ranges allocated yet.
-        </Alert>
-      );
-    }
-    return (
-      <div>
-        {ranges.map((range, range_index) => {
-          return this.render_range(range, range_index, ranges);
-        })}
-      </div>
-    );
-  }
-
-  async update_ranges(ranges: LocalAutoIncrementRange[]) {
-    const {project_id, form_id, field_id} = this.props;
+  const updateRanges = async (newRanges: LocalAutoIncrementRange[]) => {
     try {
       await setLocalAutoincrementRangesForField(
         project_id,
         form_id,
         field_id,
-        ranges
-      ).then(() => {
-        (this.context as any).dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: 'Range successfully updated',
-            severity: 'success',
-          },
-        });
+        newRanges
+      );
+      dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: 'Range successfully updated',
+          severity: 'success',
+        },
       });
-      let ranges_initialised = false;
-      for (const range of ranges) {
-        if (range.using || range.fully_used) {
-          ranges_initialised = true;
-          break;
-        }
-      }
-      this.setState({ranges: ranges, ranges_initialised: ranges_initialised});
+
+      const isInitialised = newRanges.some(
+        range => range.using || range.fully_used
+      );
+      setRanges(newRanges);
+      setRangesInitialised(isInitialised);
     } catch (err: any) {
-      (this.context as any).dispatch({
+      dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
           message: err.toString(),
@@ -157,13 +134,13 @@ export default class BasicAutoIncrementer extends React.Component<
         },
       });
     }
-  }
+  };
 
-  render_range(
+  const renderRange = (
     range: LocalAutoIncrementRange,
-    range_index: number,
+    rangeIndex: number,
     ranges: LocalAutoIncrementRange[]
-  ) {
+  ) => {
     const range_count = ranges.length;
     const start_props = {
       id: 'start',
@@ -186,7 +163,7 @@ export default class BasicAutoIncrementer extends React.Component<
 
     return (
       <Formik
-        key={range_index}
+        key={rangeIndex}
         initialValues={{
           start: range.start,
           stop: range.stop,
@@ -206,7 +183,7 @@ export default class BasicAutoIncrementer extends React.Component<
         onSubmit={async (values, {setSubmitting}) => {
           range.start = values.start;
           range.stop = values.stop;
-          await this.update_ranges(ranges).then(() => {
+          await updateRanges(ranges).then(() => {
             setSubmitting(false);
           });
         }}
@@ -246,7 +223,7 @@ export default class BasicAutoIncrementer extends React.Component<
                       onClick={async () => {
                         range.fully_used = true;
 
-                        await this.update_ranges(ranges);
+                        await updateRanges(ranges);
                       }}
                     >
                       Disable range
@@ -255,13 +232,11 @@ export default class BasicAutoIncrementer extends React.Component<
                     <Button
                       color="error"
                       data-testid="removeRangeBtn"
-                      disabled={
-                        range_count < 2 && this.state.ranges_initialised
-                      }
+                      disabled={range_count < 2 && rangesInitialised}
                       onClick={async () => {
-                        ranges.splice(range_index, 1);
+                        ranges.splice(rangeIndex, 1);
 
-                        await this.update_ranges(ranges);
+                        await updateRanges(ranges);
                       }}
                     >
                       Remove range
@@ -283,33 +258,90 @@ export default class BasicAutoIncrementer extends React.Component<
         )}
       </Formik>
     );
-  }
+  };
 
-  async componentDidMount() {
-    await this.ensure_ranges();
-  }
+  const renderRanges = () => {
+    const currentRanges = clonedRanges();
 
-  async componentDidUpdate() {
-    await this.ensure_ranges();
-  }
-
-  render() {
-    return (
-      <Box mt={1}>
-        {this.render_ranges()}
-        <Button
-          variant="outlined"
-          color={'primary'}
-          onClick={async () => {
-            this.add_new_range();
-          }}
-          startIcon={<AddIcon />}
-          data-testid="addNewRangeBtn"
-        >
-          Add new range
-        </Button>
-      </Box>
+    const all_used = currentRanges?.every(
+      (range: LocalAutoIncrementRange) => range.fully_used
     );
-  }
-}
-BasicAutoIncrementer.contextType = store;
+
+    if (currentRanges === null || currentRanges.length === 0) {
+      return (
+        <Alert severity={'info'} sx={{mb: 1}}>
+          No ranges allocated yet.
+        </Alert>
+      );
+    }
+
+    return (
+      <div>
+        {all_used && (
+          <Alert severity={'error'} sx={{mb: 1}}>
+            All ranges are fully used. Please add a new range.
+          </Alert>
+        )}
+        {currentRanges.map((range, index) =>
+          renderRange(range, index, currentRanges)
+        )}
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    ensureRanges();
+  }, []);
+
+  return (
+    <Dialog open={open} onClose={handleClose}>
+      <DialogTitle>Edit Settings for {label}</DialogTitle>
+      <IconButton
+        aria-label="close"
+        onClick={handleClose}
+        sx={{
+          position: 'absolute',
+          right: 8,
+          top: 8,
+        }}
+      >
+        <CloseIcon />
+      </IconButton>
+      <DialogContent dividers>
+        <Typography gutterBottom>
+          This form uses an auto-increment field to generate new identifiers for
+          each record. Here you can set a range of numbers to use on this
+          device.
+        </Typography>
+        <Typography gutterBottom>
+          Set a start and end for the range, numbers will be allocated in order
+          until used up. You must add at least one range. If there is more than
+          one range, the ranges will be used in order.
+        </Typography>
+        <Divider sx={{mt: 1, mb: 2}} />
+
+        {renderRanges()}
+
+        <DialogActions>
+          <Button
+            variant="contained"
+            color={'primary'}
+            onClick={addNewRange}
+            startIcon={<AddIcon />}
+            data-testid="addNewRangeBtn"
+          >
+            Add new range
+          </Button>
+          <Button
+            variant="outlined"
+            color={'primary'}
+            onClick={handleClose}
+            data-testid="closeDialogBtn"
+          >
+            Done
+          </Button>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
+  );
+};
