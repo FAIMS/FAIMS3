@@ -34,12 +34,13 @@ import Map from 'ol/Map';
 import {transform} from 'ol/proj';
 import {OSM} from 'ol/source';
 import VectorSource from 'ol/source/Vector';
-import {Fill, Stroke, Style} from 'ol/style';
+import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
+import {Geolocation} from '@capacitor/geolocation';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -139,44 +140,94 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const mapRef = useRef<Map | undefined>();
   mapRef.current = map;
 
-  const map_center = [30, -10];
+  const {data: map_center} = useQuery<Array<number>>({
+    queryKey: ['current_location'],
+    queryFn: async () => {
+      const position = await Geolocation.getCurrentPosition();
+      return [position.coords.longitude, position.coords.latitude];
+    },
+    initialData: [0, 0],
+  });
 
   /**
    * Create the OpenLayers map element
    */
-  const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
-    const center = transform(map_center, 'EPSG:4326', defaultMapProjection);
+  const createMap = useCallback(
+    async (element: HTMLElement): Promise<Map> => {
+      const center = transform(map_center, 'EPSG:4326', defaultMapProjection);
 
-    const tileLayer = new TileLayer({source: new OSM()});
-    const view = new View({
-      projection: defaultMapProjection,
-      center: center,
-      zoom: 12,
-    });
-
-    const theMap = new Map({
-      target: element,
-      layers: [tileLayer],
-      view: view,
-      controls: [new Zoom()],
-    });
-
-    theMap.addControl(createCenterControl(theMap.getView(), center));
-
-    theMap.getView().setCenter(center);
-
-    theMap.on('click', evt => {
-      const feature = theMap.forEachFeatureAtPixel(evt.pixel, feature => {
-        return feature.getProperties();
+      const tileLayer = new TileLayer({source: new OSM()});
+      const view = new View({
+        projection: defaultMapProjection,
+        center: center,
+        zoom: 12,
       });
-      if (!feature) {
-        return;
-      }
-      setSelectedFeature(feature as FeatureProps);
+
+      const theMap = new Map({
+        target: element,
+        layers: [tileLayer],
+        view: view,
+        controls: [new Zoom()],
+      });
+
+      theMap.addControl(createCenterControl(theMap.getView(), center));
+
+      theMap.getView().setCenter(center);
+
+      theMap.on('click', evt => {
+        const feature = theMap.forEachFeatureAtPixel(evt.pixel, feature => {
+          return feature.getProperties();
+        });
+        if (!feature) {
+          return;
+        }
+        setSelectedFeature(feature as FeatureProps);
+      });
+
+      return theMap;
+    },
+    [map_center]
+  );
+
+  /**
+   * Add a marker to the map at the current location
+   *
+   * @param map the map element
+   */
+  const addCurrentLocationMarker = (map: Map) => {
+    const source = new VectorSource();
+    const geoJson = new GeoJSON();
+
+    const stroke = new Stroke({color: 'black', width: 2});
+    const layer = new VectorLayer({
+      source: source,
+      style: new Style({
+        image: new RegularShape({
+          stroke: stroke,
+          points: 4,
+          radius: 10,
+          radius2: 0,
+          angle: 0,
+        }),
+      }),
     });
 
-    return theMap;
-  }, []);
+    const centerFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: map_center,
+      },
+    };
+
+    source.addFeature(
+      geoJson.readFeature(centerFeature, {
+        dataProjection: 'EPSG:4326',
+        featureProjection: map.getView().getProjection(),
+      })
+    );
+    map.addLayer(layer);
+  };
 
   /**
    * Add the features to the map and set the map view to
@@ -228,6 +279,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         // create map
         createMap(element).then((theMap: Map) => {
           addFeaturesToMap(theMap);
+          addCurrentLocationMarker(theMap);
           setMap(theMap);
         });
       } else {
