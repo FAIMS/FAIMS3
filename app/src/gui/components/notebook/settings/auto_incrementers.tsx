@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Grid, Typography, Paper, Alert, Button} from '@mui/material';
+import {Box, Grid, Typography, Paper, Button} from '@mui/material';
 import {ProjectInformation, ProjectUIModel} from '@faims3/data-model';
 import {getAutoincrementReferencesForProject} from '../../../../local-data/autoincrement';
 import {AutoIncrementReference} from '@faims3/data-model';

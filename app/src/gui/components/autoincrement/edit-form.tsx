@@ -48,7 +48,6 @@ import {
   createNewAutoincrementRange,
 } from '../../../local-data/autoincrement';
 import CloseIcon from '@mui/icons-material/Close';
-import {all} from 'ol/events/condition';
 
 interface Props {
   project_id: ProjectID;
@@ -57,11 +56,6 @@ interface Props {
   label: string;
   open: boolean;
   handleClose: () => void;
-}
-
-interface State {
-  ranges: LocalAutoIncrementRange[] | null;
-  ranges_initialised: boolean;
 }
 
 const FORM_SCHEMA = yup.object().shape({
