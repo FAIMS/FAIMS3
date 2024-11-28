@@ -32,9 +32,6 @@ jobs:
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-    strategy:
-      matrix:
-        node-version: ['20']
     steps:
       - uses: actions/checkout@v4
       - name: Cache node modules
@@ -81,10 +78,10 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}            
+          node-version: 20          
           cache: 'npm'
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Set up adopt JDK 1.17
