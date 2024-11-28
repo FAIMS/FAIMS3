@@ -78,7 +78,7 @@ jobs:
         with:
           ruby-version: 3.3.1
           bundler-cache: true
-          working-directory: android      
+          working-directory: app/android      
       - name: Decode Service Account Key JSON File
         uses: timheuer/base64-to-file@v1
         id: service_account_json_file
@@ -119,7 +119,7 @@ jobs:
       - run: npm run webapp-sync --workspace=@faims3/app -- --deployment android
       - name: Fastlane
         run: |
-          cd android
+          cd app/android
           bundle install
           bundle exec fastlane deploy_fieldmark
         env:
