@@ -61,8 +61,9 @@ jobs:
           fi
 
       - name: Install jq
-        run: sudo apt-get install -y jq
-
+        run: |
+          brew update
+          brew install jq
       - name: Declare some variables
         shell: bash
         run: |
