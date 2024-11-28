@@ -159,7 +159,6 @@ export class FaimsFrontEnd extends Construct {
       VITE_SHOW_RECORD_SUMMARY_COUNTS: 'true',
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
-      VITE_PRODUCTION_BUILD: 'true',
       VITE_TAG: 'CDKDeployment',
     };
 
