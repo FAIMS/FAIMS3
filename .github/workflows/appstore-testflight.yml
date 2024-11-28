@@ -123,7 +123,7 @@ jobs:
         uses: maierj/fastlane-action@v2.3.0
         with:
           lane: closed_beta_testflight
-          subdirectory: 'ios/App'
+          subdirectory: 'app/ios/App'
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
         env:
