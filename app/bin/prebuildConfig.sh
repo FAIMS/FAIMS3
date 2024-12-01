@@ -60,7 +60,10 @@ fi
 version=1.0.4
 buildNumber=$(date -u "+%Y%m%d%H%M")
 
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $buildNumber" ./ios/App/App/Info.plist
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" ./ios/App/App/Info.plist
-/usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $VITE_APP_ID" ./ios/App/App/Info.plist
-/usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLName $VITE_APP_ID" ./ios/App/App/Info.plist
+if test -f /usr/libexec/PlistBuddy; then
+  echo "\nIOS: Configuring Info.plist settings"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $buildNumber" ./ios/App/App/Info.plist
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" ./ios/App/App/Info.plist
+  /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $VITE_APP_ID" ./ios/App/App/Info.plist
+  /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLName $VITE_APP_ID" ./ios/App/App/Info.plist
+fi
