@@ -73,7 +73,7 @@ jobs:
       - name: Create version string
         shell: bash
         run: |
-          echo "version_string=v${{env.app_version}}-android-#${{env.sha_short}}" >> "$GITHUB_ENV"        
+          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"        
 
       - name: Set up ruby env
         uses: ruby/setup-ruby@v1
