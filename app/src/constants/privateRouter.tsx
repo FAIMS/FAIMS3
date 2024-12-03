@@ -20,7 +20,7 @@ export const PrivateRoute = (props: PrivateRouteProps): React.ReactElement => {
   // TODO use a context provider for listings instead of getting first entry
   const anyToken = useGetAnyToken();
   // The token is being retrieved
-  if (anyToken.isFetching) {
+  if (anyToken.isLoading) {
     return <LoadingApp />;
   }
 
