@@ -51,6 +51,7 @@ export const BasicAutoIncrementer = (props: FieldProps & Props) => {
     );
     if (local_state.last_used_id === null && local_state.ranges.length === 0) {
       setShowAutoIncrementEditForm(true);
+      return null;
     }
 
     if (local_state.last_used_id === null) {
@@ -79,7 +80,6 @@ export const BasicAutoIncrementer = (props: FieldProps & Props) => {
 
     // find a new range to use
     for (const range of local_state.ranges) {
-      console.debug('checking range', range);
       if (!range.fully_used) {
         const next_id = range.start;
         range.using = true;
@@ -118,13 +118,11 @@ export const BasicAutoIncrementer = (props: FieldProps & Props) => {
         setShowAutoIncrementEditForm(true);
       } else {
         props.form.setFieldValue(props.field.name, new_id, true);
-        if (props.form.errors[props.field.name] !== undefined)
-          props.form.setFieldError(props.field.name, undefined);
       }
-    } else {
-      if (props.form.errors[props.field.name] !== undefined)
-        props.form.setFieldError(props.field.name, undefined);
     }
+    // reset any errors, we don't want to report these to the user
+    if (props.form.errors[props.field.name] !== undefined)
+      props.form.setFieldError(props.field.name, undefined);
   };
 
   useEffect(() => {
@@ -146,7 +144,6 @@ export const BasicAutoIncrementer = (props: FieldProps & Props) => {
         label={props.field.name}
         open={showAutoIncrementEditForm}
         handleClose={async () => {
-          console.debug('closing edit form');
           await update_form();
           setShowAutoIncrementEditForm(false);
         }}
