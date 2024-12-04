@@ -140,9 +140,9 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const mapRef = useRef<Map | undefined>();
   mapRef.current = map;
 
-  const {data: map_center} = useQuery<Array<number>>({
+  const {data: map_center} = useQuery({
     queryKey: ['current_location'],
-    queryFn: async () => {
+    queryFn: async (): Promise<[number, number]> => {
       const position = await Geolocation.getCurrentPosition();
       return [position.coords.longitude, position.coords.latitude];
     },
@@ -212,21 +212,24 @@ export const OverviewMap = (props: OverviewMapProps) => {
       }),
     });
 
-    const centerFeature = {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: map_center,
-      },
-    };
+    // only do this if we have a real map_center, not the default 0,0
+    if (!(map_center[0] === 0 && map_center[1] === 0)) {
+      const centerFeature = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: map_center,
+        },
+      };
 
-    source.addFeature(
-      geoJson.readFeature(centerFeature, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: map.getView().getProjection(),
-      })
-    );
-    map.addLayer(layer);
+      source.addFeature(
+        geoJson.readFeature(centerFeature, {
+          dataProjection: 'EPSG:4326',
+          featureProjection: map.getView().getProjection(),
+        })
+      );
+      map.addLayer(layer);
+    }
   };
 
   /**
