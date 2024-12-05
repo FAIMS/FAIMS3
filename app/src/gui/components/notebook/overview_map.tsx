@@ -41,7 +41,6 @@ import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
 import {Geolocation} from '@capacitor/geolocation';
-import {delay} from 'lodash';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -147,7 +146,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
       const position = await Geolocation.getCurrentPosition();
       return [position.coords.longitude, position.coords.latitude];
     },
-    initialData: [0, 0],
   });
 
   /**
@@ -202,8 +200,8 @@ export const OverviewMap = (props: OverviewMapProps) => {
       }),
     });
 
-    // only do this if we have a real map_center, not the default 0,0
-    if (!(map_center[0] === 0 && map_center[1] === 0)) {
+    // only do this if we have a real map_center
+    if (map_center) {
       const centerFeature = {
         type: 'Feature',
         geometry: {
@@ -259,8 +257,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
       // don't fit if the extent is infinite because it crashes
       if (!extent.includes(Infinity)) {
         map.getView().fit(extent, {padding: [100, 100, 100, 100], maxZoom: 12});
-        const computedCenter = map.getView().getCenter();
-        console.log('computed center', computedCenter);
       }
     }
 
