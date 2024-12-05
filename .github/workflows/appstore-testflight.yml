@@ -29,11 +29,8 @@ jobs:
     needs: check_date
     if: ${{ needs.check_date.outputs.should_run != 'false' }}
     continue-on-error: false
-    # Disable Turbo to see if that fixes the build - possible cache issue
-    # env:
-    #   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-    #   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     steps:
+      # note not using Turbo build as it caused a problem with missing assets
       - uses: actions/checkout@v4
       - name: Cache node modules
         uses: actions/cache@v4
@@ -46,21 +43,6 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - name: Configure Turborepo Remote Cache
-        run: |
-          mkdir -p .turbo
-          if [ -n "${{ vars.TURBO_API_URL }}" ]; then
-            echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
-            echo "Turborepo config file created at .turbo/config.json"
-          else
-            echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."
-          fi
-          if [ -n "$TURBO_TEAM" ] && [ -n "$TURBO_TOKEN" ]; then
-            echo "TURBO_TEAM and TURBO_TOKEN environment variables set"
-          else
-            echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
-          fi
-
       - name: Install jq
         run: |
           brew update
@@ -103,7 +85,7 @@ jobs:
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_MINIFAUXTON=true
           export VITE_CONDUCTOR_URL=${{vars.NIGHTLY_CONDUCTOR_URL}}
-          export VITE_TAG=prodAndroid
+          export VITE_TAG=prodIOS
           export VITE_NOTEBOOK_LIST_TYPE=${{vars.NOTEBOOK_LIST_TYPE}}
           export VITE_NOTEBOOK_NAME=${{vars.NOTEBOOK_NAME}}
           export VITE_THEME=${{vars.THEME}}
