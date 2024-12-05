@@ -97,6 +97,13 @@ describe('Migrate Notebook Tests', () => {
     }
   });
 
+  test('fix auto incrementer initial value', () => {
+    const migrated = migrateNotebook(sampleNotebook);
+    const fields = migrated['ui-specification'].fields;
+    const targetField = fields['Field-ID'];
+    expect(targetField.initialValue).toBe('');
+  });
+
   test('update form descriptions', () => {
     const migrated = migrateNotebook(sampleNotebook);
     const fviews = migrated['ui-specification'].fviews;
