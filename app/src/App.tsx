@@ -44,6 +44,7 @@ import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
 import {AppUrlListener} from './native_hooks';
 import {NotificationProvider} from './context/popup';
+import {TestComponent} from './Test';
 
 // type AppProps = {};
 
@@ -94,6 +95,10 @@ export default function App() {
                   <AppUrlListener></AppUrlListener>
                   <MainLayout>
                     <Routes>
+                      <Route
+                        path={ROUTES.USER_ACTIVE_TESTR}
+                        element={<TestComponent />}
+                      />
                       <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
                       <Route
                         path={ROUTES.AUTH_RETURN}
