@@ -41,6 +41,7 @@ import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
 import {Geolocation} from '@capacitor/geolocation';
+import {delay} from 'lodash';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -140,7 +141,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const mapRef = useRef<Map | undefined>();
   mapRef.current = map;
 
-  const {data: map_center} = useQuery({
+  const {data: map_center, isLoading: loadingLocation} = useQuery({
     queryKey: ['current_location'],
     queryFn: async (): Promise<[number, number]> => {
       const position = await Geolocation.getCurrentPosition();
@@ -152,42 +153,31 @@ export const OverviewMap = (props: OverviewMapProps) => {
   /**
    * Create the OpenLayers map element
    */
-  const createMap = useCallback(
-    async (element: HTMLElement): Promise<Map> => {
-      const center = transform(map_center, 'EPSG:4326', defaultMapProjection);
+  const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
+    const tileLayer = new TileLayer({source: new OSM()});
+    const view = new View({
+      projection: defaultMapProjection,
+    });
 
-      const tileLayer = new TileLayer({source: new OSM()});
-      const view = new View({
-        projection: defaultMapProjection,
-        center: center,
-        zoom: 12,
+    const theMap = new Map({
+      target: element,
+      layers: [tileLayer],
+      view: view,
+      controls: [new Zoom()],
+    });
+
+    theMap.on('click', evt => {
+      const feature = theMap.forEachFeatureAtPixel(evt.pixel, feature => {
+        return feature.getProperties();
       });
+      if (!feature) {
+        return;
+      }
+      setSelectedFeature(feature as FeatureProps);
+    });
 
-      const theMap = new Map({
-        target: element,
-        layers: [tileLayer],
-        view: view,
-        controls: [new Zoom()],
-      });
-
-      theMap.addControl(createCenterControl(theMap.getView(), center));
-
-      theMap.getView().setCenter(center);
-
-      theMap.on('click', evt => {
-        const feature = theMap.forEachFeatureAtPixel(evt.pixel, feature => {
-          return feature.getProperties();
-        });
-        if (!feature) {
-          return;
-        }
-        setSelectedFeature(feature as FeatureProps);
-      });
-
-      return theMap;
-    },
-    [map_center]
-  );
+    return theMap;
+  }, []);
 
   /**
    * Add a marker to the map at the current location
@@ -269,11 +259,28 @@ export const OverviewMap = (props: OverviewMapProps) => {
       // don't fit if the extent is infinite because it crashes
       if (!extent.includes(Infinity)) {
         map.getView().fit(extent, {padding: [100, 100, 100, 100], maxZoom: 12});
+        const computedCenter = map.getView().getCenter();
+        console.log('computed center', computedCenter);
       }
     }
 
     map.addLayer(layer);
   };
+
+  // when we have a location and a map, add the 'here' marker to the map
+  if (!loadingLocation && map) {
+    addCurrentLocationMarker(map);
+    if (map_center) {
+      const center = transform(map_center, 'EPSG:4326', defaultMapProjection);
+      // add the 'here' button to go to the current location
+      map.addControl(createCenterControl(map.getView(), center));
+    }
+  }
+
+  // when we have features, add them to the map
+  if (!loadingFeatures && map) {
+    addFeaturesToMap(map);
+  }
 
   // callback to add the map to the DOM
   const refCallback = (element: HTMLElement | null) => {
@@ -281,8 +288,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
       if (!map) {
         // create map
         createMap(element).then((theMap: Map) => {
-          addFeaturesToMap(theMap);
-          addCurrentLocationMarker(theMap);
           setMap(theMap);
         });
       } else {
