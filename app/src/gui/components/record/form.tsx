@@ -406,7 +406,6 @@ class RecordForm extends React.Component<
       } catch (error) {
         // here if there was no existing record with this id above
         // so we ca't update revision_id so it is still undefined
-        if (DEBUG_APP) console.debug('new record', this.props.record_id);
       }
     }
     // work out the record type or default it
@@ -842,7 +841,7 @@ class RecordForm extends React.Component<
         // to never get here or provide a good reason if we do
         .catch(err => {
           const message = 'Could not save record';
-          console.error('Could not save record:', err);
+          logError(`Could not save record: ${JSON.stringify(err)}`);
           (this.context as any).dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
@@ -1185,6 +1184,16 @@ class RecordForm extends React.Component<
                   )
                 );
 
+                // This fragment of code is critical to saving drafts, it needs
+                // to be called here on every render and as a side-effect will
+                // save the current draft.
+                this.draftState &&
+                  this.draftState.renderHook(
+                    formProps.values,
+                    this.state.annotation,
+                    this.state.relationship ?? {}
+                  );
+
                 if (layout === 'inline')
                   return (
                     <div>
@@ -1301,13 +1310,6 @@ class RecordForm extends React.Component<
                         </Box>
                       )}
                     </div>
-                  );
-
-                this.draftState &&
-                  this.draftState.renderHook(
-                    formProps.values,
-                    this.state.annotation,
-                    this.state.relationship ?? {}
                   );
 
                 const fieldNames = getFieldsMatchingCondition(
