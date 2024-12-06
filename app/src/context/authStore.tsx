@@ -359,7 +359,7 @@ const startTokenRefreshChecker = () => {
         ) {
           console.log('Initiating token refresh');
           await state.refreshToken({serverId, username});
-        } else if (connection.expiresAt <= moment.now()) {
+        } else if (connection.expiresAt <= Date.now()) {
           useAuthStore.setState(state => ({
             ...state,
             isAuthenticated: false,
