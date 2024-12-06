@@ -276,7 +276,7 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
         </div>
       );
     }
-    if (canScan) {
+    if (!canScan) {
       return (
         <div>
           <Button variant="outlined" disabled={true}>
