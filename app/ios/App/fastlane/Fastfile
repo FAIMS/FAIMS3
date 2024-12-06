@@ -14,19 +14,19 @@ BROWSERSTACK_ACCESS_KEY = ENV["BROWSERSTACK_ACCESS_KEY"]
 
 
 # keychain details are hard-coded here with a generated password
-keychain_name = "keychain"
-keychain_password = SecureRandom.hex(32) 
+KEYCHAIN_NAME = "keychain"
+KEYCHAIN_PASSWORD = SecureRandom.hex(32) 
 
 def delete_temp_keychain()
   delete_keychain(
-    name: keychain_name
-  ) if File.exist? File.expand_path("~/Library/Keychains/keychain-db")
+    name: KEYCHAIN_NAME
+  ) if File.exist? File.expand_path("~/Library/Keychains/#{KEYCHAIN_NAME}-db")
 end
 
 def create_temp_keychain()
   create_keychain(
-    name: keychain_name,
-    password: keychain_password,
+    name: KEYCHAIN_NAME,
+    password: KEYCHAIN_PASSWORD,
     unlock: false,
     timeout: 0
   )
@@ -34,7 +34,7 @@ end
 
 def ensure_temp_keychain()
   delete_temp_keychain()
-  create_temp_keychain(keychain_name, keychain_password)
+  create_temp_keychain(KEYCHAIN_NAME, KEYCHAIN_PASSWORD)
 end
 
 platform :ios do
@@ -59,8 +59,8 @@ platform :ios do
       app_identifier: "#{APPLE_BUNDLE_IDENTIFIER}",
       git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
       readonly: false,
-      keychain_name: keychain_name,
-      keychain_password: keychain_password,
+      keychain_name: KEYCHAIN_NAME,
+      keychain_password: KEYCHAIN_PASSWORD,
       api_key: api_key
     )
 
@@ -109,8 +109,8 @@ platform :ios do
       app_identifier: "#{APPLE_BUNDLE_IDENTIFIER}",
       git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
       readonly: false,
-      keychain_name: keychain_name,
-      keychain_password: keychain_password,
+      keychain_name: KEYCHAIN_NAME,
+      keychain_password: KEYCHAIN_PASSWORD,
       api_key: api_key
     )
 
@@ -168,8 +168,8 @@ platform :ios do
       app_identifier: "#{APPLE_BUNDLE_IDENTIFIER}",
       git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
       readonly: false,
-      keychain_name: keychain_name,
-      keychain_password: keychain_password,
+      keychain_name: KEYCHAIN_NAME,
+      keychain_password: KEYCHAIN_PASSWORD,
       api_key: api_key
     )
 
