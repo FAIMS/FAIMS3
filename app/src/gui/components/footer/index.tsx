@@ -20,16 +20,11 @@
 
 import React from 'react';
 import {useLocation} from 'react-router-dom';
-
+import * as ROUTES from '../../../constants/routes';
 import FullFooter from './fullFooter';
 import SlimFooter from './slimFooter';
-// import {EHTML} from './footerEHTML';
 
-import {TokenContents} from '@faims3/data-model';
-import * as ROUTES from '../../../constants/routes';
-interface FooterProps {
-  token?: null | undefined | TokenContents;
-}
+interface FooterProps {}
 export default function Footer(props: FooterProps) {
   /**
    * Display a large footer for INDEX and WORKSPACE routes
@@ -44,14 +39,13 @@ export default function Footer(props: FooterProps) {
   const location = useLocation().pathname;
   const showFullFooter = [
     ROUTES.INDEX,
-    // ROUTES.SIGN_IN,
   ].includes(location);
   return (
     <React.Fragment>
       {showFullFooter ? (
-        <FullFooter token={props.token} />
+        <FullFooter />
       ) : (
-        <SlimFooter token={props.token} />
+        <SlimFooter />
       )}
     </React.Fragment>
   );

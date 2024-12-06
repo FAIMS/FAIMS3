@@ -83,7 +83,7 @@ export function SignIn() {
           <Grid item lg={4} md={6} sm={12} xs={12} key={index}>
             <ClusterCard
               key={listing_info.id}
-              listing_id={listing_info.id}
+              serverId={listing_info.id}
               listing_name={listing_info.name}
               listing_description={listing_info.description}
               conductor_url={listing_info.conductor_url}
