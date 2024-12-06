@@ -229,7 +229,7 @@ const AuthenticatedDisplayComponent = () => {
 
         {/* Switch Account Option (only if multiple connections exist) */}
         {availableConnections.length > 1 && (
-          <>
+          <div>
             <MenuItem onClick={toggleSwitchMenu}>
               <ListItemText primary="Switch Account" />
               {switchMenuOpen ? <ExpandLess /> : <ExpandMore />}
@@ -261,7 +261,7 @@ const AuthenticatedDisplayComponent = () => {
               </Box>
             </Collapse>
             <Divider />
-          </>
+          </div>
         )}
 
         {/* Manage Button */}

@@ -44,17 +44,12 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
    * @returns {Promise<void>} Resolves when initialization is complete.
    */
   const initProjects = async () => {
-    console.log("local projects")
     const localProjects = await getProjectsDB();
-    console.log("remote projects")
     const remoteProjects = await getRemoteProjects();
 
-    console.log("local map")
     const localProjectsMap = getProjectMap(localProjects);
-    console.log("new map")
     const newProjectsMap = getProjectMap(localProjects);
 
-    console.log("active local map")
     const localActiveMap = await getLocalActiveMap();
 
     for (const remoteProject of remoteProjects) {

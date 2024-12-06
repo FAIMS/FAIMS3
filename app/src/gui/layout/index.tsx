@@ -13,9 +13,6 @@ interface MainLayoutProps {
 }
 
 const MainLayout = (props: MainLayoutProps) => {
-  // TODO active user refactor
-  const tokenQuery = useGetAnyToken();
-  const token = tokenQuery.data?.parsedToken;
   const theme = useTheme();
   const appbarHeight = 64;
   const minHeightMob = 128 + appbarHeight; // min height of footer in mobile mode + appbar height
@@ -23,7 +20,7 @@ const MainLayout = (props: MainLayoutProps) => {
 
   return (
     <React.Fragment>
-      <MainAppBar token={token} />
+      <MainAppBar />
       <Box
         component="main"
         sx={{
@@ -48,7 +45,7 @@ const MainLayout = (props: MainLayoutProps) => {
           {props.children}
         </ErrorBoundary>
       </Box>
-      <Footer token={token} />
+      <Footer />
     </React.Fragment>
   );
 };

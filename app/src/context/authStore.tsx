@@ -1,21 +1,14 @@
-import moment from 'moment';
+import {TokenContents} from '@faims3/data-model';
 import {create} from 'zustand';
 import {persist} from 'zustand/middleware';
 import {parseToken} from '../users';
 import {requestTokenRefresh} from '../utils/apiOperations/auth';
 
 // Types
-interface ParsedToken {
-  username: string;
-  roles: string[];
-  name?: string;
-  server: string;
-}
-
 export interface UserTokens {
   token: string;
   refreshToken?: string;
-  parsedToken: ParsedToken;
+  parsedToken: TokenContents;
 }
 
 interface TokenInfo extends UserTokens {
@@ -36,7 +29,7 @@ interface ActiveUser {
   serverId: string;
   username: string;
   token: string;
-  parsedToken: ParsedToken;
+  parsedToken: TokenContents;
 }
 
 interface SetServerConnectionInput {
@@ -44,7 +37,7 @@ interface SetServerConnectionInput {
   username: string;
   token: string;
   refreshToken?: string;
-  parsedToken: ParsedToken;
+  parsedToken: TokenContents;
 }
 
 interface ServerUserIdentity {
@@ -53,11 +46,15 @@ interface ServerUserIdentity {
 }
 
 interface AuthState {
+  // Persisted state
   servers: ServerMap;
   activeUser: ActiveUser | undefined;
-  refreshError: string | undefined;
   isAuthenticated: boolean;
 
+  // Transient state
+  refreshError: string | undefined;
+
+  // Actions
   setServerConnection: (input: SetServerConnectionInput) => void;
   setActiveUser: (input: ServerUserIdentity) => void;
   removeServerConnection: (input: ServerUserIdentity) => void;
@@ -65,34 +62,38 @@ interface AuthState {
   refreshToken: (input: ServerUserIdentity) => Promise<void>;
   refreshActiveUser: () => Promise<void>;
   getActiveToken: () => TokenInfo | undefined;
-  getServerUserInformation: (input: ServerUserIdentity) => TokenInfo | undefined;
+  getServerUserInformation: (
+    input: ServerUserIdentity
+  ) => TokenInfo | undefined;
   getAllServerUsers: () => ServerUserIdentity[];
 }
 
-const parseJwt = async (token: string): Promise<ParsedToken> => {
+const parseJwt = async (token: string): Promise<TokenContents> => {
   const contents = await parseToken(token);
   return {...contents};
 };
 
-const callRefreshApi = async (
-  serverId: string,
-  username: string,
-  refreshToken: string
-): Promise<{token: string; refreshToken: string}> => {
-  const updatedToken = await requestTokenRefresh(serverId, username, {
-    refreshToken,
-  });
-  return {token: updatedToken.token, refreshToken};
+const callRefreshApi = async (input: {
+  serverId: string;
+  username: string;
+  refreshToken: string;
+}): Promise<{token: string; refreshToken: string}> => {
+  const updatedToken = await requestTokenRefresh(
+    input.serverId,
+    input.username,
+    {
+      refreshToken: input.refreshToken,
+    }
+  );
+  return {token: updatedToken.token, refreshToken: input.refreshToken};
 };
 
 const isTokenValid = (tokenInfo: TokenInfo | undefined): boolean => {
   if (!tokenInfo) return false;
-  return tokenInfo.token != undefined && tokenInfo.expiresAt > moment.now();
+  return tokenInfo.token != undefined && tokenInfo.expiresAt > Date.now();
 };
 
-const isTokenRefreshable = (
-  tokenInfo: TokenInfo | undefined
-): boolean => {
+const isTokenRefreshable = (tokenInfo: TokenInfo | undefined): boolean => {
   if (!tokenInfo) return false;
   return !!tokenInfo.refreshToken;
 };
@@ -119,7 +120,8 @@ export const useAuthStore = create<AuthState>()(
         refreshToken,
         parsedToken,
       }) => {
-        const expiresAt = moment.now() + 1000 * 60;
+        // TODO make this real
+        const expiresAt = Date.now() + 1000 * 60;
         set(state => {
           const newState = {
             servers: {
@@ -161,7 +163,7 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      setActiveUser: ({serverId, username}) => {
+      setActiveUser: async ({serverId, username}) => {
         set(state => {
           const connection = state.servers[serverId]?.users[username];
           if (!connection) {
@@ -187,6 +189,9 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: checkAuthenticationStatus({...state, ...newState}),
           };
         });
+
+        // Then try and refresh if necessary
+        await get().refreshActiveUser();
       },
 
       removeServerConnection: ({serverId, username}) => {
@@ -205,12 +210,31 @@ export const useAuthStore = create<AuthState>()(
             state.activeUser?.serverId === serverId &&
             state.activeUser?.username === username
           ) {
-            newState.activeUser = undefined;
           }
 
           newState.isAuthenticated = checkAuthenticationStatus(newState);
           return newState;
         });
+
+        // Find another user to make active! This is so that when you swap users
+        // you don't get 'logged out'
+
+        // TODO we might want to consider some sort of logical ordering here -
+        // also noting this could provoke a refresh
+
+        // List all first
+        const state = get();
+
+        // Get any of them, if available
+        if (state.activeUser === undefined) {
+          const allUsers = state.getAllServerUsers();
+          if (allUsers.length > 0) {
+            const newActive = allUsers[0];
+            state.setActiveUser(newActive);
+          } else {
+            set({activeUser: undefined});
+          }
+        }
       },
 
       clearActiveConnection: () => {
@@ -244,11 +268,11 @@ export const useAuthStore = create<AuthState>()(
         }
 
         try {
-          const {token, refreshToken} = await callRefreshApi(
+          const {token, refreshToken} = await callRefreshApi({
             username,
             serverId,
-            connection.refreshToken!
-          );
+            refreshToken: connection.refreshToken!,
+          });
           const parsedToken = await parseJwt(token);
 
           get().setServerConnection({
@@ -291,7 +315,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       getServerUserInformation: (input: ServerUserIdentity) => {
-        return get().servers[input.serverId]?.users[input.username] ?? undefined;
+        return (
+          get().servers[input.serverId]?.users[input.username] ?? undefined
+        );
       },
 
       getAllServerUsers: (): ServerUserIdentity[] => {
@@ -306,6 +332,13 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      partialize: state => {
+        return {
+          servers: state.servers,
+          activeUser: state.activeUser,
+          isAuthenticated: state.isAuthenticated,
+        };
+      },
     }
   )
 );
@@ -313,7 +346,6 @@ export const useAuthStore = create<AuthState>()(
 // Set up the refresh checker
 const startTokenRefreshChecker = () => {
   setInterval(async () => {
-    console.log('Token refresh tick');
     const state = useAuthStore.getState();
     if (state.activeUser) {
       const {serverId, username} = state.activeUser;

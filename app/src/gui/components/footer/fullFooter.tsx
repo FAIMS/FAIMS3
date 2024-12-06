@@ -7,7 +7,6 @@ import SupportEmail from './supportEmail';
 import {TokenContents} from '@faims3/data-model';
 
 interface FullFooterProps {
-  token?: null | undefined | TokenContents;
 }
 
 export default function FullFooter(props: FullFooterProps) {
@@ -22,7 +21,7 @@ export default function FullFooter(props: FullFooterProps) {
     >
       <Grid container spacing={2}>
         <Grid item xs={12} sx={{display: {xs: 'block', sm: 'none'}}}>
-          <SlimFooter token={props.token} />
+          <SlimFooter />
         </Grid>
         <Grid
           item

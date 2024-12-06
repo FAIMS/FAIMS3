@@ -96,101 +96,119 @@ export default function ClusterCard(props: ClusterCardProps) {
         </Button>
       }
     >
-      {usernamesForServer.map(username => {
-        const tokenInfo = servers[props.serverId]?.users[username];
-        return (
-          <>
-            <h4>{username}</h4>
-            {!tokenInfo.token ? (
-              <LoginButton
-                key={props.serverId}
-                conductor_url={props.conductor_url}
-                is_refresh={false}
-                startIcon={<LoginIcon />}
-              />
-            ) : (
-              <React.Fragment>
-                <Grid
-                  container
-                  direction="row"
-                  justifyContent="flex-start"
-                  alignItems="center"
-                  spacing={1}
-                >
-                  <Grid item sm={3} xs={12}>
-                    <Typography variant={'overline'}>Current User</Typography>
-                  </Grid>
-                  <Grid item sm={6} xs={12}>
-                    <Typography variant={'body2'} fontWeight={700}>
-                      {username}
-                    </Typography>
-                  </Grid>
-                  <Grid item sm={3} xs={12}>
-                    <Button
-                      size={'small'}
-                      sx={{float: 'right'}}
-                      variant={'contained'}
-                      disableElevation
-                      onClick={async () => {
-                        await handleLogout(username);
-                      }}
-                      startIcon={<LogoutIcon />}
-                    >
-                      Log&nbsp;Out
-                    </Button>
-                  </Grid>
-                </Grid>
-                <Divider sx={{my: 2}} />
-                <Grid
-                  container
-                  direction="row"
-                  justifyContent="flex-start"
-                  alignItems="flex-start"
-                  spacing={1}
-                >
-                  <Grid item sm={3} xs={12}>
-                    <Typography variant={'overline'}>Roles</Typography>
-                  </Grid>
-                  <Grid item sm={6} xs={12}>
-                    <Box sx={{maxHeight: '400px', overflowY: 'scroll'}}>
-                      {tokenInfo.parsedToken.roles.map((group, index) => {
-                        return <Chip key={index} label={group} sx={{mb: 1}} />;
-                      })}
-                    </Box>
-                  </Grid>
-                  <Grid item sm={3} xs={12}>
+      {
+        //Nothing logged in?
+      }
+      {usernamesForServer.length === 0 ? (
+        <LoginButton
+          key={props.serverId}
+          conductor_url={props.conductor_url}
+          is_refresh={false}
+          startIcon={<LoginIcon />}
+        />
+      ) : (
+        <>
+          {usernamesForServer.map(username => {
+            const tokenInfo = servers[props.serverId]?.users[username];
+            return (
+              <div key={username}>
+                <h4>{username}</h4>
+                {!tokenInfo.token ? (
+                  <LoginButton
+                    key={props.serverId}
+                    conductor_url={props.conductor_url}
+                    is_refresh={false}
+                    startIcon={<LoginIcon />}
+                  />
+                ) : (
+                  <React.Fragment>
                     <Grid
                       container
                       direction="row"
-                      justifyContent="flex-end"
+                      justifyContent="flex-start"
+                      alignItems="center"
+                      spacing={1}
+                    >
+                      <Grid item sm={3} xs={12}>
+                        <Typography variant={'overline'}>
+                          Current User
+                        </Typography>
+                      </Grid>
+                      <Grid item sm={6} xs={12}>
+                        <Typography variant={'body2'} fontWeight={700}>
+                          {username}
+                        </Typography>
+                      </Grid>
+                      <Grid item sm={3} xs={12}>
+                        <Button
+                          size={'small'}
+                          sx={{float: 'right'}}
+                          variant={'contained'}
+                          disableElevation
+                          onClick={async () => {
+                            await handleLogout(username);
+                          }}
+                          startIcon={<LogoutIcon />}
+                        >
+                          Log&nbsp;Out
+                        </Button>
+                      </Grid>
+                    </Grid>
+                    <Divider sx={{my: 2}} />
+                    <Grid
+                      container
+                      direction="row"
+                      justifyContent="flex-start"
                       alignItems="flex-start"
                       spacing={1}
                     >
-                      <Grid item xs={12}>
-                        <LoginButton
-                          key={props.serverId}
-                          conductor_url={props.conductor_url}
-                          is_refresh={true}
-                          label={'refresh'}
-                          size={'small'}
-                          sx={{float: 'right'}}
-                          startIcon={<RefreshIcon />}
-                        />
+                      <Grid item sm={3} xs={12}>
+                        <Typography variant={'overline'}>Roles</Typography>
                       </Grid>
-                      <Grid item xs={12} sx={{textAlign: 'right'}}>
-                        <Typography variant={'caption'}>
-                          Sign in again to refresh roles
-                        </Typography>
+                      <Grid item sm={6} xs={12}>
+                        <Box sx={{maxHeight: '400px', overflowY: 'scroll'}}>
+                          {tokenInfo.parsedToken.roles.map((group, index) => {
+                            return (
+                              <Chip key={index} label={group} sx={{mb: 1}} />
+                            );
+                          })}
+                        </Box>
+                      </Grid>
+                      <Grid item sm={3} xs={12}>
+                        <Grid
+                          container
+                          direction="row"
+                          justifyContent="flex-end"
+                          alignItems="flex-start"
+                          spacing={1}
+                        >
+                          <Grid item xs={12}>
+                            <LoginButton
+                              key={props.serverId}
+                              conductor_url={props.conductor_url}
+                              is_refresh={true}
+                              label={'refresh'}
+                              size={'small'}
+                              sx={{float: 'right'}}
+                              startIcon={<RefreshIcon />}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sx={{textAlign: 'right'}}>
+                            <Typography variant={'caption'}>
+                              Sign in again to refresh roles
+                            </Typography>
+                          </Grid>
+                        </Grid>
                       </Grid>
                     </Grid>
-                  </Grid>
-                </Grid>
-                <Divider sx={{my: 2}} />
-              </React.Fragment>
-            )}
-          </>
-        );
-      })}
+                    <Divider sx={{my: 2}} />
+                  </React.Fragment>
+                )}
+              </div>
+            );
+          })}
+        </>
+      )}
     </MainCard>
   );
 }

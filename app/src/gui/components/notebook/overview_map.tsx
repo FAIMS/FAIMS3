@@ -41,6 +41,7 @@ import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
 import {Geolocation} from '@capacitor/geolocation';
+import {useAuthStore} from '../../../context/authStore';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -65,6 +66,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
+  const activeUser = useAuthStore(state => state.activeUser?.parsedToken);
 
   /**
    * Get the names of all GIS fields in this UI Specification
@@ -90,7 +92,12 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const getFeatures = async () => {
     const f: FeatureProps[] = [];
     if (gisFields.length > 0) {
-      const records = await getMetadataForAllRecords(props.project_id, true);
+      const records = await getMetadataForAllRecords(
+        // TODO what do we do if no active user?
+        activeUser!,
+        props.project_id,
+        true
+      );
       if (records) {
         records.forEach(record => {
           if (record.data) {

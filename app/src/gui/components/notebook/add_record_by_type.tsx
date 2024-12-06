@@ -15,6 +15,7 @@ import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {useAuthStore} from '../../../context/authStore';
 
 type AddRecordButtonsProps = {
   project: ProjectExtended;
@@ -26,6 +27,7 @@ export default function AddRecordButtons({
   recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
+  const activeUser = useAuthStore(state => state.activeUser);
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
   const [uiSpec, setUiSpec] = useState<ProjectUIModel | undefined>(undefined);
@@ -52,13 +54,17 @@ export default function AddRecordButtons({
 
   const handleScanResult = (value: string) => {
     // find a record with this field value
-    getRecordsWithRegex(_id, value, true).then(records => {
-      // navigate to it
-      // what should happen if there are more than one?
-      for (const key in records) {
-        setSelectedRecord(records[key]);
+
+    // TODO validate that this is always defined!
+    getRecordsWithRegex(activeUser?.parsedToken!, _id, value, true).then(
+      records => {
+        // navigate to it
+        // what should happen if there are more than one?
+        for (const key in records) {
+          setSelectedRecord(records[key]);
+        }
       }
-    });
+    );
   };
   if (selectedRecord) {
     /*  if we have selected a record (via QR scanning) then redirect to it here */

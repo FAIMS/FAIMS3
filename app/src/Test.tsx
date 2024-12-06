@@ -64,8 +64,9 @@ export const TestComponent = () => {
 
   const {
     servers,
-    activeUser: activeConnection,
+    activeUser,
     refreshError,
+    isAuthenticated,
     setServerConnection,
     setActiveUser: setActiveConnection,
     removeServerConnection,
@@ -92,10 +93,10 @@ export const TestComponent = () => {
   };
 
   const refreshActive = async () => {
-    if (activeConnection) {
+    if (activeUser) {
       await refreshToken({
-        serverId: activeConnection.serverId,
-        username: activeConnection.username,
+        serverId: activeUser.serverId,
+        username: activeUser.username,
       });
     }
   };
@@ -203,10 +204,10 @@ export const TestComponent = () => {
       {/* Active connection section */}
       <div style={sectionStyle}>
         <h3 style={{marginBottom: '8px'}}>Active Connection</h3>
-        {activeConnection ? (
+        {activeUser ? (
           <>
-            <p>Server: {activeConnection.serverId}</p>
-            <p>User: {activeConnection.username}</p>
+            <p>Server: {activeUser.serverId}</p>
+            <p>User: {activeUser.username}</p>
             <button
               onClick={refreshActive}
               style={{...buttonStyle, backgroundColor: '#6f42c1'}}
@@ -233,7 +234,7 @@ export const TestComponent = () => {
       <div style={sectionStyle}>
         <h3 style={{marginBottom: '8px'}}>Current State</h3>
         <pre style={preStyle}>
-          {JSON.stringify({servers, activeConnection, refreshError}, null, 2)}
+          {JSON.stringify({servers, activeConnection: activeUser, refreshError, isAuthenticated}, null, 2)}
         </pre>
       </div>
 

@@ -1,8 +1,7 @@
 import {Navigate} from 'react-router-dom';
 
 import * as ROUTES from './routes';
-import {useGetAnyToken} from '../utils/tokenHooks';
-import LoadingApp from '../gui/components/loadingApp';
+import {useAuthStore} from '../context/authStore';
 
 interface PrivateRouteProps {
   // tslint:disable-next-line:no-any
@@ -16,14 +15,13 @@ interface PrivateRouteProps {
  * valid) for the first listing entry in the listings db
  */
 export const PrivateRoute = (props: PrivateRouteProps): React.ReactElement => {
-  // Get a default token - this is the first listing's token
-  // TODO use a context provider for listings instead of getting first entry
-  const anyToken = useGetAnyToken();
-  // The token is being retrieved
-  if (anyToken.isLoading) {
-    return <LoadingApp />;
-  }
+  // Check if the current active user is nicely logged in (i.e. valid, unexpired
+  // token)
 
-  if (anyToken.data?.token) return props.children;
+  // TODO This will force a re-render if the user is ever logged out - could
+  // cause issues in offline context? Or during data collection.
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  if (isAuthenticated) return props.children;
   else return <Navigate to={ROUTES.SIGN_IN} />;
 };

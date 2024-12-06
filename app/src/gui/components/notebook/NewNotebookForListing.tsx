@@ -1,4 +1,3 @@
-import {ListingsObject} from '@faims3/data-model/src/types';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import InfoIcon from '@mui/icons-material/Info';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -22,14 +21,12 @@ import {
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import {parseToken} from '../../../users';
+import {useAuthStore} from '../../../context/authStore';
+import {useNotification} from '../../../context/popup';
 import {useCreateNotebookFromTemplate} from '../../../utils/apiHooks/notebooks';
 import {useGetTemplates} from '../../../utils/apiHooks/templates';
-import {useRefreshToken} from '../../../utils/tokenHooks';
-import CircularLoading from '../ui/circular_loading';
-import {useNotification} from '../../../context/popup';
-import {useAuthStore} from '../../../context/authStore';
 import {useGetListing} from '../../../utils/custom_hooks';
+import CircularLoading from '../ui/circular_loading';
 
 export interface NewNotebookForListingProps {
   serverId: string;

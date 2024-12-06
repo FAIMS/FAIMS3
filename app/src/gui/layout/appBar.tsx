@@ -57,6 +57,7 @@ import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import SyncStatus from '../components/sync';
+import { useAuthStore } from '../../context/authStore';
 
 /**
  * Represents the properties for a menu list item.
@@ -210,7 +211,6 @@ function getNestedProjects(pouchProjectList: ProjectExtended[]) {
 }
 
 type NavbarProps = {
-  token?: PossibleToken;
 };
 /**
  * MainAppBar component handles the display of the navigation drawer and the app bar.
@@ -229,7 +229,7 @@ export default function MainAppBar(props: NavbarProps) {
   );
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const isAuthenticated = checkToken(props.token);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const toggle = () => setIsOpen(!isOpen);
 
   const topMenuItems: Array<MenuItemProps> = [

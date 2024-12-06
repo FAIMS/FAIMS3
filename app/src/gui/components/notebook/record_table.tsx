@@ -546,17 +546,27 @@ function RecordsTable(props: RecordsTableProps) {
  */
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {recordLabel} = props;
+  // TODO validate this is always defined
+  const activeToken = useAuthStore(state => state.activeUser?.parsedToken!);
   const [query, setQuery] = React.useState('');
   const {data: records, isLoading: recordsLoading} = useQuery({
     queryKey: ['allrecords', query, props.project_id],
     queryFn: async () => {
       if (query.length === 0) {
-        return await getMetadataForAllRecords(
+        console.log(
+          'Getting metadata for all records with project ID',
+          props.project_id
+        );
+        const rows = await getMetadataForAllRecords(
+          activeToken,
           props.project_id,
           props.filter_deleted
         );
+        console.log(rows);
+        return rows;
       } else {
         return await getRecordsWithRegex(
+          activeToken,
           props.project_id,
           query,
           props.filter_deleted
