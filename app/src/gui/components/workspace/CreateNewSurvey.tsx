@@ -16,19 +16,18 @@ import NewNotebookForListing from '../notebook/NewNotebookForListing';
 export interface CreateNewSurveyProps {}
 const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
   const activeUser = useAuthStore(state => state.activeUser);
-  // TODO guard this component with active user check
-  if (!activeUser) {
-    return <p>An error occurred - you do not have an active user.</p>;
-  }
-  const tokenInfo =
-    useAuthStore.getState().servers[activeUser?.serverId].users[
-      activeUser.username
-    ];
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // TODO guard this component with active user check
+  if (!activeUser) {
+    return <p>An error occurred - no user is currently active!</p>;
+  }
+
+  const tokenInfo = activeUser.parsedToken;
+
   // Check user has the right role
-  const allowed = userCanCreateNotebooks(tokenInfo.parsedToken);
+  const allowed = userCanCreateNotebooks(tokenInfo);
 
   // TODO guard this component with specific role - button should never appear.
   if (!allowed) {
