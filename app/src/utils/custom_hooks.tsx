@@ -44,16 +44,6 @@ const fetchListing = async (
 /**
  * Custom hook to fetch and manage listings from a directory database using React Query.
  */
-export const useGetListings = (): UseQueryResult<ListingsObject[], Error> => {
-  return useQuery<ListingsObject[], Error>({
-    queryKey: ['listings'],
-    queryFn: fetchListings,
-  });
-};
-
-/**
- * Custom hook to fetch and manage listings from a directory database using React Query.
- */
 export const useGetListing = (input: {serverId: string}) => {
   return useQuery({
     queryKey: ['listings'],
