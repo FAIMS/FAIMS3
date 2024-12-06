@@ -29,9 +29,10 @@ jobs:
     needs: check_date
     if: ${{ needs.check_date.outputs.should_run != 'false' }}
     continue-on-error: false
-    env:
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+    # env:
+      # turn of turbo to avoid issue with missing assets
+      # TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      # TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Cache node modules
