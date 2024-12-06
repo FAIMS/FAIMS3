@@ -42,6 +42,7 @@ import {userCanCreateNotebooks} from '../../../users';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
+import {activateProjectDB} from '../../../dbs/projects-db';
 
 // Survey status naming conventions
 
@@ -64,13 +65,19 @@ export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 export const DE_ACTIVATE_VERB = 'De-activate';
 
 export default function NoteBooks() {
-  const [refresh, setRefresh] = useState(false);
-  const {projects, syncProjects} = useContext(ProjectsContext);
+  const [refresh, setRefreshing] = useState(false);
 
   // get the active user - this will allow us to check roles against it
-  const activeUser = useAuthStore(state => state.activeUser);
+  // TODO what do we do if this is not defined
+  const activeServerId = useAuthStore(state => state.activeUser?.serverId);
+  const activeUserToken = useAuthStore(state => state.activeUser?.parsedToken);
 
-  const activatedProjects = projects.filter(({activated}) => activated);
+  const {projects: allProjects, syncProjects} = useContext(ProjectsContext);
+  const projects = allProjects.filter(p => {
+    return p.listing === activeServerId;
+  });
+
+  const activeUserActivatedProjects = projects.filter(nb => nb.activated);
 
   const [tabID, setTabID] = useState('1');
 
@@ -209,7 +216,7 @@ export default function NoteBooks() {
       ];
 
   const showCreateNewNotebookButton =
-    activeUser && userCanCreateNotebooks(activeUser.parsedToken);
+    activeUserToken && userCanCreateNotebooks(activeUserToken);
 
   // What type of layout are we using?
   const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
@@ -234,9 +241,9 @@ export default function NoteBooks() {
 
   const notActivatedAdvice = (
     <>
-      You have {activatedProjects.length} {NOTEBOOK_NAME}
-      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
-      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
+      You have {activeUserActivatedProjects.length} {NOTEBOOK_NAME}
+      {activeUserActivatedProjects.length !== 1 ? 's' : ''} currently{' '}
+      {ACTIVATED_LABEL} on this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (
@@ -287,7 +294,7 @@ export default function NoteBooks() {
             sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
             startIcon={<RefreshOutlined />}
             onClick={async () => {
-              setRefresh(true);
+              setRefreshing(true);
               await syncProjects()
                 .then(() => {
                   notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
@@ -298,7 +305,7 @@ export default function NoteBooks() {
                     `Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`
                   );
                 });
-              setRefresh(false);
+              setRefreshing(false);
             }}
           >
             Refresh {NOTEBOOK_NAME}s

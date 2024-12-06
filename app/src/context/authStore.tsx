@@ -167,6 +167,7 @@ export const useAuthStore = create<AuthState>()(
         set(state => {
           const connection = state.servers[serverId]?.users[username];
           if (!connection) {
+            console.error("Couldn't find connection for active user.");
             return {
               ...state,
               activeUser: undefined,
@@ -206,35 +207,41 @@ export const useAuthStore = create<AuthState>()(
             }
           }
 
+          // did we remove the active connection? If so then ensure we track
+          // this and pivot to a new one
           if (
             state.activeUser?.serverId === serverId &&
             state.activeUser?.username === username
           ) {
+            newState.activeUser = undefined;
+            newState.isAuthenticated = false;
+
+            // Now, is there something we could replace it with? This is old
+            // state, so take into account it could include the removed identity
+            const allUsers = state.getAllServerUsers().filter(identity => {
+              !(
+                identity.username === username && identity.serverId === serverId
+              );
+            });
+
+            if (allUsers.length > 0) {
+              const newActive = allUsers[0];
+              console.log('Setting active user to: ', newActive);
+              const details = state.getServerUserInformation(newActive);
+              if (!details) {
+                // something weird happening here!
+                newState.activeUser = undefined;
+              } else {
+                newState.activeUser = {...newActive, ...details};
+                newState.isAuthenticated = checkAuthenticationStatus(newState);
+              }
+            } else {
+              set({activeUser: undefined});
+            }
           }
 
-          newState.isAuthenticated = checkAuthenticationStatus(newState);
           return newState;
         });
-
-        // Find another user to make active! This is so that when you swap users
-        // you don't get 'logged out'
-
-        // TODO we might want to consider some sort of logical ordering here -
-        // also noting this could provoke a refresh
-
-        // List all first
-        const state = get();
-
-        // Get any of them, if available
-        if (state.activeUser === undefined) {
-          const allUsers = state.getAllServerUsers();
-          if (allUsers.length > 0) {
-            const newActive = allUsers[0];
-            state.setActiveUser(newActive);
-          } else {
-            set({activeUser: undefined});
-          }
-        }
       },
 
       clearActiveConnection: () => {

@@ -18,11 +18,21 @@
  *   TODO
  */
 import {Browser} from '@capacitor/browser';
+import {Person2Sharp} from '@mui/icons-material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import {Box, Button, Chip, Divider, Grid, Typography} from '@mui/material';
+import {
+  Box,
+  Button,
+  Chip,
+  Divider,
+  Grid,
+  Stack,
+  Typography,
+} from '@mui/material';
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
 import {APP_ID} from '../../../buildconfig';
@@ -32,6 +42,9 @@ import {update_directory} from '../../../sync/process-initialization';
 import {isWeb} from '../../../utils/helpers';
 import MainCard from '../ui/main-card';
 import {LoginButton} from './login_form';
+
+// TODO when we fix the add new user logic, bring this back
+const ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED = false;
 
 type ClusterCardProps = {
   serverId: string;
@@ -48,9 +61,15 @@ export default function ClusterCard(props: ClusterCardProps) {
     state => state.removeServerConnection
   );
 
+  // set active user
+  const setActiveUser = useAuthStore(state => state.setActiveUser);
+
   // For the current server, get logged in usernames
-  const servers = useAuthStore(state => state.servers);
-  const usernamesForServer = Object.keys(servers[props.serverId]?.users ?? {});
+  const usernames = useAuthStore(state => state.getAllServerUsers)().filter(
+    s => s.serverId === props.serverId
+  );
+  const getDetails = useAuthStore(state => state.getServerUserInformation);
+  const activeUser = useAuthStore(state => state.activeUser);
 
   const handleLogout = async (username: string) => {
     removeServerConnection({serverId: props.serverId, username});
@@ -63,6 +82,17 @@ export default function ClusterCard(props: ClusterCardProps) {
       // Use the capacitor browser plugin in apps
       await Browser.open({
         url: `${props.conductor_url}/logout?redirect=${APP_ID}://auth-return`,
+      });
+    }
+  };
+
+  const handleAddNewUser = async () => {
+    if (isWeb()) {
+      const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
+      window.location.href = props.conductor_url + '/auth?redirect=' + redirect;
+    } else {
+      await Browser.open({
+        url: `${props.conductor_url}/auth?redirect=${APP_ID}://auth-return`,
       });
     }
   };
@@ -96,10 +126,7 @@ export default function ClusterCard(props: ClusterCardProps) {
         </Button>
       }
     >
-      {
-        //Nothing logged in?
-      }
-      {usernamesForServer.length === 0 ? (
+      {usernames.length === 0 ? (
         <LoginButton
           key={props.serverId}
           conductor_url={props.conductor_url}
@@ -108,12 +135,76 @@ export default function ClusterCard(props: ClusterCardProps) {
         />
       ) : (
         <>
-          {usernamesForServer.map(username => {
-            const tokenInfo = servers[props.serverId]?.users[username];
+          {ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED && (
+            <>
+              <Box sx={{textAlign: 'center'}}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<PersonAddIcon />}
+                  onClick={handleAddNewUser}
+                  sx={{
+                    borderStyle: 'dashed',
+                    '&:hover': {
+                      borderStyle: 'solid',
+                    },
+                  }}
+                >
+                  Add New User
+                </Button>
+              </Box>
+              <Divider sx={{my: 2}} />
+            </>
+          )}
+          {usernames.map(identity => {
+            const username = identity.username;
+            const tokenInfo = getDetails(identity);
+            const isActive =
+              activeUser?.username === username &&
+              activeUser?.serverId === props.serverId;
+            const isLoggedIn = !!tokenInfo?.token;
             return (
               <div key={username}>
-                <h4>{username}</h4>
-                {!tokenInfo.token ? (
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={3}
+                  justifyContent={'space-between'}
+                >
+                  <h4>
+                    {isActive && '(Active) '}
+                    {username}
+                  </h4>
+                  {!isActive && (
+                    <Button
+                      size={'small'}
+                      sx={{float: 'right'}}
+                      variant={'contained'}
+                      disableElevation
+                      onClick={() => {
+                        setActiveUser(identity);
+                      }}
+                      startIcon={<Person2Sharp />}
+                    >
+                      Activate
+                    </Button>
+                  )}
+                  {isLoggedIn && (
+                    <Button
+                      size={'small'}
+                      sx={{float: 'right'}}
+                      variant={'contained'}
+                      disableElevation
+                      onClick={async () => {
+                        await handleLogout(username);
+                      }}
+                      startIcon={<LogoutIcon />}
+                    >
+                      Log&nbsp;Out
+                    </Button>
+                  )}
+                </Stack>
+                {!isLoggedIn ? (
                   <LoginButton
                     key={props.serverId}
                     conductor_url={props.conductor_url}
@@ -122,38 +213,6 @@ export default function ClusterCard(props: ClusterCardProps) {
                   />
                 ) : (
                   <React.Fragment>
-                    <Grid
-                      container
-                      direction="row"
-                      justifyContent="flex-start"
-                      alignItems="center"
-                      spacing={1}
-                    >
-                      <Grid item sm={3} xs={12}>
-                        <Typography variant={'overline'}>
-                          Current User
-                        </Typography>
-                      </Grid>
-                      <Grid item sm={6} xs={12}>
-                        <Typography variant={'body2'} fontWeight={700}>
-                          {username}
-                        </Typography>
-                      </Grid>
-                      <Grid item sm={3} xs={12}>
-                        <Button
-                          size={'small'}
-                          sx={{float: 'right'}}
-                          variant={'contained'}
-                          disableElevation
-                          onClick={async () => {
-                            await handleLogout(username);
-                          }}
-                          startIcon={<LogoutIcon />}
-                        >
-                          Log&nbsp;Out
-                        </Button>
-                      </Grid>
-                    </Grid>
                     <Divider sx={{my: 2}} />
                     <Grid
                       container
