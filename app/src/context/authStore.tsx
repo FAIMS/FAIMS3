@@ -12,10 +12,13 @@ interface ParsedToken {
   server: string;
 }
 
-interface TokenInfo {
+export interface UserTokens {
   token: string;
   refreshToken?: string;
   parsedToken: ParsedToken;
+}
+
+interface TokenInfo extends UserTokens {
   expiresAt: number;
 }
 
@@ -51,8 +54,8 @@ interface ServerUserIdentity {
 
 interface AuthState {
   servers: ServerMap;
-  activeUser: ActiveUser | null;
-  refreshError: string | null;
+  activeUser: ActiveUser | undefined;
+  refreshError: string | undefined;
   isAuthenticated: boolean;
 
   setServerConnection: (input: SetServerConnectionInput) => void;
@@ -61,8 +64,9 @@ interface AuthState {
   clearActiveConnection: () => void;
   refreshToken: (input: ServerUserIdentity) => Promise<void>;
   refreshActiveUser: () => Promise<void>;
-  getActiveToken: () => TokenInfo | null;
-  getServerUserInformation: (input: ServerUserIdentity) => TokenInfo | null;
+  getActiveToken: () => TokenInfo | undefined;
+  getServerUserInformation: (input: ServerUserIdentity) => TokenInfo | undefined;
+  getAllServerUsers: () => ServerUserIdentity[];
 }
 
 const parseJwt = async (token: string): Promise<ParsedToken> => {
@@ -81,13 +85,13 @@ const callRefreshApi = async (
   return {token: updatedToken.token, refreshToken};
 };
 
-const isTokenValid = (tokenInfo: TokenInfo | null | undefined): boolean => {
+const isTokenValid = (tokenInfo: TokenInfo | undefined): boolean => {
   if (!tokenInfo) return false;
-  return tokenInfo.token != null && tokenInfo.expiresAt > moment.now();
+  return tokenInfo.token != undefined && tokenInfo.expiresAt > moment.now();
 };
 
 const isTokenRefreshable = (
-  tokenInfo: TokenInfo | null | undefined
+  tokenInfo: TokenInfo | undefined
 ): boolean => {
   if (!tokenInfo) return false;
   return !!tokenInfo.refreshToken;
@@ -104,8 +108,8 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       servers: {},
-      activeUser: null,
-      refreshError: null,
+      activeUser: undefined,
+      refreshError: undefined,
       isAuthenticated: false,
 
       setServerConnection: ({
@@ -163,7 +167,7 @@ export const useAuthStore = create<AuthState>()(
           if (!connection) {
             return {
               ...state,
-              activeUser: null,
+              activeUser: undefined,
               isAuthenticated: false,
             };
           }
@@ -201,7 +205,7 @@ export const useAuthStore = create<AuthState>()(
             state.activeUser?.serverId === serverId &&
             state.activeUser?.username === username
           ) {
-            newState.activeUser = null;
+            newState.activeUser = undefined;
           }
 
           newState.isAuthenticated = checkAuthenticationStatus(newState);
@@ -212,7 +216,7 @@ export const useAuthStore = create<AuthState>()(
       clearActiveConnection: () => {
         set(state => ({
           ...state,
-          activeUser: null,
+          activeUser: undefined,
           isAuthenticated: false,
         }));
       },
@@ -257,7 +261,7 @@ export const useAuthStore = create<AuthState>()(
 
           set(state => ({
             ...state,
-            refreshError: null,
+            refreshError: undefined,
           }));
         } catch (error) {
           set(state => ({
@@ -280,14 +284,24 @@ export const useAuthStore = create<AuthState>()(
 
       getActiveToken: () => {
         const state = get();
-        if (!state.activeUser) return null;
+        if (!state.activeUser) return undefined;
 
         const {serverId, username} = state.activeUser;
-        return state.servers[serverId]?.users[username] || null;
+        return state.servers[serverId]?.users[username] || undefined;
       },
 
       getServerUserInformation: (input: ServerUserIdentity) => {
-        return get().servers[input.serverId]?.users[input.username] ?? null;
+        return get().servers[input.serverId]?.users[input.username] ?? undefined;
+      },
+
+      getAllServerUsers: (): ServerUserIdentity[] => {
+        const state = get();
+        return Object.entries(state.servers).flatMap(([serverId, server]) =>
+          Object.keys(server.users).map(username => ({
+            serverId,
+            username,
+          }))
+        );
       },
     }),
     {
@@ -298,7 +312,7 @@ export const useAuthStore = create<AuthState>()(
 
 // Set up the refresh checker
 const startTokenRefreshChecker = () => {
-  setInterval(() => {
+  setInterval(async () => {
     console.log('Token refresh tick');
     const state = useAuthStore.getState();
     if (state.activeUser) {
@@ -312,7 +326,7 @@ const startTokenRefreshChecker = () => {
           isTokenRefreshable(connection)
         ) {
           console.log('Initiating token refresh');
-          state.refreshToken({serverId, username});
+          await state.refreshToken({serverId, username});
         } else if (connection.expiresAt <= moment.now()) {
           useAuthStore.setState(state => ({
             ...state,
