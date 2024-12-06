@@ -23,18 +23,14 @@ def delete_temp_keychain()
   ) if File.exist? File.expand_path("~/Library/Keychains/#{KEYCHAIN_NAME}-db")
 end
 
-def create_temp_keychain()
+def ensure_temp_keychain()
+  delete_temp_keychain()
   create_keychain(
     name: KEYCHAIN_NAME,
     password: KEYCHAIN_PASSWORD,
     unlock: false,
     timeout: 0
   )
-end
-
-def ensure_temp_keychain()
-  delete_temp_keychain()
-  create_temp_keychain(KEYCHAIN_NAME, KEYCHAIN_PASSWORD)
 end
 
 platform :ios do
