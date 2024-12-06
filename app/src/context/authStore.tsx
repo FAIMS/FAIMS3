@@ -1,13 +1,11 @@
+import moment from 'moment';
 import {create} from 'zustand';
 import {persist} from 'zustand/middleware';
-import {requestTokenRefresh} from '../utils/apiOperations/auth';
 import {parseToken} from '../users';
-import moment from 'moment';
+import {requestTokenRefresh} from '../utils/apiOperations/auth';
 
 // Types
 interface ParsedToken {
-  // TODO bring this back
-  //exp: number;
   username: string;
   roles: string[];
   name?: string;
@@ -16,7 +14,7 @@ interface ParsedToken {
 
 interface TokenInfo {
   token: string;
-  refreshToken: string;
+  refreshToken?: string;
   parsedToken: ParsedToken;
   expiresAt: number;
 }
@@ -31,154 +29,268 @@ interface ServerMap {
   };
 }
 
-interface ActiveConnection {
+interface ActiveUser {
+  serverId: string;
+  username: string;
+  token: string;
+  parsedToken: ParsedToken;
+}
+
+interface SetServerConnectionInput {
+  serverId: string;
+  username: string;
+  token: string;
+  refreshToken?: string;
+  parsedToken: ParsedToken;
+}
+
+interface ServerUserIdentity {
   serverId: string;
   username: string;
 }
 
 interface AuthState {
   servers: ServerMap;
-  activeConnection: ActiveConnection | null;
+  activeUser: ActiveUser | null;
   refreshError: string | null;
+  isAuthenticated: boolean;
 
-  // Actions
-  setServerConnection: (
-    serverId: string,
-    username: string,
-    token: string,
-    refreshToken: string,
-    parsedToken: ParsedToken
-  ) => void;
-  setActiveConnection: (serverId: string, username: string) => void;
-  removeServerConnection: (serverId: string, username: string) => void;
+  setServerConnection: (input: SetServerConnectionInput) => void;
+  setActiveUser: (input: ServerUserIdentity) => void;
+  removeServerConnection: (input: ServerUserIdentity) => void;
   clearActiveConnection: () => void;
-  refreshToken: (serverId: string, username: string) => Promise<void>;
+  refreshToken: (input: ServerUserIdentity) => Promise<void>;
+  refreshActiveUser: () => Promise<void>;
+  getActiveToken: () => TokenInfo | null;
+  getServerUserInformation: (input: ServerUserIdentity) => TokenInfo | null;
 }
 
-// TODO: Implement these functions according to your application needs
 const parseJwt = async (token: string): Promise<ParsedToken> => {
-  // Implement JWT parsing logic here
   const contents = await parseToken(token);
-  // TODO expiry on the token - this will come from the API once I re-enable it
   return {...contents};
 };
 
 const callRefreshApi = async (
   serverId: string,
+  username: string,
   refreshToken: string
 ): Promise<{token: string; refreshToken: string}> => {
-  const updatedToken = await requestTokenRefresh(serverId, {
+  const updatedToken = await requestTokenRefresh(serverId, username, {
     refreshToken,
   });
   return {token: updatedToken.token, refreshToken};
 };
 
-// Create store
+const isTokenValid = (tokenInfo: TokenInfo | null | undefined): boolean => {
+  if (!tokenInfo) return false;
+  return tokenInfo.token != null && tokenInfo.expiresAt > moment.now();
+};
+
+const isTokenRefreshable = (
+  tokenInfo: TokenInfo | null | undefined
+): boolean => {
+  if (!tokenInfo) return false;
+  return !!tokenInfo.refreshToken;
+};
+
+const checkAuthenticationStatus = (state: AuthState): boolean => {
+  if (!state.activeUser) return false;
+  const {serverId, username} = state.activeUser;
+  const connection = state.servers[serverId]?.users[username];
+  return isTokenValid(connection);
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       servers: {},
-      activeConnection: null,
+      activeUser: null,
       refreshError: null,
+      isAuthenticated: false,
 
-      setServerConnection: (
+      setServerConnection: ({
         serverId,
         username,
         token,
         refreshToken,
-        parsedToken
-      ) => {
-        // Fake expiry for now - to prompt refresh
-        // TODO
+        parsedToken,
+      }) => {
         const expiresAt = moment.now() + 1000 * 60;
-        set(state => ({
-          servers: {
-            ...state.servers,
-            [serverId]: {
-              users: {
-                ...(state.servers[serverId]?.users || {}),
-                [username]: {
-                  token,
-                  refreshToken,
-                  parsedToken,
-                  expiresAt,
+        set(state => {
+          const newState = {
+            servers: {
+              ...state.servers,
+              [serverId]: {
+                users: {
+                  ...(state.servers[serverId]?.users || {}),
+                  [username]: {
+                    token,
+                    ...(refreshToken && {refreshToken}),
+                    parsedToken,
+                    expiresAt,
+                  },
                 },
               },
             },
-          },
-        }));
+          };
+
+          // Update active user token if this is the active user
+          const activeUserUpdate =
+            state.activeUser &&
+            state.activeUser.serverId === serverId &&
+            state.activeUser.username === username
+              ? {
+                  activeUser: {
+                    ...state.activeUser,
+                    token,
+                    parsedToken,
+                  },
+                }
+              : {};
+
+          return {
+            ...state,
+            ...newState,
+            ...activeUserUpdate,
+            isAuthenticated: checkAuthenticationStatus({...state, ...newState}),
+          };
+        });
       },
 
-      setActiveConnection: (serverId, username) => {
-        set({activeConnection: {serverId, username}});
+      setActiveUser: ({serverId, username}) => {
+        set(state => {
+          const connection = state.servers[serverId]?.users[username];
+          if (!connection) {
+            return {
+              ...state,
+              activeUser: null,
+              isAuthenticated: false,
+            };
+          }
+
+          const newState = {
+            activeUser: {
+              serverId,
+              username,
+              token: connection.token,
+              parsedToken: connection.parsedToken,
+            },
+          };
+
+          return {
+            ...state,
+            ...newState,
+            isAuthenticated: checkAuthenticationStatus({...state, ...newState}),
+          };
+        });
       },
 
-      removeServerConnection: (serverId, username) => {
+      removeServerConnection: ({serverId, username}) => {
         set(state => {
           const newState = {...state};
 
-          // Remove the user
           if (newState.servers[serverId]?.users) {
             delete newState.servers[serverId].users[username];
 
-            // If no users left, remove the entire server entry
             if (Object.keys(newState.servers[serverId].users).length === 0) {
               delete newState.servers[serverId];
             }
           }
 
-          // Clear active connection if it matches
           if (
-            state.activeConnection?.serverId === serverId &&
-            state.activeConnection?.username === username
+            state.activeUser?.serverId === serverId &&
+            state.activeUser?.username === username
           ) {
-            newState.activeConnection = null;
+            newState.activeUser = null;
           }
 
+          newState.isAuthenticated = checkAuthenticationStatus(newState);
           return newState;
         });
       },
 
       clearActiveConnection: () => {
-        set({activeConnection: null});
+        set(state => ({
+          ...state,
+          activeUser: null,
+          isAuthenticated: false,
+        }));
       },
 
-      refreshToken: async (serverId, username) => {
+      refreshToken: async ({serverId, username}) => {
         const state = get();
         const connection = state.servers[serverId]?.users[username];
 
         if (!connection) {
-          set({refreshError: 'No connection found'});
+          set(state => ({
+            ...state,
+            refreshError: 'No connection found',
+            isAuthenticated: checkAuthenticationStatus(state),
+          }));
+          return;
+        }
+
+        if (!isTokenRefreshable(connection)) {
+          set(state => ({
+            ...state,
+            refreshError: 'No refresh token available',
+            isAuthenticated: checkAuthenticationStatus(state),
+          }));
           return;
         }
 
         try {
           const {token, refreshToken} = await callRefreshApi(
+            username,
             serverId,
-            connection.refreshToken
+            connection.refreshToken!
           );
           const parsedToken = await parseJwt(token);
 
-          get().setServerConnection(
+          get().setServerConnection({
             serverId,
             username,
             token,
             refreshToken,
-            parsedToken
-          );
+            parsedToken,
+          });
 
-          set({refreshError: null});
+          set(state => ({
+            ...state,
+            refreshError: null,
+          }));
         } catch (error) {
-          set({
+          set(state => ({
+            ...state,
             refreshError:
               error instanceof Error ? error.message : 'Unknown error',
-          });
-          // TODO what happens if an error occurs - do we want to redirect?
+            isAuthenticated: false,
+          }));
         }
+      },
+
+      refreshActiveUser: async () => {
+        const state = get();
+        if (!state.activeUser) {
+          console.error('Cannot refresh active user when no user is active.');
+          return;
+        }
+        await state.refreshToken({...state.activeUser});
+      },
+
+      getActiveToken: () => {
+        const state = get();
+        if (!state.activeUser) return null;
+
+        const {serverId, username} = state.activeUser;
+        return state.servers[serverId]?.users[username] || null;
+      },
+
+      getServerUserInformation: (input: ServerUserIdentity) => {
+        return get().servers[input.serverId]?.users[input.username] ?? null;
       },
     }),
     {
-      // Persist everything
       name: 'auth-storage',
     }
   )
@@ -189,21 +301,27 @@ const startTokenRefreshChecker = () => {
   setInterval(() => {
     console.log('Token refresh tick');
     const state = useAuthStore.getState();
-    if (state.activeConnection) {
-      const {serverId, username} = state.activeConnection;
+    if (state.activeUser) {
+      const {serverId, username} = state.activeUser;
       const connection = state.servers[serverId]?.users[username];
 
       if (connection) {
-        // Refresh if token expires in next 5 minutes
         const fiveMinutesFromNow = Date.now() + 5 * 60 * 1000;
-        if (connection.expiresAt < fiveMinutesFromNow) {
+        if (
+          connection.expiresAt < fiveMinutesFromNow &&
+          isTokenRefreshable(connection)
+        ) {
           console.log('Initiating token refresh');
-          state.refreshToken(serverId, username);
+          state.refreshToken({serverId, username});
+        } else if (connection.expiresAt <= moment.now()) {
+          useAuthStore.setState(state => ({
+            ...state,
+            isAuthenticated: false,
+          }));
         }
       }
     }
   }, 30000);
 };
 
-// Start the checker
 startTokenRefreshChecker();

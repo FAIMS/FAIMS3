@@ -42,7 +42,7 @@ describe('Check appbarAuth', () => {
   it('Check with token', () => {
     render(
       <BrowserRouter>
-        <AppBarAuth token={testToken} />
+        <AppBarAuth/>
       </BrowserRouter>
     );
     expect(screen.getByText(testToken.username)).toBeTruthy();

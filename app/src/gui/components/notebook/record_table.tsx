@@ -34,7 +34,6 @@ import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {useGetCurrentUser} from '../../../utils/useGetCurrentUser';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
@@ -45,6 +44,7 @@ import {
   getUiSpecForProject,
   getVisibleTypes,
 } from '../../../uiSpecification';
+import {useAuthStore} from '../../../context/authStore';
 
 /**
  * Props for the RecordsTable component
@@ -88,7 +88,7 @@ type RecordsBrowseTableProps = {
  */
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading, onRecordsCountChange} = props;
-  const {data: currentUser} = useGetCurrentUser(project_id);
+  const activeUser = useAuthStore(state => state.activeUser);
 
   const theme = useTheme();
   const history = useNavigate();
@@ -160,7 +160,8 @@ function RecordsTable(props: RecordsTableProps) {
    * @returns Count filtered by  current user
    */
   const getUserRecordCount = (records: RecordMetadata[]) => {
-    return records.filter(record => record.created_by === currentUser).length;
+    return records.filter(record => record.created_by === activeUser?.username)
+      .length;
   };
 
   const rowTypeColumn = {
@@ -386,13 +387,13 @@ function RecordsTable(props: RecordsTableProps) {
     }
 
     const totalRecords = visible_rows.length;
-    const myRecords = currentUser ? getUserRecordCount(visible_rows) : 0;
+    const myRecords = activeUser ? getUserRecordCount(visible_rows) : 0;
 
     // Send count to parent with callback  - onRecordsCountChangee
     if (onRecordsCountChange) {
       onRecordsCountChange({total: totalRecords, myRecords});
     }
-  }, [rows, currentUser, onRecordsCountChange]);
+  }, [rows, activeUser, onRecordsCountChange]);
 
   return (
     <React.Fragment>

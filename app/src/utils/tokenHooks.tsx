@@ -88,7 +88,7 @@ export const useGetAnyToken = () => {
 export interface UseRefreshTokenProps {
   listingId: string;
   // Uses current if not provided
-  username?: string;
+  username: string;
 }
 export const useRefreshToken = (props: UseRefreshTokenProps) => {
   /**
@@ -120,7 +120,7 @@ export const useRefreshToken = (props: UseRefreshTokenProps) => {
       const refreshToken = tokens.refreshToken;
 
       // Now make query to the refresh API
-      const updatedToken = await requestTokenRefresh(props.listingId, {
+      const updatedToken = await requestTokenRefresh(props.listingId, props.username, {
         refreshToken,
       });
 

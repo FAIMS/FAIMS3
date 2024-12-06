@@ -222,7 +222,6 @@ type NavbarProps = {
  */
 export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
-  // get the current user token
 
   // get the list of activated projects
   const projectList = useContext(ProjectsContext).projects.filter(
@@ -314,7 +313,7 @@ export default function MainAppBar(props: NavbarProps) {
               }}
             >
               {isAuthenticated ? <SyncStatus /> : ''}
-              <AppBarAuth token={props.token} />
+              <AppBarAuth />
             </div>
           </Toolbar>
         </MuiAppBar>

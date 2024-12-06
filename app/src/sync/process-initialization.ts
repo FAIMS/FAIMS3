@@ -17,19 +17,17 @@
  * Description:
  *   Code used in the initialisation of the app, getting database and projects etc.
  */
-import {CONDUCTOR_URLS} from '../buildconfig';
 import {
-  ProjectID,
   ListingID,
-  split_full_project_id,
-  NonUniqueProjectID,
-  resolve_project_id,
   ListingsObject,
+  NonUniqueProjectID,
+  ProjectID,
+  resolve_project_id,
+  split_full_project_id,
 } from '@faims3/data-model';
-import {ProjectObject} from './projects';
+import {getAllListings} from '.';
+import {CONDUCTOR_URLS} from '../buildconfig';
 import {logError} from '../logging';
-import {getTokenForCluster} from '../users';
-
 import {
   ExistingActiveDoc,
   active_db,
@@ -38,9 +36,10 @@ import {
   projects_dbs,
 } from './databases';
 import {events} from './events';
+import {ProjectObject, ensure_project_databases} from './projects';
 import {addOrUpdateListing, deleteListing, getListing} from './state';
-import {getAllListings} from '.';
-import {ensure_project_databases} from './projects';
+import {useAuthStore} from '../context/authStore';
+import {object} from 'yup';
 
 /**
  * update_directory - make sure we have listings for each
@@ -200,9 +199,21 @@ async function get_projects_from_conductor(listing: ListingsObject) {
   );
 
   // get the remote data
-  const jwt_token = await getTokenForCluster(listing.id);
-  // if we have no token, then don't try to fetch
-  if (!jwt_token) return;
+
+  // TODO this is stupid because we are just guessing which 'user' we should use
+  // to make the request - unless we want to track active users across both
+  // listings and globally, then this is just going to take the first one
+  const serverUsers = useAuthStore.getState().servers[listing.id]?.users ?? {};
+  const keys = Object.keys(serverUsers);
+  const jwt_token = keys.length > 0 ? serverUsers[keys[0]].token : null;
+  if (!jwt_token) {
+    console.error(
+      'Could not get token for listing with ID: ',
+      listing.id,
+      'This logic is highly suspect!'
+    );
+    return;
+  }
 
   fetch(`${listing.conductor_url}/api/directory`, {
     headers: {

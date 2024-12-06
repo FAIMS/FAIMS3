@@ -8,41 +8,36 @@ import {
   useTheme,
 } from '@mui/material';
 import React from 'react';
-import {NOTEBOOK_NAME} from '../../../buildconfig';
-import {
-  CREATE_NOTEBOOK_ROLES,
-  userHasRoleInSpecificListing,
-} from '../../../users';
-import useGetListings from '../../../utils/custom_hooks';
-import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {useAuthStore} from '../../../context/authStore';
+import {userCanCreateNotebooks} from '../../../users';
 import NewNotebookForListing from '../notebook/NewNotebookForListing';
-import CircularLoading from '../ui/circular_loading';
 
 export interface CreateNewSurveyProps {}
 const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
-  // TODO replace with context management @luke-mcfarlane-rocketlab
-  const listings = useGetListings();
+  const activeUser = useAuthStore(state => state.activeUser);
+  // TODO guard this component with active user check
+  if (!activeUser) {
+    return <p>An error occurred - you do not have an active user.</p>;
+  }
+  const tokenInfo =
+    useAuthStore.getState().servers[activeUser?.serverId].users[
+      activeUser.username
+    ];
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Get all user info from local auth DB
-  const allUserInfo = useGetAllUserInfo();
+  // Check user has the right role
+  const allowed = userCanCreateNotebooks(tokenInfo.parsedToken);
 
-  // Loading or error states from either fetch
-  const loading = listings.isLoading || allUserInfo.isLoading;
-  const error = listings.isError || allUserInfo.isError;
-  const errorMessage = listings.error?.message ?? allUserInfo.error?.message;
-
-  // Only show listings for which the current active user has create permissions
-  const allowedListings = allUserInfo.data
-    ? (listings.data ?? []).filter(listing => {
-        return userHasRoleInSpecificListing(
-          allUserInfo.data,
-          listing.id,
-          CREATE_NOTEBOOK_ROLES
-        );
-      })
-    : [];
+  // TODO guard this component with specific role - button should never appear.
+  if (!allowed) {
+    return (
+      <p>
+        You are not allowed to create {NOTEBOOK_NAME_CAPITALIZED}s as this user.
+      </p>
+    );
+  }
 
   return (
     <>
@@ -91,23 +86,10 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
         spacing={theme.spacing(2)}
         padding={theme.spacing(3)}
       >
-        {loading ? (
-          <CircularLoading label="Loading servers..." />
-        ) : error ? (
-          <p>
-            An error occurred: {errorMessage || 'Unknown error'}. Please contact
-            a system administrator.
-          </p>
-        ) : allowedListings.length !== 0 ? (
-          allowedListings.map(listing => (
-            <NewNotebookForListing listingObject={listing} key={listing.id} />
-          ))
-        ) : (
-          // The user should not get here
-          <p>
-            You do not have permission to create notebooks in any active server.
-          </p>
-        )}
+        <NewNotebookForListing
+          serverId={activeUser.serverId}
+          username={activeUser.username}
+        />
       </Stack>
     </>
   );

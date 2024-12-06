@@ -1,13 +1,6 @@
-/**
- * This module provides an enhanced fetch utility and an API client manager for
- * making authenticated HTTP requests to multiple cluster endpoints. It wraps
- * the JWT handling from the listing object as well as making error handling
- * more consistent.
- */
-
 import {ListingsObject} from '@faims3/data-model/src/types';
 import {getAllListingIDs, getListing} from '../../sync/state';
-import {getTokenForCluster} from '../../users';
+import {useAuthStore} from '../../context/authStore';
 
 /** Supported HTTP methods */
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -18,9 +11,7 @@ interface FetchOptions extends CustomOptions {
   body?: any;
 }
 
-/**
- * Custom error class for HTTP errors
- */
+/** Custom error class for HTTP errors */
 class HttpError extends Error {
   /**
    * @param response - The Response object from the failed fetch
@@ -43,31 +34,42 @@ class HttpError extends Error {
 
 /**
  * Enhanced fetch utility for making authenticated HTTP requests which uses the
- * ListingObject to prepend the endpoint, add JSON headers, and auth.
+ * ListingObject to prepend the endpoint, add JSON headers, and auth from the auth store.
  */
 export class ListingFetch {
   private listing: ListingsObject;
+  private username: string;
 
   /**
    * @param listing - The ListingsObject containing API information
+   * @param username - The username to authenticate as for this listing
    */
-  constructor(listing: ListingsObject) {
+  constructor(listing: ListingsObject, username: string) {
     this.listing = listing;
+    this.username = username;
   }
 
   /**
-   * Retrieves authentication headers for the request
-   * @returns Promise resolving to Headers object with auth token
-   * @throws Error if no token is available for the cluster
+   * Retrieves authentication headers for the request from the auth store
+   * @returns Headers object with auth token
+   * @throws Error if no token is available for the listing/user combination
    */
-  private async getAuthHeaders(options: CustomOptions): Promise<{}> {
+  private getAuthHeaders(options: CustomOptions): {} {
     if (options.useToken ?? true) {
-      const jwt_token = await getTokenForCluster(this.listing.id);
-      if (!jwt_token) {
-        throw new Error('No token available for this cluster.');
+      const authStore = useAuthStore.getState();
+      const tokenInfo = authStore.getServerUserInformation({
+        serverId: this.listing.id,
+        username: this.username,
+      });
+
+      if (!tokenInfo) {
+        throw new Error(
+          'No token available for this listing/user combination.'
+        );
       }
+
       return {
-        Authorization: `Bearer ${jwt_token}`,
+        Authorization: `Bearer ${tokenInfo.token}`,
         'Content-Type': 'application/json',
       };
     }
@@ -88,26 +90,20 @@ export class ListingFetch {
     endpoint: string,
     options: FetchOptions = {}
   ): Promise<T> {
-    // Prepend the conductor URL
     const url = `${this.listing.conductor_url}${endpoint}`;
-    // Include auth headers
-    const headers = await this.getAuthHeaders(options);
+    const headers = this.getAuthHeaders(options);
 
-    // Include user options
     const fetchOptions: RequestInit = {
       ...options,
       headers: {...headers, ...options.headers},
     };
 
-    // Stringify the body if present
     if (options.body) {
       fetchOptions.body = JSON.stringify(options.body);
     }
 
-    // Make request
     const response = await fetch(url, fetchOptions);
 
-    // Throw error if not OK
     if (!response.ok) {
       const errorText = await response.text();
       console.log('HTTP Error occurred.');
@@ -116,7 +112,6 @@ export class ListingFetch {
       throw new HttpError(response);
     }
 
-    // Return JSON
     return await response.json();
   }
 
@@ -190,46 +185,31 @@ export class ListingFetch {
 type CustomOptions = RequestInit & {useToken?: boolean};
 
 /**
- * Manages multiple API clients for different listings - maintains a simple map
- *
- * //TODO @luke-mcfarlane-rocketlab replace with context management for listings
- * i.e. pass in the context object and it will handle it
+ * Manages multiple API clients for different listing/user combinations
  */
 export class ListingFetchManager {
-  private clients: Map<string, ListingFetch> = new Map();
+  private clients: Map<string, Map<string, ListingFetch>> = new Map();
   private listingsMap: Map<string, ListingsObject> = new Map();
 
   /**
-   * Retrieves or creates a client for a given listing ID
+   * Retrieves or creates a client for a given listing ID and username
    * @param listingId - The ID of the listing
-   * @returns client for the specified listing
+   * @param username - The username to authenticate as
+   * @returns client for the specified listing/user combination
    * @throws Error if no listing is found for the given ID
    */
-  private getOrCreateClient(listingId: string): ListingFetch {
-    // Do we already have a client?
-    if (this.clients.has(listingId)) {
-      // If so provide it
-      return this.clients.get(listingId)!;
+  private getOrCreateClient(listingId: string, username: string): ListingFetch {
+    let listingClients = this.clients.get(listingId);
+    if (listingClients?.has(username)) {
+      return listingClients.get(username)!;
     }
 
-    // Try to get the listing
     let listing = this.listingsMap.get(listingId);
-
-    // If it doesn't exist, let's rebuild things
-    // TODO context management
     if (!listing) {
-      console.debug(
-        `No listing found for ID: ${listingId}. Fetching from listing DB and refreshing.`
-      );
       const ids = getAllListingIDs();
       ids.forEach(id => {
-        // Get the record
         const listingObj = getListing(id);
-
-        // Update our local record
         this.listingsMap.set(id, listingObj.listing);
-
-        // If the id matches then set the particular listing
         if (id === listingId) {
           listing = listingObj.listing;
         }
@@ -237,105 +217,117 @@ export class ListingFetchManager {
     }
 
     if (!listing) {
-      throw new Error(
-        `Failed to find the listing with id ${listingId} even after rebuilding the list from local state. Unable to build client.`
-      );
+      throw new Error(`Failed to find listing with id ${listingId}`);
     }
 
-    // Okay - all good to return the client now
-    const client = new ListingFetch(listing);
-    this.clients.set(listingId, client);
+    const client = new ListingFetch(listing, username);
+    if (!listingClients) {
+      listingClients = new Map();
+      this.clients.set(listingId, listingClients);
+    }
+    listingClients.set(username, client);
     return client;
   }
 
   /**
-   * Performs a GET request for a specific listing
+   * Performs a GET request for a specific listing/user combination
    * @param listingId - The ID of the listing
+   * @param username - The username to authenticate as
    * @param endpoint - The API endpoint
    * @param options - Additional request options
    */
   async get<T>(
     listingId: string,
+    username: string,
     endpoint: string,
     options?: CustomOptions
   ): Promise<T> {
-    const client = this.getOrCreateClient(listingId);
+    const client = this.getOrCreateClient(listingId, username);
     return client.get<T>(endpoint, options);
   }
 
   /**
-   * Performs a POST request for a specific listing
+   * Performs a POST request for a specific listing/user combination
    * @param listingId - The ID of the listing
+   * @param username - The username to authenticate as
    * @param endpoint - The API endpoint
    * @param body - The request body
    * @param options - Additional request options
    */
   async post<T>(
     listingId: string,
+    username: string,
     endpoint: string,
     body: any,
     options?: CustomOptions
   ): Promise<T> {
-    const client = this.getOrCreateClient(listingId);
+    const client = this.getOrCreateClient(listingId, username);
     return client.post<T>(endpoint, body, options);
   }
 
   /**
-   * Performs a PUT request for a specific listing
+   * Performs a PUT request for a specific listing/user combination
    * @param listingId - The ID of the listing
+   * @param username - The username to authenticate as
    * @param endpoint - The API endpoint
    * @param body - The request body
    * @param options - Additional request options
    */
   async put<T>(
     listingId: string,
+    username: string,
     endpoint: string,
     body: any,
     options?: CustomOptions
   ): Promise<T> {
-    const client = this.getOrCreateClient(listingId);
+    const client = this.getOrCreateClient(listingId, username);
     return client.put<T>(endpoint, body, options);
   }
 
   /**
-   * Performs a DELETE request for a specific listing
+   * Performs a DELETE request for a specific listing/user combination
    * @param listingId - The ID of the listing
+   * @param username - The username to authenticate as
    * @param endpoint - The API endpoint
    * @param options - Additional request options
    */
   async delete<T>(
     listingId: string,
+    username: string,
     endpoint: string,
     options?: CustomOptions
   ): Promise<T> {
-    const client = this.getOrCreateClient(listingId);
+    const client = this.getOrCreateClient(listingId, username);
     return client.delete<T>(endpoint, options);
   }
 
   /**
-   * Performs a PATCH request for a specific listing
+   * Performs a PATCH request for a specific listing/user combination
    * @param listingId - The ID of the listing
+   * @param username - The username to authenticate as
    * @param endpoint - The API endpoint
    * @param body - The request body
    * @param options - Additional request options
    */
   async patch<T>(
     listingId: string,
+    username: string,
     endpoint: string,
     body: any,
     options?: CustomOptions
   ): Promise<T> {
-    const client = this.getOrCreateClient(listingId);
+    const client = this.getOrCreateClient(listingId, username);
     return client.patch<T>(endpoint, body, options);
   }
 
   /**
-   * Checks if a client exists for a given listing ID
+   * Checks if a client exists for a given listing ID and username
    * @param listingId - The ID of the listing
+   * @param username - The username to check for
    * @returns boolean indicating whether a client exists
    */
-  hasClient(listingId: string): boolean {
-    return this.clients.has(listingId);
+  hasClient(listingId: string, username: string): boolean {
+    return !!this.clients.get(listingId)?.has(username);
   }
 
   /**
@@ -352,14 +344,16 @@ export class ListingFetchManager {
    */
   updateListing(listing: ListingsObject): void {
     this.listingsMap.set(listing.id, listing);
-    // If a client already exists for this listing, update it
-    if (this.clients.has(listing.id)) {
-      this.clients.set(listing.id, new ListingFetch(listing));
+    const listingClients = this.clients.get(listing.id);
+    if (listingClients) {
+      listingClients.forEach((_, username) => {
+        listingClients.set(username, new ListingFetch(listing, username));
+      });
     }
   }
 
   /**
-   * Removes a listing and its associated client
+   * Removes a listing and its associated clients
    * @param listingId - The ID of the listing to remove
    */
   removeListing(listingId: string): void {
@@ -368,6 +362,6 @@ export class ListingFetchManager {
   }
 }
 
-// Export fetch manager
+// Export fetch manager singleton
 const FetchManager = new ListingFetchManager();
 export default FetchManager;

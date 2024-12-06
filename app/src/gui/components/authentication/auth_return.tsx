@@ -25,8 +25,9 @@ import {useContext, useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {getSyncableListingsInfo} from '../../../databaseAccess';
 import {update_directory} from '../../../sync/process-initialization';
-import {parseToken, setTokenForCluster} from '../../../users';
+import {parseToken} from '../../../users';
 import {ProjectsContext} from '../../../context/projects-context';
+import {useAuthStore} from '../../../context/authStore';
 
 async function getListingForConductorUrl(conductor_url: string) {
   const origin = new URL(conductor_url).origin;
@@ -43,6 +44,10 @@ async function getListingForConductorUrl(conductor_url: string) {
 export function AuthReturn() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | undefined>(undefined);
+
+  // Auth store hooks
+  const setServerConnection = useAuthStore(state => state.setServerConnection);
+  const setActiveConnection = useAuthStore(state => state.setActiveUser);
 
   const {initProjects} = useContext(ProjectsContext);
 
@@ -80,22 +85,22 @@ export function AuthReturn() {
       const parsedToken = await parseToken(decodedToken);
 
       // Get the listing for the server in the token
-      const listing_id = await getListingForConductorUrl(parsedToken.server);
+      const serverId = await getListingForConductorUrl(parsedToken.server);
 
       // Store the token in the database
-      try {
-        await setTokenForCluster(
-          decodedToken,
-          parsedToken,
-          decodedRefreshToken,
-          listing_id
-        );
-      } catch (e) {
-        return setErrorAndReturnHome(
-          'Auth return route attempted to store token in local auth DB but encountered an error. ' +
-            e
-        );
-      }
+      setServerConnection({
+        parsedToken: parsedToken,
+        token: decodedToken,
+        refreshToken: decodedRefreshToken,
+        serverId: serverId,
+        username: parsedToken.username,
+      });
+
+      // and make it active!
+      setActiveConnection({
+        serverId: serverId,
+        username: parsedToken.username,
+      });
 
       const login = async () => {
         await update_directory();

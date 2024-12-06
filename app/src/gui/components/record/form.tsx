@@ -55,7 +55,6 @@ import {
   getFieldsForViewSet,
   getReturnedTypesForViewSet,
 } from '../../../uiSpecification';
-import {getCurrentUserId} from '../../../users';
 import {getValidationSchemaForViewset} from '../validation';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import RecordStepper from './recordStepper';
@@ -73,6 +72,7 @@ import {logError} from '../../../logging';
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup from './formButton';
 import UGCReport from './UGCReport';
+import {useAuthStore} from '../../../context/authStore';
 //import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -777,52 +777,59 @@ class RecordForm extends React.Component<
       this.state.annotation,
       ui_specification
     );
+    const currentUser = useAuthStore.getState().activeUser?.username;
+
+    // TODO no idea how to handle errors appropriately here!
+    if (!currentUser) {
+      const message =
+        'Expected to find current user when interacting with the form, but it was not set. The application does not know which user is trying to interact with the form.';
+      console.error(message);
+      (this.context as any).dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: message,
+          severity: 'error',
+        },
+      });
+      setSubmitting(false);
+      return new Promise(() => {
+        return;
+      });
+    }
+    const now = new Date();
+    const doc = {
+      record_id: this.props.record_id,
+      revision_id: this.state.revision_cached ?? null,
+      type: this.state.type_cached!,
+      data: this.filterValues(values),
+      updated_by: currentUser,
+      updated: now,
+      annotations: this.state.annotation ?? {},
+      field_types: getReturnedTypesForViewSet(ui_specification, viewsetName),
+      ugc_comment: this.state.ugc_comment || '',
+      relationship: this.state.relationship ?? {},
+      deleted: false,
+    };
     return (
-      getCurrentUserId(this.props.project_id)
-        // prepare the record for saving
-        .then(userid => {
-          const now = new Date();
-          const doc = {
-            record_id: this.props.record_id,
-            revision_id: this.state.revision_cached ?? null,
-            type: this.state.type_cached!,
-            data: this.filterValues(values),
-            updated_by: userid,
-            updated: now,
-            annotations: this.state.annotation ?? {},
-            field_types: getReturnedTypesForViewSet(
-              ui_specification,
-              viewsetName
-            ),
-            ugc_comment: this.state.ugc_comment || '',
-            relationship: this.state.relationship ?? {},
-            deleted: false,
-          };
-          return doc;
-        })
-        // store the record
-        .then(doc => {
-          return upsertFAIMSData(this.props.project_id, doc).then(
-            revision_id => {
-              // update the component state with the new revision id and notify the parent
-              try {
-                this.setState({revision_cached: revision_id});
-                // SC. Removing this call since it prevents deletion of the draft
-                // later on (draftState.clear())
-                // by changing the draft state to 'uninitialised'
-                //
-                //this.formChanged(true, revision_id);
-                if (this.props.setRevision_id !== undefined)
-                  this.props.setRevision_id(revision_id); //pass the revision id back
-              } catch (error) {
-                logError(error);
-              }
-              return is_close === 'close'
-                ? (doc.data['hrid' + this.state.type_cached] ??
-                    this.props.record_id)
-                : revision_id; // return revision id for save and continue function
-            }
-          );
+      upsertFAIMSData(this.props.project_id, doc)
+        .then(revision_id => {
+          // update the component state with the new revision id and notify the parent
+          try {
+            this.setState({revision_cached: revision_id});
+            // SC. Removing this call since it prevents deletion of the draft
+            // later on (draftState.clear())
+            // by changing the draft state to 'uninitialised'
+            //
+            //this.formChanged(true, revision_id);
+            if (this.props.setRevision_id !== undefined)
+              this.props.setRevision_id(revision_id); //pass the revision id back
+          } catch (error) {
+            logError(error);
+          }
+          return is_close === 'close'
+            ? (doc.data['hrid' + this.state.type_cached] ??
+                this.props.record_id)
+            : revision_id; // return revision id for save and continue function
         })
         // generate a success alert
         .then(hrid => {
@@ -1155,11 +1162,7 @@ class RecordForm extends React.Component<
               validateOnBlur={true}
               onSubmit={(values, {setSubmitting}) => {
                 setSubmitting(true);
-                return this.save(values, 'continue', setSubmitting).then(
-                  result => {
-                    return result;
-                  }
-                );
+                return this.save(values, 'continue', setSubmitting);
               }}
             >
               {formProps => {

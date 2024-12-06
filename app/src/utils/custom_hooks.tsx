@@ -28,13 +28,37 @@ const fetchListings = async (): Promise<ListingsObject[]> => {
 };
 
 /**
+ * Fetches a specific listing from the directory database.
+ * @returns Promise<ListingsObject | undefined>
+ */
+const fetchListing = async (
+  serverId: string
+): Promise<ListingsObject | undefined> => {
+  try {
+    return await directory_db.local.get(serverId);
+  } catch {
+    return undefined;
+  }
+};
+
+/**
  * Custom hook to fetch and manage listings from a directory database using React Query.
  */
-const useGetListings = (): UseQueryResult<ListingsObject[], Error> => {
+export const useGetListings = (): UseQueryResult<ListingsObject[], Error> => {
   return useQuery<ListingsObject[], Error>({
     queryKey: ['listings'],
     queryFn: fetchListings,
   });
 };
 
-export default useGetListings;
+/**
+ * Custom hook to fetch and manage listings from a directory database using React Query.
+ */
+export const useGetListing = (input: {serverId: string}) => {
+  return useQuery({
+    queryKey: ['listings'],
+    queryFn: async () => {
+      return await fetchListing(input.serverId);
+    },
+  });
+};

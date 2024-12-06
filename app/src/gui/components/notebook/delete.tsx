@@ -40,10 +40,10 @@ import {
   RevisionID,
   setRecordAsDeleted,
 } from '@faims3/data-model';
-import {getCurrentUserId} from '../../../users';
 import {deleteStagedData} from '../../../sync/draft-storage';
 import {deleteDraftsForRecord} from '../../../drafts';
 import {theme} from '../../themes';
+import {useAuthStore} from '../../../context/authStore';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
@@ -88,23 +88,22 @@ export default function RecordDelete(props: RecordDeleteProps) {
   const handleClickOpen = () => {
     setOpen(true);
   };
+  const activeUser = useAuthStore(state => state.activeUser);
 
   const handleClose = () => {
     setOpen(false);
   };
 
   const handleDelete = () => {
-    getCurrentUserId(project_id)
-      .then(userid =>
-        deleteFromDB(
-          project_id,
-          record_id,
-          revision_id,
-          draft_id,
-          userid,
-          props.handleRefresh
-        )
-      )
+    deleteFromDB(
+      project_id,
+      record_id,
+      revision_id,
+      draft_id,
+      // Is this safe? We know that the user should be defined at this point
+      activeUser?.username!,
+      props.handleRefresh
+    )
       .then(() => {
         const message = is_draft
           ? `Draft ${draft_id} for record ${record_id} discarded`

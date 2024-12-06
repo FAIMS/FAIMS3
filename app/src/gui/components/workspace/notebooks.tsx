@@ -34,11 +34,11 @@ import {
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import {useAuthStore} from '../../../context/authStore';
 import {useNotification} from '../../../context/popup';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
-import {CREATE_NOTEBOOK_ROLES, userHasRoleInAnyListing} from '../../../users';
-import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
+import {userCanCreateNotebooks} from '../../../users';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
@@ -66,6 +66,9 @@ export const DE_ACTIVATE_VERB = 'De-activate';
 export default function NoteBooks() {
   const [refresh, setRefresh] = useState(false);
   const {projects, syncProjects} = useContext(ProjectsContext);
+
+  // get the active user - this will allow us to check roles against it
+  const activeUser = useAuthStore(state => state.activeUser);
 
   const activatedProjects = projects.filter(({activated}) => activated);
 
@@ -205,11 +208,8 @@ export default function NoteBooks() {
         },
       ];
 
-  // fetch all user info then determine if any listing has permission to create notebooks
-  const allUserInfo = useGetAllUserInfo();
-  const showCreateNewNotebookButton = allUserInfo?.data
-    ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
-    : false;
+  const showCreateNewNotebookButton =
+    activeUser && userCanCreateNotebooks(activeUser.parsedToken);
 
   // What type of layout are we using?
   const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
