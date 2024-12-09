@@ -45,7 +45,6 @@ import {
   upsertFAIMSData,
 } from '@faims3/data-model';
 import {NavigateFunction} from 'react-router-dom';
-import {DEBUG_APP} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {store} from '../../../context/store';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
