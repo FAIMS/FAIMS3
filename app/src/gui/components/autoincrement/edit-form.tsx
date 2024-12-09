@@ -80,7 +80,6 @@ export const AutoIncrementEditForm = ({
       );
       return ranges;
     },
-    initialData: [],
     enabled: true,
   });
 
@@ -207,20 +206,25 @@ type IncremenenterRangeProps = {
  * @param props component props
  */
 const IncrementerRange = (props: IncremenenterRangeProps) => {
-  const [start, setStart] = useState(props.range.start);
-  const [stop, setStop] = useState(props.range.stop);
+  const [start, setStart] = useState<number | string>(props.range.start);
+  const [stop, setStop] = useState<number | string>(props.range.stop);
 
   const handleStartChange = (event: any) => {
+    if (event.target.value === '') {
+      // set start but don't update the range
+      setStart('');
+      return;
+    }
     const newStart = parseInt(event.target.value);
     if (newStart >= 0) {
       setStart(newStart);
       if (newStart >= props.range.stop) {
         // initialise a range of 100 if they enter a start > stop
-        setStop(newStart + 100);
+        setStop(newStart + 99);
         props.updateRange({
           ...props.range,
           start: newStart,
-          stop: newStart + 100,
+          stop: newStart + 99,
         });
       } else {
         props.updateRange({
@@ -232,6 +236,11 @@ const IncrementerRange = (props: IncremenenterRangeProps) => {
   };
 
   const handleStopChange = (event: any) => {
+    if (event.target.value === '') {
+      // set stop but don't update the range
+      setStop('');
+      return;
+    }
     const newStop = parseInt(event.target.value);
     if (newStop > props.range.start) {
       setStop(newStop);
