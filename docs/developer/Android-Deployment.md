@@ -25,7 +25,7 @@ npx cap open android
 ```
 
 Inside Android Studio, create a production build. To do this you'll need to generate
-an _upload key and keystore_, there are instructions 
+an _upload key and keystore_, there are instructions
 [on android.com](https://developer.android.com/studio/publish/app-signing#sign-apk).
 Basically you select "Generate Signed Bundle or API" from the Build menu and follow the
 prompts. This will get you to generate a new keystore file, key name and password.  

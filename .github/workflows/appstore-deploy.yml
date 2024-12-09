@@ -40,7 +40,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3.1
-          bundler-cache: false
+          bundler-cache: true
           working-directory: app/ios/App
       - run: |
           cd app/ios/App
@@ -89,7 +89,7 @@ jobs:
           verbose: false
         env:
           APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
-          DEVELOPER_APP_ID: '${{ secrets.DEVELOPER_APP_ID }}'
+          DEVELOPER_APP_ID: '${{ vars.DEVELOPER_APP_ID }}'
           APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
           DEVELOPER_PORTAL_TEAM_ID: '${{ secrets.DEVELOPER_PORTAL_TEAM_ID }}'
           FASTLANE_APPLE_ID: '${{ secrets.FASTLANE_APPLE_ID }}'

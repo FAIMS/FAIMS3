@@ -31,7 +31,8 @@ jobs:
     continue-on-error: false
     steps:
       # note not using Turbo build as it caused a problem with missing assets
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Cache node modules
         uses: actions/cache@v4
         env:
@@ -61,7 +62,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3.1
-          bundler-cache: true # changed - was false because 'permissions issues?'
+          bundler-cache: true
           working-directory: app/ios/App
       - run: |
           cd app/ios/App
@@ -101,7 +102,6 @@ jobs:
           npx cap update ios
           npx cap sync --deployment ios
           cd ios/App; pod install
-      #- run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
       - name: Deploy iOS Beta to TestFlight via Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:
