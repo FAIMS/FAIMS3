@@ -6,7 +6,6 @@ import SupportEmail from './supportEmail';
 import {TokenContents} from '@faims3/data-model';
 
 interface SlimFooterProps {
-  token?: null | undefined | TokenContents;
 }
 
 const SlimFooter = (props: SlimFooterProps) => {
@@ -50,7 +49,7 @@ const SlimFooter = (props: SlimFooterProps) => {
             >
               Privacy Policy
             </Typography>
-            <SupportEmail token={props.token} />
+            <SupportEmail />
             <Typography
               variant="subtitle2"
               color={theme.palette.grey[900]}

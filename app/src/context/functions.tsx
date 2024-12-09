@@ -2,12 +2,11 @@ import {
   active_db,
   directory_db_pouch,
   ExistingActiveDoc,
-  JWTTokenInfo,
-  local_auth_db,
 } from '../sync/databases';
 import {ProjectObject, resolve_project_id} from '@faims3/data-model';
 import {ProjectExtended} from '../types/project';
 import ObjectMap from '../utils/ObjectMap';
+import {useAuthStore, UserTokens} from './authStore';
 
 /**
  * Retrieves a list of listings from the directory database.
@@ -30,52 +29,43 @@ const getListings = async () => {
  * @returns The token associated with the specified ID.
  * @throws 404 error from pouch if not found
  */
-export const getToken = async (id: string) => {
-  const {available_tokens, current_username} = await local_auth_db.get(id);
-
-  return ObjectMap.get(available_tokens, current_username);
-};
-
-/**
- * Fetches the listings, gets the first one if present, then gets token for that
- * listing. Does not parse or validate it.
- * @returns Unparsed, unvalidated JWT
- */
-export const getDefaultToken = async (): Promise<JWTTokenInfo | undefined> => {
-  // Get listings
-  const listings = await getListings();
-
-  // If there is an entry, use first
-  if (listings.length > 0) {
-    return getToken(listings[0]._id);
+export const getToken = (id: string): UserTokens | undefined => {
+  // TODO this is stupid because we are just guessing which 'user' we should use
+  // to make the request - unless we want to track active users across both
+  // listings and globally, then this is just going to take the first one
+  const serverUsers = useAuthStore.getState().servers[id]?.users ?? {};
+  const keys = Object.keys(serverUsers);
+  const jwt_token = keys.length > 0 ? serverUsers[keys[0]] : null;
+  if (!jwt_token) {
+    console.error(
+      'Could not get token for listing with ID: ',
+      id,
+      'This logic is highly suspect!'
+    );
+    return undefined;
   }
-
-  // Otherwise no tokens
-  return undefined;
+  return jwt_token;
 };
 
 /**
  * Fetches the listings and looks for any listing which has a token
  * @returns Unparsed, unvalidated JWT
  */
-export const getAnyToken = async (): Promise<JWTTokenInfo | undefined> => {
-  // Get listings
-  const listings = await getListings();
+export const getAnyToken = (): UserTokens | undefined => {
+  const state = useAuthStore.getState();
 
-  // If there is an entry, use first
-  for (const listing of listings) {
-    try {
-      const possibleToken = await getToken(listing._id);
-      if (possibleToken !== undefined) {
-        return possibleToken;
-      }
-    } catch {
-      continue;
-    }
+  // First try getting the active token
+  if (state.activeUser) {
+    return state.activeUser;
   }
 
-  // Otherwise no tokens
-  return undefined;
+  // Otherwise try getting any - ask for first one
+  const serverUsers = state.getAllServerUsers();
+  if (serverUsers.length > 0) {
+    return state.getServerUserInformation(serverUsers[0]);
+  } else {
+    return undefined;
+  }
 };
 
 /**
