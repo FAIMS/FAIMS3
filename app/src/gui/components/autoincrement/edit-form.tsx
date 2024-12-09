@@ -111,9 +111,11 @@ export const AutoIncrementEditForm = ({
 
   const updateRange = (index: number) => {
     return (range: LocalAutoIncrementRange) => {
-      const rangesCopy = [...ranges];
-      rangesCopy[index] = range;
-      updateRanges(rangesCopy);
+      if (ranges) {
+        const rangesCopy = [...ranges];
+        rangesCopy[index] = range;
+        updateRanges(rangesCopy);
+      }
     };
   };
 
