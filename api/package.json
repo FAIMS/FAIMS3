@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@faims3/data-model": "*",
+    "@reduxjs/toolkit": "^2.4.0",
     "archiver": "^6.0.1",
     "aws-sdk": "^2.1664.0",
     "axios": "^1.7.6",
