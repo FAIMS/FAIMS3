@@ -7,6 +7,8 @@ import {
 import {activate_project} from '../sync/process-initialization';
 import {ProjectExtended} from '../types/project';
 import {getLocalActiveMap, getProjectMap, getRemoteProjects} from './functions';
+import {getAvailableProjectsFromListing} from '../sync/projects';
+import {getAllListingIDs, getListing} from '../sync/state';
 
 export const ProjectsContext = createContext<{
   projects: ProjectExtended[];
@@ -30,6 +32,7 @@ export const ProjectsContext = createContext<{
 export function ProjectsProvider({children}: {children: ReactNode}) {
   const [projects, setProjects] = useState<ProjectExtended[]>([]);
 
+  console.debug('projectsProvider', projects);
   useEffect(() => {
     initProjects();
   }, []);
@@ -52,6 +55,36 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
 
     const localActiveMap = await getLocalActiveMap();
 
+    // if we're offline, remote projects is empty so just
+    // return the local ones we know already
+
+    if (remoteProjects.length === 0) {
+      const allStoredProjects: ProjectExtended[] = [];
+      getAllListingIDs().forEach(async (listing_id: string) => {
+        const storedProjects =
+          await getAvailableProjectsFromListing(listing_id);
+        console.debug('storedProjects', storedProjects);
+        // storedProjects is ProjectInformation[] and we need ProjectExtended[]
+        const listing = await getListing(listing_id);
+        allStoredProjects.concat(
+          storedProjects.map(project => {
+            return {
+              ...project,
+              _id: project.project_id,
+              conductor_url: listing.listing.conductor_url,
+              listing: listing_id,
+              activated: localActiveMap.has(project.project_id),
+              sync: localProjectsMap.get(project.project_id)?.sync ?? false,
+              // do we also need the two database connections here???
+            };
+          })
+        );
+      });
+      console.debug('allStoredProjects', allStoredProjects);
+      setProjects(allStoredProjects);
+      return;
+    }
+
     for (const remoteProject of remoteProjects) {
       const activated =
         localProjectsMap.get(remoteProject._id)?.activated ??
@@ -70,6 +103,7 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
       });
     }
 
+    console.debug('setting projects', [...newProjectsMap.values()]);
     setProjects([...newProjectsMap.values()]);
   };
 
@@ -86,6 +120,8 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
 
     const projectsMap = getProjectMap(projects);
     const newProjectsMap = getProjectMap(projects);
+
+    if (remoteProjects.length === 0) return;
 
     // update project list, preserve activated and sync states from existing list
     for (const remoteProject of remoteProjects) {

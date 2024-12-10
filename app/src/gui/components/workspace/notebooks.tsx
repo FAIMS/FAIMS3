@@ -69,6 +69,8 @@ export default function NoteBooks() {
 
   const activatedProjects = projects.filter(({activated}) => activated);
 
+  console.debug('PPPPP', projects, activatedProjects);
+
   const [tabID, setTabID] = useState('1');
 
   const history = useNavigate();

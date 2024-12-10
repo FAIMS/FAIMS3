@@ -35,6 +35,7 @@ export const updateProjectsDB = async (projects: ProjectExtended[]) =>
  * @returns A promise that resolves when the project is activated.
  */
 export const activateProjectDB = async (_id: string) => {
+  console.debug('activateProjectDB', await db.info());
   const doc = await db.get(_id);
 
   await db.put({
@@ -73,6 +74,7 @@ export const setSyncProjectDB = async (_id: string, sync: boolean) => {
  * @returns An array of local projects.
  */
 export const getProjectsDB = async () => {
+  console.debug('getProjectsDB', await db.info());
   const {rows} = await db.allDocs({include_docs: true});
 
   return rows.map(row => row?.doc?.project).filter(x => x !== undefined);
