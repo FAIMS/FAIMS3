@@ -90,11 +90,9 @@ const getProjects = async (url: string, token: string) => {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-  }).catch(() => {
-    return null;
   });
 
-  if (response === null || (response && !response.ok)) {
+  if (!response.ok) {
     console.error(`Error fetching projects from ${url}`);
     return [] as ProjectObject[];
   }
