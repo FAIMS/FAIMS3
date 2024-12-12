@@ -17,7 +17,7 @@
  * Description:
  *   Internals of map generation for MapFormField
  */
-import React, {useState, useRef, useCallback} from 'react';
+import {useState, useRef, useCallback, useEffect} from 'react';
 
 // openlayers
 import Map from 'ol/Map';
@@ -67,8 +67,12 @@ interface MapProps extends ButtonProps {
 import {AppBar, Dialog, IconButton, Toolbar, Typography} from '@mui/material';
 import Feature from 'ol/Feature';
 import {Geometry} from 'ol/geom';
-import {createCenterControl} from '../../components/map/center-control';
+import {addCenterControl} from '../../../lib/map/center-control';
 import {useNotification} from '../../../context/popup';
+import {
+  addCurrentLocationMarker,
+  getCurrentLocation,
+} from '../../../lib/map/current-location';
 
 const styles = {
   mapContainer: {
@@ -87,6 +91,15 @@ function MapWrapper(props: MapProps) {
     useState<VectorLayer<Feature<Geometry>>>();
   const defaultMapProjection = 'EPSG:3857';
   const geoJson = new GeoJSON();
+
+  const {data: currentLocation} = getCurrentLocation();
+
+  useEffect(() => {
+    if (map && currentLocation) {
+      addCenterControl(map, currentLocation);
+      addCurrentLocationMarker(map, currentLocation);
+    }
+  }, [map, currentLocation]);
 
   // notifications
   const notify = useNotification();
@@ -141,10 +154,6 @@ function MapWrapper(props: MapProps) {
         view: view,
         controls: [new Zoom()],
       });
-
-      theMap.addControl(createCenterControl(theMap.getView(), center));
-
-      theMap.getView().setCenter(center);
 
       return theMap;
     },

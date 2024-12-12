@@ -31,16 +31,18 @@ import GeoJSON from 'ol/format/GeoJSON';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
-import {transform} from 'ol/proj';
 import {OSM} from 'ol/source';
 import VectorSource from 'ol/source/Vector';
-import {Fill, RegularShape, Stroke, Style} from 'ol/style';
+import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {createCenterControl} from '../map/center-control';
-import {Geolocation} from '@capacitor/geolocation';
+import {addCenterControl} from '../../../lib/map/center-control';
+import {
+  addCurrentLocationMarker,
+  getCurrentLocation,
+} from '../../../lib/map/current-location';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -140,13 +142,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const mapRef = useRef<Map | undefined>();
   mapRef.current = map;
 
-  const {data: map_center, isLoading: loadingLocation} = useQuery({
-    queryKey: ['current_location'],
-    queryFn: async (): Promise<[number, number]> => {
-      const position = await Geolocation.getCurrentPosition();
-      return [position.coords.longitude, position.coords.latitude];
-    },
-  });
+  const {data: currentLocation} = getCurrentLocation();
 
   /**
    * Create the OpenLayers map element
@@ -182,43 +178,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
    *
    * @param map the map element
    */
-  const addCurrentLocationMarker = (map: Map) => {
-    const source = new VectorSource();
-    const geoJson = new GeoJSON();
-
-    const stroke = new Stroke({color: 'black', width: 2});
-    const layer = new VectorLayer({
-      source: source,
-      style: new Style({
-        image: new RegularShape({
-          stroke: stroke,
-          points: 4,
-          radius: 10,
-          radius2: 0,
-          angle: 0,
-        }),
-      }),
-    });
-
-    // only do this if we have a real map_center
-    if (map_center) {
-      const centerFeature = {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: map_center,
-        },
-      };
-
-      source.addFeature(
-        geoJson.readFeature(centerFeature, {
-          dataProjection: 'EPSG:4326',
-          featureProjection: map.getView().getProjection(),
-        })
-      );
-      map.addLayer(layer);
-    }
-  };
 
   /**
    * Add the features to the map and set the map view to
@@ -263,14 +222,9 @@ export const OverviewMap = (props: OverviewMapProps) => {
     map.addLayer(layer);
   };
 
-  // when we have a location and a map, add the 'here' marker to the map
-  if (!loadingLocation && map) {
-    addCurrentLocationMarker(map);
-    if (map_center) {
-      const center = transform(map_center, 'EPSG:4326', defaultMapProjection);
-      // add the 'here' button to go to the current location
-      map.addControl(createCenterControl(map.getView(), center));
-    }
+  if (map && currentLocation) {
+    addCurrentLocationMarker(map, currentLocation);
+    addCenterControl(map, currentLocation);
   }
 
   // when we have features, add them to the map
