@@ -22,7 +22,7 @@
 
 import {EncodedProjectUIModel, resolve_project_id} from '@faims3/data-model';
 import {getProjectDB} from '.';
-import {getTokenForCluster} from '../users';
+import {useAuthStore} from '../context/authStore';
 import {createdListingsInterface} from './state';
 
 export type PropertyMap = {
@@ -54,7 +54,24 @@ export const fetchProjectMetadata = async (
   project_id: string
 ) => {
   const url = `${lst.listing.conductor_url}/api/notebooks/${project_id}`;
-  const jwt_token = await getTokenForCluster(lst.listing.id);
+  // In the current auth store, get the token synchronously
+
+  // TODO this is stupid because we are just guessing which 'user' we should use
+  // to make the request - unless we want to track active users across both
+  // listings and globally, then this is just going to take the first one
+  const listing_id = lst.listing.id;
+  const serverUsers = useAuthStore.getState().servers[listing_id]?.users ?? {};
+  const keys = Object.keys(serverUsers);
+  const jwt_token = keys.length > 0 ? serverUsers[keys[0]].token : null;
+  if (!jwt_token) {
+    console.error(
+      'Could not get token for listing with ID: ',
+      listing_id,
+      'This logic is highly suspect!'
+    );
+    return;
+  }
+
   const full_project_id = resolve_project_id(lst.listing.id, project_id);
   const response = await fetch(url, {
     headers: {

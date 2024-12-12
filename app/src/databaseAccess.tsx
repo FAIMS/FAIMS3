@@ -29,29 +29,9 @@
  *   (Sync refactor)
  */
 
-import {getAvailableProjectsFromListing} from './sync/projects';
-import {ProjectInformation} from '@faims3/data-model';
-import {ListingsObject} from '@faims3/data-model/src/types';
-import {getAllListingIDs} from './sync/state';
-import {events} from './sync/events';
-import {getAllListings} from './sync';
-
-export async function getAllProjectList(): Promise<ProjectInformation[]> {
-  /**
-   * Return all projects the user has access to from all servers
-   */
-
-  //await waitForStateOnce(() => all_projects_updated);
-
-  const output: ProjectInformation[] = [];
-  for (const listing_id of getAllListingIDs()) {
-    const projects = await getAvailableProjectsFromListing(listing_id);
-    for (const proj of projects) {
-      output.push(proj);
-    }
-  }
-  return output;
-}
+import { ListingsObject } from '@faims3/data-model/src/types';
+import { getAllListings } from './sync';
+import { events } from './sync/events';
 
 export function listenProjectList(listener: () => void): () => void {
   events.on('project_update', listener);

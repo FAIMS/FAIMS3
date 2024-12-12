@@ -13,11 +13,13 @@ import FetchManager from './client';
  * @returns A promise that resolves to an array of templates if the request is successful, or undefined if an error occurs.
  */
 export const fetchTemplates = async (
-  listingId: string
+  listingId: string,
+  username: string,
 ): Promise<GetListTemplatesResponse> => {
   // Make a request to the server to fetch the templates
   return await FetchManager.get<GetListTemplatesResponse>(
     listingId,
+    username,
     '/api/templates',
     {}
   );

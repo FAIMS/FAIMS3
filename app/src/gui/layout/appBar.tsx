@@ -49,10 +49,9 @@ import {createUseStyles as makeStyles} from 'react-jss';
 import {Link as RouterLink} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
+import {useAuthStore} from '../../context/authStore';
 import {ProjectsContext} from '../../context/projects-context';
-import {PossibleToken} from '../../types/misc';
 import {ProjectExtended} from '../../types/project';
-import {checkToken} from '../../utils/helpers';
 import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
@@ -209,9 +208,7 @@ function getNestedProjects(pouchProjectList: ProjectExtended[]) {
   };
 }
 
-type NavbarProps = {
-  token?: PossibleToken;
-};
+type NavbarProps = {};
 /**
  * MainAppBar component handles the display of the navigation drawer and the app bar.
  * It includes top menu items, bottom menu items, and conditional rendering based on authentication status.
@@ -222,15 +219,15 @@ type NavbarProps = {
  */
 export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
-  // get the current user token
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const activeServerId = useAuthStore(state => state.activeUser?.serverId);
 
   // get the list of activated projects
   const projectList = useContext(ProjectsContext).projects.filter(
-    p => p.activated
+    p => p.activated && p.listing === activeServerId
   );
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
 
   const topMenuItems: Array<MenuItemProps> = [
@@ -314,7 +311,7 @@ export default function MainAppBar(props: NavbarProps) {
               }}
             >
               {isAuthenticated ? <SyncStatus /> : ''}
-              <AppBarAuth token={props.token} />
+              <AppBarAuth />
             </div>
           </Toolbar>
         </MuiAppBar>
