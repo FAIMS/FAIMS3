@@ -21,7 +21,7 @@
  *  - Publish and Close Record(TBD)
  */
 
-import {Button} from '@mui/material';
+import {Alert, AlertTitle, Button} from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import {CustomMobileStepper} from './recordStepper';
 
@@ -103,7 +103,7 @@ export default function FormButtonGroup(props: any) {
           data-testid="publish-close-record"
           disabled={disabled}
           formProps={formProps}
-          text={`Save and close ${record_type}`}
+          text={`Publish and close ${record_type}`}
           is_close={'close'}
           handleFormSubmit={handleFormSubmit}
           is_final_view={is_final_view}
@@ -118,6 +118,15 @@ export default function FormButtonGroup(props: any) {
           is_final_view={is_final_view}
         />
       </div>
+      {disabled !== true && (
+        <Alert severity={'info'} variant="outlined">
+          <AlertTitle>What does publishing mean?</AlertTitle>
+          The data you capture are being saved to your device constantly in a
+          draft state. When you click publish, the record will be queued for
+          syncing to the remote server when the app detects a network
+          connection.
+        </Alert>
+      )}
     </div>
   );
 }
