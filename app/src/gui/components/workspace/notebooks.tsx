@@ -18,27 +18,59 @@
  *   TODO
  */
 
-import {useContext, useState} from 'react';
-import {Box, Paper, Typography, Button} from '@mui/material';
-import FolderIcon from '@mui/icons-material/Folder';
-import {GridColDef} from '@mui/x-data-grid';
-import ProjectStatus from '../notebook/settings/status';
-import NotebookSyncSwitch from '../notebook/settings/sync_switch';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
-import {grey} from '@mui/material/colors';
-import Tabs from '../ui/tab-grid';
-import HeadingProjectGrid from '../ui/heading-grid';
-import {NOTEBOOK_LIST_TYPE, NOTEBOOK_NAME} from '../../../buildconfig';
+import {RefreshOutlined} from '@mui/icons-material';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
+import FolderIcon from '@mui/icons-material/Folder';
+import {Alert, AlertTitle, Box, Button, Paper, Typography} from '@mui/material';
+import {grey} from '@mui/material/colors';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {GridColDef} from '@mui/x-data-grid';
+import {useContext, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {
+  NOTEBOOK_LIST_TYPE,
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import {useNotification} from '../../../context/popup';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
-import {useNavigate} from 'react-router-dom';
+import {CREATE_NOTEBOOK_ROLES, userHasRoleInAnyListing} from '../../../users';
+import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
+import NotebookSyncSwitch from '../notebook/settings/sync_switch';
+import HeadingProjectGrid from '../ui/heading-grid';
+import Tabs from '../ui/tab-grid';
+
+// Survey status naming conventions
+
+// E.g. "This survey is not active"
+export const NOT_ACTIVATED_LABEL = 'Not Active';
+
+// E.g. "This survey is active"
+export const ACTIVATED_LABEL = 'Active';
+
+// E.g. "This survey has been activated"
+export const ACTIVATED_VERB_PAST = 'Activated';
+
+// E.g. "Please activate this survey"
+export const ACTIVATE_VERB_LABEL = 'Activate';
+
+// E.g. "This survey is currently activating" or "Before activating, consider ..."
+export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
+
+// E.g. "You cannot currently de-activate a survey"
+export const DE_ACTIVATE_VERB = 'De-activate';
 
 export default function NoteBooks() {
+  const [refresh, setRefresh] = useState(false);
+  const {projects, syncProjects} = useContext(ProjectsContext);
+
+  const activatedProjects = projects.filter(({activated}) => activated);
+
   const [tabID, setTabID] = useState('1');
-  const {projects} = useContext(ProjectsContext);
+
   const history = useNavigate();
 
   const theme = useTheme();
@@ -53,23 +85,28 @@ export default function NoteBooks() {
           flex: 0.4,
           minWidth: 200,
           renderCell: ({row: {activated, name, description}}) => (
-            <Box my={1}>
+            <Box my={3}>
               <span
                 style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
+                  alignItems: 'center',
                   flexWrap: 'nowrap',
+                  padding: '12px 0',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
                   color={activated ? 'primary' : 'disabled'}
-                  sx={{mr: '3px'}}
+                  sx={{mr: '8px'}}
                 />
                 <Typography
-                  variant={'body2'}
+                  variant={'body1'}
                   fontWeight={activated ? 'bold' : 'normal'}
                   color={activated ? 'black' : grey[800]}
+                  sx={{
+                    padding: '4px 0',
+                    lineHeight: 1,
+                  }}
                 >
                   {name}
                 </Typography>
@@ -78,22 +115,15 @@ export default function NoteBooks() {
             </Box>
           ),
         },
-        {
-          field: 'last_updated',
-          headerName: 'Last Updated',
-          type: 'dateTime',
-          minWidth: 160,
-          flex: 0.2,
-          valueGetter: ({value}) => value && new Date(value),
-        },
-        {
-          field: 'status',
-          headerName: 'Status',
-          type: 'string',
-          flex: 0.2,
-          minWidth: 160,
-          renderCell: ({row: {status}}) => <ProjectStatus status={status} />,
-        },
+        // commenting this untill the functionality is fixed for this column.
+        // {
+        //   field: 'last_updated',
+        //   headerName: 'Last Updated',
+        //   type: 'dateTime',
+        //   minWidth: 160,
+        //   flex: 0.2,
+        //   valueGetter: ({value}) => value && new Date(value),
+        // },
         {
           field: 'actions',
           type: 'actions',
@@ -117,41 +147,47 @@ export default function NoteBooks() {
           type: 'string',
           flex: 0.4,
           minWidth: 160,
-          renderCell: ({row: {activated, name, description, status}}) => (
+          renderCell: ({row: {activated, name, description}}) => (
             <div>
               <div
                 style={{
                   display: 'flex',
+                  alignItems: 'flex-start',
+                  padding: '12px 0',
                 }}
               >
                 <FolderIcon
                   fontSize={'small'}
                   color={activated ? 'secondary' : 'disabled'}
-                  sx={{mr: '3px'}}
+                  sx={{mr: '4px'}}
                 />
                 <Typography
                   variant={'body2'}
                   fontWeight={activated ? 'bold' : 'normal'}
                   color={activated ? 'black' : grey[800]}
+                  sx={{
+                    padding: '4px 0',
+                  }}
                 >
                   {name}
                 </Typography>
               </div>
-              <Typography variant={'caption'}>{description}</Typography>
-              <div>
-                <ProjectStatus status={status} />
-              </div>
+              <Typography variant={'caption'} sx={{paddingTop: '4px'}}>
+                {description}
+              </Typography>
             </div>
           ),
         },
-        {
-          field: 'last_updated',
-          headerName: 'Last Updated',
-          type: 'dateTime',
-          minWidth: 100,
-          flex: 0.3,
-          valueGetter: ({value}) => value && new Date(value),
-        },
+        // commenting this until the functionality is fixed for this column.
+
+        // {
+        //   field: 'last_updated',
+        //   headerName: 'Last Updated',
+        //   type: 'dateTime',
+        //   minWidth: 100,
+        //   flex: 0.3,
+        //   valueGetter: ({value}) => value && new Date(value),
+        // },
         {
           field: 'actions',
           type: 'actions',
@@ -169,29 +205,105 @@ export default function NoteBooks() {
         },
       ];
 
-  const activatedProjects = projects.filter(({activated}) => activated);
+  // fetch all user info then determine if any listing has permission to create notebooks
+  const allUserInfo = useGetAllUserInfo();
+  const showCreateNewNotebookButton = allUserInfo?.data
+    ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
+    : false;
+
+  // What type of layout are we using?
+  const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
+  const sectionLabel = isTabs ? 'tab' : 'section';
+
+  const buildTabLink = (target: 'active' | 'not active') => {
+    switch (target) {
+      case 'active':
+        return (
+          <Button variant="text" size={'medium'} onClick={() => setTabID('1')}>
+            "{ACTIVATED_LABEL}" tab
+          </Button>
+        );
+      case 'not active':
+        return (
+          <Button variant="text" size={'medium'} onClick={() => setTabID('2')}>
+            {NOT_ACTIVATED_LABEL} tab
+          </Button>
+        );
+    }
+  };
+
+  const notActivatedAdvice = (
+    <>
+      You have {activatedProjects.length} {NOTEBOOK_NAME}
+      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
+      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
+      {isTabs ? (
+        <>{buildTabLink('not active')}</>
+      ) : (
+        <>
+          "{NOT_ACTIVATED_LABEL}" {sectionLabel}
+        </>
+      )}{' '}
+      need to be {ACTIVATED_VERB_PAST.toLowerCase()} before they can be used. To
+      start using a {NOTEBOOK_NAME_CAPITALIZED} in the{' '}
+      {isTabs ? (
+        <>{buildTabLink('not active')}</>
+      ) : (
+        <>
+          "{NOT_ACTIVATED_LABEL}" {sectionLabel}
+        </>
+      )}{' '}
+      click the "{ACTIVATE_VERB_LABEL}" button.
+    </>
+  );
+
+  // use notification service
+  const notify = useNotification();
 
   return (
     <Box>
       <Box component={Paper} elevation={0} p={2}>
         <Typography variant={'body1'} gutterBottom>
-          You have {activatedProjects.length} {NOTEBOOK_NAME}
-          {activatedProjects.length !== 1 ? 's' : ''} activated on this device.
-          To start syncing a {NOTEBOOK_NAME}, visit the{' '}
-          <Button variant="text" size={'small'} onClick={() => setTabID('2')}>
-            Available
-          </Button>{' '}
-          tab and click the activate button.
+          {notActivatedAdvice}
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
-          sx={{mb: 3, mt: 3}}
-          startIcon={<AddCircleSharpIcon />}
+        <div
+          style={{display: 'flex', justifyContent: 'space-between', gap: '8px'}}
         >
-          Create New Survey
-        </Button>
+          {showCreateNewNotebookButton ? (
+            <Button
+              variant="contained"
+              onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
+              sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
+              startIcon={<AddCircleSharpIcon />}
+            >
+              Create New {NOTEBOOK_NAME}
+            </Button>
+          ) : (
+            <div />
+          )}
+          <Button
+            variant="contained"
+            disabled={refresh}
+            sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
+            startIcon={<RefreshOutlined />}
+            onClick={async () => {
+              setRefresh(true);
+              await syncProjects()
+                .then(() => {
+                  notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
+                })
+                .catch(e => {
+                  console.log(e);
+                  notify.showError(
+                    `Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`
+                  );
+                });
+              setRefresh(false);
+            }}
+          >
+            Refresh {NOTEBOOK_NAME}s
+          </Button>
+        </div>
         {NOTEBOOK_LIST_TYPE === 'tabs' ? (
           <Tabs
             projects={projects}
@@ -202,6 +314,22 @@ export default function NoteBooks() {
         ) : (
           <HeadingProjectGrid projects={projects} columns={columns} />
         )}
+        <Alert severity="info">
+          <AlertTitle>
+            What does {ACTIVATED_LABEL} and {NOT_ACTIVATED_LABEL} mean?
+          </AlertTitle>
+          When a {NOTEBOOK_NAME} is “{ACTIVATED_LABEL}” you are safe to work
+          offline at any point because all the data you collect will be saved to
+          your device. {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} will start
+          the downloading of existing {NOTEBOOK_NAME} records onto your device.
+          We recommend you complete this procedure while you have a stable
+          internet connection. Currently, you cannot{' '}
+          {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}, this is something
+          we will be adding soon. If you need to make space on your device you
+          can clear the application storage or delete the application. If a{' '}
+          {NOTEBOOK_NAME} is "{NOT_ACTIVATED_LABEL}" you are unable to start
+          using it.
+        </Alert>
       </Box>
     </Box>
   );

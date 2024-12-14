@@ -25,7 +25,7 @@ npx cap open android
 ```
 
 Inside Android Studio, create a production build. To do this you'll need to generate
-an _upload key and keystore_, there are instructions 
+an _upload key and keystore_, there are instructions
 [on android.com](https://developer.android.com/studio/publish/app-signing#sign-apk).
 Basically you select "Generate Signed Bundle or API" from the Build menu and follow the
 prompts. This will get you to generate a new keystore file, key name and password.  
@@ -117,11 +117,11 @@ we will be updating.  Both of these come from the environment in our
 
 ```ruby
 json_key_file(ENV["ANDROID_JSON_KEY_FILE"])
-package_name(ENV["ANDROID_APP_ID"])
+package_name(ENV["APP_ID"])
 
 for_platform :android do
   for_lane :deploy_fieldmark do
-    package_name(ENV["ANDROID_APP_ID"])
+    package_name(ENV["APP_ID"])
   end
 end
 ```
@@ -145,7 +145,7 @@ Fastlane actions are defined by a `lane` in the [Fastfile](../../app/android/fas
             )
       upload_to_play_store(json_key: ENV["ANDROID_JSON_KEY_FILE"],
                            track: ENV["ANDROID_DEPLOY_TRACK"],
-                           release_status: 'completed',
+                           release_status: RELEASE_STATUS,
                            skip_upload_metadata: true,
                            skip_upload_images: true,
                            skip_upload_screenshots: true
@@ -173,13 +173,14 @@ where these workflows will run.
 - `vars.PRODUCTION_CONDUCTOR_URL` - URL setting for production build
 - `vars.TURBO_TEAM` - Turbo cache team name for authentication
 - `vars.TURBO_API_URL` - Turbo cache URL
-- `vars.ANDROID_APP_ID` - the id of the app on the app store, eg. 'au.edu.faims.fieldmark', needs to be unique per deployment
+- `vars.APP_ID` - the id of the app on the app store, eg. 'au.edu.faims.fieldmark', needs to be unique per deployment
+- `vars.APP_NAME` - the app name that appears in various places
+= `vars.ANDROID_RELEASE_STATUS` - the release status, normally 'completed' but for a draft (not yet reviewed) app this could be 'draft'
 
 Secrets will not be visible once added so we need to keep copies somewhere safe.
 
 - `secrets.TURBO_TOKEN` - authentication token for the turbo cache
 - `secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON` - bases64 encoded version of service account key, the workflow decodes this and sets `ANDROID_JSON_KEY_FILE` to point to it
-- `secrets.KEYSTORE_FILE` - contents of android-signing-keystore.jks (as base64?)
 - `secrets.BUGSNAG_KEY`
 - `secrets.KEYSTORE_FILE` - java key store file, base64 encoded
 - `secrets.JAVA_KEY_PASSWORD` - password for the Java keystore

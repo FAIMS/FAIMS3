@@ -4,6 +4,16 @@ import InfoIcon from '@mui/icons-material/Info';
 import {ProjectExtended} from '../../../../types/project';
 import {ProjectsContext} from '../../../../context/projects-context';
 import FaimsDialog from '../../ui/Faims_Dialog';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../../buildconfig';
+import {
+  ACTIVATE_ACTIVE_VERB_LABEL,
+  ACTIVATE_VERB_LABEL,
+  ACTIVATED_LABEL,
+  DE_ACTIVATE_VERB,
+} from '../../workspace/notebooks';
 
 type NotebookActivationSwitchProps = {
   project: ProjectExtended;
@@ -37,33 +47,41 @@ export default function NotebookActivationSwitch({
         variant="outlined"
         disableElevation
       >
-        Activate
+        {ACTIVATE_VERB_LABEL}
       </Button>
       <FaimsDialog
         open={open}
-        title="Activating / Deactivating surveys"
+        title={`${ACTIVATE_ACTIVE_VERB_LABEL} ${NOTEBOOK_NAME_CAPITALIZED}s`}
         icon={<InfoIcon style={{fontSize: 40, color: '#1976d2'}} />}
         onClose={handleClose}
         onPrimaryAction={handleActivationClick}
-        primaryActionText="Activate"
+        primaryActionText={ACTIVATE_VERB_LABEL}
         primaryActionLoading={isWorking}
         primaryActionColor="primary"
         primaryActionVariant="contained"
         cancelButtonText="Cancel"
       >
         <Box mb={2}>
-          <Typography variant="subtitle1" fontWeight="bold">
-            Activating a survey:
+          <Typography variant="body2" paragraph>
+            When a {NOTEBOOK_NAME_CAPITALIZED} is “{ACTIVATED_LABEL}” you are
+            safe to work offline at any point because all the data you collect
+            will be saved to your device. To {ACTIVATE_VERB_LABEL.toLowerCase()}{' '}
+            your {NOTEBOOK_NAME_CAPITALIZED}, click the "{ACTIVATE_VERB_LABEL}"
+            button below.
           </Typography>
           <Typography variant="body2" paragraph>
-            • When a survey is “Active” you are safe to work offline at any
-            point because all the data is saved to your device.
+            <b>Warning</b>: {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()} a{' '}
+            {NOTEBOOK_NAME_CAPITALIZED} will start the downloading of existing
+            records onto your device. We recommend you complete this procedure
+            while you have a stable internet connection.
+            <br />
+            <br />
+            Currently, you cannot {DE_ACTIVATE_VERB.toLowerCase()} a{' '}
+            {NOTEBOOK_NAME}, this is something we will be adding soon. If you
+            need to make space on your device you can clear the application
+            storage or remove and reinstall the application.
           </Typography>
-          <Typography variant="body2" paragraph>
-            • Before going out in the field you must ‘Activate’ your survey by
-            pressing the button “Activate" and selecting which survey(s) you
-            want to be available while out in the field.
-          </Typography>
+          {/*
           <Typography variant="subtitle1" fontWeight="bold">
             Deactivating a survey:
           </Typography>
@@ -72,6 +90,7 @@ export default function NotebookActivationSwitch({
             and when you no longer need access to surveys or survey data
             offline.
           </Typography>
+            */}
         </Box>
       </FaimsDialog>
     </Box>

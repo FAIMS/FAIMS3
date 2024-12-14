@@ -1,0 +1,104 @@
+name: Deploy to Apple App Store Production, Manual
+
+on:
+  workflow_dispatch:
+    
+jobs:
+  ios-deploy:
+    name: Deploying to Production
+    runs-on: macOS-latest
+    steps:
+      # note not using Turbo build as it caused a problem with missing assets
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Cache node modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Install jq
+        run: |
+          brew update
+          brew install jq
+      - name: Declare some variables
+        shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "app_version=$(jq -r '.version' app/package.json)" >> "$GITHUB_ENV"
+      - name: Create version string
+        shell: bash
+        run: |
+          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"        
+      
+      - name: Set up ruby env
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.1
+          bundler-cache: true
+          working-directory: app/ios/App
+      - run: |
+          cd app/ios/App
+          bundle install
+          bundle exec fastlane install_plugins
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Use Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10' 
+      - name: Building webapp
+        run: |
+          export platform="github-actions-ios"
+          export serverprefix="fieldmark"
+          export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
+          export VITE_COMMIT_VERSION=${{env.version_string}}
+          export VITE_SHOW_WIPE=true
+          export VITE_SHOW_MINIFAUXTON=false
+          export VITE_CONDUCTOR_URL=${{vars.PRODUCTION_CONDUCTOR_URL}}
+          export VITE_TAG=prodIOS
+          export VITE_NOTEBOOK_LIST_TYPE=${{vars.NOTEBOOK_LIST_TYPE}}
+          export VITE_NOTEBOOK_NAME=${{vars.NOTEBOOK_NAME}}
+          export VITE_THEME=${{vars.THEME}}
+          export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
+          export VITE_APP_ID=${{vars.APP_ID}}
+          export VITE_APP_NAME="${{vars.APP_NAME}}"
+          export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
+          npm ci --python=python3.10
+          npm run build
+      - name: Update IOS Build
+        run: |
+          cd app
+          npx cap update ios
+          npx cap sync --deployment ios
+          cd ios/App; pod install
+      - name: Deploy iOS app to production with Fastlane
+        uses: maierj/fastlane-action@v2.3.0
+        with:
+          lane: production
+          subdirectory: 'app/ios/App'
+          bundle-install-path: '$HOME/vendor/bundle'
+          verbose: false
+        env:
+          APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
+          DEVELOPER_APP_ID: '${{ vars.DEVELOPER_APP_ID }}'
+          APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
+          DEVELOPER_PORTAL_TEAM_ID: '${{ secrets.DEVELOPER_PORTAL_TEAM_ID }}'
+          FASTLANE_APPLE_ID: '${{ secrets.FASTLANE_APPLE_ID }}'
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: '${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}'
+          MATCH_PASSWORD: '${{ secrets.MATCH_PASSWORD }}'
+          GIT_AUTHORIZATION: '${{ secrets.GIT_AUTHORIZATION }}'
+          PROVISIONING_PROFILE_SPECIFIER: '${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}'
+          APPLE_KEY_ID: '${{ secrets.APPLE_KEY_ID }}'
+          APPLE_ISSUER_ID: '${{ secrets.APPLE_ISSUER_ID }}'
+          APPLE_KEY_CONTENT: '${{ secrets.APPLE_KEY_CONTENT }}'
+          BROWSERSTACK_USERNAME: '${{secrets.BROWSERSTACK_USERNAME}}'
+          BROWSERSTACK_ACCESS_KEY: '${{secrets.BROWSERSTACK_ACCESS_KEY}}'

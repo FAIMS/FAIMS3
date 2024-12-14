@@ -18,30 +18,54 @@
  *   Defines the SignIn component to present login and registration options
  */
 
-import {useState, useEffect} from 'react';
-import {Box, Grid, Typography} from '@mui/material';
-
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import ClusterCard from '../components/authentication/cluster_card';
-import * as ROUTES from '../../constants/routes';
 import {ListingsObject} from '@faims3/data-model/src/types';
+import {Box, Grid, Typography} from '@mui/material';
+import {useEffect, useState} from 'react';
+import {NOTEBOOK_NAME} from '../../buildconfig';
+import * as ROUTES from '../../constants/routes';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {logError} from '../../logging';
-import {NOTEBOOK_NAME} from '../../buildconfig';
-import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
 import {isWeb} from '../../utils/helpers';
+import ClusterCard from '../components/authentication/cluster_card';
+import Breadcrumbs from '../components/ui/breadcrumbs';
+import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
+import OnboardingComponent from '../components/authentication/oneServerLanding';
+import {Capacitor} from '@capacitor/core';
+import {useGetAnyToken} from '../../utils/tokenHooks';
 
-type SignInProps = {
-  setToken?: any;
-};
-
-export function SignIn(props: SignInProps) {
-  const [listings, setListings] = useState(null as null | ListingsObject[]);
+export function SignIn() {
+  const [listings, setListings] = useState<ListingsObject[] | null>(null);
   const breadcrumbs = [{link: ROUTES.INDEX, title: 'Home'}, {title: 'Sign In'}];
+  const platform = Capacitor.getPlatform();
+  const allowQr = platform === 'ios' || platform === 'android';
+
+  // Get the current login token if any
+  const tokenQuery = useGetAnyToken();
 
   useEffect(() => {
     getSyncableListingsInfo().then(setListings).catch(logError);
   }, []);
+
+  // The conditions for this to show are to simplify onboarding in the most
+  // common case i.e. one listing - check we are not already logged in and only
+  // one loaded listing
+  if (
+    // One listing
+    listings?.length === 1 &&
+    // It's well defined
+    !!listings[0] &&
+    // Tokens are not loading
+    !tokenQuery.isLoading &&
+    // Token is not present
+    !tokenQuery.data?.token
+  ) {
+    return (
+      <OnboardingComponent
+        scanQr={allowQr}
+        listings={listings}
+      ></OnboardingComponent>
+    );
+  }
 
   if (listings === null) {
     return (
@@ -56,14 +80,13 @@ export function SignIn(props: SignInProps) {
       <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={4}>
         {listings.map((listing_info, index) => (
-          <Grid item lg={4} md={6} sm={8} xs={12} key={index}>
+          <Grid item lg={4} md={6} sm={12} xs={12} key={index}>
             <ClusterCard
               key={listing_info.id}
               listing_id={listing_info.id}
               listing_name={listing_info.name}
               listing_description={listing_info.description}
               conductor_url={listing_info.conductor_url}
-              setToken={props.setToken}
             />
           </Grid>
         ))}

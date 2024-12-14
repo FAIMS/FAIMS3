@@ -1,1 +1,1 @@
-docker compose -f api/docker-compose.dev.yml up -d
+docker compose up -d

@@ -1,6 +1,5 @@
 import {NavLink} from 'react-router-dom';
-import {appBarHeading} from '../../themes/index';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {HEADING_APP_NAME} from '../../../buildconfig';
 
 interface AppBarHeadingProps {
   link: string;
@@ -13,23 +12,18 @@ interface AppBarHeadingProps {
  * @param {string} props.link - The link URL for the NavLink component.
  * @returns {JSX.Element} - The rendered AppBarHeading component.
  */
-export const AppBarHeading = ({link}: AppBarHeadingProps) =>
-  appBarHeading === 'bubble' ? (
-    <div
-      style={{
-        flexGrow: 1,
-        fontSize: 32,
-        fontWeight: 600,
-        textAlign: 'center',
-      }}
-    >
-      {NOTEBOOK_NAME_CAPITALIZED}s
-    </div>
-  ) : (
-    <NavLink style={{flexGrow: 1}} to={link}>
-      <img
-        src="/static/logo/Fieldmark-Short-Green-NoBorder.png"
-        style={{maxWidth: '140px', flex: 1}}
-      />
-    </NavLink>
-  );
+export const AppBarHeading = ({link}: AppBarHeadingProps) => (
+  <NavLink
+    to={link}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      flex: 1,
+      textDecoration: 'none',
+      color: 'black',
+    }}
+  >
+    <img src="/assets/icons/icon-48.webp" />
+    <h1>{HEADING_APP_NAME}</h1>
+  </NavLink>
+);

@@ -21,7 +21,15 @@
 import React from 'react';
 import MuiTextField from '@mui/material/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
-import {MenuItem} from '@mui/material';
+import {
+  FormControl,
+  FormHelperText,
+  InputLabel,
+  ListItemText,
+  MenuItem,
+  OutlinedInput,
+  Select as MuiSelect,
+} from '@mui/material';
 import {ElementOption} from '@faims3/data-model';
 
 interface ElementProps {
@@ -33,7 +41,48 @@ interface Props {
   select_others?: string;
 }
 
-export class Select extends React.Component<TextFieldProps & Props> {
+import {useTheme} from '@mui/material/styles';
+
+export const Select = (props: Props & TextFieldProps) => {
+  const theme = useTheme();
+  const handleChange = (e: any) => {
+    props.form.setFieldValue(props.field.name, e.target.value, true);
+  };
+
+  return (
+    <FormControl sx={{m: 1, width: '100%'}}>
+      <InputLabel
+        id="multi-select-label"
+        style={{backgroundColor: theme.palette.background.default}}
+      >
+        {props.label}
+      </InputLabel>
+      <MuiSelect
+        labelId="multi-select-label"
+        label={props.label}
+        onChange={handleChange}
+        value={props.field.value}
+        input={<OutlinedInput label={props.label} />}
+      >
+        {props.ElementProps.options.map((option: any) => (
+          <MenuItem
+            key={option.key ? option.key : option.value}
+            value={option.value}
+            sx={{
+              whiteSpace: 'normal',
+              wordWrap: 'break-word',
+            }}
+          >
+            <ListItemText primary={option.label} />
+          </MenuItem>
+        ))}
+      </MuiSelect>
+      {props.helperText && <FormHelperText>{props.helperText}</FormHelperText>}
+    </FormControl>
+  );
+};
+
+export class Selectx extends React.Component<TextFieldProps & Props> {
   handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     this.props.form.setFieldValue(this.props.field.name, e.target.value, true);
   }

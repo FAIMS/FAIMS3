@@ -56,28 +56,6 @@ function commit_version(): string {
   }
 }
 
-function prod_build(): boolean {
-  const productionBuild = import.meta.env.VITE_PRODUCTION_BUILD;
-  if (
-    productionBuild === '' ||
-    productionBuild === undefined ||
-    TRUTHY_STRINGS.includes(productionBuild.toLowerCase())
-  ) {
-    return true;
-  } else if (FALSEY_STRINGS.includes(productionBuild.toLowerCase())) {
-    return false;
-  } else {
-    logError('VITE_PRODUCTION_BUILD badly defined, assuming false');
-    return false;
-  }
-}
-/*
- * This isn't exported, instead to help reduce the number of environment
- * variables to set to get a production build for real users. Can be used in the
- * rest of the configuration.
- */
-const PROD_BUILD = prod_build();
-
 function include_pouchdb_debugging(): boolean {
   const debug_pouch = import.meta.env.VITE_DEBUG_POUCHDB;
   if (debug_pouch === '' || debug_pouch === undefined) {
@@ -215,32 +193,6 @@ function cluster_admin_group_name(): string {
   return name;
 }
 
-function disable_signin_redirect(): boolean {
-  const disable_signin = import.meta.env.VITE_DISABLE_SIGNIN_REDIRECT;
-  if (disable_signin === '' || disable_signin === undefined) {
-    return false;
-  }
-  if (FALSEY_STRINGS.includes(disable_signin.toLowerCase())) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(disable_signin.toLowerCase())) {
-    return true;
-  } else {
-    logError('VITE_DISABLE_SIGNIN_REDIRECT badly defined, assuming false');
-    return false;
-  }
-}
-
-function get_login_token(): string | undefined {
-  const login_token = import.meta.env.VITE_LOGIN_TOKEN;
-  if (login_token === '' || login_token === undefined) {
-    return undefined;
-  }
-  if (PROD_BUILD) {
-    logError('Production builds should not set login token, except under test');
-  }
-  return login_token;
-}
-
 // If VITE_BUGSNAG_KEY is not defined then we don't use Bugsnag
 function get_bugsnag_key(): string | false {
   const bugsnag_key = import.meta.env.VITE_BUGSNAG_KEY;
@@ -311,6 +263,23 @@ function get_notebook_list_type(): 'tabs' | 'headings' {
 }
 
 /**
+ * Is the VITE_SHOW_RECORD_SUMMARY_COUNTS env variable present and not falsey
+ * @returns The notebook list type, which can be either "tabs" or "headings".
+ */
+function showRecordCounts(): boolean {
+  const val = import.meta.env.VITE_SHOW_RECORD_SUMMARY_COUNTS as
+    | string
+    | undefined;
+  if (!val) {
+    return false;
+  }
+  if (['false', 'f'].includes(val.toLowerCase())) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * Retrieves the name of notebooks from the environment variables.
  * If the environment variable is not set, it returns a default value 'notebook'.
  *
@@ -336,6 +305,33 @@ function get_notebook_name_capitalized(): string {
   return notebook_name.charAt(0).toUpperCase() + notebook_name.slice(1);
 }
 
+/**
+ * Retrieves the configured app identifier for Android/IOS
+ * @returns {string} - the app id
+ */
+function get_app_id(): string {
+  const appid = import.meta.env.VITE_APP_ID;
+  return appid || 'org.fedarch.faims3';
+}
+
+/**
+ * Retrieves the configured app name
+ * @returns {string} - the app name
+ */
+function get_app_name(): string {
+  const appid = import.meta.env.VITE_APP_NAME;
+  return appid || 'Fieldmark';
+}
+
+/**
+ * Retrieves the configured heading app name or falls back to APP_NAME
+ * @returns {string} - the app name
+ */
+function get_heading_app_name(): string {
+  const appid = import.meta.env.VITE_HEADING_APP_NAME;
+  return appid || get_app_name();
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -350,9 +346,11 @@ export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
 export const SHOW_MINIFAUXTON = show_minifauxton();
 export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
-export const DISABLE_SIGNIN_REDIRECT = disable_signin_redirect();
-export const BUILT_LOGIN_TOKEN = get_login_token();
 export const BUGSNAG_KEY = get_bugsnag_key();
 export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
 export const NOTEBOOK_NAME = get_notebook_name();
 export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
+export const APP_NAME = get_app_name();
+export const HEADING_APP_NAME = get_heading_app_name();
+export const APP_ID = get_app_id();
+export const SHOW_RECORD_SUMMARY_COUNTS = showRecordCounts();

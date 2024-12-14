@@ -116,10 +116,16 @@ const DomainsConfigSchema = z.object({
 });
 
 const ConductorConfigSchema = z.object({
+  /** The title for this conductor instance, shown on listings page */
+  name: z.string(),
+  /** The description shown underneath as a sub heading */
+  description: z.string(),
   /** Conductor docker image e.g. org/faims3-api */
   conductorDockerImage: z.string(),
   /** Conductor docker image e.g. latest, sha-123456 */
   conductorDockerImageTag: z.string().default('latest'),
+  /** The prefix to use for the short codes in the app */
+  shortCodePrefix: z.string().default('FAIMS'),
   /** The number of CPU units for the Fargate task */
   cpu: z.number().int().positive(),
   /** The amount of memory (in MiB) for the Fargate task */
@@ -171,11 +177,15 @@ const BackupConfigSchema = z
 
 export const UiConfiguration = z.object({
   /** The UI Theme for the app */
-  uiTheme: z.enum(['bubble', 'default']),
+  uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
   /** The notebook list type for the app */
   notebookListType: z.enum(['tabs', 'headings']),
   /** The display name for notebooks e.g. survey, notebook */
   notebookName: z.string(),
+  /** The name of the App in app store etc - heading by default */
+  appName: z.string(),
+  /** Override the heading text in banner */
+  headingAppName: z.string().optional(),
 });
 
 // Define the schema
@@ -394,6 +404,8 @@ export class FaimsInfraStack extends cdk.Stack {
       uiTheme: config.uiConfiguration.uiTheme,
       notebookListType: config.uiConfiguration.notebookListType,
       notebookName: config.uiConfiguration.notebookName,
+      appName: config.uiConfiguration.appName,
+      headingAppName: config.uiConfiguration.headingAppName,
     });
 
     // Backup setup

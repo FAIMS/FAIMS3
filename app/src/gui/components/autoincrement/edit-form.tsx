@@ -15,31 +15,35 @@
  *
  * Filename: form.tsx
  * Description:
- *   TODO
+ *   Defines a form for editing the auto-incrementer ranges for a field
  */
 
-import React from 'react';
-import {Formik, Form, Field, yupToFormErrors} from 'formik';
-import {
-  ButtonGroup,
-  Box,
-  Alert,
-  Button,
-  LinearProgress,
-  Grid,
-  Divider,
-} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import {TextField} from 'formik-mui';
-import * as yup from 'yup';
+import {
+  Badge,
+  Button,
+  ButtonGroup,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  IconButton,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import {useContext, useState} from 'react';
 
+import {LocalAutoIncrementRange, ProjectID} from '@faims3/data-model';
+import CloseIcon from '@mui/icons-material/Close';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {ActionType} from '../../../context/actions';
 import {store} from '../../../context/store';
-import {ProjectID, LocalAutoIncrementRange} from '@faims3/data-model';
 import {
+  createNewAutoincrementRange,
   getLocalAutoincrementRangesForField,
   setLocalAutoincrementRangesForField,
-  createNewAutoincrementRange,
 } from '../../../local-data/autoincrement';
 
 interface Props {
@@ -47,109 +51,55 @@ interface Props {
   form_id: string;
   field_id: string;
   label: string;
+  open: boolean;
+  handleClose: () => void;
 }
 
-interface State {
-  ranges: LocalAutoIncrementRange[] | null;
-  ranges_initialised: boolean;
-}
+export const AutoIncrementEditForm = ({
+  project_id,
+  form_id,
+  field_id,
+  label,
+  open,
+  handleClose,
+}: Props) => {
+  const {dispatch} = useContext(store);
 
-const FORM_SCHEMA = yup.object().shape({
-  start: yup.number().required().positive().integer(),
-  stop: yup.number().required().positive().integer(),
-});
-
-export default class BasicAutoIncrementer extends React.Component<
-  Props,
-  State
-> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      ranges: null,
-      ranges_initialised: false,
-    };
-  }
-
-  async ensure_ranges() {
-    if (this.state.ranges === null) {
+  // useQuery to get the current ranges for the field,
+  // we will invalidate the query when we update the ranges
+  // so that they get re-fetched
+  const queryClient = useQueryClient();
+  const queryKey = ['autoincrement', project_id, form_id, field_id];
+  const {data: ranges} = useQuery({
+    queryKey: queryKey,
+    queryFn: async () => {
       const ranges = await getLocalAutoincrementRangesForField(
-        this.props.project_id,
-        this.props.form_id,
-        this.props.field_id
+        project_id,
+        form_id,
+        field_id
       );
-      this.setState({ranges: ranges});
-    }
-  }
+      return ranges;
+    },
+    enabled: true,
+  });
 
-  async add_new_range() {
-    await this.ensure_ranges();
-    const ranges = [
-      ...((this.state.ranges || []) as LocalAutoIncrementRange[]),
-    ];
-    ranges.push(createNewAutoincrementRange(0, 0));
-    this.setState({ranges: ranges});
-  }
+  const addNewRange = async () => {
+    const updatedRanges = [...(ranges || [])];
+    updatedRanges.push(createNewAutoincrementRange(0, 0));
+    updateRanges(updatedRanges);
+  };
 
-  cloned_ranges(): LocalAutoIncrementRange[] | null {
-    if (this.state.ranges === null) {
-      return null;
-    }
-    // react requires us to make deep copied if we want to modify state...
-    const ranges = [] as LocalAutoIncrementRange[];
-    for (const old_range of this.state.ranges) {
-      // This assumes we don't need to go another level down to deep clone
-      const new_range = {...old_range};
-      ranges.push(new_range);
-    }
-    return ranges;
-  }
-
-  render_ranges() {
-    const ranges = this.cloned_ranges();
-    if (ranges === null || ranges.length === 0) {
-      return (
-        <Alert severity={'info'} sx={{mb: 1}}>
-          No ranges allocated yet.
-        </Alert>
-      );
-    }
-    return (
-      <div>
-        {ranges.map((range, range_index) => {
-          return this.render_range(range, range_index, ranges);
-        })}
-      </div>
-    );
-  }
-
-  async update_ranges(ranges: LocalAutoIncrementRange[]) {
-    const {project_id, form_id, field_id} = this.props;
+  const updateRanges = async (newRanges: LocalAutoIncrementRange[]) => {
     try {
       await setLocalAutoincrementRangesForField(
         project_id,
         form_id,
         field_id,
-        ranges
-      ).then(() => {
-        (this.context as any).dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: 'Range successfully updated',
-            severity: 'success',
-          },
-        });
-      });
-      let ranges_initialised = false;
-      for (const range of ranges) {
-        if (range.using || range.fully_used) {
-          ranges_initialised = true;
-          break;
-        }
-      }
-      this.setState({ranges: ranges, ranges_initialised: ranges_initialised});
+        newRanges
+      );
+      queryClient.invalidateQueries({queryKey: queryKey});
     } catch (err: any) {
-      (this.context as any).dispatch({
+      dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
           message: err.toString(),
@@ -157,159 +107,211 @@ export default class BasicAutoIncrementer extends React.Component<
         },
       });
     }
-  }
+  };
 
-  render_range(
-    range: LocalAutoIncrementRange,
-    range_index: number,
-    ranges: LocalAutoIncrementRange[]
-  ) {
-    const range_count = ranges.length;
-    const start_props = {
-      id: 'start',
-      label: 'start',
-      name: 'start',
-      required: true,
-      type: 'number',
-      readOnly: range.using || range.fully_used,
-      disabled: range.using || range.fully_used,
+  const updateRange = (index: number) => {
+    return (range: LocalAutoIncrementRange) => {
+      if (ranges) {
+        const rangesCopy = [...ranges];
+        rangesCopy[index] = range;
+        updateRanges(rangesCopy);
+      }
     };
-    const stop_props = {
-      id: 'stop',
-      label: 'stop',
-      name: 'stop',
-      required: true,
-      type: 'number',
-      readOnly: range.fully_used,
-      disabled: range.fully_used,
-    };
+  };
 
-    return (
-      <Formik
-        key={range_index}
-        initialValues={{
-          start: range.start,
-          stop: range.stop,
-        }}
-        validate={values => {
-          return FORM_SCHEMA.validate(values)
-            .then(v => {
-              if (!(v.stop > v.start)) {
-                return {stop: 'Must be greater than start'};
-              }
-              return {};
-            })
-            .catch(err => {
-              return yupToFormErrors(err);
-            });
-        }}
-        onSubmit={async (values, {setSubmitting}) => {
-          range.start = values.start;
-          range.stop = values.stop;
-          await this.update_ranges(ranges).then(() => {
-            setSubmitting(false);
-          });
+  const handleRemoveRange = (index: number) => {
+    const newRanges = ranges?.filter((_, i) => i !== index);
+    if (newRanges !== undefined) {
+      updateRanges(newRanges);
+    } else {
+      updateRanges([]);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={handleClose}>
+      <DialogTitle>Edit Settings for {label}</DialogTitle>
+      <IconButton
+        aria-label="close"
+        onClick={handleClose}
+        sx={{
+          position: 'absolute',
+          right: 8,
+          top: 8,
         }}
       >
-        {({submitForm, isSubmitting}) => (
-          <Box sx={{my: 1}} data-testid="rangeBox">
-            <Form data-testid="addRangeForm">
-              <Grid container direction="row" spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Field
-                    size={'small'}
-                    component={TextField}
-                    data-testid="rangeStart"
-                    {...start_props}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Field
-                    size={'small'}
-                    component={TextField}
-                    data-testid="rangeStop"
-                    {...stop_props}
-                  />
-                </Grid>
-              </Grid>
+        <CloseIcon />
+      </IconButton>
+      <DialogContent dividers>
+        <Typography gutterBottom>
+          This form uses an auto-increment field to generate new identifiers for
+          each record. Here you can set a range of numbers to use on this
+          device.
+        </Typography>
+        <Typography gutterBottom>
+          Set a start and end for the range, numbers will be allocated in order
+          until used up. You must add at least one range. If there is more than
+          one range, the ranges will be used in order.
+        </Typography>
+        <Divider sx={{mt: 1, mb: 2}} />
 
-              <Grid item xs>
-                <ButtonGroup
-                  fullWidth={true}
-                  sx={{mt: 1}}
-                  variant={'outlined'}
-                  size={'small'}
-                >
-                  {range.using ? (
-                    <Button
-                      color="error"
-                      onClick={async () => {
-                        range.fully_used = true;
+        <Stack direction="column" spacing={2}>
+          {ranges?.map((range, index) => {
+            return (
+              <IncrementerRange
+                key={index}
+                range={range}
+                index={index}
+                updateRange={updateRange(index)}
+                handleRemoveRange={handleRemoveRange}
+                allowRemove={ranges.length > 1}
+              />
+            );
+          })}
+          <Button
+            variant="outlined"
+            color={'primary'}
+            onClick={addNewRange}
+            startIcon={<AddIcon />}
+            data-testid="addNewRangeBtn"
+          >
+            Add new range
+          </Button>
+        </Stack>
 
-                        await this.update_ranges(ranges);
-                      }}
-                    >
-                      Disable range
-                    </Button>
-                  ) : (
-                    <Button
-                      color="error"
-                      data-testid="removeRangeBtn"
-                      disabled={
-                        range_count < 2 && this.state.ranges_initialised
-                      }
-                      onClick={async () => {
-                        ranges.splice(range_index, 1);
+        <DialogActions>
+          <Button
+            variant="contained"
+            color={'primary'}
+            onClick={handleClose}
+            data-testid="closeDialogBtn"
+          >
+            Done
+          </Button>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
-                        await this.update_ranges(ranges);
-                      }}
-                    >
-                      Remove range
-                    </Button>
-                  )}
-                  <Button
-                    color="primary"
-                    disabled={isSubmitting || range.fully_used}
-                    onClick={submitForm}
-                  >
-                    Update range
-                  </Button>
-                </ButtonGroup>
-              </Grid>
-            </Form>
-            {isSubmitting && <LinearProgress />}
-            <Divider sx={{mt: 1, mb: 2}} />
-          </Box>
-        )}
-      </Formik>
-    );
-  }
+type IncremenenterRangeProps = {
+  range: LocalAutoIncrementRange;
+  index: number;
+  allowRemove: boolean;
+  updateRange: (range: LocalAutoIncrementRange) => void;
+  handleRemoveRange: (index: number) => void;
+};
 
-  async componentDidMount() {
-    await this.ensure_ranges();
-  }
+/**
+ * A component to display and allow editing of a single range of auto-increment
+ *
+ * @param props component props
+ */
+const IncrementerRange = (props: IncremenenterRangeProps) => {
+  const [start, setStart] = useState<number | string>(props.range.start);
+  const [stop, setStop] = useState<number | string>(props.range.stop);
 
-  async componentDidUpdate() {
-    await this.ensure_ranges();
-  }
+  const handleStartChange = (event: any) => {
+    if (event.target.value === '') {
+      // set start but don't update the range
+      setStart('');
+      return;
+    }
+    const newStart = parseInt(event.target.value);
+    if (newStart >= 0) {
+      setStart(newStart);
+      if (newStart >= props.range.stop) {
+        // initialise a range of 100 if they enter a start > stop
+        setStop(newStart + 99);
+        props.updateRange({
+          ...props.range,
+          start: newStart,
+          stop: newStart + 99,
+        });
+      } else {
+        props.updateRange({
+          ...props.range,
+          start: newStart,
+        });
+      }
+    }
+  };
 
-  render() {
-    return (
-      <Box mt={1}>
-        {this.render_ranges()}
-        <Button
-          variant="outlined"
-          color={'primary'}
-          onClick={async () => {
-            this.add_new_range();
-          }}
-          startIcon={<AddIcon />}
-          data-testid="addNewRangeBtn"
+  const handleStopChange = (event: any) => {
+    if (event.target.value === '') {
+      // set stop but don't update the range
+      setStop('');
+      return;
+    }
+    const newStop = parseInt(event.target.value);
+    if (newStop > props.range.start) {
+      setStop(newStop);
+      props.updateRange({
+        ...props.range,
+        stop: newStop,
+      });
+    }
+  };
+
+  const handleDisableRange = () => {
+    props.updateRange({
+      ...props.range,
+      fully_used: true,
+    });
+  };
+
+  return (
+    <Badge badgeContent={props.range.using ? 'in use' : 0} color="primary">
+      <Stack direction="row" spacing={2}>
+        <TextField
+          id={`rangeStart-${props.index}`}
+          value={start}
+          label="Start"
+          type="number"
+          size="small"
+          sx={{maxWidth: '7em', minWidth: '2em'}}
+          onChange={handleStartChange}
+          disabled={props.range.using || props.range.fully_used}
+        />
+        <TextField
+          id={`rangeStop-${props.index}`}
+          value={stop}
+          label="Stop"
+          type="number"
+          size="small"
+          sx={{maxWidth: '7em'}}
+          onChange={handleStopChange}
+          disabled={props.range.fully_used}
+        />
+        <ButtonGroup
+          fullWidth={true}
+          sx={{mt: 1}}
+          variant={'outlined'}
+          size={'small'}
         >
-          Add new range
-        </Button>
-      </Box>
-    );
-  }
-}
-BasicAutoIncrementer.contextType = store;
+          {props.range.using && (
+            <Button color="error" onClick={handleDisableRange}>
+              Disable range
+            </Button>
+          )}
+
+          {!(props.range.using || props.range.fully_used) && (
+            <Button
+              color="error"
+              data-testid="removeRangeBtn"
+              disabled={!props.allowRemove}
+              onClick={() => props.handleRemoveRange(props.index)}
+            >
+              Remove range
+            </Button>
+          )}
+          {props.range.fully_used && (
+            <Button color="error" disabled>
+              Range fully used
+            </Button>
+          )}
+        </ButtonGroup>
+      </Stack>
+    </Badge>
+  );
+};

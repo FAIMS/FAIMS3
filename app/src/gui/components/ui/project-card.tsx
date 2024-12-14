@@ -41,9 +41,9 @@ export default function ProjectCard({
         border: '1px solid #BBBBBB',
         boxShadow: '0 5px 5px -2px rgb(0 0 0 / 0.3)',
         backgroundColor: '#F9F9F9',
-        borderRadius: 20,
-        paddingTop: 16,
-        paddingLeft: 16,
+        borderRadius: '20px',
+        paddingTop: '20px 16px',
+        paddingLeft: '16px',
       }}
       onClick={() => onClick(project.project_id, project.is_activated)}
     >

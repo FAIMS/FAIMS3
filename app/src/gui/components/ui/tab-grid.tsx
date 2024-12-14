@@ -11,6 +11,8 @@ import {ProjectExtended} from '../../../types/project';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
+import {theme} from '../../themes';
+import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
 
 /**
  * Renders a tabbed grid component.
@@ -57,14 +59,22 @@ export default function TabProjectGrid({
   return (
     <TabContext value={tabID}>
       <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-        <TabList onChange={(_, value: string) => handleChange(value)}>
+        <TabList
+          onChange={(_, value: string) => handleChange(value)}
+          TabIndicatorProps={{
+            style: {
+              backgroundColor: theme.palette.secondary.contrastText,
+            },
+          }}
+          sx={{backgroundColor: theme.palette.background.tabsBackground}}
+        >
           {['1', '2'].map(tab => (
             <Tab
               key={tab}
               label={
                 tab === '1'
-                  ? `Activated (${activatedProjects.length})`
-                  : `Available (${availableProjects.length})`
+                  ? `${ACTIVATED_LABEL} (${activatedProjects.length})`
+                  : `${NOT_ACTIVATED_LABEL} (${availableProjects.length})`
               }
               value={tab}
               disabled={

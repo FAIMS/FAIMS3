@@ -130,22 +130,18 @@ export class FaimsConductor extends Construct {
         ],
         environment: {
           PROFILE_NAME: 'default',
-          CONDUCTOR_INSTANCE_NAME: 'AWS FAIMS 3 Deployment',
+          CONDUCTOR_INSTANCE_NAME: props.config.name,
+          CONDUCTOR_DESCRIPTION: props.config.description,
           COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
           COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
           COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
+          CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
           // Conductor API URLs
           CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
           CONDUCTOR_URL: this.conductorEndpoint,
           WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
           ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
           IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
-          // TODO Setup email
-          CONDUCTOR_EMAIL_FROM_ADDRESS: 'noreply@localhost.test',
-          CONDUCTOR_EMAIL_HOST_CONFIG:
-            'smtps://username:password@smtp.example.test',
-          // TODO Setup git revision properly
-          COMMIT_VERSION: 'todo',
           KEY_SOURCE: 'AWS_SM',
           AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         },

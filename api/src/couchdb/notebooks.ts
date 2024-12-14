@@ -32,7 +32,7 @@ import {
 import archiver from 'archiver';
 import PouchDB from 'pouchdb';
 import {Stream} from 'stream';
-import {getMetadataDb, getProjectsDB} from '.';
+import {getMetadataDb, getProjectsDB, verifyCouchDBConnection} from '.';
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {
   PROJECT_METADATA_PREFIX,
@@ -200,27 +200,36 @@ const getAutoIncrementers = (uiSpec: EncodedProjectUIModel) => {
  *  properly, add design documents if they are missing
  */
 export const validateDatabases = async () => {
-  const output: any[] = [];
   const projects: ProjectObject[] = [];
-  const projects_db = getProjectsDB();
-  if (projects_db) {
-    const res = await projects_db.allDocs({
-      include_docs: true,
-    });
-    res.rows.forEach(e => {
-      if (e.doc !== undefined && !e.id.startsWith('_')) {
-        projects.push(e.doc as unknown as ProjectObject);
-      }
-    });
+  try {
+    const report = await verifyCouchDBConnection();
 
-    for (const project of projects) {
-      const project_id = project._id;
-      const dataDB = await getDataDB(project_id);
-      // ensure that design documents are here
-      await addDesignDocsForNotebook(dataDB);
+    if (!report.valid) {
+      return report;
     }
+
+    const projects_db = getProjectsDB();
+    if (projects_db) {
+      const res = await projects_db.allDocs({
+        include_docs: true,
+      });
+      res.rows.forEach(e => {
+        if (e.doc !== undefined && !e.id.startsWith('_')) {
+          projects.push(e.doc as unknown as ProjectObject);
+        }
+      });
+
+      for (const project of projects) {
+        const project_id = project._id;
+        const dataDB = await getDataDB(project_id);
+        // ensure that design documents are here
+        await addDesignDocsForNotebook(dataDB);
+      }
+    }
+    return report;
+  } catch (e) {
+    return {valid: false};
   }
-  return output;
 };
 
 /**
@@ -760,50 +769,53 @@ export const streamNotebookRecordsAsCSV = async (
   let {record, done} = await iterator.next();
   let header_done = false;
   const filenames: string[] = [];
-  while (record && !done) {
-    const hrid = getRecordHRID(record);
-    const row = [
-      hrid,
-      record.record_id,
-      record.revision_id,
-      record.type,
-      record.created_by,
-      record.created.toISOString(),
-      record.updated_by,
-      record.updated.toISOString(),
-    ];
-    const outputData = convertDataForOutput(
-      fields,
-      record.data,
-      hrid,
-      filenames
-    );
-    Object.keys(outputData).forEach((property: string) => {
-      row.push(outputData[property]);
-    });
-
-    if (!header_done) {
-      const columns = [
-        'identifier',
-        'record_id',
-        'revision_id',
-        'type',
-        'created_by',
-        'created',
-        'updated_by',
-        'updated',
+  while (!done) {
+    // record might be null if there was an invalid db entry
+    if (record) {
+      const hrid = getRecordHRID(record);
+      const row = [
+        hrid,
+        record.record_id,
+        record.revision_id,
+        record.type,
+        record.created_by,
+        record.created.toISOString(),
+        record.updated_by,
+        record.updated.toISOString(),
       ];
-      // take the keys in the generated output data which may have more than
-      // the original data
-      Object.keys(outputData).forEach((key: string) => {
-        columns.push(key);
+      const outputData = convertDataForOutput(
+        fields,
+        record.data,
+        hrid,
+        filenames
+      );
+      Object.keys(outputData).forEach((property: string) => {
+        row.push(outputData[property]);
       });
-      stringifier = stringify({columns, header: true});
-      // pipe output to the respose
-      stringifier.pipe(res);
-      header_done = true;
+
+      if (!header_done) {
+        const columns = [
+          'identifier',
+          'record_id',
+          'revision_id',
+          'type',
+          'created_by',
+          'created',
+          'updated_by',
+          'updated',
+        ];
+        // take the keys in the generated output data which may have more than
+        // the original data
+        Object.keys(outputData).forEach((key: string) => {
+          columns.push(key);
+        });
+        stringifier = stringify({columns, header: true});
+        // pipe output to the respose
+        stringifier.pipe(res);
+        header_done = true;
+      }
+      if (stringifier) stringifier.write(row);
     }
-    if (stringifier) stringifier.write(row);
     const next = await iterator.next();
     record = next.record;
     done = next.done;

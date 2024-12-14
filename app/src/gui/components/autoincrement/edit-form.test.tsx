@@ -19,7 +19,7 @@
  */
 
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import BasicAutoIncrementer from './edit-form';
+import {AutoIncrementEditForm} from './edit-form';
 import {expect, describe, it} from 'vitest';
 
 const props = {
@@ -27,11 +27,13 @@ const props = {
   form_id: '',
   field_id: '',
   label: '',
+  open: true,
+  handleClose: () => {},
 };
 
 describe('Check edit-form component', () => {
   it('Check add btn', async () => {
-    render(<BasicAutoIncrementer {...props} />);
+    render(<AutoIncrementEditForm {...props} />);
     const addRangeBtn = screen.getByTestId('addNewRangeBtn');
 
     await waitFor(() => {
@@ -45,7 +47,7 @@ describe('Check edit-form component', () => {
     });
   });
   it('Check remove btn', async () => {
-    render(<BasicAutoIncrementer {...props} />);
+    render(<AutoIncrementEditForm {...props} />);
     const addRangeBtn = screen.getByTestId('addNewRangeBtn');
 
     await waitFor(() => {
@@ -67,7 +69,7 @@ describe('Check edit-form component', () => {
     });
   });
   it('Check adding range start and stop fields', async () => {
-    render(<BasicAutoIncrementer {...props} />);
+    render(<AutoIncrementEditForm {...props} />);
     const addRangeBtn = screen.getByTestId('addNewRangeBtn');
 
     await waitFor(() => {

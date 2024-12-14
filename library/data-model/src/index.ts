@@ -37,14 +37,16 @@ import {
   getFirstRecordHead,
   getFullRecordData,
   getHRIDforRecordID,
+  getRecordType,
   getMetadataForAllRecords,
   getRecordMetadata,
-  getRecordsByType,
+  getPossibleRelatedRecords,
   getRecordsWithRegex,
   listFAIMSRecordRevisions,
   notebookRecordIterator,
   setRecordAsDeleted,
   upsertFAIMSData,
+  getMetadataForSomeRecords,
 } from './data_storage';
 import {addDesignDocsForNotebook} from './data_storage/databases';
 import {
@@ -65,6 +67,8 @@ import {
 } from './data_storage/attachments';
 export * from './auth';
 
+export * from './data_storage/authDB';
+
 export {
   HRID_STRING,
   attachment_to_file,
@@ -76,12 +80,14 @@ export {
   generateFAIMSDataID,
   getAllRecordsWithRegex,
   getFirstRecordHead,
+  getRecordType,
   getFullRecordData,
   getHRIDforRecordID,
   getInitialMergeDetails,
   getMetadataForAllRecords,
+  getMetadataForSomeRecords,
   getRecordMetadata,
-  getRecordsByType,
+  getPossibleRelatedRecords,
   getRecordsWithRegex,
   getMergeInformationForHead,
   isEqualFAIMS,

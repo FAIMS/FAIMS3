@@ -1,3 +1,4 @@
+import {ListingsObject} from '@faims3/data-model/src/types';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import InfoIcon from '@mui/icons-material/Info';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -20,19 +21,20 @@ import {
 } from '@mui/material';
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {ListingsObject} from '@faims3/data-model/src/types';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {parseToken, setTokenForCluster} from '../../../users';
 import {useCreateNotebookFromTemplate} from '../../../utils/apiHooks/notebooks';
 import {useGetTemplates} from '../../../utils/apiHooks/templates';
+import {useRefreshToken} from '../../../utils/tokenHooks';
 import CircularLoading from '../ui/circular_loading';
-import useErrorPopup from '../ui/errorPopup';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {useNotification} from '../../../context/popup';
 
 export interface NewNotebookForListingProps {
   listingObject: ListingsObject;
 }
 const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   // Popup manager
-  const errorPopup = useErrorPopup();
+  const popup = useNotification();
 
   // Use custom hook to get template list
   const templates = useGetTemplates({listingId: props.listingObject.id});
@@ -44,6 +46,11 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   // What survey name has user inputted, if any
   const [surveyName, setSurveyName] = useState<string | undefined>(undefined);
 
+  // Token refresh mutation using default active username for current listing
+  const refreshTokenMutation = useRefreshToken({
+    listingId: props.listingObject.id,
+  });
+
   // Mutation to create new survey
   const createNotebook = useCreateNotebookFromTemplate({
     listingId: props.listingObject.id,
@@ -51,16 +58,37 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
     templateId: selectedTemplate,
     // When we succeed, navigate back to home page
     options: {
-      onSuccess: () => {
+      onSuccess: async () => {
+        await refreshTokenMutation
+          .mutateAsync()
+          .then(async t => {
+            // parse the new token
+            const parsedToken = await parseToken(t);
+
+            // and update
+            await setTokenForCluster(
+              t,
+              parsedToken,
+              // use existing refresh token
+              undefined,
+              props.listingObject.id
+            );
+          })
+          .catch(e => {
+            console.error(
+              'Token refresh failed! User may not be able to see new survey.'
+            );
+            console.error(e);
+            return undefined;
+          });
+
         navigate('/');
         window.location.reload();
       },
       // If error occurs then display popup
       onError: e => {
         console.error(e);
-        errorPopup.showError(
-          'An error occurred while creating the notebook. ' + e
-        );
+        popup.showError('An error occurred while creating the notebook. ' + e);
       },
     },
   });
@@ -94,13 +122,13 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   // Handle survey creation
   const handleSubmitSurvey = async () => {
     if (!surveyName) {
-      errorPopup.showError(
+      popup.showError(
         'You cannot create a survey without providing a survey name!'
       );
       return;
     }
     if (!selectedTemplate) {
-      errorPopup.showError(
+      popup.showError(
         'You cannot create a survey without selecting a template!'
       );
       return;
@@ -110,7 +138,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
       console.error(
         'Unexpected state where all values are present yet mutation is not ready!'
       );
-      errorPopup.showError('You cannot create a survey yet.');
+      popup.showError('You cannot create a survey yet.');
       return;
     }
 
@@ -120,7 +148,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
 
   return (
     <>
-      {errorPopup.ErrorPopupRenderer()}
       <Box
         sx={{
           width: '100%',
@@ -251,7 +278,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           </Select>
         )}
       </FormControl>
-
       {/* <Box
         sx={{
           fontSize: '1.1rem',
@@ -287,7 +313,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           />
         </Typography>
       </Box> */}
-
       <Box>
         {/* <Box
           sx={{
@@ -324,35 +349,35 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           />
         </Box> */}
       </Box>
-
       <Button
         variant="contained"
         startIcon={
-          <AddCircleSharpIcon sx={{fontSize: '1.6em', color: 'orange'}} />
+          <AddCircleSharpIcon
+            sx={{
+              fontSize: '1.6em',
+              color:
+                createNotebook.mutation?.isPending || !selectedTemplate
+                  ? theme.palette.primary.main
+                  : theme.palette.background.lightBackground,
+            }}
+          />
         }
         sx={{
-          width: '40%',
+          width: '50%',
           alignSelf: 'left',
           mt: '120px',
           textTransform: 'none',
           fontSize: '1.2em',
           backgroundColor:
             !createNotebook.mutation?.isPending && selectedTemplate
-              ? '#669911'
-              : '#d2e2b9', // Enabled and disabled color
-          color:
-            !createNotebook.mutation?.isPending && selectedTemplate
-              ? '#fff'
-              : 'darkgrey', // Enabled and disabled text color
+              ? theme.palette.primary.main
+              : theme.palette.alert.warningText,
+          color: theme.palette.dialogButton.dialogText,
           '&:hover': {
             backgroundColor:
               !createNotebook.mutation?.isPending && selectedTemplate
-                ? '#1976d2'
-                : '#d2e2b9', // Adjust hover color
-          },
-          '&.Mui-disabled': {
-            backgroundColor: '#d2e2b9', // Override the default disabled color
-            color: 'darkgrey', // Override the default disabled text color
+                ? theme.palette.secondary.main
+                : theme.palette.secondary.light,
           },
         }}
         onClick={handleInstantiateSurvey}
@@ -362,7 +387,6 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           ? `Creating ${NOTEBOOK_NAME}...`
           : `Create ${NOTEBOOK_NAME}`}
       </Button>
-
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
@@ -371,8 +395,8 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
         disableScrollLock={true}
         sx={{
           '& .MuiDialog-paper': {
-            width: isMobile ? '90%' : '60%', // Adjust width for mobile and desktop
-            margin: 'auto', // Center the dialog
+            width: isMobile ? '90%' : '60%',
+            margin: 'auto',
             fontStyle: 'bold',
           },
         }}
@@ -403,7 +427,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
                 textAlign: 'center',
               }}
             >
-              Instantiate {NOTEBOOK_NAME}
+              Create New {NOTEBOOK_NAME_CAPITALIZED}
             </Typography>
           </Box>
         </DialogTitle>
@@ -451,6 +475,10 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             onClick={handleCloseDialog}
             color="primary"
             variant="outlined"
+            sx={{
+              backgroundColor: theme.palette.dialogButton.cancel,
+              color: theme.palette.dialogButton.dialogText,
+            }}
           >
             Cancel
           </Button>
@@ -458,6 +486,10 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             onClick={handleSubmitSurvey}
             color="primary"
             variant="contained"
+            sx={{
+              backgroundColor: theme.palette.dialogButton.confirm,
+              color: theme.palette.dialogButton.dialogText,
+            }}
             disabled={createNotebook.mutation?.isPending || !surveyName}
           >
             {createNotebook.mutation?.isPending ? 'Creating...' : 'Submit'}

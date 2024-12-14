@@ -18,39 +18,37 @@
  *    Core functions to access the various databases used by the application
  */
 
-import PouchDB from 'pouchdb';
-import * as Exceptions from '../exceptions';
-
 import {
+  AuthDatabase,
   ProjectDataObject,
   ProjectID,
   ProjectMetaObject,
   ProjectObject,
   TemplateDetails,
 } from '@faims3/data-model';
+import PouchDB from 'pouchdb';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
+import {COUCHDB_INTERNAL_URL, LOCAL_COUCHDB_AUTH} from '../buildconfig';
+import * as Exceptions from '../exceptions';
 import {
-  COUCHDB_INTERNAL_URL,
-  COUCHDB_PUBLIC_URL,
-  LOCAL_COUCHDB_AUTH,
-} from '../buildconfig';
-import {
+  initialiseAuthDb,
   initialiseDirectoryDB,
   initialiseProjectsDB,
   initialiseTemplatesDb,
   initialiseUserDB,
 } from './initialise';
-import {Express} from 'express';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
 const TEMPLATES_DB_NAME = 'templates';
+const AUTH_DB_NAME = 'auth';
 const PEOPLE_DB_NAME = 'people';
 const INVITE_DB_NAME = 'invites';
 
 let _directoryDB: PouchDB.Database | undefined;
 let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
 let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
+let _authDB: AuthDatabase | undefined;
 let _usersDB: PouchDB.Database<Express.User> | undefined;
 let _invitesDB: PouchDB.Database | undefined;
 
@@ -67,6 +65,73 @@ const pouchOptions = () => {
   return options;
 };
 
+export type CouchDBConnectionResult = {
+  valid: boolean;
+  server_msg?: string;
+  database_errors?: string[];
+  validate_error?: string;
+};
+
+export const databaseValidityReport: CouchDBConnectionResult = {
+  valid: true,
+  server_msg: '',
+  database_errors: [],
+  validate_error: '',
+};
+
+export const verifyCouchDBConnection = async () => {
+  const result = databaseValidityReport;
+  const url = COUCHDB_INTERNAL_URL;
+
+  // can we reach the couchdb server?
+  const response = await fetch(url, {
+    method: 'HEAD',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).catch(() => {
+    console.log('Catching error');
+    return null;
+  });
+
+  if (!response) {
+    result.valid = false;
+    result.server_msg = `Unable to connect to CouchDB server at ${url}`;
+    return result;
+  }
+
+  // reset valid to true here, will set to falsel below if something is missing
+  result.valid = true;
+
+  // now we know we can connect to the server, but can we connect to the database?
+  const pouch_options = pouchOptions();
+  // don't create databases if they don't exist
+  pouch_options.skip_setup = true;
+
+  // check for all required databases
+  const required = ['people', 'projects', 'templates', 'auth'];
+
+  for (let i = 0; i < required.length; i++) {
+    const db = required[i];
+    const dbName = COUCHDB_INTERNAL_URL + '/' + db;
+    try {
+      const dbInstance = new PouchDB(dbName, pouch_options);
+      const info = (await dbInstance.info()) as any; // type does not include error
+      if (info.error === 'not_found') {
+        result.valid = false;
+        result.database_errors?.push(`Database ${db} not found`);
+      }
+    } catch {
+      result.valid = false;
+      result.database_errors?.push(
+        `Unable to connect to CouchDB database ${db}`
+      );
+    }
+  }
+
+  return result;
+};
+
 export const getDirectoryDB = (): PouchDB.Database | undefined => {
   if (!_directoryDB) {
     const pouch_options = pouchOptions();
@@ -81,12 +146,19 @@ export const getDirectoryDB = (): PouchDB.Database | undefined => {
   return _directoryDB;
 };
 
-/**
- * getPublicUserDbURL -
- * @returns a URL that can be used externaly to access the user database
- */
-export const getPublicUserDbURL = (): string => {
-  return COUCHDB_PUBLIC_URL + PEOPLE_DB_NAME;
+export const getAuthDB = (): AuthDatabase => {
+  if (!_authDB) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + AUTH_DB_NAME;
+    try {
+      _authDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting auth database.'
+      );
+    }
+  }
+  return _authDB;
 };
 
 export const getUsersDB = (): PouchDB.Database<Express.User> | undefined => {
@@ -243,6 +315,15 @@ export const getDataDb = async (
 };
 
 export const initialiseDatabases = async () => {
+  // Setup the auth DB
+  const authDB = getAuthDB();
+  try {
+    await initialiseAuthDb(authDB);
+  } catch (error) {
+    console.log('Could not initialise the auth database', error);
+    throw error;
+  }
+
   const directoryDB = getDirectoryDB();
   try {
     await initialiseDirectoryDB(directoryDB);

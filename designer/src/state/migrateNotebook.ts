@@ -44,6 +44,9 @@ export const migrateNotebook = (notebook: unknown) => {
   // fix validation for photo fields which had a bad default
   fixPhotoValidation(notebookCopy);
 
+  // fix bad autoincrementer initial value
+  fixAutoIncrementerInitialValue(notebookCopy);
+
   return notebookCopy;
 };
 
@@ -233,6 +236,29 @@ const fixPhotoValidation = (notebook: Notebook) => {
     if (field['component-name'] === 'TakePhoto') {
       if (field.validationSchema?.length === 2)
         field.validationSchema = goodValidation;
+    }
+
+    fields[fieldName] = field;
+  }
+
+  notebook['ui-specification'].fields = fields;
+};
+
+/**
+ * In some old notebooks, the initialValue of an auto incrementer was null
+ * which conflicts with the validate schema and triggers an error
+ * message on load in some cases.  Here we replace that with the empty string.
+ *
+ * @param notebook A notebook that might be out of date, modified
+ */
+const fixAutoIncrementerInitialValue = (notebook: Notebook) => {
+  const fields: {[key: string]: FieldType} = {};
+
+  for (const fieldName in notebook['ui-specification'].fields) {
+    const field = notebook['ui-specification'].fields[fieldName];
+
+    if (field['component-name'] === 'BasicAutoIncrementer') {
+      if (field.initialValue === null) field.initialValue = '';
     }
 
     fields[fieldName] = field;

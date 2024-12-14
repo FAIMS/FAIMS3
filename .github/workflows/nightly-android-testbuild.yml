@@ -29,12 +29,6 @@ jobs:
     needs: check_date
     if: ${{ needs.check_date.outputs.should_run != 'false' }}
     continue-on-error: false
-    env:
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-    strategy:
-      matrix:
-        node-version: ['20']
     steps:
       - uses: actions/checkout@v4
       - name: Cache node modules
@@ -48,20 +42,6 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - name: Configure Turborepo Remote Cache
-        run: |
-          mkdir -p .turbo
-          if [ -n "${{ vars.TURBO_API_URL }}" ]; then
-            echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
-            echo "Turborepo config file created at .turbo/config.json"
-          else
-            echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."
-          fi
-          if [ -n "$TURBO_TEAM" ] && [ -n "$TURBO_TOKEN" ]; then
-            echo "TURBO_TEAM and TURBO_TOKEN environment variables set"
-          else
-            echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
-          fi
       - name: Install jq
         run: sudo apt-get install -y jq
 
@@ -81,10 +61,10 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}            
+          node-version: 20          
           cache: 'npm'
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Set up adopt JDK 1.17
@@ -124,12 +104,14 @@ jobs:
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_MINIFAUXTON=true
           export VITE_CONDUCTOR_URL=${{vars.NIGHTLY_CONDUCTOR_URL}}
-          export VITE_PRODUCTION_BUILD=true          
-          export VITE_PROD_BUILD=true 
           export VITE_TAG=prodAndroid
-          export VITE_NOTEBOOK_LIST_TYPE=tabs
-          export VITE_THEME=default
+          export VITE_NOTEBOOK_LIST_TYPE=${{vars.NOTEBOOK_LIST_TYPE}}
+          export VITE_NOTEBOOK_NAME=${{vars.NOTEBOOK_NAME}}
+          export VITE_THEME=${{vars.THEME}}
           export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
+          export VITE_APP_ID=${{vars.APP_ID}}
+          export VITE_APP_NAME="${{vars.APP_NAME}}"
+          export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
@@ -142,7 +124,8 @@ jobs:
           bundle install
           bundle exec fastlane deploy_fieldmark
         env:
-          ANDROID_APP_ID: ${{ vars.ANDROID_APP_ID }}
+          APP_ID: ${{ vars.APP_ID }}
+          ANDROID_RELEASE_STATUS: ${{ vars.ANDROID_RELEASE_STATUS }}
           ANDROID_DEPLOY_TRACK: "internal"
           JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
           JAVA_KEYSTORE_PASSWORD: ${{ secrets.JAVA_KEYSTORE_PASSWORD }}

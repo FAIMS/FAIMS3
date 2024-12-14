@@ -1,7 +1,7 @@
 {
     "name": "@faims3/app",
     "packageManager": "npm@10.7.0",
-    "version": "0.9.0",
+    "version": "1.0.0",
     "private": true,
     "browserslist": {
         "production": [
@@ -19,7 +19,10 @@
         "node": "^20.9.0"
     },
     "scripts": {
+        "prestart": "npm run runconfig",
         "start": "vite",
+        "force-start": "vite --force",
+        "prebuild": "npm run runconfig",
         "build": "tsc && vite build",
         "pretest": "npm run compile",
         "test": "vitest",
@@ -40,7 +43,8 @@
         "compile": "tsc",
         "fix": "gts fix",
         "doc": "jsdoc -c ./jsdoc.config.json",
-        "set-version": "./bin/setBuildVersion.sh"
+        "set-version": "./bin/setBuildVersion.sh",
+        "runconfig": "env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh"
     },
     "dependencies": {
         "@bugsnag/js": "^7.20.2",
@@ -139,6 +143,7 @@
         "yup": "1.1.1"
     },
     "devDependencies": {
+        "@capacitor/assets": "^3.0.5",
         "@capacitor/cli": "^6.0.0",
         "@swc/core": "^1.7.10",
         "@testing-library/jest-dom": "6.4.6",
