@@ -121,10 +121,9 @@ export default function FormButtonGroup(props: any) {
       {disabled !== true && (
         <Alert severity={'info'} variant="outlined">
           <AlertTitle>What does publishing mean?</AlertTitle>
-          The data you capture are being saved to your device constantly in a
-          draft state. When you click publish, the record will be queued for
-          syncing to the remote server when the app detects a network
-          connection.
+          Your response is being saved automatically as a draft. When you click
+          publish, your response will be uploaded once your device has an
+          internet connection.
         </Alert>
       )}
     </div>
