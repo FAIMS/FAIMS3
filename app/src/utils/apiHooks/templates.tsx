@@ -5,6 +5,7 @@ import {GetListTemplatesResponse} from '@faims3/data-model';
 export interface UseGetTemplatesProps {
   // Which listing to get templates for
   listingId: string;
+  username: string;
 }
 
 /**
@@ -16,7 +17,7 @@ export const useGetTemplates = (props: UseGetTemplatesProps) => {
   return useQuery<GetListTemplatesResponse>({
     queryKey: ['get template list', props.listingId],
     queryFn: async () => {
-      return await fetchTemplates(props.listingId);
+      return await fetchTemplates(props.listingId, props.username);
     },
   });
 };
