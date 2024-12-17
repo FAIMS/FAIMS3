@@ -1,9 +1,8 @@
-import {createSlice, createAsyncThunk, PayloadAction} from '@reduxjs/toolkit';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {TokenContents} from '@faims3/data-model';
 import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
-import type {RootState} from '../authStore';
-import type {AppDispatch} from '../authStore';
+import {store} from '../authStore';
 
 // Types
 interface TokenInfo {
@@ -50,12 +49,6 @@ interface ServerUserIdentity {
   username: string;
 }
 
-// Helper functions
-const parseJwt = async (token: string): Promise<TokenContents> => {
-  const contents = await parseToken(token);
-  return {...contents};
-};
-
 const isTokenValid = (tokenInfo: TokenInfo | undefined): boolean => {
   if (!tokenInfo) return false;
   return tokenInfo.token != undefined && tokenInfo.expiresAt > Date.now();
@@ -73,60 +66,54 @@ const checkAuthenticationStatus = (state: AuthState): boolean => {
   return isTokenValid(connection);
 };
 
-// Async thunks
-export const doTokenRefresh = createAsyncThunk<
-  ServerUser,
-  ServerUserIdentity,
-  {rejectValue: string}
->(
-  'auth/refreshToken',
-  async (
-    {serverId, username}: ServerUserIdentity,
-    {dispatch, getState, rejectWithValue}
-  ) => {
-    const state = getState() as RootState;
-    const connection = state.auth.servers[serverId]?.users[username];
+// Refresh token store operation
+export const refreshToken = async ({
+  serverId,
+  username,
+}: ServerUserIdentity) => {
+  // Get the current state and relevant connection
+  const state = store.getState();
+  const connection = state.auth.servers[serverId]?.users[username];
 
-    if (!connection) {
-      return rejectWithValue('No connection found');
-    }
+  if (!connection) {
+    throw new Error('No connection found');
+  }
 
-    if (!isTokenRefreshable(connection)) {
-      return rejectWithValue('No refresh token available');
-    }
+  if (!isTokenRefreshable(connection)) {
+    throw new Error('No refresh token available.');
+  }
 
-    try {
-      const {token} = await requestTokenRefresh(serverId, username, {
-        refreshToken: connection.refreshToken!,
-      });
-      const parsedToken = await parseJwt(token);
+  try {
+    const {token} = await requestTokenRefresh(serverId, username, {
+      refreshToken: connection.refreshToken!,
+    });
+    const parsedToken = parseToken(token);
 
-      return {
-        serverId,
-        username,
-        token,
-        refreshToken: connection.refreshToken!,
+    // Update this connection with newest token
+    store.dispatch(
+      setServerConnection({
         parsedToken,
-      };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error ? error.message : 'Unknown error'
-      );
-    }
+        serverId,
+        token,
+        username,
+        refreshToken: connection.refreshToken,
+      })
+    );
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'Unknown error');
   }
-);
+};
 
-export const refreshActiveUser = createAsyncThunk(
-  'auth/refreshActiveUser',
-  async (_, {getState, dispatch}) => {
-    const state = getState() as {auth: AuthState};
-    const appDispatch = dispatch as AppDispatch;
-    if (!state.auth.activeUser) {
-      throw new Error('Cannot refresh active user when no user is active.');
-    }
-    await appDispatch(refreshToken(state.auth.activeUser));
+export const refreshActiveUser = async () => {
+  const state = store.getState();
+  if (!state.auth.activeUser) {
+    throw new Error('Cannot refresh active user when no user is active.');
   }
-);
+  await refreshToken({
+    serverId: state.auth.activeUser.serverId,
+    username: state.auth.activeUser.username,
+  });
+};
 
 // Slice
 const initialState: AuthState = {
@@ -252,41 +239,6 @@ const authSlice = createSlice({
       state.activeUser = undefined;
       state.isAuthenticated = false;
     },
-  },
-  extraReducers: builder => {
-    builder
-      .addCase(doTokenRefresh.fulfilled, (state, action) => {
-        const {serverId, username, token, refreshToken, parsedToken} =
-          action.payload;
-        const expiresAt = Date.now() + 1000 * 60;
-
-        if (!state.servers[serverId]) {
-          state.servers[serverId] = {users: {}};
-        }
-
-        state.servers[serverId].users[username] = {
-          token,
-          refreshToken,
-          parsedToken,
-          expiresAt,
-        };
-
-        if (
-          state.activeUser &&
-          state.activeUser.serverId === serverId &&
-          state.activeUser.username === username
-        ) {
-          state.activeUser.token = token;
-          state.activeUser.parsedToken = parsedToken;
-        }
-
-        state.refreshError = undefined;
-        state.isAuthenticated = checkAuthenticationStatus(state);
-      })
-      .addCase(doTokenRefresh.rejected, (state, action) => {
-        state.refreshError = action.payload as string;
-        state.isAuthenticated = false;
-      });
   },
 });
 

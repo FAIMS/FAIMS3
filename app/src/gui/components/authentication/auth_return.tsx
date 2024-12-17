@@ -82,7 +82,7 @@ export function AuthReturn() {
         : undefined;
 
       // Decode the JWT object into an untyped object
-      const parsedToken = await parseToken(decodedToken);
+      const parsedToken = parseToken(decodedToken);
 
       // Get the listing for the server in the token
       const serverId = await getListingForConductorUrl(parsedToken.server);

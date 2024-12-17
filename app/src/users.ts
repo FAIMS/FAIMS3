@@ -54,8 +54,8 @@ export const CREATE_NOTEBOOK_ROLES = [
  * @param token The raw JWT
  * @returns The parsed token as a TokenContents object
  */
-export async function parseToken(token: string): Promise<TokenContents> {
-  const payload = await decodeJwt(token);
+export function parseToken(token: string): TokenContents {
+  const payload = decodeJwt(token);
 
   const username = payload.sub ?? undefined;
   const server = payload['server'] as string | undefined;

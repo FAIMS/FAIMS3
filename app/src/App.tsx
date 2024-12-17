@@ -83,86 +83,90 @@ const queryClient = new QueryClient({
   },
 });
 
+import {Provider} from 'react-redux';
+import {store} from './context/authStore';
+
 export default function App() {
   return (
-    <NotificationProvider>
-      <StateProvider>
-        <ProjectsProvider>
-          <QueryClientProvider client={queryClient}>
-            <StyledEngineProvider injectFirst>
-              <ThemeProvider theme={theme}>
-                <Router>
-                  <AppUrlListener></AppUrlListener>
-                  <MainLayout>
-                    <Routes>
-                      <Route
-                        path={ROUTES.USER_ACTIVE_TESTR}
-                        element={<TestComponent />}
-                      />
-                      <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
-                      <Route
-                        path={ROUTES.AUTH_RETURN}
-                        element={<AuthReturn />}
-                      />
-                      <Route
-                        path={ROUTES.INDEX}
-                        element={
-                          <PrivateRoute>
-                            <Workspace />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
-                        element={
-                          <PrivateRoute>
-                            <Notebook />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={ROUTES.CREATE_NEW_SURVEY}
-                        element={
-                          <PrivateRoute>
-                            <CreateNewSurvey />
-                          </PrivateRoute>
-                        }
-                      />
-                      {/* Draft creation happens by redirecting to a fresh minted UUID
+    <Provider store={store}>
+      <NotificationProvider>
+        <StateProvider>
+          <ProjectsProvider>
+            <QueryClientProvider client={queryClient}>
+              <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={theme}>
+                  <Router>
+                    <AppUrlListener></AppUrlListener>
+                    <MainLayout>
+                      <Routes>
+                        <Route
+                          path={ROUTES.USER_ACTIVE_TESTR}
+                          element={<TestComponent />}
+                        />
+                        <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
+                        <Route
+                          path={ROUTES.AUTH_RETURN}
+                          element={<AuthReturn />}
+                        />
+                        <Route
+                          path={ROUTES.INDEX}
+                          element={
+                            <PrivateRoute>
+                              <Workspace />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
+                          element={
+                            <PrivateRoute>
+                              <Notebook />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path={ROUTES.CREATE_NEW_SURVEY}
+                          element={
+                            <PrivateRoute>
+                              <CreateNewSurvey />
+                            </PrivateRoute>
+                          }
+                        />
+                        {/* Draft creation happens by redirecting to a fresh minted UUID
                   This is to keep it stable until the user navigates away. So the
                   draft_id is optional, and when RecordCreate is instantiated
                   without one, it immediately mints a UUID and redirects to it */}
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
-                          ROUTES.RECORD_CREATE +
-                          ':type_name' +
-                          ROUTES.RECORD_DRAFT +
-                          ':draft_id' + //added for keep the record id same for draft
-                          ROUTES.RECORD_RECORD +
-                          ':record_id'
-                        }
-                        element={
-                          <PrivateRoute>
-                            <RecordCreate />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
-                          ROUTES.RECORD_CREATE +
-                          ':type_name'
-                        }
-                        element={
-                          <PrivateRoute>
-                            <RecordCreate />
-                          </PrivateRoute>
-                        }
-                      />
-                      {/*Record editing and viewing is a separate affair, separated by
+                        <Route
+                          path={
+                            ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            ':project_id' +
+                            ROUTES.RECORD_CREATE +
+                            ':type_name' +
+                            ROUTES.RECORD_DRAFT +
+                            ':draft_id' + //added for keep the record id same for draft
+                            ROUTES.RECORD_RECORD +
+                            ':record_id'
+                          }
+                          element={
+                            <PrivateRoute>
+                              <RecordCreate />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path={
+                            ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            ':project_id' +
+                            ROUTES.RECORD_CREATE +
+                            ':type_name'
+                          }
+                          element={
+                            <PrivateRoute>
+                              <RecordCreate />
+                            </PrivateRoute>
+                          }
+                        />
+                        {/*Record editing and viewing is a separate affair, separated by
                   the presence/absence of draft_id prop OR draft_id being in the
                   state of the Record component. So if the user clicks a draft to
                   make continued changes, the draft_id is in the URL here.
@@ -170,48 +174,52 @@ export default function App() {
                   should at some point, TODO, redirect to the same Record form but
                   with the newly minted draft_id attached. BUt this TODO is in the
                   record/form.tsx*/}
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
-                          ROUTES.RECORD_EXISTING +
-                          ':record_id' +
-                          ROUTES.REVISION +
-                          ':revision_id'
-                        }
-                        element={
-                          <PrivateRoute>
-                            <Record />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
-                          ROUTES.RECORD_EXISTING +
-                          ':record_id' +
-                          ROUTES.REVISION +
-                          ':revision_id' +
-                          ROUTES.RECORD_DRAFT +
-                          ':draft_id'
-                        }
-                        element={
-                          <PrivateRoute>
-                            <Record />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
-                      <Route path={'*'} Component={NotFound404} />
-                    </Routes>
-                  </MainLayout>
-                </Router>
-              </ThemeProvider>
-            </StyledEngineProvider>
-          </QueryClientProvider>
-        </ProjectsProvider>
-      </StateProvider>
-    </NotificationProvider>
+                        <Route
+                          path={
+                            ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            ':project_id' +
+                            ROUTES.RECORD_EXISTING +
+                            ':record_id' +
+                            ROUTES.REVISION +
+                            ':revision_id'
+                          }
+                          element={
+                            <PrivateRoute>
+                              <Record />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path={
+                            ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            ':project_id' +
+                            ROUTES.RECORD_EXISTING +
+                            ':record_id' +
+                            ROUTES.REVISION +
+                            ':revision_id' +
+                            ROUTES.RECORD_DRAFT +
+                            ':draft_id'
+                          }
+                          element={
+                            <PrivateRoute>
+                              <Record />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path={ROUTES.ABOUT_BUILD}
+                          Component={AboutBuild}
+                        />
+                        <Route path={'*'} Component={NotFound404} />
+                      </Routes>
+                    </MainLayout>
+                  </Router>
+                </ThemeProvider>
+              </StyledEngineProvider>
+            </QueryClientProvider>
+          </ProjectsProvider>
+        </StateProvider>
+      </NotificationProvider>
+    </Provider>
   );
 }
