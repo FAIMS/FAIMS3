@@ -3,6 +3,7 @@ import {
   activateProjectDB,
   getProjectsDB,
   setSyncProjectDB,
+  updateProjectsDB,
 } from '../dbs/projects-db';
 import {activate_project} from '../sync/process-initialization';
 import {ProjectExtended} from '../types/project';
@@ -70,7 +71,10 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
       });
     }
 
-    setProjects([...newProjectsMap.values()]);
+    const newProjects = [...newProjectsMap.values()];
+
+    updateProjectsDB(newProjects);
+    setProjects(newProjects);
   };
 
   /**
@@ -96,7 +100,10 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
       });
     }
 
-    setProjects([...newProjectsMap.values()]);
+    const newProjects = [...newProjectsMap.values()];
+
+    updateProjectsDB(newProjects);
+    setProjects(newProjects);
   };
 
   /**

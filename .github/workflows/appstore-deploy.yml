@@ -62,8 +62,8 @@ jobs:
           export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
           export VITE_COMMIT_VERSION=${{env.version_string}}
           export VITE_SHOW_WIPE=true
-          export VITE_SHOW_MINIFAUXTON=true
-          export VITE_CONDUCTOR_URL=${{vars.NIGHTLY_CONDUCTOR_URL}}
+          export VITE_SHOW_MINIFAUXTON=false
+          export VITE_CONDUCTOR_URL=${{vars.PRODUCTION_CONDUCTOR_URL}}
           export VITE_TAG=prodIOS
           export VITE_NOTEBOOK_LIST_TYPE=${{vars.NOTEBOOK_LIST_TYPE}}
           export VITE_NOTEBOOK_NAME=${{vars.NOTEBOOK_NAME}}
