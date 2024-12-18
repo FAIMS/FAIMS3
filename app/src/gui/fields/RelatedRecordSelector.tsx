@@ -43,7 +43,7 @@ import {DataGridFieldLinksComponent} from '../components/record/relationships/fi
 import {SelectChangeEvent} from '@mui/material';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {logError} from '../../logging';
-import {useAuthStore} from '../../context/authStore';
+import {useAuthStore} from '../../context/store';
 
 function get_default_relation_label(
   multiple: boolean,

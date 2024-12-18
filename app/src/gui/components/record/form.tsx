@@ -47,7 +47,7 @@ import {
 import {NavigateFunction} from 'react-router-dom';
 import {DEBUG_APP} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import {store} from '../../../context/store';
+import {StateProvider, store, useAppSelector} from '../../../context/store';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
 import RecordDraftState from '../../../sync/draft-state';
 import {
@@ -72,7 +72,7 @@ import {logError} from '../../../logging';
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup from './formButton';
 import UGCReport from './UGCReport';
-import {useAuthStore} from '../../../context/authStore';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 //import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -777,7 +777,7 @@ class RecordForm extends React.Component<
       this.state.annotation,
       ui_specification
     );
-    const currentUser = useAuthStore.getState().activeUser?.username;
+    const currentUser = useAppSelector(selectActiveUser)?.username;
 
     // TODO no idea how to handle errors appropriately here!
     if (!currentUser) {
@@ -1415,5 +1415,5 @@ class RecordForm extends React.Component<
     }
   }
 }
-RecordForm.contextType = store;
+RecordForm.contextType = StateProvider;
 export default RecordForm;

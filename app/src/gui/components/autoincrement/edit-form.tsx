@@ -39,7 +39,7 @@ import {LocalAutoIncrementRange, ProjectID} from '@faims3/data-model';
 import CloseIcon from '@mui/icons-material/Close';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {ActionType} from '../../../context/actions';
-import {store} from '../../../context/store';
+import {store, useAppDispatch} from '../../../context/store';
 import {
   createNewAutoincrementRange,
   getLocalAutoincrementRangesForField,
@@ -63,7 +63,7 @@ export const AutoIncrementEditForm = ({
   open,
   handleClose,
 }: Props) => {
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
 
   // useQuery to get the current ranges for the field,
   // we will invalidate the query when we update the ranges

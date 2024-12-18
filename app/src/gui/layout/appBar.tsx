@@ -49,7 +49,7 @@ import {createUseStyles as makeStyles} from 'react-jss';
 import {Link as RouterLink} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {useAuthStore} from '../../context/authStore';
+import {useAuthStore} from '../../context/store';
 import {ProjectsContext} from '../../context/projects-context';
 import {ProjectExtended} from '../../types/project';
 import SystemAlert from '../components/alert';

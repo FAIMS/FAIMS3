@@ -18,32 +18,32 @@
  *   TODO
  */
 
-import React, {useContext} from 'react';
+import React from 'react';
 import {useNavigate} from 'react-router-dom';
 
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
+  Alert,
+  AlertTitle,
   Button,
-  IconButton,
   Dialog,
   DialogActions,
-  AlertTitle,
+  IconButton,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import {Alert} from '@mui/material';
 
-import {ActionType} from '../../../context/actions';
-import * as ROUTES from '../../../constants/routes';
-import {store} from '../../../context/store';
 import {
   ProjectID,
   RecordID,
   RevisionID,
   setRecordAsDeleted,
 } from '@faims3/data-model';
-import {deleteStagedData} from '../../../sync/draft-storage';
+import * as ROUTES from '../../../constants/routes';
+import {ActionType} from '../../../context/actions';
+import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {deleteDraftsForRecord} from '../../../drafts';
+import {deleteStagedData} from '../../../sync/draft-storage';
 import {theme} from '../../themes';
-import {useAuthStore} from '../../../context/authStore';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
@@ -82,13 +82,12 @@ export default function RecordDelete(props: RecordDeleteProps) {
   const {project_id, record_id, revision_id, draft_id} = props;
   const [open, setOpen] = React.useState(false);
   const history = useNavigate();
-  const globalState = useContext(store);
-  const {dispatch} = globalState;
+  const dispatch = useAppDispatch();
   const is_draft = draft_id !== null;
   const handleClickOpen = () => {
     setOpen(true);
   };
-  const activeUser = useAuthStore(state => state.activeUser);
+  const activeUser = useAppSelector(selectActiveUser);
 
   const handleClose = () => {
     setOpen(false);

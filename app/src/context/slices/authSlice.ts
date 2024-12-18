@@ -2,41 +2,41 @@ import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {TokenContents} from '@faims3/data-model';
 import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
-import {store} from '../authStore';
+import {store} from '../store';
 
 // Types
-interface TokenInfo {
+export interface TokenInfo {
   token: string;
   refreshToken?: string;
   parsedToken: TokenContents;
   expiresAt: number;
 }
 
-interface ServerUser {
+export interface ServerUser {
   [username: string]: TokenInfo;
 }
 
-interface ServerMap {
+export interface ServerMap {
   [serverId: string]: {
     users: ServerUser;
   };
 }
 
-interface ActiveUser {
+export interface ActiveUser {
   serverId: string;
   username: string;
   token: string;
   parsedToken: TokenContents;
 }
 
-interface AuthState {
+export interface AuthState {
   servers: ServerMap;
   activeUser: ActiveUser | undefined;
   isAuthenticated: boolean;
   refreshError: string | undefined;
 }
 
-interface SetServerConnectionInput {
+export interface SetServerConnectionInput {
   serverId: string;
   username: string;
   token: string;
@@ -44,7 +44,7 @@ interface SetServerConnectionInput {
   parsedToken: TokenContents;
 }
 
-interface ServerUserIdentity {
+export interface ServerUserIdentity {
   serverId: string;
   username: string;
 }
@@ -251,23 +251,37 @@ export const {
 
 export default authSlice.reducer;
 
+type AuthStore = {auth: AuthState};
+
 // Selectors
-export const selectActiveUser = (state: {auth: AuthState}) =>
-  state.auth.activeUser;
-export const selectIsAuthenticated = (state: {auth: AuthState}) =>
+export const selectActiveUser = (state: AuthStore) => state.auth.activeUser;
+export const selectIsAuthenticated = (state: AuthStore) =>
   state.auth.isAuthenticated;
-export const selectActiveToken = (state: {auth: AuthState}) => {
+export const selectActiveToken = (state: AuthStore) => {
   const activeUser = state.auth.activeUser;
   if (!activeUser) return undefined;
   return state.auth.servers[activeUser.serverId]?.users[activeUser.username];
 };
-export const selectAllServerUsers = (state: {
-  auth: AuthState;
-}): ServerUserIdentity[] => {
+export const selectAllServerUsers = (
+  state: AuthStore
+): ServerUserIdentity[] => {
   return Object.entries(state.auth.servers).flatMap(([serverId, server]) =>
     Object.keys(server.users).map(username => ({
       serverId,
       username,
     }))
   );
+};
+
+// Helper functions (which use the store state)
+export const getServerConnection = ({
+  state,
+  serverId,
+  username,
+}: {
+  state: AuthStore;
+  serverId: string;
+  username: string;
+}) => {
+  return state.auth.servers[serverId]?.users[username];
 };

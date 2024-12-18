@@ -34,7 +34,7 @@ import {
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import {useAuthStore} from '../../../context/authStore';
+import {useAuthStore} from '../../../context/store';
 import {useNotification} from '../../../context/popup';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';

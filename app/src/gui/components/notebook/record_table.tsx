@@ -44,7 +44,8 @@ import {
   getUiSpecForProject,
   getVisibleTypes,
 } from '../../../uiSpecification';
-import {useAuthStore} from '../../../context/authStore';
+import {useAppSelector} from '../../../context/store';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 
 /**
  * Props for the RecordsTable component
@@ -88,7 +89,7 @@ type RecordsBrowseTableProps = {
  */
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading, onRecordsCountChange} = props;
-  const activeUser = useAuthStore(state => state.activeUser);
+  const activeUser = useAppSelector(selectActiveUser);
 
   const theme = useTheme();
   const history = useNavigate();
@@ -547,7 +548,8 @@ function RecordsTable(props: RecordsTableProps) {
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {recordLabel} = props;
   // TODO validate this is always defined
-  const activeToken = useAuthStore(state => state.activeUser?.parsedToken!);
+  const activeToken = useAppSelector(selectActiveUser)?.parsedToken!;
+
   const [query, setQuery] = React.useState('');
   const {data: records, isLoading: recordsLoading} = useQuery({
     queryKey: ['allrecords', query, props.project_id],

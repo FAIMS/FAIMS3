@@ -40,7 +40,7 @@ import {
   setSyncingProjectAttachments,
 } from '../../../../sync/sync-toggle';
 import {ActionType} from '../../../../context/actions';
-import {store} from '../../../../context/store';
+import {store, useAppDispatch} from '../../../../context/store';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
 import {ProjectUIModel} from '@faims3/data-model';
@@ -53,7 +53,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
 
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
 
   const project = useContext(ProjectsContext).projects.find(
     project => project_id === project.project_id

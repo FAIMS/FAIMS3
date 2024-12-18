@@ -27,7 +27,7 @@ import {
 } from '@faims3/data-model';
 import {getAllListings} from '.';
 import {CONDUCTOR_URLS} from '../buildconfig';
-import {useAuthStore} from '../context/authStore';
+import {useAuthStore} from '../context/store';
 import {logError} from '../logging';
 import {
   ExistingActiveDoc,

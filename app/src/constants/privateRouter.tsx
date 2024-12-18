@@ -1,7 +1,7 @@
 import {Navigate} from 'react-router-dom';
 
 import * as ROUTES from './routes';
-import {useAuthStore} from '../context/authStore';
+import {useAppSelector} from '../context/store';
 
 interface PrivateRouteProps {
   // tslint:disable-next-line:no-any
@@ -20,7 +20,7 @@ export const PrivateRoute = (props: PrivateRouteProps): React.ReactElement => {
 
   // TODO This will force a re-render if the user is ever logged out - could
   // cause issues in offline context? Or during data collection.
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
 
   if (isAuthenticated) return props.children;
   else return <Navigate to={ROUTES.SIGN_IN} />;

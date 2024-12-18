@@ -2,14 +2,15 @@ import {Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import Obfuscate from 'react-obfuscate';
 import {COMMIT_VERSION, CONDUCTOR_URLS} from '../../../buildconfig';
-import {useAuthStore} from '../../../context/authStore';
+import {useAppSelector} from '../../../context/store';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 
 interface SupportEmailProps {}
 
 export default function SupportEmail(props: SupportEmailProps) {
   const theme = useTheme();
   // Get active user
-  const activeUser = useAuthStore(state => state.activeUser);
+  const activeUser = useAppSelector(selectActiveUser);
 
   let supportEmail = 'support@fieldmark.au';
   if (

@@ -50,7 +50,7 @@ import {
   throttled_ping_sync_up,
 } from './connection';
 import {fetchProjectMetadata} from './metadata';
-import {useAuthStore} from '../context/authStore';
+import {useAuthStore} from '../context/store';
 
 /**
  * Temporarily override this type from @faims3/data-model to make

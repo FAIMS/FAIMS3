@@ -41,7 +41,8 @@ import {
   AccountCircle,
 } from '@mui/icons-material';
 import {theme} from '../../themes';
-import {useAuthStore} from '../../../context/authStore';
+import {useAppDispatch, useAppSelector} from '../../../context/store';
+import {selectIsAuthenticated, setActiveUser} from '../../../context/slices/authSlice';
 
 const SignInButtonComponent = () => {
   return (
@@ -78,7 +79,8 @@ const AuthenticatedDisplayComponent = () => {
   const [switchMenuOpen, setSwitchMenuOpen] = React.useState(false);
   const open = Boolean(anchorEl);
 
-  const {servers, activeUser, setActiveUser} = useAuthStore();
+  const {servers, activeUser} = useAppSelector(state => state.auth);
+  const dispatch = useAppDispatch();
 
   const userInitial =
     activeUser?.parsedToken.username.charAt(0).toUpperCase() || '';
@@ -114,7 +116,7 @@ const AuthenticatedDisplayComponent = () => {
   };
 
   const handleConnectionChange = (serverId: string, username: string) => {
-    setActiveUser({serverId, username});
+    dispatch(setActiveUser({serverId, username}));
     setSwitchMenuOpen(false);
   };
 
@@ -277,7 +279,7 @@ const AuthenticatedDisplayComponent = () => {
 };
 
 export default function AppBarAuth() {
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   return isAuthenticated ? (
     <AuthenticatedDisplayComponent />

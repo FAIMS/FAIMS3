@@ -48,7 +48,7 @@ import ConflictPanel from './conflictpanel';
 import ConflictToolBar from './conflicttoolbar';
 import {ConflictResolveIcon} from './conflictfield';
 import {ConflictSaveButton} from './conflictbutton';
-import {store} from '../../../../context/store';
+import {store, useAppDispatch} from '../../../../context/store';
 import {ActionType} from '../../../../context/actions';
 import {isEqualFAIMS} from '@faims3/data-model';
 import ConflictLinkBar from './conflictLinkBar';
@@ -228,7 +228,7 @@ export default function ConflictForm(props: ConflictFormProps) {
   const [saveduserMergeResult, setUserMergeResult] = useState(
     null as UserMergeResult | null
   );
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
   const [loading, setloading] = useState(false);
   const [numRejected, setnumRejected] = useState(0);
   const now = new Date();

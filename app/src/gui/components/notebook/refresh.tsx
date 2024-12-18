@@ -2,7 +2,7 @@ import React, {useContext} from 'react';
 import {Box, Button, Typography} from '@mui/material';
 import moment from 'moment/moment';
 import {ActionType} from '../../../context/actions';
-import {store} from '../../../context/store';
+import {store, useAppDispatch} from '../../../context/store';
 import {useInterval} from '../../../utils/useInterval';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -43,8 +43,7 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
 
   const [counter, setCounter] = React.useState(0);
 
-  const globalState = useContext(store);
-  const {dispatch} = globalState;
+  const dispatch = useAppDispatch();
 
   /**
    * handleRefresh triggers the refresh process for the notebook data.

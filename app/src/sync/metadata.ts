@@ -22,7 +22,7 @@
 
 import {EncodedProjectUIModel, resolve_project_id} from '@faims3/data-model';
 import {getProjectDB} from '.';
-import {useAuthStore} from '../context/authStore';
+import {useAuthStore} from '../context/store';
 import {createdListingsInterface} from './state';
 
 export type PropertyMap = {

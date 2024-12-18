@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import React from 'react';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import {useAuthStore} from '../../../context/authStore';
+import {useAuthStore} from '../../../context/store';
 import {userCanCreateNotebooks} from '../../../users';
 import NewNotebookForListing from '../notebook/NewNotebookForListing';
 

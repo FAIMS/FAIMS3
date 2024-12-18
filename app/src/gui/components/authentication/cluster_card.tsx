@@ -37,11 +37,18 @@ import React from 'react';
 import {useNavigate} from 'react-router-dom';
 import {APP_ID} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import {useAuthStore} from '../../../context/authStore';
 import {update_directory} from '../../../sync/process-initialization';
 import {isWeb} from '../../../utils/helpers';
 import MainCard from '../ui/main-card';
 import {LoginButton} from './login_form';
+import {store, useAppDispatch, useAppSelector} from '../../../context/store';
+import {
+  getServerConnection,
+  removeServerConnection,
+  selectActiveUser,
+  selectAllServerUsers,
+  setActiveUser,
+} from '../../../context/slices/authSlice';
 
 // TODO when we fix the add new user logic, bring this back
 const ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED = false;
@@ -57,22 +64,18 @@ export default function ClusterCard(props: ClusterCardProps) {
   const history = useNavigate();
 
   // Auth store interactions
-  const removeServerConnection = useAuthStore(
-    state => state.removeServerConnection
-  );
-
-  // set active user
-  const setActiveUser = useAuthStore(state => state.setActiveUser);
+  const dispatch = useAppDispatch();
 
   // For the current server, get logged in usernames
-  const usernames = useAuthStore(state => state.getAllServerUsers)().filter(
+  const usernames = useAppSelector(selectAllServerUsers).filter(
     s => s.serverId === props.serverId
   );
-  const getDetails = useAuthStore(state => state.getServerUserInformation);
-  const activeUser = useAuthStore(state => state.activeUser);
+  const activeUser = useAppSelector(selectActiveUser);
+  const authServers = useAppSelector(state => state.auth.servers);
 
   const handleLogout = async (username: string) => {
-    removeServerConnection({serverId: props.serverId, username});
+    // remove the server connection on logout
+    dispatch(removeServerConnection({serverId: props.serverId, username}));
     update_directory();
     if (isWeb()) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
@@ -158,7 +161,7 @@ export default function ClusterCard(props: ClusterCardProps) {
           )}
           {usernames.map(identity => {
             const username = identity.username;
-            const tokenInfo = getDetails(identity);
+            const tokenInfo = authServers[props.serverId]?.users[username];
             const isActive =
               activeUser?.username === username &&
               activeUser?.serverId === props.serverId;
@@ -182,7 +185,8 @@ export default function ClusterCard(props: ClusterCardProps) {
                       variant={'contained'}
                       disableElevation
                       onClick={() => {
-                        setActiveUser(identity);
+                        // activate this user
+                        dispatch(setActiveUser(identity));
                       }}
                       startIcon={<Person2Sharp />}
                     >

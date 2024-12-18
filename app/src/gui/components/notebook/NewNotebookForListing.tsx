@@ -21,12 +21,12 @@ import {
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import {useAuthStore} from '../../../context/authStore';
 import {useNotification} from '../../../context/popup';
 import {useCreateNotebookFromTemplate} from '../../../utils/apiHooks/notebooks';
 import {useGetTemplates} from '../../../utils/apiHooks/templates';
 import {useGetListing} from '../../../utils/custom_hooks';
 import CircularLoading from '../ui/circular_loading';
+import {refreshToken} from '../../../context/slices/authSlice';
 
 export interface NewNotebookForListingProps {
   serverId: string;
@@ -39,8 +39,9 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   // Get the listing information
   const listing = useGetListing({serverId: props.serverId});
 
-  // Auth store to force a refresh
-  const refreshToken = useAuthStore(state => state.refreshActiveUser);
+  // Auth store to force a refresh - note this is an synchronous function which
+  // will a) read state b) run token refresh c) update the state
+  const doRefreshToken = refreshToken;
 
   // Use custom hook to get template list
   const templates = useGetTemplates({
@@ -64,7 +65,10 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
     // When we succeed, navigate back to home page
     options: {
       onSuccess: async () => {
-        refreshToken();
+        doRefreshToken({
+          serverId: props.serverId,
+          username: props.username,
+        });
         navigate('/');
         window.location.reload();
       },

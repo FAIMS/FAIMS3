@@ -27,7 +27,11 @@ import {getSyncableListingsInfo} from '../../../databaseAccess';
 import {update_directory} from '../../../sync/process-initialization';
 import {parseToken} from '../../../users';
 import {ProjectsContext} from '../../../context/projects-context';
-import {useAuthStore} from '../../../context/authStore';
+import {useAppDispatch} from '../../../context/store';
+import {
+  setServerConnection,
+  setActiveUser,
+} from '../../../context/slices/authSlice';
 
 async function getListingForConductorUrl(conductor_url: string) {
   const origin = new URL(conductor_url).origin;
@@ -44,10 +48,7 @@ async function getListingForConductorUrl(conductor_url: string) {
 export function AuthReturn() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | undefined>(undefined);
-
-  // Auth store hooks
-  const setServerConnection = useAuthStore(state => state.setServerConnection);
-  const setActiveConnection = useAuthStore(state => state.setActiveUser);
+  const dispatch = useAppDispatch();
 
   const {initProjects} = useContext(ProjectsContext);
 
@@ -88,27 +89,31 @@ export function AuthReturn() {
       const serverId = await getListingForConductorUrl(parsedToken.server);
 
       // Store the token in the database
-      setServerConnection({
-        parsedToken: parsedToken,
-        token: decodedToken,
-        refreshToken: decodedRefreshToken,
-        serverId: serverId,
-        username: parsedToken.username,
-      });
+      dispatch(
+        setServerConnection({
+          parsedToken: parsedToken,
+          token: decodedToken,
+          refreshToken: decodedRefreshToken,
+          serverId: serverId,
+          username: parsedToken.username,
+        })
+      );
 
       // and make it active!
-      setActiveConnection({
-        serverId: serverId,
-        username: parsedToken.username,
-      });
+      dispatch(
+        setActiveUser({
+          serverId: serverId,
+          username: parsedToken.username,
+        })
+      );
 
       const login = async () => {
-        console.log("Login function");
-        console.log("Update directory");
+        console.log('Login function');
+        console.log('Update directory');
         await update_directory();
-        console.log("Init projects");
+        console.log('Init projects');
         await initProjects();
-        console.log("Done")
+        console.log('Done');
         navigate('/');
       };
 

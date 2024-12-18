@@ -24,7 +24,6 @@ import {Route, BrowserRouter as Router, Routes} from 'react-router-dom';
 import './App.css';
 import {PrivateRoute} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
-import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';
 import AboutBuild from './gui/pages/about-build';
 import Notebook from './gui/pages/notebook';
@@ -37,22 +36,15 @@ import Workspace from './gui/pages/workspace';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 
-import {theme} from './gui/themes';
+import {NotificationProvider} from './context/popup';
 import {ProjectsProvider} from './context/projects-context';
 import {AuthReturn} from './gui/components/authentication/auth_return';
 import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
+import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
-import {NotificationProvider} from './context/popup';
 import {TestComponent} from './Test';
-
-// type AppProps = {};
-
-// type AppState = {
-//   projects: ProjectsList;
-//   global_error: null | {};
-//   token: boolean;
-// };
+import {StateProvider} from './context/store';
 
 // Setup react query
 const queryClient = new QueryClient({
@@ -83,12 +75,9 @@ const queryClient = new QueryClient({
   },
 });
 
-import {Provider} from 'react-redux';
-import {store} from './context/authStore';
-
 export default function App() {
   return (
-    <Provider store={store}>
+    <StateProvider>
       <NotificationProvider>
         <StateProvider>
           <ProjectsProvider>
@@ -220,6 +209,6 @@ export default function App() {
           </ProjectsProvider>
         </StateProvider>
       </NotificationProvider>
-    </Provider>
+    </StateProvider>
   );
 }

@@ -15,7 +15,8 @@ import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
-import {useAuthStore} from '../../../context/authStore';
+import {useAppSelector} from '../../../context/store';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 
 type AddRecordButtonsProps = {
   project: ProjectExtended;
@@ -27,7 +28,7 @@ export default function AddRecordButtons({
   recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
-  const activeUser = useAuthStore(state => state.activeUser);
+  const activeUser = useAppSelector(selectActiveUser);
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
   const [uiSpec, setUiSpec] = useState<ProjectUIModel | undefined>(undefined);

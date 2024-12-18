@@ -18,14 +18,14 @@
  *   Alerts are shown one at a time with configurable durations and severity levels.
  */
 
-import {useContext} from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import {ThemeProvider} from '@mui/material/styles';
 import {theme} from '../themes';
 import Alert from '@mui/material/Alert';
 import {createUseStyles} from 'react-jss';
-import {store} from '../../context/store';
 import {ActionType} from '../../context/actions';
+import {useAppDispatch} from '../../context/store';
+import {useAppSelector} from '../../context/store';
 
 const useStyles = createUseStyles({
   root: {
@@ -49,9 +49,8 @@ const useStyles = createUseStyles({
 
 export default function SystemAlert() {
   const classes = useStyles();
-  const globalState = useContext(store);
-  const {dispatch} = globalState;
-  const alerts = globalState.state.alerts;
+  const dispatch = useAppDispatch();
+  const alerts = useAppSelector(state => state.sync.alerts);
 
   /**
    * Handles the closing of the current alert.

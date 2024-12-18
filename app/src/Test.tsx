@@ -1,4 +1,4 @@
-import {useAuthStore} from './context/authStore';
+import {useAuthStore} from './context/store';
 import {useState} from 'react';
 
 const buttonStyle = {
@@ -234,7 +234,16 @@ export const TestComponent = () => {
       <div style={sectionStyle}>
         <h3 style={{marginBottom: '8px'}}>Current State</h3>
         <pre style={preStyle}>
-          {JSON.stringify({servers, activeConnection: activeUser, refreshError, isAuthenticated}, null, 2)}
+          {JSON.stringify(
+            {
+              servers,
+              activeConnection: activeUser,
+              refreshError,
+              isAuthenticated,
+            },
+            null,
+            2
+          )}
         </pre>
       </div>
 

@@ -5,8 +5,13 @@ import {
 } from '../sync/databases';
 import {ProjectObject, resolve_project_id} from '@faims3/data-model';
 import {ProjectExtended} from '../types/project';
-import ObjectMap from '../utils/ObjectMap';
-import {useAuthStore, UserTokens} from './authStore';
+import {
+  getServerConnection,
+  selectActiveUser,
+  selectAllServerUsers,
+  TokenInfo,
+} from './slices/authSlice';
+import {store} from './store';
 
 /**
  * Retrieves a list of listings from the directory database.
@@ -29,11 +34,11 @@ const getListings = async () => {
  * @returns The token associated with the specified ID.
  * @throws 404 error from pouch if not found
  */
-export const getToken = (id: string): UserTokens | undefined => {
+export const getToken = (id: string): TokenInfo | undefined => {
   // TODO this is stupid because we are just guessing which 'user' we should use
   // to make the request - unless we want to track active users across both
   // listings and globally, then this is just going to take the first one
-  const serverUsers = useAuthStore.getState().servers[id]?.users ?? {};
+  const serverUsers = store.getState().auth.servers[id]?.users ?? {};
   const keys = Object.keys(serverUsers);
   const jwt_token = keys.length > 0 ? serverUsers[keys[0]] : null;
   if (!jwt_token) {
@@ -51,18 +56,20 @@ export const getToken = (id: string): UserTokens | undefined => {
  * Fetches the listings and looks for any listing which has a token
  * @returns Unparsed, unvalidated JWT
  */
-export const getAnyToken = (): UserTokens | undefined => {
-  const state = useAuthStore.getState();
+export const getAnyToken = (): Omit<TokenInfo, 'expiresAt'> | undefined => {
+  const state = store.getState();
+  const activeUser = selectActiveUser(state);
+  const serverUsers = selectAllServerUsers(state);
 
   // First try getting the active token
-  if (state.activeUser) {
-    return state.activeUser;
+  if (activeUser) {
+    return activeUser;
   }
 
   // Otherwise try getting any - ask for first one
-  const serverUsers = state.getAllServerUsers();
   if (serverUsers.length > 0) {
-    return state.getServerUserInformation(serverUsers[0]);
+    // get targeted info
+    return getServerConnection({state, ...serverUsers[0]});
   } else {
     return undefined;
   }

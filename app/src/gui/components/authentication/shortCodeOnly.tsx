@@ -18,7 +18,7 @@ import React, {useContext, useState} from 'react';
 import {APP_ID} from '../../../buildconfig';
 import {ActionType} from '../../../context/actions';
 import {useNotification} from '../../../context/popup';
-import {store} from '../../../context/store';
+import {store, useAppDispatch} from '../../../context/store';
 import {isWeb} from '../../../utils/helpers';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 
@@ -29,7 +29,7 @@ import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
  * @returns component content
  */
 export function QRCodeButtonOnly(props: {listings: ListingsObject[]}) {
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
   const theme = useTheme();
   const handleRegister = async (url: string) => {
     // verify that this URL is one that's going to work
