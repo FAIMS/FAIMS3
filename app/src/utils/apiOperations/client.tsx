@@ -1,6 +1,8 @@
 import {ListingsObject} from '@faims3/data-model/src/types';
 import {getAllListingIDs, getListing} from '../../sync/state';
-import {useAuthStore} from '../../context/store';
+import {store, useAppSelector} from '../../context/store';
+import {selectSpecificServer} from '../../context/slices/authSlice';
+import {PropaneSharp} from '@mui/icons-material';
 
 /** Supported HTTP methods */
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -56,11 +58,9 @@ export class ListingFetch {
    */
   private getAuthHeaders(options: CustomOptions): {} {
     if (options.useToken ?? true) {
-      const authStore = useAuthStore.getState();
-      const tokenInfo = authStore.getServerUserInformation({
-        serverId: this.listing.id,
-        username: this.username,
-      });
+      const authState = store.getState().auth;
+      const tokenInfo =
+        authState.servers[this.listing.id]?.users[this.username];
 
       if (!tokenInfo) {
         throw new Error(

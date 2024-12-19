@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {ActionType} from '../../../../../context/actions';
-import {store} from '../../../../../context/store';
+import {store, useAppDispatch} from '../../../../../context/store';
 import {RecordReference} from '@faims3/data-model';
 import {Field} from 'formik';
 import AddIcon from '@mui/icons-material/Add';
@@ -86,8 +86,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
    * Allow users to add a link to a record from the current record
    */
   const [submitting, setSubmitting] = React.useState(false);
-
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
 
   const {
     field_name,
@@ -107,6 +106,8 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     /**
      * Submit relationship to couchDB
      * TODO replace setTimeout with actual request to couchDB
+     * 
+     * Peter B: what the hell is going on here?? This is cooked.
      */
     setSubmitting(true);
     if (props.add_related_child !== undefined) {

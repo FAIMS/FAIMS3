@@ -1,4 +1,4 @@
-import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {createSelector, createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {TokenContents} from '@faims3/data-model';
 import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
@@ -50,8 +50,13 @@ export interface ServerUserIdentity {
 }
 
 const isTokenValid = (tokenInfo: TokenInfo | undefined): boolean => {
+  // Present
   if (!tokenInfo) return false;
-  return tokenInfo.token != undefined && tokenInfo.expiresAt > Date.now();
+  // Present (token property)
+  if (!tokenInfo.token) return false;
+  // Expired?
+  if (tokenInfo.expiresAt <= Date.now()) return false;
+  return true;
 };
 
 const isTokenRefreshable = (tokenInfo: TokenInfo | undefined): boolean => {
@@ -255,6 +260,9 @@ type AuthStore = {auth: AuthState};
 
 // Selectors
 export const selectActiveUser = (state: AuthStore) => state.auth.activeUser;
+export const selectActiveServerId = (state: AuthStore) =>
+  state.auth.activeUser?.serverId;
+
 export const selectIsAuthenticated = (state: AuthStore) =>
   state.auth.isAuthenticated;
 export const selectActiveToken = (state: AuthStore) => {
@@ -272,6 +280,16 @@ export const selectAllServerUsers = (
     }))
   );
 };
+
+// This is a special selector which looks for a given serverId re-renders
+// optimally
+export const selectSpecificServer = createSelector(
+  [
+    (state: AuthStore) => state.auth.servers,
+    (_state: AuthStore, serverId: string) => serverId,
+  ],
+  (servers, serverId) => servers[serverId]?.users ?? {}
+);
 
 // Helper functions (which use the store state)
 export const getServerConnection = ({

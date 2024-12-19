@@ -9,13 +9,14 @@ import {
 } from '@mui/material';
 import React from 'react';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import {useAuthStore} from '../../../context/store';
 import {userCanCreateNotebooks} from '../../../users';
 import NewNotebookForListing from '../notebook/NewNotebookForListing';
+import { useAppSelector } from '../../../context/store';
+import { selectActiveUser } from '../../../context/slices/authSlice';
 
 export interface CreateNewSurveyProps {}
 const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
-  const activeUser = useAuthStore(state => state.activeUser);
+  const activeUser = useAppSelector(selectActiveUser);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 

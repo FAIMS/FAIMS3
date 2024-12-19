@@ -38,7 +38,7 @@ import {
 
 import {ActionType} from '../../context/actions';
 import * as ROUTES from '../../constants/routes';
-import {store} from '../../context/store';
+import {store, useAppDispatch} from '../../context/store';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -90,7 +90,7 @@ interface DraftCreateProps {
 function DraftCreate(props: DraftCreateProps) {
   const {project_id, type_name, record_id} = props;
 
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const [error, setError] = useState(null as null | {});
@@ -160,7 +160,7 @@ interface DraftEditProps {
 
 function DraftEdit(props: DraftEditProps) {
   const {project_id, type_name, draft_id, project_info, record_id} = props;
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});

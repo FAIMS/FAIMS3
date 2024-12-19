@@ -1,5 +1,12 @@
-import {useAuthStore} from './context/store';
 import {useState} from 'react';
+import {useAppDispatch, useAppSelector} from './context/store';
+import {
+  clearActiveConnection,
+  refreshToken,
+  removeServerConnection,
+  setActiveUser,
+  setServerConnection,
+} from './context/slices/authSlice';
 
 const buttonStyle = {
   display: 'block',
@@ -62,32 +69,27 @@ export const TestComponent = () => {
   const [selectedServer, setSelectedServer] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
 
-  const {
-    servers,
-    activeUser,
-    refreshError,
-    isAuthenticated,
-    setServerConnection,
-    setActiveUser: setActiveConnection,
-    removeServerConnection,
-    clearActiveConnection,
-    refreshToken,
-  } = useAuthStore();
+  const authStore = useAppSelector(state => state.auth);
+  const dispatch = useAppDispatch();
+
+  const {servers, activeUser, refreshError, isAuthenticated} = authStore;
 
   const addConnection = async () => {
     if (!newServerId || !newUsername) return;
 
-    setServerConnection({
-      serverId: newServerId,
-      username: newUsername,
-      parsedToken: {
+    dispatch(
+      setServerConnection({
+        serverId: newServerId,
         username: newUsername,
-        roles: ['user'],
-        server: newServerId,
-      },
-      token: 'fake-token',
-      refreshToken: 'fake-token',
-    });
+        parsedToken: {
+          username: newUsername,
+          roles: ['user'],
+          server: newServerId,
+        },
+        token: 'fake-token',
+        refreshToken: 'fake-token',
+      })
+    );
     setNewServerId('');
     setNewUsername('');
   };
@@ -177,10 +179,12 @@ export const TestComponent = () => {
           <div>
             <button
               onClick={() =>
-                setActiveConnection({
-                  serverId: selectedServer,
-                  username: selectedUser,
-                })
+                dispatch(
+                  setActiveUser({
+                    serverId: selectedServer,
+                    username: selectedUser,
+                  })
+                )
               }
               style={buttonStyle}
             >
@@ -188,10 +192,12 @@ export const TestComponent = () => {
             </button>
             <button
               onClick={() =>
-                removeServerConnection({
-                  serverId: selectedServer,
-                  username: selectedUser,
-                })
+                dispatch(
+                  removeServerConnection({
+                    serverId: selectedServer,
+                    username: selectedUser,
+                  })
+                )
               }
               style={{...buttonStyle, backgroundColor: '#dc3545'}}
             >
@@ -215,7 +221,7 @@ export const TestComponent = () => {
               Refresh Token
             </button>
             <button
-              onClick={clearActiveConnection}
+              onClick={() => dispatch(clearActiveConnection)}
               style={{
                 ...buttonStyle,
                 backgroundColor: '#ffc107',

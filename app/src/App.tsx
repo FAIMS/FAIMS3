@@ -44,7 +44,7 @@ import NotFound404 from './gui/pages/404';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
 import {TestComponent} from './Test';
-import {StateProvider} from './context/store';
+import {InitialiseGate, StateProvider} from './context/store';
 
 // Setup react query
 const queryClient = new QueryClient({
@@ -78,8 +78,8 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <StateProvider>
-      <NotificationProvider>
-        <StateProvider>
+      <InitialiseGate>
+        <NotificationProvider>
           <ProjectsProvider>
             <QueryClientProvider client={queryClient}>
               <StyledEngineProvider injectFirst>
@@ -207,8 +207,8 @@ export default function App() {
               </StyledEngineProvider>
             </QueryClientProvider>
           </ProjectsProvider>
-        </StateProvider>
-      </NotificationProvider>
+        </NotificationProvider>
+      </InitialiseGate>
     </StateProvider>
   );
 }

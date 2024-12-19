@@ -40,7 +40,7 @@ import {
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../buildconfig';
 import {ActionType} from '../../context/actions';
-import {store} from '../../context/store';
+import {store, useAppDispatch} from '../../context/store';
 import {isWeb} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
 import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
@@ -228,7 +228,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
  * @returns component content
  */
 export function QRCodeRegistration(props: ShortCodeProps) {
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
   const handleRegister = async (url: string) => {
     // verify that this URL is one that's going to work
     // valid urls look like:

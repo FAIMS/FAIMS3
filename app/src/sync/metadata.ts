@@ -22,8 +22,9 @@
 
 import {EncodedProjectUIModel, resolve_project_id} from '@faims3/data-model';
 import {getProjectDB} from '.';
-import {useAuthStore} from '../context/store';
 import {createdListingsInterface} from './state';
+import {store, useAppSelector} from '../context/store';
+import {selectSpecificServer} from '../context/slices/authSlice';
 
 export type PropertyMap = {
   [key: string]: unknown;
@@ -46,33 +47,34 @@ type minimalCreatedListing =
  * Fetch project metadata from the server and store it locally for
  * later access.
  *
- * @param lst a createdListing entry (or subset for testing)
+ * @param listing a createdListing entry (or subset for testing)
  * @param project_id short project identifier
  */
 export const fetchProjectMetadata = async (
-  lst: minimalCreatedListing,
+  {listing}: minimalCreatedListing,
   project_id: string
 ) => {
-  const url = `${lst.listing.conductor_url}/api/notebooks/${project_id}`;
+  const url = `${listing.conductor_url}/api/notebooks/${project_id}`;
   // In the current auth store, get the token synchronously
 
   // TODO this is stupid because we are just guessing which 'user' we should use
   // to make the request - unless we want to track active users across both
   // listings and globally, then this is just going to take the first one
-  const listing_id = lst.listing.id;
-  const serverUsers = useAuthStore.getState().servers[listing_id]?.users ?? {};
+  const serverId = listing.id;
+  const serverUsers = selectSpecificServer(store.getState(), serverId);
   const keys = Object.keys(serverUsers);
+
   const jwt_token = keys.length > 0 ? serverUsers[keys[0]].token : null;
   if (!jwt_token) {
     console.error(
       'Could not get token for listing with ID: ',
-      listing_id,
+      serverId,
       'This logic is highly suspect!'
     );
     return;
   }
 
-  const full_project_id = resolve_project_id(lst.listing.id, project_id);
+  const full_project_id = resolve_project_id(listing.id, project_id);
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${jwt_token}`,

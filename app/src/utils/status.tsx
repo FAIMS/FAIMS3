@@ -1,15 +1,12 @@
 import {ActionType} from '../context/actions';
-import {ContextType} from '../context/store';
 import {SyncStatusCallbacks} from '@faims3/data-model';
+import {AppDispatch} from '../context/store';
 
 export type SyncActionTypes =
   | ActionType.IS_SYNCING_DOWN
   | ActionType.IS_SYNCING_UP;
 
-export function startSync(
-  dispatch: ContextType['dispatch'],
-  syncAction: SyncActionTypes
-) {
+export function startSync(dispatch: AppDispatch, syncAction: SyncActionTypes) {
   /**
    * Dispatch IS_SYNCING_UP or IS_SYNCING_DOWN =true
    * Set to false after 5 seconds
@@ -26,20 +23,14 @@ export function startSync(
   return;
 }
 
-function sendErrorNotification(
-  dispatch: ContextType['dispatch'],
-  message: string
-) {
+function sendErrorNotification(dispatch: AppDispatch, message: string) {
   dispatch({
     type: ActionType.ADD_ALERT,
     payload: {message: message, severity: 'error'},
   });
 }
 
-export function setSyncError(
-  dispatch: ContextType['dispatch'],
-  has_error: boolean
-) {
+export function setSyncError(dispatch: AppDispatch, has_error: boolean) {
   /**
    * Toggle the sync error state
    */
@@ -47,7 +38,7 @@ export function setSyncError(
 }
 
 export function getSyncStatusCallbacks(
-  dispatch: ContextType['dispatch']
+  dispatch: AppDispatch
 ): SyncStatusCallbacks {
   const handleStartSyncUp = () => {
     startSync(dispatch, ActionType.IS_SYNCING_UP);

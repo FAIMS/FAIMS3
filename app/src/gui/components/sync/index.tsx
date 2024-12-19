@@ -18,6 +18,7 @@
  *   This contains the syncStatus React component, which allows users to see their device's sync status
  */
 import React, {useContext, useEffect, useRef} from 'react';
+import {shallowEqual} from 'react-redux';
 import {
   Box,
   Button,
@@ -44,7 +45,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ErrorIcon from '@mui/icons-material/Error';
 import 'animate.css';
 
-import {store} from '../../../context/store';
+import {store, useAppSelector} from '../../../context/store';
 import {grey} from '@mui/material/colors';
 import moment from 'moment';
 // custom hook for getting previous value
@@ -73,7 +74,17 @@ export default function SyncStatus() {
    *
    */
 
-  const {state} = useContext(store);
+  // decompose state into fields we want - then do shallow equality so that we
+  // don't rerender on every store change due to object creation
+  const {isSyncError, isSyncingUp, isSyncingDown} = useAppSelector(
+    state => ({
+      isSyncError: state.sync.isSyncError,
+      isSyncingUp: state.sync.isSyncingUp,
+      isSyncingDown: state.sync.isSyncingDown,
+    }),
+    shallowEqual
+  );
+
   const LAST_SYNC_FORMAT = 'MMMM Do YYYY, LTS';
   const [lastSync, setLastSync] = React.useState(
     moment().format(LAST_SYNC_FORMAT)
@@ -88,8 +99,8 @@ export default function SyncStatus() {
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popper' : undefined;
   const prevSync = usePrevious({
-    up: state.isSyncingUp,
-    down: state.isSyncingDown,
+    up: isSyncingUp,
+    down: isSyncingDown,
   });
 
   useEffect(() => {
@@ -117,7 +128,7 @@ export default function SyncStatus() {
           }}
         >
           <Box display="flex" justifyContent="center" sx={{height: '100%'}}>
-            {state.isSyncError ? (
+            {isSyncError ? (
               <React.Fragment>
                 <CloudOffIcon
                   style={{marginLeft: '11px'}}
@@ -128,14 +139,13 @@ export default function SyncStatus() {
                   color={'warning'}
                 />
               </React.Fragment>
-            ) : state.isSyncingUp || state.isSyncingDown ? (
+            ) : isSyncingUp || isSyncingDown ? (
               <CloudIcon sx={{color: 'primary'}} />
             ) : (
-              // state.hasUnsyncedChanges ? (<CloudQueueIcon />) : (<CloudDoneIcon />)
               <CloudQueueIcon sx={{color: 'primary'}} />
             )}
           </Box>
-          {!state.isSyncError ? (
+          {!isSyncError ? (
             <Grid
               container
               style={{
@@ -149,9 +159,9 @@ export default function SyncStatus() {
                 <Box display="flex" justifyContent="center">
                   <ArrowDropUpIcon
                     sx={{fontSize: '32px'}}
-                    color={!state.isSyncingUp ? 'disabled' : 'warning'}
+                    color={!isSyncingUp ? 'disabled' : 'warning'}
                     className={
-                      state.isSyncingUp
+                      isSyncingUp
                         ? 'animate__animated animate__flash animate__slow animate__infinite'
                         : ''
                     }
@@ -162,9 +172,9 @@ export default function SyncStatus() {
                 <Box display="flex" justifyContent="center">
                   <ArrowDropDownIcon
                     sx={{fontSize: '32px'}}
-                    color={!state.isSyncingDown ? 'disabled' : 'warning'}
+                    color={!isSyncingDown ? 'disabled' : 'warning'}
                     className={
-                      state.isSyncingDown
+                      isSyncingDown
                         ? 'animate__animated animate__flash animate__slow animate__infinite'
                         : ''
                     }
@@ -195,9 +205,9 @@ export default function SyncStatus() {
                     <TableCell sx={{verticalAlign: 'top'}}>Status</TableCell>
                     <TableCell sx={{verticalAlign: 'top', textAlign: 'right'}}>
                       <Typography color="text.secondary" sx={{fontSize: 14}}>
-                        {state.isSyncError
+                        {isSyncError
                           ? 'Error'
-                          : state.isSyncingUp || state.isSyncingDown
+                          : isSyncingUp || isSyncingDown
                             ? 'In Progress'
                             : 'Idle'}
                       </Typography>
@@ -206,9 +216,9 @@ export default function SyncStatus() {
                         gutterBottom
                         variant={'caption'}
                       >
-                        {state.isSyncError
+                        {isSyncError
                           ? 'Cannot sync to server, your device may be offline.'
-                          : state.isSyncingUp || state.isSyncingDown
+                          : isSyncingUp || isSyncingDown
                             ? 'Sync is underway'
                             : 'Waiting for changes'}
                       </Typography>

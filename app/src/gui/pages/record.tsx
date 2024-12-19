@@ -53,7 +53,7 @@ import {
   getInitialMergeDetails,
   findConflictingFields,
 } from '@faims3/data-model';
-import {store} from '../../context/store';
+import {store, useAppDispatch} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
 
 import ConflictForm from '../components/record/conflict/conflictform';
@@ -112,7 +112,8 @@ export default function Record() {
     draft_id?: string;
   }>();
   const [updatedrevision_id, setrevision_id] = React.useState(revision_id);
-  const {dispatch} = useContext(store);
+
+  const dispatch = useAppDispatch();
   const history = useNavigate();
 
   const [value, setValue] = React.useState('1');

@@ -27,7 +27,6 @@ import {
 } from '@faims3/data-model';
 import {getAllListings} from '.';
 import {CONDUCTOR_URLS} from '../buildconfig';
-import {useAuthStore} from '../context/store';
 import {logError} from '../logging';
 import {
   ExistingActiveDoc,
@@ -39,6 +38,11 @@ import {
 import {events} from './events';
 import {ProjectObject, ensure_project_databases} from './projects';
 import {addOrUpdateListing, deleteListing, getListing} from './state';
+import {store, useAppSelector} from '../context/store';
+import {
+  selectAllServerUsers,
+  selectSpecificServer,
+} from '../context/slices/authSlice';
 
 /**
  * update_directory - make sure we have listings for each
@@ -202,7 +206,7 @@ async function get_projects_from_conductor(listing: ListingsObject) {
   // TODO this is stupid because we are just guessing which 'user' we should use
   // to make the request - unless we want to track active users across both
   // listings and globally, then this is just going to take the first one
-  const serverUsers = useAuthStore.getState().servers[listing.id]?.users ?? {};
+  const serverUsers = selectSpecificServer(store.getState(), listing.id);
   const keys = Object.keys(serverUsers);
   const jwt_token = keys.length > 0 ? serverUsers[keys[0]].token : null;
   if (!jwt_token) {

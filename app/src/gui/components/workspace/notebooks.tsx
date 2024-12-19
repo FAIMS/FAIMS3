@@ -34,7 +34,6 @@ import {
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import {useAuthStore} from '../../../context/store';
 import {useNotification} from '../../../context/popup';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
@@ -42,7 +41,8 @@ import {userCanCreateNotebooks} from '../../../users';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
-import {activateProjectDB} from '../../../dbs/projects-db';
+import {useAppSelector} from '../../../context/store';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 
 // Survey status naming conventions
 
@@ -69,8 +69,9 @@ export default function NoteBooks() {
 
   // get the active user - this will allow us to check roles against it
   // TODO what do we do if this is not defined
-  const activeServerId = useAuthStore(state => state.activeUser?.serverId);
-  const activeUserToken = useAuthStore(state => state.activeUser?.parsedToken);
+  const activeUser = useAppSelector(selectActiveUser);
+  const activeServerId = activeUser?.serverId;
+  const activeUserToken = activeUser?.parsedToken;
 
   const {projects: allProjects, syncProjects} = useContext(ProjectsContext);
   const projects = allProjects.filter(p => {

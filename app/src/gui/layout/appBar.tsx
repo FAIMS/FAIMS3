@@ -49,13 +49,17 @@ import {createUseStyles as makeStyles} from 'react-jss';
 import {Link as RouterLink} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {useAuthStore} from '../../context/store';
 import {ProjectsContext} from '../../context/projects-context';
 import {ProjectExtended} from '../../types/project';
 import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import SyncStatus from '../components/sync';
+import {useAppSelector} from '../../context/store';
+import {
+  selectActiveServerId,
+  selectIsAuthenticated,
+} from '../../context/slices/authSlice';
 
 /**
  * Represents the properties for a menu list item.
@@ -219,8 +223,8 @@ type NavbarProps = {};
  */
 export default function MainAppBar(props: NavbarProps) {
   const classes = useStyles();
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  const activeServerId = useAuthStore(state => state.activeUser?.serverId);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const activeServerId = useAppSelector(selectActiveServerId);
 
   // get the list of activated projects
   const projectList = useContext(ProjectsContext).projects.filter(

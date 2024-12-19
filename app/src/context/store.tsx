@@ -30,6 +30,7 @@ export const store = configureStore({
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
+      // TODO fix this
       serializableCheck: {},
     }),
   devTools: process.env.NODE_ENV !== 'production',
@@ -48,6 +49,25 @@ export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
 // Provider component
 export const StateProvider: React.FC<{children: React.ReactNode}> = ({
+  children,
+}) => {
+  return (
+    <Provider store={store}>
+      {
+        // Persistence gate to ensure app is not loaded before auth slice persists
+      }
+      <PersistGate loading={<LoadingApp />} persistor={persistor}>
+        {children}
+      </PersistGate>
+    </Provider>
+  );
+};
+
+/**
+ * InitialiseGate component This checks that the app store is initialised,
+ * returning loading fall back. Initiates if not, and only runs once.
+ */
+export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
   children,
 }) => {
   const dispatch = useAppDispatch();
@@ -97,14 +117,5 @@ export const StateProvider: React.FC<{children: React.ReactNode}> = ({
     return <LoadingApp />;
   }
 
-  return (
-    <Provider store={store}>
-      {
-        // Persistence gate to ensure app is not loaded before auth slice persists
-      }
-      <PersistGate loading={<LoadingApp />} persistor={persistor}>
-        {children}
-      </PersistGate>
-    </Provider>
-  );
+  return children;
 };

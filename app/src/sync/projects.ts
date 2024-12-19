@@ -50,7 +50,11 @@ import {
   throttled_ping_sync_up,
 } from './connection';
 import {fetchProjectMetadata} from './metadata';
-import {useAuthStore} from '../context/store';
+import {store} from '../context/store';
+import {
+  getServerConnection,
+  selectSpecificServer,
+} from '../context/slices/authSlice';
 
 /**
  * Temporarily override this type from @faims3/data-model to make
@@ -138,9 +142,8 @@ export const getActiveProjectList = async (
   username: string,
   serverId: string
 ): Promise<ProjectInformation[]> => {
-  const tokenContents = useAuthStore
-    .getState()
-    .getServerUserInformation({username, serverId});
+  const state = store.getState();
+  const tokenContents = getServerConnection({state, serverId, username});
   if (!tokenContents) {
     throw new Error(
       'Could not find credentials in auth store for requested user/server combination: ' +
@@ -174,9 +177,8 @@ export async function getAvailableProjectsFromListing(
   username: string,
   serverId: string
 ): Promise<ProjectInformation[]> {
-  const tokenContents = useAuthStore
-    .getState()
-    .getServerUserInformation({username, serverId});
+  const state = store.getState();
+  const tokenContents = getServerConnection({state, serverId, username});
   if (!tokenContents) {
     throw new Error(
       'Could not find credentials in auth store for requested user/server combination: ' +
@@ -356,14 +358,14 @@ export async function ensure_project_databases(
   // TODO this is stupid because we are just guessing which 'user' we should use
   // to make the request - unless we want to track active users across both
   // listings and globally, then this is just going to take the first one
-  const listing_id = listing.listing.id;
-  const serverUsers = useAuthStore.getState().servers[listing_id]?.users ?? {};
+  const serverId = listing.listing.id;
+  const serverUsers = selectSpecificServer(store.getState(), serverId);
   const keys = Object.keys(serverUsers);
   const jwt_token = keys.length > 0 ? serverUsers[keys[0]].token : null;
   if (!jwt_token) {
     console.error(
       'Could not get token for listing with ID: ',
-      listing_id,
+      serverId,
       'This logic is highly suspect!'
     );
     return;
