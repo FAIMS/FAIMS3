@@ -270,16 +270,19 @@ export const selectActiveToken = (state: AuthStore) => {
   if (!activeUser) return undefined;
   return state.auth.servers[activeUser.serverId]?.users[activeUser.username];
 };
-export const selectAllServerUsers = (
-  state: AuthStore
-): ServerUserIdentity[] => {
-  return Object.entries(state.auth.servers).flatMap(([serverId, server]) =>
-    Object.keys(server.users).map(username => ({
-      serverId,
-      username,
-    }))
-  );
-};
+
+// Memoized selector for all server users
+export const selectAllServerUsers = createSelector(
+  [(state: AuthStore) => state.auth.servers],
+  (servers): ServerUserIdentity[] => {
+    return Object.entries(servers).flatMap(([serverId, server]) =>
+      Object.keys(server.users).map(username => ({
+        serverId,
+        username,
+      }))
+    );
+  }
+);
 
 // This is a special selector which looks for a given serverId re-renders
 // optimally

@@ -6,7 +6,16 @@ import {
   useDispatch,
   useSelector,
 } from 'react-redux';
-import {persistReducer, persistStore} from 'redux-persist';
+import {
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  persistReducer,
+  persistStore,
+  PURGE,
+  REGISTER,
+  REHYDRATE,
+} from 'redux-persist';
 import {PersistGate} from 'redux-persist/integration/react';
 import storage from 'redux-persist/lib/storage';
 import LoadingApp from '../gui/components/loadingApp';
@@ -31,7 +40,9 @@ export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       // TODO fix this
-      serializableCheck: {},
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
     }),
   devTools: process.env.NODE_ENV !== 'production',
 });
@@ -47,6 +58,8 @@ export type AppDispatch = typeof store.dispatch;
 export const useAppDispatch: () => AppDispatch = useDispatch;
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
+const LoadingComponent = LoadingApp;
+
 // Provider component
 export const StateProvider: React.FC<{children: React.ReactNode}> = ({
   children,
@@ -56,7 +69,7 @@ export const StateProvider: React.FC<{children: React.ReactNode}> = ({
       {
         // Persistence gate to ensure app is not loaded before auth slice persists
       }
-      <PersistGate loading={<LoadingApp />} persistor={persistor}>
+      <PersistGate loading={<LoadingComponent />} persistor={persistor}>
         {children}
       </PersistGate>
     </Provider>
@@ -114,7 +127,7 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
   }, []);
 
   if (!isInitialized) {
-    return <LoadingApp />;
+    return <LoadingComponent />;
   }
 
   return children;
