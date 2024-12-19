@@ -1,8 +1,14 @@
-import {createSelector, createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {TokenContents} from '@faims3/data-model';
+import {
+  createAsyncThunk,
+  createSelector,
+  createSlice,
+  PayloadAction,
+} from '@reduxjs/toolkit';
 import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
-import {store} from '../store';
+import {AppDispatch, RootState, store} from '../store';
+import {addAlert} from './syncSlice';
 
 // Types
 export interface TokenInfo {
@@ -42,6 +48,7 @@ export interface SetServerConnectionInput {
   token: string;
   refreshToken?: string;
   parsedToken: TokenContents;
+  promptRefresh?: boolean; // default false
 }
 
 export interface ServerUserIdentity {
@@ -132,6 +139,9 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    refreshIsAuthenticated: (state, _: PayloadAction<{}>) => {
+      state.isAuthenticated = checkAuthenticationStatus(state);
+    },
     setServerConnection: (
       state,
       action: PayloadAction<SetServerConnectionInput>
@@ -183,6 +193,8 @@ const authSlice = createSlice({
       };
 
       state.isAuthenticated = checkAuthenticationStatus(state);
+
+      // Schedule a refresh too
     },
 
     removeServerConnection: (
@@ -252,6 +264,7 @@ export const {
   setActiveUser,
   removeServerConnection,
   clearActiveConnection,
+  refreshIsAuthenticated,
 } = authSlice.actions;
 
 export default authSlice.reducer;
@@ -306,3 +319,81 @@ export const getServerConnection = ({
 }) => {
   return state.auth.servers[serverId]?.users[username];
 };
+
+export const setAndRefreshActiveConnection = createAsyncThunk<
+  void,
+  ServerUserIdentity
+>(
+  'auth/setAndRefreshActiveConnection',
+  async (args, {dispatch: rawDispatch, getState}) => {
+    // cast and get state
+    const state = (getState() as RootState).auth;
+    const dispatch = rawDispatch as AppDispatch;
+
+    // dispatch the job to set active user
+    dispatch(setActiveUser(args));
+
+    // Dispatch a refresh too
+    dispatch(
+      refreshTokenOperation({serverId: args.serverId, username: args.username})
+    );
+  }
+);
+
+// Refresh token thunk - this is an atomic operation which
+export const refreshTokenOperation = createAsyncThunk<
+  void,
+  {serverId: string; username: string}
+>('auth/refreshToken', async ({serverId, username}, {dispatch, getState}) => {
+  // cast and get state
+  const state = getState() as RootState;
+  const appDispatch = dispatch as AppDispatch;
+
+  // Try to refresh token
+  const connection = state.auth.servers[serverId]?.users[username];
+
+  if (!connection) {
+    appDispatch(
+      addAlert({
+        message: 'Token refresh failed: unknown connection requested.',
+        severity: 'warning',
+      })
+    );
+  }
+
+  if (!isTokenRefreshable(connection)) {
+    appDispatch(
+      addAlert({
+        message: 'No refresh token available.',
+        severity: 'warning',
+      })
+    );
+  }
+
+  try {
+    const {token} = await requestTokenRefresh(serverId, username, {
+      refreshToken: connection.refreshToken!,
+    });
+    const parsedToken = parseToken(token);
+
+    // Update this connection with newest token
+    appDispatch(
+      setServerConnection({
+        parsedToken,
+        serverId,
+        token,
+        username,
+        refreshToken: connection.refreshToken,
+      })
+    );
+  } catch (error) {
+    console.warn('Token refresh failed:', error);
+    dispatch(
+      addAlert({
+        message:
+          error instanceof Error ? error.message : 'Token refresh failed',
+        severity: 'warning',
+      })
+    );
+  }
+});

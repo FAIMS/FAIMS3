@@ -22,12 +22,19 @@ import LoadingApp from '../gui/components/loadingApp';
 import {set_sync_status_callbacks} from '../sync/connection';
 import {initialize} from '../sync/initialize';
 import {getSyncStatusCallbacks} from '../utils/status';
-import authReducer from './slices/authSlice';
+import authReducer, {
+  refreshActiveUser,
+  refreshIsAuthenticated,
+  selectIsAuthenticated,
+} from './slices/authSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
 
 // Configure persistence for the auth slice
 const persistConfig = {key: 'auth', storage};
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
+
+// Token refresh interval in milliseconds (15 seconds)
+const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000;
 
 // Configure the store
 export const store = configureStore({
@@ -77,8 +84,57 @@ export const StateProvider: React.FC<{children: React.ReactNode}> = ({
 };
 
 /**
+ * TokenRefreshTimer component
+ * Handles periodic token refresh attempts and authentication status checks
+ */
+const TokenRefreshTimer: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
+  useEffect(() => {
+    const refreshTokenAndCheckAuth = async () => {
+      console.log('Token refresh occurring.');
+      try {
+        if (isAuthenticated) {
+          await refreshActiveUser();
+        }
+      } catch (error) {
+        console.warn('Token refresh failed:', error);
+        dispatch(
+          addAlert({
+            message:
+              error instanceof Error ? error.message : 'Token refresh failed',
+            severity: 'warning',
+          })
+        );
+      } finally {
+        // Always check authentication status after refresh attempt
+        dispatch(refreshIsAuthenticated({}));
+      }
+      console.log('Token refresh succeeded.');
+    };
+
+    // Initial check
+    refreshTokenAndCheckAuth();
+
+    // Set up interval
+    const intervalId = setInterval(
+      refreshTokenAndCheckAuth,
+      TOKEN_REFRESH_INTERVAL
+    );
+
+    // Cleanup
+    return () => clearInterval(intervalId);
+  }, [dispatch, isAuthenticated]);
+
+  return null;
+};
+
+/**
  * InitialiseGate component This checks that the app store is initialised,
  * returning loading fall back. Initiates if not, and only runs once.
+ *
+ * It also starts a timer process which refreshes the token.
  */
 export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
   children,
@@ -130,5 +186,13 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
     return <LoadingComponent />;
   }
 
-  return children;
+  return (
+    <>
+      {
+        // Include timer
+      }
+      <TokenRefreshTimer />
+      {children}
+    </>
+  );
 };
