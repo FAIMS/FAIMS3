@@ -10,7 +10,8 @@ import {useState} from 'react';
 import {QRCodeButtonOnly, ShortCodeOnlyComponent} from './shortCodeOnly';
 import {isWeb} from '../../../utils/helpers';
 import {Browser} from '@capacitor/browser';
-import {APP_ID} from '../../../buildconfig';
+import {APP_ID, APP_NAME, HEADING_APP_NAME} from '../../../buildconfig';
+import {useIsOnline} from '../../../utils/customHooks';
 
 const OnboardingComponent = ({
   scanQr,
@@ -19,11 +20,18 @@ const OnboardingComponent = ({
   scanQr: boolean;
   listings: ListingsObject[];
 }) => {
+  const {isOnline, fallback} = useIsOnline();
+
   const [showCodeInput, setShowCodeInput] = useState(false);
   const theme = useTheme();
 
   // This component is only rendered when this item is defined
   const listing = listings[0]!;
+
+  // If we are offline - just show this - you can't login while offline!
+  if (!isOnline) {
+    return <>{fallback}</>;
+  }
 
   return (
     <Box
@@ -63,7 +71,7 @@ const OnboardingComponent = ({
             marginBottom: 1,
           }}
         >
-          Welcome
+            {APP_NAME}
         </Typography>
 
         {/* Sign In Button */}
@@ -135,7 +143,7 @@ const OnboardingComponent = ({
               },
             }}
           >
-            Enter Access Code
+            Enter access code to register
           </Button>
         )}
 

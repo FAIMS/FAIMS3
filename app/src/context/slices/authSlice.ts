@@ -9,6 +9,11 @@ import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
 import {AppDispatch, RootState} from '../store';
 import {addAlert} from './syncSlice';
+import {
+  data_dbs,
+  ensure_synced_db,
+  refreshDataDbTokens,
+} from '../../sync/databases';
 
 // Types
 export interface TokenInfo {
@@ -289,10 +294,10 @@ export const getServerConnection = ({
 /**
  * Lists all the connections in the given auth state - appends the serverId
  */
-export const listAllConnections = ({state}: {state: AuthStore}) => {
+export const listAllConnections = ({state}: {state: AuthState}) => {
   const connections = [];
-  for (const serverId of Object.keys(state.auth.servers)) {
-    const server = state.auth.servers[serverId]!;
+  for (const serverId of Object.keys(state.servers)) {
+    const server = state.servers[serverId]!;
     for (const user of Object.values(server.users)) {
       connections.push({...user, serverId: serverId});
     }
@@ -314,7 +319,7 @@ export const setServerConnection = createAsyncThunk<
   const state = (getState() as RootState).auth;
   const appDispatch = dispatch as AppDispatch;
 
-  const {serverId, username, token, refreshToken, parsedToken} = args;
+  const {serverId, username, token} = args;
 
   // Run the usual store operation
   appDispatch(assignServerConnection(args));
@@ -334,8 +339,9 @@ export const setServerConnection = createAsyncThunk<
 
   // If the new token has changed, update!
   if (tokenIsChanged) {
-    // TODO Steve - here we should update the all remote synced DBs for
-    // listing/server with id `serverId` to the new token `token`
+    // Here we should update the all remote synced DBs for listing/server with
+    // id `serverId` to the new token `token`
+    await refreshDataDbTokens({serverId, newToken: token});
   }
 });
 
@@ -456,7 +462,7 @@ export const refreshAllUsers = createAsyncThunk<void, {}>(
     const appDispatch = dispatch as AppDispatch;
 
     // get all identities
-    const connections = listAllConnections({state});
+    const connections = listAllConnections({state : state.auth});
 
     // refresh all of them
     for (const conn of connections) {

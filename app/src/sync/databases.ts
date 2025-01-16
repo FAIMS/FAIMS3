@@ -39,6 +39,7 @@ import {
 import {draft_db} from './draft-storage';
 
 import {db as projects_db} from '../dbs/projects-db';
+import {getLocalActiveMap} from '../context/functions';
 
 export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
@@ -375,4 +376,92 @@ export async function wipe_all_pouch_databases() {
   // TODO: work out how best to recreate the databases, currently using a
   // redirect and having FAIMS reinitialise seems to be the best
   console.debug('Deleted dbs');
+}
+
+/**
+ * Sets the remote sync connection jwt_token property for all activated projects
+ * data DBs to a new token as specified.
+ *
+ * NOTE uses the ensure_synced_db method which will check for a diff in the
+ * connection info, prompting recreation of the remote db
+ *
+ * TODO this could be more specific to the username + listing combination once
+ * the data dbs are tracked to logged in users that activated them
+ *
+ * @param serverId Listing/server to target for a token refresh
+ * @param newToken The new token to set as the connection info for the remote db
+ * sync
+ */
+export async function refreshDataDbTokens({
+  serverId,
+  newToken,
+}: {
+  serverId: string;
+  newToken: string;
+}) {
+  const activeRecords = (await active_db.allDocs({include_docs: true})).rows
+    .map(d => d.doc)
+    .filter(d => !!d);
+
+  for (const record of activeRecords) {
+    // This is server/project combinations
+    const {listing_id} = record;
+
+    if (listing_id !== serverId) {
+      continue;
+    }
+
+    const dbKey = record._id;
+
+    // Get the associated data DB for this active db
+    const db = data_dbs[dbKey];
+
+    if (!db.remote) {
+      continue;
+    }
+
+    // Take existing remote DB connection info, replace token with new token
+    console.log(
+      'Updating connection token for listing_id ',
+      listing_id,
+      ' token: ',
+      newToken,
+      ' data db ID ',
+      dbKey
+    );
+
+    let newConnectionInfo: ConnectionInfo = {
+      ...db.remote?.info,
+      jwt_token: newToken,
+    };
+
+    // run the synced db operation which will update the
+    ensure_synced_db(dbKey, newConnectionInfo, data_dbs);
+  }
+
+  // this is using the data_dbs directly but relies on the key name to check
+  // match with listing ID
+
+  /**
+  for (const dbKey of Object.keys(data_dbs)) {
+    // check that the db key starts with the listing/server ID
+    if (dbKey.startsWith(serverId)) {
+      // The data DB
+      const db = data_dbs[dbKey]!;
+
+      if (!db.remote) {
+        continue;
+      }
+
+      // Take existing remote DB connection info, replace token with new token
+      let newConnectionInfo: ConnectionInfo = {
+        ...db.remote?.info,
+        jwt_token: newToken,
+      };
+
+      // run the synced db operation which will update the
+      ensure_synced_db(dbKey, newConnectionInfo, data_dbs);
+    }
+  }
+   */
 }

@@ -18,31 +18,47 @@
  *   Provides a component to show either a link to sign-in or the username
  *   which links to the sign-in page
  */
-import React from 'react';
 import {
+  AccountCircle,
+  ExpandLess,
+  ExpandMore,
+  Person,
+  Settings,
+} from '@mui/icons-material';
+import LogoutIcon from '@mui/icons-material/Logout';
+import {
+  Box,
   Button,
-  Tooltip,
-  Menu,
-  MenuItem,
+  ButtonBase,
+  Collapse,
+  Divider,
   ListItemIcon,
   ListItemText,
+  Menu,
+  MenuItem,
+  Tooltip,
   Typography,
-  Divider,
-  Box,
-  Collapse,
 } from '@mui/material';
+import React from 'react';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {
-  Person,
-  Settings,
-  ExpandMore,
-  ExpandLess,
-  AccountCircle,
-} from '@mui/icons-material';
-import {theme} from '../../themes';
+  isTokenValid,
+  listAllConnections,
+  removeServerConnection,
+  selectActiveUser,
+  selectIsAuthenticated,
+  setActiveUser,
+} from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
-import {selectIsAuthenticated, setActiveUser} from '../../../context/slices/authSlice';
+import {update_directory} from '../../../sync/process-initialization';
+import {isWeb} from '../../../utils/helpers';
+import {theme} from '../../themes';
+import {getListing} from '../../../sync/state';
+import {APP_ID} from '../../../buildconfig';
+import {Browser} from '@capacitor/browser';
+import {getAllListings} from '../../../sync';
+import {addAlert} from '../../../context/slices/syncSlice';
 
 const SignInButtonComponent = () => {
   return (
@@ -79,32 +95,19 @@ const AuthenticatedDisplayComponent = () => {
   const [switchMenuOpen, setSwitchMenuOpen] = React.useState(false);
   const open = Boolean(anchorEl);
 
-  const {servers, activeUser} = useAppSelector(state => state.auth);
+  const authState = useAppSelector(state => state.auth);
+  const {servers, activeUser} = authState;
   const dispatch = useAppDispatch();
 
   const userInitial =
     activeUser?.parsedToken.username.charAt(0).toUpperCase() || '';
 
   // Generate available connections list
-  const availableConnections = React.useMemo(() => {
-    const connections: Array<{
-      serverId: string;
-      username: string;
-      displayName: string;
-    }> = [];
-
-    Object.entries(servers).forEach(([serverId, serverData]) => {
-      Object.entries(serverData.users).forEach(([username]) => {
-        connections.push({
-          serverId,
-          username,
-          displayName: `${serverId}: ${username}`,
-        });
-      });
-    });
-
-    return connections;
-  }, [servers]);
+  const availableConnections = listAllConnections({state: authState});
+  const problematicConnections = availableConnections.filter(c => {
+    return !isTokenValid(c);
+  });
+  const hasProblematicConnection = problematicConnections.length > 0;
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -122,6 +125,45 @@ const AuthenticatedDisplayComponent = () => {
 
   const toggleSwitchMenu = () => {
     setSwitchMenuOpen(!switchMenuOpen);
+  };
+
+  const handleLogout = async ({
+    serverId,
+    username,
+  }: {
+    serverId: string;
+    username: string;
+  }) => {
+    // Get the conductor URL for the relevant server
+    const listing = getListing(serverId);
+    const conductorUrl = listing?.listing.conductor_url;
+
+    if (!conductorUrl) {
+      dispatch(
+        addAlert({
+          message:
+            'Logout warning. The current server is not configured correctly. Logging out anyway.',
+          severity: 'warning',
+        })
+      );
+    }
+
+    // remove the server connection on logout
+    dispatch(removeServerConnection({serverId, username}));
+    update_directory();
+
+    if (conductorUrl) {
+      if (isWeb()) {
+        // Web redirect
+        const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
+        window.location.href = conductorUrl + '/logout?redirect=' + redirect;
+      } else {
+        // Use the capacitor browser plugin in apps
+        await Browser.open({
+          url: `${conductorUrl}/logout?redirect=${APP_ID}://auth-return`,
+        });
+      }
+    }
   };
 
   return (
@@ -241,21 +283,21 @@ const AuthenticatedDisplayComponent = () => {
               <Box sx={{backgroundColor: theme.palette.action.hover}}>
                 {availableConnections.map(connection => (
                   <MenuItem
-                    key={`${connection.serverId}-${connection.username}`}
+                    key={`${connection.serverId}-${connection.parsedToken.username}`}
                     onClick={() =>
                       handleConnectionChange(
                         connection.serverId,
-                        connection.username
+                        connection.parsedToken.username
                       )
                     }
                     selected={
                       activeUser?.serverId === connection.serverId &&
-                      activeUser?.username === connection.username
+                      activeUser?.username === connection.parsedToken.username
                     }
                     sx={{pl: 4}}
                   >
                     <ListItemText
-                      primary={connection.username}
+                      primary={connection.parsedToken.username}
                       secondary={connection.serverId}
                     />
                   </MenuItem>
@@ -273,17 +315,43 @@ const AuthenticatedDisplayComponent = () => {
           </ListItemIcon>
           <ListItemText primary="Manage" />
         </MenuItem>
+
+        {/* Logout button */}
+        {activeUser && (
+          <MenuItem
+            component={ButtonBase}
+            onClick={async () => {
+              await handleLogout({
+                serverId: activeUser.serverId,
+                username: activeUser.username,
+              });
+            }}
+          >
+            <ListItemIcon>
+              <LogoutIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText primary="Logout" />
+          </MenuItem>
+        )}
       </Menu>
     </>
   );
 };
 
+/**
+ *
+ * Renders either a sign in button or a profile icon button with click menu
+ * depending on the global auth state for the active user.
+ */
 export default function AppBarAuth() {
+  // Do we have an active user?
+  const hasActiveUser = !!useAppSelector(selectActiveUser);
+  // Is the active user logged in with valid token?
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
-  return isAuthenticated ? (
-    <AuthenticatedDisplayComponent />
-  ) : (
-    <SignInButtonComponent />
-  );
+  if (isAuthenticated || hasActiveUser) {
+    return <AuthenticatedDisplayComponent />;
+  } else {
+    return <SignInButtonComponent />;
+  }
 }

@@ -58,10 +58,10 @@ const OfflineLoginBannerComponent = (
 
   return dismissed ? null : (
     <Alert
-      severity="warning"
+      severity="error"
       sx={{
         position: 'fixed',
-        top: 0,
+        top: 100,
         left: 0,
         right: 0,
         zIndex: 9999,
@@ -77,7 +77,10 @@ const OfflineLoginBannerComponent = (
         },
       }}
     >
-      <AlertTitle sx={{m: 0}}>You are currently logged out.</AlertTitle>
+      <AlertTitle sx={{m: 0}}>
+        You are currently logged out. <br />
+        Your data will be saved, but not uploaded.
+      </AlertTitle>
       <Link
         component={RouterLink}
         to={ROUTES.SIGN_IN}
@@ -86,6 +89,7 @@ const OfflineLoginBannerComponent = (
           '&:hover': {
             textDecoration: 'underline',
           },
+          fontSize: 'large',
         }}
       >
         Click to login
@@ -119,7 +123,15 @@ export const TolerantPrivateRoute = (
   const isToken = useAppSelector(state => !!state.auth.activeUser?.token);
 
   // Good case - all good
-  if (isAuthenticated) return props.children;
+  if (isAuthenticated)
+    return (
+      <>
+        {
+          // <OfflineLoginBannerComponent />
+        }
+        {props.children}
+      </>
+    );
 
   // Token is expired or something else wrong- soft warning
   if (isToken) {

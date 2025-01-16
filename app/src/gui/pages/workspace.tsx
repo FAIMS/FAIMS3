@@ -24,12 +24,21 @@ import Notebooks from '../components/workspace/notebooks';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {useTheme} from '@mui/material/styles';
+import {useAppSelector} from '../../context/store';
+import {selectActiveUser} from '../../context/slices/authSlice';
+import {getListing} from '../../sync/state';
+import {useGetListing} from '../../utils/custom_hooks';
 
 export default function Workspace() {
   const theme = useTheme();
+  const activeUser = useAppSelector(selectActiveUser);
+
+  // TODO improve handling of undefined case
+  const listing = useGetListing({serverId: activeUser?.serverId!});
+  const serverName = listing.data?.name;
+
   return (
     <React.Fragment>
-      <Breadcrumbs data={[{title: 'Workspace'}]} />
       <Grid container spacing={3}>
         <Grid item xs={12} md={12} lg={8}>
           <Typography
@@ -38,6 +47,13 @@ export default function Workspace() {
             style={{marginBottom: theme.spacing(2)}}
           >
             My {NOTEBOOK_NAME_CAPITALIZED}s
+          </Typography>
+          <Typography
+            variant="h4"
+            color="textSecondary"
+            style={{marginBottom: theme.spacing(2)}}
+          >
+            {serverName}
           </Typography>
           <Notebooks />
         </Grid>
