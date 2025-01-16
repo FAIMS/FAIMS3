@@ -28,6 +28,7 @@ import authReducer, {
   selectActiveUser,
   selectIsAuthenticated,
   repropmtLoginBanner,
+  refreshAllUsers,
 } from './slices/authSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
 
@@ -99,7 +100,7 @@ const TokenRefreshTimer: React.FC = () => {
         // This dispatch handles the case where there is no active user or
         // similar concerns - avoids us needing to worry about reading state
         // synchronously here
-        await dispatch(refreshActiveUser({}));
+        await dispatch(refreshAllUsers({}));
       } finally {
         // Always check authentication status after refresh attempt
         dispatch(refreshIsAuthenticated({}));
@@ -139,7 +140,7 @@ const NetworkUpHandler: React.FC = () => {
         // This dispatch handles the case where there is no active user or
         // similar concerns - avoids us needing to worry about reading state
         // synchronously here
-        await dispatch(refreshActiveUser({}));
+        await dispatch(refreshAllUsers({}));
       } finally {
         // Always check authentication status after refresh attempt
         dispatch(refreshIsAuthenticated({}));

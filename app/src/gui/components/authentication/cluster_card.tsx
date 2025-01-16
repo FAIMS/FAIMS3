@@ -25,6 +25,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -44,6 +45,7 @@ import {LoginButton} from './login_form';
 import {store, useAppDispatch, useAppSelector} from '../../../context/store';
 import {
   getServerConnection,
+  isTokenValid,
   removeServerConnection,
   selectActiveUser,
   selectAllServerUsers,
@@ -165,6 +167,7 @@ export default function ClusterCard(props: ClusterCardProps) {
             const isActive =
               activeUser?.username === username &&
               activeUser?.serverId === props.serverId;
+            const tokenValid = isTokenValid(tokenInfo);
             const isLoggedIn = !!tokenInfo?.token;
             return (
               <div key={username}>
@@ -218,6 +221,12 @@ export default function ClusterCard(props: ClusterCardProps) {
                 ) : (
                   <React.Fragment>
                     <Divider sx={{my: 2}} />
+                    {!tokenValid && (
+                      <Alert severity={'error'} sx={{mb: 2}}>
+                        This login has expired. Click refresh, below, to login
+                        again.
+                      </Alert>
+                    )}
                     <Grid
                       container
                       direction="row"
@@ -245,6 +254,9 @@ export default function ClusterCard(props: ClusterCardProps) {
                           alignItems="flex-start"
                           spacing={1}
                         >
+                          {
+                            // The token is not valid i.e. expired - prompt a login here with more encouragement
+                          }
                           <Grid item xs={12}>
                             <LoginButton
                               key={props.serverId}

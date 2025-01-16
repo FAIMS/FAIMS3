@@ -51,6 +51,11 @@ const OfflineLoginBannerComponent = (
   // Offline/online?
   const {isOnline} = useIsOnline();
 
+  // If we are not online - never show anything - there's no action the user can take anyway!
+  if (!isOnline) {
+    return null;
+  }
+
   return dismissed ? null : (
     <Alert
       severity="warning"
@@ -73,29 +78,24 @@ const OfflineLoginBannerComponent = (
       }}
     >
       <AlertTitle sx={{m: 0}}>You are currently logged out.</AlertTitle>
-      {isOnline ? (
-        <Link
-          component={RouterLink}
-          to={ROUTES.SIGN_IN}
-          sx={{
-            textDecoration: 'none',
-            '&:hover': {
-              textDecoration: 'underline',
-            },
-          }}
-        >
-          Click to login
-        </Link>
-      ) : (
-        <p>
-          Your device is <b>offline</b>. Please wait for network connection to
-          login.
-        </p>
-      )}
+      <Link
+        component={RouterLink}
+        to={ROUTES.SIGN_IN}
+        sx={{
+          textDecoration: 'none',
+          '&:hover': {
+            textDecoration: 'underline',
+          },
+        }}
+      >
+        Click to login
+      </Link>
       {
         // Button to dismiss the banner
       }
-      <Button onClick={() => dispatch(dismissLoginBanner())}>Dismiss</Button>
+      <Button variant="outlined" onClick={() => dispatch(dismissLoginBanner())}>
+        Dismiss
+      </Button>
     </Alert>
   );
 };
@@ -107,7 +107,7 @@ const OfflineLoginBannerComponent = (
  * @returns Conditionally renders children if token is present (not necessarily
  * valid) for the first listing entry in the listings db
  */
-export const OfflinePrivateRoute = (
+export const TolerantPrivateRoute = (
   props: PrivateRouteProps
 ): React.ReactElement => {
   // Check if the current active user is nicely logged in (i.e. valid, unexpired
@@ -134,4 +134,24 @@ export const OfflinePrivateRoute = (
   else {
     return <Navigate to={ROUTES.SIGN_IN} />;
   }
+};
+
+/**
+ * Conditional auth route - this requires that the token is present but allows
+ * for the case where the token has expired, but adds a warning!
+ * @param props children to render
+ * @returns Conditionally renders children if token is present (not necessarily
+ * valid) for the first listing entry in the listings db
+ */
+export const OnlineOnlyRoute = (
+  props: PrivateRouteProps
+): React.ReactElement => {
+  // Offline/online?
+  const {isOnline, fallback} = useIsOnline();
+
+  // online? render the route
+  if (isOnline) return props.children;
+
+  // Offline -return the fallback
+  return <>{fallback}</>;
 };

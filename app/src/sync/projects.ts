@@ -356,8 +356,10 @@ export async function ensure_project_databases(
   // other parts of FAIMS to continue)
 
   // TODO this is stupid because we are just guessing which 'user' we should use
-  // to make the request - unless we want to track active users across both
-  // listings and globally, then this is just going to take the first one
+  // to make the request. We know the listing ID that we are activating, but not
+  // which user we are activating it for. Unless we want to track active users
+  // across both listings and globally, then this is just going to take the
+  // first one
   const serverId = listing.listing.id;
   const serverUsers = selectSpecificServer(store.getState(), serverId);
   const keys = Object.keys(serverUsers);

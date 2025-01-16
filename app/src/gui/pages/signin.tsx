@@ -31,16 +31,15 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
 import OnboardingComponent from '../components/authentication/oneServerLanding';
 import {Capacitor} from '@capacitor/core';
-import {useGetAnyToken} from '../../utils/tokenHooks';
+import {useAppSelector} from '../../context/store';
+import {selectIsAuthenticated} from '../../context/slices/authSlice';
 
 export function SignIn() {
   const [listings, setListings] = useState<ListingsObject[] | null>(null);
   const breadcrumbs = [{link: ROUTES.INDEX, title: 'Home'}, {title: 'Sign In'}];
   const platform = Capacitor.getPlatform();
   const allowQr = platform === 'ios' || platform === 'android';
-
-  // Get the current login token if any
-  const tokenQuery = useGetAnyToken();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   useEffect(() => {
     getSyncableListingsInfo().then(setListings).catch(logError);
@@ -54,10 +53,8 @@ export function SignIn() {
     listings?.length === 1 &&
     // It's well defined
     !!listings[0] &&
-    // Tokens are not loading
-    !tokenQuery.isLoading &&
-    // Token is not present
-    !tokenQuery.data?.token
+    // We shouldn't be authenticated
+    !isAuthenticated
   ) {
     return (
       <OnboardingComponent

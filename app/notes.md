@@ -28,6 +28,15 @@ In the second class, we could show a banner in the condition where isAuthenticat
 
 ## TODO
 
-- always trigger a token refresh immediately when network connection is back
-- update the couch configuration token when the token is changed
-- add a new class of protected route which checks for a token but not that it is necessarily authenticated
+- update the couch configuration token when the token is changed - who's token do I use in the case where there is multiple users?
+    - need Steve's help
+    - find the trigger which is most suitable to update the token in the couch DB
+- alert when token was expired but logged back in successfully
+- redesign 
+- you can't login while offline
+- button in top right needs to show profile (maybe with exclamation) when logged in but expired
+- change 'Welcome' - if active user show 'log back in to' etc. - get rid of enter access code under this condition 
+- add logout button onto popup
+- (later) - make the refresh token expiry be taken into account
+- (later) - on app open - always go to login screen when refresh token expired or close to
+- (later) per server per user db? 

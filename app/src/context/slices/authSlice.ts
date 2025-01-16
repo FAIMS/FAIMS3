@@ -9,6 +9,7 @@ import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
 import {AppDispatch, RootState} from '../store';
 import {addAlert} from './syncSlice';
+import {stat} from 'fs';
 
 // Types
 export interface TokenInfo {
@@ -60,7 +61,7 @@ export interface ServerUserIdentity {
 // UTILITY FUNCTIONS
 // =================
 
-const isTokenValid = (tokenInfo: TokenInfo | undefined): boolean => {
+export const isTokenValid = (tokenInfo: TokenInfo | undefined): boolean => {
   // Present
   if (!tokenInfo) return false;
   // Present (token property)
@@ -117,12 +118,24 @@ const authSlice = createSlice({
       const {serverId, username, token, refreshToken, parsedToken} =
         action.payload;
 
+      // track if we've changed the token so as to know when to prompt the pouch
+      // DB to update it's remote connection token
+      let tokenIsChanged = true;
+
       // TODO this is fake - pull this from the token itself
-      const expiresAt = Date.now() + 1000 * 20;
+      const expiresAt = Date.now() + 1000 * 10;
 
       // Update servers state
       if (!state.servers[serverId]) {
         state.servers[serverId] = {users: {}};
+      }
+
+      // Check if we've changed the token
+      const existingState = state.servers[serverId].users[username];
+      if (existingState) {
+        if (existingState.token !== token) {
+          tokenIsChanged = true;
+        }
       }
 
       state.servers[serverId].users[username] = {
@@ -146,6 +159,12 @@ const authSlice = createSlice({
 
       // Update dismissed to false since we've performed some change to the active connection
       state.dismissedLoginBanner = false;
+
+      // If the new token has changed, update!
+      if (tokenIsChanged) {
+        // TODO Steve - here we should update the all remote synced DBs for
+        // listing/server with id `serverId` to the new token `token`
+      }
     },
 
     setActiveUser: (state, action: PayloadAction<ServerUserIdentity>) => {
@@ -300,11 +319,25 @@ export const getServerConnection = ({
   return state.auth.servers[serverId]?.users[username];
 };
 
+/**
+ * Lists all the connections in the given auth state - appends the serverId
+ */
+export const listAllConnections = ({state}: {state: AuthStore}) => {
+  const connections = [];
+  for (const serverId of Object.keys(state.auth.servers)) {
+    const server = state.auth.servers[serverId]!;
+    for (const user of Object.values(server.users)) {
+      connections.push({...user, serverId: serverId});
+    }
+  }
+  return connections;
+};
+
 // THUNKS
 // ======
+
 // These are actions which can be dispatched which can dispatch other store
 // actions safely and run asynchronous operations.
-
 export const setAndRefreshActiveConnection = createAsyncThunk<
   void,
   ServerUserIdentity
@@ -322,7 +355,9 @@ export const setAndRefreshActiveConnection = createAsyncThunk<
   }
 );
 
-// Refresh token thunk - this is an atomic operation which
+/**
+ * Atomic async operation on store to refresh a specific connection
+ */
 export const refreshToken = createAsyncThunk<
   void,
   {serverId: string; username: string}
@@ -375,9 +410,11 @@ export const refreshToken = createAsyncThunk<
   }
 });
 
-// Refresh token thunk - this is an atomic operation which
+/**
+ * Atomic async operation on store to refresh the active user's token
+ */
 export const refreshActiveUser = createAsyncThunk<void, {}>(
-  'auth/refreshToken',
+  'auth/refreshActive',
   async ({}, {dispatch, getState}) => {
     console.log('Initiating active user token refresh.');
 
@@ -402,5 +439,32 @@ export const refreshActiveUser = createAsyncThunk<void, {}>(
         username: activeUser.username,
       })
     );
+  }
+);
+
+/**
+ * Atomic async operation on store to refresh all connection's tokens
+ */
+export const refreshAllUsers = createAsyncThunk<void, {}>(
+  'auth/refreshAll',
+  async ({}, {dispatch, getState}) => {
+    console.log('Initiating all user token refresh.');
+
+    // cast and get state
+    const state = getState() as RootState;
+    const appDispatch = dispatch as AppDispatch;
+
+    // get all identities
+    const connections = listAllConnections({state});
+
+    // refresh all of them
+    for (const conn of connections) {
+      appDispatch(
+        refreshToken({
+          serverId: conn.serverId,
+          username: conn.parsedToken.username,
+        })
+      );
+    }
   }
 );

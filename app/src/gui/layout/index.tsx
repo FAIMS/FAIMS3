@@ -5,7 +5,6 @@ import {ErrorBoundary, ErrorPage} from '../../logging';
 import {PossibleToken} from '../../types/misc';
 import Footer from '../components/footer';
 import MainAppBar from './appBar';
-import {useGetAnyToken} from '../../utils/tokenHooks';
 
 interface MainLayoutProps {
   children: React.ReactNode;

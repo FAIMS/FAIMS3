@@ -22,7 +22,11 @@ import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {Route, BrowserRouter as Router, Routes} from 'react-router-dom';
 import './App.css';
-import {ActivePrivateRoute, OfflinePrivateRoute} from './constants/privateRouter';
+import {
+  ActivePrivateRoute,
+  OnlineOnlyRoute,
+  TolerantPrivateRoute,
+} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
 import MainLayout from './gui/layout';
 import AboutBuild from './gui/pages/about-build';
@@ -43,7 +47,6 @@ import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
-import {TestComponent} from './Test';
 import {InitialiseGate, StateProvider} from './context/store';
 
 // Setup react query
@@ -88,10 +91,6 @@ export default function App() {
                     <AppUrlListener></AppUrlListener>
                     <MainLayout>
                       <Routes>
-                        <Route
-                          path={ROUTES.USER_ACTIVE_TESTR}
-                          element={<TestComponent />}
-                        />
                         <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
                         <Route
                           path={ROUTES.AUTH_RETURN}
@@ -100,25 +99,28 @@ export default function App() {
                         <Route
                           path={ROUTES.INDEX}
                           element={
-                            <OfflinePrivateRoute>
+                            <TolerantPrivateRoute>
                               <Workspace />
-                            </OfflinePrivateRoute>
+                            </TolerantPrivateRoute>
                           }
                         />
                         <Route
                           path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
                           element={
-                            <OfflinePrivateRoute>
+                            <TolerantPrivateRoute>
                               <Notebook />
-                            </OfflinePrivateRoute>
+                            </TolerantPrivateRoute>
                           }
                         />
                         <Route
                           path={ROUTES.CREATE_NEW_SURVEY}
                           element={
-                            <ActivePrivateRoute>
-                              <CreateNewSurvey />
-                            </ActivePrivateRoute>
+                            // Online only and authenticated
+                            <OnlineOnlyRoute>
+                              <ActivePrivateRoute>
+                                <CreateNewSurvey />
+                              </ActivePrivateRoute>
+                            </OnlineOnlyRoute>
                           }
                         />
                         {/* Draft creation happens by redirecting to a fresh minted UUID
@@ -137,9 +139,9 @@ export default function App() {
                             ':record_id'
                           }
                           element={
-                            <OfflinePrivateRoute>
+                            <TolerantPrivateRoute>
                               <RecordCreate />
-                            </OfflinePrivateRoute>
+                            </TolerantPrivateRoute>
                           }
                         />
                         <Route
@@ -150,9 +152,9 @@ export default function App() {
                             ':type_name'
                           }
                           element={
-                            <OfflinePrivateRoute>
+                            <TolerantPrivateRoute>
                               <RecordCreate />
-                            </OfflinePrivateRoute>
+                            </TolerantPrivateRoute>
                           }
                         />
                         {/*Record editing and viewing is a separate affair, separated by
@@ -173,9 +175,9 @@ export default function App() {
                             ':revision_id'
                           }
                           element={
-                            <OfflinePrivateRoute>
+                            <TolerantPrivateRoute>
                               <Record />
-                            </OfflinePrivateRoute>
+                            </TolerantPrivateRoute>
                           }
                         />
                         <Route
@@ -190,9 +192,9 @@ export default function App() {
                             ':draft_id'
                           }
                           element={
-                            <OfflinePrivateRoute>
+                            <TolerantPrivateRoute>
                               <Record />
-                            </OfflinePrivateRoute>
+                            </TolerantPrivateRoute>
                           }
                         />
                         <Route
