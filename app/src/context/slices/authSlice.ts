@@ -9,7 +9,6 @@ import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
 import {AppDispatch, RootState} from '../store';
 import {addAlert} from './syncSlice';
-import {stat} from 'fs';
 
 // Types
 export interface TokenInfo {
@@ -111,16 +110,12 @@ const authSlice = createSlice({
       state.dismissedLoginBanner = false;
     },
 
-    setServerConnection: (
+    assignServerConnection: (
       state,
       action: PayloadAction<SetServerConnectionInput>
     ) => {
       const {serverId, username, token, refreshToken, parsedToken} =
         action.payload;
-
-      // track if we've changed the token so as to know when to prompt the pouch
-      // DB to update it's remote connection token
-      let tokenIsChanged = true;
 
       // TODO this is fake - pull this from the token itself
       const expiresAt = Date.now() + 1000 * 10;
@@ -128,14 +123,6 @@ const authSlice = createSlice({
       // Update servers state
       if (!state.servers[serverId]) {
         state.servers[serverId] = {users: {}};
-      }
-
-      // Check if we've changed the token
-      const existingState = state.servers[serverId].users[username];
-      if (existingState) {
-        if (existingState.token !== token) {
-          tokenIsChanged = true;
-        }
       }
 
       state.servers[serverId].users[username] = {
@@ -159,12 +146,6 @@ const authSlice = createSlice({
 
       // Update dismissed to false since we've performed some change to the active connection
       state.dismissedLoginBanner = false;
-
-      // If the new token has changed, update!
-      if (tokenIsChanged) {
-        // TODO Steve - here we should update the all remote synced DBs for
-        // listing/server with id `serverId` to the new token `token`
-      }
     },
 
     setActiveUser: (state, action: PayloadAction<ServerUserIdentity>) => {
@@ -251,20 +232,6 @@ const authSlice = createSlice({
   },
 });
 
-export const {
-  setServerConnection,
-  setActiveUser,
-  removeServerConnection,
-  clearActiveConnection,
-  refreshIsAuthenticated,
-  dismissLoginBanner,
-  repropmtLoginBanner,
-} = authSlice.actions;
-
-export default authSlice.reducer;
-
-type AuthStore = {auth: AuthState};
-
 // SELECTORS
 // =========
 
@@ -338,6 +305,40 @@ export const listAllConnections = ({state}: {state: AuthStore}) => {
 
 // These are actions which can be dispatched which can dispatch other store
 // actions safely and run asynchronous operations.
+
+export const setServerConnection = createAsyncThunk<
+  void,
+  SetServerConnectionInput
+>('auth/setAndRefreshActiveConnection', async (args, {dispatch, getState}) => {
+  // cast and get state
+  const state = (getState() as RootState).auth;
+  const appDispatch = dispatch as AppDispatch;
+
+  const {serverId, username, token, refreshToken, parsedToken} = args;
+
+  // Run the usual store operation
+  appDispatch(assignServerConnection(args));
+
+  // track if we've changed the token so as to know when to prompt the pouch
+  // DB to update it's remote connection token
+  let tokenIsChanged = true;
+
+  // Check if we've changed the token
+  const existingState = state.servers[serverId].users[username];
+
+  if (existingState) {
+    if (existingState.token === token) {
+      tokenIsChanged = false;
+    }
+  }
+
+  // If the new token has changed, update!
+  if (tokenIsChanged) {
+    // TODO Steve - here we should update the all remote synced DBs for
+    // listing/server with id `serverId` to the new token `token`
+  }
+});
+
 export const setAndRefreshActiveConnection = createAsyncThunk<
   void,
   ServerUserIdentity
@@ -395,7 +396,7 @@ export const refreshToken = createAsyncThunk<
 
     // Update this connection with newest token
     // This will also prompt an isAuthenticated check
-    appDispatch(
+    await appDispatch(
       setServerConnection({
         parsedToken,
         serverId,
@@ -468,3 +469,17 @@ export const refreshAllUsers = createAsyncThunk<void, {}>(
     }
   }
 );
+
+export const {
+  setActiveUser,
+  removeServerConnection,
+  clearActiveConnection,
+  refreshIsAuthenticated,
+  dismissLoginBanner,
+  repropmtLoginBanner,
+  assignServerConnection,
+} = authSlice.actions;
+
+export default authSlice.reducer;
+
+type AuthStore = {auth: AuthState};

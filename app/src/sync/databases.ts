@@ -211,6 +211,9 @@ export function ensure_synced_db<Content extends {}>(
   }
 
   // Already connected/connecting, or local-only database
+
+  // This checks for a diff so as to not unnecessarily recreate synced
+  // connections without any changes
   if (
     global_dbs[local_db_id].remote !== null &&
     JSON.stringify(global_dbs[local_db_id].remote!.info) ===

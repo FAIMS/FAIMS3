@@ -89,7 +89,7 @@ export function AuthReturn() {
       const serverId = await getListingForConductorUrl(parsedToken.server);
 
       // Store the token in the database
-      dispatch(
+      await dispatch(
         setServerConnection({
           parsedToken: parsedToken,
           token: decodedToken,
