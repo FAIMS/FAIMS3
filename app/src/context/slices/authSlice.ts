@@ -7,7 +7,7 @@ import {
 } from '@reduxjs/toolkit';
 import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
-import {AppDispatch, RootState, store} from '../store';
+import {AppDispatch, RootState} from '../store';
 import {addAlert} from './syncSlice';
 
 // Types
@@ -40,6 +40,7 @@ export interface AuthState {
   activeUser: ActiveUser | undefined;
   isAuthenticated: boolean;
   refreshError: string | undefined;
+  dismissedLoginBanner: boolean;
 }
 
 export interface SetServerConnectionInput {
@@ -55,6 +56,9 @@ export interface ServerUserIdentity {
   serverId: string;
   username: string;
 }
+
+// UTILITY FUNCTIONS
+// =================
 
 const isTokenValid = (tokenInfo: TokenInfo | undefined): boolean => {
   // Present
@@ -78,61 +82,15 @@ const checkAuthenticationStatus = (state: AuthState): boolean => {
   return isTokenValid(connection);
 };
 
-// Refresh token store operation
-export const refreshToken = async ({
-  serverId,
-  username,
-}: ServerUserIdentity) => {
-  // Get the current state and relevant connection
-  const state = store.getState();
-  const connection = state.auth.servers[serverId]?.users[username];
+// SLICE
+// =====
 
-  if (!connection) {
-    throw new Error('No connection found');
-  }
-
-  if (!isTokenRefreshable(connection)) {
-    throw new Error('No refresh token available.');
-  }
-
-  try {
-    const {token} = await requestTokenRefresh(serverId, username, {
-      refreshToken: connection.refreshToken!,
-    });
-    const parsedToken = parseToken(token);
-
-    // Update this connection with newest token
-    store.dispatch(
-      setServerConnection({
-        parsedToken,
-        serverId,
-        token,
-        username,
-        refreshToken: connection.refreshToken,
-      })
-    );
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : 'Unknown error');
-  }
-};
-
-export const refreshActiveUser = async () => {
-  const state = store.getState();
-  if (!state.auth.activeUser) {
-    throw new Error('Cannot refresh active user when no user is active.');
-  }
-  await refreshToken({
-    serverId: state.auth.activeUser.serverId,
-    username: state.auth.activeUser.username,
-  });
-};
-
-// Slice
 const initialState: AuthState = {
   servers: {},
   activeUser: undefined,
   isAuthenticated: false,
   refreshError: undefined,
+  dismissedLoginBanner: false,
 };
 
 const authSlice = createSlice({
@@ -142,13 +100,25 @@ const authSlice = createSlice({
     refreshIsAuthenticated: (state, _: PayloadAction<{}>) => {
       state.isAuthenticated = checkAuthenticationStatus(state);
     },
+
+    // Banner management - this is shared so that network events can interact
+    // with it globally
+    dismissLoginBanner: state => {
+      state.dismissedLoginBanner = true;
+    },
+    repropmtLoginBanner: state => {
+      state.dismissedLoginBanner = false;
+    },
+
     setServerConnection: (
       state,
       action: PayloadAction<SetServerConnectionInput>
     ) => {
       const {serverId, username, token, refreshToken, parsedToken} =
         action.payload;
-      const expiresAt = Date.now() + 1000 * 60;
+
+      // TODO this is fake - pull this from the token itself
+      const expiresAt = Date.now() + 1000 * 20;
 
       // Update servers state
       if (!state.servers[serverId]) {
@@ -173,6 +143,9 @@ const authSlice = createSlice({
       }
 
       state.isAuthenticated = checkAuthenticationStatus(state);
+
+      // Update dismissed to false since we've performed some change to the active connection
+      state.dismissedLoginBanner = false;
     },
 
     setActiveUser: (state, action: PayloadAction<ServerUserIdentity>) => {
@@ -265,13 +238,17 @@ export const {
   removeServerConnection,
   clearActiveConnection,
   refreshIsAuthenticated,
+  dismissLoginBanner,
+  repropmtLoginBanner,
 } = authSlice.actions;
 
 export default authSlice.reducer;
 
 type AuthStore = {auth: AuthState};
 
-// Selectors
+// SELECTORS
+// =========
+
 export const selectActiveUser = (state: AuthStore) => state.auth.activeUser;
 export const selectActiveServerId = (state: AuthStore) =>
   state.auth.activeUser?.serverId;
@@ -307,6 +284,9 @@ export const selectSpecificServer = createSelector(
   (servers, serverId) => servers[serverId]?.users ?? {}
 );
 
+// STATE HELPER FUNCTIONS
+// ======================
+
 // Helper functions (which use the store state)
 export const getServerConnection = ({
   state,
@@ -320,6 +300,11 @@ export const getServerConnection = ({
   return state.auth.servers[serverId]?.users[username];
 };
 
+// THUNKS
+// ======
+// These are actions which can be dispatched which can dispatch other store
+// actions safely and run asynchronous operations.
+
 export const setAndRefreshActiveConnection = createAsyncThunk<
   void,
   ServerUserIdentity
@@ -327,21 +312,18 @@ export const setAndRefreshActiveConnection = createAsyncThunk<
   'auth/setAndRefreshActiveConnection',
   async (args, {dispatch: rawDispatch, getState}) => {
     // cast and get state
-    const state = (getState() as RootState).auth;
     const dispatch = rawDispatch as AppDispatch;
 
     // dispatch the job to set active user
     dispatch(setActiveUser(args));
 
     // Dispatch a refresh too
-    dispatch(
-      refreshTokenOperation({serverId: args.serverId, username: args.username})
-    );
+    dispatch(refreshToken({serverId: args.serverId, username: args.username}));
   }
 );
 
 // Refresh token thunk - this is an atomic operation which
-export const refreshTokenOperation = createAsyncThunk<
+export const refreshToken = createAsyncThunk<
   void,
   {serverId: string; username: string}
 >('auth/refreshToken', async ({serverId, username}, {dispatch, getState}) => {
@@ -377,6 +359,7 @@ export const refreshTokenOperation = createAsyncThunk<
     const parsedToken = parseToken(token);
 
     // Update this connection with newest token
+    // This will also prompt an isAuthenticated check
     appDispatch(
       setServerConnection({
         parsedToken,
@@ -386,14 +369,38 @@ export const refreshTokenOperation = createAsyncThunk<
         refreshToken: connection.refreshToken,
       })
     );
+    console.log('Token refresh request successful');
   } catch (error) {
     console.warn('Token refresh failed:', error);
-    dispatch(
-      addAlert({
-        message:
-          error instanceof Error ? error.message : 'Token refresh failed',
-        severity: 'warning',
+  }
+});
+
+// Refresh token thunk - this is an atomic operation which
+export const refreshActiveUser = createAsyncThunk<void, {}>(
+  'auth/refreshToken',
+  async ({}, {dispatch, getState}) => {
+    console.log('Initiating active user token refresh.');
+
+    // cast and get state
+    const state = getState() as RootState;
+    const appDispatch = dispatch as AppDispatch;
+
+    // Get the active user
+    const activeUser = state.auth.activeUser;
+
+    if (!activeUser) {
+      console.error(
+        'Attempted to refresh active user when active user is not set. No action.'
+      );
+      return;
+    }
+
+    // Dispatch a refresh of the active user
+    appDispatch(
+      refreshToken({
+        serverId: activeUser.serverId,
+        username: activeUser.username,
       })
     );
   }
-});
+);

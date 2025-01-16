@@ -25,7 +25,9 @@ import {getSyncStatusCallbacks} from '../utils/status';
 import authReducer, {
   refreshActiveUser,
   refreshIsAuthenticated,
+  selectActiveUser,
   selectIsAuthenticated,
+  repropmtLoginBanner,
 } from './slices/authSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
 
@@ -34,7 +36,7 @@ const persistConfig = {key: 'auth', storage};
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
 
 // Token refresh interval in milliseconds (15 seconds)
-const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000;
+const TOKEN_REFRESH_INTERVAL = 5000;
 
 // Configure the store
 export const store = configureStore({
@@ -93,25 +95,15 @@ const TokenRefreshTimer: React.FC = () => {
 
   useEffect(() => {
     const refreshTokenAndCheckAuth = async () => {
-      console.log('Token refresh occurring.');
       try {
-        if (isAuthenticated) {
-          await refreshActiveUser();
-        }
-      } catch (error) {
-        console.warn('Token refresh failed:', error);
-        dispatch(
-          addAlert({
-            message:
-              error instanceof Error ? error.message : 'Token refresh failed',
-            severity: 'warning',
-          })
-        );
+        // This dispatch handles the case where there is no active user or
+        // similar concerns - avoids us needing to worry about reading state
+        // synchronously here
+        await dispatch(refreshActiveUser({}));
       } finally {
         // Always check authentication status after refresh attempt
         dispatch(refreshIsAuthenticated({}));
       }
-      console.log('Token refresh succeeded.');
     };
 
     // Initial check
@@ -125,6 +117,46 @@ const TokenRefreshTimer: React.FC = () => {
 
     // Cleanup
     return () => clearInterval(intervalId);
+  }, [dispatch, isAuthenticated]);
+
+  return null;
+};
+
+/**
+ * NetworkUpHandler component
+ *
+ * Attaches to the network up condition a token
+ * refresh so that a token refresh is always attempted when the network comes
+ * back up.
+ */
+const NetworkUpHandler: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
+  useEffect(() => {
+    const promptRefresh = async () => {
+      try {
+        // This dispatch handles the case where there is no active user or
+        // similar concerns - avoids us needing to worry about reading state
+        // synchronously here
+        await dispatch(refreshActiveUser({}));
+      } finally {
+        // Always check authentication status after refresh attempt
+        dispatch(refreshIsAuthenticated({}));
+
+        // We also want to prompt the banner back since the network has 'come
+        // back up' - good time to re-ask user to log back in
+        dispatch(repropmtLoginBanner());
+      }
+    };
+
+    // Attach to network up handler
+    window.addEventListener('online', promptRefresh);
+
+    return () => {
+      // Detach for cleanup
+      window.removeEventListener('online', promptRefresh);
+    };
   }, [dispatch, isAuthenticated]);
 
   return null;
@@ -192,6 +224,7 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
         // Include timer
       }
       <TokenRefreshTimer />
+      <NetworkUpHandler />
       {children}
     </>
   );

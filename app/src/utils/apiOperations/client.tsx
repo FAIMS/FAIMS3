@@ -189,43 +189,44 @@ type CustomOptions = RequestInit & {useToken?: boolean};
  */
 export class ListingFetchManager {
   private clients: Map<string, Map<string, ListingFetch>> = new Map();
-  private listingsMap: Map<string, ListingsObject> = new Map();
+  private serverMap: Map<string, ListingsObject> = new Map();
 
   /**
    * Retrieves or creates a client for a given listing ID and username
-   * @param listingId - The ID of the listing
+   * @param serverId - The ID of the listing
    * @param username - The username to authenticate as
    * @returns client for the specified listing/user combination
    * @throws Error if no listing is found for the given ID
    */
-  private getOrCreateClient(listingId: string, username: string): ListingFetch {
-    let listingClients = this.clients.get(listingId);
-    if (listingClients?.has(username)) {
-      return listingClients.get(username)!;
+  private getOrCreateClient(serverId: string, username: string): ListingFetch {
+    let serverClients = this.clients.get(serverId);
+    if (serverClients?.has(username)) {
+      return serverClients.get(username)!;
     }
 
-    let listing = this.listingsMap.get(listingId);
-    if (!listing) {
+    let server = this.serverMap.get(serverId);
+    if (!server) {
       const ids = getAllListingIDs();
+      console.log(ids);
       ids.forEach(id => {
         const listingObj = getListing(id);
-        this.listingsMap.set(id, listingObj.listing);
-        if (id === listingId) {
-          listing = listingObj.listing;
+        this.serverMap.set(id, listingObj.listing);
+        if (id === serverId) {
+          server = listingObj.listing;
         }
       });
     }
 
-    if (!listing) {
-      throw new Error(`Failed to find listing with id ${listingId}`);
+    if (!server) {
+      throw new Error(`Failed to find server with id ${serverId}`);
     }
 
-    const client = new ListingFetch(listing, username);
-    if (!listingClients) {
-      listingClients = new Map();
-      this.clients.set(listingId, listingClients);
+    const client = new ListingFetch(server, username);
+    if (!serverClients) {
+      serverClients = new Map();
+      this.clients.set(serverId, serverClients);
     }
-    listingClients.set(username, client);
+    serverClients.set(username, client);
     return client;
   }
 
@@ -335,7 +336,7 @@ export class ListingFetchManager {
    * @returns Array of listing IDs
    */
   getListingIds(): string[] {
-    return Array.from(this.listingsMap.keys());
+    return Array.from(this.serverMap.keys());
   }
 
   /**
@@ -343,7 +344,7 @@ export class ListingFetchManager {
    * @param listing - The ListingsObject to update or add
    */
   updateListing(listing: ListingsObject): void {
-    this.listingsMap.set(listing.id, listing);
+    this.serverMap.set(listing.id, listing);
     const listingClients = this.clients.get(listing.id);
     if (listingClients) {
       listingClients.forEach((_, username) => {
@@ -357,7 +358,7 @@ export class ListingFetchManager {
    * @param listingId - The ID of the listing to remove
    */
   removeListing(listingId: string): void {
-    this.listingsMap.delete(listingId);
+    this.serverMap.delete(listingId);
     this.clients.delete(listingId);
   }
 }
