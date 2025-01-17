@@ -1,9 +1,18 @@
-import {Link as RouterLink, Navigate} from 'react-router-dom';
-import {useAppDispatch, useAppSelector} from '../context/store';
-import * as ROUTES from './routes';
-import {Alert, Link, AlertTitle, Button} from '@mui/material';
-import {useIsOnline} from '../utils/customHooks';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import {
+  Alert,
+  AlertTitle,
+  Box,
+  Link,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
+import {useEffect, useRef, useState} from 'react';
+import {Navigate, Link as RouterLink} from 'react-router-dom';
 import {dismissLoginBanner} from '../context/slices/authSlice';
+import {useAppDispatch, useAppSelector} from '../context/store';
+import {useIsOnline} from '../utils/customHooks';
+import * as ROUTES from './routes';
 
 interface PrivateRouteProps {
   // tslint:disable-next-line:no-any
@@ -35,72 +44,194 @@ export const ActivePrivateRoute = (
   else return <Navigate to={ROUTES.SIGN_IN} />;
 };
 
-interface OfflineLoginBannerComponentProps {}
-const OfflineLoginBannerComponent = (
-  props: OfflineLoginBannerComponentProps
-) => {
-  /**
-    Component: OfflineLoginBannerComponent
+/**
+ * Props for the OfflineLoginBanner component
+ * @property {boolean} isOnline - Current online/offline status
+ * @property {boolean} dismissed - Whether the banner has been dismissed (legacy property)
+ * @property {string} loginPath - Route path for the login page
+ */
+interface OfflineLoginBannerProps {
+  isOnline: boolean;
+  dismissed: boolean;
+  loginPath: string;
+}
 
-    This banner is to be shown fixed at the top of the screen to notify the user
-    that they are offline and to log back in when the network becomes available.
-    */
-  const dismissed = useAppSelector(state => state.auth.dismissedLoginBanner);
-  const dispatch = useAppDispatch();
+/**
+ * OfflineLoginBanner Component
+ *
+ * A responsive banner that displays when users are logged out, warning them that their
+ * data won't be synchronized. The banner has two states:
+ * 1. Initial state: Part of the normal document flow
+ * 2. Sticky state: Fixed to the top after scrolling past the navbar
+ *
+ * Styling Features:
+ * - Smooth transitions between normal and sticky states
+ * - Responsive design that adapts to mobile and desktop viewports
+ * - High-contrast error styling for visibility
+ * - Accessible text and interactive elements
+ *
+ * Implementation Notes:
+ * - Uses Intersection Observer to detect scroll position relative to navbar
+ * - Implements smooth transitions using CSS transforms and transitions
+ * - Adapts layout and spacing based on viewport size
+ */
+const OfflineLoginBanner = ({
+  isOnline,
+  dismissed,
+  loginPath,
+}: OfflineLoginBannerProps) => {
+  const [isSticky, setIsSticky] = useState(false);
+  const observerRef = useRef<HTMLDivElement>(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Offline/online?
-  const {isOnline} = useIsOnline();
+  // Set up intersection observer to detect when banner should become sticky
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsSticky(!entry.isIntersecting);
+      },
+      {
+        threshold: [0, 1], // Observe at both fully visible and fully hidden states
+        // Adjust observer margin based on navbar height for different screen sizes
+        rootMargin: isMobile ? '-64px 0px 0px 0px' : '-100px 0px 0px 0px',
+      }
+    );
 
-  // If we are not online - never show anything - there's no action the user can take anyway!
-  if (!isOnline) {
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [isMobile]); // Recreate observer when screen size changes
+
+  if (!isOnline || dismissed) {
     return null;
   }
 
-  return dismissed ? null : (
-    <Alert
-      severity="error"
-      sx={{
-        position: 'fixed',
-        top: 100,
-        left: 0,
-        right: 0,
-        zIndex: 9999,
-        borderRadius: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        '& .MuiAlert-message': {
-          display: 'flex',
-          width: '100%',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        },
-      }}
-    >
-      <AlertTitle sx={{m: 0}}>
-        You are currently logged out. <br />
-        Your data will be saved, but not uploaded.
-      </AlertTitle>
-      <Link
-        component={RouterLink}
-        to={ROUTES.SIGN_IN}
+  return (
+    <>
+      {/* Invisible element for intersection observer */}
+      <Box ref={observerRef} sx={{height: 0, width: '100%'}} />
+
+      <Box
         sx={{
-          textDecoration: 'none',
-          '&:hover': {
-            textDecoration: 'underline',
-          },
-          fontSize: 'large',
+          // Container positioning
+          width: '100%',
+          position: isSticky ? 'fixed' : 'relative',
+          top: isSticky ? 0 : 'auto',
+          left: isSticky ? 0 : 'auto',
+          right: isSticky ? 0 : 'auto',
+
+          // Ensure banner stays above other content
+          zIndex: 1300,
+
+          // Smooth transitions for position changes
+          transition: 'all 500ms cubic-bezier(0.4, 0, 0.2, 1)',
+
+          // Visual effects
+          boxShadow: isSticky ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+
+          // Margin for content spacing below
+          marginBottom: 2,
         }}
       >
-        Click to login
-      </Link>
-      {
-        // Button to dismiss the banner
-      }
-      <Button variant="outlined" onClick={() => dispatch(dismissLoginBanner())}>
-        Dismiss
-      </Button>
-    </Alert>
+        <Alert
+          icon={<ErrorOutlineIcon sx={{fontSize: 28}} />}
+          severity="error"
+          sx={{
+            // Reset default Alert styling
+            borderRadius: 2,
+            border: 'none',
+
+            // Error theme styling
+            backgroundColor: 'error.main',
+            color: 'error.contrastText',
+
+            // Responsive padding
+            padding: isMobile ? 1.5 : 2,
+
+            // Icon styling
+            '& .MuiAlert-icon': {
+              color: 'error.contrastText',
+              opacity: 0.9,
+            },
+
+            // Ensure message takes full width
+            '& .MuiAlert-message': {
+              width: '100%',
+            },
+          }}
+        >
+          <Box
+            sx={{
+              // Flex container for content layout
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              width: '100%',
+              gap: isMobile ? 2 : 3,
+
+              // Alignment adjustments
+              alignItems: isMobile ? 'stretch' : 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            {/* Alert message */}
+            <AlertTitle
+              sx={{
+                m: 0,
+                fontSize: isMobile ? '0.875rem' : '1rem',
+                lineHeight: '1.4',
+                color: 'inherit',
+                fontWeight: 500,
+              }}
+            >
+              You are currently logged out.
+              <br />
+              Your data will be saved, but not uploaded.
+            </AlertTitle>
+
+            {/* Login button container */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: isMobile ? 'flex-start' : 'flex-end',
+              }}
+            >
+              {/* Styled login link/button */}
+              <Link
+                component={RouterLink}
+                to={loginPath}
+                sx={{
+                  // Base styling
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  fontSize: isMobile ? '0.875rem' : '1rem',
+                  fontWeight: 500,
+
+                  // Button-like appearance
+                  padding: '6px 16px',
+                  border: '1px solid currentColor',
+                  borderRadius: 1,
+
+                  // Hover effects
+                  transition: 'all 200ms ease-in-out',
+                  opacity: 0.9,
+                  '&:hover': {
+                    opacity: 1,
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    textDecoration: 'none',
+                  },
+                }}
+              >
+                Click to login
+              </Link>
+            </Box>
+          </Box>
+        </Alert>
+      </Box>
+    </>
   );
 };
 
@@ -122,13 +253,19 @@ export const TolerantPrivateRoute = (
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const isToken = useAppSelector(state => !!state.auth.activeUser?.token);
 
+  const dismissed = useAppSelector(state => state.auth.dismissedLoginBanner);
+  const dispatch = useAppDispatch();
+  const {isOnline} = useIsOnline();
+
   // Good case - all good
   if (isAuthenticated)
     return (
       <>
-        {
-          // <OfflineLoginBannerComponent />
-        }
+        <OfflineLoginBanner
+          isOnline={isOnline}
+          dismissed={dismissed}
+          loginPath={ROUTES.SIGN_IN}
+        />
         {props.children}
       </>
     );
@@ -137,7 +274,11 @@ export const TolerantPrivateRoute = (
   if (isToken) {
     return (
       <>
-        <OfflineLoginBannerComponent />
+        <OfflineLoginBanner
+          isOnline={isOnline}
+          dismissed={dismissed}
+          loginPath={ROUTES.SIGN_IN}
+        />
         {props.children}
       </>
     );
