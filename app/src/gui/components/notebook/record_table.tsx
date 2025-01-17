@@ -553,6 +553,8 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const [query, setQuery] = React.useState('');
   const {data: records, isLoading: recordsLoading} = useQuery({
     queryKey: ['allrecords', query, props.project_id],
+    networkMode: 'always',
+    gcTime: 0,
     queryFn: async () => {
       if (query.length === 0) {
         console.log(
@@ -575,10 +577,6 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
         );
       }
     },
-    // TODO if we are seeing performance issues, really we should get told when
-    // to invalidate this cache. To be extra careful to keep records up to date
-    // we force a refresh on remount
-    refetchOnMount: true,
   });
 
   return (

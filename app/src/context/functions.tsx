@@ -84,18 +84,19 @@ export const getAnyToken = (): Omit<TokenInfo, 'expiresAt'> | undefined => {
  * @returns {Promise<ProjectObject[]>} - A promise that resolves to an array of ProjectObject.
  */
 const getProjects = async (url: string, token: string) => {
+  // fetch the projects but guard against being offline and this failing
   const response = await fetch(`${url}/api/directory`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-  });
+  }).catch(() => null);
 
-  if (!response.ok) {
+  if (response && response.ok) {
+    return (await response.json()) as ProjectObject[];
+  } else {
     console.error(`Error fetching projects from ${url}`);
     return [] as ProjectObject[];
   }
-
-  return (await response.json()) as ProjectObject[];
 };
 
 /**

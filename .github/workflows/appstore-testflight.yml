@@ -29,11 +29,10 @@ jobs:
     needs: check_date
     if: ${{ needs.check_date.outputs.should_run != 'false' }}
     continue-on-error: false
-    env:
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      # note not using Turbo build as it caused a problem with missing assets
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Cache node modules
         uses: actions/cache@v4
         env:
@@ -45,24 +44,10 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - name: Configure Turborepo Remote Cache
-        run: |
-          mkdir -p .turbo
-          if [ -n "${{ vars.TURBO_API_URL }}" ]; then
-            echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
-            echo "Turborepo config file created at .turbo/config.json"
-          else
-            echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."
-          fi
-          if [ -n "$TURBO_TEAM" ] && [ -n "$TURBO_TOKEN" ]; then
-            echo "TURBO_TEAM and TURBO_TOKEN environment variables set"
-          else
-            echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
-          fi
-
       - name: Install jq
-        run: sudo apt-get install -y jq
-
+        run: |
+          brew update
+          brew install jq
       - name: Declare some variables
         shell: bash
         run: |
@@ -71,13 +56,13 @@ jobs:
       - name: Create version string
         shell: bash
         run: |
-          echo "version_string=v${{env.app_version}}-android-#${{env.sha_short}}" >> "$GITHUB_ENV"        
+          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"        
 
       - name: Set up ruby env
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3.1
-          bundler-cache: true # changed - was false because 'permissions issues?'
+          bundler-cache: true
           working-directory: app/ios/App
       - run: |
           cd app/ios/App
@@ -101,7 +86,7 @@ jobs:
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_MINIFAUXTON=true
           export VITE_CONDUCTOR_URL=${{vars.NIGHTLY_CONDUCTOR_URL}}
-          export VITE_TAG=prodAndroid
+          export VITE_TAG=prodIOS
           export VITE_NOTEBOOK_LIST_TYPE=${{vars.NOTEBOOK_LIST_TYPE}}
           export VITE_NOTEBOOK_NAME=${{vars.NOTEBOOK_NAME}}
           export VITE_THEME=${{vars.THEME}}
@@ -117,26 +102,23 @@ jobs:
           npx cap update ios
           npx cap sync --deployment ios
           cd ios/App; pod install
-      #- run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
       - name: Deploy iOS Beta to TestFlight via Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:
           lane: closed_beta_testflight
-          subdirectory: 'ios/App'
+          subdirectory: 'app/ios/App'
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
         env:
           APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
-          DEVELOPER_APP_ID: '${{ secrets.DEVELOPER_APP_ID }}'
-          DEVELOPER_APP_IDENTIFIER: '${{ secrets.DEVELOPER_APP_IDENTIFIER }}'
+          DEVELOPER_APP_ID: '${{ vars.DEVELOPER_APP_ID }}'
+          APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
           DEVELOPER_PORTAL_TEAM_ID: '${{ secrets.DEVELOPER_PORTAL_TEAM_ID }}'
           FASTLANE_APPLE_ID: '${{ secrets.FASTLANE_APPLE_ID }}'
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: '${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}'
           MATCH_PASSWORD: '${{ secrets.MATCH_PASSWORD }}'
           GIT_AUTHORIZATION: '${{ secrets.GIT_AUTHORIZATION }}'
           PROVISIONING_PROFILE_SPECIFIER: '${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}'
-          TEMP_KEYCHAIN_PASSWORD: '${{ secrets.TEMP_KEYCHAIN_PASSWORD }}'
-          TEMP_KEYCHAIN_USER: '${{ secrets.TEMP_KEYCHAIN_USER }}'
           APPLE_KEY_ID: '${{ secrets.APPLE_KEY_ID }}'
           APPLE_ISSUER_ID: '${{ secrets.APPLE_ISSUER_ID }}'
           APPLE_KEY_CONTENT: '${{ secrets.APPLE_KEY_CONTENT }}'
