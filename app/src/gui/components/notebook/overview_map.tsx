@@ -41,6 +41,7 @@ import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
 import {Geolocation} from '@capacitor/geolocation';
+import {TileStore} from '../map/tile_source';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -152,7 +153,9 @@ export const OverviewMap = (props: OverviewMapProps) => {
    * Create the OpenLayers map element
    */
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
-    const tileLayer = new TileLayer({source: new OSM()});
+    //const tileLayer = new TileLayer({source: new OSM()});
+    const tileStore = new TileStore();
+    const tileLayer = new TileLayer({source: tileStore.source});
     const view = new View({
       projection: defaultMapProjection,
     });
