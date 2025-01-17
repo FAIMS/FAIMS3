@@ -83,8 +83,7 @@ function MapWrapper(props: MapProps) {
   // set initial state
   const [mapOpen, setMapOpen] = useState<boolean>(false);
   const [map, setMap] = useState<Map | undefined>();
-  const [featuresLayer, setFeaturesLayer] =
-    useState<VectorLayer<Feature<Geometry>>>();
+  const [featuresLayer, setFeaturesLayer] = useState<VectorLayer>();
   const defaultMapProjection = 'EPSG:3857';
   const geoJson = new GeoJSON();
 

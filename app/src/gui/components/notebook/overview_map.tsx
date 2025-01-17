@@ -213,12 +213,12 @@ export const OverviewMap = (props: OverviewMapProps) => {
         },
       };
 
-      source.addFeature(
-        geoJson.readFeature(centerFeature, {
-          dataProjection: 'EPSG:4326',
-          featureProjection: map.getView().getProjection(),
-        })
-      );
+      // there is only one feature but readFeature return type is odd and readFeatures works for singletons
+      const theFeatures = geoJson.readFeatures(centerFeature, {
+        dataProjection: 'EPSG:4326',
+        featureProjection: map.getView().getProjection(),
+      });
+      source.addFeature(theFeatures[0]);
       map.addLayer(layer);
     }
   };
