@@ -28,13 +28,11 @@ import authReducer, {
   selectIsAuthenticated,
 } from './slices/authSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
+import { TOKEN_REFRESH_INTERVAL_MS } from '../buildconfig';
 
 // Configure persistence for the auth slice
 const persistConfig = {key: 'auth', storage};
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
-
-// Token refresh interval in milliseconds (15 seconds)
-const TOKEN_REFRESH_INTERVAL = 5000;
 
 // Configure the store
 export const store = configureStore({
@@ -110,7 +108,7 @@ const TokenRefreshTimer: React.FC = () => {
     // Set up interval
     const intervalId = setInterval(
       refreshTokenAndCheckAuth,
-      TOKEN_REFRESH_INTERVAL
+      TOKEN_REFRESH_INTERVAL_MS
     );
 
     // Cleanup

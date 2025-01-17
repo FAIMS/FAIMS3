@@ -28,10 +28,8 @@ In the second class, we could show a banner in the condition where isAuthenticat
 
 ## TODO
 
-- make refresh only refresh if the token is going to expire in the next minute and the refresh token is not expired
-- setup reasonable refresh intervals as part of build config
-- ensure couch DB respects expiry
 - add expiry back to JWTs generated from backend
+- ensure couch DB respects expiry
 - (later) - make the refresh token expiry be taken into account
 - (later) - on app open - always go to login screen when refresh token expired or close to
 - (later) per server per user db?

@@ -30,7 +30,6 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import {
   Box,
   Button,
-  ButtonBase,
   Collapse,
   Divider,
   ListItemIcon,
@@ -258,13 +257,13 @@ const AuthenticatedDisplayComponent = () => {
           <Box
             sx={{
               flexGrow: 1,
-              minWidth: 0, // Crucial for text truncation in flex containers
+              minWidth: 0,
             }}
           >
             <Typography
               variant="subtitle1"
               fontWeight="bold"
-              noWrap // Simpler way to handle text truncation
+              noWrap
               sx={{
                 display: 'block',
               }}

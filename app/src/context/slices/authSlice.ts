@@ -9,11 +9,8 @@ import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
 import {AppDispatch, RootState} from '../store';
 import {addAlert} from './syncSlice';
-import {
-  data_dbs,
-  ensure_synced_db,
-  refreshDataDbTokens,
-} from '../../sync/databases';
+import {refreshDataDbTokens} from '../../sync/databases';
+import {TOKEN_REFRESH_WINDOW_MS} from '../../buildconfig';
 
 // Types
 export interface TokenInfo {
@@ -77,6 +74,21 @@ export const isTokenValid = (tokenInfo: TokenInfo | undefined): boolean => {
 const isTokenRefreshable = (tokenInfo: TokenInfo | undefined): boolean => {
   if (!tokenInfo) return false;
   return !!tokenInfo.refreshToken;
+};
+
+/**
+ * Checks if a token should be refreshed based on it being close to expiring by
+ * a given millisecond window
+ * @param tokenInfo The token information
+ * @param windowMs The window meaning the maximum allowed difference between
+ * current time and refresh time before running a refresh
+ * @returns True/false - true iff refresh SHOULD occur
+ */
+const shouldTokenRefresh = (
+  tokenInfo: TokenInfo,
+  windowMs: number
+): boolean => {
+  return Date.now() + windowMs >= tokenInfo.expiresAt;
 };
 
 const checkAuthenticationStatus = (state: AuthState): boolean => {
@@ -448,16 +460,19 @@ export const refreshAllUsers = createAsyncThunk<void, {}>(
     const appDispatch = dispatch as AppDispatch;
 
     // get all identities
-    const connections = listAllConnections({state : state.auth});
+    const connections = listAllConnections({state: state.auth});
 
     // refresh all of them
     for (const conn of connections) {
-      appDispatch(
-        refreshToken({
-          serverId: conn.serverId,
-          username: conn.parsedToken.username,
-        })
-      );
+      // Only dispatch a refresh operation if the token is going to expire soon
+      if (shouldTokenRefresh(conn, TOKEN_REFRESH_WINDOW_MS)) {
+        appDispatch(
+          refreshToken({
+            serverId: conn.serverId,
+            username: conn.parsedToken.username,
+          })
+        );
+      }
     }
   }
 );

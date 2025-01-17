@@ -332,6 +332,42 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
+const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 15000;
+
+/**
+ * @returns The interval by which we attempt to refresh all tokens
+ */
+function tokenRefreshIntervalMs(): number {
+  const tokenRefreshIntervalMs = import.meta.env.VITE_TOKEN_REFRESH_INTERVAL_MS;
+  if (tokenRefreshIntervalMs === '' || tokenRefreshIntervalMs === undefined) {
+    return DEFAULT_TOKEN_REFRESH_INTERVAL_MS;
+  }
+  try {
+    return parseInt(tokenRefreshIntervalMs);
+  } catch (err) {
+    logError(err);
+    return DEFAULT_TOKEN_REFRESH_INTERVAL_MS;
+  }
+}
+
+const DEFAULT_TOKEN_REFRESH_WINDOW_MS = 60000;
+
+/**
+ * @returns The minimum valid time for a token before attempting refreshes
+ */
+function tokenRefreshWindowMs(): number {
+  const tokenRefreshWindowMs = import.meta.env.VITE_TOKEN_REFRESH_WINDOW_MS;
+  if (tokenRefreshWindowMs === '' || tokenRefreshWindowMs === undefined) {
+    return DEFAULT_TOKEN_REFRESH_WINDOW_MS;
+  }
+  try {
+    return parseInt(tokenRefreshWindowMs);
+  } catch (err) {
+    logError(err);
+    return DEFAULT_TOKEN_REFRESH_WINDOW_MS;
+  }
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -354,3 +390,5 @@ export const APP_NAME = get_app_name();
 export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();
 export const SHOW_RECORD_SUMMARY_COUNTS = showRecordCounts();
+export const TOKEN_REFRESH_INTERVAL_MS = tokenRefreshIntervalMs();
+export const TOKEN_REFRESH_WINDOW_MS = tokenRefreshWindowMs();

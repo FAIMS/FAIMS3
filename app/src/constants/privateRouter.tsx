@@ -242,8 +242,7 @@ export const TolerantPrivateRoute = (
     return (
       <>
         {
-          //
-          <OfflineLoginBanner loginPath={ROUTES.SIGN_IN} />
+          // <OfflineLoginBanner loginPath={ROUTES.SIGN_IN} />
         }
         {props.children}
       </>
