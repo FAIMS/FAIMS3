@@ -126,6 +126,7 @@ const useStyles = makeStyles({
   drawer: {
     width: drawerWidth,
     flexShrink: 0,
+    zIndex: 1500
   },
   drawerPaper: {
     width: drawerWidth,

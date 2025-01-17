@@ -59,21 +59,15 @@ interface OfflineLoginBannerProps {
 /**
  * OfflineLoginBanner Component
  *
- * A responsive banner that displays when users are logged out, warning them that their
- * data won't be synchronized. The banner has two states:
- * 1. Initial state: Part of the normal document flow
- * 2. Sticky state: Fixed to the top after scrolling past the navbar
+ * A responsive banner that displays when users are logged out, warning them
+ * that their data won't be synchronized. The banner has two states:
  *
- * Styling Features:
- * - Smooth transitions between normal and sticky states
- * - Responsive design that adapts to mobile and desktop viewports
- * - High-contrast error styling for visibility
- * - Accessible text and interactive elements
+ * Initial state: Part of the normal document flow, and Sticky state: Fixed to
+ * the top after scrolling past the navbar (roughly - currently in wrong context
+ * to know for sure height of nav bar) - but if you scroll to the top you'll be
+ * okay
  *
- * Implementation Notes:
- * - Uses Intersection Observer to detect scroll position relative to navbar
- * - Implements smooth transitions using CSS transforms and transitions
- * - Adapts layout and spacing based on viewport size
+ * Uses an Intersection Observer to detect scroll position relative to navbar
  */
 const OfflineLoginBanner = ({
   isOnline,
@@ -140,9 +134,7 @@ const OfflineLoginBanner = ({
           icon={<ErrorOutlineIcon sx={{fontSize: 28}} />}
           severity="error"
           sx={{
-            // Reset default Alert styling
-            borderRadius: 2,
-            border: 'none',
+            borderRadius: 2.5,
 
             // Error theme styling
             backgroundColor: 'error.main',
@@ -155,6 +147,10 @@ const OfflineLoginBanner = ({
             '& .MuiAlert-icon': {
               color: 'error.contrastText',
               opacity: 0.9,
+              marginRight: 2,
+              // center the exclamation icon
+              display: 'flex',
+              alignItems: 'center',
             },
 
             // Ensure message takes full width
@@ -173,7 +169,7 @@ const OfflineLoginBanner = ({
 
               // Alignment adjustments
               alignItems: isMobile ? 'stretch' : 'center',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-start',
             }}
           >
             {/* Alert message */}
