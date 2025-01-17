@@ -28,8 +28,8 @@ In the second class, we could show a banner in the condition where isAuthenticat
 
 ## TODO
 
-- test with email address rather than admin to see if the profile icon works
 - make refresh only refresh if the token is going to expire in the next minute and the refresh token is not expired
+- setup reasonable refresh intervals as part of build config
 - ensure couch DB respects expiry
 - add expiry back to JWTs generated from backend
 - (later) - make the refresh token expiry be taken into account

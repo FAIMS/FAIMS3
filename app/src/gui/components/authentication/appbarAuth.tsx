@@ -255,25 +255,40 @@ const AuthenticatedDisplayComponent = () => {
           }}
         >
           <AccountCircle sx={{width: 40, height: 40}} />
-          <Box sx={{maxWidth: '100%'}}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              minWidth: 0, // Crucial for text truncation in flex containers
+            }}
+          >
             <Typography
               variant="subtitle1"
               fontWeight="bold"
+              noWrap // Simpler way to handle text truncation
               sx={{
-                textOverflow: 'ellipsis',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
+                display: 'block',
+              }}
+            >
+              {activeUser?.parsedToken.name ?? ''}
+            </Typography>
+            <Typography
+              variant="body2"
+              noWrap
+              sx={{
+                opacity: 0.8,
+                display: 'block',
+                mb: 0.6,
+                mt: 0.6,
               }}
             >
               {activeUser?.parsedToken.username}
             </Typography>
             <Typography
               variant="body2"
+              noWrap
               sx={{
                 opacity: 0.8,
-                textOverflow: 'ellipsis',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
+                display: 'block',
               }}
             >
               {activeUser?.serverId}
@@ -311,6 +326,15 @@ const AuthenticatedDisplayComponent = () => {
                     <ListItemText
                       primary={connection.parsedToken.username}
                       secondary={connection.serverId}
+                      // truncate text here too
+                      sx={{
+                        '.MuiListItemText-primary, .MuiListItemText-secondary':
+                          {
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          },
+                      }}
                     />
                   </MenuItem>
                 ))}
