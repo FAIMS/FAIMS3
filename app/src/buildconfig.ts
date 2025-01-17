@@ -332,7 +332,8 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
-const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 1800000;
+// Consider a refresh every 15 seconds
+const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 15000;
 
 /**
  * @returns The interval by which we attempt to refresh all tokens
@@ -350,6 +351,7 @@ function tokenRefreshIntervalMs(): number {
   }
 }
 
+// Try and refresh before it hits 60 seconds till expiry
 const DEFAULT_TOKEN_REFRESH_WINDOW_MS = 60000;
 
 /**

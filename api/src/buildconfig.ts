@@ -275,7 +275,7 @@ function developer_mode(): any {
 }
 
 // 5 minute access token expiry by default
-const DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES = 1;
+const DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES = 5;
 
 /**
  * @returns The minimum valid time for a token before attempting refreshes
