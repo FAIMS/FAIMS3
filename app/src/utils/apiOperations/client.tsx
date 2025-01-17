@@ -1,8 +1,6 @@
 import {ListingsObject} from '@faims3/data-model/src/types';
+import {store} from '../../context/store';
 import {getAllListingIDs, getListing} from '../../sync/state';
-import {store, useAppSelector} from '../../context/store';
-import {selectSpecificServer} from '../../context/slices/authSlice';
-import {PropaneSharp} from '@mui/icons-material';
 
 /** Supported HTTP methods */
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';

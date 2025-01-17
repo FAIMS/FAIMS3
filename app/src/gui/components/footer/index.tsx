@@ -24,8 +24,8 @@ import * as ROUTES from '../../../constants/routes';
 import FullFooter from './fullFooter';
 import SlimFooter from './slimFooter';
 
-interface FooterProps {}
-export default function Footer(props: FooterProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function Footer() {
   /**
    * Display a large footer for INDEX and WORKSPACE routes
    * Show only the SlimFooter otherwise
@@ -37,16 +37,10 @@ export default function Footer(props: FooterProps) {
   // version and can do things with it
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const location = useLocation().pathname;
-  const showFullFooter = [
-    ROUTES.INDEX,
-  ].includes(location);
+  const showFullFooter = [ROUTES.INDEX].includes(location);
   return (
     <React.Fragment>
-      {showFullFooter ? (
-        <FullFooter />
-      ) : (
-        <SlimFooter />
-      )}
+      {showFullFooter ? <FullFooter /> : <SlimFooter />}
     </React.Fragment>
   );
 }

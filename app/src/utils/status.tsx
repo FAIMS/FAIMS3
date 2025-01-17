@@ -19,23 +19,20 @@ export function startSync(dispatch: AppDispatch, syncAction: SyncActionTypes) {
    */
   const controller = new AbortController();
 
-  switch (syncAction) {
-    case ActionType.IS_SYNCING_DOWN:
-      dispatch(setSyncingDown(true));
-      const downTimeout = setTimeout(() => {
-        dispatch(setSyncingDown(false));
-        clearTimeout(downTimeout);
-        controller.abort();
-      }, 5000);
-      return;
-    case ActionType.IS_SYNCING_UP:
-      dispatch(setSyncingUp(true));
-      const upTimeout = setTimeout(() => {
-        dispatch(setSyncingUp(false));
-        clearTimeout(upTimeout);
-        controller.abort();
-      }, 5000);
-      return;
+  if (syncAction === ActionType.IS_SYNCING_DOWN) {
+    dispatch(setSyncingDown(true));
+    const downTimeout = setTimeout(() => {
+      dispatch(setSyncingDown(false));
+      clearTimeout(downTimeout);
+      controller.abort();
+    }, 5000);
+  } else if (syncAction === ActionType.IS_SYNCING_UP) {
+    dispatch(setSyncingUp(true));
+    const upTimeout = setTimeout(() => {
+      dispatch(setSyncingUp(false));
+      clearTimeout(upTimeout);
+      controller.abort();
+    }, 5000);
   }
 }
 

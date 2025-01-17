@@ -19,49 +19,47 @@
  * TODO: Get date/time and username for conflict Drop list instead of ids
  */
 
-import React, {useEffect} from 'react';
-import {useContext, useState} from 'react';
 import {
-  ProjectID,
-  RecordID,
-  RevisionID,
   AttributeValuePairID,
-} from '@faims3/data-model';
-import {
+  InitialMergeDetails,
+  ProjectID,
   ProjectUIModel,
+  RecordID,
   RecordMergeInformation,
+  RevisionID,
   UserMergeResult,
+  getMergeInformationForHead,
+  isEqualFAIMS,
+  saveUserMergeResult,
 } from '@faims3/data-model';
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
-import {Grid, Box, Switch, FormControlLabel} from '@mui/material';
-import RecordTabBar from './recordTab';
 import {
-  InitialMergeDetails,
-  getMergeInformationForHead,
-  saveUserMergeResult,
-} from '@faims3/data-model';
-import {CircularProgress} from '@mui/material';
-
+  Box,
+  CircularProgress,
+  FormControlLabel,
+  Grid,
+  Switch,
+} from '@mui/material';
 import {grey} from '@mui/material/colors';
-import ConflictPanel from './conflictpanel';
-import ConflictToolBar from './conflicttoolbar';
-import {ConflictResolveIcon} from './conflictfield';
-import {ConflictSaveButton} from './conflictbutton';
-import {store, useAppDispatch} from '../../../../context/store';
-import {ActionType} from '../../../../context/actions';
-import {isEqualFAIMS} from '@faims3/data-model';
-import ConflictLinkBar from './conflictLinkBar';
-import {RecordLinkProps} from '../relationships/types';
-import {
-  addLinkedRecord,
-  update_child_records_conflict,
-  check_if_record_relationship,
-} from '../relationships/RelatedInformation';
-import {ConflictHelpDialog} from './conflictDialog';
+import React, {useEffect, useState} from 'react';
+import {addAlert} from '../../../../context/slices/syncSlice';
+import {useAppDispatch} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {theme} from '../../../themes';
-import {addAlert} from '../../../../context/slices/syncSlice';
+import {
+  addLinkedRecord,
+  check_if_record_relationship,
+  update_child_records_conflict,
+} from '../relationships/RelatedInformation';
+import {RecordLinkProps} from '../relationships/types';
+import {ConflictSaveButton} from './conflictbutton';
+import {ConflictHelpDialog} from './conflictDialog';
+import {ConflictResolveIcon} from './conflictfield';
+import ConflictLinkBar from './conflictLinkBar';
+import ConflictPanel from './conflictpanel';
+import ConflictToolBar from './conflicttoolbar';
+import RecordTabBar from './recordTab';
 
 type ConflictFormProps = {
   project_id: ProjectID;

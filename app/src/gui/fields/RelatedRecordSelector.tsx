@@ -134,8 +134,7 @@ interface RelatedRecordSelectorProps extends FieldProps {
 }
 
 export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
-  // TODO validate this is always available
-  const activeToken = useAppSelector(selectActiveToken)?.parsedToken!;
+  const activeToken = useAppSelector(selectActiveToken)!.parsedToken;
   const project_id = props.form.values['_project_id'];
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;

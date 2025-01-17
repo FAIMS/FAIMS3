@@ -30,7 +30,7 @@ import Notebooks from '../components/workspace/notebooks';
 export default function Workspace() {
   const theme = useTheme();
   const activeUser = useAppSelector(selectActiveUser);
-  const listing = useGetListing({serverId: activeUser?.serverId!});
+  const listing = useGetListing({serverId: activeUser?.serverId});
   const serverName = listing.data?.name;
 
   return (

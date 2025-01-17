@@ -38,19 +38,18 @@ import React from 'react';
 import {useNavigate} from 'react-router-dom';
 import {APP_ID} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import {update_directory} from '../../../sync/process-initialization';
-import {isWeb} from '../../../utils/helpers';
-import MainCard from '../ui/main-card';
-import {LoginButton} from './login_form';
-import {store, useAppDispatch, useAppSelector} from '../../../context/store';
 import {
-  getServerConnection,
   isTokenValid,
   removeServerConnection,
   selectActiveUser,
   selectAllServerUsers,
   setActiveUser,
 } from '../../../context/slices/authSlice';
+import {useAppDispatch, useAppSelector} from '../../../context/store';
+import {update_directory} from '../../../sync/process-initialization';
+import {isWeb} from '../../../utils/helpers';
+import MainCard from '../ui/main-card';
+import {LoginButton} from './login_form';
 
 // TODO when we fix the add new user logic, bring this back
 const ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED = false;

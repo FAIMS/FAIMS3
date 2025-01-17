@@ -29,9 +29,9 @@
  *   (Sync refactor)
  */
 
-import { ListingsObject } from '@faims3/data-model/src/types';
-import { getAllListings } from './sync';
-import { events } from './sync/events';
+import {ListingsObject} from '@faims3/data-model/src/types';
+import {getAllListings} from './sync';
+import {events} from './sync/events';
 
 export function listenProjectList(listener: () => void): () => void {
   events.on('project_update', listener);

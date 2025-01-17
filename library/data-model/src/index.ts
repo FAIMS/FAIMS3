@@ -147,7 +147,11 @@ export const shouldDisplayRecord = (
   record_metadata: RecordMetadata
 ) => {
   if (moduleCallback) {
-    return moduleCallback.shouldDisplayRecord(contents, project_id, record_metadata);
+    return moduleCallback.shouldDisplayRecord(
+      contents,
+      project_id,
+      record_metadata
+    );
   } else {
     logError('No callback registered to check record permissions');
     return undefined;

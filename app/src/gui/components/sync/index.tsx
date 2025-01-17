@@ -17,8 +17,12 @@
  * Description:
  *   This contains the syncStatus React component, which allows users to see their device's sync status
  */
-import React, {useContext, useEffect, useRef} from 'react';
-import {shallowEqual} from 'react-redux';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
+import CloudIcon from '@mui/icons-material/Cloud';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
+import CloudQueueIcon from '@mui/icons-material/CloudQueue';
+import ErrorIcon from '@mui/icons-material/Error';
 import {
   Box,
   Button,
@@ -35,19 +39,13 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import CloudIcon from '@mui/icons-material/Cloud';
-import CloudOffIcon from '@mui/icons-material/CloudOff';
-import CloudQueueIcon from '@mui/icons-material/CloudQueue';
-// import CloudDoneIcon from '@mui/icons-material/CloudDone';
-
-import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ErrorIcon from '@mui/icons-material/Error';
-import 'animate.css';
-
-import {store, useAppSelector} from '../../../context/store';
 import {grey} from '@mui/material/colors';
+import 'animate.css';
 import moment from 'moment';
+import React, {useEffect, useRef} from 'react';
+import {shallowEqual} from 'react-redux';
+import {useAppSelector} from '../../../context/store';
+
 // custom hook for getting previous value
 function usePrevious(value: any) {
   const ref = useRef();

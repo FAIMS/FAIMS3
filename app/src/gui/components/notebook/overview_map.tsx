@@ -95,7 +95,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     if (gisFields.length > 0) {
       const records = await getMetadataForAllRecords(
         // TODO what do we do if no active user?
-        activeUser?.parsedToken!,
+        activeUser!.parsedToken,
         props.project_id,
         true
       );

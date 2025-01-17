@@ -18,9 +18,12 @@
  *   TODO
  */
 
-import React from 'react';
-import {useNavigate} from 'react-router-dom';
-
+import {
+  ProjectID,
+  RecordID,
+  RevisionID,
+  setRecordAsDeleted,
+} from '@faims3/data-model';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Alert,
@@ -30,21 +33,15 @@ import {
   DialogActions,
   IconButton,
 } from '@mui/material';
-
-import {
-  ProjectID,
-  RecordID,
-  RevisionID,
-  setRecordAsDeleted,
-} from '@faims3/data-model';
+import React from 'react';
+import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {ActionType} from '../../../context/actions';
 import {selectActiveUser} from '../../../context/slices/authSlice';
+import {addAlert} from '../../../context/slices/syncSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {deleteDraftsForRecord} from '../../../drafts';
 import {deleteStagedData} from '../../../sync/draft-storage';
 import {theme} from '../../themes';
-import {addAlert} from '../../../context/slices/syncSlice';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
@@ -88,7 +85,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
   const handleClickOpen = () => {
     setOpen(true);
   };
-  const activeUser = useAppSelector(selectActiveUser);
+  const activeUser = useAppSelector(selectActiveUser)!;
 
   const handleClose = () => {
     setOpen(false);
@@ -100,8 +97,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
       record_id,
       revision_id,
       draft_id,
-      // Is this safe? We know that the user should be defined at this point
-      activeUser?.username!,
+      activeUser.username,
       props.handleRefresh
     )
       .then(() => {

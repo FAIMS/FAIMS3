@@ -2,12 +2,10 @@ import {Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import Obfuscate from 'react-obfuscate';
 import {COMMIT_VERSION, CONDUCTOR_URLS} from '../../../buildconfig';
-import {useAppSelector} from '../../../context/store';
 import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useAppSelector} from '../../../context/store';
 
-interface SupportEmailProps {}
-
-export default function SupportEmail(props: SupportEmailProps) {
+export default function SupportEmail() {
   const theme = useTheme();
   // Get active user
   const activeUser = useAppSelector(selectActiveUser);

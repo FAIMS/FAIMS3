@@ -18,15 +18,13 @@
  *   Alerts are shown one at a time with configurable durations and severity levels.
  */
 
+import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import {ThemeProvider} from '@mui/material/styles';
-import {theme} from '../themes';
-import Alert from '@mui/material/Alert';
 import {createUseStyles} from 'react-jss';
-import {ActionType} from '../../context/actions';
-import {useAppDispatch} from '../../context/store';
-import {useAppSelector} from '../../context/store';
-import {addAlert, deleteAlert} from '../../context/slices/syncSlice';
+import {deleteAlert} from '../../context/slices/syncSlice';
+import {useAppDispatch, useAppSelector} from '../../context/store';
+import {theme} from '../themes';
 
 const useStyles = createUseStyles({
   root: {

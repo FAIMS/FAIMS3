@@ -22,9 +22,9 @@
 
 import {EncodedProjectUIModel, resolve_project_id} from '@faims3/data-model';
 import {getProjectDB} from '.';
-import {createdListingsInterface} from './state';
-import {store, useAppSelector} from '../context/store';
 import {selectSpecificServer} from '../context/slices/authSlice';
+import {store} from '../context/store';
+import {createdListingsInterface} from './state';
 
 export type PropertyMap = {
   [key: string]: unknown;

@@ -42,7 +42,7 @@ import {
   NotificationContextType,
 } from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
-import {store, useAppSelector} from '../../../context/store';
+import {store} from '../../../context/store';
 import {percentComplete, requiredFields} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
 import {logError} from '../../../logging';

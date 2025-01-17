@@ -1,12 +1,11 @@
-import React, {useContext} from 'react';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {Box, Button, Typography} from '@mui/material';
 import moment from 'moment/moment';
-import {ActionType} from '../../../context/actions';
-import {store, useAppDispatch} from '../../../context/store';
-import {useInterval} from '../../../utils/useInterval';
+import React from 'react';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import {addAlert} from '../../../context/slices/syncSlice';
+import {useAppDispatch} from '../../../context/store';
+import {useInterval} from '../../../utils/useInterval';
 
 interface RefreshNotebookProps {
   handleRefresh: Function;

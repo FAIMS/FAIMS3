@@ -1,30 +1,28 @@
-import React, {useContext} from 'react';
-import {
-  Button,
-  Grid,
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Autocomplete,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from '@mui/material';
-import LoadingButton from '@mui/lab/LoadingButton';
-import {ActionType} from '../../../../../context/actions';
-import {store, useAppDispatch} from '../../../../../context/store';
-import {RecordReference} from '@faims3/data-model';
-import {Field} from 'formik';
+import {LocationState, RecordReference} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
-import {CreateRecordLinkProps} from '../types';
+import LoadingButton from '@mui/lab/LoadingButton';
+import {
+  Autocomplete,
+  Box,
+  Button,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  TextField,
+  Typography,
+} from '@mui/material';
+import {Field} from 'formik';
+import React from 'react';
 import {useNavigate} from 'react-router-dom';
-import {LocationState} from '@faims3/data-model';
 import * as ROUTES from '../../../../../constants/routes';
-import {logError} from '../../../../../logging';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../../../constants/routes';
-import { addAlert } from '../../../../../context/slices/syncSlice';
+import {addAlert} from '../../../../../context/slices/syncSlice';
+import {useAppDispatch} from '../../../../../context/store';
+import {logError} from '../../../../../logging';
+import {CreateRecordLinkProps} from '../types';
 
 export function AddNewRecordButton(props: {
   is_enabled: boolean;
@@ -107,7 +105,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     /**
      * Submit relationship to couchDB
      * TODO replace setTimeout with actual request to couchDB
-     * 
+     *
      * Peter B: what the hell is going on here?? This is cooked.
      */
     setSubmitting(true);
@@ -132,11 +130,12 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       // });
       try {
         // response success
-        dispatch(addAlert({
+        dispatch(
+          addAlert({
             message: `Link between this record ${props.label} and ${selectedRecord.record_label} added`,
             severity: 'success',
-
-        }))
+          })
+        );
       } catch (error) {
         logError(error);
       }

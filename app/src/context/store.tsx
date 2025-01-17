@@ -28,7 +28,7 @@ import authReducer, {
   selectIsAuthenticated,
 } from './slices/authSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
-import { TOKEN_REFRESH_INTERVAL_MS } from '../buildconfig';
+import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 
 // Configure persistence for the auth slice
 const persistConfig = {key: 'auth', storage};
@@ -95,7 +95,7 @@ const TokenRefreshTimer: React.FC = () => {
         // This dispatch handles the case where there is no active user or
         // similar concerns - avoids us needing to worry about reading state
         // synchronously here
-        await dispatch(refreshAllUsers({}));
+        await dispatch(refreshAllUsers());
       } finally {
         // Always check authentication status after refresh attempt
         dispatch(refreshIsAuthenticated({}));

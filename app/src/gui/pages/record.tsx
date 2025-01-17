@@ -18,85 +18,78 @@
  *   TODO
  */
 
-import React, {useContext, useEffect, useRef, useState} from 'react';
-import {useParams, useNavigate} from 'react-router-dom';
 import {
-  AppBar,
-  Alert,
-  Box,
-  Grid,
-  Typography,
-  Paper,
-  Tab,
-  CircularProgress,
-  Button,
-} from '@mui/material';
-import {grey} from '@mui/material/colors';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
-import {ActionType} from '../../context/actions';
-
-import * as ROUTES from '../../constants/routes';
-import {getProjectInfo} from '../../sync/projects';
-import {
+  InitialMergeDetails,
   ProjectID,
+  ProjectInformation,
+  ProjectUIModel,
   RecordID,
   Relationship,
   RevisionID,
-  ProjectUIModel,
-  ProjectInformation,
-  listFAIMSRecordRevisions,
+  findConflictingFields,
   getFullRecordData,
   getHRIDforRecordID,
-  InitialMergeDetails,
   getInitialMergeDetails,
-  findConflictingFields,
+  listFAIMSRecordRevisions,
 } from '@faims3/data-model';
-import {store, useAppDispatch} from '../../context/store';
-import {getUiSpecForProject} from '../../uiSpecification';
-
-import ConflictForm from '../components/record/conflict/conflictform';
-import RecordMeta from '../components/record/meta';
-import BoxTab from '../components/ui/boxTab';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
-import {} from '@faims3/data-model';
-
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
+import ArticleIcon from '@mui/icons-material/Article';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import TabContext from '@mui/lab/TabContext';
+import TabList from '@mui/lab/TabList';
+import TabPanel from '@mui/lab/TabPanel';
 import {
-  ConflictHelpDialog,
+  Alert,
+  AppBar,
+  Box,
+  Button,
+  CircularProgress,
+  Grid,
+  Paper,
+  Tab,
+  Typography,
+} from '@mui/material';
+import Badge from '@mui/material/Badge';
+import {grey} from '@mui/material/colors';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import React, {useEffect, useRef, useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import * as ROUTES from '../../constants/routes';
+import {addAlert} from '../../context/slices/syncSlice';
+import {useAppDispatch} from '../../context/store';
+import {scrollToDiv} from '../../lib/navigation';
+import {logError} from '../../logging';
+import {getProjectInfo} from '../../sync/projects';
+import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
+import {getUiSpecForProject} from '../../uiSpecification';
+import TransparentButton from '../components/buttons/transparent-button';
+import RecordDelete from '../components/notebook/delete';
+import ProgressBar from '../components/progress-bar';
+import {ResolveButton} from '../components/record/conflict/conflictbutton';
+import {
   BasicDialog,
+  ConflictHelpDialog,
 } from '../components/record/conflict/conflictDialog';
 import {EditDroplist} from '../components/record/conflict/conflictdroplist';
-import Badge from '@mui/material/Badge';
-import {ResolveButton} from '../components/record/conflict/conflictbutton';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
-
+import ConflictForm from '../components/record/conflict/conflictform';
+import RecordMeta from '../components/record/meta';
+import RecordData from '../components/record/RecordData';
 import {
   getDetailRelatedInformation,
   getParentPersistenceData,
   remove_deleted_parent,
 } from '../components/record/relationships/RelatedInformation';
 import {
-  RecordLinkProps,
   ParentLinkProps,
+  RecordLinkProps,
 } from '../components/record/relationships/types';
-
-import ArticleIcon from '@mui/icons-material/Article';
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import BoxTab from '../components/ui/boxTab';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import CircularLoading from '../components/ui/circular_loading';
-import RecordData from '../components/record/RecordData';
 import getLocalDate from '../fields/LocalDate';
-import RecordDelete from '../components/notebook/delete';
-import {logError} from '../../logging';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import ProgressBar from '../components/progress-bar';
 
-import {scrollToDiv} from '../../lib/navigation';
-import TransparentButton from '../components/buttons/transparent-button';
-import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
-import {addAlert} from '../../context/slices/syncSlice';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;

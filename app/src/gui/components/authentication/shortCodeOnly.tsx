@@ -14,14 +14,13 @@ import {
   TextField,
   useTheme,
 } from '@mui/material';
-import React, {useContext, useState} from 'react';
+import React, {useState} from 'react';
 import {APP_ID} from '../../../buildconfig';
-import {ActionType} from '../../../context/actions';
 import {useNotification} from '../../../context/popup';
-import {store, useAppDispatch} from '../../../context/store';
+import {addAlert} from '../../../context/slices/syncSlice';
+import {useAppDispatch} from '../../../context/store';
 import {isWeb} from '../../../utils/helpers';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
-import {addAlert} from '../../../context/slices/syncSlice';
 
 /**
  * Component to register a button for scanning a QR code to register

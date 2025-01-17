@@ -50,16 +50,16 @@ import {Link as RouterLink} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {ProjectsContext} from '../../context/projects-context';
+import {
+  selectActiveServerId,
+  selectIsAuthenticated,
+} from '../../context/slices/authSlice';
+import {useAppSelector} from '../../context/store';
 import {ProjectExtended} from '../../types/project';
 import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import SyncStatus from '../components/sync';
-import {useAppSelector} from '../../context/store';
-import {
-  selectActiveServerId,
-  selectIsAuthenticated,
-} from '../../context/slices/authSlice';
 
 /**
  * Represents the properties for a menu list item.
@@ -126,7 +126,7 @@ const useStyles = makeStyles({
   drawer: {
     width: drawerWidth,
     flexShrink: 0,
-    zIndex: 1500
+    zIndex: 1500,
   },
   drawerPaper: {
     width: drawerWidth,
@@ -213,16 +213,14 @@ function getNestedProjects(pouchProjectList: ProjectExtended[]) {
   };
 }
 
-type NavbarProps = {};
 /**
  * MainAppBar component handles the display of the navigation drawer and the app bar.
  * It includes top menu items, bottom menu items, and conditional rendering based on authentication status.
  *
  * @component
- * @param {NavbarProps} props - Props passed to the component.
  * @returns {JSX.Element} - The rendered MainAppBar component.
  */
-export default function MainAppBar(props: NavbarProps) {
+export default function MainAppBar() {
   const classes = useStyles();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const activeServerId = useAppSelector(selectActiveServerId);

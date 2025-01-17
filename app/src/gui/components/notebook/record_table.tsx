@@ -548,7 +548,7 @@ function RecordsTable(props: RecordsTableProps) {
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {recordLabel} = props;
   // TODO validate this is always defined
-  const activeToken = useAppSelector(selectActiveUser)?.parsedToken!;
+  const activeToken = useAppSelector(selectActiveUser)!.parsedToken;
 
   const [query, setQuery] = React.useState('');
   const {data: records, isLoading: recordsLoading} = useQuery({

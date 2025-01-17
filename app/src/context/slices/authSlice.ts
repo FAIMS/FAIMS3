@@ -5,12 +5,12 @@ import {
   createSlice,
   PayloadAction,
 } from '@reduxjs/toolkit';
+import {TOKEN_REFRESH_WINDOW_MS} from '../../buildconfig';
+import {refreshDataDbTokens} from '../../sync/databases';
 import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
 import {AppDispatch, RootState} from '../store';
 import {addAlert} from './syncSlice';
-import {refreshDataDbTokens} from '../../sync/databases';
-import {TOKEN_REFRESH_WINDOW_MS} from '../../buildconfig';
 
 // Types
 export interface TokenInfo {
@@ -112,6 +112,7 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     refreshIsAuthenticated: (state, _: PayloadAction<{}>) => {
       state.isAuthenticated = checkAuthenticationStatus(state);
     },
@@ -348,7 +349,7 @@ export const setAndRefreshActiveConnection = createAsyncThunk<
   ServerUserIdentity
 >(
   'auth/setAndRefreshActiveConnection',
-  async (args, {dispatch: rawDispatch, getState}) => {
+  async (args, {dispatch: rawDispatch}) => {
     // cast and get state
     const dispatch = rawDispatch as AppDispatch;
 
@@ -418,9 +419,11 @@ export const refreshToken = createAsyncThunk<
 /**
  * Atomic async operation on store to refresh the active user's token
  */
-export const refreshActiveUser = createAsyncThunk<void, {}>(
+export const refreshActiveUser = createAsyncThunk<void, void>(
   'auth/refreshActive',
-  async ({}, {dispatch, getState}) => {
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async (_, {dispatch, getState}) => {
     console.log('Initiating active user token refresh.');
 
     // cast and get state
@@ -450,9 +453,10 @@ export const refreshActiveUser = createAsyncThunk<void, {}>(
 /**
  * Atomic async operation on store to refresh all connection's tokens
  */
-export const refreshAllUsers = createAsyncThunk<void, {}>(
+export const refreshAllUsers = createAsyncThunk<void, void>(
   'auth/refreshAll',
-  async ({}, {dispatch, getState}) => {
+  // eslint-disable-next-line no-unused-vars
+  async (_, {dispatch, getState}) => {
     console.log('Initiating all user token refresh.');
 
     // cast and get state

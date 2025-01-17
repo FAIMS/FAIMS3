@@ -14,7 +14,7 @@ import FetchManager from './client';
  */
 export const fetchTemplates = async (
   listingId: string,
-  username: string,
+  username: string
 ): Promise<GetListTemplatesResponse> => {
   // Make a request to the server to fetch the templates
   return await FetchManager.get<GetListTemplatesResponse>(

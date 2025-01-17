@@ -18,18 +18,17 @@
  *   Create the main local databases and provide access to them
  */
 
-import PouchDB from 'pouchdb-browser';
-import {POUCH_BATCH_SIZE, POUCH_BATCHES_LIMIT} from '../buildconfig';
 import {
-  ProjectMetaObject,
-  ProjectDataObject,
-  ProjectID,
   ListingID,
   NonUniqueProjectID,
-  TokenContents,
+  ProjectDataObject,
+  ProjectID,
+  ProjectMetaObject,
 } from '@faims3/data-model';
 import {ListingsObject} from '@faims3/data-model/src/types';
-import {ProjectObject} from './projects';
+import PouchDB from 'pouchdb-browser';
+import {POUCH_BATCH_SIZE, POUCH_BATCHES_LIMIT} from '../buildconfig';
+import {db as projects_db} from '../dbs/projects-db';
 import {logError} from '../logging';
 import {
   ConnectionInfo,
@@ -37,9 +36,7 @@ import {
   local_pouch_options,
 } from './connection';
 import {draft_db} from './draft-storage';
-
-import {db as projects_db} from '../dbs/projects-db';
-import {getLocalActiveMap} from '../context/functions';
+import {ProjectObject} from './projects';
 
 export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
@@ -430,7 +427,7 @@ export async function refreshDataDbTokens({
       dbKey
     );
 
-    let newConnectionInfo: ConnectionInfo = {
+    const newConnectionInfo: ConnectionInfo = {
       ...db.remote?.info,
       jwt_token: newToken,
     };

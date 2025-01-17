@@ -19,16 +19,30 @@
  */
 
 import {
-  ProjectMetaObject,
-  ProjectDataObject,
-  ProjectInformation,
-  split_full_project_id,
-  ProjectID,
-  PossibleConnectionInfo,
   NonUniqueProjectID,
-  ListingID,
+  PossibleConnectionInfo,
+  ProjectDataObject,
+  ProjectID,
+  ProjectInformation,
+  ProjectMetaObject,
   resolve_project_id,
+  split_full_project_id,
 } from '@faims3/data-model';
+import {DEBUG_APP} from '../buildconfig';
+import {
+  getServerConnection,
+  selectSpecificServer,
+} from '../context/slices/authSlice';
+import {store} from '../context/store';
+import {logError} from '../logging';
+import {shouldDisplayProject} from '../users';
+import {
+  ConnectionInfo,
+  ping_sync_denied,
+  ping_sync_error,
+  throttled_ping_sync_down,
+  throttled_ping_sync_up,
+} from './connection';
 import {
   ExistingActiveDoc,
   LocalDB,
@@ -37,24 +51,9 @@ import {
   ensure_synced_db,
   metadata_dbs,
 } from './databases';
-import {shouldDisplayProject} from '../users';
-import {all_projects_updated, getListing} from './state';
-import {DEBUG_APP} from '../buildconfig';
-import {logError} from '../logging';
 import {events} from './events';
-import {
-  ConnectionInfo,
-  throttled_ping_sync_down,
-  ping_sync_denied,
-  ping_sync_error,
-  throttled_ping_sync_up,
-} from './connection';
 import {fetchProjectMetadata} from './metadata';
-import {store} from '../context/store';
-import {
-  getServerConnection,
-  selectSpecificServer,
-} from '../context/slices/authSlice';
+import {all_projects_updated, getListing} from './state';
 
 /**
  * Temporarily override this type from @faims3/data-model to make

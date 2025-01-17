@@ -33,19 +33,18 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {useContext, useState} from 'react';
+import {useState} from 'react';
 
 import {LocalAutoIncrementRange, ProjectID} from '@faims3/data-model';
 import CloseIcon from '@mui/icons-material/Close';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {ActionType} from '../../../context/actions';
-import {store, useAppDispatch} from '../../../context/store';
+import {addAlert} from '../../../context/slices/syncSlice';
+import {useAppDispatch} from '../../../context/store';
 import {
   createNewAutoincrementRange,
   getLocalAutoincrementRangesForField,
   setLocalAutoincrementRangesForField,
 } from '../../../local-data/autoincrement';
-import {addAlert} from '../../../context/slices/syncSlice';
 
 interface Props {
   project_id: ProjectID;

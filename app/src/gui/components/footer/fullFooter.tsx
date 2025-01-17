@@ -1,15 +1,10 @@
-import {useTheme} from '@mui/material/styles';
-import React from 'react';
 import {Box, Divider, Grid, Typography} from '@mui/material';
 import Link from '@mui/material/Link';
+import {useTheme} from '@mui/material/styles';
 import SlimFooter from './slimFooter';
 import SupportEmail from './supportEmail';
-import {TokenContents} from '@faims3/data-model';
 
-interface FullFooterProps {
-}
-
-export default function FullFooter(props: FullFooterProps) {
+export default function FullFooter() {
   const theme = useTheme();
   return (
     <Box
