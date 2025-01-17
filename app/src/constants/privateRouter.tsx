@@ -9,8 +9,7 @@ import {
 } from '@mui/material';
 import {useEffect, useRef, useState} from 'react';
 import {Navigate, Link as RouterLink} from 'react-router-dom';
-import {dismissLoginBanner} from '../context/slices/authSlice';
-import {useAppDispatch, useAppSelector} from '../context/store';
+import {useAppSelector} from '../context/store';
 import {useIsOnline} from '../utils/customHooks';
 import * as ROUTES from './routes';
 
@@ -46,13 +45,9 @@ export const ActivePrivateRoute = (
 
 /**
  * Props for the OfflineLoginBanner component
- * @property {boolean} isOnline - Current online/offline status
- * @property {boolean} dismissed - Whether the banner has been dismissed (legacy property)
  * @property {string} loginPath - Route path for the login page
  */
 interface OfflineLoginBannerProps {
-  isOnline: boolean;
-  dismissed: boolean;
   loginPath: string;
 }
 
@@ -69,11 +64,7 @@ interface OfflineLoginBannerProps {
  *
  * Uses an Intersection Observer to detect scroll position relative to navbar
  */
-const OfflineLoginBanner = ({
-  isOnline,
-  dismissed,
-  loginPath,
-}: OfflineLoginBannerProps) => {
+const OfflineLoginBanner = ({loginPath}: OfflineLoginBannerProps) => {
   const [isSticky, setIsSticky] = useState(false);
   const observerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
@@ -98,10 +89,6 @@ const OfflineLoginBanner = ({
 
     return () => observer.disconnect();
   }, [isMobile]); // Recreate observer when screen size changes
-
-  if (!isOnline || dismissed) {
-    return null;
-  }
 
   return (
     <>
@@ -248,20 +235,16 @@ export const TolerantPrivateRoute = (
   // cause issues in offline context? Or during data collection.
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const isToken = useAppSelector(state => !!state.auth.activeUser?.token);
-
-  const dismissed = useAppSelector(state => state.auth.dismissedLoginBanner);
-  const dispatch = useAppDispatch();
   const {isOnline} = useIsOnline();
 
   // Good case - all good
   if (isAuthenticated)
     return (
       <>
-        <OfflineLoginBanner
-          isOnline={isOnline}
-          dismissed={dismissed}
-          loginPath={ROUTES.SIGN_IN}
-        />
+        {
+          //
+          <OfflineLoginBanner loginPath={ROUTES.SIGN_IN} />
+        }
         {props.children}
       </>
     );
@@ -270,11 +253,7 @@ export const TolerantPrivateRoute = (
   if (isToken) {
     return (
       <>
-        <OfflineLoginBanner
-          isOnline={isOnline}
-          dismissed={dismissed}
-          loginPath={ROUTES.SIGN_IN}
-        />
+        {isOnline && <OfflineLoginBanner loginPath={ROUTES.SIGN_IN} />}
         {props.children}
       </>
     );

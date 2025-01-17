@@ -18,6 +18,7 @@
  *   Provides a component to show either a link to sign-in or the username
  *   which links to the sign-in page
  */
+import {Browser} from '@capacitor/browser';
 import {
   AccountCircle,
   ExpandLess,
@@ -41,24 +42,21 @@ import {
 } from '@mui/material';
 import React from 'react';
 import {NavLink} from 'react-router-dom';
+import {APP_ID} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {
-  isTokenValid,
   listAllConnections,
   removeServerConnection,
   selectActiveUser,
   selectIsAuthenticated,
   setActiveUser,
 } from '../../../context/slices/authSlice';
+import {addAlert} from '../../../context/slices/syncSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {update_directory} from '../../../sync/process-initialization';
+import {getListing} from '../../../sync/state';
 import {isWeb} from '../../../utils/helpers';
 import {theme} from '../../themes';
-import {getListing} from '../../../sync/state';
-import {APP_ID} from '../../../buildconfig';
-import {Browser} from '@capacitor/browser';
-import {getAllListings} from '../../../sync';
-import {addAlert} from '../../../context/slices/syncSlice';
 
 const SignInButtonComponent = () => {
   return (
@@ -96,7 +94,7 @@ const AuthenticatedDisplayComponent = () => {
   const open = Boolean(anchorEl);
 
   const authState = useAppSelector(state => state.auth);
-  const {servers, activeUser} = authState;
+  const {activeUser} = authState;
   const dispatch = useAppDispatch();
 
   const userInitial =
@@ -104,10 +102,6 @@ const AuthenticatedDisplayComponent = () => {
 
   // Generate available connections list
   const availableConnections = listAllConnections({state: authState});
-  const problematicConnections = availableConnections.filter(c => {
-    return !isTokenValid(c);
-  });
-  const hasProblematicConnection = problematicConnections.length > 0;
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -186,9 +180,11 @@ const AuthenticatedDisplayComponent = () => {
           transition: 'background-color 0.3s ease, transform 0.2s ease',
           cursor: 'pointer',
         }}
+        // on hover colour
         onMouseEnter={e => {
           e.currentTarget.style.backgroundColor = theme.palette.secondary.main;
         }}
+        // not on hover colour
         onMouseLeave={e => {
           e.currentTarget.style.backgroundColor = theme.palette.primary.main;
         }}
@@ -259,11 +255,27 @@ const AuthenticatedDisplayComponent = () => {
           }}
         >
           <AccountCircle sx={{width: 40, height: 40}} />
-          <Box>
-            <Typography variant="subtitle1" fontWeight="bold">
+          <Box sx={{maxWidth: '100%'}}>
+            <Typography
+              variant="subtitle1"
+              fontWeight="bold"
+              sx={{
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {activeUser?.parsedToken.username}
             </Typography>
-            <Typography variant="body2" sx={{opacity: 0.8}}>
+            <Typography
+              variant="body2"
+              sx={{
+                opacity: 0.8,
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+              }}
+            >
               {activeUser?.serverId}
             </Typography>
           </Box>
@@ -319,7 +331,6 @@ const AuthenticatedDisplayComponent = () => {
         {/* Logout button */}
         {activeUser && (
           <MenuItem
-            component={ButtonBase}
             onClick={async () => {
               await handleLogout({
                 serverId: activeUser.serverId,

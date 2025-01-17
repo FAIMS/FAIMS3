@@ -18,22 +18,18 @@
  *   TODO
  */
 
-import React from 'react';
-import {Typography, Grid} from '@mui/material';
-import Notebooks from '../components/workspace/notebooks';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {Grid, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
-import {useAppSelector} from '../../context/store';
+import React from 'react';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {selectActiveUser} from '../../context/slices/authSlice';
-import {getListing} from '../../sync/state';
+import {useAppSelector} from '../../context/store';
 import {useGetListing} from '../../utils/custom_hooks';
+import Notebooks from '../components/workspace/notebooks';
 
 export default function Workspace() {
   const theme = useTheme();
   const activeUser = useAppSelector(selectActiveUser);
-
-  // TODO improve handling of undefined case
   const listing = useGetListing({serverId: activeUser?.serverId!});
   const serverName = listing.data?.name;
 
@@ -48,13 +44,15 @@ export default function Workspace() {
           >
             My {NOTEBOOK_NAME_CAPITALIZED}s
           </Typography>
-          <Typography
-            variant="h4"
-            color="textSecondary"
-            style={{marginBottom: theme.spacing(2)}}
-          >
-            {serverName}
-          </Typography>
+          {!listing.isError && (
+            <Typography
+              variant="h4"
+              color="textSecondary"
+              style={{marginBottom: theme.spacing(2)}}
+            >
+              {listing.isLoading ? 'Loading...' : serverName}
+            </Typography>
+          )}
           <Notebooks />
         </Grid>
       </Grid>

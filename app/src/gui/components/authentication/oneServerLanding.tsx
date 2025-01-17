@@ -10,8 +10,9 @@ import {useState} from 'react';
 import {QRCodeButtonOnly, ShortCodeOnlyComponent} from './shortCodeOnly';
 import {isWeb} from '../../../utils/helpers';
 import {Browser} from '@capacitor/browser';
-import {APP_ID, APP_NAME, HEADING_APP_NAME} from '../../../buildconfig';
+import {APP_ID, APP_NAME} from '../../../buildconfig';
 import {useIsOnline} from '../../../utils/customHooks';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 
 const OnboardingComponent = ({
   scanQr,
@@ -21,14 +22,10 @@ const OnboardingComponent = ({
   listings: ListingsObject[];
 }) => {
   const {isOnline, fallback} = useIsOnline();
-
   const [showCodeInput, setShowCodeInput] = useState(false);
   const theme = useTheme();
-
-  // This component is only rendered when this item is defined
   const listing = listings[0]!;
 
-  // If we are offline - just show this - you can't login while offline!
   if (!isOnline) {
     return <>{fallback}</>;
   }
@@ -39,10 +36,6 @@ const OnboardingComponent = ({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        // TODO I don't like this magic number but can't workout how app bar
-        // height is calculated and is not screen size dependent
-
-        // Adjust for header height to achieve true center
         height: 'calc(100vh - 110px)',
         padding: 1,
         backgroundColor: '#f5f5f5',
@@ -71,52 +64,63 @@ const OnboardingComponent = ({
             marginBottom: 1,
           }}
         >
-            {APP_NAME}
+          {APP_NAME}
         </Typography>
 
-        {/* Sign In Button */}
-        <Button
-          variant="outlined"
-          fullWidth
-          startIcon={
-            <LoginOutlinedIcon sx={{color: theme.palette.primary.main}} />
-          }
-          onClick={async () => {
-            if (isWeb()) {
-              const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-              window.location.href =
-                listing.conductor_url + '/auth?redirect=' + redirect;
-            } else {
-              // Use the capacitor browser plugin in apps
-              await Browser.open({
-                url: `${listing.conductor_url}/auth?redirect=${APP_ID}://auth-return`,
-              });
+        {/* Sign In Section */}
+        <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              textAlign: 'left',
+              color: theme.palette.text.secondary,
+              fontSize: '0.95rem',
+            }}
+          >
+            Already have an account
+          </Typography>
+          <Button
+            variant="outlined"
+            fullWidth
+            startIcon={
+              <LoginOutlinedIcon sx={{color: theme.palette.primary.main}} />
             }
-          }}
-          sx={{
-            borderRadius: '12px',
-            padding: '12px 20px',
-            textTransform: 'none',
-            fontSize: '1rem',
-            color: theme.palette.primary.main,
-            borderColor: theme.palette.primary.main,
-            borderWidth: '1.5px',
-            '&:hover': {
-              borderColor: theme.palette.primary.dark,
+            onClick={async () => {
+              if (isWeb()) {
+                const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
+                window.location.href =
+                  listing.conductor_url + '/auth?redirect=' + redirect;
+              } else {
+                await Browser.open({
+                  url: `${listing.conductor_url}/auth?redirect=${APP_ID}://auth-return`,
+                });
+              }
+            }}
+            sx={{
+              borderRadius: '12px',
+              padding: '12px 20px',
+              textTransform: 'none',
+              fontSize: '1rem',
+              color: theme.palette.primary.main,
+              borderColor: theme.palette.primary.main,
               borderWidth: '1.5px',
-              backgroundColor: theme.palette.primary.light[50],
-            },
-          }}
-        >
-          Already have an account? Sign in
-        </Button>
+              '&:hover': {
+                borderColor: theme.palette.primary.dark,
+                borderWidth: '1.5px',
+                backgroundColor: theme.palette.primary.light[50],
+              },
+            }}
+          >
+            Sign in
+          </Button>
+        </Box>
 
         <Typography
           sx={{
             textAlign: 'center',
-            color: theme.palette.primary.dark,
+            color: theme.palette.text.secondary,
             margin: '-8px 0',
-            fontSize: '0.9rem',
+            fontSize: '1rem',
           }}
         >
           - or -
@@ -128,23 +132,42 @@ const OnboardingComponent = ({
             <ShortCodeOnlyComponent listings={listings} />
           </Box>
         ) : (
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={() => setShowCodeInput(true)}
-            sx={{
-              borderRadius: '12px',
-              padding: '12px 20px',
-              textTransform: 'none',
-              fontSize: '1rem',
-              backgroundColor: theme.palette.primary.main,
-              '&:hover': {
-                backgroundColor: theme.palette.primary.main,
-              },
-            }}
-          >
-            Enter access code to register
-          </Button>
+          <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                textAlign: 'left',
+                color: theme.palette.text.secondary,
+                fontSize: '0.95rem',
+              }}
+            >
+              Enter access code to register
+            </Typography>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => setShowCodeInput(true)}
+              startIcon={
+                <LockOpenIcon sx={{color: theme.palette.primary.main}} />
+              }
+              sx={{
+                borderRadius: '12px',
+                padding: '12px 20px',
+                textTransform: 'none',
+                fontSize: '1rem',
+                color: theme.palette.primary.main,
+                borderColor: theme.palette.primary.main,
+                borderWidth: '1.5px',
+                '&:hover': {
+                  borderColor: theme.palette.primary.dark,
+                  borderWidth: '1.5px',
+                  backgroundColor: theme.palette.primary.light[50],
+                },
+              }}
+            >
+              Enter code
+            </Button>
+          </Box>
         )}
 
         {/* QR Code Scanner Button (if enabled) */}

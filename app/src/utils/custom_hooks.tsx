@@ -42,13 +42,17 @@ const fetchListing = async (
 };
 
 /**
- * Custom hook to fetch and manage listings from a directory database using React Query.
+ * Custom hook to fetch and manage listings from a directory database using
+ * React Query.
  */
-export const useGetListing = (input: {serverId: string}) => {
+export const useGetListing = (input: {serverId?: string}) => {
   return useQuery({
-    queryKey: ['listings'],
+    queryKey: ['listings', input.serverId],
     queryFn: async () => {
-      return await fetchListing(input.serverId);
+      if (!input.serverId) {
+        return null;
+      }
+      return (await fetchListing(input.serverId)) || null;
     },
   });
 };

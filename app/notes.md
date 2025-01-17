@@ -28,14 +28,6 @@ In the second class, we could show a banner in the condition where isAuthenticat
 
 ## TODO
 
-- move the banner to top if navigation present, otherwise float on top
-- left align login button + dismiss on banner - prominent login, 'alert' dismiss
-- separate instructions from button text in login page
-- workspace.tsx fix up implementation of sub heading
-- update NBIC BSS Server to show display name for server
-- add logout button onto popup
-- add logo green vs orange icon for online vs offline - in banner
-- remove dismiss
 - test with email address rather than admin to see if the profile icon works
 - make refresh only refresh if the token is going to expire in the next minute and the refresh token is not expired
 - ensure couch DB respects expiry

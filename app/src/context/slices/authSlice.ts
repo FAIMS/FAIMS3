@@ -45,7 +45,6 @@ export interface AuthState {
   activeUser: ActiveUser | undefined;
   isAuthenticated: boolean;
   refreshError: string | undefined;
-  dismissedLoginBanner: boolean;
 }
 
 export interface SetServerConnectionInput {
@@ -95,7 +94,6 @@ const initialState: AuthState = {
   activeUser: undefined,
   isAuthenticated: false,
   refreshError: undefined,
-  dismissedLoginBanner: false,
 };
 
 const authSlice = createSlice({
@@ -104,15 +102,6 @@ const authSlice = createSlice({
   reducers: {
     refreshIsAuthenticated: (state, _: PayloadAction<{}>) => {
       state.isAuthenticated = checkAuthenticationStatus(state);
-    },
-
-    // Banner management - this is shared so that network events can interact
-    // with it globally
-    dismissLoginBanner: state => {
-      state.dismissedLoginBanner = true;
-    },
-    repropmtLoginBanner: state => {
-      state.dismissedLoginBanner = false;
     },
 
     assignServerConnection: (
@@ -148,9 +137,6 @@ const authSlice = createSlice({
       }
 
       state.isAuthenticated = checkAuthenticationStatus(state);
-
-      // Update dismissed to false since we've performed some change to the active connection
-      state.dismissedLoginBanner = false;
     },
 
     setActiveUser: (state, action: PayloadAction<ServerUserIdentity>) => {
@@ -481,8 +467,6 @@ export const {
   removeServerConnection,
   clearActiveConnection,
   refreshIsAuthenticated,
-  dismissLoginBanner,
-  repropmtLoginBanner,
   assignServerConnection,
 } = authSlice.actions;
 

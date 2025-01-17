@@ -23,12 +23,9 @@ import {set_sync_status_callbacks} from '../sync/connection';
 import {initialize} from '../sync/initialize';
 import {getSyncStatusCallbacks} from '../utils/status';
 import authReducer, {
-  refreshActiveUser,
-  refreshIsAuthenticated,
-  selectActiveUser,
-  selectIsAuthenticated,
-  repropmtLoginBanner,
   refreshAllUsers,
+  refreshIsAuthenticated,
+  selectIsAuthenticated,
 } from './slices/authSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
 
@@ -144,10 +141,6 @@ const NetworkUpHandler: React.FC = () => {
       } finally {
         // Always check authentication status after refresh attempt
         dispatch(refreshIsAuthenticated({}));
-
-        // We also want to prompt the banner back since the network has 'come
-        // back up' - good time to re-ask user to log back in
-        dispatch(repropmtLoginBanner());
       }
     };
 
