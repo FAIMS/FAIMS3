@@ -142,9 +142,7 @@
         "workbox-expiration": "6.5.4",
         "workbox-precaching": "7.1.0",
         "workbox-routing": "6.5.4",
-        "workbox-strategies": "6.5.4",
-        "yup": "1.1.1",
-        "zustand": "^5.0.2"
+        "workbox-strategies": "6.5.4"
     },
     "devDependencies": {
         "@capacitor/assets": "^3.0.5",
