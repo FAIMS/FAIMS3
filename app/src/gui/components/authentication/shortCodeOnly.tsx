@@ -21,6 +21,7 @@ import {useNotification} from '../../../context/popup';
 import {store, useAppDispatch} from '../../../context/store';
 import {isWeb} from '../../../utils/helpers';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {addAlert} from '../../../context/slices/syncSlice';
 
 /**
  * Component to register a button for scanning a QR code to register
@@ -44,13 +45,12 @@ export function QRCodeButtonOnly(props: {listings: ListingsObject[]}) {
         url: `${url}?redirect=${APP_ID}://auth-return`,
       });
     } else {
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
+      dispatch(
+        addAlert({
           message: 'Invalid QRCode Scanned',
           severity: 'warning',
-        },
-      });
+        })
+      );
     }
   };
 

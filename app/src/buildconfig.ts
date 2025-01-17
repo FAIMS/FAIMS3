@@ -332,7 +332,7 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
-const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 15000;
+const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 1800000;
 
 /**
  * @returns The interval by which we attempt to refresh all tokens

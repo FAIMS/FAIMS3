@@ -61,6 +61,7 @@ import {
 import {ConflictHelpDialog} from './conflictDialog';
 import {logError} from '../../../../logging';
 import {theme} from '../../../themes';
+import {addAlert} from '../../../../context/slices/syncSlice';
 
 type ConflictFormProps = {
   project_id: ProjectID;
@@ -624,13 +625,12 @@ export default function ConflictForm(props: ConflictFormProps) {
         });
 
         if (result) {
-          dispatch({
-            type: ActionType.ADD_ALERT,
-            payload: {
+          dispatch(
+            addAlert({
               message: 'Saved conflict resolved.',
               severity: 'success',
-            },
-          });
+            })
+          );
           try {
             const new_result = await check_relationship(fieldchoise);
             console.debug(
@@ -640,13 +640,12 @@ export default function ConflictForm(props: ConflictFormProps) {
             );
           } catch (error) {
             logError(error); // error to save update child of the conflict
-            dispatch({
-              type: ActionType.ADD_ALERT,
-              payload: {
+            dispatch(
+              addAlert({
                 message: 'Error to save update child record information',
                 severity: 'error',
-              },
-            });
+              })
+            );
           }
           //this function need to be tested more
           // setRevisionList(['', '']);
@@ -660,25 +659,23 @@ export default function ConflictForm(props: ConflictFormProps) {
         logError(error); // error to save the conflict
         // alert user if the conflict not been saved
         setloading(false);
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: 'Attempted conflict resolution not saved',
             severity: 'error',
-          },
-        });
+          })
+        );
         setissavedconflict(record_id + revisionlist[1]);
       }
     } else {
       // alert user if the conflict not been saved
       setloading(false);
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
+      dispatch(
+        addAlert({
           message: 'Conflict Resolve Not saved',
           severity: 'error',
-        },
-      });
+        })
+      );
       setissavedconflict(record_id + revisionlist[1]);
     }
   };

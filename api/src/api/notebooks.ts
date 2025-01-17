@@ -37,7 +37,7 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {DEVELOPER_MODE} from '../buildconfig';
+import {CONDUCTOR_INSTANCE_NAME, DEVELOPER_MODE} from '../buildconfig';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
   createNotebook,
@@ -66,6 +66,7 @@ import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 
 import patch from '../utils/patchExpressAsync';
+import {slugify} from '../utils';
 
 // This must occur before express api is used
 patch();
@@ -243,7 +244,11 @@ api.get(
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.UnauthorizedException();
     }
-    const records = await getNotebookRecords(req.params.id);
+    const records = await getNotebookRecords(req.params.id, {
+      roles: req.user.roles,
+      server: slugify(CONDUCTOR_INSTANCE_NAME),
+      username: req.user.user_id,
+    });
     if (records) {
       res.json({records});
     } else {

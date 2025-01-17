@@ -96,6 +96,7 @@ import ProgressBar from '../components/progress-bar';
 import {scrollToDiv} from '../../lib/navigation';
 import TransparentButton from '../components/buttons/transparent-button';
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
+import {addAlert} from '../../context/slices/syncSlice';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -272,13 +273,12 @@ export default function Record() {
           if (latest_record !== null) {
             //add checking for deleted record, so it can be direct to notebook page
             if (latest_record.deleted === true) {
-              dispatch({
-                type: ActionType.ADD_ALERT,
-                payload: {
+              dispatch(
+                addAlert({
                   message: 'Could not load record, it might be deleted ',
                   severity: 'warning',
-                },
-              });
+                })
+              );
               history({
                 pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
               });
@@ -399,13 +399,12 @@ export default function Record() {
             });
           }
         } else {
-          dispatch({
-            type: ActionType.ADD_ALERT,
-            payload: {
+          dispatch(
+            addAlert({
               message: 'Could not remove link,please save and then try again ',
               severity: 'warning',
-            },
-          });
+            })
+          );
         }
       }
     );
@@ -594,13 +593,12 @@ export default function Record() {
 
           {(() => {
             if (error !== null) {
-              dispatch({
-                type: ActionType.ADD_ALERT,
-                payload: {
+              dispatch(
+                addAlert({
                   message: 'Could not load form: ' + error.toString(),
                   severity: 'warning',
-                },
-              });
+                })
+              );
               history(-1);
               return <React.Fragment />;
             } else if (uiSpec === null || type === null || isSyncing === null) {

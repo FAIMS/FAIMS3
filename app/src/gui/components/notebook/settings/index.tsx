@@ -48,6 +48,7 @@ import {logError} from '../../../../logging';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
 import {ProjectsContext} from '../../../../context/projects-context';
 import {theme} from '../../../themes';
+import {addAlert} from '../../../../context/slices/syncSlice';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -127,13 +128,12 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                           checked
                         );
                         if (checked)
-                          dispatch({
-                            type: ActionType.ADD_ALERT,
-                            payload: {
+                          dispatch(
+                            addAlert({
                               message: 'Downloading attachments to device...',
                               severity: 'success',
-                            },
-                          });
+                            })
+                          );
                       }}
                     />
                   }

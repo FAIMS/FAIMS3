@@ -45,6 +45,7 @@ import {
   getLocalAutoincrementRangesForField,
   setLocalAutoincrementRangesForField,
 } from '../../../local-data/autoincrement';
+import {addAlert} from '../../../context/slices/syncSlice';
 
 interface Props {
   project_id: ProjectID;
@@ -100,13 +101,12 @@ export const AutoIncrementEditForm = ({
       );
       queryClient.invalidateQueries({queryKey: queryKey});
     } catch (err: any) {
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
+      dispatch(
+        addAlert({
           message: err.toString(),
           severity: 'error',
-        },
-      });
+        })
+      );
     }
   };
 

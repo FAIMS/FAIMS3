@@ -26,6 +26,7 @@ import {createUseStyles} from 'react-jss';
 import {ActionType} from '../../context/actions';
 import {useAppDispatch} from '../../context/store';
 import {useAppSelector} from '../../context/store';
+import {addAlert, deleteAlert} from '../../context/slices/syncSlice';
 
 const useStyles = createUseStyles({
   root: {
@@ -58,10 +59,11 @@ export default function SystemAlert() {
    * @param {string} key - The unique key identifying the alert to be closed.
    */
   const handleClose = (key: string) => {
-    dispatch({
-      type: ActionType.DELETE_ALERT,
-      payload: {key},
-    });
+    dispatch(
+      deleteAlert({
+        key,
+      })
+    );
   };
 
   const currentAlert = alerts.length > 0 ? alerts[alerts.length - 1] : null;

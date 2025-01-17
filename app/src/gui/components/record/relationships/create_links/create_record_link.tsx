@@ -24,6 +24,7 @@ import {LocationState} from '@faims3/data-model';
 import * as ROUTES from '../../../../../constants/routes';
 import {logError} from '../../../../../logging';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../../../constants/routes';
+import { addAlert } from '../../../../../context/slices/syncSlice';
 
 export function AddNewRecordButton(props: {
   is_enabled: boolean;
@@ -131,13 +132,11 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       // });
       try {
         // response success
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(addAlert({
             message: `Link between this record ${props.label} and ${selectedRecord.record_label} added`,
             severity: 'success',
-          },
-        });
+
+        }))
       } catch (error) {
         logError(error);
       }

@@ -45,6 +45,7 @@ import {isWeb} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
 import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
 import {useNotification} from '../../context/popup';
+import {addAlert} from '../../context/slices/syncSlice';
 
 type ShortCodeProps = {
   listings: ListingsObject[];
@@ -242,13 +243,12 @@ export function QRCodeRegistration(props: ShortCodeProps) {
         url: `${url}?redirect=${APP_ID}://auth-return`,
       });
     } else {
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
+      dispatch(
+        addAlert({
           message: 'Invalid QRCode Scanned',
           severity: 'warning',
-        },
-      });
+        })
+      );
     }
   };
 

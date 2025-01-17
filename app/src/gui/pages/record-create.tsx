@@ -67,6 +67,7 @@ import ProgressBar from '../components/progress-bar';
 import TransparentButton from '../components/buttons/transparent-button';
 import {scrollToDiv} from '../../lib/navigation';
 import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
+import {addAlert} from '../../context/slices/syncSlice';
 
 interface DraftCreateProps {
   project_id: ProjectID;
@@ -117,13 +118,12 @@ function DraftCreate(props: DraftCreateProps) {
   }, [project_id, uiSpec]);
 
   if (error !== null) {
-    dispatch({
-      type: ActionType.ADD_ALERT,
-      payload: {
+    dispatch(
+      addAlert({
         message: 'Could not create a draft: ' + error.toString(),
         severity: 'warning',
-      },
-    });
+      })
+    );
     navigate(-1);
     return <React.Fragment />;
   } else if (draft_id === null) {
@@ -234,13 +234,12 @@ function DraftEdit(props: DraftEditProps) {
   };
 
   if (error !== null) {
-    dispatch({
-      type: ActionType.ADD_ALERT,
-      payload: {
+    dispatch(
+      addAlert({
         message: 'Could not edit draft: ' + error.toString(),
         severity: 'warning',
-      },
-    });
+      })
+    );
     navigate(-1);
     return <React.Fragment />;
   }

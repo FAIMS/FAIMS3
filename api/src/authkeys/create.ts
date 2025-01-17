@@ -45,7 +45,8 @@ export async function createAuthKey(
     .setIssuedAt()
     .setIssuer(signingKey.instanceName)
     // Expiry in minutes
-    .setExpirationTime(ACCESS_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+    .setExpirationTime('10s')
+    //ACCESS_TOKEN_EXPIRY_MINUTES.toString() + 'm')
     .sign(signingKey.privateKey);
   return jwt;
 }

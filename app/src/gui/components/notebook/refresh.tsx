@@ -6,6 +6,7 @@ import {store, useAppDispatch} from '../../../context/store';
 import {useInterval} from '../../../utils/useInterval';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import {addAlert} from '../../../context/slices/syncSlice';
 
 interface RefreshNotebookProps {
   handleRefresh: Function;
@@ -56,22 +57,20 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
         // clear timer and reset lastRefresh
         setCounter(0);
         setLastRefresh(moment().format(LAST_REFRESH_FORMAT));
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: `${props.project_name} ${NOTEBOOK_NAME_CAPITALIZED} refreshed`,
             severity: 'success',
-          },
-        });
+          })
+        );
       })
       .catch((err: Error) => {
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: err.message,
             severity: 'error',
-          },
-        });
+          })
+        );
       });
   };
 

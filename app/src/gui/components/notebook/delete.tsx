@@ -44,6 +44,7 @@ import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {deleteDraftsForRecord} from '../../../drafts';
 import {deleteStagedData} from '../../../sync/draft-storage';
 import {theme} from '../../themes';
+import {addAlert} from '../../../context/slices/syncSlice';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
@@ -107,13 +108,12 @@ export default function RecordDelete(props: RecordDeleteProps) {
         const message = is_draft
           ? `Draft ${draft_id} for record ${record_id} discarded`
           : `Record ${record_id} deleted`;
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: message,
             severity: 'success',
-          },
-        });
+          })
+        );
         handleClose();
         history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
       })
@@ -122,13 +122,12 @@ export default function RecordDelete(props: RecordDeleteProps) {
         const message = is_draft
           ? `Draft ${draft_id} for record ${record_id} could not be discarded`
           : `Record ${record_id} could not be deleted`;
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: message,
             severity: 'error',
-          },
-        });
+          })
+        );
         handleClose();
       });
   };

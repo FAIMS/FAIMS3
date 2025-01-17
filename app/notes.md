@@ -28,8 +28,7 @@ In the second class, we could show a banner in the condition where isAuthenticat
 
 ## TODO
 
-- add expiry back to JWTs generated from backend
-- ensure couch DB respects expiry
+- ensure couch DB respects expiry (I believe it will since exp claim will be there)
 - (later) - make the refresh token expiry be taken into account
 - (later) - on app open - always go to login screen when refresh token expired or close to
 - (later) per server per user db?
