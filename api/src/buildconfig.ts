@@ -274,6 +274,56 @@ function developer_mode(): any {
   }
 }
 
+// 5 minute access token expiry by default
+const DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES = 5;
+
+/**
+ * @returns The minimum valid time for a token before attempting refreshes
+ */
+function accessTokenExpiryMinutes(): number {
+  const accessTokenExpiryMinutes = process.env.ACCESS_TOKEN_EXPIRY_MINUTES;
+  if (
+    accessTokenExpiryMinutes === '' ||
+    accessTokenExpiryMinutes === undefined
+  ) {
+    return DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES;
+  }
+  try {
+    return parseInt(accessTokenExpiryMinutes);
+  } catch (err) {
+    console.error(
+      'ACCESS_TOKEN_EXPIRY_MINUTES unparseable, defaulting to ' +
+        DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES
+    );
+    return DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES;
+  }
+}
+
+// 2 days refresh token expiry by default
+const DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES = 60 * 24 * 2;
+
+/**
+ * @returns The minimum valid time for a token before attempting refreshes
+ */
+function refreshTokenExpiryMinutes(): number {
+  const refreshTokenExpiryMinutes = process.env.REFRESH_TOKEN_EXPIRY_MINUTES;
+  if (
+    refreshTokenExpiryMinutes === '' ||
+    refreshTokenExpiryMinutes === undefined
+  ) {
+    return DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES;
+  }
+  try {
+    return parseInt(refreshTokenExpiryMinutes);
+  } catch (err) {
+    console.error(
+      'REFRESH_TOKEN_EXPIRY_MINUTES unparseable, defaulting to ' +
+        DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES
+    );
+    return DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES;
+  }
+}
+
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -294,6 +344,8 @@ export const CONDUCTOR_AUTH_PROVIDERS = get_providers_to_use();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
+export const ACCESS_TOKEN_EXPIRY_MINUTES = accessTokenExpiryMinutes();
+export const REFRESH_TOKEN_EXPIRY_MINUTES = refreshTokenExpiryMinutes();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
