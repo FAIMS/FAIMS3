@@ -23,6 +23,7 @@ import {requireAuthenticationAPI} from '../middleware';
 import {
   addOtherRoleToUser,
   getUserFromEmailOrUsername,
+  getUsers,
   removeOtherRoleFromUser,
   saveUser,
   userIsClusterAdmin,
@@ -70,3 +71,15 @@ api.post(
     res.status(200).send();
   }
 );
+
+// GET all users
+api.get('/', requireAuthenticationAPI, async (req, res) => {
+  if (!req.user) {
+    throw new Exceptions.UnauthorizedException(
+      'You are not allowed to get users.'
+    );
+  }
+
+  const users = await getUsers();
+  res.json(users);
+});

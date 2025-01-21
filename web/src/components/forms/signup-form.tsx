@@ -14,12 +14,15 @@ import {Input} from '@/components/ui/input';
 import {useState} from 'react';
 import {useAuth} from '@/auth';
 import {Link, useRouter} from '@tanstack/react-router';
-import {Route} from '@/routes/login';
+import {Route} from '@/routes/signup';
 import {sleep} from '@/utils';
 
 const formSchema = z.object({
   email: z.string().min(2, {
     message: 'Username must be at least 2 characters.',
+  }),
+  name: z.string().min(2, {
+    message: 'Name must be at least 2 characters.',
   }),
   password: z.string().min(2, {
     message: 'Password must be at least 2 characters.',
@@ -33,23 +36,35 @@ export function SignupForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
+      name: '',
+      password: '',
     },
   });
+  const {
+    control,
+    formState: {errors},
+  } = form;
 
-  const auth = useAuth();
-  const router = useRouter();
-  const search = Route.useSearch();
+  const {signup} = useAuth();
+  const {navigate} = useRouter();
+  const {redirect} = Route.useSearch();
 
-  const onSubmit = async ({email, password}: z.infer<typeof formSchema>) => {
+  const onSubmit = async ({
+    email,
+    name,
+    password,
+  }: z.infer<typeof formSchema>) => {
     form.clearErrors();
-
     setIsSubmitting(true);
 
-    await auth.login(email, password);
+    const {status, message} = await signup(email, name, password);
 
-    await sleep(1);
-
-    await router.navigate({to: search.redirect || ''});
+    if (status === 'error') {
+      form.setError('root', {type: 'submit', message});
+    } else {
+      await sleep(1);
+      await navigate({to: redirect || ''});
+    }
 
     setIsSubmitting(false);
   };
@@ -62,7 +77,7 @@ export function SignupForm() {
       >
         <div className="flex flex-col gap-2">
           <FormField
-            control={form.control}
+            control={control}
             name="email"
             render={({field}) => (
               <FormItem>
@@ -75,7 +90,20 @@ export function SignupForm() {
             )}
           />
           <FormField
-            control={form.control}
+            control={control}
+            name="name"
+            render={({field}) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="John Smith" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
             name="password"
             render={({field}) => (
               <FormItem>
@@ -87,6 +115,7 @@ export function SignupForm() {
               </FormItem>
             )}
           />
+          <FormMessage>{errors.root?.message}</FormMessage>
         </div>
         <div className="flex flex-col gap-2">
           <Button type="submit" className="w-full" disabled={isSubmitting}>

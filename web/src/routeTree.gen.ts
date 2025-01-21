@@ -15,7 +15,13 @@ import { Route as SignupImport } from './routes/signup'
 import { Route as LoginImport } from './routes/login'
 import { Route as AuthImport } from './routes/_auth'
 import { Route as AuthIndexImport } from './routes/_auth/index'
-import { Route as AuthAboutImport } from './routes/_auth/about'
+import { Route as AuthUsersImport } from './routes/_auth/users'
+import { Route as AuthProfileImport } from './routes/_auth/profile'
+import { Route as AuthAccountImport } from './routes/_auth/account'
+import { Route as AuthTemplatesIndexImport } from './routes/_auth/templates/index'
+import { Route as AuthSurveysIndexImport } from './routes/_auth/surveys/index'
+import { Route as AuthTemplatesTemplateIdImport } from './routes/_auth/templates/$templateId'
+import { Route as AuthSurveysSurveyIdImport } from './routes/_auth/surveys/$surveyId'
 
 // Create/Update Routes
 
@@ -42,9 +48,45 @@ const AuthIndexRoute = AuthIndexImport.update({
   getParentRoute: () => AuthRoute,
 } as any)
 
-const AuthAboutRoute = AuthAboutImport.update({
-  id: '/about',
-  path: '/about',
+const AuthUsersRoute = AuthUsersImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthRoute,
+} as any)
+
+const AuthProfileRoute = AuthProfileImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthRoute,
+} as any)
+
+const AuthAccountRoute = AuthAccountImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AuthRoute,
+} as any)
+
+const AuthTemplatesIndexRoute = AuthTemplatesIndexImport.update({
+  id: '/templates/',
+  path: '/templates/',
+  getParentRoute: () => AuthRoute,
+} as any)
+
+const AuthSurveysIndexRoute = AuthSurveysIndexImport.update({
+  id: '/surveys/',
+  path: '/surveys/',
+  getParentRoute: () => AuthRoute,
+} as any)
+
+const AuthTemplatesTemplateIdRoute = AuthTemplatesTemplateIdImport.update({
+  id: '/templates/$templateId',
+  path: '/templates/$templateId',
+  getParentRoute: () => AuthRoute,
+} as any)
+
+const AuthSurveysSurveyIdRoute = AuthSurveysSurveyIdImport.update({
+  id: '/surveys/$surveyId',
+  path: '/surveys/$surveyId',
   getParentRoute: () => AuthRoute,
 } as any)
 
@@ -73,11 +115,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupImport
       parentRoute: typeof rootRoute
     }
-    '/_auth/about': {
-      id: '/_auth/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AuthAboutImport
+    '/_auth/account': {
+      id: '/_auth/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthAccountImport
+      parentRoute: typeof AuthImport
+    }
+    '/_auth/profile': {
+      id: '/_auth/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthProfileImport
+      parentRoute: typeof AuthImport
+    }
+    '/_auth/users': {
+      id: '/_auth/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthUsersImport
       parentRoute: typeof AuthImport
     }
     '/_auth/': {
@@ -87,19 +143,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexImport
       parentRoute: typeof AuthImport
     }
+    '/_auth/surveys/$surveyId': {
+      id: '/_auth/surveys/$surveyId'
+      path: '/surveys/$surveyId'
+      fullPath: '/surveys/$surveyId'
+      preLoaderRoute: typeof AuthSurveysSurveyIdImport
+      parentRoute: typeof AuthImport
+    }
+    '/_auth/templates/$templateId': {
+      id: '/_auth/templates/$templateId'
+      path: '/templates/$templateId'
+      fullPath: '/templates/$templateId'
+      preLoaderRoute: typeof AuthTemplatesTemplateIdImport
+      parentRoute: typeof AuthImport
+    }
+    '/_auth/surveys/': {
+      id: '/_auth/surveys/'
+      path: '/surveys'
+      fullPath: '/surveys'
+      preLoaderRoute: typeof AuthSurveysIndexImport
+      parentRoute: typeof AuthImport
+    }
+    '/_auth/templates/': {
+      id: '/_auth/templates/'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof AuthTemplatesIndexImport
+      parentRoute: typeof AuthImport
+    }
   }
 }
 
 // Create and export the route tree
 
 interface AuthRouteChildren {
-  AuthAboutRoute: typeof AuthAboutRoute
+  AuthAccountRoute: typeof AuthAccountRoute
+  AuthProfileRoute: typeof AuthProfileRoute
+  AuthUsersRoute: typeof AuthUsersRoute
   AuthIndexRoute: typeof AuthIndexRoute
+  AuthSurveysSurveyIdRoute: typeof AuthSurveysSurveyIdRoute
+  AuthTemplatesTemplateIdRoute: typeof AuthTemplatesTemplateIdRoute
+  AuthSurveysIndexRoute: typeof AuthSurveysIndexRoute
+  AuthTemplatesIndexRoute: typeof AuthTemplatesIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
-  AuthAboutRoute: AuthAboutRoute,
+  AuthAccountRoute: AuthAccountRoute,
+  AuthProfileRoute: AuthProfileRoute,
+  AuthUsersRoute: AuthUsersRoute,
   AuthIndexRoute: AuthIndexRoute,
+  AuthSurveysSurveyIdRoute: AuthSurveysSurveyIdRoute,
+  AuthTemplatesTemplateIdRoute: AuthTemplatesTemplateIdRoute,
+  AuthSurveysIndexRoute: AuthSurveysIndexRoute,
+  AuthTemplatesIndexRoute: AuthTemplatesIndexRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -108,15 +204,27 @@ export interface FileRoutesByFullPath {
   '': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/about': typeof AuthAboutRoute
+  '/account': typeof AuthAccountRoute
+  '/profile': typeof AuthProfileRoute
+  '/users': typeof AuthUsersRoute
   '/': typeof AuthIndexRoute
+  '/surveys/$surveyId': typeof AuthSurveysSurveyIdRoute
+  '/templates/$templateId': typeof AuthTemplatesTemplateIdRoute
+  '/surveys': typeof AuthSurveysIndexRoute
+  '/templates': typeof AuthTemplatesIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/about': typeof AuthAboutRoute
+  '/account': typeof AuthAccountRoute
+  '/profile': typeof AuthProfileRoute
+  '/users': typeof AuthUsersRoute
   '/': typeof AuthIndexRoute
+  '/surveys/$surveyId': typeof AuthSurveysSurveyIdRoute
+  '/templates/$templateId': typeof AuthTemplatesTemplateIdRoute
+  '/surveys': typeof AuthSurveysIndexRoute
+  '/templates': typeof AuthTemplatesIndexRoute
 }
 
 export interface FileRoutesById {
@@ -124,16 +232,55 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/_auth/about': typeof AuthAboutRoute
+  '/_auth/account': typeof AuthAccountRoute
+  '/_auth/profile': typeof AuthProfileRoute
+  '/_auth/users': typeof AuthUsersRoute
   '/_auth/': typeof AuthIndexRoute
+  '/_auth/surveys/$surveyId': typeof AuthSurveysSurveyIdRoute
+  '/_auth/templates/$templateId': typeof AuthTemplatesTemplateIdRoute
+  '/_auth/surveys/': typeof AuthSurveysIndexRoute
+  '/_auth/templates/': typeof AuthTemplatesIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '' | '/login' | '/signup' | '/about' | '/'
+  fullPaths:
+    | ''
+    | '/login'
+    | '/signup'
+    | '/account'
+    | '/profile'
+    | '/users'
+    | '/'
+    | '/surveys/$surveyId'
+    | '/templates/$templateId'
+    | '/surveys'
+    | '/templates'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/signup' | '/about' | '/'
-  id: '__root__' | '/_auth' | '/login' | '/signup' | '/_auth/about' | '/_auth/'
+  to:
+    | '/login'
+    | '/signup'
+    | '/account'
+    | '/profile'
+    | '/users'
+    | '/'
+    | '/surveys/$surveyId'
+    | '/templates/$templateId'
+    | '/surveys'
+    | '/templates'
+  id:
+    | '__root__'
+    | '/_auth'
+    | '/login'
+    | '/signup'
+    | '/_auth/account'
+    | '/_auth/profile'
+    | '/_auth/users'
+    | '/_auth/'
+    | '/_auth/surveys/$surveyId'
+    | '/_auth/templates/$templateId'
+    | '/_auth/surveys/'
+    | '/_auth/templates/'
   fileRoutesById: FileRoutesById
 }
 
@@ -167,8 +314,14 @@ export const routeTree = rootRoute
     "/_auth": {
       "filePath": "_auth.tsx",
       "children": [
-        "/_auth/about",
-        "/_auth/"
+        "/_auth/account",
+        "/_auth/profile",
+        "/_auth/users",
+        "/_auth/",
+        "/_auth/surveys/$surveyId",
+        "/_auth/templates/$templateId",
+        "/_auth/surveys/",
+        "/_auth/templates/"
       ]
     },
     "/login": {
@@ -177,12 +330,36 @@ export const routeTree = rootRoute
     "/signup": {
       "filePath": "signup.tsx"
     },
-    "/_auth/about": {
-      "filePath": "_auth/about.tsx",
+    "/_auth/account": {
+      "filePath": "_auth/account.tsx",
+      "parent": "/_auth"
+    },
+    "/_auth/profile": {
+      "filePath": "_auth/profile.tsx",
+      "parent": "/_auth"
+    },
+    "/_auth/users": {
+      "filePath": "_auth/users.tsx",
       "parent": "/_auth"
     },
     "/_auth/": {
       "filePath": "_auth/index.tsx",
+      "parent": "/_auth"
+    },
+    "/_auth/surveys/$surveyId": {
+      "filePath": "_auth/surveys/$surveyId.tsx",
+      "parent": "/_auth"
+    },
+    "/_auth/templates/$templateId": {
+      "filePath": "_auth/templates/$templateId.tsx",
+      "parent": "/_auth"
+    },
+    "/_auth/surveys/": {
+      "filePath": "_auth/surveys/index.tsx",
+      "parent": "/_auth"
+    },
+    "/_auth/templates/": {
+      "filePath": "_auth/templates/index.tsx",
       "parent": "/_auth"
     }
   }

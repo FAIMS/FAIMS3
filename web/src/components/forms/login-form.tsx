@@ -35,6 +35,10 @@ export function LoginForm() {
       email: '',
     },
   });
+  const {
+    control,
+    formState: {errors},
+  } = form;
 
   const auth = useAuth();
   const router = useRouter();
@@ -42,13 +46,18 @@ export function LoginForm() {
 
   const onSubmit = async ({email, password}: z.infer<typeof formSchema>) => {
     form.clearErrors();
-
     setIsSubmitting(true);
 
-    await auth.login(email, password);
+    const {status, message} = await auth.login(email, password);
+
+    if (status === 'error') {
+      setIsSubmitting(false);
+      form.setError('root', {type: 'submit', message});
+
+      return;
+    }
 
     await sleep(1);
-
     await router.navigate({to: search.redirect || ''});
 
     setIsSubmitting(false);
@@ -62,7 +71,7 @@ export function LoginForm() {
       >
         <div className="flex flex-col gap-2">
           <FormField
-            control={form.control}
+            control={control}
             name="email"
             render={({field}) => (
               <FormItem>
@@ -75,7 +84,7 @@ export function LoginForm() {
             )}
           />
           <FormField
-            control={form.control}
+            control={control}
             name="password"
             render={({field}) => (
               <FormItem>
@@ -87,6 +96,7 @@ export function LoginForm() {
               </FormItem>
             )}
           />
+          <FormMessage>{errors.root?.message}</FormMessage>
         </div>
         <div className="flex flex-col gap-2">
           <Button type="submit" className="w-full" disabled={isSubmitting}>

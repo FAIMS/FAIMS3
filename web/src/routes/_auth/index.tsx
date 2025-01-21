@@ -1,3 +1,4 @@
+import {Card} from '@/components/ui/card';
 import {createFileRoute} from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_auth/')({
@@ -5,5 +6,5 @@ export const Route = createFileRoute('/_auth/')({
 });
 
 function RouteComponent() {
-  return <div>Hello Home!</div>;
+  return <Card>Home</Card>;
 }

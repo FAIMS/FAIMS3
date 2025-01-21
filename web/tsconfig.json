@@ -5,6 +5,7 @@
       "@/*": ["./src/*"]
     },
     "strict": true,
+    "resolveJsonModule": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",
     "target": "ESNext",

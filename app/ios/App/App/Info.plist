@@ -22,15 +22,15 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>au.edu.faims.fieldmark</string>
+			<string></string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>au.edu.faims.fieldmark</string>
+				<string></string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>202412012317</string>
+	<string>202501052239</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>

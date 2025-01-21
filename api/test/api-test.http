@@ -1,0 +1,56 @@
+### Login (Happy path)
+
+POST http://localhost:8080/web/login/local
+content-type: application/json
+
+{
+    "username": "admin",
+    "password": "aSecretPasswordThatCantBeGuessed"
+}
+
+### Login (Wrong password)
+
+POST http://localhost:8080/web/login/local
+content-type: application/json
+
+{
+    "username": "admin",
+    "password": "wrongPassword"
+}
+
+### Signup (User already exists)
+
+POST http://localhost:8080/web/signup/local
+content-type: application/json
+
+{
+    "email": "admin",
+    "name": "Admin",
+    "password": "aSecretPasswordThatCantBeGuessed"
+}
+
+### Signup (Happy path)
+
+POST http://localhost:8080/web/signup/local
+content-type: application/json
+
+{
+    "email": "admin77",
+    "name": "Admin User 2",
+    "password": "aSecretPasswordThatCantBeGuessed"
+}
+
+### Logout
+
+POST http://localhost:8080/web/logout
+content-type: application/json
+
+### Get notebooks
+
+GET http://localhost:8080/web/notebooks/
+content-type: application/json
+
+### Get templates
+
+GET http://localhost:8080/web/templates/
+content-type: application/json
