@@ -31,7 +31,7 @@ export function NavMain({
     isActive?: boolean;
     items?: {
       title: string;
-      url: string;
+      url?: string;
     }[];
   }[];
 }) {
@@ -70,9 +70,15 @@ export function NavMain({
                   {item.items?.map(subItem => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <Link href={subItem.url}>
-                          <span>{subItem.title}</span>
-                        </Link>
+                        {subItem.url ? (
+                          <Link href={subItem.url}>
+                            <span>{subItem.title}</span>
+                          </Link>
+                        ) : (
+                          <div className={'cursor-default'}>
+                            <span className='text-muted-foreground'>{subItem.title}</span>
+                          </div>
+                        )}
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import {useAuth} from '@/auth';
 import {NavMain} from '@/components/side-bar/nav-main';
 import {NavUser} from '@/components/side-bar/nav-user';
 import {
@@ -8,19 +8,19 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {useAuth} from '@/auth';
-import Logo from '../logo';
+import {useGetSurveys, useGetTemplates} from '@/lib/queries';
 import {Link} from '@tanstack/react-router';
-import {getSurveys, getTemplates} from '@/lib/queries';
-import {LayoutTemplate, LetterText, User, Users} from 'lucide-react';
+import {LayoutTemplate, LetterText, Users} from 'lucide-react';
+import * as React from 'react';
+import Logo from '../logo';
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const {user} = useAuth();
 
   if (!user) return <></>;
 
-  const {data: surveys} = getSurveys(user);
-  const {data: templates} = getTemplates(user);
+  const {data: surveys} = useGetSurveys(user);
+  const {data: templates} = useGetTemplates(user);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -37,19 +37,25 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               title: 'Templates',
               url: '/templates',
               icon: LayoutTemplate,
-              items: templates?.map(({_id, template_name}: any) => ({
-                title: template_name,
-                url: `/templates/${_id}`,
-              })),
+              items:
+                templates?.length > 0
+                  ? templates.map(({_id, template_name}: any) => ({
+                      title: template_name,
+                      url: `/templates/${_id}`,
+                    }))
+                  : [{title: 'No templates...'}],
             },
             {
               title: 'Surveys',
               url: '/surveys',
               icon: LetterText,
-              items: surveys?.map(({name, non_unique_project_id}: any) => ({
-                title: name,
-                url: `/surveys/${non_unique_project_id}`,
-              })),
+              items:
+                surveys?.length > 0
+                  ? surveys.map(({name, non_unique_project_id}: any) => ({
+                      title: name,
+                      url: `/surveys/${non_unique_project_id}`,
+                    }))
+                  : [{title: 'No surveys...'}],
             },
           ]}
         />
