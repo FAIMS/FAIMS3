@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {useState} from 'react';
+import React, {useState} from 'react';
 
 import {DataTablePagination} from './pagination';
 
@@ -33,6 +33,8 @@ interface DataTableProps<TData, TValue> {
   loading?: boolean;
   onRowClick?: (row: TData) => void;
   onAddClick?: () => void;
+  addClickLabel?: string;
+  OnAddComponent?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -41,6 +43,8 @@ export function DataTable<TData, TValue>({
   loading,
   onRowClick,
   onAddClick,
+  addClickLabel,
+  OnAddComponent,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -77,11 +81,13 @@ export function DataTable<TData, TValue>({
           }
           className="max-w-sm"
         />
-        {onAddClick && (
-          <Button variant="outline" size="icon" onClick={onAddClick}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        )}
+        {OnAddComponent ??
+          (onAddClick && (
+            <Button variant="outline" onClick={onAddClick}>
+              {addClickLabel ?? ''}
+              <Plus className="h-4 w-4" />
+            </Button>
+          ))}
       </div>
 
       <div className="rounded-md border">
