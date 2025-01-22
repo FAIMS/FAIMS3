@@ -1,13 +1,12 @@
-
 FAIMS3 Developer Documentation
 ==============================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
-   markdown/Android-Deployment
-   markdown/Fields
-   markdown/IOS-Deployment
-   markdown/Configuration
-   markdown/Auth
+   Developer Docs/Android-Deployment.md
+   Developer Docs/Fields.md
+   Developer Docs/IOS-Deployment.md
+   Developer Docs/Configuration.md
+   Developer Docs/Authorisation/RefreshTokens.md
