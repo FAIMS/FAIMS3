@@ -1,0 +1,29 @@
+name: Deploy Developer Documentation
+
+on:
+  push:
+    branches: [ main ] 
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r docs/developer/requirements.txt
+          
+      - name: Build documentation
+        run: |
+          cd docs/developer/docs
+          make html
+          
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/developer/docs/build/html

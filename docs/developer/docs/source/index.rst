@@ -5,8 +5,8 @@ FAIMS3 Developer Documentation
    :maxdepth: 3
    :caption: Contents:
 
-   Developer Docs/Android-Deployment.md
-   Developer Docs/Fields.md
-   Developer Docs/IOS-Deployment.md
-   Developer Docs/Configuration.md
-   Developer Docs/Authorisation/RefreshTokens.md
+   markdown/Android-Deployment.md
+   markdown/Fields.md
+   markdown/IOS-Deployment.md
+   markdown/Configuration.md
+   markdown/Authorisation/RefreshTokens.md
