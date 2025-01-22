@@ -23,7 +23,7 @@ import {
   ProjectID,
   ProjectUIModel,
 } from '@faims3/data-model';
-import {Box, Popover} from '@mui/material';
+import {Box, Button, Popover} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
@@ -32,11 +32,10 @@ import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform} from 'ol/proj';
-import {OSM} from 'ol/source';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import {useCallback, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
@@ -66,6 +65,8 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
+  const [cacheSize, setCacheSize] = useState('');
+  const [zoomLevel, setZoomLevel] = useState(12); // Default zoom level
 
   /**
    * Get the names of all GIS fields in this UI Specification
@@ -158,6 +159,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const tileLayer = new TileLayer({source: tileStore.source});
     const view = new View({
       projection: defaultMapProjection,
+      zoom: zoomLevel,
     });
 
     const theMap = new Map({
@@ -177,8 +179,41 @@ export const OverviewMap = (props: OverviewMapProps) => {
       setSelectedFeature(feature as FeatureProps);
     });
 
+    // Add this in the createMap function after creating theMap
+    theMap.getView().on('change:resolution', () => {
+      const z = theMap.getView().getZoom();
+      //console.log('Resolution changed', z);
+      if (z) setZoomLevel(z);
+    });
+
     return theMap;
   }, []);
+
+  const handleCacheMapExtent = () => {
+    if (map) {
+      const extent = map.getView().calculateExtent();
+      let sizeStr = '';
+      const tileStore = new TileStore();
+      tileStore.estimateSizeForRegion(extent, 12, 18).then(size => {
+        if (size > 1024 * 1024) {
+          sizeStr = (size / 1024 / 1024).toFixed(2) + ' TB';
+        } else if (size > 1024) {
+          sizeStr = (size / 1024).toFixed(2) + ' GB';
+        } else {
+          sizeStr = size + ' MB';
+        }
+        setCacheSize(sizeStr);
+      });
+    }
+  };
+
+  const confirmCacheMapExtent = () => {
+    if (map) {
+      const tileStore = new TileStore();
+      const extent = map.getView().calculateExtent();
+      tileStore.getTilesForRegion(extent, 12, 18);
+    }
+  };
 
   /**
    * Add a marker to the map at the current location
@@ -230,6 +265,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
    * @param map OpenLayers map object
    */
   const addFeaturesToMap = (map: Map) => {
+    console.log('Adding features to map');
     const source = new VectorSource();
     const geoJson = new GeoJSON();
 
@@ -276,24 +312,32 @@ export const OverviewMap = (props: OverviewMapProps) => {
     }
   }
 
-  // when we have features, add them to the map
-  if (!loadingFeatures && map) {
-    addFeaturesToMap(map);
-  }
+  useEffect(() => {
+    // when we have features, add them to the map
+    if (!loadingFeatures && map) {
+      addFeaturesToMap(map);
+    } 
+  }, [loadingFeatures, map]);
 
   // callback to add the map to the DOM
-  const refCallback = (element: HTMLElement | null) => {
-    if (element) {
+  const refCallback = useCallback(
+    (element: HTMLElement | null) => {
+      if (element === null) return;
+
       if (!map) {
-        // create map
+        // First render - create new map
+        console.log('creating map');
         createMap(element).then((theMap: Map) => {
           setMap(theMap);
         });
-      } else {
+      } else if (element !== map.getTarget()) {
+        // Subsequent renders - only set target if it has changed
+        console.log('setting target');
         map.setTarget(element);
       }
-    }
-  };
+    },
+    [map, createMap]
+  );
 
   const handlePopoverClose = () => {
     setSelectedFeature(null);
@@ -308,6 +352,14 @@ export const OverviewMap = (props: OverviewMapProps) => {
   } else
     return (
       <>
+        <Button variant="outlined" onClick={handleCacheMapExtent}>
+          Cache Map
+        </Button>
+        {cacheSize && <Box>Cache Size: {cacheSize}</Box>}
+        <Button variant="outlined" onClick={confirmCacheMapExtent}>
+          Download Offline Map
+        </Button>
+        <Box>Zoom Level: {zoomLevel}</Box>
         <Box
           ref={refCallback}
           sx={{
