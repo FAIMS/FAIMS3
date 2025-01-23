@@ -1,8 +1,5 @@
-'use client';
-
 import * as React from 'react';
 import {ChevronsUpDown, Plus} from 'lucide-react';
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,15 +16,26 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-export function TeamSwitcher({
-  teams,
-}: {
-  teams: {
-    name: string;
-    logo: React.ElementType;
-    plan: string;
-  }[];
-}) {
+interface Team {
+  name: string;
+  logo: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  plan: string;
+}
+
+interface TeamSwitcherProps {
+  teams: Team[];
+}
+
+/**
+ * TeamSwitcher component renders a dropdown menu within the sidebar that allows users
+ * to switch between different teams. It displays the active team's logo, name, and plan,
+ * and provides options to select other teams or add a new team.
+ *
+ * @param {TeamSwitcherProps} props - The properties object.
+ * @param {Team[]} props.teams - The array of teams to be displayed in the switcher.
+ * @returns {JSX.Element} The rendered TeamSwitcher component.
+ */
+export function TeamSwitcher({teams}: TeamSwitcherProps) {
   const {isMobile} = useSidebar();
   const [activeTeam, setActiveTeam] = React.useState(teams[0]);
 

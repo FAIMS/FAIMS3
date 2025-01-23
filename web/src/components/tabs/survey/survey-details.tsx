@@ -14,6 +14,13 @@ const detailsFields = [
   {field: 'notebook_version', label: 'Version'},
 ];
 
+/**
+ * SurveyDetails component renders a list of details for a survey.
+ * It displays the survey name, description, created by, team, and version.
+ *
+ * @param {string} surveyId - The unique identifier of the survey.
+ * @returns {JSX.Element} The rendered SurveyDetails component.
+ */
 const SurveyDetails = ({surveyId}: {surveyId: string}) => {
   const {user} = useAuth();
 

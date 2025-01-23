@@ -12,7 +12,16 @@ export const fields = [
   },
 ];
 
+/**
+ * Component for rendering a form to create a survey from a template.
+ * @returns {JSX.Element} The rendered form component.
+ */
 export function CreateSurveyFromTemplateForm() {
+  /**
+   * Handles form submission for creating a survey.
+   * @param {{name: string}} params - The submitted form values.
+   * @returns {Promise<{type: string; message: string}>} The result of the form submission.
+   */
   const onSubmit = async ({name}: {name: string}) => {
     await sleep(100);
 

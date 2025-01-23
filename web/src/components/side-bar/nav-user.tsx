@@ -1,7 +1,4 @@
-'use client';
-
 import {BadgeCheck, ChevronsUpDown, LogOut, UserCircle} from 'lucide-react';
-
 import {Avatar, AvatarFallback} from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -23,23 +20,41 @@ import {initials} from '@/lib/utils';
 import {sleep} from '@/utils';
 import {Link, useRouter} from '@tanstack/react-router';
 
+interface NavUserProps {
+  user: User;
+}
+
+/**
+ * NavUser component renders the user section in the sidebar with a dropdown menu
+ * for account-related actions such as viewing the account, profile, and logging out.
+ *
+ * @param {NavUserProps} props - The properties object.
+ * @param {User} props.user - The user object containing user details.
+ * @returns {JSX.Element} The rendered NavUser component.
+ */
 export function NavUser({
   user: {
     user: {name, email},
   },
-}: {
-  user: User;
-}) {
+}: NavUserProps) {
   const {isMobile} = useSidebar();
   const auth = useAuth();
   const router = useRouter();
 
+  /**
+   * Handles the user logout process by invoking the auth.logout method,
+   * waiting for a brief period, and then navigating to the login page.
+   *
+   * @async
+   * @function handleLogout
+   * @returns {Promise<void>} A promise that resolves once the logout process is complete.
+   */
   const handleLogout = async () => {
     await auth.logout();
 
     await sleep(1);
 
-    await router.navigate({to: '/login'});
+    await router.navigate({to: '/login', search: {redirect: '/'}});
   };
 
   return (

@@ -14,6 +14,12 @@ const tabs = [
   {name: 'Actions', Component: SurveyActions},
 ];
 
+/**
+ * Route component renders the survey details page.
+ * It displays the survey details, invites, users, export, and actions.
+ *
+ * @returns {JSX.Element} The rendered Route component.
+ */
 export const Route = createFileRoute('/_auth/surveys/$surveyId')({
   component: RouteComponent,
 });

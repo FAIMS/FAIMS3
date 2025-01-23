@@ -6,6 +6,12 @@ export const Route = createFileRoute('/_auth/profile')({
   component: RouteComponent,
 });
 
+/**
+ * RouteComponent component renders the profile page.
+ * It displays a card with the user's profile information.
+ *
+ * @returns {JSX.Element} The rendered RouteComponent component.
+ */
 function RouteComponent() {
   const auth = useAuth();
 

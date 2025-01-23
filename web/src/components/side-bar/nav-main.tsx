@@ -1,7 +1,4 @@
-'use client';
-
 import {ChevronRight, type LucideIcon} from 'lucide-react';
-
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,22 +16,31 @@ import {
 } from '@/components/ui/sidebar';
 import {Link} from '@tanstack/react-router';
 
-export function NavMain({
-  title,
-  items,
-}: {
+interface NavItem {
   title: string;
-  items: {
+  url: string;
+  icon?: LucideIcon;
+  isActive?: boolean;
+  items?: {
     title: string;
-    url: string;
-    icon?: LucideIcon;
-    isActive?: boolean;
-    items?: {
-      title: string;
-      url?: string;
-    }[];
+    url?: string;
   }[];
-}) {
+}
+
+interface NavMainProps {
+  title: string;
+  items: NavItem[];
+}
+
+/**
+ * Main navigation component that renders a sidebar with collapsible menu items.
+ *
+ * @param {NavMainProps} props - The properties object.
+ * @param {string} props.title - The title of the navigation group.
+ * @param {NavItem[]} props.items - The navigation items to display.
+ * @returns {JSX.Element} The rendered navigation component.
+ */
+export function NavMain({title, items}: NavMainProps) {
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{title}</SidebarGroupLabel>
@@ -76,7 +82,9 @@ export function NavMain({
                           </Link>
                         ) : (
                           <div className={'cursor-default'}>
-                            <span className='text-muted-foreground'>{subItem.title}</span>
+                            <span className="text-muted-foreground">
+                              {subItem.title}
+                            </span>
                           </div>
                         )}
                       </SidebarMenuSubButton>

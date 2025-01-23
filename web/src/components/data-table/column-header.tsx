@@ -17,6 +17,12 @@ interface DataTableColumnHeaderProps<TData, TValue>
   title: string;
 }
 
+/**
+ * Component for rendering a column header in a data table with optional sorting and visibility controls.
+ * @template TData, TValue
+ * @param {DataTableColumnHeaderProps<TData, TValue>} props - The properties for the column header.
+ * @returns {JSX.Element} The rendered component.
+ */
 export function DataTableColumnHeader<TData, TValue>({
   column,
   title,

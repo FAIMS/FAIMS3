@@ -21,6 +21,12 @@ export const Route = createFileRoute('/signup')({
   component: SignupComponent,
 });
 
+/**
+ * SignupComponent component renders the signup form.
+ * It includes a header with the BSS logo and a form for entering email and password.
+ *
+ * @returns {JSX.Element} The rendered SignupComponent component.
+ */
 function SignupComponent() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">

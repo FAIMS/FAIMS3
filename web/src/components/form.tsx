@@ -20,6 +20,16 @@ interface Field {
   type?: string;
 }
 
+/**
+ * Form component renders a form with fields and a submit button.
+ * It provides a way to handle form submission and validation.
+ *
+ * @param {FormProps} props - The properties object.
+ * @param {Field[]} props.fields - An array of field objects.
+ * @param {(data: TSchema) => Promise<ErrorOption | undefined>} props.onSubmit - A function to handle form submission.
+ * @param {string} props.submitButtonText - The text to display on the submit button.
+ * @returns {JSX.Element} The rendered Form component.
+ */
 export function Form<
   TFields extends Field[],
   TSchema extends FieldValues = {

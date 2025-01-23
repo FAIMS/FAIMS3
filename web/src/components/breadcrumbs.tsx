@@ -10,6 +10,12 @@ import {capitalize} from '@/lib/utils';
 import {useAuth} from '@/auth';
 import {Fragment} from 'react';
 
+/**
+ * Breadcrumbs component renders a breadcrumb navigation for the current page.
+ * It displays the current page's path as a list of breadcrumb items.
+ *
+ * @returns {JSX.Element} The rendered Breadcrumbs component.
+ */
 export default function Breadcrumbs() {
   const {user} = useAuth();
 

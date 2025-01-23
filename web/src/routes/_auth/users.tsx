@@ -9,6 +9,12 @@ export const Route = createFileRoute('/_auth/users')({
   component: RouteComponent,
 });
 
+/**
+ * RouteComponent component renders the users page.
+ * It displays a table with the user's information.
+ *
+ * @returns {JSX.Element} The rendered RouteComponent component.
+ */
 function RouteComponent() {
   const {user} = useAuth();
 

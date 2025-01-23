@@ -27,6 +27,11 @@ export interface AuthContext {
 const AuthContext = React.createContext<AuthContext | null>(null);
 
 const key = 'user';
+
+/**
+ * Stores or removes the user object in/from localStorage.
+ * @param {User | null} user - The user object to store or `null` to remove the user.
+ */
 function setStoredUser(user: User | null) {
   if (user) {
     localStorage.setItem(key, JSON.stringify(user));
@@ -35,17 +40,33 @@ function setStoredUser(user: User | null) {
   }
 }
 
+/**
+ * Provides authentication context to its children.
+ * @param {{children: React.ReactNode}} props - The children components that will receive the auth context.
+ * @returns {JSX.Element} The AuthProvider component.
+ */
 export function AuthProvider({children}: {children: React.ReactNode}) {
   const [user, setUser] = React.useState<User | null>(
     JSON.parse(localStorage.getItem(key) || 'null')
   );
+
   const isAuthenticated = !!user;
 
+  /**
+   * Logs out the current user by clearing the stored user and updating the state.
+   * @returns {Promise<void>} An empty promise indicating the completion of the logout process.
+   */
   const logout = async () => {
     setStoredUser(null);
     setUser(null);
   };
 
+  /**
+   * Logs in a user using the provided username and password.
+   * @param {string} username - The username of the user.
+   * @param {string} password - The password of the user.
+   * @returns {Promise<{status: string; message: string}>} The result of the login operation.
+   */
   const login = async (username: string, password: string) => {
     const response = await fetch('http://localhost:8080/web/login/local', {
       method: 'POST',
@@ -72,6 +93,13 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     return {status: 'success', message: ''};
   };
 
+  /**
+   * Signs up a new user with an email, name, and password.
+   * @param {string} email - The email of the user.
+   * @param {string} name - The name of the user.
+   * @param {string} password - The password of the user.
+   * @returns {Promise<{status: string; message: string}>} The result of the signup operation.
+   */
   const signup = async (email: string, name: string, password: string) => {
     const response = await fetch('http://localhost:8080/web/signup/local', {
       method: 'POST',
@@ -108,6 +136,11 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   );
 }
 
+/**
+ * Custom hook to access the authentication context.
+ * @returns {AuthContext} The current authentication context value.
+ * @throws Will throw an error if used outside of an AuthProvider.
+ */
 export function useAuth() {
   const context = React.useContext(AuthContext);
   if (!context) {

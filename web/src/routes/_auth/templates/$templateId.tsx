@@ -19,6 +19,12 @@ const tabs = [
   },
 ];
 
+/**
+ * Route component renders the template details page.
+ * It displays the template details, surveys, and actions.
+ *
+ * @returns {JSX.Element} The rendered Route component.
+ */
 export const Route = createFileRoute('/_auth/templates/$templateId')({
   component: RouteComponent,
 });

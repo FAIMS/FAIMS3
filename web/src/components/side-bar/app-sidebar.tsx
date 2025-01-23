@@ -14,6 +14,13 @@ import {LayoutTemplate, LetterText, Users} from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
 
+/**
+ * AppSidebar component renders the main application sidebar with navigation items
+ * based on the authenticated user's data, including surveys and templates.
+ *
+ * @param {React.ComponentProps<typeof Sidebar>} props - The properties to pass to the Sidebar component.
+ * @returns {JSX.Element} The rendered sidebar component, or an empty fragment if no user is authenticated.
+ */
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const {user} = useAuth();
 

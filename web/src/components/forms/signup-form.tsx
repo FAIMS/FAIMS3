@@ -30,11 +30,20 @@ const fields = [
   },
 ];
 
+/**
+ * Component for rendering a signup form.
+ * @returns {JSX.Element} The rendered signup form component.
+ */
 export function SignupForm() {
   const {signup} = useAuth();
   const {navigate} = useRouter();
   const {redirect} = Route.useSearch();
 
+  /**
+   * Handles form submission for signing up a new user.
+   * @param {{email: string; name: string; password: string}} params - The submitted form values.
+   * @returns {Promise<{type: string; message: string} | void>} The result of the signup attempt or void if successful.
+   */
   const onSubmit = async ({
     email,
     name,

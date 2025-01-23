@@ -4,6 +4,13 @@ import {get} from '@/lib/utils';
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/survey-users';
 
+/**
+ * SurveyUsers component renders a table of users for a survey.
+ * It displays the survey name, email, and role for each user.
+ *
+ * @param {string} surveyId - The unique identifier of the survey.
+ * @returns {JSX.Element} The rendered SurveyUsers component.
+ */
 const SurveyUsers = ({surveyId}: {surveyId: string}) => {
   const {user} = useAuth();
 

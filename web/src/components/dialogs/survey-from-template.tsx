@@ -2,7 +2,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -10,6 +9,10 @@ import {
 import {Button} from '../ui/button';
 import {CreateSurveyFromTemplateForm} from '../forms/create-survey-from-template-form';
 
+/**
+ * Component for rendering a dialog to create a new survey from a template.
+ * @returns {JSX.Element} The rendered dialog component.
+ */
 export const SurveyFromTemplateDialog = () => (
   <Dialog>
     <DialogTrigger className="w-fit">

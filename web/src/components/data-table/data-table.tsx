@@ -37,6 +37,12 @@ interface DataTableProps<TData, TValue> {
   OnAddComponent?: React.ReactNode;
 }
 
+/**
+ * Component for rendering a data table with pagination, sorting, and filtering.
+ * @template TData, TValue
+ * @param {DataTableProps<TData, TValue>} props - The properties for the data table.
+ * @returns {JSX.Element} The rendered component.
+ */
 export function DataTable<TData, TValue>({
   columns,
   data,

@@ -23,11 +23,20 @@ export const fields = [
   },
 ];
 
+/**
+ * Component for rendering a login form.
+ * @returns {JSX.Element} The rendered login form component.
+ */
 export function LoginForm() {
   const auth = useAuth();
   const router = useRouter();
   const {redirect} = Route.useSearch();
 
+  /**
+   * Handles form submission for logging in a user.
+   * @param {{email: string; password: string}} params - The submitted form values.
+   * @returns {Promise<{type: string; message: string} | void>} The result of the login attempt or void if successful.
+   */
   const onSubmit = async ({
     email,
     password,

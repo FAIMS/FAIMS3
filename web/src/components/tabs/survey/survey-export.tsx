@@ -9,6 +9,14 @@ import {
   SelectTrigger,
 } from '@/components/ui/select';
 
+/**
+ * SurveyExport component renders a card with options to export a survey's data.
+ * It allows users to export the survey's data to CSV, JSON, or XLSX formats,
+ * as well as to download a ZIP file containing all photos.
+ *
+ * @param {string} surveyId - The unique identifier of the survey.
+ * @returns {JSX.Element} The rendered SurveyExport component.
+ */
 const SurveyExport = ({surveyId}: {surveyId: string}) => {
   return (
     <div className="flex flex-col gap-2">

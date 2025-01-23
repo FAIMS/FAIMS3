@@ -5,6 +5,13 @@ import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {AlertCircle} from 'lucide-react';
 
+/**
+ * TemplateActions component renders action cards for creating a survey from a template,
+ * editing the template, and archiving the template.
+ *
+ * @param {string} templateId - The unique identifier of the template.
+ * @returns {JSX.Element} The rendered TemplateActions component.
+ */
 const TemplateActions = ({templateId}: {templateId: string}) => {
   return (
     <div className="flex flex-col gap-2 justify-between">

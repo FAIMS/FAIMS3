@@ -5,6 +5,13 @@ import {get} from '@/lib/utils';
 import {useQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
 
+/**
+ * TemplateSurveys component renders a table of surveys for a template.
+ * It displays the survey name, description, and status for each survey.
+ *
+ * @param {string} templateId - The unique identifier of the template.
+ * @returns {JSX.Element} The rendered TemplateSurveys component.
+ */
 const TemplateSurveys = ({templateId}: {templateId: string}) => {
   const {user} = useAuth();
 
@@ -18,8 +25,6 @@ const TemplateSurveys = ({templateId}: {templateId: string}) => {
   const navigate = useNavigate();
 
   if (error) return 'An error has occurred: ' + error.message;
-
-  console.log(data);
 
   return (
     <DataTable

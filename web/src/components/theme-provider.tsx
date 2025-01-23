@@ -2,30 +2,34 @@ import {createContext, useContext, useEffect, useState} from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
 
-type ThemeProviderProps = {
-  children: React.ReactNode;
-  defaultTheme?: Theme;
-  storageKey?: string;
-};
-
-type ThemeProviderState = {
+const ThemeProviderContext = createContext<{
   theme: Theme;
   setTheme: (theme: Theme) => void;
-};
-
-const initialState: ThemeProviderState = {
+}>({
   theme: 'system',
   setTheme: () => null,
-};
+});
 
-const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
-
+/**
+ * ThemeProvider component provides a context for managing the theme state.
+ * It allows components to access the current theme and a function to set the theme.
+ *
+ * @param {ThemeProviderProps} props - The properties object.
+ * @param {React.ReactNode} props.children - The child components to be rendered.
+ * @param {Theme} props.defaultTheme - The default theme to be used if none is stored in localStorage.
+ * @param {string} props.storageKey - The key to use for storing the theme in localStorage.
+ * @returns {JSX.Element} The rendered ThemeProvider component.
+ */
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
   storageKey = 'vite-ui-theme',
   ...props
-}: ThemeProviderProps) {
+}: {
+  children: React.ReactNode;
+  defaultTheme?: Theme;
+  storageKey?: string;
+}) {
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
@@ -63,6 +67,11 @@ export function ThemeProvider({
   );
 }
 
+/**
+ * useTheme hook returns the current theme and a function to set the theme.
+ *
+ * @returns {ThemeProviderState} The current theme and a function to set the theme.
+ */
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext);
 

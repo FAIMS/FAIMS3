@@ -9,6 +9,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {useTheme} from '@/components/theme-provider';
 
+/**
+ * ModeToggle component renders a button with a dropdown menu for switching between light and dark themes.
+ * It allows users to switch between the two themes.
+ *
+ * @returns {JSX.Element} The rendered ModeToggle component.
+ */
 export function ModeToggle() {
   const {setTheme} = useTheme();
 

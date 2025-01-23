@@ -24,6 +24,12 @@ export const Route = createFileRoute('/_auth')({
   component: AuthLayout,
 });
 
+/**
+ * AuthLayout component renders the main application layout with a sidebar.
+ * It includes the main navigation and the main content.
+ *
+ * @returns {JSX.Element} The rendered AuthLayout component.
+ */
 function AuthLayout() {
   return (
     <Dialog>

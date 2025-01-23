@@ -7,6 +7,12 @@ import './index.css';
 import {AuthProvider, useAuth} from './auth';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
+/**
+ * App component renders the main application layout.
+ * It includes the main navigation and the main content.
+ *
+ * @returns {JSX.Element} The rendered App component.
+ */
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
@@ -21,6 +27,12 @@ declare module '@tanstack/react-router' {
   }
 }
 
+/**
+ * App component renders the main application layout.
+ * It includes the main navigation and the main content.
+ *
+ * @returns {JSX.Element} The rendered App component.
+ */
 function App() {
   const auth = useAuth();
 

@@ -9,6 +9,12 @@ export const Route = createFileRoute('/_auth/surveys/')({
   component: RouteComponent,
 });
 
+/**
+ * RouteComponent component renders the surveys page.
+ * It displays a table with the user's surveys.
+ *
+ * @returns {JSX.Element} The rendered RouteComponent component.
+ */
 function RouteComponent() {
   const {user} = useAuth();
 
