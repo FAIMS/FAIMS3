@@ -88,6 +88,8 @@ export type FieldType = {
       include: boolean;
       label: string;
     };
+    protection?: 'protected' | 'allow-hiding' | 'none';
+    hidden?: boolean;
   };
 };
 

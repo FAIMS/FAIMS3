@@ -76,6 +76,8 @@ export const FieldEditor = ({
   };
   const label = getFieldLabel();
 
+  const protection = field?.meta?.protection || 'none';
+
   const moveFieldDown = (event: React.SyntheticEvent) => {
     event.stopPropagation();
     dispatch({
@@ -202,15 +204,29 @@ export const FieldEditor = ({
           </Grid>
           <Grid item xs={12} sm={3}>
             <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
-              <Tooltip title="Delete Field">
-                <IconButton
-                  onClick={deleteField}
-                  aria-label="delete"
-                  size="small"
-                >
-                  <DeleteRoundedIcon />
-                </IconButton>
+              <Tooltip
+                title={
+                  protection === 'protected'
+                    ? 'This field cannot be deleted'
+                    : 'Delete Field'
+                }
+              >
+                <span>
+                  <IconButton
+                    onClick={deleteField}
+                    aria-label="delete"
+                    size="small"
+                    disabled={protection === 'protected'}
+                  >
+                    <DeleteRoundedIcon />
+                  </IconButton>
+                </span>
               </Tooltip>
+              {protection === 'protected' ? (
+                <Chip label="PROTECTED" color="warning" size="small" />
+              ) : (
+                <Chip label="NOT Protected" color="success" size="small" />
+              )}
               <Tooltip title="Add Field Below">
                 <IconButton
                   onClick={addFieldBelow}
