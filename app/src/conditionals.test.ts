@@ -37,12 +37,13 @@ describe('get dependant fields', () => {
           conditions: [
             {operator: 'less', field: 'y', value: 10},
             {operator: 'greater', field: 'y', value: 100},
+            {operator: 'contains', field: 'z', value: 'test'},
           ],
         },
       ],
     };
     const fields = getDependantFields(expr);
-    expect(fields).toEqual(new Set(['x', 'y']));
+    expect(fields).toEqual(new Set(['x', 'y', 'z']));
   });
 });
 
@@ -225,5 +226,105 @@ describe('compiling expressions', () => {
     };
     const fn = compileExpression(expr);
     expect(fn({price: 100})).toBe(true);
+  });
+
+  it('compiles a contains expression', () => {
+    const expr = {
+      operator: 'contains',
+      field: 'tags',
+      value: 'urgent',
+    };
+    const fn = compileExpression(expr);
+    expect(fn({tags: ['urgent', 'important']})).toBe(true);
+    expect(fn({tags: ['important']})).toBe(false);
+    expect(fn({tags: []})).toBe(false);
+    expect(fn({other: ['urgent']})).toBe(false);
+  });
+
+  it('compiles a does-not-contain expression', () => {
+    const expr = {
+      operator: 'does-not-contain',
+      field: 'tags',
+      value: 'urgent',
+    };
+    const fn = compileExpression(expr);
+    expect(fn({tags: ['urgent', 'important']})).toBe(false);
+    expect(fn({tags: ['important']})).toBe(true);
+    expect(fn({tags: []})).toBe(true);
+    expect(fn({other: ['urgent']})).toBe(false);
+  });
+
+  it('compiles a contains-regex expression', () => {
+    const expr = {
+      operator: 'contains-regex',
+      field: 'tags',
+      value: '^urg.*$',
+    };
+    const fn = compileExpression(expr);
+    expect(fn({tags: ['urgent', 'important']})).toBe(true);
+    expect(fn({tags: ['urge']})).toBe(true);
+    expect(fn({tags: ['important']})).toBe(false);
+    expect(fn({other: ['urgent']})).toBe(false);
+  });
+
+  it('compiles a does-not-contain-regex expression', () => {
+    const expr = {
+      operator: 'does-not-contain-regex',
+      field: 'tags',
+      value: '^urg.*$',
+    };
+    const fn = compileExpression(expr);
+    expect(fn({tags: ['urgent', 'important']})).toBe(false);
+    expect(fn({tags: ['important']})).toBe(true);
+    expect(fn({tags: []})).toBe(true);
+    expect(fn({other: ['urgent']})).toBe(false);
+  });
+
+  it('handles whitespace in contains expression', () => {
+    const expr = {
+      operator: 'contains',
+      field: 'tags',
+      value: 'urgent',
+    };
+    const fn = compileExpression(expr);
+    // Can strip white space from search param AND
+    expect(fn({tags: ['urgent', 'important']})).toBe(true);
+    // Can strip whitespace from the list
+    expect(fn({tags: ['urgent ']})).toBe(true);
+  });
+
+  it('handles whitespace in does-not-contain expression', () => {
+    const expr = {
+      operator: 'does-not-contain',
+      field: 'tags',
+      value: 'urgent ',
+    };
+    const fn = compileExpression(expr);
+    expect(fn({tags: ['urgent', 'important']})).toBe(false);
+    expect(fn({tags: ['urgent ']})).toBe(false);
+  });
+
+  it('handles whitespace in contains-regex expression', () => {
+    const expr = {
+      operator: 'contains-regex',
+      field: 'tags',
+      value: '^urgent\\s+$',
+    };
+    const fn = compileExpression(expr);
+    // Regex explicitly expecting whitespace should be accurate - no stripping here
+    expect(fn({tags: ['urgent', 'important']})).toBe(false);
+    expect(fn({tags: ['urgent ']})).toBe(true);
+  });
+
+  it('handles whitespace in does-not-contain-regex expression', () => {
+    const expr = {
+      operator: 'does-not-contain-regex',
+      field: 'tags',
+      value: '^urgent\\s+$',
+    };
+    const fn = compileExpression(expr);
+    // Regex explicitly expecting whitespace should be accurate - no stripping here
+    expect(fn({tags: ['urgent', 'important']})).toBe(true);
+    expect(fn({tags: ['urgent ']})).toBe(false);
   });
 });
