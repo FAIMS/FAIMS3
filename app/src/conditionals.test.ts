@@ -18,7 +18,11 @@
 
 // eslint-disable-next-line n/no-unpublished-import
 import {expect, it, describe} from 'vitest';
-import {compileExpression, getDependantFields} from './conditionals';
+import {
+  compileExpression,
+  getDependantFields,
+  isStringArray,
+} from './conditionals';
 
 describe('get dependant fields', () => {
   it('finds dependant fields in a nested expression', () => {
@@ -326,5 +330,30 @@ describe('compiling expressions', () => {
     // Regex explicitly expecting whitespace should be accurate - no stripping here
     expect(fn({tags: ['urgent', 'important']})).toBe(true);
     expect(fn({tags: ['urgent ']})).toBe(false);
+  });
+
+  it('checks that string arrays are valid', () => {
+    const shouldBeArrays = [['this', 'is'], [], ['single'], ['']];
+    const shouldNotBeArrays = [
+      false,
+      'string',
+      null,
+      undefined,
+      1,
+      ['valid', null],
+      [1],
+      ['valid', undefined],
+      [1, ''],
+    ];
+
+    for (const should of shouldBeArrays) {
+      const res = isStringArray(should);
+      expect(res).to.be.true;
+    }
+
+    for (const shouldNot of shouldNotBeArrays) {
+      const res = isStringArray(shouldNot);
+      expect(res).to.be.false;
+    }
   });
 });

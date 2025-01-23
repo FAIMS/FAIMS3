@@ -184,7 +184,7 @@ const sanitizeComparisonInput = (input: string): string => {
  * @param value The value to check
  * @returns True iff is an array of strings
  */
-const isStringArray = (value: unknown): value is string[] => 
+export const isStringArray = (value: unknown): value is string[] => 
   Array.isArray(value) && value.every(item => typeof item === 'string');
 
 /**
