@@ -7,10 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {Flame} from 'lucide-react';
 import Logo from '@/components/logo';
 
 export const Route = createFileRoute('/login')({
+  validateSearch: (search: Record<string, string>) => ({
+    redirect: search?.redirect || '/',
+  }),
   beforeLoad: ({
     context: {
       auth: {isAuthenticated},
@@ -18,7 +20,7 @@ export const Route = createFileRoute('/login')({
     search,
   }) => {
     if (isAuthenticated) {
-      throw redirect({to: search.redirect || '/'});
+      throw redirect({to: search.redirect});
     }
   },
   component: LoginComponent,

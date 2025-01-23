@@ -1,6 +1,6 @@
 import {useAuth} from '@/auth';
 import {columns} from '@/components/tables/users';
-import {DataTable} from '@/components/ui/data-table/data-table';
+import {DataTable} from '@/components/data-table/data-table';
 import {get} from '@/lib/utils';
 import {useQuery} from '@tanstack/react-query';
 import {createFileRoute} from '@tanstack/react-router';

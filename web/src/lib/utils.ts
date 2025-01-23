@@ -1,6 +1,8 @@
 import {User} from '@/auth';
 import {clsx, type ClassValue} from 'clsx';
 import {twMerge} from 'tailwind-merge';
+import {z} from 'zod';
+import type {ZodObject, ZodSchema} from 'zod';
 
 export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs));
 
@@ -25,3 +27,9 @@ export const get = async (path: string, user: User) => {
 
   return await response.json();
 };
+
+export function schemaFields<T extends ZodObject<any>>(
+  schema: T
+): Array<keyof z.infer<T>> {
+  return Object.keys(schema.shape) as Array<keyof z.infer<T>>;
+}

@@ -1,5 +1,5 @@
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
-import {DataTable} from '@/components/ui/data-table/data-table';
+import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/templates';
 import {useAuth} from '@/auth';
 import {useGetTemplates} from '@/lib/queries';
@@ -40,14 +40,14 @@ function RouteComponent() {
         data={data}
         loading={isPending}
         onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
-        OnAddComponent={
-          <DialogTrigger className="w-fit">
-            <Button variant="default">
-              New Template
-              <Plus className="h-4 w-4" />
-            </Button>
-          </DialogTrigger>
-        }
+        // OnAddComponent={
+        //   <DialogTrigger className="w-fit">
+        //     <Button variant="default">
+        //       New Template
+        //       <Plus className="h-4 w-4" />
+        //     </Button>
+        //   </DialogTrigger>
+        // }
       />
       <NewTemplateDialog />
     </Dialog>

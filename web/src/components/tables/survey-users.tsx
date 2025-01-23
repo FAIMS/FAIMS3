@@ -1,5 +1,5 @@
 import {ColumnDef} from '@tanstack/react-table';
-import {DataTableColumnHeader} from '../ui/data-table/column-header';
+import {DataTableColumnHeader} from '../data-table/column-header';
 import {Trash} from 'lucide-react';
 import {Button} from '../ui/button';
 

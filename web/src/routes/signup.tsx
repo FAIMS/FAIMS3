@@ -10,6 +10,9 @@ import {createFileRoute, redirect} from '@tanstack/react-router';
 import {Flame} from 'lucide-react';
 
 export const Route = createFileRoute('/signup')({
+  validateSearch: (search: Record<string, string>) => ({
+    redirect: search?.redirect || '/',
+  }),
   beforeLoad: ({context, search}) => {
     if (context.auth.isAuthenticated) {
       throw redirect({to: search.redirect || '/'});

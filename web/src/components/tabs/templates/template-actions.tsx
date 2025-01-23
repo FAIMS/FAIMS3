@@ -1,3 +1,4 @@
+import {SurveyFromTemplateDialog} from '@/components/dialogs/survey-from-template';
 import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
@@ -15,7 +16,7 @@ const TemplateActions = ({templateId}: {templateId: string}) => {
               Create a new survey based on this template.
             </ListDescription>
           </ListItem>
-          <Button>Create Survey</Button>
+          <SurveyFromTemplateDialog />
         </List>
       </Card>
       <Card className="flex-1">

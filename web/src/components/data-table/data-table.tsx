@@ -24,7 +24,7 @@ import {DataTablePagination} from './pagination';
 
 import {Input} from '@/components/ui/input';
 import {Skeleton} from '@/components/ui/skeleton';
-import {Button} from '../button';
+import {Button} from '../ui/button';
 import {Plus} from 'lucide-react';
 
 interface DataTableProps<TData, TValue> {
@@ -90,7 +90,7 @@ export function DataTable<TData, TValue>({
           ))}
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (

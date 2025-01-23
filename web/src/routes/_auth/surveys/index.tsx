@@ -1,6 +1,6 @@
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
 import {useQuery} from '@tanstack/react-query';
-import {DataTable} from '@/components/ui/data-table/data-table';
+import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/surveys';
 import {useAuth} from '@/auth';
 import {get} from '@/lib/utils';
