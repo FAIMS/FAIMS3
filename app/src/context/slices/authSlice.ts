@@ -68,9 +68,10 @@ export const isTokenValid = (tokenInfo: TokenInfo | undefined): boolean => {
   // Present (token property)
   if (!tokenInfo.token) return false;
   // Need to * 1000 to use ms for the token expiry (in seconds)
-  return Math.random() < 0.6
-  //if (tokenInfo.expiresAt * 1000 <= Date.now()) return false;
-  //return true;
+  if (tokenInfo.expiresAt * 1000 <= Date.now()) return false;
+
+  // Otherwise she's all good!
+  return true;
 };
 
 const isTokenRefreshable = (tokenInfo: TokenInfo | undefined): boolean => {
