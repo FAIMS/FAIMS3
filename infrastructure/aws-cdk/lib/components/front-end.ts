@@ -233,7 +233,7 @@ export class FaimsFrontEnd extends Construct {
     this.setupDesignerDistribution(props);
 
     // Deploy into this bucket
-    this.setupDesignerBundling(props);
+    this.setupDesignerBundling();
 
     // Bucket arn
     this.designerBucketArnCfnOutput = new CfnOutput(this, 'DesignerBucketArn', {
@@ -282,7 +282,7 @@ export class FaimsFrontEnd extends Construct {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  setupDesignerBundling(props: FaimsFrontEndProps) {
+  setupDesignerBundling() {
     const buildScript = 'build.sh';
     // need to build from root because requires context in docker bundling from
     // monorepo root
