@@ -180,6 +180,14 @@ const sanitizeComparisonInput = (input: string): string => {
 };
 
 /**
+ * Checks if the item is a string array
+ * @param value The value to check
+ * @returns True iff is an array of strings
+ */
+const isStringArray = (value: unknown): value is string[] => 
+  Array.isArray(value) && value.every(item => typeof item === 'string');
+
+/**
  * This condition checks that the list contains the targeted entry. If an error
  * occurs or other edge case, returns false to reflect 'not' containing.
  */
@@ -195,7 +203,7 @@ registerCompiler('contains', (expression: ConditionalExpression) => {
         const target = expression.value as string | undefined | null;
 
         // empty string is okay - be explicit
-        if (target === undefined || target === null) {
+        if (target === undefined || target === null || !isStringArray(valuePresent)) {
           // The condition has been setup incorrectly - this should be defined
           return false;
         }
@@ -247,7 +255,7 @@ registerCompiler('does-not-contain', (expression: ConditionalExpression) => {
         const target = expression.value as string | undefined | null;
 
         // empty string is okay - be explicit
-        if (target === undefined || target === null) {
+        if (target === undefined || target === null || !isStringArray(valuePresent)) {
           // The condition has been setup incorrectly - since we are doing
           // exclusion let's return OK
           return true;
@@ -300,7 +308,7 @@ registerCompiler('contains-regex', (expression: ConditionalExpression) => {
         const target = expression.value as string | undefined | null;
 
         // empty string is okay - be explicit
-        if (target === undefined || target === null) {
+        if (target === undefined || target === null || !isStringArray(valuePresent)) {
           // The condition has been setup incorrectly - this should be defined
           return false;
         }
@@ -353,7 +361,7 @@ registerCompiler(
           const target = expression.value as string | undefined | null;
 
           // empty string is okay - be explicit
-          if (target === undefined || target === null) {
+          if (target === undefined || target === null || !isStringArray(valuePresent)) {
             // The condition has been setup incorrectly - since we are doing
             // exclusion let's return OK
             return true;
