@@ -23,16 +23,15 @@
 import {Button, Stack} from '@mui/material';
 import {useContext, useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
+import {ProjectsContext} from '../../../context/projects-context';
+import {
+  setActiveUser,
+  setServerConnection,
+} from '../../../context/slices/authSlice';
+import {useAppDispatch} from '../../../context/store';
 import {getSyncableListingsInfo} from '../../../databaseAccess';
 import {update_directory} from '../../../sync/process-initialization';
 import {parseToken} from '../../../users';
-import {ProjectsContext} from '../../../context/projects-context';
-import {useAppDispatch} from '../../../context/store';
-import {
-  setServerConnection,
-  setActiveUser,
-} from '../../../context/slices/authSlice';
-import {TokenContents} from '@faims3/data-model';
 
 async function getListingForConductorUrl(conductor_url: string) {
   const origin = new URL(conductor_url).origin;

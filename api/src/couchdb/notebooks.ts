@@ -574,7 +574,7 @@ export const validateNotebookID = async (
  */
 export const getNotebookRecords = async (
   project_id: string,
-  token : TokenContents
+  token: TokenContents
 ): Promise<any | null> => {
   const records = await getRecordsWithRegex(token, project_id, '.*', true);
   const fullRecords: any[] = [];

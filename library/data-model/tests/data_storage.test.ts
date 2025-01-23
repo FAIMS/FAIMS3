@@ -18,23 +18,21 @@
  *   Tests of the data storage API
  */
 
-import {test, fc} from '@fast-check/jest';
+import {fc, test} from '@fast-check/jest';
 import {getDataDB, registerClient} from '../src';
-import {Record, RecordMetadata} from '../src/types';
 import {
   deleteFAIMSDataForID,
   generateFAIMSDataID,
   getFirstRecordHead,
   getFullRecordData,
-  getMetadataForAllRecords,
-  getMetadataForSomeRecords,
-  getRecordsWithRegex,
   listFAIMSProjectRevisions,
   notebookRecordIterator,
   undeleteFAIMSDataForID,
   upsertFAIMSData,
 } from '../src/data_storage';
+import {listRecordMetadata} from '../src/data_storage/internals';
 import {getAllRecordsWithRegex} from '../src/data_storage/queries';
+import {Record, RecordMetadata} from '../src/types';
 import {equals} from './eqTestSupport';
 import {
   callbackObject,
@@ -42,7 +40,6 @@ import {
   createNRecords,
   createRecord,
 } from './mocks';
-import { listRecordMetadata } from '../src/data_storage/internals';
 
 // register our mock database clients with the module
 registerClient(callbackObject);
@@ -378,7 +375,9 @@ describe('record retrieval', () => {
     const db = await getDataDB(project_id);
     if (db) {
       // use the underlying get all records rather than the token filtered version for now
-      const records = Object.values(await getAllRecordsWithRegex(project_id, '.*'));
+      const records = Object.values(
+        await getAllRecordsWithRegex(project_id, '.*')
+      );
       expect(records.length).toBe(10);
       // check a few properties
       expect(records[0].created_by).toBe('user');
@@ -420,7 +419,9 @@ describe('record retrieval', () => {
       const record_ids = all_records.map((r: RecordMetadata) => r.record_id);
 
       // get a filtered selection of records
-      const records = Object.values(await listRecordMetadata(project_id, record_ids.slice(5)))
+      const records = Object.values(
+        await listRecordMetadata(project_id, record_ids.slice(5))
+      );
       expect(records.length).toBe(5);
       // // check a few properties
       expect(records[0].created_by).toBe('user');
