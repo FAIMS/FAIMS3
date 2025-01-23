@@ -248,6 +248,8 @@ api.get(
       roles: req.user.roles,
       server: slugify(CONDUCTOR_INSTANCE_NAME),
       username: req.user.user_id,
+      // Five minutes from now
+      exp: Date.now() + 1000 * 60 * 5,
     });
     if (records) {
       res.json({records});

@@ -58,13 +58,20 @@ export function parseToken(token: string): TokenContents {
   const payload = decodeJwt(token);
 
   const username = payload.sub ?? undefined;
+  const exp = payload.exp;
   const server = payload['server'] as string | undefined;
+
+  // These are all required
+  if (!exp) {
+    throw new Error('Cannot accept a JWT which has no exp field defined.');
+  }
   if (!server) {
     throw Error('Server not specified in token');
   }
   if (username === undefined) {
     throw Error('Username not specified in token');
   }
+
   const roles = (payload['_couchdb.roles'] as string[]) ?? [];
   const name = (payload['name'] as string) ?? undefined;
 
@@ -73,6 +80,7 @@ export function parseToken(token: string): TokenContents {
     roles: roles,
     name: name,
     server: server,
+    exp,
   };
 }
 

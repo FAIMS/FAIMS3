@@ -32,6 +32,7 @@ import {
   setServerConnection,
   setActiveUser,
 } from '../../../context/slices/authSlice';
+import {TokenContents} from '@faims3/data-model';
 
 async function getListingForConductorUrl(conductor_url: string) {
   const origin = new URL(conductor_url).origin;

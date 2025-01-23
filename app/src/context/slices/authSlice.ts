@@ -35,6 +35,7 @@ export interface ActiveUser {
   username: string;
   token: string;
   parsedToken: TokenContents;
+  expiresAt: number;
 }
 
 export interface AuthState {
@@ -66,9 +67,10 @@ export const isTokenValid = (tokenInfo: TokenInfo | undefined): boolean => {
   if (!tokenInfo) return false;
   // Present (token property)
   if (!tokenInfo.token) return false;
-  // Expired?
-  if (tokenInfo.expiresAt <= Date.now()) return false;
-  return true;
+  // Need to * 1000 to use ms for the token expiry (in seconds)
+  return Math.random() < 0.6
+  //if (tokenInfo.expiresAt * 1000 <= Date.now()) return false;
+  //return true;
 };
 
 const isTokenRefreshable = (tokenInfo: TokenInfo | undefined): boolean => {
@@ -88,7 +90,8 @@ const shouldTokenRefresh = (
   tokenInfo: TokenInfo,
   windowMs: number
 ): boolean => {
-  return Date.now() + windowMs >= tokenInfo.expiresAt;
+  // Multiply the expiresAt by 1000 to bring to ms
+  return Date.now() + windowMs >= tokenInfo.expiresAt * 1000;
 };
 
 const checkAuthenticationStatus = (state: AuthState): boolean => {
@@ -124,8 +127,8 @@ const authSlice = createSlice({
       const {serverId, username, token, refreshToken, parsedToken} =
         action.payload;
 
-      // TODO this is fake - pull this from the token itself
-      const expiresAt = Date.now() + 1000 * 10;
+      // Fill out expiry from the token
+      const expiresAt = parsedToken.exp;
 
       // Update servers state
       if (!state.servers[serverId]) {
@@ -149,7 +152,9 @@ const authSlice = createSlice({
         state.activeUser.parsedToken = parsedToken;
       }
 
+      console.log('Checking is authenticated');
       state.isAuthenticated = checkAuthenticationStatus(state);
+      console.log('True/false, ', state.isAuthenticated);
     },
 
     setActiveUser: (state, action: PayloadAction<ServerUserIdentity>) => {
@@ -167,6 +172,7 @@ const authSlice = createSlice({
         username,
         token: connection.token,
         parsedToken: connection.parsedToken,
+        expiresAt: connection.expiresAt,
       };
 
       state.isAuthenticated = checkAuthenticationStatus(state);
@@ -216,6 +222,7 @@ const authSlice = createSlice({
               ...newActive,
               token: details.token,
               parsedToken: details.parsedToken,
+              expiresAt: details.expiresAt,
             };
             state.isAuthenticated = checkAuthenticationStatus(state);
           } else {

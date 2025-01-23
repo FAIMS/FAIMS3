@@ -68,6 +68,8 @@ describe('Backup and restore', () => {
           roles: user.roles,
           server: slugify(CONDUCTOR_INSTANCE_NAME),
           username: user.user_id,
+          // Five minutes from now
+          exp: Date.now() + 1000 * 60 * 5,
         }
       );
       expect(records).to.have.lengthOf(28);

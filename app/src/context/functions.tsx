@@ -57,7 +57,7 @@ export const getToken = (serverId: string): TokenInfo | undefined => {
  * Fetches the listings and looks for any listing which has a token
  * @returns Unparsed, unvalidated JWT
  */
-export const getAnyToken = (): Omit<TokenInfo, 'expiresAt'> | undefined => {
+export const getAnyToken = (): TokenInfo | undefined => {
   const state = store.getState();
   const activeUser = selectActiveUser(state);
   const serverUsers = selectAllServerUsers(state);

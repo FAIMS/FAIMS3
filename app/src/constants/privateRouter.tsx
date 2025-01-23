@@ -38,6 +38,7 @@ export const ActivePrivateRoute = (
   // TODO This will force a re-render if the user is ever logged out - could
   // cause issues in offline context? Or during data collection.
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
+  console.log('auth', isAuthenticated);
 
   if (isAuthenticated) return props.children;
   else return <Navigate to={ROUTES.SIGN_IN} />;
@@ -49,6 +50,7 @@ export const ActivePrivateRoute = (
  */
 interface OfflineLoginBannerProps {
   loginPath: string;
+  visible: boolean;
 }
 
 /**
@@ -64,7 +66,7 @@ interface OfflineLoginBannerProps {
  *
  * Uses an Intersection Observer to detect scroll position relative to navbar
  */
-const OfflineLoginBanner = ({loginPath}: OfflineLoginBannerProps) => {
+const OfflineLoginBanner = ({loginPath, visible}: OfflineLoginBannerProps) => {
   const [isSticky, setIsSticky] = useState(false);
   const observerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
@@ -115,6 +117,12 @@ const OfflineLoginBanner = ({loginPath}: OfflineLoginBannerProps) => {
 
           // Margin for content spacing below
           marginBottom: 2,
+
+          // Make invisible if not visible
+          visibility: visible ? 'visible' : 'hidden',
+          opacity: visible ? 1 : 0,
+          height: visible ? 'auto' : 0,
+          overflow: 'hidden',
         }}
       >
         <Alert
@@ -221,6 +229,11 @@ const OfflineLoginBanner = ({loginPath}: OfflineLoginBannerProps) => {
 /**
  * Conditional auth route - this requires that the token is present but allows
  * for the case where the token has expired, but adds a warning!
+ *
+ * This is very careful to not force a remount/rerender of the main content by
+ * keeping the banner there all the time but making it invisible. This is due to
+ * the fragility of the main form to re-renders.
+ *
  * @param props children to render
  * @returns Conditionally renders children if token is present (not necessarily
  * valid) for the first listing entry in the listings db
@@ -228,38 +241,24 @@ const OfflineLoginBanner = ({loginPath}: OfflineLoginBannerProps) => {
 export const TolerantPrivateRoute = (
   props: PrivateRouteProps
 ): React.ReactElement => {
-  // Check if the current active user is nicely logged in (i.e. valid, unexpired
-  // token)
-
-  // TODO This will force a re-render if the user is ever logged out - could
-  // cause issues in offline context? Or during data collection.
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const isToken = useAppSelector(state => !!state.auth.activeUser?.token);
   const {isOnline} = useIsOnline();
+  const bannerVisible = !isAuthenticated && isToken && isOnline;
 
   // Good case - all good
-  if (isAuthenticated)
-    return (
-      <>
-        {
-          // <OfflineLoginBanner loginPath={ROUTES.SIGN_IN} />
-        }
-        {props.children}
-      </>
-    );
-
-  // Token is expired or something else wrong- soft warning
-  if (isToken) {
-    return (
-      <>
-        {isOnline && <OfflineLoginBanner loginPath={ROUTES.SIGN_IN} />}
-        {props.children}
-      </>
-    );
-  }
-  // User is not logged in and appears to never have been - redirect to login
-  else {
+  if (!isAuthenticated && !isToken) {
     return <Navigate to={ROUTES.SIGN_IN} />;
+  } else {
+    return (
+      <>
+        <OfflineLoginBanner
+          visible={bannerVisible}
+          loginPath={ROUTES.SIGN_IN}
+        />
+        {props.children}
+      </>
+    );
   }
 };
 
