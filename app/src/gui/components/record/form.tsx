@@ -18,23 +18,10 @@
  *   Record/Draft form file
  */
 
-import {Form, Formik} from 'formik';
-import React from 'react';
-
-import {Box, Divider, Typography, Alert} from '@mui/material';
-
-import {
-  getFieldsMatchingCondition,
-  getViewsMatchingCondition,
-} from './branchingLogic';
-import {firstDefinedFromList} from './helpers';
-
-import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
-
-import {ActionType} from '../../../context/actions';
-
 import {
   Annotations,
+  generateFAIMSDataID,
+  getFirstRecordHead,
   getFullRecordData,
   ProjectID,
   ProjectUIModel,
@@ -44,10 +31,18 @@ import {
   RevisionID,
   upsertFAIMSData,
 } from '@faims3/data-model';
+import {Alert, Box, Divider, Typography} from '@mui/material';
+import {Form, Formik} from 'formik';
+import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
+import {ValidationError} from 'yup';
 import * as ROUTES from '../../../constants/routes';
+import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
+import {ActionType} from '../../../context/actions';
 import {store} from '../../../context/store';
+import {percentComplete, requiredFields} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
+import {logError} from '../../../logging';
 import RecordDraftState from '../../../sync/draft-state';
 import {
   getFieldNamesFromFields,
@@ -55,24 +50,24 @@ import {
   getReturnedTypesForViewSet,
 } from '../../../uiSpecification';
 import {getCurrentUserId} from '../../../users';
+import CircularLoading from '../ui/circular_loading';
 import {getValidationSchemaForViewset} from '../validation';
+import {
+  getFieldsMatchingCondition,
+  getViewsMatchingCondition,
+} from './branchingLogic';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
+import FormButtonGroup from './formButton';
+import {firstDefinedFromList} from './helpers';
 import RecordStepper from './recordStepper';
-
 import {
   generateLocationState,
   generateRelationship,
   getParentLinkInfo,
 } from './relationships/RelatedInformation';
-
-import {generateFAIMSDataID, getFirstRecordHead} from '@faims3/data-model';
-import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
-import {percentComplete, requiredFields} from '../../../lib/form-utils';
-import {logError} from '../../../logging';
-import CircularLoading from '../ui/circular_loading';
-import FormButtonGroup from './formButton';
 import UGCReport from './UGCReport';
-//import {RouteComponentProps} from 'react-router';
+import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
+
 type RecordFormProps = {
   navigate: NavigateFunction;
   project_id: ProjectID;
