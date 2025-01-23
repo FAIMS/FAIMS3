@@ -20,7 +20,6 @@
 
 import {Form, Formik} from 'formik';
 import React from 'react';
-import {ValidationError} from 'yup';
 
 import {Box, Divider, Typography, Alert} from '@mui/material';
 
@@ -73,7 +72,6 @@ import {logError} from '../../../logging';
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup from './formButton';
 import UGCReport from './UGCReport';
-import {ConstructionOutlined} from '@mui/icons-material';
 //import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -1133,58 +1131,6 @@ class RecordForm extends React.Component<
     this.setState({...this.state, annotation: annotation});
   }
 
-  filterErrors({
-    errors,
-    viewsetName,
-    values,
-  }: {
-    errors: {[key: string]: string};
-    viewsetName: string;
-    values: object;
-  }): {[key: string]: string} {
-    console.log('ERRORS');
-    if (!errors) return {};
-    console.log(errors);
-    return Object.entries(errors).reduce(
-      (filtered: {[key: string]: string}, [fieldName, error]) => {
-        console.log('Testing fieldname', fieldName);
-
-        // Get all visible views
-        const views = getViewsMatchingCondition(
-          this.props.ui_specification,
-          values,
-          [],
-          viewsetName,
-          {}
-        );
-
-        // Then for each check if the field is present in matching fields
-        let isVisible = false;
-        for (const v of views) {
-          const fieldsMatching = getFieldsMatchingCondition(
-            this.props.ui_specification,
-            values,
-            [],
-            v,
-            {}
-          );
-          if (fieldsMatching.includes(fieldName)) {
-            isVisible = true;
-            break;
-          }
-        }
-
-        // Then check that the field is visible for specific conditions
-        console.log('Is visible: ', isVisible);
-        if (isVisible) {
-          filtered[fieldName] = error;
-        }
-        return filtered;
-      },
-      {}
-    );
-  }
-
   render() {
     if (this.isReady()) {
       const viewName = this.requireView();
@@ -1202,40 +1148,10 @@ class RecordForm extends React.Component<
           <div>
             <Formik
               initialValues={initialValues}
-              // We are manually running the validate function now
-              // validationSchema={validationSchema}
+              validationSchema={validationSchema}
               validateOnMount={true}
               validateOnChange={false}
               validateOnBlur={true}
-              validate={values => {
-                console.log('Running validate function');
-                try {
-                  validationSchema.validateSync(values, {abortEarly: false});
-                  console.log('validation did not throw error');
-                  return {}; // If validation passes, no errors
-                } catch (err) {
-                  console.log(err);
-                  //if (err instanceof ValidationError) {
-                  if (true) {
-                    console.log('Validation error');
-                    const errors = (err as ValidationError).inner.reduce(
-                      (acc: {[key: string]: string}, error) => {
-                        if (error.path) acc[error.path] = error.message;
-                        return acc;
-                      },
-                      {}
-                    );
-                    return this.filterErrors({
-                      errors,
-                      values,
-                      viewsetName: viewsetName,
-                    });
-                  } else {
-                    console.log('Non validation error');
-                    return {};
-                  }
-                }
-              }}
               onSubmit={(values, {setSubmitting}) => {
                 setSubmitting(true);
                 return this.save(values, 'continue', setSubmitting).then(
