@@ -20,7 +20,6 @@
 
 import {Form, Formik} from 'formik';
 import React from 'react';
-import {ValidationError} from 'yup';
 
 import {Box, Divider, Typography, Alert} from '@mui/material';
 
@@ -73,7 +72,6 @@ import {logError} from '../../../logging';
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup from './formButton';
 import UGCReport from './UGCReport';
-import {ConstructionOutlined} from '@mui/icons-material';
 //import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   navigate: NavigateFunction;
