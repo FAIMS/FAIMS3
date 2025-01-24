@@ -3,9 +3,9 @@ import {importPKCS8, importSPKI, KeyLike} from 'jose';
 import {
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_KEY_ID,
-  CONDUCTOR_PUBLIC_KEY_PATH,
-  CONDUCTOR_PRIVATE_KEY_PATH,
   AWS_SECRET_KEY_ARN,
+  private_key_path,
+  public_key_path,
 } from '../buildconfig';
 import {SecretsManager} from 'aws-sdk';
 import NodeCache from 'node-cache';
@@ -276,7 +276,7 @@ class AWSSecretsManagerKeyService extends BaseKeyService {
  * @returns An instance of IKeyService.
  * @throws Error if an unsupported key source is specified.
  */
-export function createKeyService(
+function createKeyService(
   keySource: KeySource = KeySource.FILE
 ): IKeyService {
   const config: KeyConfig = {
@@ -288,8 +288,9 @@ export function createKeyService(
   switch (keySource) {
     case KeySource.FILE:
       return new FileKeyService(config, {
-        publicKeyFile: CONDUCTOR_PUBLIC_KEY_PATH,
-        privateKeyFile: CONDUCTOR_PRIVATE_KEY_PATH,
+        // This will error if the configuration is not setup properly
+        publicKeyFile: public_key_path(),
+        privateKeyFile: private_key_path(),
       });
     case KeySource.AWS_SM:
       if (!AWS_SECRET_KEY_ARN) {
