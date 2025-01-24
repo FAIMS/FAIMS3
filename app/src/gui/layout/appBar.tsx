@@ -265,6 +265,13 @@ export default function MainAppBar(props: NavbarProps) {
       disabled: false,
     },
 
+    {
+      title: 'Offline Maps',
+      icon: <SettingsIcon />,
+      to: ROUTES.OFFLINE_MAPS,
+      disabled: false,
+    },
+
     isAuthenticated
       ? {
           title: 'Sign out',

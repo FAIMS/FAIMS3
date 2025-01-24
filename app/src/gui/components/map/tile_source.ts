@@ -21,14 +21,12 @@
 import OSM, {ATTRIBUTION} from 'ol/source/OSM';
 import {LoaderOptions} from 'ol/source/DataTile';
 import ImageTileSource from 'ol/source/ImageTile';
-import PouchDB from 'pouchdb-browser';
 import {Extent} from 'ol/extent';
 
-interface Tile {
-  _id: string;
-  set: string;
-  data: Blob;
-}
+// const TILE_URL_TEMPLATE =
+//   'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=yJaRyFscf2iogDGe64SH';
+const TILE_URL_TEMPLATE = 'https://cdn.lima-labs.com/{z}/{x}/{y}.png?api=bear'
+// `https://tile.openstreetmap.org/{z}/{x}/{y}.png`;
 
 export class TileStore {
   static DB_NAME = 'tiles_db';
@@ -40,12 +38,12 @@ export class TileStore {
     if (!TileStore.db) {
       this.initDB();
     }
-    this.clearCache();
     this.source = new ImageTileSource({
       attributions: ATTRIBUTION,
       loader: this.tileLoader.bind(this),
     });
-    this.report_size();
+    console.log('initialized tile source');
+    this.reportDBSize();
   }
 
   private initDB(): Promise<void> {
@@ -69,14 +67,18 @@ export class TileStore {
   async clearCache() {
     console.log('clearing tile cache');
     if (TileStore.db) {
-      const db = TileStore.db;
-      const transaction = db.transaction(TileStore.STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(TileStore.STORE_NAME);
-      store.clear();
+      return new Promise<void>((resolve, reject) => {
+        const db = TileStore.db;
+        const transaction = db.transaction(TileStore.STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(TileStore.STORE_NAME);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        store.clear();
+      });
     }
   }
 
-  async report_size() {
+  async reportDBSize() {
     return new Promise<void>((resolve, reject) => {
       if (!TileStore.db) {
         return;
@@ -160,11 +162,13 @@ export class TileStore {
   ): Promise<string | null> {
     let image = await this.get(x, y, z);
     if (!image && navigator.onLine) {
-      console.log('fetching tile', z, x, y);
-      const url = `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+      // console.log('fetching tile', z, x, y);
+      const url = TILE_URL_TEMPLATE.replace('{z}', z.toString())
+        .replace('{x}', x.toString())
+        .replace('{y}', y.toString());
       const response = await fetch(url);
       image = await response.blob();
-      this.store(x, y, z, image, setName);
+      await this.store(x, y, z, image, setName);
     } else if (!image) {
       return null;
     }
@@ -205,7 +209,13 @@ export class TileStore {
     }
     const counter = tileSet.size;
     const estimatedSize = Math.round((counter * 12) / 1024);
-    console.log('estimated size', Math.round(estimatedSize), 'MB, ', counter, 'tiles');
+    console.log(
+      'estimated size',
+      Math.round(estimatedSize),
+      'MB, ',
+      counter,
+      'tiles'
+    );
     return estimatedSize;
   }
 
@@ -220,17 +230,18 @@ export class TileStore {
     console.log('getTilesForRegion', extent, minZoom, maxZoom);
     const OSMSource = new OSM();
     const tileGrid = OSMSource.getTileGrid();
-    const tileSet = new Set<string>();
+    const tileCoords: number[][] = [];
     for (let zoom = minZoom; zoom <= maxZoom; zoom += 2) {
-      tileGrid?.forEachTileCoord(extent, Math.ceil(zoom), async tileCoord => {
-        const [z, x, y] = tileCoord;
-        const tc = `${z}|${x}|${y}`;
-        if (!tileSet.has(tc)) {
-          tileSet.add(tc);
-          await this.getImageTile(x, y, z);
-          console.log('fetched', x, y, z);
-        }
+      tileGrid?.forEachTileCoord(extent, Math.ceil(zoom), tileCoord => {
+        tileCoords.push(tileCoord);
       });
     }
+    console.log('found', tileCoords.length, 'tiles');
+
+    for (const tileCoord of tileCoords) {
+      const [z, x, y] = tileCoord;
+      await this.getImageTile(x, y, z);
+    }
+    console.log('done');
   }
 }

@@ -189,32 +189,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
     return theMap;
   }, []);
 
-  const handleCacheMapExtent = () => {
-    if (map) {
-      const extent = map.getView().calculateExtent();
-      let sizeStr = '';
-      const tileStore = new TileStore();
-      tileStore.estimateSizeForRegion(extent, 12, 18).then(size => {
-        if (size > 1024 * 1024) {
-          sizeStr = (size / 1024 / 1024).toFixed(2) + ' TB';
-        } else if (size > 1024) {
-          sizeStr = (size / 1024).toFixed(2) + ' GB';
-        } else {
-          sizeStr = size + ' MB';
-        }
-        setCacheSize(sizeStr);
-      });
-    }
-  };
-
-  const confirmCacheMapExtent = () => {
-    if (map) {
-      const tileStore = new TileStore();
-      const extent = map.getView().calculateExtent();
-      tileStore.getTilesForRegion(extent, 12, 18);
-    }
-  };
-
   /**
    * Add a marker to the map at the current location
    *
@@ -316,7 +290,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     // when we have features, add them to the map
     if (!loadingFeatures && map) {
       addFeaturesToMap(map);
-    } 
+    }
   }, [loadingFeatures, map]);
 
   // callback to add the map to the DOM
@@ -352,14 +326,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
   } else
     return (
       <>
-        <Button variant="outlined" onClick={handleCacheMapExtent}>
-          Cache Map
-        </Button>
-        {cacheSize && <Box>Cache Size: {cacheSize}</Box>}
-        <Button variant="outlined" onClick={confirmCacheMapExtent}>
-          Download Offline Map
-        </Button>
-        <Box>Zoom Level: {zoomLevel}</Box>
         <Box
           ref={refCallback}
           sx={{
