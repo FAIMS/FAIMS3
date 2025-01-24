@@ -221,3 +221,16 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
     </>
   );
 };
+
+/**
+ * Dangerous function which resets the redux store, purges persistence, and
+ * clears all localStorage
+ */
+export const clearReduxAndLocalStorage = async () => {
+  // Reset the store
+  store.dispatch({type: 'RESET_STORE'});
+  // then ensure persistence is cleared out
+  await persistor.purge();
+  // then also clear all local storage
+  localStorage.clear();
+};

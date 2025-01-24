@@ -25,6 +25,7 @@ import {getProjectDB} from '.';
 import {selectSpecificServer} from '../context/slices/authSlice';
 import {store} from '../context/store';
 import {createdListingsInterface} from './state';
+import {getToken} from '../context/functions';
 
 export type PropertyMap = {
   [key: string]: unknown;
@@ -56,21 +57,10 @@ export const fetchProjectMetadata = async (
 ) => {
   const url = `${listing.conductor_url}/api/notebooks/${project_id}`;
   // In the current auth store, get the token synchronously
-
-  // TODO this is stupid because we are just guessing which 'user' we should use
-  // to make the request - unless we want to track active users across both
-  // listings and globally, then this is just going to take the first one
   const serverId = listing.id;
-  const serverUsers = selectSpecificServer(store.getState(), serverId);
-  const keys = Object.keys(serverUsers);
-
-  const jwt_token = keys.length > 0 ? serverUsers[keys[0]].token : null;
+  const jwt_token = getToken(serverId);
   if (!jwt_token) {
-    console.error(
-      'Could not get token for listing with ID: ',
-      serverId,
-      'This logic is highly suspect!'
-    );
+    console.error('Could not get token for listing with ID: ', serverId);
     return;
   }
 

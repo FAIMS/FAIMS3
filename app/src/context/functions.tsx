@@ -31,26 +31,37 @@ const getListings = async () => {
  *
  * This will throw an error if there is no token for the given ID.
  *
+ * TODO ensure that there is a sensible reason for choosing the particular
+ * user's token when in the non active server.
+ *
  * @param serverId - The ID of the listing to get the token for
  * @returns The token associated with the specified ID.
  * @throws 404 error from pouch if not found
  */
 export const getToken = (serverId: string): TokenInfo | undefined => {
-  // TODO this is stupid because we are just guessing which 'user' we should use
-  // to make the request - unless we want to track active users across both
+  // TODO this is not ideal because we are just guessing which 'user' we should
+  // use to make the request - unless we want to track active users across both
   // listings and globally, then this is just going to take the first one
   const serverUsers = selectSpecificServer(store.getState(), serverId);
-  const keys = Object.keys(serverUsers);
-  const jwt_token = keys.length > 0 ? serverUsers[keys[0]] : null;
-  if (!jwt_token) {
-    console.error(
-      'Could not get token for listing with ID: ',
-      serverId,
-      'This logic is highly suspect!'
-    );
-    return undefined;
+  const activeUser = selectActiveUser(store.getState());
+
+  // First try and use the active user
+  if (activeUser?.serverId === serverId) {
+    return activeUser;
+  } else {
+    // Server ID != active user, try any token!
+    const keys = Object.keys(serverUsers);
+    const jwt_token = keys.length > 0 ? serverUsers[keys[0]] : null;
+    if (!jwt_token) {
+      console.error(
+        'Could not get token for listing with ID: ',
+        serverId,
+        'This logic is highly suspect!'
+      );
+      return undefined;
+    }
+    return jwt_token;
   }
-  return jwt_token;
 };
 
 /**

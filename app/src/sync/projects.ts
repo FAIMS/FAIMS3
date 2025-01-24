@@ -54,6 +54,7 @@ import {
 import {events} from './events';
 import {fetchProjectMetadata} from './metadata';
 import {all_projects_updated, getListing} from './state';
+import {getToken} from '../context/functions';
 
 /**
  * Temporarily override this type from @faims3/data-model to make
@@ -354,21 +355,11 @@ export async function ensure_project_databases(
   // do it here: (Otherwise, emit 'paused' anyway to allow
   // other parts of FAIMS to continue)
 
-  // TODO this is stupid because we are just guessing which 'user' we should use
-  // to make the request. We know the listing ID that we are activating, but not
-  // which user we are activating it for. Unless we want to track active users
-  // across both listings and globally, then this is just going to take the
-  // first one
+  // Get token for server
   const serverId = listing.listing.id;
-  const serverUsers = selectSpecificServer(store.getState(), serverId);
-  const keys = Object.keys(serverUsers);
-  const jwt_token = keys.length > 0 ? serverUsers[keys[0]].token : null;
+  const jwt_token = getToken(serverId);
   if (!jwt_token) {
-    console.error(
-      'Could not get token for listing with ID: ',
-      serverId,
-      'This logic is highly suspect!'
-    );
+    console.error('Could not get token for listing with ID: ', serverId);
     return;
   }
 
@@ -386,7 +377,7 @@ export async function ensure_project_databases(
   // will want couch to respect the token refresh, so we need to ensure that
   // when tokens are refreshed, the connection information is updated.
   const data_connection_info: ConnectionInfo = {
-    jwt_token: jwt_token,
+    jwt_token: jwt_token.token,
     db_name: data_db_name,
     ...project_object.data_db,
   };
