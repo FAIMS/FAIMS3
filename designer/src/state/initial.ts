@@ -79,6 +79,8 @@ export type FieldType = {
   condition?: ConditionType | null;
   persistent?: boolean;
   displayParent?: boolean;
+  protection?: 'protected' | 'allow-hiding' | 'none';
+  hidden?: boolean;
   meta?: {
     annotation: {
       include: boolean;
@@ -88,8 +90,6 @@ export type FieldType = {
       include: boolean;
       label: string;
     };
-    protection?: 'protected' | 'allow-hiding' | 'none';
-    hidden?: boolean;
   };
 };
 

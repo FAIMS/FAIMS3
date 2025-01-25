@@ -17,6 +17,9 @@ import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import Lock from '@mui/icons-material/Lock';
+import LockOpen from '@mui/icons-material/LockOpen';
+
 import {
   Accordion,
   AccordionDetails,
@@ -42,6 +45,7 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
+import {field_level_links} from '../../../app/src/utils/fixtures';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -76,7 +80,16 @@ export const FieldEditor = ({
   };
   const label = getFieldLabel();
 
-  const protection = field?.meta?.protection || 'none';
+  const protection = field?.protection || 'none';
+
+  const toggleProtection = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+    const newProtection = protection === 'protected' ? 'none' : 'protected';
+    dispatch({
+      type: 'ui-specification/toggleFieldProtection',
+      payload: {fieldName, protection: newProtection},
+    });
+  };
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
     event.stopPropagation();
@@ -206,8 +219,22 @@ export const FieldEditor = ({
             <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
               <Tooltip
                 title={
+                  protection === 'protected' ? 'Unlock Field' : 'Lock Field'
+                }
+              >
+                <IconButton
+                  onClick={toggleProtection}
+                  aria-label="toggle protection"
+                  size="small"
+                >
+                  {protection === 'protected' ? <Lock /> : <LockOpen />}
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip
+                title={
                   protection === 'protected'
-                    ? 'This field cannot be deleted'
+                    ? 'Locked fields can not be deleted'
                     : 'Delete Field'
                 }
               >
@@ -222,11 +249,7 @@ export const FieldEditor = ({
                   </IconButton>
                 </span>
               </Tooltip>
-              {protection === 'protected' ? (
-                <Chip label="PROTECTED" color="warning" size="small" />
-              ) : (
-                <Chip label="NOT Protected" color="success" size="small" />
-              )}
+
               <Tooltip title="Add Field Below">
                 <IconButton
                   onClick={addFieldBelow}
@@ -256,48 +279,108 @@ export const FieldEditor = ({
       </AccordionSummary>
 
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
-        {(fieldComponent === 'MultipleTextField' && (
-          <MultipleTextFieldEditor fieldName={fieldName} />
-        )) ||
-          (fieldComponent === 'TakePhoto' && (
-            <TakePhotoFieldEditor fieldName={fieldName} />
+        {protection === 'protected' && (
+          <Stack
+            direction="column"
+            alignItems="center"
+            justifyContent="center"
+            spacing={1}
+            sx={{
+              width: '100%',
+              padding: 2,
+              marginBottom: 2,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              borderRadius: 1,
+              border: '1px solid #546e7a',
+              boxSizing: 'border-box', // Ensures consistent padding
+              textAlign: 'center',
+            }}
+          >
+            <Lock sx={{color: '#546e7a', fontSize: 24}} />
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 500,
+                color: '#546e7a',
+              }}
+            >
+              Locked fields can not be edited
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 400,
+                color: '#008040',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+              onClick={() => {
+                const newProtection = 'none';
+                dispatch({
+                  type: 'ui-specification/toggleFieldProtection',
+                  payload: {fieldName, protection: newProtection},
+                });
+              }}
+            >
+              Unlock...
+            </Typography>
+          </Stack>
+        )}
+        <div
+          style={{
+            pointerEvents: protection === 'protected' ? 'none' : 'auto',
+            opacity: protection === 'protected' ? 0.5 : 1,
+          }}
+        >
+          {(fieldComponent === 'MultipleTextField' && (
+            <MultipleTextFieldEditor fieldName={fieldName} />
           )) ||
-          (fieldComponent === 'TextField' && (
-            <TextFieldEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'DateTimeNow' && (
-            <DateTimeNowEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'Select' && (
-            <OptionsEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'MultiSelect' && (
-            <OptionsEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'AdvancedSelect' && (
-            <AdvancedSelectEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RadioGroup' && (
-            <OptionsEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'MapFormField' && (
-            <MapFormFieldEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RandomStyle' && (
-            <RandomStyleEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RichText' && (
-            <RichTextEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RelatedRecordSelector' && (
-            <RelatedRecordEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'BasicAutoIncrementer' && (
-            <BasicAutoIncrementerEditor fieldName={fieldName} viewId={viewId} />
-          )) ||
-          (fieldComponent === 'TemplatedStringField' && (
-            <TemplatedStringFieldEditor fieldName={fieldName} viewId={viewId} />
-          )) || <BaseFieldEditor fieldName={fieldName} />}
+            (fieldComponent === 'TakePhoto' && (
+              <TakePhotoFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'TextField' && (
+              <TextFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'DateTimeNow' && (
+              <DateTimeNowEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'Select' && (
+              <OptionsEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'MultiSelect' && (
+              <OptionsEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'AdvancedSelect' && (
+              <AdvancedSelectEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RadioGroup' && (
+              <OptionsEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'MapFormField' && (
+              <MapFormFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RandomStyle' && (
+              <RandomStyleEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RichText' && (
+              <RichTextEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RelatedRecordSelector' && (
+              <RelatedRecordEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'BasicAutoIncrementer' && (
+              <BasicAutoIncrementerEditor
+                fieldName={fieldName}
+                viewId={viewId}
+              />
+            )) ||
+            (fieldComponent === 'TemplatedStringField' && (
+              <TemplatedStringFieldEditor
+                fieldName={fieldName}
+                viewId={viewId}
+              />
+            )) || <BaseFieldEditor fieldName={fieldName} />}
+        </div>
       </AccordionDetails>
     </Accordion>
   );
