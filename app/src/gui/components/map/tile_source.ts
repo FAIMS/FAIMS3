@@ -22,17 +22,21 @@ import OSM, {ATTRIBUTION} from 'ol/source/OSM';
 import {LoaderOptions} from 'ol/source/DataTile';
 import ImageTileSource from 'ol/source/ImageTile';
 import {Extent} from 'ol/extent';
+import TileLayer from 'ol/layer/Tile';
+import {MAP_SOURCE_KEY, MAP_SOURCE} from '../../../buildconfig';
 
-// const TILE_URL_TEMPLATE =
-//   'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=yJaRyFscf2iogDGe64SH';
-const TILE_URL_TEMPLATE = 'https://cdn.lima-labs.com/{z}/{x}/{y}.png?api=bear'
-// `https://tile.openstreetmap.org/{z}/{x}/{y}.png`;
+const TILE_URL_MAP: {[key: string]: string} = {
+  'lima-labs': 'https://cdn.lima-labs.com/{z}/{x}/{y}.png?api={key}',
+  osm: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  maptiler: 'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key={key}',
+};
 
 export class TileStore {
   static DB_NAME = 'tiles_db';
   static STORE_NAME = 'tiles';
   static db: IDBDatabase;
   source!: ImageTileSource;
+  tileLayer!: TileLayer;
 
   constructor() {
     if (!TileStore.db) {
@@ -42,8 +46,17 @@ export class TileStore {
       attributions: ATTRIBUTION,
       loader: this.tileLoader.bind(this),
     });
+    this.tileLayer = new TileLayer({source: this.source});
     console.log('initialized tile source');
     this.reportDBSize();
+  }
+
+  getTileLayer() {
+    return this.tileLayer;
+  }
+
+  getAttribution() {
+    return this.source.getAttributions();
   }
 
   private initDB(): Promise<void> {
@@ -163,9 +176,10 @@ export class TileStore {
     let image = await this.get(x, y, z);
     if (!image && navigator.onLine) {
       // console.log('fetching tile', z, x, y);
-      const url = TILE_URL_TEMPLATE.replace('{z}', z.toString())
+      const url = TILE_URL_MAP[MAP_SOURCE].replace('{z}', z.toString())
         .replace('{x}', x.toString())
-        .replace('{y}', y.toString());
+        .replace('{y}', y.toString())
+        .replace('{key}', MAP_SOURCE_KEY);
       const response = await fetch(url);
       image = await response.blob();
       await this.store(x, y, z, image, setName);

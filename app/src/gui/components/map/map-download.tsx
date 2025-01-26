@@ -24,7 +24,6 @@ import {useQuery} from '@tanstack/react-query';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
 import GeoJSON from 'ol/format/GeoJSON';
-import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform} from 'ol/proj';
@@ -33,6 +32,7 @@ import {RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
 import {TileStore} from '../map/tile_source';
+import {Attribution} from 'ol/source/Source';
 
 const defaultMapProjection = 'EPSG:3857';
 
@@ -45,6 +45,7 @@ export const MapDownloadComponent = () => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [cacheSize, setCacheSize] = useState('');
   const [zoomLevel, setZoomLevel] = useState(12); // Default zoom level
+  const [attribution, setAttribution] = useState<Attribution | null>(null);
 
   // create state ref that can be accessed in OpenLayers onclick callback function
   //  https://stackoverflow.com/a/60643670
@@ -63,9 +64,9 @@ export const MapDownloadComponent = () => {
    * Create the OpenLayers map element
    */
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
-    //const tileLayer = new TileLayer({source: new OSM()});
     const tileStore = new TileStore();
-    const tileLayer = new TileLayer({source: tileStore.source});
+    setAttribution(tileStore.getAttribution());
+    const tileLayer = tileStore.getTileLayer();
     const view = new View({
       projection: defaultMapProjection,
       zoom: zoomLevel,
@@ -224,6 +225,9 @@ export const MapDownloadComponent = () => {
             width: '100%',
           }}
         />
+        <Box>
+          {attribution && <p dangerouslySetInnerHTML={{__html: attribution}} />}
+        </Box>
       </>
     );
   }

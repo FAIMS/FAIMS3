@@ -332,6 +332,22 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
+/**
+ * Map source configuration.  Define the map source
+ * (see src/gui/components/map/tile_source.ts for options)
+ * and the map key if required.
+ */
+
+function get_map_source(): string {
+  const map_source = import.meta.env.VITE_MAP_SOURCE;
+  return map_source || 'osm';
+}
+
+function get_map_key(): string {
+  const map_key = import.meta.env.VITE_MAP_SOURCE_KEY;
+  return map_key || '';
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -354,3 +370,5 @@ export const APP_NAME = get_app_name();
 export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();
 export const SHOW_RECORD_SUMMARY_COUNTS = showRecordCounts();
+export const MAP_SOURCE_KEY = get_map_key();
+export const MAP_SOURCE = get_map_source();
