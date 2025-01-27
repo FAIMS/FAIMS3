@@ -61,6 +61,11 @@ function ios_url(): string {
   return url || '';
 }
 
+function designer_url(): string {
+  const url = process.env.DESIGNER_URL;
+  return url || '';
+}
+
 function is_testing() {
   const jest_worker_is_running = process.env.JEST_WORKER_ID !== undefined;
   const jest_imported = false; //typeof jest !== 'undefined';
@@ -286,6 +291,7 @@ export const CONDUCTOR_AUTH_PROVIDERS = get_providers_to_use();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
+export const DESIGNER_URL = designer_url();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to

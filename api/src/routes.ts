@@ -34,6 +34,7 @@ import {
   CONDUCTOR_AUTH_PROVIDERS,
   CONDUCTOR_PUBLIC_URL,
   COUCHDB_INTERNAL_URL,
+  DESIGNER_URL,
   DEVELOPER_MODE,
   IOS_APP_URL,
   WEBAPP_PUBLIC_URL,
@@ -183,6 +184,7 @@ app.get('/notebooks/', requireAuthentication, async (req, res) => {
       cluster_admin: userIsClusterAdmin(user),
       can_create_notebooks: userCanCreateNotebooks(user),
       developer: DEVELOPER_MODE,
+      DESIGNER_URL: DESIGNER_URL,
     });
   } else {
     res.status(401).end();
@@ -223,6 +225,7 @@ app.get(
           return {label: uiSpec.viewsets[key].label, id: key};
         }),
         developer: DEVELOPER_MODE,
+        DESIGNER_URL: DESIGNER_URL,
       });
     } else {
       res.sendStatus(404);
