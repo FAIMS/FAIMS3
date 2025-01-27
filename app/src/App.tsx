@@ -44,6 +44,7 @@ import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
 import {AppUrlListener} from './native_hooks';
 import {NotificationProvider} from './context/popup';
+import {MapDownloadComponent} from './gui/components/map/map-download';
 
 // type AppProps = {};
 
@@ -198,6 +199,10 @@ export default function App() {
                         }
                       />
                       <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
+                      <Route
+                        path={ROUTES.OFFLINE_MAPS}
+                        Component={MapDownloadComponent}
+                      />
                       <Route path={'*'} Component={NotFound404} />
                     </Routes>
                   </MainLayout>
