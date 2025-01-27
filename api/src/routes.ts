@@ -34,6 +34,7 @@ import {
   CONDUCTOR_AUTH_PROVIDERS,
   CONDUCTOR_PUBLIC_URL,
   COUCHDB_INTERNAL_URL,
+  DESIGNER_URL,
   DEVELOPER_MODE,
   IOS_APP_URL,
   WEBAPP_PUBLIC_URL,
@@ -78,11 +79,6 @@ add_auth_routes(app, CONDUCTOR_AUTH_PROVIDERS);
 app.get('/', async (req, res) => {
   if (databaseValidityReport.valid) {
     if (req.user && req.user._id) {
-      // Handlebars is pretty useless at including render logic in templates, just
-      // parse the raw, pre-processed string in...
-      const rendered_project_roles = render_project_roles(
-        req.user.project_roles
-      );
       const provider = Object.keys(req.user.profiles)[0];
       // No need for a refresh here
       const token = await generateUserToken(req.user, false);
@@ -90,12 +86,13 @@ app.get('/', async (req, res) => {
       res.render('home', {
         user: req.user,
         token: token.token,
-        project_roles: rendered_project_roles,
-        other_roles: req.user.other_roles,
         cluster_admin: userIsClusterAdmin(req.user),
         can_create_notebooks: userCanCreateNotebooks(req.user),
         provider: provider,
         developer: DEVELOPER_MODE,
+        ANDROID_APP_URL: ANDROID_APP_URL,
+        IOS_APP_URL: IOS_APP_URL,
+        WEBAPP_PUBLIC_URL: WEBAPP_PUBLIC_URL,
       });
     } else {
       res.redirect('/auth/');
@@ -187,6 +184,7 @@ app.get('/notebooks/', requireAuthentication, async (req, res) => {
       cluster_admin: userIsClusterAdmin(user),
       can_create_notebooks: userCanCreateNotebooks(user),
       developer: DEVELOPER_MODE,
+      DESIGNER_URL: DESIGNER_URL,
     });
   } else {
     res.status(401).end();
@@ -227,6 +225,7 @@ app.get(
           return {label: uiSpec.viewsets[key].label, id: key};
         }),
         developer: DEVELOPER_MODE,
+        DESIGNER_URL: DESIGNER_URL,
       });
     } else {
       res.sendStatus(404);

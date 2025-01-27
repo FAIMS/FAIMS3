@@ -27,6 +27,9 @@
       <h3>Download Notebook JSON definition</h3>
       <p><a download href="/api/notebooks/{{notebook.project_id}}">{{notebook.project_id}}.json</a></p>
 
+      {{#if DESIGNER_URL}}
+        <p>You can update your notebook by uploading the JSON to <a href="{{DESIGNER_URL}}">Designer</a></p>
+      {{/if}}
     </div>
 
     <div class="col">
