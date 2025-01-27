@@ -78,11 +78,6 @@ add_auth_routes(app, CONDUCTOR_AUTH_PROVIDERS);
 app.get('/', async (req, res) => {
   if (databaseValidityReport.valid) {
     if (req.user && req.user._id) {
-      // Handlebars is pretty useless at including render logic in templates, just
-      // parse the raw, pre-processed string in...
-      const rendered_project_roles = render_project_roles(
-        req.user.project_roles
-      );
       const provider = Object.keys(req.user.profiles)[0];
       // No need for a refresh here
       const token = await generateUserToken(req.user, false);
@@ -90,12 +85,13 @@ app.get('/', async (req, res) => {
       res.render('home', {
         user: req.user,
         token: token.token,
-        project_roles: rendered_project_roles,
-        other_roles: req.user.other_roles,
         cluster_admin: userIsClusterAdmin(req.user),
         can_create_notebooks: userCanCreateNotebooks(req.user),
         provider: provider,
         developer: DEVELOPER_MODE,
+        ANDROID_APP_URL: ANDROID_APP_URL,
+        IOS_APP_URL: IOS_APP_URL,
+        WEBAPP_PUBLIC_URL: WEBAPP_PUBLIC_URL,
       });
     } else {
       res.redirect('/auth/');

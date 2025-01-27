@@ -53,18 +53,12 @@ function app_url(): string {
 
 function android_url(): string {
   const url = process.env.ANDROID_APP_PUBLIC_URL;
-  if (url === '' || url === undefined) {
-    return 'http://localhost:3000';
-  }
-  return url;
+  return url || '';
 }
 
 function ios_url(): string {
   const url = process.env.IOS_APP_PUBLIC_URL;
-  if (url === '' || url === undefined) {
-    return 'http://localhost:3000';
-  }
-  return url;
+  return url || '';
 }
 
 function is_testing() {
