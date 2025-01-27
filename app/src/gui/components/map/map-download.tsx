@@ -19,7 +19,7 @@
  */
 
 import {Geolocation} from '@capacitor/geolocation';
-import {Box, Button} from '@mui/material';
+import {Box, Button, FormGroup, TextField} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
@@ -46,6 +46,7 @@ export const MapDownloadComponent = () => {
   const [cacheSize, setCacheSize] = useState('');
   const [zoomLevel, setZoomLevel] = useState(12); // Default zoom level
   const [attribution, setAttribution] = useState<Attribution | null>(null);
+  const [downloadSetName, setDownloadSetName] = useState('default');
 
   // create state ref that can be accessed in OpenLayers onclick callback function
   //  https://stackoverflow.com/a/60643670
@@ -110,7 +111,7 @@ export const MapDownloadComponent = () => {
   const confirmCacheMapExtent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
-      tileStore.getTilesForRegion(extent, 12, 18);
+      tileStore.getTilesForRegion(extent, 12, 18, downloadSetName);
     }
   };
 
@@ -202,20 +203,29 @@ export const MapDownloadComponent = () => {
   } else {
     return (
       <>
-        <Button variant="outlined" onClick={handleCacheMapExtent}>
-          Cache Map
-        </Button>
-        {cacheSize && <Box>Cache Size: {cacheSize}</Box>}
-        <Button variant="outlined" onClick={confirmCacheMapExtent}>
-          Download Offline Map
-        </Button>
+        <FormGroup row>
+          <TextField
+            label="Name for Downloaded Map"
+            value={downloadSetName}
+            onChange={e => setDownloadSetName(e.target.value)}
+          />
+          <Button variant="outlined" onClick={confirmCacheMapExtent}>
+            Download Offline Map
+          </Button>
+          <Button variant="outlined" onClick={handleCacheMapExtent}>
+            Estimate Download Size
+          </Button>
+        </FormGroup>
+
         <Button variant="outlined" onClick={handleGetDBSize}>
           DB Size
         </Button>
         <Button variant="outlined" onClick={handleClearDB}>
           Clear DB
         </Button>
+
         <Box>Zoom Level: {zoomLevel}</Box>
+        {cacheSize && <Box>Estimated Download Size: {cacheSize}</Box>}
         <Box
           ref={refCallback}
           sx={{

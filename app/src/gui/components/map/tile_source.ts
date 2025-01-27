@@ -18,18 +18,15 @@
  * tiles locally.
  */
 
-import OSM, {ATTRIBUTION} from 'ol/source/OSM';
+import {Extent} from 'ol/extent';
+import MVT from 'ol/format/MVT';
+import TileLayer from 'ol/layer/Tile';
+import VectorTileLayer from 'ol/layer/VectorTile';
 import {LoaderOptions} from 'ol/source/DataTile';
 import ImageTileSource from 'ol/source/ImageTile';
-import {Extent} from 'ol/extent';
-import TileLayer from 'ol/layer/Tile';
-import {MAP_SOURCE_KEY, MAP_SOURCE} from '../../../buildconfig';
-import Tile from 'ol/Tile';
-import VectorTileLayer from 'ol/layer/VectorTile';
+import OSM, {ATTRIBUTION} from 'ol/source/OSM';
 import VectorTileSource from 'ol/source/VectorTile';
-import MVT from 'ol/format/MVT';
-import {Style} from 'ol/style';
-import TopoJSON from 'ol/format/TopoJSON';
+import {MAP_SOURCE, MAP_SOURCE_KEY} from '../../../buildconfig';
 
 const TILE_URL_MAP: {[key: string]: string} = {
   'lima-labs': 'https://cdn.lima-labs.com/{z}/{x}/{y}.png?api={key}',
@@ -37,6 +34,12 @@ const TILE_URL_MAP: {[key: string]: string} = {
   maptiler: 'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key={key}',
 };
 
+// Type returned by reportDBSize
+export interface TileDBReport {
+  count: number;
+  size: number;
+  average: number;
+}
 class TileStoreBase {
   static DB_NAME = 'tiles_db';
   static STORE_NAME = 'tiles';
@@ -68,6 +71,11 @@ class TileStoreBase {
     });
   }
 
+  // get a tile grid, may be overridden by subclasses
+  getTileGrid() {
+    return new OSM().getTileGrid();
+  }
+
   async clearCache() {
     console.log('clearing tile cache');
     if (TileStoreBase.db) {
@@ -86,7 +94,7 @@ class TileStoreBase {
   }
 
   async reportDBSize() {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<TileDBReport>((resolve, reject) => {
       if (!TileStoreBase.db) {
         return;
       }
@@ -106,7 +114,7 @@ class TileStoreBase {
         console.log(
           `tile store has ${tiles.length} tiles using ${size}M average ${average_size}Kb`
         );
-        resolve();
+        resolve({count: tiles.length, size: size, average: average_size});
       };
       request.onerror = () => reject(request.error);
     });
@@ -146,7 +154,8 @@ class TileStoreBase {
     x: number,
     y: number,
     z: number,
-    setName = 'default'
+    setName = 'default',
+    cache = false
   ): Promise<string | null> {
     let image = await this.get(x, y, z);
     if (!image && navigator.onLine) {
@@ -157,7 +166,8 @@ class TileStoreBase {
         .replace('{key}', MAP_SOURCE_KEY);
       const response = await fetch(url);
       image = await response.blob();
-      await this.store(x, y, z, image, setName);
+      // cache the image if we are told to
+      if (cache) await this.store(x, y, z, image, setName);
     } else if (!image) {
       return null;
     }
@@ -183,8 +193,10 @@ class TileStoreBase {
     minZoom: number,
     maxZoom: number
   ) {
-    const OSMSource = new OSM();
-    const tileGrid = OSMSource.getTileGrid();
+    const tileGrid = this.getTileGrid();
+
+    const report = await this.reportDBSize();
+    const average_size = report.average || 20;
 
     const tileSet = new Set<string>();
     for (let zoom = minZoom; zoom <= maxZoom; zoom += 2) {
@@ -197,7 +209,7 @@ class TileStoreBase {
       );
     }
     const counter = tileSet.size;
-    const estimatedSize = Math.round((counter * 12) / 1024);
+    const estimatedSize = Math.round((counter * average_size) / 1024);
     console.log(
       'estimated size',
       Math.round(estimatedSize),
@@ -215,10 +227,14 @@ class TileStoreBase {
    * @param minZoom Minimum zoom level to download
    * @param maxZoom Maximum zoom level to download
    */
-  async getTilesForRegion(extent: Extent, minZoom: number, maxZoom: number) {
-    console.log('getTilesForRegion', extent, minZoom, maxZoom);
-    const OSMSource = new OSM();
-    const tileGrid = OSMSource.getTileGrid();
+  async getTilesForRegion(
+    extent: Extent,
+    minZoom: number,
+    maxZoom: number,
+    setName = 'default'
+  ) {
+    console.log('getTilesForRegion', setName, extent, minZoom, maxZoom);
+    const tileGrid = this.getTileGrid();
     const tileCoords: number[][] = [];
     for (let zoom = minZoom; zoom <= maxZoom; zoom += 2) {
       tileGrid?.forEachTileCoord(extent, Math.ceil(zoom), tileCoord => {
@@ -229,7 +245,7 @@ class TileStoreBase {
 
     for (const tileCoord of tileCoords) {
       const [z, x, y] = tileCoord;
-      await this.getTile(x, y, z);
+      await this.getTile(x, y, z, setName, true);
     }
     console.log('done');
   }
@@ -247,6 +263,10 @@ export class ImageTileStore extends TileStoreBase {
     });
     this.tileLayer = new TileLayer({source: this.source});
     console.log('initialized image tile source');
+  }
+
+  getTileGrid() {
+    return this.source.getTileGrid();
   }
 
   getTileLayer() {
@@ -284,7 +304,7 @@ export class ImageTileStore extends TileStoreBase {
 // find an open alternative.
 // Also works with tiles served from local Planetiler instance
 // <https://github.com/onthegomap/planetiler> but again no style.
-// TODO: work out how to implement the download/cache option for these 
+// TODO: work out how to implement the download/cache option for these
 // tiles.  `tileLoaderFunction` should be the way.
 
 export class VectorTileStore extends TileStoreBase {
@@ -295,7 +315,7 @@ export class VectorTileStore extends TileStoreBase {
     super();
     this.source = new VectorTileSource({
       attributions: ATTRIBUTION,
-//      url: 'https://api.maptiler.com/tiles/v3-openmaptiles/{z}/{x}/{y}.pbf?key=XS7BaYII4la5ZbVgh8i2',
+      //      url: 'https://api.maptiler.com/tiles/v3-openmaptiles/{z}/{x}/{y}.pbf?key=XS7BaYII4la5ZbVgh8i2',
       url: 'http://localhost:8080/data/v3/{z}/{x}/{y}.pbf',
       format: new MVT(),
       //tileLoadFunction: this.tileLoader.bind(this),
