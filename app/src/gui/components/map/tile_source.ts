@@ -104,17 +104,30 @@ class TileStoreBase {
       );
       const store = transaction.objectStore(TileStoreBase.STORE_NAME);
       const request = store.getAll();
+      let count = 0;
 
       request.onsuccess = () => {
         const tiles = request.result;
-        const totalSize = tiles.reduce((acc, tile) => acc + tile.data.size, 0);
-        const size = Math.round((100 * totalSize) / 1024 / 1024) / 100;
-        const average_size = Math.round(totalSize / tiles.length / 1024);
-
-        console.log(
-          `tile store has ${tiles.length} tiles using ${size}M average ${average_size}Kb`
+        count = tiles.length;
+        // const totalSize = tiles.reduce((acc, tile) => acc + tile.data.size, 0);
+        const sizeMap = tiles.reduce(
+          (sMap, tile) =>
+            sMap.set(tile.set, (sMap.get(tile.set) | 0) + tile.data.size),
+          new Map<string, number>()
         );
-        resolve({count: tiles.length, size: size, average: average_size});
+        console.log('size map', sizeMap);
+
+        sizeMap.set(
+          'total',
+          Array.from(sizeMap.values()).reduce(
+            (acc: unknown, size: unknown) => (acc as number) + (size as number),
+            0
+          ) as number
+        );
+
+        const average_size = sizeMap.get('total') / count;
+
+        resolve({count: tiles.length, size: sizeMap, average: average_size});
       };
       request.onerror = () => reject(request.error);
     });
