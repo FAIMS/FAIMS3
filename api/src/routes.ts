@@ -65,11 +65,13 @@ import {
   initialiseDatabases,
   verifyCouchDBConnection,
 } from './couchdb';
+import {addWebRoutes} from './web-routes';
 
 export {app};
 
 add_auth_providers(CONDUCTOR_AUTH_PROVIDERS);
 add_auth_routes(app, CONDUCTOR_AUTH_PROVIDERS);
+addWebRoutes(app);
 
 /**
  * Home Page
