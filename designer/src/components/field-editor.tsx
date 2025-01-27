@@ -17,8 +17,11 @@ import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
-import Lock from '@mui/icons-material/Lock';
-import LockOpen from '@mui/icons-material/LockOpen';
+import LockRounded from '@mui/icons-material/LockRounded';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 import {
   Accordion,
@@ -27,10 +30,18 @@ import {
   Chip,
   Grid,
   IconButton,
+  Menu,
+  MenuItem,
   Stack,
   Tooltip,
   Typography,
+  Checkbox,
+  FormControlLabel,
+  Divider,
+  Radio,
+  RadioGroup,
 } from '@mui/material';
+import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {BaseFieldEditor} from './Fields/BaseFieldEditor';
@@ -45,7 +56,7 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
-import {field_level_links} from '../../../app/src/utils/fixtures';
+import {FieldProtectionMenu} from './field-protection-menu';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -69,6 +80,20 @@ export const FieldEditor = ({
   const dispatch = useAppDispatch();
 
   const fieldComponent = field['component-name'];
+  const protection = field?.protection || 'none';
+  const isHidden = field?.hidden || false;
+
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(anchorEl);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const getFieldLabel = () => {
     return (
@@ -79,17 +104,6 @@ export const FieldEditor = ({
     );
   };
   const label = getFieldLabel();
-
-  const protection = field?.protection || 'none';
-
-  const toggleProtection = (event: React.SyntheticEvent) => {
-    event.stopPropagation();
-    const newProtection = protection === 'protected' ? 'none' : 'protected';
-    dispatch({
-      type: 'ui-specification/toggleFieldProtection',
-      payload: {fieldName, protection: newProtection},
-    });
-  };
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
     event.stopPropagation();
@@ -120,6 +134,25 @@ export const FieldEditor = ({
     addFieldCallback(fieldName);
   };
 
+  const toggleProtection = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    newProtection: 'protected' | 'none' | 'allow-hiding'
+  ) => {
+    event.stopPropagation();
+    dispatch({
+      type: 'ui-specification/toggleFieldProtection',
+      payload: {fieldName, protection: newProtection},
+    });
+  };
+
+  const toggleHiddenState = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+    dispatch({
+      type: 'ui-specification/toggleFieldHidden',
+      payload: {fieldName, hidden: !isHidden},
+    });
+  };
+
   return (
     <Accordion
       key={fieldName}
@@ -130,7 +163,6 @@ export const FieldEditor = ({
       elevation={0}
       sx={{
         border: '1px solid #CBCFCD',
-        color: '#1A211E',
         '&:not(:nth-of-type(2))': {
           borderTop: 0,
         },
@@ -216,26 +248,41 @@ export const FieldEditor = ({
             )}
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
-              <Tooltip
-                title={
-                  protection === 'protected' ? 'Unlock Field' : 'Lock Field'
-                }
-              >
-                <IconButton
-                  onClick={toggleProtection}
-                  aria-label="toggle protection"
-                  size="small"
-                >
-                  {protection === 'protected' ? <Lock /> : <LockOpen />}
-                </IconButton>
-              </Tooltip>
-
+            <Stack
+              direction="row"
+              justifyContent={{sm: 'right', xs: 'left'}}
+              spacing={1}
+            >
+              {isHidden ? (
+                <Tooltip title="Unhide Field">
+                  <IconButton
+                    onClick={toggleHiddenState}
+                    aria-label="unhide field"
+                    size="small"
+                  >
+                    <VisibilityIcon />
+                  </IconButton>
+                </Tooltip>
+              ) : (
+                (protection === 'none' || protection === 'allow-hiding') && (
+                  <Tooltip title="Hide Field">
+                    <IconButton
+                      onClick={toggleHiddenState}
+                      aria-label="hide field"
+                      size="small"
+                    >
+                      <VisibilityOffIcon />
+                    </IconButton>
+                  </Tooltip>
+                )
+              )}
               <Tooltip
                 title={
                   protection === 'protected'
-                    ? 'Locked fields can not be deleted'
-                    : 'Delete Field'
+                    ? 'This field is protected and cannot be deleted.'
+                    : protection === 'allow-hiding'
+                      ? 'This field is protected and cannot be deleted.'
+                      : 'Delete Field'
                 }
               >
                 <span>
@@ -243,13 +290,15 @@ export const FieldEditor = ({
                     onClick={deleteField}
                     aria-label="delete"
                     size="small"
-                    disabled={protection === 'protected'}
+                    disabled={
+                      protection === 'protected' ||
+                      protection === 'allow-hiding'
+                    }
                   >
                     <DeleteRoundedIcon />
                   </IconButton>
                 </span>
               </Tooltip>
-
               <Tooltip title="Add Field Below">
                 <IconButton
                   onClick={addFieldBelow}
@@ -273,13 +322,30 @@ export const FieldEditor = ({
                   <ArrowDropDownRoundedIcon />
                 </IconButton>
               </Tooltip>
+              <Tooltip title="Field Protection">
+                <IconButton
+                  onClick={handleMenuOpen}
+                  aria-label="Field Protection"
+                  size="small"
+                >
+                  <MoreVertIcon />
+                </IconButton>
+              </Tooltip>
+
+              <FieldProtectionMenu
+                anchorEl={anchorEl}
+                menuOpen={menuOpen}
+                onClose={handleMenuClose}
+                protection={protection}
+                onToggleProtection={toggleProtection}
+              />
             </Stack>
           </Grid>
         </Grid>
       </AccordionSummary>
 
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
-        {protection === 'protected' && (
+        {(protection === 'protected' || protection === 'allow-hiding') && (
           <Stack
             direction="column"
             alignItems="center"
@@ -292,11 +358,11 @@ export const FieldEditor = ({
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
               borderRadius: 1,
               border: '1px solid #546e7a',
-              boxSizing: 'border-box', // Ensures consistent padding
+              boxSizing: 'border-box',
               textAlign: 'center',
             }}
           >
-            <Lock sx={{color: '#546e7a', fontSize: 24}} />
+            <LockRounded sx={{color: '#546e7a', fontSize: 24}} />
             <Typography
               variant="body2"
               sx={{
@@ -304,32 +370,36 @@ export const FieldEditor = ({
                 color: '#546e7a',
               }}
             >
-              Locked fields can not be edited
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 400,
-                color: '#008040',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-              }}
-              onClick={() => {
-                const newProtection = 'none';
-                dispatch({
-                  type: 'ui-specification/toggleFieldProtection',
-                  payload: {fieldName, protection: newProtection},
-                });
-              }}
-            >
-              Unlock...
+              {protection === 'protected'
+                ? 'This field is protected. You may not modify or delete it.'
+                : `This field is protected. You may not modify or delete it. ${
+                    !isHidden ? 'However, you may ' : ''
+                  }`}
+              {!isHidden && protection === 'allow-hiding' && (
+                <span
+                  onClick={toggleHiddenState}
+                  style={{
+                    textDecoration: 'underline',
+                    color: '#007bfc',
+                    cursor: 'pointer',
+                  }}
+                >
+                  hide it.
+                </span>
+              )}
             </Typography>
           </Stack>
         )}
         <div
           style={{
-            pointerEvents: protection === 'protected' ? 'none' : 'auto',
-            opacity: protection === 'protected' ? 0.5 : 1,
+            pointerEvents:
+              protection === 'protected' || protection === 'allow-hiding'
+                ? 'none'
+                : 'auto',
+            opacity:
+              protection === 'protected' || protection === 'allow-hiding'
+                ? 0.5
+                : 1,
           }}
         >
           {(fieldComponent === 'MultipleTextField' && (

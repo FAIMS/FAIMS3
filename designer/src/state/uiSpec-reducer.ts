@@ -71,8 +71,13 @@ export const uiSpecificationReducer = createSlice({
       }>
     ) => {
       const {fieldName, protection} = action.payload;
+
       if (fieldName in state.fields) {
         state.fields[fieldName].protection = protection;
+
+        if (protection === 'protected' && state.fields[fieldName].hidden) {
+          state.fields[fieldName].hidden = false;
+        }
       } else {
         throw new Error(
           `Cannot toggle protection for unknown field ${fieldName}`

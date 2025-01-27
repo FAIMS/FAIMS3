@@ -22,15 +22,15 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>org.fedarch.faims3</string>
+			<string></string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>org.fedarch.faims3</string>
+				<string></string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>202501170634</string>
+	<string>202501250936</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
