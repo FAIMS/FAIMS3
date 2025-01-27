@@ -40,7 +40,7 @@ import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
 import {Geolocation} from '@capacitor/geolocation';
-import {TileStore} from '../map/tile_source';
+import {ImageTileStore} from '../map/tile_source';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -65,8 +65,8 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
-  const [cacheSize, setCacheSize] = useState('');
   const [zoomLevel, setZoomLevel] = useState(12); // Default zoom level
+  const tileStore = useMemo(() => new ImageTileStore(), []);
 
   /**
    * Get the names of all GIS fields in this UI Specification
@@ -154,9 +154,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
    * Create the OpenLayers map element
    */
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
-    //const tileLayer = new TileLayer({source: new OSM()});
-    const tileStore = new TileStore();
-    const tileLayer = new TileLayer({source: tileStore.source});
+    const tileLayer = tileStore.getTileLayer();
     const view = new View({
       projection: defaultMapProjection,
       zoom: zoomLevel,

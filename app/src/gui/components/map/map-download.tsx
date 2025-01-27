@@ -29,9 +29,9 @@ import Map from 'ol/Map';
 import {transform} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {RegularShape, Stroke, Style} from 'ol/style';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
-import {TileStore} from '../map/tile_source';
+import {ImageTileStore} from '../map/tile_source';
 import {Attribution} from 'ol/source/Source';
 
 const defaultMapProjection = 'EPSG:3857';
@@ -52,6 +52,9 @@ export const MapDownloadComponent = () => {
   const mapRef = useRef<Map | undefined>();
   mapRef.current = map;
 
+  // alternately use VectorTileStore for vector tiles (in progress)
+  const tileStore = useMemo(() => new ImageTileStore(), []);
+
   const {data: map_center, isLoading: loadingLocation} = useQuery({
     queryKey: ['current_location'],
     queryFn: async (): Promise<[number, number]> => {
@@ -64,7 +67,6 @@ export const MapDownloadComponent = () => {
    * Create the OpenLayers map element
    */
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
-    const tileStore = new TileStore();
     setAttribution(tileStore.getAttribution());
     const tileLayer = tileStore.getTileLayer();
     const view = new View({
@@ -92,7 +94,6 @@ export const MapDownloadComponent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
       let sizeStr = '';
-      const tileStore = new TileStore();
       tileStore.estimateSizeForRegion(extent, 12, 18).then(size => {
         if (size > 1024 * 1024) {
           sizeStr = (size / 1024 / 1024).toFixed(2) + ' TB';
@@ -108,7 +109,6 @@ export const MapDownloadComponent = () => {
 
   const confirmCacheMapExtent = () => {
     if (map) {
-      const tileStore = new TileStore();
       const extent = map.getView().calculateExtent();
       tileStore.getTilesForRegion(extent, 12, 18);
     }
@@ -191,12 +191,10 @@ export const MapDownloadComponent = () => {
   );
 
   const handleGetDBSize = async () => {
-    const tileStore = new TileStore();
     await tileStore.reportDBSize();
   };
 
   const handleClearDB = async () => {
-    const tileStore = new TileStore();
     await tileStore.clearCache();
   };
   if (loadingLocation) {

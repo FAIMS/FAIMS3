@@ -17,7 +17,7 @@
  * Description:
  *   Internals of map generation for MapFormField
  */
-import React, {useState, useRef, useCallback} from 'react';
+import React, {useState, useRef, useCallback, useMemo} from 'react';
 
 // openlayers
 import Map from 'ol/Map';
@@ -69,6 +69,7 @@ import Feature from 'ol/Feature';
 import {Geometry} from 'ol/geom';
 import {createCenterControl} from '../../components/map/center-control';
 import {useNotification} from '../../../context/popup';
+import {ImageTileStore} from '../../components/map/tile_source';
 
 const styles = {
   mapContainer: {
@@ -86,6 +87,7 @@ function MapWrapper(props: MapProps) {
   const [featuresLayer, setFeaturesLayer] = useState<VectorLayer>();
   const defaultMapProjection = 'EPSG:3857';
   const geoJson = new GeoJSON();
+  const tileStore = useMemo(() => new ImageTileStore(), []);
 
   // notifications
   const notify = useNotification();
@@ -126,7 +128,7 @@ function MapWrapper(props: MapProps) {
           view = new View(viewOptions);
         }
       } else {
-        tileLayer = new TileLayer({source: new OSM()});
+        tileLayer = tileStore.getTileLayer();
         view = new View({
           projection: props.projection || defaultMapProjection,
           center: center,

@@ -24,6 +24,12 @@ import ImageTileSource from 'ol/source/ImageTile';
 import {Extent} from 'ol/extent';
 import TileLayer from 'ol/layer/Tile';
 import {MAP_SOURCE_KEY, MAP_SOURCE} from '../../../buildconfig';
+import Tile from 'ol/Tile';
+import VectorTileLayer from 'ol/layer/VectorTile';
+import VectorTileSource from 'ol/source/VectorTile';
+import MVT from 'ol/format/MVT';
+import {Style} from 'ol/style';
+import TopoJSON from 'ol/format/TopoJSON';
 
 const TILE_URL_MAP: {[key: string]: string} = {
   'lima-labs': 'https://cdn.lima-labs.com/{z}/{x}/{y}.png?api={key}',
@@ -31,47 +37,32 @@ const TILE_URL_MAP: {[key: string]: string} = {
   maptiler: 'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key={key}',
 };
 
-export class TileStore {
+class TileStoreBase {
   static DB_NAME = 'tiles_db';
   static STORE_NAME = 'tiles';
   static db: IDBDatabase;
-  source!: ImageTileSource;
-  tileLayer!: TileLayer;
 
   constructor() {
-    if (!TileStore.db) {
+    if (!TileStoreBase.db) {
       this.initDB();
     }
-    this.source = new ImageTileSource({
-      attributions: ATTRIBUTION,
-      loader: this.tileLoader.bind(this),
-    });
-    this.tileLayer = new TileLayer({source: this.source});
-    console.log('initialized tile source');
+    console.log('initialized base tile source');
     this.reportDBSize();
-  }
-
-  getTileLayer() {
-    return this.tileLayer;
-  }
-
-  getAttribution() {
-    return this.source.getAttributions();
   }
 
   private initDB(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(TileStore.DB_NAME, 1);
+      const request = indexedDB.open(TileStoreBase.DB_NAME, 1);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
-        TileStore.db = request.result;
+        TileStoreBase.db = request.result;
         resolve();
       };
 
       request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(TileStore.STORE_NAME)) {
-          db.createObjectStore(TileStore.STORE_NAME);
+        if (!db.objectStoreNames.contains(TileStoreBase.STORE_NAME)) {
+          db.createObjectStore(TileStoreBase.STORE_NAME);
         }
       };
     });
@@ -79,11 +70,14 @@ export class TileStore {
 
   async clearCache() {
     console.log('clearing tile cache');
-    if (TileStore.db) {
+    if (TileStoreBase.db) {
       return new Promise<void>((resolve, reject) => {
-        const db = TileStore.db;
-        const transaction = db.transaction(TileStore.STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(TileStore.STORE_NAME);
+        const db = TileStoreBase.db;
+        const transaction = db.transaction(
+          TileStoreBase.STORE_NAME,
+          'readwrite'
+        );
+        const store = transaction.objectStore(TileStoreBase.STORE_NAME);
         transaction.oncomplete = () => resolve();
         transaction.onerror = () => reject(transaction.error);
         store.clear();
@@ -93,14 +87,14 @@ export class TileStore {
 
   async reportDBSize() {
     return new Promise<void>((resolve, reject) => {
-      if (!TileStore.db) {
+      if (!TileStoreBase.db) {
         return;
       }
-      const transaction = TileStore.db.transaction(
-        TileStore.STORE_NAME,
+      const transaction = TileStoreBase.db.transaction(
+        TileStoreBase.STORE_NAME,
         'readonly'
       );
-      const store = transaction.objectStore(TileStore.STORE_NAME);
+      const store = transaction.objectStore(TileStoreBase.STORE_NAME);
       const request = store.getAll();
 
       request.onsuccess = () => {
@@ -118,32 +112,13 @@ export class TileStore {
     });
   }
 
-  /**
-   * @param {number} z The tile z coordinate.
-   * @param {number} x The tile x coordinate.
-   * @param {number} y The tile y coordinate.
-   * @param {LoaderOptions} options The loader options.
-   * @return {Promise<HTMLImageElement>} Resolves with a loaded image.
-   */
-  async tileLoader(
-    z: number,
-    x: number,
-    y: number,
-    options: LoaderOptions
-  ): Promise<HTMLImageElement> {
-    const image = new Image();
-    image.crossOrigin = options.crossOrigin ?? null;
-    image.src = (await this.getImageTile(x, y, z)) || '';
-    return image;
-  }
-
   async store(x: number, y: number, z: number, data: Blob, set = 'default') {
     return new Promise<void>((resolve, reject) => {
-      const transaction = TileStore.db.transaction(
-        TileStore.STORE_NAME,
+      const transaction = TileStoreBase.db.transaction(
+        TileStoreBase.STORE_NAME,
         'readwrite'
       );
-      const store = transaction.objectStore(TileStore.STORE_NAME);
+      const store = transaction.objectStore(TileStoreBase.STORE_NAME);
       const request = store.put({set: set, data: data}, `${z}_${x}_${y}`);
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
@@ -152,11 +127,11 @@ export class TileStore {
 
   async get(x: number, y: number, z: number): Promise<Blob | null> {
     return new Promise((resolve, reject) => {
-      const transaction = TileStore.db.transaction(
-        TileStore.STORE_NAME,
+      const transaction = TileStoreBase.db.transaction(
+        TileStoreBase.STORE_NAME,
         'readonly'
       );
-      const store = transaction.objectStore(TileStore.STORE_NAME);
+      const store = transaction.objectStore(TileStoreBase.STORE_NAME);
       const request = store.get(`${z}_${x}_${y}`);
 
       request.onsuccess = () => {
@@ -167,7 +142,7 @@ export class TileStore {
     });
   }
 
-  async getImageTile(
+  async getTile(
     x: number,
     y: number,
     z: number,
@@ -254,8 +229,94 @@ export class TileStore {
 
     for (const tileCoord of tileCoords) {
       const [z, x, y] = tileCoord;
-      await this.getImageTile(x, y, z);
+      await this.getTile(x, y, z);
     }
     console.log('done');
   }
+}
+
+export class ImageTileStore extends TileStoreBase {
+  declare source: ImageTileSource;
+  declare tileLayer: TileLayer;
+
+  constructor() {
+    super();
+    this.source = new ImageTileSource({
+      attributions: ATTRIBUTION,
+      loader: this.tileLoader.bind(this),
+    });
+    this.tileLayer = new TileLayer({source: this.source});
+    console.log('initialized image tile source');
+  }
+
+  getTileLayer() {
+    return this.tileLayer;
+  }
+
+  getAttribution() {
+    return this.source.getAttributions();
+  }
+
+  /**
+   * @param {number} z The tile z coordinate.
+   * @param {number} x The tile x coordinate.
+   * @param {number} y The tile y coordinate.
+   * @param {LoaderOptions} options The loader options.
+   * @return {Promise<HTMLImageElement>} Resolves with a loaded image.
+   */
+  async tileLoader(
+    z: number,
+    x: number,
+    y: number,
+    options: LoaderOptions
+  ): Promise<HTMLImageElement> {
+    const image = new Image();
+    image.crossOrigin = options.crossOrigin ?? null;
+    image.src = (await this.getTile(x, y, z)) || '';
+    return image;
+  }
+}
+
+// A vector tile source, will download and store vector tiles
+// which should be smaller.
+// TODO: Need to apply a style to the tiles to get a useful map, looked at
+// ol-mapbox-style which might work but it needs a licence key. Need to
+// find an open alternative.
+// Also works with tiles served from local Planetiler instance
+// <https://github.com/onthegomap/planetiler> but again no style.
+// TODO: work out how to implement the download/cache option for these 
+// tiles.  `tileLoaderFunction` should be the way.
+
+export class VectorTileStore extends TileStoreBase {
+  declare source: VectorTileSource;
+  declare tileLayer: VectorTileLayer;
+
+  constructor() {
+    super();
+    this.source = new VectorTileSource({
+      attributions: ATTRIBUTION,
+//      url: 'https://api.maptiler.com/tiles/v3-openmaptiles/{z}/{x}/{y}.pbf?key=XS7BaYII4la5ZbVgh8i2',
+      url: 'http://localhost:8080/data/v3/{z}/{x}/{y}.pbf',
+      format: new MVT(),
+      //tileLoadFunction: this.tileLoader.bind(this),
+    });
+    this.tileLayer = new VectorTileLayer({
+      source: this.source,
+    });
+    console.log('initialized vector tile source');
+  }
+
+  getTileLayer() {
+    return this.tileLayer;
+  }
+
+  getAttribution() {
+    return this.source.getAttributions();
+  }
+
+  /**
+   */
+  // async tileLoader(tile: Tile, url: string): Promise<Tile> {
+  //   this.getTile(tile.getZ(), tile.getX(), tile.getY());
+  // }
 }
