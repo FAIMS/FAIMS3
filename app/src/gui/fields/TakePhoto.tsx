@@ -30,7 +30,7 @@ import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {FieldProps} from 'formik';
 import React from 'react';
-import {APP_NAME} from '../../buildconfig';
+import {APP_NAME, NOTEBOOK_NAME} from '../../buildconfig';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 
@@ -52,6 +52,11 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
   );
   return await response.blob();
 }
+
+// Helper function to check if any images are undownloaded
+const hasUndownloadedImages = (images: Array<any>): boolean => {
+  return images.some(image => image['attachment_id'] !== undefined);
+};
 
 interface Props {
   // this should be removed but will appear in older notebooks
@@ -341,6 +346,7 @@ export const TakePhoto: React.FC<
 
   const images = props.form.values[props.field.name] ?? [];
   const disabled = props.disabled ?? false;
+  const hasUndownloaded = hasUndownloadedImages(images);
 
   return (
     <Box sx={{width: '100%'}}>
@@ -357,6 +363,14 @@ export const TakePhoto: React.FC<
           </Typography>
         )}
       </Box>
+
+      {/* Download Banner */}
+      {hasUndownloaded && (
+        <Alert severity="info" sx={{mb: 2}}>
+          To download attachments and photos, please go to the {NOTEBOOK_NAME}{' '}
+          Settings Tab and enable it.
+        </Alert>
+      )}
 
       {images.length === 0 ? (
         <EmptyState onAddPhoto={takePhoto} />
