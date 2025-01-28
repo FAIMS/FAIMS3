@@ -1,17 +1,3 @@
-// Copyright 2023 FAIMS Project
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// You may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 import React from 'react';
 import {
   Divider,
@@ -36,6 +22,7 @@ type FieldProtectionMenuProps = {
     event: React.ChangeEvent<HTMLInputElement>,
     newProtection: 'protected' | 'none' | 'allow-hiding'
   ) => void;
+  required: boolean;
 };
 
 export const FieldProtectionMenu: React.FC<FieldProtectionMenuProps> = ({
@@ -44,6 +31,7 @@ export const FieldProtectionMenu: React.FC<FieldProtectionMenuProps> = ({
   onClose,
   protection,
   onToggleProtection,
+  required,
 }) => {
   return (
     <Menu
@@ -117,27 +105,30 @@ export const FieldProtectionMenu: React.FC<FieldProtectionMenuProps> = ({
           />
         </MenuItem>
 
-        <MenuItem disableRipple sx={{padding: '6px 12px'}}>
-          <FormControlLabel
-            value="allow-hiding"
-            control={<Radio size="small" />}
-            label={
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Typography variant="body2" sx={{color: '#37474f'}}>
-                  Allow Hiding
-                </Typography>
-                <Tooltip
-                  title="Allow users to hide this field while keeping it protected from deletion."
-                  arrow
-                >
-                  <IconButton size="small">
-                    <InfoOutlinedIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-            }
-          />
-        </MenuItem>
+        {/* Hide "Allow Hiding" option if the field is required */}
+        {!required && (
+          <MenuItem disableRipple sx={{padding: '6px 12px'}}>
+            <FormControlLabel
+              value="allow-hiding"
+              control={<Radio size="small" />}
+              label={
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography variant="body2" sx={{color: '#37474f'}}>
+                    Allow Hiding
+                  </Typography>
+                  <Tooltip
+                    title="Allow users to hide this field while keeping it protected from deletion."
+                    arrow
+                  >
+                    <IconButton size="small">
+                      <InfoOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              }
+            />
+          </MenuItem>
+        )}
 
         <MenuItem disableRipple sx={{padding: '6px 12px'}}>
           <FormControlLabel

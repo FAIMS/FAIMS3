@@ -32,7 +32,7 @@ export type ComponentParameters = {
   multiple?: boolean;
   SelectProps?: unknown;
   ElementProps?: {
-    expandedChecklist?: boolean,
+    expandedChecklist?: boolean;
     options?: {
       value: string;
       label: string;
