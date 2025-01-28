@@ -18,24 +18,10 @@
  *   Record/Draft form file
  */
 
-import {Form, Formik} from 'formik';
-import React from 'react';
-import {ValidationError} from 'yup';
-
-import {Box, Divider, Typography, Alert} from '@mui/material';
-
-import {
-  getFieldsMatchingCondition,
-  getViewsMatchingCondition,
-} from './branchingLogic';
-import {firstDefinedFromList} from './helpers';
-
-import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
-
-import {ActionType} from '../../../context/actions';
-
 import {
   Annotations,
+  generateFAIMSDataID,
+  getFirstRecordHead,
   getFullRecordData,
   ProjectID,
   ProjectUIModel,
@@ -45,10 +31,18 @@ import {
   RevisionID,
   upsertFAIMSData,
 } from '@faims3/data-model';
+import {Alert, Box, Divider, Typography} from '@mui/material';
+import {Form, Formik} from 'formik';
+import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
+import {ValidationError} from 'yup';
 import * as ROUTES from '../../../constants/routes';
+import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
+import {ActionType} from '../../../context/actions';
 import {store} from '../../../context/store';
+import {percentComplete, requiredFields} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
+import {logError} from '../../../logging';
 import RecordDraftState from '../../../sync/draft-state';
 import {
   getFieldNamesFromFields,
@@ -56,25 +50,24 @@ import {
   getReturnedTypesForViewSet,
 } from '../../../uiSpecification';
 import {getCurrentUserId} from '../../../users';
+import CircularLoading from '../ui/circular_loading';
 import {getValidationSchemaForViewset} from '../validation';
+import {
+  getFieldsMatchingCondition,
+  getViewsMatchingCondition,
+} from './branchingLogic';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
+import FormButtonGroup from './formButton';
+import {firstDefinedFromList} from './helpers';
 import RecordStepper from './recordStepper';
-
 import {
   generateLocationState,
   generateRelationship,
   getParentLinkInfo,
 } from './relationships/RelatedInformation';
-
-import {generateFAIMSDataID, getFirstRecordHead} from '@faims3/data-model';
-import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
-import {percentComplete, requiredFields} from '../../../lib/form-utils';
-import {logError} from '../../../logging';
-import CircularLoading from '../ui/circular_loading';
-import FormButtonGroup from './formButton';
 import UGCReport from './UGCReport';
-import {ConstructionOutlined} from '@mui/icons-material';
-//import {RouteComponentProps} from 'react-router';
+import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
+
 type RecordFormProps = {
   navigate: NavigateFunction;
   project_id: ProjectID;
@@ -1133,6 +1126,16 @@ class RecordForm extends React.Component<
     this.setState({...this.state, annotation: annotation});
   }
 
+  /**
+   * This method filters errors to only those which are visible taking into
+   * account a) conditional logic for the individual field b) conditional logic
+   * for sections. Returns a filtered error object with the same type.
+   *
+   * @param errors The object with map from fieldname -> error
+   * @param viewsetName The name of the current viewset
+   * @param values The values in the form at this time
+   * @returns The filtered error object
+   */
   filterErrors({
     errors,
     viewsetName,
@@ -1142,40 +1145,35 @@ class RecordForm extends React.Component<
     viewsetName: string;
     values: object;
   }): {[key: string]: string} {
-    console.log('ERRORS');
     if (!errors) return {};
-    console.log(errors);
+    // Build a set of visible fields within visible views
+    const views = getViewsMatchingCondition(
+      this.props.ui_specification,
+      values,
+      [],
+      viewsetName,
+      {}
+    );
+    const visibleFields = new Set();
+    for (const v of views) {
+      const fieldsMatching = getFieldsMatchingCondition(
+        this.props.ui_specification,
+        values,
+        [],
+        v,
+        {}
+      );
+      // Add all fields to visible fields set
+      for (const f of fieldsMatching) {
+        visibleFields.add(f);
+      }
+    }
+
+    // Work through the errors and
     return Object.entries(errors).reduce(
       (filtered: {[key: string]: string}, [fieldName, error]) => {
-        console.log('Testing fieldname', fieldName);
-
-        // Get all visible views
-        const views = getViewsMatchingCondition(
-          this.props.ui_specification,
-          values,
-          [],
-          viewsetName,
-          {}
-        );
-
-        // Then for each check if the field is present in matching fields
-        let isVisible = false;
-        for (const v of views) {
-          const fieldsMatching = getFieldsMatchingCondition(
-            this.props.ui_specification,
-            values,
-            [],
-            v,
-            {}
-          );
-          if (fieldsMatching.includes(fieldName)) {
-            isVisible = true;
-            break;
-          }
-        }
-
-        // Then check that the field is visible for specific conditions
-        console.log('Is visible: ', isVisible);
+        // Check if field is visible in any view
+        const isVisible = visibleFields.has(fieldName);
         if (isVisible) {
           filtered[fieldName] = error;
         }
@@ -1202,23 +1200,31 @@ class RecordForm extends React.Component<
           <div>
             <Formik
               initialValues={initialValues}
-              // We are manually running the validate function now
+              // We are manually running the validate function now - if you
+              // leave this here this schema validation will take precedence
+              // over the manual validate function
               // validationSchema={validationSchema}
               validateOnMount={true}
               validateOnChange={false}
               validateOnBlur={true}
+              // This manually runs the validate function which formik triggers
+              // validation due to the above conditions, we use the yup
+              // validation schema to attempt data validation, filtering errors
+              // for only visible fields.
               validate={values => {
-                console.log('Running validate function');
                 try {
+                  // Run the validation function which will check the form
+                  // data against the yup schema. This throws exceptions which
+                  // represent errors.
                   validationSchema.validateSync(values, {abortEarly: false});
-                  console.log('validation did not throw error');
-                  return {}; // If validation passes, no errors
+
+                  // If validation passes, no errors
+                  return {};
                 } catch (err) {
-                  console.log(err);
-                  //if (err instanceof ValidationError) {
-                  if (true) {
-                    console.log('Validation error');
-                    const errors = (err as ValidationError).inner.reduce(
+                  try {
+                    const errors = err as ValidationError;
+
+                    const processedErrors = errors.inner.reduce(
                       (acc: {[key: string]: string}, error) => {
                         if (error.path) acc[error.path] = error.message;
                         return acc;
@@ -1226,12 +1232,21 @@ class RecordForm extends React.Component<
                       {}
                     );
                     return this.filterErrors({
-                      errors,
+                      errors: processedErrors,
                       values,
                       viewsetName: viewsetName,
                     });
-                  } else {
-                    console.log('Non validation error');
+                  } catch (e) {
+                    // An exception occurred during error processing - this is a
+                    // problem - it might be due to our type casting the error
+                    // response, or some error in the filtering logic
+                    console.error(
+                      'During error processing in the validate loop, an exception \
+                      occurred while trying to parse and filter the yup validation \
+                      errors. Defaulting to showing no errors to allow user to \
+                      proceed. Err: ',
+                      e
+                    );
                     return {};
                   }
                 }

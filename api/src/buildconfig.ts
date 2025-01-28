@@ -151,7 +151,7 @@ function key_file_path(): string {
   }
 }
 
-function private_key_path(): string {
+export function private_key_path(): string {
   let host = process.env.PROFILE_NAME;
   if (host === '' || host === undefined) {
     host = 'conductor';
@@ -168,7 +168,7 @@ function private_key_path(): string {
   }
 }
 
-function public_key_path(): string {
+export function public_key_path(): string {
   let host = process.env.PROFILE_NAME;
   if (host === '' || host === undefined) {
     host = 'conductor';
@@ -282,8 +282,6 @@ export const RUNNING_UNDER_TEST = is_testing();
 export const CONDUCTOR_PUBLIC_URL = conductor_url();
 export const CONDUCTOR_INTERNAL_PORT = conductor_internal_port();
 export const CONDUCTOR_KEY_ID = signing_key_id();
-export const CONDUCTOR_PRIVATE_KEY_PATH = private_key_path();
-export const CONDUCTOR_PUBLIC_KEY_PATH = public_key_path();
 export const CONDUCTOR_INSTANCE_NAME = instance_name();
 export const CONDUCTOR_SHORT_CODE_PREFIX = short_code_prefix();
 export const CONDUCTOR_DESCRIPTION = instance_description();
