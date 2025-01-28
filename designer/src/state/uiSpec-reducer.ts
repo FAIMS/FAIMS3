@@ -63,6 +63,38 @@ export const uiSpecificationReducer = createSlice({
         );
       }
     },
+    toggleFieldProtection: (
+      state,
+      action: PayloadAction<{
+        fieldName: string;
+        protection: 'protected' | 'allow-hiding' | 'none';
+      }>
+    ) => {
+      const {fieldName, protection} = action.payload;
+
+      if (fieldName in state.fields) {
+        state.fields[fieldName].protection = protection;
+
+        if (protection === 'protected' && state.fields[fieldName].hidden) {
+          state.fields[fieldName].hidden = false;
+        }
+      } else {
+        throw new Error(
+          `Cannot toggle protection for unknown field ${fieldName}`
+        );
+      }
+    },
+    toggleFieldHidden: (
+      state,
+      action: PayloadAction<{fieldName: string; hidden: boolean}>
+    ) => {
+      const {fieldName, hidden} = action.payload;
+      if (fieldName in state.fields) {
+        state.fields[fieldName].hidden = hidden;
+      } else {
+        throw new Error(`Cannot toggle hidden for unknown field ${fieldName}`);
+      }
+    },
     fieldMoved: (
       state,
       action: PayloadAction<{
@@ -223,17 +255,19 @@ export const uiSpecificationReducer = createSlice({
       action: PayloadAction<{fieldName: string; viewId: string}>
     ) => {
       const {fieldName, viewId} = action.payload;
-      // remove the field from fields and the viewSet
       if (fieldName in state.fields) {
+        const protection = state.fields[fieldName]?.protection;
+        if (protection === 'protected') {
+          throw new Error(
+            `Field ${fieldName} is protected and cannot be deleted.`
+          );
+        }
         delete state.fields[fieldName];
-        const newView = state.fviews[viewId].fields.filter(
+        state.fviews[viewId].fields = state.fviews[viewId].fields.filter(
           field => field !== fieldName
         );
-        state.fviews[viewId].fields = newView;
       } else {
-        throw new Error(
-          `Cannot delete unknown field ${fieldName} via fieldDeleted action`
-        );
+        throw new Error(`Cannot delete unknown field ${fieldName}`);
       }
     },
     sectionRenamed: (

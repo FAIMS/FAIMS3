@@ -17,6 +17,12 @@ import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import LockRounded from '@mui/icons-material/LockRounded';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+
 import {
   Accordion,
   AccordionDetails,
@@ -24,10 +30,18 @@ import {
   Chip,
   Grid,
   IconButton,
+  Menu,
+  MenuItem,
   Stack,
   Tooltip,
   Typography,
+  Checkbox,
+  FormControlLabel,
+  Divider,
+  Radio,
+  RadioGroup,
 } from '@mui/material';
+import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {BaseFieldEditor} from './Fields/BaseFieldEditor';
@@ -42,6 +56,7 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
+import {FieldProtectionMenu} from './field-protection-menu';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -65,6 +80,21 @@ export const FieldEditor = ({
   const dispatch = useAppDispatch();
 
   const fieldComponent = field['component-name'];
+  const protection = field?.protection || 'none';
+  const isHidden = field?.hidden || false;
+  const isRequired = field['component-parameters']?.required || false;
+
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(anchorEl);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const getFieldLabel = () => {
     return (
@@ -105,6 +135,25 @@ export const FieldEditor = ({
     addFieldCallback(fieldName);
   };
 
+  const toggleProtection = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    newProtection: 'protected' | 'none' | 'allow-hiding'
+  ) => {
+    event.stopPropagation();
+    dispatch({
+      type: 'ui-specification/toggleFieldProtection',
+      payload: {fieldName, protection: newProtection},
+    });
+  };
+
+  const toggleHiddenState = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+    dispatch({
+      type: 'ui-specification/toggleFieldHidden',
+      payload: {fieldName, hidden: !isHidden},
+    });
+  };
+
   return (
     <Accordion
       key={fieldName}
@@ -115,7 +164,6 @@ export const FieldEditor = ({
       elevation={0}
       sx={{
         border: '1px solid #CBCFCD',
-        color: '#1A211E',
         '&:not(:nth-of-type(2))': {
           borderTop: 0,
         },
@@ -201,15 +249,76 @@ export const FieldEditor = ({
             )}
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
-              <Tooltip title="Delete Field">
-                <IconButton
-                  onClick={deleteField}
-                  aria-label="delete"
-                  size="small"
+            <Stack
+              direction="row"
+              justifyContent={{sm: 'right', xs: 'left'}}
+              spacing={1}
+            >
+              {isHidden ? (
+                <Tooltip
+                  title={
+                    protection === 'protected'
+                      ? 'Fully protected fields cannot be hidden'
+                      : isRequired
+                        ? 'Required fields cannot be hidden'
+                        : 'Unhide Field'
+                  }
                 >
-                  <DeleteRoundedIcon />
-                </IconButton>
+                  <span>
+                    <IconButton
+                      onClick={toggleHiddenState}
+                      aria-label="unhide field"
+                      size="small"
+                      disabled={protection === 'protected' || isRequired}
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              ) : (
+                <Tooltip
+                  title={
+                    protection === 'protected'
+                      ? 'Fully protected fields cannot be hidden'
+                      : isRequired
+                        ? 'Required fields cannot be hidden'
+                        : 'Hide Field'
+                  }
+                >
+                  <span>
+                    <IconButton
+                      onClick={toggleHiddenState}
+                      aria-label="hide field"
+                      size="small"
+                      disabled={protection === 'protected' || isRequired}
+                    >
+                      <VisibilityOffIcon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
+              <Tooltip
+                title={
+                  protection === 'protected'
+                    ? 'Protected fields cannot be deleted.'
+                    : protection === 'allow-hiding'
+                      ? 'Protected fields cannot be deleted.'
+                      : 'Delete Field'
+                }
+              >
+                <span>
+                  <IconButton
+                    onClick={deleteField}
+                    aria-label="delete"
+                    size="small"
+                    disabled={
+                      protection === 'protected' ||
+                      protection === 'allow-hiding'
+                    }
+                  >
+                    <DeleteRoundedIcon />
+                  </IconButton>
+                </span>
               </Tooltip>
               <Tooltip title="Add Field Below">
                 <IconButton
@@ -234,54 +343,139 @@ export const FieldEditor = ({
                   <ArrowDropDownRoundedIcon />
                 </IconButton>
               </Tooltip>
+              <Tooltip title="Field Protection...">
+                <IconButton
+                  onClick={handleMenuOpen}
+                  aria-label="Field Protection"
+                  size="small"
+                >
+                  <MoreVertIcon />
+                </IconButton>
+              </Tooltip>
+
+              <FieldProtectionMenu
+                anchorEl={anchorEl}
+                menuOpen={menuOpen}
+                onClose={handleMenuClose}
+                protection={protection}
+                onToggleProtection={toggleProtection}
+                required={isRequired}
+              />
             </Stack>
           </Grid>
         </Grid>
       </AccordionSummary>
 
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
-        {(fieldComponent === 'MultipleTextField' && (
-          <MultipleTextFieldEditor fieldName={fieldName} />
-        )) ||
-          (fieldComponent === 'TakePhoto' && (
-            <TakePhotoFieldEditor fieldName={fieldName} />
+        {(protection === 'protected' || protection === 'allow-hiding') && (
+          <Stack
+            direction="column"
+            alignItems="center"
+            justifyContent="center"
+            spacing={1}
+            sx={{
+              width: '100%',
+              padding: 2,
+              marginBottom: 2,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              borderRadius: 1,
+              border: '1px solid #546e7a',
+              boxSizing: 'border-box',
+              textAlign: 'center',
+            }}
+          >
+            <LockRounded sx={{color: '#546e7a', fontSize: 24}} />
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 500,
+                color: '#546e7a',
+              }}
+            >
+              {protection === 'protected'
+                ? 'This field is protected. You may not modify or delete it.'
+                : `This field is protected. You may not modify or delete it. ${
+                    !isHidden ? 'However, you can ' : ''
+                  }`}
+              {!isHidden && protection === 'allow-hiding' && (
+                <span
+                  onClick={toggleHiddenState}
+                  style={{
+                    textDecoration: 'underline',
+                    color: '#007bfc',
+                    cursor: 'pointer',
+                  }}
+                >
+                  hide it.
+                </span>
+              )}
+            </Typography>
+          </Stack>
+        )}
+        <div
+          style={{
+            pointerEvents:
+              protection === 'protected' || protection === 'allow-hiding'
+                ? 'none'
+                : 'auto',
+            opacity:
+              protection === 'protected' || protection === 'allow-hiding'
+                ? 0.5
+                : 1,
+          }}
+        >
+          {(fieldComponent === 'MultipleTextField' && (
+            <MultipleTextFieldEditor fieldName={fieldName} />
           )) ||
-          (fieldComponent === 'TextField' && (
-            <TextFieldEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'DateTimeNow' && (
-            <DateTimeNowEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'Select' && (
-            <OptionsEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'MultiSelect' && (
-            <OptionsEditor fieldName={fieldName} showExpandedChecklist={true}/>
-          )) ||
-          (fieldComponent === 'AdvancedSelect' && (
-            <AdvancedSelectEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RadioGroup' && (
-            <OptionsEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'MapFormField' && (
-            <MapFormFieldEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RandomStyle' && (
-            <RandomStyleEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RichText' && (
-            <RichTextEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RelatedRecordSelector' && (
-            <RelatedRecordEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'BasicAutoIncrementer' && (
-            <BasicAutoIncrementerEditor fieldName={fieldName} viewId={viewId} />
-          )) ||
-          (fieldComponent === 'TemplatedStringField' && (
-            <TemplatedStringFieldEditor fieldName={fieldName} viewId={viewId} />
-          )) || <BaseFieldEditor fieldName={fieldName} />}
+            (fieldComponent === 'TakePhoto' && (
+              <TakePhotoFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'TextField' && (
+              <TextFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'DateTimeNow' && (
+              <DateTimeNowEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'Select' && (
+              <OptionsEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'MultiSelect' && (
+              <OptionsEditor
+                fieldName={fieldName}
+                showExpandedChecklist={true}
+              />
+            )) ||
+            (fieldComponent === 'AdvancedSelect' && (
+              <AdvancedSelectEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RadioGroup' && (
+              <OptionsEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'MapFormField' && (
+              <MapFormFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RandomStyle' && (
+              <RandomStyleEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RichText' && (
+              <RichTextEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RelatedRecordSelector' && (
+              <RelatedRecordEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'BasicAutoIncrementer' && (
+              <BasicAutoIncrementerEditor
+                fieldName={fieldName}
+                viewId={viewId}
+              />
+            )) ||
+            (fieldComponent === 'TemplatedStringField' && (
+              <TemplatedStringFieldEditor
+                fieldName={fieldName}
+                viewId={viewId}
+              />
+            )) || <BaseFieldEditor fieldName={fieldName} />}
+        </div>
       </AccordionDetails>
     </Accordion>
   );

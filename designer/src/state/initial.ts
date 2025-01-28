@@ -32,7 +32,7 @@ export type ComponentParameters = {
   multiple?: boolean;
   SelectProps?: unknown;
   ElementProps?: {
-    expandedChecklist?: boolean,
+    expandedChecklist?: boolean;
     options?: {
       value: string;
       label: string;
@@ -80,6 +80,8 @@ export type FieldType = {
   condition?: ConditionType | null;
   persistent?: boolean;
   displayParent?: boolean;
+  protection?: 'protected' | 'allow-hiding' | 'none';
+  hidden?: boolean;
   meta?: {
     annotation: {
       include: boolean;

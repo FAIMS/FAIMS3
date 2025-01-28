@@ -136,6 +136,13 @@ export const schema = {
               required: ['include', 'label'],
               additionalProperties: false,
             },
+            protection: {
+              type: 'string',
+              enum: ['protected', 'allow-hiding', 'none'],
+            },
+            hidden: {
+              type: 'boolean',
+            },
           },
           required: ['annotation', 'uncertainty'],
           additionalProperties: false,
