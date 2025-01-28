@@ -105,7 +105,6 @@ export const FieldProtectionMenu: React.FC<FieldProtectionMenuProps> = ({
           />
         </MenuItem>
 
-        {/* Hide "Allow Hiding" option if the field is required */}
         {!required && (
           <MenuItem disableRipple sx={{padding: '6px 12px'}}>
             <FormControlLabel
