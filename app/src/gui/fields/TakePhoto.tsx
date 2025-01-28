@@ -54,6 +54,8 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
 }
 
 interface Props {
+  // this should be removed but will appear in older notebooks
+  helpertext?: string;
   helperText?: string;
   label?: string;
   issyncing?: string;
@@ -349,9 +351,9 @@ export const TakePhoto: React.FC<
             {props.label}
           </Typography>
         )}
-        {props.helperText && (
+        {(props.helperText || props.helpertext) && (
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            {props.helperText}
+            {props.helperText || props.helpertext}
           </Typography>
         )}
       </Box>
