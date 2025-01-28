@@ -275,7 +275,7 @@ const ImageGallery = ({
 };
 
 /**
- * A cphoto capture and management component. Supports taking photos via device
+ * A photo capture and management component. Supports taking photos via device
  * camera, displaying them in a grid, and instructing re: permissions across
  * different platforms
  */
