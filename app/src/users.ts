@@ -63,6 +63,7 @@ export function parseToken(token: string): TokenContents {
 
   // These are all required
   if (!exp) {
+    console.error('Cannot accept a JWT which has no exp field defined.');
     throw new Error('Cannot accept a JWT which has no exp field defined.');
   }
   if (!server) {

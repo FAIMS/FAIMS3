@@ -40,7 +40,7 @@ import {
   Typography,
 } from '@mui/material';
 import React from 'react';
-import {NavLink} from 'react-router-dom';
+import {NavigateFunction, NavLink, useNavigate} from 'react-router-dom';
 import {APP_ID} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {
@@ -91,6 +91,7 @@ const AuthenticatedDisplayComponent = () => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [switchMenuOpen, setSwitchMenuOpen] = React.useState(false);
   const open = Boolean(anchorEl);
+  const navigate = useNavigate();
 
   const authState = useAppSelector(state => state.auth);
   const {activeUser} = authState;
@@ -98,9 +99,19 @@ const AuthenticatedDisplayComponent = () => {
 
   const userInitial =
     activeUser?.parsedToken.username.charAt(0).toUpperCase() || '';
+  const activeServerInfo = activeUser
+    ? getListing(activeUser.serverId)
+    : undefined;
 
-  // Generate available connections list
-  const availableConnections = listAllConnections({state: authState});
+  // Generate available connections list and map into full info
+  const availableConnections = listAllConnections({state: authState}).map(c => {
+    const info = getListing(c.serverId);
+    return {
+      ...c,
+      serverName: info.listing.name,
+      conductorUrl: info.listing.conductor_url,
+    };
+  });
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -111,9 +122,18 @@ const AuthenticatedDisplayComponent = () => {
     setSwitchMenuOpen(false);
   };
 
-  const handleConnectionChange = (serverId: string, username: string) => {
+  const handleConnectionChange = (
+    serverId: string,
+    username: string,
+    navigate: NavigateFunction
+  ) => {
+    // Set the active user
     dispatch(setActiveUser({serverId, username}));
     setSwitchMenuOpen(false);
+
+    // Always go to home page after changing active user (we might already be
+    // here)
+    navigate(ROUTES.INDEX);
   };
 
   const toggleSwitchMenu = () => {
@@ -123,14 +143,12 @@ const AuthenticatedDisplayComponent = () => {
   const handleLogout = async ({
     serverId,
     username,
+    conductorUrl,
   }: {
     serverId: string;
     username: string;
+    conductorUrl: string;
   }) => {
-    // Get the conductor URL for the relevant server
-    const listing = getListing(serverId);
-    const conductorUrl = listing?.listing.conductor_url;
-
     if (!conductorUrl) {
       dispatch(
         addAlert({
@@ -290,7 +308,7 @@ const AuthenticatedDisplayComponent = () => {
                 display: 'block',
               }}
             >
-              {activeUser?.serverId}
+              {activeServerInfo?.listing.name}
             </Typography>
           </Box>
         </Box>
@@ -313,7 +331,8 @@ const AuthenticatedDisplayComponent = () => {
                     onClick={() =>
                       handleConnectionChange(
                         connection.serverId,
-                        connection.parsedToken.username
+                        connection.parsedToken.username,
+                        navigate
                       )
                     }
                     selected={
@@ -324,7 +343,7 @@ const AuthenticatedDisplayComponent = () => {
                   >
                     <ListItemText
                       primary={connection.parsedToken.username}
-                      secondary={connection.serverId}
+                      secondary={connection.serverName}
                       // truncate text here too
                       sx={{
                         '.MuiListItemText-primary, .MuiListItemText-secondary':
@@ -358,6 +377,7 @@ const AuthenticatedDisplayComponent = () => {
               await handleLogout({
                 serverId: activeUser.serverId,
                 username: activeUser.username,
+                conductorUrl: activeServerInfo?.listing.conductor_url ?? '',
               });
             }}
           >

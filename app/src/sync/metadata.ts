@@ -67,7 +67,7 @@ export const fetchProjectMetadata = async (
   const full_project_id = resolve_project_id(listing.id, project_id);
   const response = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${jwt_token}`,
+      Authorization: `Bearer ${jwt_token.token}`,
     },
   });
   const notebook = await response.json();

@@ -418,15 +418,6 @@ export async function refreshDataDbTokens({
     }
 
     // Take existing remote DB connection info, replace token with new token
-    console.log(
-      'Updating connection token for listing_id ',
-      listing_id,
-      ' token: ',
-      newToken,
-      ' data db ID ',
-      dbKey
-    );
-
     const newConnectionInfo: ConnectionInfo = {
       ...db.remote?.info,
       jwt_token: newToken,
@@ -435,30 +426,4 @@ export async function refreshDataDbTokens({
     // run the synced db operation which will update the
     ensure_synced_db(dbKey, newConnectionInfo, data_dbs);
   }
-
-  // this is using the data_dbs directly but relies on the key name to check
-  // match with listing ID
-
-  /**
-  for (const dbKey of Object.keys(data_dbs)) {
-    // check that the db key starts with the listing/server ID
-    if (dbKey.startsWith(serverId)) {
-      // The data DB
-      const db = data_dbs[dbKey]!;
-
-      if (!db.remote) {
-        continue;
-      }
-
-      // Take existing remote DB connection info, replace token with new token
-      let newConnectionInfo: ConnectionInfo = {
-        ...db.remote?.info,
-        jwt_token: newToken,
-      };
-
-      // run the synced db operation which will update the
-      ensure_synced_db(dbKey, newConnectionInfo, data_dbs);
-    }
-  }
-   */
 }

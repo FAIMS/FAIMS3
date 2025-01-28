@@ -211,7 +211,7 @@ async function get_projects_from_conductor(listing: ListingsObject) {
 
   fetch(`${listing.conductor_url}/api/directory`, {
     headers: {
-      Authorization: `Bearer ${jwt_token}`,
+      Authorization: `Bearer ${jwt_token.token}`,
     },
   })
     .then(response => response.json())

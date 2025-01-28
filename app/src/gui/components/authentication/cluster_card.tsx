@@ -19,7 +19,7 @@
  */
 import {Browser} from '@capacitor/browser';
 import {Person2Sharp} from '@mui/icons-material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -31,13 +31,12 @@ import {
   Chip,
   Divider,
   Grid,
+  Paper,
   Stack,
   Typography,
 } from '@mui/material';
-import React from 'react';
 import {useNavigate} from 'react-router-dom';
 import {APP_ID} from '../../../buildconfig';
-import * as ROUTES from '../../../constants/routes';
 import {
   isTokenValid,
   removeServerConnection,
@@ -106,29 +105,16 @@ export default function ClusterCard(props: ClusterCardProps) {
       title={
         <Grid container>
           <Grid item xs>
-            <Typography variant={'overline'}>Provider</Typography>
-            <Typography variant={'body2'} fontWeight={700} sx={{mb: 0}}>
+            <Typography variant={'h4'} fontWeight={700} sx={{mb: 0}}>
               {props.listing_name}
             </Typography>
-            <Typography variant={'caption'}>
+            <Typography variant={'subtitle1'}>
               {props.listing_description}
             </Typography>
           </Grid>
-          <Divider orientation="vertical" flexItem />
         </Grid>
       }
       content={true}
-      secondary={
-        <Button
-          color="primary"
-          variant="text"
-          onClick={() => history(ROUTES.INDEX)}
-          startIcon={<DashboardIcon />}
-          sx={{ml: 2}}
-        >
-          Workspace
-        </Button>
-      }
     >
       {usernames.length === 0 ? (
         <LoginButton
@@ -168,117 +154,113 @@ export default function ClusterCard(props: ClusterCardProps) {
               activeUser?.serverId === props.serverId;
             const tokenValid = isTokenValid(tokenInfo);
             const isLoggedIn = !!tokenInfo?.token;
+
             return (
-              <div key={username}>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  spacing={3}
-                  justifyContent={'space-between'}
-                >
-                  <h4>
-                    {isActive && '(Active) '}
-                    {username}
-                  </h4>
-                  {!isActive && (
-                    <Button
-                      size={'small'}
-                      sx={{float: 'right'}}
-                      variant={'contained'}
-                      disableElevation
-                      onClick={() => {
-                        // activate this user
-                        dispatch(setActiveUser(identity));
-                      }}
-                      startIcon={<Person2Sharp />}
-                    >
-                      Activate
-                    </Button>
+              <Paper
+                key={username}
+                elevation={0}
+                sx={{
+                  p: 2,
+                  mb: 2,
+                  border: '2px solid',
+                  borderColor: isActive ? 'primary.main' : 'divider',
+                  boxShadow: isActive
+                    ? '0 0 0 2px rgba(25, 118, 210, 0.2)'
+                    : 'none',
+                  bgcolor: isActive ? 'primary.lighter' : 'background.paper',
+                  transition: 'all 0.2s ease-in-out',
+                }}
+              >
+                <Stack spacing={2}>
+                  {/* User Info Section */}
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="h5" component="h4">
+                      {username}
+                    </Typography>
+                    {isActive && (
+                      <Chip
+                        icon={<CheckCircleIcon />}
+                        label="Active User"
+                        color="primary"
+                        size="small"
+                      />
+                    )}
+                  </Stack>
+
+                  {tokenInfo?.parsedToken?.name && (
+                    <Typography variant="body2" color="text.secondary">
+                      {tokenInfo.parsedToken.name}
+                    </Typography>
                   )}
-                  {isLoggedIn && (
-                    <Button
-                      size={'small'}
-                      sx={{float: 'right'}}
-                      variant={'contained'}
-                      disableElevation
-                      onClick={async () => {
-                        await handleLogout(username);
+
+                  {/* Alert Section */}
+                  {!tokenValid && isLoggedIn && (
+                    <Alert severity={'error'}>
+                      This login has expired. Click refresh, below, to login
+                      again.
+                    </Alert>
+                  )}
+
+                  {/* Button Section */}
+                  {!isLoggedIn ? (
+                    <LoginButton
+                      key={props.serverId}
+                      conductor_url={props.conductor_url}
+                      is_refresh={false}
+                      startIcon={<LoginIcon />}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 1,
+                        '& > button': {
+                          flex: {
+                            // Full width on very small screens
+                            xs: '1 1 100%',
+                            // Auto width on larger screens
+                            sm: '1 1 auto',
+                          },
+                          minWidth: {
+                            // Minimum button width on larger screens
+                            sm: '120px',
+                          },
+                        },
                       }}
-                      startIcon={<LogoutIcon />}
                     >
-                      Log&nbsp;Out
-                    </Button>
+                      {!isActive && (
+                        <Button
+                          size={'small'}
+                          variant={'outlined'}
+                          onClick={() => dispatch(setActiveUser(identity))}
+                          startIcon={<Person2Sharp />}
+                        >
+                          Activate
+                        </Button>
+                      )}
+                      {/* The token is not valid i.e. expired - prompt a login here with more encouragement */}
+                      <LoginButton
+                        key={props.serverId}
+                        conductor_url={props.conductor_url}
+                        is_refresh={true}
+                        label={'refresh'}
+                        size={'small'}
+                        startIcon={<RefreshIcon />}
+                      />
+                      <Button
+                        size={'small'}
+                        variant={'outlined'}
+                        color="error"
+                        onClick={() => handleLogout(username)}
+                        startIcon={<LogoutIcon />}
+                      >
+                        Log out
+                      </Button>
+                    </Box>
                   )}
                 </Stack>
-                {!isLoggedIn ? (
-                  <LoginButton
-                    key={props.serverId}
-                    conductor_url={props.conductor_url}
-                    is_refresh={false}
-                    startIcon={<LoginIcon />}
-                  />
-                ) : (
-                  <React.Fragment>
-                    <Divider sx={{my: 2}} />
-                    {!tokenValid && (
-                      <Alert severity={'error'} sx={{mb: 2}}>
-                        This login has expired. Click refresh, below, to login
-                        again.
-                      </Alert>
-                    )}
-                    <Grid
-                      container
-                      direction="row"
-                      justifyContent="flex-start"
-                      alignItems="flex-start"
-                      spacing={1}
-                    >
-                      <Grid item sm={3} xs={12}>
-                        <Typography variant={'overline'}>Roles</Typography>
-                      </Grid>
-                      <Grid item sm={6} xs={12}>
-                        <Box sx={{maxHeight: '400px', overflowY: 'scroll'}}>
-                          {tokenInfo.parsedToken.roles.map((group, index) => {
-                            return (
-                              <Chip key={index} label={group} sx={{mb: 1}} />
-                            );
-                          })}
-                        </Box>
-                      </Grid>
-                      <Grid item sm={3} xs={12}>
-                        <Grid
-                          container
-                          direction="row"
-                          justifyContent="flex-end"
-                          alignItems="flex-start"
-                          spacing={1}
-                        >
-                          {
-                            // The token is not valid i.e. expired - prompt a login here with more encouragement
-                          }
-                          <Grid item xs={12}>
-                            <LoginButton
-                              key={props.serverId}
-                              conductor_url={props.conductor_url}
-                              is_refresh={true}
-                              label={'refresh'}
-                              size={'small'}
-                              sx={{float: 'right'}}
-                              startIcon={<RefreshIcon />}
-                            />
-                          </Grid>
-                          <Grid item xs={12} sx={{textAlign: 'right'}}>
-                            <Typography variant={'caption'}>
-                              Sign in again to refresh roles
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </Grid>
-                    </Grid>
-                    <Divider sx={{my: 2}} />
-                  </React.Fragment>
-                )}
-              </div>
+              </Paper>
             );
           })}
         </>

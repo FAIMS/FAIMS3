@@ -108,12 +108,8 @@ export function AuthReturn() {
       );
 
       const login = async () => {
-        console.log('Login function');
-        console.log('Update directory');
         await update_directory();
-        console.log('Init projects');
         await initProjects();
-        console.log('Done');
         navigate('/');
       };
 
