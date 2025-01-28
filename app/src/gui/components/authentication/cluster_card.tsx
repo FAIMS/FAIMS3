@@ -35,7 +35,6 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import {useNavigate} from 'react-router-dom';
 import {APP_ID} from '../../../buildconfig';
 import {
   isTokenValid,
@@ -61,8 +60,6 @@ type ClusterCardProps = {
 };
 
 export default function ClusterCard(props: ClusterCardProps) {
-  const history = useNavigate();
-
   // Auth store interactions
   const dispatch = useAppDispatch();
 
@@ -239,7 +236,6 @@ export default function ClusterCard(props: ClusterCardProps) {
                           Activate
                         </Button>
                       )}
-                      {/* The token is not valid i.e. expired - prompt a login here with more encouragement */}
                       <LoginButton
                         key={props.serverId}
                         conductor_url={props.conductor_url}
@@ -247,6 +243,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                         label={'refresh'}
                         size={'small'}
                         startIcon={<RefreshIcon />}
+                        variant={!tokenValid ? 'contained' : 'outlined'}
                       />
                       <Button
                         size={'small'}
