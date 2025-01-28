@@ -18,55 +18,57 @@
  *   TODO
  */
 
-import React, {useContext, useState, useEffect, useRef} from 'react';
 import {
-  Navigate,
-  useNavigate,
-  useParams,
-  useLocation,
-  Location,
-} from 'react-router-dom';
-
-import {
-  AppBar,
-  Tab,
-  Box,
-  Typography,
-  Paper,
-  CircularProgress,
-} from '@mui/material';
-
-import {ActionType} from '../../context/actions';
-import * as ROUTES from '../../constants/routes';
-import {store} from '../../context/store';
+  generateFAIMSDataID,
+  ProjectID,
+  ProjectInformation,
+  ProjectUIModel,
+  RecordID,
+} from '@faims3/data-model';
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import {generateFAIMSDataID} from '@faims3/data-model';
-import {getProjectInfo} from '../../sync/projects';
-import {ProjectID, RecordID} from '@faims3/data-model';
-import {ProjectUIModel, ProjectInformation} from '@faims3/data-model';
 import {
-  getUiSpecForProject,
-  getReturnedTypesForViewSet,
-} from '../../uiSpecification';
-import RecordDelete from '../components/notebook/delete';
-import {newStagedData} from '../../sync/draft-storage';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import RecordForm from '../components/record/form';
-import UnpublishedWarning from '../components/record/unpublished_warning';
-import DraftSyncStatus from '../components/record/sync_status';
+  AppBar,
+  Box,
+  CircularProgress,
+  Paper,
+  Tab,
+  Typography,
+} from '@mui/material';
 import {grey} from '@mui/material/colors';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
-import {ParentLinkProps} from '../components/record/relationships/types';
-import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
-import InheritedDataComponent from '../components/record/inherited_data';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import React, {useEffect, useRef, useState} from 'react';
+import {
+  Location,
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import ProgressBar from '../components/progress-bar';
-import TransparentButton from '../components/buttons/transparent-button';
+import * as ROUTES from '../../constants/routes';
+import {addAlert} from '../../context/slices/syncSlice';
+import {useAppDispatch} from '../../context/store';
 import {scrollToDiv} from '../../lib/navigation';
-import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
+import {newStagedData} from '../../sync/draft-storage';
+import {getProjectInfo} from '../../sync/projects';
+import {
+  getReturnedTypesForViewSet,
+  getUiSpecForProject,
+} from '../../uiSpecification';
+import TransparentButton from '../components/buttons/transparent-button';
+import RecordDelete from '../components/notebook/delete';
+import ProgressBar from '../components/progress-bar';
+import RecordForm from '../components/record/form';
+import InheritedDataComponent from '../components/record/inherited_data';
+import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
+import {ParentLinkProps} from '../components/record/relationships/types';
+import DraftSyncStatus from '../components/record/sync_status';
+import UnpublishedWarning from '../components/record/unpublished_warning';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 
 interface DraftCreateProps {
   project_id: ProjectID;
@@ -90,7 +92,7 @@ interface DraftCreateProps {
 function DraftCreate(props: DraftCreateProps) {
   const {project_id, type_name, record_id} = props;
 
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const [error, setError] = useState(null as null | {});
@@ -117,13 +119,12 @@ function DraftCreate(props: DraftCreateProps) {
   }, [project_id, uiSpec]);
 
   if (error !== null) {
-    dispatch({
-      type: ActionType.ADD_ALERT,
-      payload: {
+    dispatch(
+      addAlert({
         message: 'Could not create a draft: ' + error.toString(),
         severity: 'warning',
-      },
-    });
+      })
+    );
     navigate(-1);
     return <React.Fragment />;
   } else if (draft_id === null) {
@@ -160,7 +161,7 @@ interface DraftEditProps {
 
 function DraftEdit(props: DraftEditProps) {
   const {project_id, type_name, draft_id, project_info, record_id} = props;
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
@@ -234,13 +235,12 @@ function DraftEdit(props: DraftEditProps) {
   };
 
   if (error !== null) {
-    dispatch({
-      type: ActionType.ADD_ALERT,
-      payload: {
+    dispatch(
+      addAlert({
         message: 'Could not edit draft: ' + error.toString(),
         severity: 'warning',
-      },
-    });
+      })
+    );
     navigate(-1);
     return <React.Fragment />;
   }

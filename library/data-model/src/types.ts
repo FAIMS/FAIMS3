@@ -66,6 +66,8 @@ export interface TokenContents {
   roles: string[];
   name?: string;
   server: string;
+  // This is required now - all tokens must have an expiry
+  exp: number;
 }
 
 export type ProjectRole = string;

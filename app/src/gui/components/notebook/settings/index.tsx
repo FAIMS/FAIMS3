@@ -18,42 +18,42 @@
  *   The settings component for a notebook presents user changeable options
  */
 
-import React, {useContext, useEffect, useState} from 'react';
-import {useParams} from 'react-router-dom';
-
+import {
+  ProjectID,
+  ProjectInformation,
+  ProjectUIModel,
+} from '@faims3/data-model';
 import {
   Box,
-  Typography,
-  Grid,
-  Paper,
   CircularProgress,
   FormControlLabel,
+  Grid,
+  Paper,
   Switch,
+  Typography,
 } from '@mui/material';
-
+import {useContext, useEffect, useState} from 'react';
+import {useParams} from 'react-router-dom';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
+import {ProjectsContext} from '../../../../context/projects-context';
+import {addAlert} from '../../../../context/slices/syncSlice';
+import {useAppDispatch} from '../../../../context/store';
+import {logError} from '../../../../logging';
 import {getProjectInfo} from '../../../../sync/projects';
-import {ProjectInformation} from '@faims3/data-model';
-import {ProjectID} from '@faims3/data-model';
 import {
   isSyncingProjectAttachments,
   listenSyncingProjectAttachments,
   setSyncingProjectAttachments,
 } from '../../../../sync/sync-toggle';
-import {ActionType} from '../../../../context/actions';
-import {store} from '../../../../context/store';
+import {theme} from '../../../themes';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
-import {ProjectUIModel} from '@faims3/data-model';
-import {logError} from '../../../../logging';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
-import {ProjectsContext} from '../../../../context/projects-context';
-import {theme} from '../../../themes';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
 
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
 
   const project = useContext(ProjectsContext).projects.find(
     project => project_id === project.project_id
@@ -127,13 +127,12 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                           checked
                         );
                         if (checked)
-                          dispatch({
-                            type: ActionType.ADD_ALERT,
-                            payload: {
+                          dispatch(
+                            addAlert({
                               message: 'Downloading attachments to device...',
                               severity: 'success',
-                            },
-                          });
+                            })
+                          );
                       }}
                     />
                   }

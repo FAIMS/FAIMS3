@@ -21,7 +21,11 @@
 
 import {SignJWT} from 'jose';
 import type {SigningKey} from '../services/keyService';
-import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
+import {
+  ACCESS_TOKEN_EXPIRY_MINUTES,
+  CONDUCTOR_PUBLIC_URL,
+  KEY_SERVICE,
+} from '../buildconfig';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 
 export async function createAuthKey(
@@ -40,9 +44,8 @@ export async function createAuthKey(
     .setSubject(user.user_id)
     .setIssuedAt()
     .setIssuer(signingKey.instanceName)
-    // TODO reinstate expiration time
-    //
-    //.setExpirationTime('2h')
+    // Expiry in minutes
+    .setExpirationTime(ACCESS_TOKEN_EXPIRY_MINUTES.toString() + 'm')
     .sign(signingKey.privateKey);
   return jwt;
 }

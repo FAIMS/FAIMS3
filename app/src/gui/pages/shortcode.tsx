@@ -33,18 +33,18 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import React, {useContext, useState} from 'react';
+import React, {useState} from 'react';
 import {
   APP_ID,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../buildconfig';
-import {ActionType} from '../../context/actions';
-import {store} from '../../context/store';
+import {useNotification} from '../../context/popup';
+import {addAlert} from '../../context/slices/syncSlice';
+import {useAppDispatch} from '../../context/store';
 import {isWeb} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
 import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
-import {useNotification} from '../../context/popup';
 
 type ShortCodeProps = {
   listings: ListingsObject[];
@@ -228,7 +228,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
  * @returns component content
  */
 export function QRCodeRegistration(props: ShortCodeProps) {
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
   const handleRegister = async (url: string) => {
     // verify that this URL is one that's going to work
     // valid urls look like:
@@ -242,13 +242,12 @@ export function QRCodeRegistration(props: ShortCodeProps) {
         url: `${url}?redirect=${APP_ID}://auth-return`,
       });
     } else {
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
+      dispatch(
+        addAlert({
           message: 'Invalid QRCode Scanned',
           severity: 'warning',
-        },
-      });
+        })
+      );
     }
   };
 

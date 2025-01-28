@@ -51,13 +51,13 @@ export default function Notebook() {
     project => project_id === project.project_id
   );
 
-  if (!project) return <CircularProgress data-testid="progressbar" />;
-
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
 
   const history = useNavigate();
   const isActive = project?.activated;
+
+  if (!project) return <CircularProgress data-testid="progressbar" />;
 
   return (
     <Box>

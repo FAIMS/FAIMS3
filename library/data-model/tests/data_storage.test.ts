@@ -18,22 +18,21 @@
  *   Tests of the data storage API
  */
 
-import {test, fc} from '@fast-check/jest';
+import {fc, test} from '@fast-check/jest';
 import {getDataDB, registerClient} from '../src';
-import {Record, RecordMetadata} from '../src/types';
 import {
   deleteFAIMSDataForID,
   generateFAIMSDataID,
   getFirstRecordHead,
   getFullRecordData,
-  getMetadataForAllRecords,
-  getMetadataForSomeRecords,
-  getRecordsWithRegex,
   listFAIMSProjectRevisions,
   notebookRecordIterator,
   undeleteFAIMSDataForID,
   upsertFAIMSData,
 } from '../src/data_storage';
+import {listRecordMetadata} from '../src/data_storage/internals';
+import {getAllRecordsWithRegex} from '../src/data_storage/queries';
+import {Record, RecordMetadata} from '../src/types';
 import {equals} from './eqTestSupport';
 import {
   callbackObject,
@@ -375,7 +374,10 @@ describe('record retrieval', () => {
 
     const db = await getDataDB(project_id);
     if (db) {
-      const records = await getRecordsWithRegex(project_id, '.*', true);
+      // use the underlying get all records rather than the token filtered version for now
+      const records = Object.values(
+        await getAllRecordsWithRegex(project_id, '.*')
+      );
       expect(records.length).toBe(10);
       // check a few properties
       expect(records[0].created_by).toBe('user');
@@ -394,7 +396,7 @@ describe('record retrieval', () => {
 
     const db = await getDataDB(project_id);
     if (db) {
-      const records = await getMetadataForAllRecords(project_id, true);
+      const records = Object.values(await listRecordMetadata(project_id));
       expect(records.length).toBe(10);
       // // check a few properties
       expect(records[0].created_by).toBe('user');
@@ -413,13 +415,12 @@ describe('record retrieval', () => {
 
     const db = await getDataDB(project_id);
     if (db) {
-      const all_records = await getMetadataForAllRecords(project_id, true);
+      const all_records = Object.values(await listRecordMetadata(project_id));
       const record_ids = all_records.map((r: RecordMetadata) => r.record_id);
 
-      const records = await getMetadataForSomeRecords(
-        project_id,
-        record_ids.slice(5),
-        true
+      // get a filtered selection of records
+      const records = Object.values(
+        await listRecordMetadata(project_id, record_ids.slice(5))
       );
       expect(records.length).toBe(5);
       // // check a few properties

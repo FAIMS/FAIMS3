@@ -51,7 +51,7 @@ export function split_full_project_id(full_proj_id: ProjectID): {
     splitId[0].trim() === '' ||
     splitId[1].trim() === ''
   ) {
-    throw Error('{full_proj_id} is not a valid full project id.');
+    throw Error(`${full_proj_id} is not a valid full project id.`);
   }
   const cleaned_listing_id = splitId[0].replace('\\|\\|', '||');
   const cleaned_project_id = splitId[1].replace('\\|\\|', '||');

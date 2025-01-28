@@ -1,11 +1,11 @@
-import React, {useContext} from 'react';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {Box, Button, Typography} from '@mui/material';
 import moment from 'moment/moment';
-import {ActionType} from '../../../context/actions';
-import {store} from '../../../context/store';
-import {useInterval} from '../../../utils/useInterval';
+import React from 'react';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import {addAlert} from '../../../context/slices/syncSlice';
+import {useAppDispatch} from '../../../context/store';
+import {useInterval} from '../../../utils/useInterval';
 
 interface RefreshNotebookProps {
   handleRefresh: Function;
@@ -43,8 +43,7 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
 
   const [counter, setCounter] = React.useState(0);
 
-  const globalState = useContext(store);
-  const {dispatch} = globalState;
+  const dispatch = useAppDispatch();
 
   /**
    * handleRefresh triggers the refresh process for the notebook data.
@@ -57,22 +56,20 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
         // clear timer and reset lastRefresh
         setCounter(0);
         setLastRefresh(moment().format(LAST_REFRESH_FORMAT));
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: `${props.project_name} ${NOTEBOOK_NAME_CAPITALIZED} refreshed`,
             severity: 'success',
-          },
-        });
+          })
+        );
       })
       .catch((err: Error) => {
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: err.message,
             severity: 'error',
-          },
-        });
+          })
+        );
       });
   };
 

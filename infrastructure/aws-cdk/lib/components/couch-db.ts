@@ -121,6 +121,9 @@ writer = file
 file = ${this.couchDataPath}/couch.log
 level = info
 
+[jwt_auth]
+required_claims = exp
+
 [cors]
 origins = *
 headers = accept, authorization, content-type, origin, referer

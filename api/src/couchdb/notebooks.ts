@@ -28,6 +28,7 @@ import {
   ProjectID,
   ProjectObject,
   resolve_project_id,
+  TokenContents,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import PouchDB from 'pouchdb';
@@ -572,9 +573,10 @@ export const validateNotebookID = async (
  * @returns an array of records
  */
 export const getNotebookRecords = async (
-  project_id: string
+  project_id: string,
+  token: TokenContents
 ): Promise<any | null> => {
-  const records = await getRecordsWithRegex(project_id, '.*', true);
+  const records = await getRecordsWithRegex(token, project_id, '.*', true);
   const fullRecords: any[] = [];
   for (let i = 0; i < records.length; i++) {
     const data = await getFullRecordData(

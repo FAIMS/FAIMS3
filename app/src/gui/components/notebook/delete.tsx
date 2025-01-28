@@ -18,31 +18,29 @@
  *   TODO
  */
 
-import React, {useContext} from 'react';
-import {useNavigate} from 'react-router-dom';
-
-import {
-  Button,
-  IconButton,
-  Dialog,
-  DialogActions,
-  AlertTitle,
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import {Alert} from '@mui/material';
-
-import {ActionType} from '../../../context/actions';
-import * as ROUTES from '../../../constants/routes';
-import {store} from '../../../context/store';
 import {
   ProjectID,
   RecordID,
   RevisionID,
   setRecordAsDeleted,
 } from '@faims3/data-model';
-import {getCurrentUserId} from '../../../users';
-import {deleteStagedData} from '../../../sync/draft-storage';
+import DeleteIcon from '@mui/icons-material/Delete';
+import {
+  Alert,
+  AlertTitle,
+  Button,
+  Dialog,
+  DialogActions,
+  IconButton,
+} from '@mui/material';
+import React from 'react';
+import {useNavigate} from 'react-router-dom';
+import * as ROUTES from '../../../constants/routes';
+import {selectActiveUser} from '../../../context/slices/authSlice';
+import {addAlert} from '../../../context/slices/syncSlice';
+import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {deleteDraftsForRecord} from '../../../drafts';
+import {deleteStagedData} from '../../../sync/draft-storage';
 import {theme} from '../../themes';
 
 type RecordDeleteProps = {
@@ -82,40 +80,36 @@ export default function RecordDelete(props: RecordDeleteProps) {
   const {project_id, record_id, revision_id, draft_id} = props;
   const [open, setOpen] = React.useState(false);
   const history = useNavigate();
-  const globalState = useContext(store);
-  const {dispatch} = globalState;
+  const dispatch = useAppDispatch();
   const is_draft = draft_id !== null;
   const handleClickOpen = () => {
     setOpen(true);
   };
+  const activeUser = useAppSelector(selectActiveUser)!;
 
   const handleClose = () => {
     setOpen(false);
   };
 
   const handleDelete = () => {
-    getCurrentUserId(project_id)
-      .then(userid =>
-        deleteFromDB(
-          project_id,
-          record_id,
-          revision_id,
-          draft_id,
-          userid,
-          props.handleRefresh
-        )
-      )
+    deleteFromDB(
+      project_id,
+      record_id,
+      revision_id,
+      draft_id,
+      activeUser.username,
+      props.handleRefresh
+    )
       .then(() => {
         const message = is_draft
           ? `Draft ${draft_id} for record ${record_id} discarded`
           : `Record ${record_id} deleted`;
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: message,
             severity: 'success',
-          },
-        });
+          })
+        );
         handleClose();
         history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
       })
@@ -124,13 +118,12 @@ export default function RecordDelete(props: RecordDeleteProps) {
         const message = is_draft
           ? `Draft ${draft_id} for record ${record_id} could not be discarded`
           : `Record ${record_id} could not be deleted`;
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: message,
             severity: 'error',
-          },
-        });
+          })
+        );
         handleClose();
       });
   };

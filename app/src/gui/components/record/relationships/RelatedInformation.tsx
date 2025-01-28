@@ -30,6 +30,7 @@ import {
   getMetadataForSomeRecords,
   ProjectID,
   RecordMetadata,
+  TokenContents,
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
@@ -328,6 +329,7 @@ function getRelatedFields(
  * @returns an array of RecordMetadata for the linked records
  */
 export async function getRelatedRecords(
+  token: TokenContents,
   project_id: ProjectID,
   values: {[field_name: string]: any},
   field_name: string,
@@ -367,7 +369,12 @@ export async function getRelatedRecords(
   });
 
   const record_ids = links.map((link: any) => link.record_id);
-  const records = await getMetadataForSomeRecords(project_id, record_ids, true);
+  const records = await getMetadataForSomeRecords(
+    token,
+    project_id,
+    record_ids,
+    true
+  );
   return records;
 }
 

@@ -13,6 +13,13 @@
         "no-constant-condition": "off",
         "@typescript-eslint/no-empty-interface": "off",
         "n/no-missing-import": "off",
-        "n/no-unpublished-import": "off"
+        "n/no-unpublished-import": "off",
+        "no-unused-vars": [
+            "error",
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_"
+            }
+        ]
     }
 }

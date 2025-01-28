@@ -38,7 +38,11 @@ import {NavigateFunction} from 'react-router-dom';
 import {ValidationError} from 'yup';
 import * as ROUTES from '../../../constants/routes';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
-import {ActionType} from '../../../context/actions';
+import {
+  NotificationContext,
+  NotificationContextType,
+} from '../../../context/popup';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {store} from '../../../context/store';
 import {percentComplete, requiredFields} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
@@ -49,7 +53,6 @@ import {
   getFieldsForViewSet,
   getReturnedTypesForViewSet,
 } from '../../../uiSpecification';
-import {getCurrentUserId} from '../../../users';
 import CircularLoading from '../ui/circular_loading';
 import {getValidationSchemaForViewset} from '../validation';
 import {
@@ -287,13 +290,9 @@ class RecordForm extends React.Component<
       } else {
         this.props.handleSetIsDraftSaving(false);
         this.props.handleSetDraftError(error_message);
-        (this.context as any).dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: 'Could not load previous data: ' + error_message,
-            severity: 'warning',
-          },
-        });
+        (this.context as NotificationContextType).showError(
+          'Could not load previous data: ' + error_message
+        );
       }
     }
   }
@@ -322,14 +321,9 @@ class RecordForm extends React.Component<
           this.props.handleSetDraftError(
             `Could not find data for record ${this.props.record_id}`
           );
-          (this.context as any).dispatch({
-            type: ActionType.ADD_ALERT,
-            payload: {
-              message:
-                'Could not load existing record: ' + this.props.record_id,
-              severity: 'warning',
-            },
-          });
+          (this.context as NotificationContextType).showError(
+            'Could not load existing record: ' + this.props.record_id
+          );
           return false;
         } else {
           viewSetName = latest_record.type;
@@ -404,13 +398,9 @@ class RecordForm extends React.Component<
     }
     // work out the record type or default it
     if (!(await this.identifyRecordType(revision_id))) {
-      (this.context as any).dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: 'Project is not fully downloaded or not setup correctly',
-          severity: 'error',
-        },
-      });
+      (this.context as NotificationContextType).showError(
+        'Project is not fully downloaded or not setup correctly'
+      );
       // This form cannot be shown at all. No recovery except go back to project.
       this.props.navigate(-1);
       return;
@@ -445,13 +435,11 @@ class RecordForm extends React.Component<
       await this.setInitialValues(revision_id);
     } catch (err: any) {
       logError(err);
-      (this.context as any).dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: 'Could not load previous data: ' + err.message,
-          severity: 'warning',
-        },
-      });
+
+      (this.context as NotificationContextType).showError(
+        'Could not load previous data: ' + err.message
+      );
+
       // Show an empty form
       this.setState({
         initialValues: {
@@ -771,63 +759,63 @@ class RecordForm extends React.Component<
       this.state.annotation,
       ui_specification
     );
+
+    // This is a synchronous call to the store - not an ideal to do this... TODO
+    // consider rewriting the form as a functional component so we can use hooks
+    // properly and consider implications if the active user is no longer
+    // defined
+    const currentUser = selectActiveUser(store.getState())?.username;
+
+    // TODO no idea how to handle errors appropriately here!
+    if (!currentUser) {
+      const message =
+        'Expected to find current user when interacting with the form, but it was not set. The application does not know which user is trying to interact with the form.';
+      console.error(message);
+      (this.context as NotificationContextType).showError(message);
+      setSubmitting(false);
+      return new Promise(() => {
+        return;
+      });
+    }
+    const now = new Date();
+    const doc = {
+      record_id: this.props.record_id,
+      revision_id: this.state.revision_cached ?? null,
+      type: this.state.type_cached!,
+      data: this.filterValues(values),
+      updated_by: currentUser,
+      updated: now,
+      annotations: this.state.annotation ?? {},
+      field_types: getReturnedTypesForViewSet(ui_specification, viewsetName),
+      ugc_comment: this.state.ugc_comment || '',
+      relationship: this.state.relationship ?? {},
+      deleted: false,
+    };
     return (
-      getCurrentUserId(this.props.project_id)
-        // prepare the record for saving
-        .then(userid => {
-          const now = new Date();
-          const doc = {
-            record_id: this.props.record_id,
-            revision_id: this.state.revision_cached ?? null,
-            type: this.state.type_cached!,
-            data: this.filterValues(values),
-            updated_by: userid,
-            updated: now,
-            annotations: this.state.annotation ?? {},
-            field_types: getReturnedTypesForViewSet(
-              ui_specification,
-              viewsetName
-            ),
-            ugc_comment: this.state.ugc_comment || '',
-            relationship: this.state.relationship ?? {},
-            deleted: false,
-          };
-          return doc;
-        })
-        // store the record
-        .then(doc => {
-          return upsertFAIMSData(this.props.project_id, doc).then(
-            revision_id => {
-              // update the component state with the new revision id and notify the parent
-              try {
-                this.setState({revision_cached: revision_id});
-                // SC. Removing this call since it prevents deletion of the draft
-                // later on (draftState.clear())
-                // by changing the draft state to 'uninitialised'
-                //
-                //this.formChanged(true, revision_id);
-                if (this.props.setRevision_id !== undefined)
-                  this.props.setRevision_id(revision_id); //pass the revision id back
-              } catch (error) {
-                logError(error);
-              }
-              return is_close === 'close'
-                ? (doc.data['hrid' + this.state.type_cached] ??
-                    this.props.record_id)
-                : revision_id; // return revision id for save and continue function
-            }
-          );
+      upsertFAIMSData(this.props.project_id, doc)
+        .then(revision_id => {
+          // update the component state with the new revision id and notify the parent
+          try {
+            this.setState({revision_cached: revision_id});
+            // SC. Removing this call since it prevents deletion of the draft
+            // later on (draftState.clear())
+            // by changing the draft state to 'uninitialised'
+            //
+            //this.formChanged(true, revision_id);
+            if (this.props.setRevision_id !== undefined)
+              this.props.setRevision_id(revision_id); //pass the revision id back
+          } catch (error) {
+            logError(error);
+          }
+          return is_close === 'close'
+            ? (doc.data['hrid' + this.state.type_cached] ??
+                this.props.record_id)
+            : revision_id; // return revision id for save and continue function
         })
         // generate a success alert
         .then(hrid => {
           const message = 'Record successfully saved';
-          (this.context as any).dispatch({
-            type: ActionType.ADD_ALERT,
-            payload: {
-              message: message,
-              severity: 'success',
-            },
-          });
+          (this.context as NotificationContextType).showSuccess(message);
           return hrid;
         })
         // Could not save record error
@@ -836,13 +824,7 @@ class RecordForm extends React.Component<
         .catch(err => {
           const message = 'Could not save record';
           logError(`Could not save record: ${JSON.stringify(err)}`);
-          (this.context as any).dispatch({
-            type: ActionType.ADD_ALERT,
-            payload: {
-              message: message,
-              severity: 'error',
-            },
-          });
+          (this.context as NotificationContextType).showError(message);
           logError('Unsaved record error:' + err);
         })
         // Clear the current draft area (Possibly after redirecting back to project page)
@@ -1253,11 +1235,7 @@ class RecordForm extends React.Component<
               }}
               onSubmit={(values, {setSubmitting}) => {
                 setSubmitting(true);
-                return this.save(values, 'continue', setSubmitting).then(
-                  result => {
-                    return result;
-                  }
-                );
+                return this.save(values, 'continue', setSubmitting);
               }}
             >
               {formProps => {
@@ -1510,5 +1488,5 @@ class RecordForm extends React.Component<
     }
   }
 }
-RecordForm.contextType = store;
+RecordForm.contextType = NotificationContext;
 export default RecordForm;
