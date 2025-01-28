@@ -257,9 +257,11 @@ export const FieldEditor = ({
               {isHidden ? (
                 <Tooltip
                   title={
-                    isRequired
-                      ? 'Required fields cannot be hidden'
-                      : 'Unhide Field'
+                    protection === 'protected'
+                      ? 'Fully protected fields cannot be hidden'
+                      : isRequired
+                        ? 'Required fields cannot be hidden'
+                        : 'Unhide Field'
                   }
                 >
                   <span>
@@ -267,33 +269,33 @@ export const FieldEditor = ({
                       onClick={toggleHiddenState}
                       aria-label="unhide field"
                       size="small"
-                      disabled={isRequired}
+                      disabled={protection === 'protected' || isRequired}
                     >
                       <VisibilityIcon />
                     </IconButton>
                   </span>
                 </Tooltip>
               ) : (
-                (protection === 'none' || protection === 'allow-hiding') && (
-                  <Tooltip
-                    title={
-                      isRequired
+                <Tooltip
+                  title={
+                    protection === 'protected'
+                      ? 'Fully protected fields cannot be hidden'
+                      : isRequired
                         ? 'Required fields cannot be hidden'
                         : 'Hide Field'
-                    }
-                  >
-                    <span>
-                      <IconButton
-                        onClick={toggleHiddenState}
-                        aria-label="hide field"
-                        size="small"
-                        disabled={isRequired}
-                      >
-                        <VisibilityOffIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                )
+                  }
+                >
+                  <span>
+                    <IconButton
+                      onClick={toggleHiddenState}
+                      aria-label="hide field"
+                      size="small"
+                      disabled={protection === 'protected' || isRequired}
+                    >
+                      <VisibilityOffIcon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
               )}
               <Tooltip
                 title={
@@ -341,7 +343,7 @@ export const FieldEditor = ({
                   <ArrowDropDownRoundedIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Field Protection">
+              <Tooltip title="Field Protection...">
                 <IconButton
                   onClick={handleMenuOpen}
                   aria-label="Field Protection"
@@ -393,7 +395,7 @@ export const FieldEditor = ({
               {protection === 'protected'
                 ? 'This field is protected. You may not modify or delete it.'
                 : `This field is protected. You may not modify or delete it. ${
-                    !isHidden ? 'However, you may ' : ''
+                    !isHidden ? 'However, you can ' : ''
                   }`}
               {!isHidden && protection === 'allow-hiding' && (
                 <span
