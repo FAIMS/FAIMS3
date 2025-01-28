@@ -259,6 +259,14 @@ export class FaimsFrontEnd extends Construct {
       hostedZone: props.designerHz,
       domainNames: props.designerDomainNames,
       removalPolicy: RemovalPolicy.DESTROY,
+      // Add custom header response overriding CSP to allow unsafe script
+      // execution due to parsing
+      securityHeadersBehavior: {
+        contentSecurityPolicy: {
+          contentSecurityPolicy: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';`,
+          override: true,
+        },
+      },
       errorResponses: [
         {
           httpStatus: 404,

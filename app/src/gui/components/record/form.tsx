@@ -35,6 +35,7 @@ import {Alert, Box, Divider, Typography} from '@mui/material';
 import {Form, Formik} from 'formik';
 import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
+import {ValidationError} from 'yup';
 import * as ROUTES from '../../../constants/routes';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
 import {
@@ -70,7 +71,6 @@ import {
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
 
-//import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   navigate: NavigateFunction;
   project_id: ProjectID;
@@ -1108,6 +1108,63 @@ class RecordForm extends React.Component<
     this.setState({...this.state, annotation: annotation});
   }
 
+  /**
+   * This method filters errors to only those which are visible taking into
+   * account a) conditional logic for the individual field b) conditional logic
+   * for sections. Returns a filtered error object with the same type.
+   *
+   * @param errors The object with map from fieldname -> error
+   * @param viewsetName The name of the current viewset
+   * @param values The values in the form at this time
+   * @returns The filtered error object
+   */
+  filterErrors({
+    errors,
+    viewsetName,
+    values,
+  }: {
+    errors: {[key: string]: string};
+    viewsetName: string;
+    values: object;
+  }): {[key: string]: string} {
+    if (!errors) return {};
+    // Build a set of visible fields within visible views
+    const views = getViewsMatchingCondition(
+      this.props.ui_specification,
+      values,
+      [],
+      viewsetName,
+      {}
+    );
+    const visibleFields = new Set();
+    for (const v of views) {
+      const fieldsMatching = getFieldsMatchingCondition(
+        this.props.ui_specification,
+        values,
+        [],
+        v,
+        {}
+      );
+      // Add all fields to visible fields set
+      for (const f of fieldsMatching) {
+        visibleFields.add(f);
+      }
+    }
+
+    // Work through the errors and
+    return Object.entries(errors).reduce(
+      (filtered: {[key: string]: string}, [fieldName, error]) => {
+        // Check if field is visible in any view
+        const isVisible = visibleFields.has(fieldName);
+        if (isVisible) {
+          filtered[fieldName] = error;
+        }
+        return filtered;
+      },
+      {}
+    );
+  }
+
   render() {
     if (this.isReady()) {
       const viewName = this.requireView();
@@ -1125,10 +1182,57 @@ class RecordForm extends React.Component<
           <div>
             <Formik
               initialValues={initialValues}
-              validationSchema={validationSchema}
+              // We are manually running the validate function now - if you
+              // leave this here this schema validation will take precedence
+              // over the manual validate function
+              // validationSchema={validationSchema}
               validateOnMount={true}
               validateOnChange={false}
               validateOnBlur={true}
+              // This manually runs the validate function which formik triggers
+              // validation due to the above conditions, we use the yup
+              // validation schema to attempt data validation, filtering errors
+              // for only visible fields.
+              validate={values => {
+                try {
+                  // Run the validation function which will check the form
+                  // data against the yup schema. This throws exceptions which
+                  // represent errors.
+                  validationSchema.validateSync(values, {abortEarly: false});
+
+                  // If validation passes, no errors
+                  return {};
+                } catch (err) {
+                  try {
+                    const errors = err as ValidationError;
+
+                    const processedErrors = errors.inner.reduce(
+                      (acc: {[key: string]: string}, error) => {
+                        if (error.path) acc[error.path] = error.message;
+                        return acc;
+                      },
+                      {}
+                    );
+                    return this.filterErrors({
+                      errors: processedErrors,
+                      values,
+                      viewsetName: viewsetName,
+                    });
+                  } catch (e) {
+                    // An exception occurred during error processing - this is a
+                    // problem - it might be due to our type casting the error
+                    // response, or some error in the filtering logic
+                    console.error(
+                      'During error processing in the validate loop, an exception \
+                      occurred while trying to parse and filter the yup validation \
+                      errors. Defaulting to showing no errors to allow user to \
+                      proceed. Err: ',
+                      e
+                    );
+                    return {};
+                  }
+                }
+              }}
               onSubmit={(values, {setSubmitting}) => {
                 setSubmitting(true);
                 return this.save(values, 'continue', setSubmitting);
