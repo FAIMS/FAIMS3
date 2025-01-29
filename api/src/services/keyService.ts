@@ -276,9 +276,7 @@ class AWSSecretsManagerKeyService extends BaseKeyService {
  * @returns An instance of IKeyService.
  * @throws Error if an unsupported key source is specified.
  */
-function createKeyService(
-  keySource: KeySource = KeySource.FILE
-): IKeyService {
+function createKeyService(keySource: KeySource = KeySource.FILE): IKeyService {
   const config: KeyConfig = {
     signingAlgorithm: 'RS256',
     instanceName: CONDUCTOR_INSTANCE_NAME,

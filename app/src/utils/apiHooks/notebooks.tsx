@@ -10,6 +10,8 @@ export interface UseCreateNotebookFromTemplateProps {
   name?: string;
   // Listing to create in
   listingId: string;
+  // Username we are working in
+  username: string;
   // Other options to pass through to react query mutation
   options?: UseMutationOptions<PostCreateNotebookResponse>;
 }
@@ -32,6 +34,7 @@ export const useCreateNotebookFromTemplate = (
     mutationFn: async () => {
       return await createNotebookFromTemplate({
         templateId: props.templateId!,
+        username: props.username,
         name: props.name!,
         listingId: props.listingId,
       });

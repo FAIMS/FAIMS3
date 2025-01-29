@@ -43,6 +43,8 @@ import {DataGridFieldLinksComponent} from '../components/record/relationships/fi
 import {SelectChangeEvent} from '@mui/material';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {logError} from '../../logging';
+import {useAppSelector} from '../../context/store';
+import {selectActiveToken} from '../../context/slices/authSlice';
 
 function get_default_relation_label(
   multiple: boolean,
@@ -132,6 +134,7 @@ interface RelatedRecordSelectorProps extends FieldProps {
 }
 
 export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
+  const activeToken = useAppSelector(selectActiveToken)!.parsedToken;
   const project_id = props.form.values['_project_id'];
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;
@@ -210,6 +213,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
         setRelatedRecords(records);
 
         const records_info = await getRelatedRecords(
+          activeToken,
           project_id,
           props.form.values,
           field_name,
@@ -232,6 +236,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       // this is for conflict only
       if (project_id !== undefined && mounted && props.isconflict === true) {
         const records_info = await getRelatedRecords(
+          activeToken,
           project_id,
           props.form.values,
           field_name,

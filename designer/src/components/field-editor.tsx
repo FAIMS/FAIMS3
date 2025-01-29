@@ -256,7 +256,7 @@ export const FieldEditor = ({
             <OptionsEditor fieldName={fieldName} />
           )) ||
           (fieldComponent === 'MultiSelect' && (
-            <OptionsEditor fieldName={fieldName} showExpandedChecklist={true}/>
+            <OptionsEditor fieldName={fieldName} showExpandedChecklist={true} />
           )) ||
           (fieldComponent === 'AdvancedSelect' && (
             <AdvancedSelectEditor fieldName={fieldName} />

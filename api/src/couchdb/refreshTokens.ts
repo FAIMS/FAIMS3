@@ -16,10 +16,10 @@ import {getAuthDB} from '.';
 import {v4 as uuidv4} from 'uuid';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {getUserFromEmailOrUsername} from './users';
+import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 
 // Expiry time in hours
-const TOKEN_EXPIRY_HOURS = 24; // 24 hours
-const TOKEN_EXPIRY_MS = TOKEN_EXPIRY_HOURS * 60 * 60 * 1000;
+const TOKEN_EXPIRY_MS = REFRESH_TOKEN_EXPIRY_MINUTES * 60 * 1000;
 
 /**
  * Generates an expiry timestamp for a refresh token.

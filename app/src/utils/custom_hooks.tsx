@@ -1,7 +1,7 @@
-import {useEffect, useRef} from 'react';
-import {useQuery, UseQueryResult} from '@tanstack/react-query';
-import {directory_db} from '../sync/databases';
 import {ListingsObject} from '@faims3/data-model/src/types';
+import {useQuery} from '@tanstack/react-query';
+import {useEffect, useRef} from 'react';
+import {directory_db} from '../sync/databases';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -16,25 +16,31 @@ export const usePrevious = <T extends {}>(value: T): T | undefined => {
 };
 
 /**
- * Fetches listings from the directory database.
- * @returns Promise<ListingsObject[]>
+ * Fetches a specific listing from the directory database.
+ * @returns Promise<ListingsObject | undefined>
  */
-const fetchListings = async (): Promise<ListingsObject[]> => {
-  const {rows} = await directory_db.local.allDocs({
-    include_docs: true,
-  });
-
-  return rows.map(row => row.doc).filter(d => d !== undefined);
+const fetchListing = async (
+  serverId: string
+): Promise<ListingsObject | undefined> => {
+  try {
+    return await directory_db.local.get(serverId);
+  } catch {
+    return undefined;
+  }
 };
 
 /**
- * Custom hook to fetch and manage listings from a directory database using React Query.
+ * Custom hook to fetch and manage listings from a directory database using
+ * React Query.
  */
-const useGetListings = (): UseQueryResult<ListingsObject[], Error> => {
-  return useQuery<ListingsObject[], Error>({
-    queryKey: ['listings'],
-    queryFn: fetchListings,
+export const useGetListing = (input: {serverId?: string}) => {
+  return useQuery({
+    queryKey: ['listings', input.serverId],
+    queryFn: async () => {
+      if (!input.serverId) {
+        return null;
+      }
+      return (await fetchListing(input.serverId)) || null;
+    },
   });
 };
-
-export default useGetListings;
