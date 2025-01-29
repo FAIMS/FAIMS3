@@ -20,11 +20,13 @@ import {theme} from '../themes';
  * @property {ReactNode} [heading] - The main label or heading for the input field.
  * @property {ReactNode} [subheading] - The help text or description for additional guidance.
  * @property {ReactNode} children - The actual input field component wrapped inside.
+ * @property {ReactNode} required - To visually show that it's a required field if it is.
  */
 interface FieldWrapperProps {
   heading?: ReactNode;
   subheading?: ReactNode;
   children: ReactNode;
+  required?: boolean;
 }
 
 /**
@@ -42,6 +44,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
   heading,
   subheading,
   children,
+  required,
 }) => {
   return (
     <Box sx={{marginBottom: 3}}>
@@ -55,7 +58,19 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             fontSize: {xs: '1.1rem', md: '1.25rem'},
           }}
         >
-          {heading}
+          {heading}{' '}
+          {required && (
+            <span
+              style={{
+                color: theme.palette.alert.warningText,
+                marginLeft: 2,
+                fontSize: '1.4em',
+                fontWeight: 'bold',
+              }}
+            >
+              *
+            </span>
+          )}
         </Typography>
       )}
 
