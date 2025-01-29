@@ -370,6 +370,22 @@ function tokenRefreshWindowMs(): number {
   }
 }
 
+// Try and refresh before it hits 60 seconds till expiry
+const DEFAULT_IGNORE_TOKEN_EXP = false;
+
+/**
+ * @returns Flag indicating to spoof/ignore the token expiry if present - if
+ * True then the expiry will be ignored from any JWT intercepted, and set for 1
+ * year. Must === true (case insensitive).
+ */
+function ignoreTokenExp(): boolean {
+  const ignoreTokenExp = import.meta.env.VITE_IGNORE_TOKEN_EXP;
+  if (ignoreTokenExp === '' || ignoreTokenExp === undefined) {
+    return DEFAULT_IGNORE_TOKEN_EXP;
+  }
+  return ignoreTokenExp.toUpperCase() === 'TRUE';
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -394,3 +410,4 @@ export const APP_ID = get_app_id();
 export const SHOW_RECORD_SUMMARY_COUNTS = showRecordCounts();
 export const TOKEN_REFRESH_INTERVAL_MS = tokenRefreshIntervalMs();
 export const TOKEN_REFRESH_WINDOW_MS = tokenRefreshWindowMs();
+export const IGNORE_TOKEN_EXP = ignoreTokenExp();

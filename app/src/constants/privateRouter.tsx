@@ -179,7 +179,7 @@ const OfflineLoginBanner = ({loginPath, visible}: OfflineLoginBannerProps) => {
             >
               You are currently logged out.
               <br />
-              Your data will be saved, but not uploaded.
+              Your data will be saved on your device, but not uploaded.
             </AlertTitle>
 
             {/* Login button container */}
@@ -263,11 +263,9 @@ export const TolerantPrivateRoute = (
 };
 
 /**
- * Conditional auth route - this requires that the token is present but allows
- * for the case where the token has expired, but adds a warning!
+ * This only renders the page if navigator thinks the device is online. Shows
+ * fallback component otherwise. Can be stacked with other route wrappers.
  * @param props children to render
- * @returns Conditionally renders children if token is present (not necessarily
- * valid) for the first listing entry in the listings db
  */
 export const OnlineOnlyRoute = (
   props: PrivateRouteProps

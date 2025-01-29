@@ -27,8 +27,7 @@ import {
 } from '@faims3/data-model';
 import {getAllListings} from '.';
 import {CONDUCTOR_URLS} from '../buildconfig';
-import {selectSpecificServer} from '../context/slices/authSlice';
-import {store} from '../context/store';
+import {getToken} from '../context/functions';
 import {logError} from '../logging';
 import {
   ExistingActiveDoc,
@@ -40,7 +39,6 @@ import {
 import {events} from './events';
 import {ProjectObject, ensure_project_databases} from './projects';
 import {addOrUpdateListing, deleteListing, getListing} from './state';
-import {getToken} from '../context/functions';
 
 /**
  * update_directory - make sure we have listings for each

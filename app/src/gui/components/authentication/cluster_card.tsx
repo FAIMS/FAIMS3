@@ -17,6 +17,7 @@
  * Description:
  *   TODO
  */
+
 import {Browser} from '@capacitor/browser';
 import {Person2Sharp} from '@mui/icons-material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -190,11 +191,32 @@ export default function ClusterCard(props: ClusterCardProps) {
                     </Typography>
                   )}
 
-                  {/* Alert Section */}
-                  {!tokenValid && isLoggedIn && (
-                    <Alert severity={'error'}>
-                      This login has expired. Click refresh, below, to login
-                      again.
+                  {/* Session Alerts Section */}
+                  {isLoggedIn && !tokenValid && (
+                    <Alert
+                      severity="error"
+                      sx={{
+                        '& .MuiAlert-action': {
+                          alignItems: 'center',
+                          pt: 0,
+                        },
+                      }}
+                      action={
+                        <LoginButton
+                          key={props.serverId}
+                          conductor_url={props.conductor_url}
+                          is_refresh={true}
+                          label="Renew"
+                          size="small"
+                          variant="contained"
+                          sx={{color: 'error'}}
+                          startIcon={<RefreshIcon />}
+                        />
+                      }
+                    >
+                      Your session has expired. Your data will be saved on your
+                      device, but not uploaded. Please renew your session to
+                      enable data upload.
                     </Alert>
                   )}
 
@@ -214,13 +236,10 @@ export default function ClusterCard(props: ClusterCardProps) {
                         gap: 1,
                         '& > button': {
                           flex: {
-                            // Full width on very small screens
                             xs: '1 1 100%',
-                            // Auto width on larger screens
                             sm: '1 1 auto',
                           },
                           minWidth: {
-                            // Minimum button width on larger screens
                             sm: '120px',
                           },
                         },
@@ -236,15 +255,6 @@ export default function ClusterCard(props: ClusterCardProps) {
                           Activate
                         </Button>
                       )}
-                      <LoginButton
-                        key={props.serverId}
-                        conductor_url={props.conductor_url}
-                        is_refresh={true}
-                        label={'refresh'}
-                        size={'small'}
-                        startIcon={<RefreshIcon />}
-                        variant={!tokenValid ? 'contained' : 'outlined'}
-                      />
                       <Button
                         size={'small'}
                         variant={'outlined'}

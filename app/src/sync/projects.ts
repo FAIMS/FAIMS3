@@ -29,10 +29,8 @@ import {
   split_full_project_id,
 } from '@faims3/data-model';
 import {DEBUG_APP} from '../buildconfig';
-import {
-  getServerConnection,
-  selectSpecificServer,
-} from '../context/slices/authSlice';
+import {getToken} from '../context/functions';
+import {getServerConnection} from '../context/slices/authSlice';
 import {store} from '../context/store';
 import {logError} from '../logging';
 import {shouldDisplayProject} from '../users';
@@ -54,7 +52,6 @@ import {
 import {events} from './events';
 import {fetchProjectMetadata} from './metadata';
 import {all_projects_updated, getListing} from './state';
-import {getToken} from '../context/functions';
 
 /**
  * Temporarily override this type from @faims3/data-model to make

@@ -32,7 +32,7 @@ import {
   split_full_project_id,
   TokenContents,
 } from '@faims3/data-model';
-import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
+import {CLUSTER_ADMIN_GROUP_NAME, IGNORE_TOKEN_EXP} from './buildconfig';
 
 interface SplitCouchDBRole {
   project_id: ProjectID;
@@ -51,6 +51,8 @@ export const CREATE_NOTEBOOK_ROLES = [
  * NOTE: This does not validate the token. This does not check expiry. Decodes
  * the token and puts into TokenContents.
  *
+ * NOTE: If IGNORE_TOKEN_EXP = true, then the exp is spoofed
+ *
  * @param token The raw JWT
  * @returns The parsed token as a TokenContents object
  */
@@ -58,7 +60,17 @@ export function parseToken(token: string): TokenContents {
   const payload = decodeJwt(token);
 
   const username = payload.sub ?? undefined;
-  const exp = payload.exp;
+
+  // Either interpret exp from the JWT or if the backwards compatibility build
+  // flag is used, will spoof an expiry one year from now.
+  let exp: number | undefined = undefined;
+  if (IGNORE_TOKEN_EXP) {
+    // a year from now
+    exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365;
+  } else {
+    exp = payload.exp;
+  }
+
   const server = payload['server'] as string | undefined;
 
   // These are all required
