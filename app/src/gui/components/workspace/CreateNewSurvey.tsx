@@ -13,7 +13,7 @@ import {
   CREATE_NOTEBOOK_ROLES,
   userHasRoleInSpecificListing,
 } from '../../../users';
-import useGetListings from '../../../utils/custom_hooks';
+import {useGetListings} from '../../../utils/customHooks';
 import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
 import NewNotebookForListing from '../notebook/NewNotebookForListing';
 import CircularLoading from '../ui/circular_loading';

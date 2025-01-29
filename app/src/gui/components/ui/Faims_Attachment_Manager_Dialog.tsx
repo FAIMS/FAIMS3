@@ -106,8 +106,9 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
           </DialogContentText>
         ) : (
           <DialogContentText id="alert-dialog-description">
-            To download attachments and photos, please go to{' '}
-            {NOTEBOOK_NAME_CAPITALIZED} / Settings Tab and enable it.
+            To download existing photos, please go to the{' '}
+            {NOTEBOOK_NAME_CAPITALIZED} Settings Tab and enable attachment
+            download.
           </DialogContentText>
         )}
       </DialogContent>
@@ -122,9 +123,13 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
             color="primary"
             size="large"
             component={RouterLink}
-            to={ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id}
+            to={
+              ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+              project_id +
+              `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
+            }
           >
-            CHANGE SETTINGS
+            Go to settings
           </Button>
         </DialogActions>
       )}

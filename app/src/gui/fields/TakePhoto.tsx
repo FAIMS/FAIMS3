@@ -23,14 +23,16 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
-import {Alert, Box, Paper, Typography, useTheme} from '@mui/material';
+import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {FieldProps} from 'formik';
 import React from 'react';
-import {APP_NAME, NOTEBOOK_NAME} from '../../buildconfig';
+import {useNavigate} from 'react-router';
+import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 
@@ -296,6 +298,7 @@ export const TakePhoto: React.FC<
   const [open, setOpen] = React.useState(false);
   const [photoPath, setPhotoPath] = React.useState<string | null>(null);
   const [noPermission, setNoPermission] = React.useState<boolean>(false);
+  const navigate = useNavigate();
 
   // Handles photo capture with permission checks
   const takePhoto = async () => {
@@ -347,6 +350,7 @@ export const TakePhoto: React.FC<
   const images = props.form.values[props.field.name] ?? [];
   const disabled = props.disabled ?? false;
   const hasUndownloaded = hasUndownloadedImages(images);
+  const projectId = props.form.values['_project_id'];
 
   return (
     <Box sx={{width: '100%'}}>
@@ -367,8 +371,22 @@ export const TakePhoto: React.FC<
       {/* Download Banner */}
       {hasUndownloaded && (
         <Alert severity="info" sx={{mb: 2}}>
-          To download attachments and photos, please go to the {NOTEBOOK_NAME}{' '}
-          Settings Tab and enable it.
+          To download existing photos, please go to the{' '}
+          {
+            // Deeplink directly to settings tab
+          }
+          <Link
+            onClick={() => {
+              navigate(
+                ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                  projectId +
+                  `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
+              );
+            }}
+          >
+            {NOTEBOOK_NAME_CAPITALIZED} Settings Tab
+          </Link>{' '}
+          and enable attachment download.
         </Alert>
       )}
 
@@ -422,7 +440,7 @@ export const TakePhoto: React.FC<
       )}
 
       <FaimsAttachmentManagerDialog
-        project_id={props.form.values['_project_id']}
+        project_id={projectId}
         open={open}
         setopen={() => setOpen(false)}
         filedId={props.id}
