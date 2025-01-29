@@ -31,7 +31,7 @@ const theme = createTheme({
     },
     alert: {
       warningBackground: '#FFFFFF',
-      warningText: '#BC0505',
+      warningText: '#EA0E0EFF',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
     },

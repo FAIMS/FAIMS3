@@ -27,6 +27,7 @@
  * - helperText (string, optional): The field help text displayed below the heading.
  * - ElementProps (object): Contains the dropdown options.
  * - field (object): Formik field object for managing value.
+ * - reqired : To visually showif the field is required if it is.
  * - form (object): Formik form object for managing state and validation.
  */
 import React from 'react';
@@ -34,8 +35,6 @@ import MuiTextField from '@mui/material/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import {
   FormControl,
-  FormHelperText,
-  InputLabel,
   ListItemText,
   MenuItem,
   OutlinedInput,
@@ -76,7 +75,11 @@ export const Select = (props: Props & TextFieldProps) => {
   };
 
   return (
-    <FieldWrapper heading={props.label} subheading={props.helperText}>
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText}
+      required={props.required}
+    >
       <FormControl
         sx={{
           m: 1,

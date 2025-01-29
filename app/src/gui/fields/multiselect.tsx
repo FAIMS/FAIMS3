@@ -25,6 +25,7 @@
  * Props:
  * - label (string, optional): The field label displayed as a heading.
  * - helperText (string, optional): The field help text displayed below the heading.
+ * -required (boolean) : To know whether field is required or not.
  * - ElementProps (object): Contains the options and configuration for the multi-select.
  * - expandedChecklist (boolean, optional): If true, renders options as checkboxes instead of a dropdown.
  * - field (object): Formik field object for managing value.
@@ -37,18 +38,14 @@ import {
   Checkbox,
   FormControl,
   FormControlLabel,
-  FormHelperText,
-  InputLabel,
   ListItemText,
   MenuItem,
   OutlinedInput,
   Select,
-  Typography,
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {FieldProps} from 'formik';
 import {TextFieldProps} from 'formik-mui';
-import {ReactNode} from 'react';
 import FieldWrapper from './fieldWrapper';
 
 /**
@@ -173,7 +170,11 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
   const isExpandedChecklist = props.ElementProps.expandedChecklist ?? false;
 
   return (
-    <FieldWrapper heading={props.label} subheading={props.helperText}>
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText}
+      required={props.required}
+    >
       {isExpandedChecklist ? (
         <ExpandedChecklist
           options={props.ElementProps.options}

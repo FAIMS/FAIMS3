@@ -61,6 +61,7 @@ interface Props {
   helperText?: string; // Subheading
   ElementProps: ElementProps; // Radio options
   disabled?: boolean; // Wheter the field is disabled
+  required?: boolean;
 }
 
 export class RadioGroup extends React.Component<RadioGroupProps & Props> {
@@ -76,7 +77,11 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
     const {ElementProps, label, helperText, ...radioGroupProps} = this.props;
 
     return (
-      <FieldWrapper heading={label} subheading={helperText}>
+      <FieldWrapper
+        heading={label}
+        subheading={helperText}
+        required={this.props.required}
+      >
         <FormControl
           error={Boolean(
             radioGroupProps.form.errors[radioGroupProps.field.name]

@@ -54,7 +54,11 @@ export const FAIMSTextField = (props: FieldProps & Props) => {
     props.form.errors[props.field.name] && props.form.touched[props.field.name];
 
   return (
-    <FieldWrapper heading={props.label} subheading={props.helperText}>
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText}
+      required={props.required}
+    >
       <MuiTextField
         {...props.field}
         variant="outlined"
