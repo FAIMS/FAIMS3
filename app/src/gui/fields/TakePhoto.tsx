@@ -36,6 +36,7 @@ import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 import {Capacitor} from '@capacitor/core';
 import {APP_NAME} from '../../buildconfig';
+import FieldWrapper from './fieldWrapper';
 
 function base64image_to_blob(image: Photo): Blob {
   if (image.base64String === undefined) {
@@ -58,6 +59,7 @@ interface Props {
   label?: string;
   issyncing?: string;
   isconflict?: boolean;
+  required?: boolean;
 }
 
 type ImageListProps = {
@@ -266,9 +268,11 @@ export const TakePhoto: React.FC<
   const helperText = props.helpertext ?? props.helperText ?? undefined;
 
   return (
-    <div>
-      {title && <h3>{title}</h3>}
-      {helperText && <p>{helperText}</p>}
+    <FieldWrapper
+      heading={title}
+      subheading={helperText}
+      required={props.required}
+    >
       <Button
         variant="contained"
         color="primary"
@@ -279,6 +283,7 @@ export const TakePhoto: React.FC<
         <span style={{width: 10}} />
         <CameraAltIcon />
       </Button>
+
       {noPermission && (
         <Alert severity="error" sx={{width: '100%'}}>
           {Capacitor.getPlatform() === 'web' && (
@@ -304,6 +309,7 @@ export const TakePhoto: React.FC<
           )}
         </Alert>
       )}
+
       <FAIMSImageList
         images={props.form.values[props.field.name] ?? []}
         setopen={(path: string) => {
@@ -316,9 +322,11 @@ export const TakePhoto: React.FC<
         disabled={props.disabled ?? false}
         fieldName={props.field.name}
       />
+
       <Typography variant="caption" color="textSecondary">
         {errorText}
       </Typography>
+
       <FaimsAttachmentManagerDialog
         project_id={props.form.values['_project_id']}
         open={open}
@@ -327,7 +335,7 @@ export const TakePhoto: React.FC<
         path={photoPath}
         isSyncing={props.issyncing}
       />
-    </div>
+    </FieldWrapper>
   );
 };
 
