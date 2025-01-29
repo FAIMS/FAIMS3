@@ -67,7 +67,7 @@ export const SectionEditor = ({
   );
   const dispatch = useAppDispatch();
 
-  console.log('SectionEditor', viewId, viewSet);
+  console.log('SectionEditor', { viewId, viewSet, fView });
 
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
