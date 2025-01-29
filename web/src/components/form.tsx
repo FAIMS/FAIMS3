@@ -1,7 +1,7 @@
 import {zodResolver} from '@hookform/resolvers/zod';
 import {ErrorOption, FieldValues, Path, useForm} from 'react-hook-form';
 import {z} from 'zod';
-import {Button} from '@/components/ui/button';
+import {Button, ButtonProps} from '@/components/ui/button';
 import {
   Form as FormProvider,
   FormControl,
@@ -12,10 +12,12 @@ import {
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {useState} from 'react';
+import {Alert, AlertTitle, AlertDescription} from './ui/alert';
+import {DialogClose} from '@radix-ui/react-dialog';
 
 interface Field {
   name: string;
-  label: string;
+  label?: string;
   schema: z.ZodSchema;
   type?: string;
 }
@@ -39,10 +41,14 @@ export function Form<
   fields,
   onSubmit,
   submitButtonText = 'Submit',
+  submitButtonVariant = 'default',
+  warningMessage,
 }: {
   fields: TFields;
   onSubmit: (data: TSchema) => Promise<ErrorOption | undefined>;
   submitButtonText?: string;
+  submitButtonVariant?: ButtonProps['variant'];
+  warningMessage?: string;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -77,11 +83,20 @@ export function Form<
               key={name}
               control={form.control}
               name={name as Path<TSchema>}
-              render={({field}) => (
+              render={({field: {value, onChange, ...field}}) => (
                 <FormItem>
-                  <FormLabel>{label}</FormLabel>
+                  {label && <FormLabel>{label}</FormLabel>}
                   <FormControl>
-                    <Input {...field} type={type} />
+                    <Input
+                      {...field}
+                      type={type}
+                      onChange={event =>
+                        type === 'file'
+                          ? event.target.files &&
+                            onChange(event.target.files[0])
+                          : onChange(event)
+                      }
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -89,8 +104,19 @@ export function Form<
             />
           ))}
         </div>
+        {warningMessage && (
+          <Alert variant="destructive">
+            <AlertTitle>Warning</AlertTitle>
+            <AlertDescription>{warningMessage}</AlertDescription>
+          </Alert>
+        )}
         <FormMessage>{form.formState.errors.root?.message}</FormMessage>
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          variant={submitButtonVariant}
+          className="w-full"
+          disabled={isSubmitting}
+        >
           {submitButtonText}
         </Button>
       </form>

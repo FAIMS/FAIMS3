@@ -42,3 +42,22 @@ export function schemaFields<T extends ZodObject<any>>(
 ): Array<keyof z.infer<T>> {
   return Object.keys(schema.shape) as Array<keyof z.infer<T>>;
 }
+
+/**
+ * readFileAsText function reads a file as text and returns a promise with the file contents.
+ *
+ * @param {File} file - The file to read.
+ * @returns {Promise<string>} A promise that resolves to the file contents.
+ */
+export const readFileAsText = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      resolve(reader.result as string);
+    };
+
+    reader.onerror = reject;
+
+    reader.readAsText(file);
+  });

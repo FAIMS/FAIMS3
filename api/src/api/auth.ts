@@ -1,7 +1,7 @@
 import {NextFunction, Router} from 'express';
 import passport from 'passport';
-import {registerLocalUser} from './auth_providers/local';
-import {generateUserToken} from './authkeys/create';
+import {registerLocalUser} from '../auth_providers/local';
+import {generateUserToken} from '../authkeys/create';
 
 const PREFIX = '/web';
 
@@ -11,7 +11,7 @@ const protectedRoute = (req: any, res: any, next: NextFunction) => {
   return next();
 };
 
-export function addWebRoutes(app: Router) {
+export function addAPIAuthRoutes(app: Router) {
   app.post(
     `${PREFIX}/login/local`,
     passport.authenticate('local'),

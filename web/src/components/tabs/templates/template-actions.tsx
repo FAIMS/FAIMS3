@@ -1,9 +1,9 @@
+import {EditTemplateDialog} from '@/components/dialogs/edit-template';
 import {SurveyFromTemplateDialog} from '@/components/dialogs/survey-from-template';
 import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {AlertCircle} from 'lucide-react';
 
 /**
  * TemplateActions component renders action cards for creating a survey from a template,
@@ -32,17 +32,17 @@ const TemplateActions = ({templateId}: {templateId: string}) => {
             <ListLabel>Edit Template</ListLabel>
             <ListDescription>Edit the current template.</ListDescription>
           </ListItem>
-          <Button>Edit Template</Button>
+          <EditTemplateDialog />
         </List>
       </Card>
       <Card className="flex flex-col gap-4 flex-1">
         <List className="flex flex-col justify-between h-full">
           <ListItem>
             <ListLabel>Archive Template</ListLabel>
+            <ListDescription>Archive the current template.</ListDescription>
           </ListItem>
           <ListItem>
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
               <AlertTitle>Warning</AlertTitle>
               <AlertDescription>
                 Archiving the template will prevent surveys from being created

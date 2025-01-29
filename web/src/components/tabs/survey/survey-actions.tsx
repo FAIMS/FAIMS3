@@ -2,7 +2,6 @@ import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {AlertCircle} from 'lucide-react';
 
 interface SurveyActionsProps {
   surveyId: string;
@@ -28,7 +27,6 @@ const SurveyActions = ({surveyId}: SurveyActionsProps): JSX.Element => {
           </ListItem>
           <ListItem>
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
               <AlertTitle>Warning</AlertTitle>
               <AlertDescription>
                 Updating the design for a survey with existing responses could
@@ -49,7 +47,6 @@ const SurveyActions = ({surveyId}: SurveyActionsProps): JSX.Element => {
           </ListItem>
           <ListItem>
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
               <AlertTitle>Warning</AlertTitle>
               <AlertDescription>
                 Closing a survey prevents new responses from being added to it.

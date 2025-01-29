@@ -64,3 +64,14 @@ content-type: application/json
     "template_id": "1736225044552-csiro-rapid-impact-survey",
     "name": "Test template from survey"
 }
+
+### Create new template
+
+POST http://localhost:8080/api/templates
+content-type: application/json
+
+
+### Update a template
+
+PUT http://localhost:8080/api/templates/1736918912018-template-2
+content-type: application/json
