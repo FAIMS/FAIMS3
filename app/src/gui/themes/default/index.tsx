@@ -46,6 +46,7 @@ const theme = createTheme({
     text: {
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
+      helpText: colors.blueGrey[600],
     },
     alert: {
       warningBackground: '#FFF4E5',

@@ -27,6 +27,7 @@ const theme = createTheme({
     text: {
       primary: '#000000FF',
       secondary: '#000000',
+      helpText: '#737373',
     },
     alert: {
       warningBackground: '#FFFFFF',

@@ -2,6 +2,9 @@
 import {PaletteOptions, TypeBackground} from '@mui/material/styles';
 
 declare module '@mui/material/styles' {
+  interface TypeText {
+    helpText: string;
+  }
   interface TypeBackground {
     draftBackground: string;
     lightBackground: string;
