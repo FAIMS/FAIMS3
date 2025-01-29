@@ -53,18 +53,17 @@ function app_url(): string {
 
 function android_url(): string {
   const url = process.env.ANDROID_APP_PUBLIC_URL;
-  if (url === '' || url === undefined) {
-    return 'http://localhost:3000';
-  }
-  return url;
+  return url || '';
 }
 
 function ios_url(): string {
   const url = process.env.IOS_APP_PUBLIC_URL;
-  if (url === '' || url === undefined) {
-    return 'http://localhost:3000';
-  }
-  return url;
+  return url || '';
+}
+
+function designer_url(): string {
+  const url = process.env.DESIGNER_URL;
+  return url || '';
 }
 
 function is_testing() {
@@ -344,6 +343,7 @@ export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
 export const ACCESS_TOKEN_EXPIRY_MINUTES = accessTokenExpiryMinutes();
 export const REFRESH_TOKEN_EXPIRY_MINUTES = refreshTokenExpiryMinutes();
+export const DESIGNER_URL = designer_url();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
