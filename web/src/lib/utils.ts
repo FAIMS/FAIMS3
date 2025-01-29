@@ -1,8 +1,7 @@
-import {User} from '@/auth';
 import {clsx, type ClassValue} from 'clsx';
 import {twMerge} from 'tailwind-merge';
 import {z} from 'zod';
-import type {ZodObject, ZodSchema} from 'zod';
+import type {ZodObject} from 'zod';
 
 /**
  * cn function is a utility function for creating class names from tailwind classes.
@@ -31,20 +30,6 @@ export const initials = (name: string) => {
  */
 export const capitalize = (name: string) =>
   name.charAt(0).toUpperCase() + name.slice(1);
-
-export const get = async (path: string, user: User) => {
-  const response = await fetch(`http://localhost:8080${path}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${user.token}`,
-    },
-  });
-
-  if (!response.ok) throw new Error('Error fetching surveys');
-
-  return await response.json();
-};
 
 /**
  * schemaFields function returns an array of field names from a Zod schema.

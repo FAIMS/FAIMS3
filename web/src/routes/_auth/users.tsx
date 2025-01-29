@@ -1,9 +1,8 @@
 import {useAuth} from '@/auth';
 import {columns} from '@/components/tables/users';
 import {DataTable} from '@/components/data-table/data-table';
-import {get} from '@/lib/utils';
-import {useQuery} from '@tanstack/react-query';
 import {createFileRoute} from '@tanstack/react-router';
+import {useGetUsers} from '@/lib/queries';
 
 export const Route = createFileRoute('/_auth/users')({
   component: RouteComponent,
@@ -18,11 +17,7 @@ export const Route = createFileRoute('/_auth/users')({
 function RouteComponent() {
   const {user} = useAuth();
 
-  const {data, isPending, error} = useQuery({
-    queryKey: ['users'],
-    queryFn: () => user && get(`/api/users`, user),
-    staleTime: 0,
-  });
+  const {data, isPending} = useGetUsers(user);
 
   return (
     <DataTable

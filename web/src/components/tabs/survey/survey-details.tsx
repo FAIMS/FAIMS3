@@ -1,10 +1,9 @@
 import {useAuth} from '@/auth';
 import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
-import {useQuery} from '@tanstack/react-query';
-import {get} from '@/lib/utils';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
+import {useGetSurveys} from '@/lib/queries';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -24,12 +23,7 @@ const detailsFields = [
 const SurveyDetails = ({surveyId}: {surveyId: string}) => {
   const {user} = useAuth();
 
-  const {data, isPending, error} = useQuery({
-    queryKey: ['survey', surveyId],
-    queryFn: () => user && get(`/api/notebooks/${surveyId}`, user),
-  });
-
-  if (error) return 'An error has occurred: ' + error.message;
+  const {data, isPending} = useGetSurveys(user, surveyId);
 
   return (
     <Card>

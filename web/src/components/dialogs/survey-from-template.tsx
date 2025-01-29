@@ -15,7 +15,7 @@ import {CreateSurveyFromTemplateForm} from '../forms/create-survey-from-template
  */
 export const SurveyFromTemplateDialog = () => (
   <Dialog>
-    <DialogTrigger className="w-fit">
+    <DialogTrigger asChild className="w-fit">
       <Button>Create Survey</Button>
     </DialogTrigger>
     <DialogContent>

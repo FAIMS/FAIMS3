@@ -17,13 +17,9 @@ export const Route = createFileRoute('/_auth/templates/')({
 function RouteComponent() {
   const {user} = useAuth();
 
-  if (!user) return <></>;
-
-  const {isPending, error, data} = useGetTemplates(user);
+  const {isPending, data} = useGetTemplates(user);
 
   const navigate = useNavigate();
-
-  console.log(data);
 
   return (
     <DataTable

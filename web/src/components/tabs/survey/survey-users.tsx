@@ -1,6 +1,5 @@
 import {useAuth} from '@/auth';
 import {useQuery} from '@tanstack/react-query';
-import {get} from '@/lib/utils';
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/survey-users';
 
@@ -14,11 +13,21 @@ import {columns} from '@/components/tables/survey-users';
 const SurveyUsers = ({surveyId}: {surveyId: string}) => {
   const {user} = useAuth();
 
-  const {data, isPending, error} = useQuery({
+  const {data, isPending} = useQuery({
     queryKey: ['survey-users', surveyId],
     queryFn: async () => {
-      if (!user) return null;
-      const data = await get(`/api/notebooks/${surveyId}/users`, user);
+      if (!user) return [];
+
+      const data = await fetch(
+        `http://localhost:8080/api/notebooks/${surveyId}/users`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      ).then(response => response.json());
 
       return data.users.map((user: any) => ({
         ...user,

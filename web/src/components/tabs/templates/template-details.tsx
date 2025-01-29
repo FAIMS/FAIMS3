@@ -1,10 +1,9 @@
 import {useAuth} from '@/auth';
 import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
-import {useQuery} from '@tanstack/react-query';
-import {get} from '@/lib/utils';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
+import {useGetTemplates} from '@/lib/queries';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -29,14 +28,7 @@ interface TemplateDetailsProps {
 const TemplateDetails = ({templateId}: TemplateDetailsProps) => {
   const {user} = useAuth();
 
-  const {data, isPending, error} = useQuery({
-    queryKey: ['template', templateId],
-    queryFn: () => user && get(`/api/templates/${templateId}`, user),
-  });
-
-  console.log(data);
-
-  if (error) return 'An error has occurred: ' + error.message;
+  const {data, isPending} = useGetTemplates(user, templateId);
 
   return (
     <Card>

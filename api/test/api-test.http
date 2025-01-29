@@ -47,10 +47,20 @@ content-type: application/json
 
 ### Get notebooks
 
-GET http://localhost:8080/web/notebooks/
+GET http://localhost:8080/api/notebooks
 content-type: application/json
 
 ### Get templates
 
-GET http://localhost:8080/web/templates/
+GET http://localhost:8080/api/templates
 content-type: application/json
+
+### New survey from template
+
+POST http://localhost:8080/api/notebooks
+content-type: application/json
+
+{
+    "template_id": "1736225044552-csiro-rapid-impact-survey",
+    "name": "Test template from survey"
+}

@@ -1,9 +1,8 @@
 import {useAuth} from '@/auth';
 import {columns} from '@/components/tables/surveys';
 import {DataTable} from '@/components/data-table/data-table';
-import {get} from '@/lib/utils';
-import {useQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
+import {useGetSurveys} from '@/lib/queries';
 
 /**
  * TemplateSurveys component renders a table of surveys for a template.
@@ -15,16 +14,9 @@ import {useNavigate} from '@tanstack/react-router';
 const TemplateSurveys = ({templateId}: {templateId: string}) => {
   const {user} = useAuth();
 
-  if (!user) return <></>;
-
-  const {isPending, error, data} = useQuery({
-    queryKey: ['surveys'],
-    queryFn: () => get('/api/notebooks', user),
-  });
+  const {isPending, data} = useGetSurveys(user);
 
   const navigate = useNavigate();
-
-  if (error) return 'An error has occurred: ' + error.message;
 
   return (
     <DataTable
