@@ -18,14 +18,13 @@
  *   Alerts are shown one at a time with configurable durations and severity levels.
  */
 
-import {useContext} from 'react';
+import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import {ThemeProvider} from '@mui/material/styles';
-import {theme} from '../themes';
-import Alert from '@mui/material/Alert';
 import {createUseStyles} from 'react-jss';
-import {store} from '../../context/store';
-import {ActionType} from '../../context/actions';
+import {deleteAlert} from '../../context/slices/syncSlice';
+import {useAppDispatch, useAppSelector} from '../../context/store';
+import {theme} from '../themes';
 
 const useStyles = createUseStyles({
   root: {
@@ -49,9 +48,8 @@ const useStyles = createUseStyles({
 
 export default function SystemAlert() {
   const classes = useStyles();
-  const globalState = useContext(store);
-  const {dispatch} = globalState;
-  const alerts = globalState.state.alerts;
+  const dispatch = useAppDispatch();
+  const alerts = useAppSelector(state => state.sync.alerts);
 
   /**
    * Handles the closing of the current alert.
@@ -59,10 +57,11 @@ export default function SystemAlert() {
    * @param {string} key - The unique key identifying the alert to be closed.
    */
   const handleClose = (key: string) => {
-    dispatch({
-      type: ActionType.DELETE_ALERT,
-      payload: {key},
-    });
+    dispatch(
+      deleteAlert({
+        key,
+      })
+    );
   };
 
   const currentAlert = alerts.length > 0 ? alerts[alerts.length - 1] : null;

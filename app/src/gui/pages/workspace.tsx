@@ -18,18 +18,23 @@
  *   TODO
  */
 
-import React from 'react';
-import {Typography, Grid} from '@mui/material';
-import Notebooks from '../components/workspace/notebooks';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {Grid, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
+import React from 'react';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {selectActiveUser} from '../../context/slices/authSlice';
+import {useAppSelector} from '../../context/store';
+import {useGetListing} from '../../utils/custom_hooks';
+import Notebooks from '../components/workspace/notebooks';
 
 export default function Workspace() {
   const theme = useTheme();
+  const activeUser = useAppSelector(selectActiveUser);
+  const listing = useGetListing({serverId: activeUser?.serverId});
+  const serverName = listing.data?.name;
+
   return (
     <React.Fragment>
-      <Breadcrumbs data={[{title: 'Workspace'}]} />
       <Grid container spacing={3}>
         <Grid item xs={12} md={12} lg={8}>
           <Typography
@@ -39,6 +44,15 @@ export default function Workspace() {
           >
             My {NOTEBOOK_NAME_CAPITALIZED}s
           </Typography>
+          {!listing.isError && (
+            <Typography
+              variant="h4"
+              color="textSecondary"
+              style={{marginBottom: theme.spacing(2)}}
+            >
+              {listing.isLoading ? 'Loading...' : serverName}
+            </Typography>
+          )}
           <Notebooks />
         </Grid>
       </Grid>
