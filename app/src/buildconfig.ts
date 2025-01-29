@@ -370,7 +370,8 @@ function tokenRefreshWindowMs(): number {
   }
 }
 
-// Try and refresh before it hits 60 seconds till expiry
+// Ignore the expiry from the JWT - use 1 year expiry instead - disables token
+// refreshing - debug/compat usage only!
 const DEFAULT_IGNORE_TOKEN_EXP = false;
 
 /**
