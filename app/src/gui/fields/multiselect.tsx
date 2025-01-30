@@ -43,6 +43,7 @@ import {ReactNode} from 'react';
 interface ElementProps {
   options: Array<ElementOption>;
   expandedChecklist?: boolean;
+  exclusiveOptions?: Array<string>;
 }
 
 /**

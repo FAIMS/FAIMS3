@@ -17,6 +17,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import EditIcon from '@mui/icons-material/Edit';
+import InfoIcon from '@mui/icons-material/Info';
 import {
   Alert,
   Button,
@@ -34,6 +35,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Typography,
+  Tooltip,
+  FormGroup,
+  Paper,
 } from '@mui/material';
 import {useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
@@ -41,19 +46,79 @@ import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 /**
+ * ExclusiveOptionsSelector is a component for managing which options are considered "exclusive"
+ * in a multi-select field.
+ * 
+ * @param {Object} props - Component props
+ * @param {string[]} props.options - Array of available options
+ * @param {string[]} props.exclusiveOptions - Currently selected exclusive options
+ * @param {(options: string[]) => void} props.onChange - Callback when selection changes
+ */
+const ExclusiveOptionsSelector = ({
+  options,
+  exclusiveOptions = [],
+  onChange,
+}: {
+  options: { value: string; label: string }[];
+  exclusiveOptions: string[];
+  onChange: (options: string[]) => void;
+}) => {
+  const handleToggle = (value: string) => {
+    const currentIndex = exclusiveOptions.indexOf(value);
+    const newExclusiveOptions = [...exclusiveOptions];
+
+    if (currentIndex === -1) {
+      newExclusiveOptions.push(value);
+    } else {
+      newExclusiveOptions.splice(currentIndex, 1);
+    }
+
+    onChange(newExclusiveOptions);
+  };
+
+  return (
+    <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+        <Typography variant="subtitle1">Exclusive Options</Typography>
+        <Tooltip title="TODO: Add explanation of what exclusive options are">
+          <InfoIcon color="action" fontSize="small" />
+        </Tooltip>
+      </Stack>
+      <FormGroup>
+        {options.map((option) => (
+          <FormControlLabel
+            key={option.value}
+            control={
+              <Checkbox
+                checked={exclusiveOptions.includes(option.value)}
+                onChange={() => handleToggle(option.value)}
+              />
+            }
+            label={option.label}
+          />
+        ))}
+      </FormGroup>
+    </Paper>
+  );
+};
+
+/**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.
- * Provides functionality to add, remove, reorder, edit, and display options, with an additional feature
- * to toggle between compact and expanded checklist views for multi-select fields.
+ * Provides functionality to add, remove, reorder, edit, and display options, with additional features
+ * for expanded checklist views and exclusive options in multi-select fields.
  *
  * @param {string} fieldName - The name of the field being edited
  * @param {boolean} [showExpandedChecklist] - Whether to show the expanded checklist toggle control
+ * @param {boolean} [showExclusiveOptions] - Whether to show the exclusive options selector
  */
 export const OptionsEditor = ({
   fieldName,
   showExpandedChecklist,
+  showExclusiveOptions,
 }: {
   fieldName: string;
   showExpandedChecklist?: boolean;
+  showExclusiveOptions?: boolean;
 }) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
@@ -76,17 +141,12 @@ export const OptionsEditor = ({
    * Retrieves and normalizes the current list of options from the field configuration
    */
   const getOptions = () => {
-    let options;
-    if (field['component-parameters'].ElementProps) {
-      options = field['component-parameters'].ElementProps.options;
-      if (options) options = options.map(pair => pair.label.trim());
-    } else {
-      field['component-parameters'].ElementProps = {options: []};
-    }
-    return options || [];
+    let options = field['component-parameters'].ElementProps?.options || [];
+    return options;
   };
 
   const options = getOptions();
+  const exclusiveOptions = field['component-parameters'].ElementProps?.exclusiveOptions || [];
 
   /**
    * Validates option text for emptiness and duplicates
@@ -102,9 +162,9 @@ export const OptionsEditor = ({
       return 'Option text cannot be empty';
     }
 
-    const duplicateExists = options.some((element: string, index: number) => {
+    const duplicateExists = options.some((element, index: number) => {
       if (currentIndex !== undefined && index === currentIndex) return false;
-      return element.toLowerCase() === text.toLowerCase();
+      return element.label.toLowerCase() === text.toLowerCase();
     });
 
     if (duplicateExists) {
@@ -116,10 +176,12 @@ export const OptionsEditor = ({
 
   /**
    * Updates the options list in the Redux store
-   * @param {string[]} updatedOptions - The new list of options
+   * @param {Array} updatedOptions - The new list of options
    */
-  const updateOptions = (updatedOptions: string[]) => {
+  const updateOptions = (updatedOptions: Array<{ label: string; value: string }>) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    
+    // Update options
     newField['component-parameters'].ElementProps = {
       ...newField['component-parameters'].ElementProps,
       options: updatedOptions.map((o, index) => {
@@ -128,16 +190,38 @@ export const OptionsEditor = ({
             RadioProps: {
               id: 'radio-group-field-' + index,
             },
-            label: o,
-            value: o,
+            ...o,
           };
         } else {
-          return {
-            label: o,
-            value: o,
-          };
+          return o;
         }
       }),
+    };
+
+    // Clean up exclusive options - remove any that no longer exist in options
+    const currentValues = updatedOptions.map(o => o.value);
+    const updatedExclusiveOptions = exclusiveOptions.filter(eo => 
+      currentValues.includes(eo)
+    );
+
+    if (updatedExclusiveOptions.length !== exclusiveOptions.length) {
+      newField['component-parameters'].ElementProps.exclusiveOptions = updatedExclusiveOptions;
+    }
+
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+  };
+
+  /**
+   * Updates the exclusive options in the Redux store
+   */
+  const updateExclusiveOptions = (newExclusiveOptions: string[]) => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    newField['component-parameters'].ElementProps = {
+      ...newField['component-parameters'].ElementProps,
+      exclusiveOptions: newExclusiveOptions,
     };
 
     dispatch({
@@ -174,7 +258,8 @@ export const OptionsEditor = ({
     if (error) {
       setErrorMessage(error);
     } else {
-      const newOptions = [...options, newOption];
+      const newOptionObj = { label: newOption, value: newOption };
+      const newOptions = [...options, newOptionObj];
       updateOptions(newOptions);
       setErrorMessage('');
       setNewOption('');
@@ -184,8 +269,8 @@ export const OptionsEditor = ({
   /**
    * Handles option deletion
    */
-  const removeOption = (option: string) => {
-    const newOptions = options.filter((o: string) => o !== option);
+  const removeOption = (option: { label: string; value: string }) => {
+    const newOptions = options.filter(o => o.value !== option.value);
     updateOptions(newOptions);
   };
 
@@ -208,9 +293,9 @@ export const OptionsEditor = ({
   /**
    * Initiates option editing
    */
-  const startEditing = (option: string, index: number) => {
-    setEditingOption({value: option, index});
-    setEditValue(option);
+  const startEditing = (option: { label: string; value: string }, index: number) => {
+    setEditingOption({value: option.label, index});
+    setEditValue(option.label);
     setErrorMessage('');
   };
 
@@ -226,9 +311,40 @@ export const OptionsEditor = ({
       return;
     }
 
+    const oldValue = options[editingOption.index].value;
     const newOptions = [...options];
-    newOptions[editingOption.index] = editValue;
-    updateOptions(newOptions);
+    newOptions[editingOption.index] = { label: editValue, value: editValue };
+    
+    // Update the exclusive options to reference the new value if the old one was included
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    const currentExclusiveOptions = newField['component-parameters'].ElementProps?.exclusiveOptions || [];
+    const updatedExclusiveOptions = currentExclusiveOptions.map(eo => 
+      eo === oldValue ? editValue : eo
+    );
+
+    // Update both options and exclusive options simultaneously
+    newField['component-parameters'].ElementProps = {
+      ...newField['component-parameters'].ElementProps,
+      options: newOptions.map((o, index) => {
+        if (fieldName.includes('radio')) {
+          return {
+            RadioProps: {
+              id: 'radio-group-field-' + index,
+            },
+            ...o,
+          };
+        } else {
+          return o;
+        }
+      }),
+      exclusiveOptions: updatedExclusiveOptions
+    };
+
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+    
     setEditingOption(null);
     setErrorMessage('');
   };
@@ -263,9 +379,9 @@ export const OptionsEditor = ({
             </Grid>
             <Grid item xs={12} sm={6}>
               <List>
-                {options.map((option: string, index: number) => (
+                {options.map((option, index: number) => (
                   <ListItem
-                    key={option}
+                    key={option.value}
                     secondaryAction={
                       <Stack direction="row" spacing={1}>
                         <IconButton
@@ -301,7 +417,7 @@ export const OptionsEditor = ({
                       </Stack>
                     }
                   >
-                    <ListItemText primary={option} />
+                    <ListItemText primary={option.label} />
                   </ListItem>
                 ))}
               </List>
@@ -316,6 +432,15 @@ export const OptionsEditor = ({
                     />
                   }
                   label="Display multi-select as an expanded checklist?"
+                />
+              </Grid>
+            )}
+            {showExclusiveOptions && options.length > 0 && (
+              <Grid item xs={12}>
+                <ExclusiveOptionsSelector
+                  options={options}
+                  exclusiveOptions={exclusiveOptions}
+                  onChange={updateExclusiveOptions}
                 />
               </Grid>
             )}

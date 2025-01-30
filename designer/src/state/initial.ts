@@ -33,6 +33,9 @@ export type ComponentParameters = {
   SelectProps?: unknown;
   ElementProps?: {
     expandedChecklist?: boolean;
+    // These items must correspond to values in the options[]. Only one of such
+    // can be selecting, greying out/excluding other options
+    exclusiveOptions?: Array<string>;
     options?: {
       value: string;
       label: string;
