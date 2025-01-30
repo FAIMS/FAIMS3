@@ -160,11 +160,17 @@ const ImageGallery = ({
       <Box
         sx={{
           display: 'grid',
-          gap: theme.spacing(2),
-          padding: theme.spacing(2),
+          gap: theme.spacing(1),
+          padding: theme.spacing(1),
           gridTemplateColumns: {
-            xs: 'repeat(auto-fill, minmax(200px, 1fr))',
-            sm: 'repeat(auto-fill, minmax(250px, 1fr))',
+            // Show 3 images per row on mobile
+            xs: 'repeat(3, 1fr)',
+            // Show 4 images per row on tablet
+            sm: 'repeat(4, 1fr)',
+            // Show 6 images per row on small desktop
+            md: 'repeat(6, 1fr)',
+            // Show 8 images per row on big desktop
+            lg: 'repeat(8, 1fr)',
           },
           width: '100%',
         }}
@@ -232,7 +238,7 @@ const ImageGallery = ({
                   sx={{
                     width: '100%',
                     height: '100%',
-                    objectFit: 'contain',
+                    objectFit: 'cover',
                     bgcolor: theme.palette.background.lightBackground,
                   }}
                 />
