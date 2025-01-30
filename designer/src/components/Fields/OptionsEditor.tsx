@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
+import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
@@ -327,7 +327,7 @@ export const OptionsEditor = ({
                           }}
                         >
                           Exclusive
-                          <Tooltip title="When selected, this option cannot be combined with other options">
+                          <Tooltip title="Checking this setting marks the option as 'exclusive'. Exclusive options cannot be combined with other selections. For example, choosing 'None' will exclude other selections.">
                             <InfoIcon color="action" fontSize="small" />
                           </Tooltip>
                         </Box>
@@ -372,21 +372,23 @@ export const OptionsEditor = ({
                         </TableCell>
                       )}
                       <TableCell align="right" sx={{py: 1}}>
-                        <IconButton
-                          size="small"
-                          disabled={index === 0}
-                          onClick={() => moveOption(index, 'up')}
-                          sx={{p: 0.5}}
-                        >
-                          <ArrowUpwardIcon fontSize="small" />
-                        </IconButton>
+                        <Tooltip title="Move up">
+                          <IconButton
+                            size="small"
+                            disabled={index === 0}
+                            onClick={() => moveOption(index, 'up')}
+                            sx={{p: 0.5}}
+                          >
+                            <ArrowDropUpRoundedIcon fontSize="large" />
+                          </IconButton>
+                        </Tooltip>
                         <IconButton
                           size="small"
                           disabled={index === options.length - 1}
                           onClick={() => moveOption(index, 'down')}
                           sx={{p: 0.5}}
                         >
-                          <ArrowDownwardIcon fontSize="small" />
+                          <ArrowDropDownRoundedIcon fontSize="large" />
                         </IconButton>
                         <IconButton
                           size="small"
