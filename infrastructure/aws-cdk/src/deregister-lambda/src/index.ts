@@ -16,7 +16,7 @@ export const handler = async (
     'EC2 Instance-terminate Lifecycle Action',
     ASGLifecycleEvent
   >,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   context: Context
 ): Promise<{statusCode: number; body: string}> => {
   console.log('Received event:', JSON.stringify(event, null, 2));

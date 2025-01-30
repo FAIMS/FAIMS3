@@ -14,7 +14,7 @@ import React, {createContext, useState, useCallback, useContext} from 'react';
 /**
  * Functions available from context
  */
-type NotificationContextType = {
+export type NotificationContextType = {
   showSuccess: (message: string) => void;
   showError: (message: string) => void;
   showInfo: (message: string) => void;
@@ -25,9 +25,9 @@ type NotificationContextType = {
  * Creates the notification context with undefined as initial value.
  * The actual value will be provided by NotificationProvider.
  */
-const NotificationContext = createContext<NotificationContextType | undefined>(
-  undefined
-);
+export const NotificationContext = createContext<
+  NotificationContextType | undefined
+>(undefined);
 
 /**
  * Custom hook to access the notification context.

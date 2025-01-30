@@ -27,6 +27,8 @@ PouchDB.plugin(require('pouchdb-find'));
 
 import {expect} from 'chai';
 import {callbackObject, cleanDataDBS, resetDatabases} from './mocks';
+import {slugify} from '../src/utils';
+import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 
 // register our mock database clients with the module
 registerClient(callbackObject);
@@ -61,7 +63,14 @@ describe('Backup and restore', () => {
 
       // throw in a test of getNotebookRecords while we're here
       const records = await getNotebookRecords(
-        notebooks[0].non_unique_project_id
+        notebooks[0].non_unique_project_id,
+        {
+          roles: user.roles,
+          server: slugify(CONDUCTOR_INSTANCE_NAME),
+          username: user.user_id,
+          // Five minutes from now
+          exp: Date.now() + 1000 * 60 * 5,
+        }
       );
       expect(records).to.have.lengthOf(28);
     }

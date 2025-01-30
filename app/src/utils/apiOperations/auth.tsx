@@ -12,10 +12,12 @@ import FetchManager from './client';
  */
 export const requestTokenRefresh = async (
   listingId: string,
+  username: string,
   input: PostRefreshTokenInput
 ): Promise<PostRefreshTokenResponse> => {
   return await FetchManager.post<PostRefreshTokenResponse>(
     listingId,
+    username,
     '/api/auth/refresh',
     input
   );

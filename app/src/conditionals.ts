@@ -184,7 +184,7 @@ const sanitizeComparisonInput = (input: string): string => {
  * @param value The value to check
  * @returns True iff is an array of strings
  */
-export const isStringArray = (value: unknown): value is string[] => 
+export const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(item => typeof item === 'string');
 
 /**
@@ -203,7 +203,11 @@ registerCompiler('contains', (expression: ConditionalExpression) => {
         const target = expression.value as string | undefined | null;
 
         // empty string is okay - be explicit
-        if (target === undefined || target === null || !isStringArray(valuePresent)) {
+        if (
+          target === undefined ||
+          target === null ||
+          !isStringArray(valuePresent)
+        ) {
           // The condition has been setup incorrectly - this should be defined
           return false;
         }
@@ -255,7 +259,11 @@ registerCompiler('does-not-contain', (expression: ConditionalExpression) => {
         const target = expression.value as string | undefined | null;
 
         // empty string is okay - be explicit
-        if (target === undefined || target === null || !isStringArray(valuePresent)) {
+        if (
+          target === undefined ||
+          target === null ||
+          !isStringArray(valuePresent)
+        ) {
           // The condition has been setup incorrectly - since we are doing
           // exclusion let's return OK
           return true;
@@ -308,7 +316,11 @@ registerCompiler('contains-regex', (expression: ConditionalExpression) => {
         const target = expression.value as string | undefined | null;
 
         // empty string is okay - be explicit
-        if (target === undefined || target === null || !isStringArray(valuePresent)) {
+        if (
+          target === undefined ||
+          target === null ||
+          !isStringArray(valuePresent)
+        ) {
           // The condition has been setup incorrectly - this should be defined
           return false;
         }
@@ -361,7 +373,11 @@ registerCompiler(
           const target = expression.value as string | undefined | null;
 
           // empty string is okay - be explicit
-          if (target === undefined || target === null || !isStringArray(valuePresent)) {
+          if (
+            target === undefined ||
+            target === null ||
+            !isStringArray(valuePresent)
+          ) {
             // The condition has been setup incorrectly - since we are doing
             // exclusion let's return OK
             return true;

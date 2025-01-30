@@ -391,7 +391,7 @@ export class FaimsInfraStack extends cdk.Stack {
 
     // Deploy the FAIMS 3 web front-end as a S3 CloudFront static website
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const frontEnd = new FaimsFrontEnd(this, 'frontend', {
+    const _frontEnd = new FaimsFrontEnd(this, 'frontend', {
       couchDbDomainOnly: domains.couch,
       couchDbPort: couchDb.exposedPort,
       faimsDomainNames: [domains.faims],
