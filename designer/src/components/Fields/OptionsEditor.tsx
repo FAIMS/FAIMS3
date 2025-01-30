@@ -12,33 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
 import {
   Alert,
+  Box,
   Button,
-  Card,
   Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   Grid,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  TextField,
-  Stack,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Typography,
-  Tooltip,
-  FormGroup,
   Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Tooltip,
+  Typography,
 } from '@mui/material';
 import {useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
@@ -46,70 +47,9 @@ import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 /**
- * ExclusiveOptionsSelector is a component for managing which options are considered "exclusive"
- * in a multi-select field.
- * 
- * @param {Object} props - Component props
- * @param {string[]} props.options - Array of available options
- * @param {string[]} props.exclusiveOptions - Currently selected exclusive options
- * @param {(options: string[]) => void} props.onChange - Callback when selection changes
- */
-const ExclusiveOptionsSelector = ({
-  options,
-  exclusiveOptions = [],
-  onChange,
-}: {
-  options: { value: string; label: string }[];
-  exclusiveOptions: string[];
-  onChange: (options: string[]) => void;
-}) => {
-  const handleToggle = (value: string) => {
-    const currentIndex = exclusiveOptions.indexOf(value);
-    const newExclusiveOptions = [...exclusiveOptions];
-
-    if (currentIndex === -1) {
-      newExclusiveOptions.push(value);
-    } else {
-      newExclusiveOptions.splice(currentIndex, 1);
-    }
-
-    onChange(newExclusiveOptions);
-  };
-
-  return (
-    <Paper variant="outlined" sx={{ p: 2, mt: 2 }}>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-        <Typography variant="subtitle1">Exclusive Options</Typography>
-        <Tooltip title="TODO: Add explanation of what exclusive options are">
-          <InfoIcon color="action" fontSize="small" />
-        </Tooltip>
-      </Stack>
-      <FormGroup>
-        {options.map((option) => (
-          <FormControlLabel
-            key={option.value}
-            control={
-              <Checkbox
-                checked={exclusiveOptions.includes(option.value)}
-                onChange={() => handleToggle(option.value)}
-              />
-            }
-            label={option.label}
-          />
-        ))}
-      </FormGroup>
-    </Paper>
-  );
-};
-
-/**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.
- * Provides functionality to add, remove, reorder, edit, and display options, with additional features
+ * It provides functionality to add, remove, reorder, and edit options, with additional features
  * for expanded checklist views and exclusive options in multi-select fields.
- *
- * @param {string} fieldName - The name of the field being edited
- * @param {boolean} [showExpandedChecklist] - Whether to show the expanded checklist toggle control
- * @param {boolean} [showExclusiveOptions] - Whether to show the exclusive options selector
  */
 export const OptionsEditor = ({
   fieldName,
@@ -137,23 +77,10 @@ export const OptionsEditor = ({
   } | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  /**
-   * Retrieves and normalizes the current list of options from the field configuration
-   */
-  const getOptions = () => {
-    let options = field['component-parameters'].ElementProps?.options || [];
-    return options;
-  };
+  const options = field['component-parameters'].ElementProps?.options || [];
+  const exclusiveOptions =
+    field['component-parameters'].ElementProps?.exclusiveOptions || [];
 
-  const options = getOptions();
-  const exclusiveOptions = field['component-parameters'].ElementProps?.exclusiveOptions || [];
-
-  /**
-   * Validates option text for emptiness and duplicates
-   * @param {string} text - The option text to validate
-   * @param {number} [currentIndex] - Index of option being edited (to exclude from duplicate check)
-   * @return Null if okay, string if error
-   */
   const validateOptionText = (
     text: string,
     currentIndex?: number
@@ -174,54 +101,24 @@ export const OptionsEditor = ({
     return null;
   };
 
-  /**
-   * Updates the options list in the Redux store
-   * @param {Array} updatedOptions - The new list of options
-   */
-  const updateOptions = (updatedOptions: Array<{ label: string; value: string }>) => {
+  const updateField = (
+    updatedOptions: Array<{label: string; value: string}>,
+    updatedExclusiveOptions: string[]
+  ) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    
-    // Update options
+
     newField['component-parameters'].ElementProps = {
       ...newField['component-parameters'].ElementProps,
       options: updatedOptions.map((o, index) => {
         if (fieldName.includes('radio')) {
           return {
-            RadioProps: {
-              id: 'radio-group-field-' + index,
-            },
+            RadioProps: {id: 'radio-group-field-' + index},
             ...o,
           };
-        } else {
-          return o;
         }
+        return o;
       }),
-    };
-
-    // Clean up exclusive options - remove any that no longer exist in options
-    const currentValues = updatedOptions.map(o => o.value);
-    const updatedExclusiveOptions = exclusiveOptions.filter(eo => 
-      currentValues.includes(eo)
-    );
-
-    if (updatedExclusiveOptions.length !== exclusiveOptions.length) {
-      newField['component-parameters'].ElementProps.exclusiveOptions = updatedExclusiveOptions;
-    }
-
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
-  };
-
-  /**
-   * Updates the exclusive options in the Redux store
-   */
-  const updateExclusiveOptions = (newExclusiveOptions: string[]) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].ElementProps = {
-      ...newField['component-parameters'].ElementProps,
-      exclusiveOptions: newExclusiveOptions,
+      exclusiveOptions: updatedExclusiveOptions,
     };
 
     dispatch({
@@ -230,27 +127,6 @@ export const OptionsEditor = ({
     });
   };
 
-  /**
-   * Toggles the expanded checklist view state
-   */
-  const toggleShowExpanded = () => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    const existing =
-      newField['component-parameters'].ElementProps?.expandedChecklist ?? false;
-    const newValue = !existing;
-    newField['component-parameters'].ElementProps = {
-      ...(newField['component-parameters'].ElementProps ?? {}),
-      expandedChecklist: newValue,
-    };
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
-  };
-
-  /**
-   * Handles adding a new option
-   */
   const addOption = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const error = validateOptionText(newOption);
@@ -258,25 +134,20 @@ export const OptionsEditor = ({
     if (error) {
       setErrorMessage(error);
     } else {
-      const newOptionObj = { label: newOption, value: newOption };
-      const newOptions = [...options, newOptionObj];
-      updateOptions(newOptions);
+      const newOptionObj = {label: newOption, value: newOption};
+      updateField([...options, newOptionObj], exclusiveOptions);
       setErrorMessage('');
       setNewOption('');
     }
   };
 
-  /**
-   * Handles option deletion
-   */
-  const removeOption = (option: { label: string; value: string }) => {
-    const newOptions = options.filter(o => o.value !== option.value);
-    updateOptions(newOptions);
+  const handleExclusiveToggle = (value: string) => {
+    const newExclusiveOptions = exclusiveOptions.includes(value)
+      ? exclusiveOptions.filter(o => o !== value)
+      : [...exclusiveOptions, value];
+    updateField(options, newExclusiveOptions);
   };
 
-  /**
-   * Handles option reordering
-   */
   const moveOption = (index: number, direction: 'up' | 'down') => {
     const newOptions = [...options];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
@@ -286,22 +157,18 @@ export const OptionsEditor = ({
         newOptions[newIndex],
         newOptions[index],
       ];
-      updateOptions(newOptions);
+      updateField(newOptions, exclusiveOptions);
     }
   };
 
-  /**
-   * Initiates option editing
-   */
-  const startEditing = (option: { label: string; value: string }, index: number) => {
-    setEditingOption({value: option.label, index});
-    setEditValue(option.label);
-    setErrorMessage('');
+  const removeOption = (option: {label: string; value: string}) => {
+    const newOptions = options.filter(o => o.value !== option.value);
+    const newExclusiveOptions = exclusiveOptions.filter(
+      eo => eo !== option.value
+    );
+    updateField(newOptions, newExclusiveOptions);
   };
 
-  /**
-   * Handles edit submission
-   */
   const handleEditSubmit = () => {
     if (!editingOption) return;
 
@@ -313,178 +180,279 @@ export const OptionsEditor = ({
 
     const oldValue = options[editingOption.index].value;
     const newOptions = [...options];
-    newOptions[editingOption.index] = { label: editValue, value: editValue };
-    
-    // Update the exclusive options to reference the new value if the old one was included
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    const currentExclusiveOptions = newField['component-parameters'].ElementProps?.exclusiveOptions || [];
-    const updatedExclusiveOptions = currentExclusiveOptions.map(eo => 
+    newOptions[editingOption.index] = {label: editValue, value: editValue};
+
+    const updatedExclusiveOptions = exclusiveOptions.map(eo =>
       eo === oldValue ? editValue : eo
     );
 
-    // Update both options and exclusive options simultaneously
-    newField['component-parameters'].ElementProps = {
-      ...newField['component-parameters'].ElementProps,
-      options: newOptions.map((o, index) => {
-        if (fieldName.includes('radio')) {
-          return {
-            RadioProps: {
-              id: 'radio-group-field-' + index,
-            },
-            ...o,
-          };
-        } else {
-          return o;
-        }
-      }),
-      exclusiveOptions: updatedExclusiveOptions
-    };
-
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
-    
+    updateField(newOptions, updatedExclusiveOptions);
     setEditingOption(null);
     setErrorMessage('');
   };
 
+  const toggleShowExpanded = () => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    const newValue = !isShowExpandedList;
+    newField['component-parameters'].ElementProps = {
+      ...(newField['component-parameters'].ElementProps ?? {}),
+      expandedChecklist: newValue,
+    };
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+  };
+
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item xs={12}>
-        <Card variant="outlined">
-          <Grid container p={2} spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Alert severity="info">Add and remove options as needed.</Alert>
+      <Paper sx={{width: '100%', ml: 2, mt: 2, p: 3}}>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <Alert
+              severity="info"
+              sx={{
+                mb: 2,
+                backgroundColor: 'rgb(229, 246, 253)', // Lighter blue background
+                '& .MuiAlert-icon': {
+                  color: 'rgb(1, 67, 97)', // Darker blue icon
+                },
+              }}
+            >
+              Add and remove options as needed.
+            </Alert>
+
+            <Box sx={{mb: 2}}>
               <form onSubmit={addOption}>
-                <Grid item alignItems="stretch" style={{display: 'flex'}}>
-                  <TextField
-                    label="Add Option"
-                    value={newOption}
-                    onChange={e => setNewOption(e.target.value)}
-                    sx={{my: 1.5}}
-                  />
-                  <Button
-                    color="primary"
-                    startIcon={<AddCircleIcon />}
-                    variant="outlined"
-                    type="submit"
-                    sx={{my: 1.5}}
-                  >
-                    ADD
-                  </Button>
+                <Grid container spacing={1} alignItems="center">
+                  <Grid item xs>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="Add Option"
+                      value={newOption}
+                      onChange={e => setNewOption(e.target.value)}
+                    />
+                  </Grid>
+                  <Grid item>
+                    <Button
+                      color="primary"
+                      variant="outlined"
+                      size="small"
+                      type="submit"
+                      sx={{
+                        height: '40px',
+                        backgroundColor: '#fff',
+                        textTransform: 'none',
+                        '&:hover': {
+                          backgroundColor: '#f5f5f5',
+                        },
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </Grid>
                 </Grid>
               </form>
-              {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <List>
-                {options.map((option, index: number) => (
-                  <ListItem
-                    key={option.value}
-                    secondaryAction={
-                      <Stack direction="row" spacing={1}>
+            </Box>
+
+            {errorMessage && (
+              <Alert severity="error" sx={{mt: 2, mb: 2}}>
+                {errorMessage}
+              </Alert>
+            )}
+
+            {showExpandedCheckListControl && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isShowExpandedList}
+                    onChange={toggleShowExpanded}
+                    size="small"
+                  />
+                }
+                label={
+                  <>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <p>Display multi-select as an expanded checklist?</p>
+                      <Tooltip title="This option changes the multi-select from a dropdown menu, to a pre-expanded checklist of items. This takes up more space on the user's screen, but requires less clicks to interact with.">
+                        <InfoIcon color="action" fontSize="small" />
+                      </Tooltip>
+                    </Stack>
+                  </>
+                }
+                sx={{mb: 2}}
+              />
+            )}
+          </Grid>
+
+          <Grid item xs={12}>
+            <TableContainer
+              component={Paper}
+              variant="outlined"
+              sx={{
+                border: '1px solid rgba(0, 0, 0, 0.12)',
+                boxShadow: 'none',
+                borderRadius: 1,
+              }}
+            >
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell
+                      sx={{
+                        backgroundColor: '#fafafa',
+                        fontWeight: 500,
+                        py: 1.5,
+                      }}
+                    >
+                      Option Text
+                    </TableCell>
+                    {showExclusiveOptions && (
+                      <TableCell
+                        align="center"
+                        sx={{
+                          width: 140,
+                          backgroundColor: '#fafafa',
+                          fontWeight: 500,
+                          py: 1.5,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 0.5,
+                          }}
+                        >
+                          Exclusive
+                          <Tooltip title="When selected, this option cannot be combined with other options">
+                            <InfoIcon color="action" fontSize="small" />
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    )}
+                    <TableCell
+                      align="right"
+                      sx={{
+                        width: 160,
+                        backgroundColor: '#fafafa',
+                        fontWeight: 500,
+                        py: 1.5,
+                      }}
+                    >
+                      Actions
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {options.map((option, index) => (
+                    <TableRow key={option.value}>
+                      <TableCell sx={{py: 1}}>
+                        <Tooltip title={option.label}>
+                          <Typography
+                            noWrap
+                            sx={{
+                              maxWidth: 400,
+                              fontSize: '0.875rem',
+                            }}
+                          >
+                            {option.label}
+                          </Typography>
+                        </Tooltip>
+                      </TableCell>
+                      {showExclusiveOptions && (
+                        <TableCell align="center" sx={{py: 1}}>
+                          <Checkbox
+                            checked={exclusiveOptions.includes(option.value)}
+                            onChange={() => handleExclusiveToggle(option.value)}
+                            size="small"
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell align="right" sx={{py: 1}}>
                         <IconButton
                           size="small"
                           disabled={index === 0}
                           onClick={() => moveOption(index, 'up')}
-                          aria-label="move option up"
+                          sx={{p: 0.5}}
                         >
-                          <ArrowUpwardIcon />
+                          <ArrowUpwardIcon fontSize="small" />
                         </IconButton>
                         <IconButton
                           size="small"
                           disabled={index === options.length - 1}
                           onClick={() => moveOption(index, 'down')}
-                          aria-label="move option down"
+                          sx={{p: 0.5}}
                         >
-                          <ArrowDownwardIcon />
+                          <ArrowDownwardIcon fontSize="small" />
                         </IconButton>
                         <IconButton
                           size="small"
-                          onClick={() => startEditing(option, index)}
-                          aria-label="edit option"
+                          onClick={() => {
+                            setEditingOption({value: option.label, index});
+                            setEditValue(option.label);
+                            setErrorMessage('');
+                          }}
+                          sx={{p: 0.5}}
                         >
-                          <EditIcon />
+                          <EditIcon fontSize="small" />
                         </IconButton>
                         <IconButton
-                          edge="end"
-                          aria-label="delete option"
+                          size="small"
                           onClick={() => removeOption(option)}
+                          sx={{p: 0.5}}
                         >
-                          <DeleteIcon />
+                          <DeleteIcon fontSize="small" />
                         </IconButton>
-                      </Stack>
-                    }
-                  >
-                    <ListItemText primary={option.label} />
-                  </ListItem>
-                ))}
-              </List>
-            </Grid>
-            {showExpandedCheckListControl && (
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={isShowExpandedList}
-                      onChange={toggleShowExpanded}
-                    />
-                  }
-                  label="Display multi-select as an expanded checklist?"
-                />
-              </Grid>
-            )}
-            {showExclusiveOptions && options.length > 0 && (
-              <Grid item xs={12}>
-                <ExclusiveOptionsSelector
-                  options={options}
-                  exclusiveOptions={exclusiveOptions}
-                  onChange={updateExclusiveOptions}
-                />
-              </Grid>
-            )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Grid>
-        </Card>
-      </Grid>
+        </Grid>
 
-      <Dialog
-        open={!!editingOption}
-        onClose={() => {
-          setEditingOption(null);
-          setErrorMessage('');
-        }}
-      >
-        <DialogTitle>Edit Option</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Option Text"
-            fullWidth
-            value={editValue}
-            onChange={e => setEditValue(e.target.value)}
-          />
-          {errorMessage && (
-            <Alert severity="error" sx={{mt: 2}}>
-              {errorMessage}
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setEditingOption(null);
-              setErrorMessage('');
-            }}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleEditSubmit} color="primary">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Dialog
+          open={!!editingOption}
+          onClose={() => {
+            setEditingOption(null);
+            setErrorMessage('');
+          }}
+        >
+          <DialogTitle>Edit Option</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Option Text"
+              fullWidth
+              value={editValue}
+              onChange={e => setEditValue(e.target.value)}
+            />
+            {errorMessage && (
+              <Alert severity="error" sx={{mt: 2}}>
+                {errorMessage}
+              </Alert>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setEditingOption(null);
+                setErrorMessage('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleEditSubmit} color="primary">
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Paper>
     </BaseFieldEditor>
   );
 };
