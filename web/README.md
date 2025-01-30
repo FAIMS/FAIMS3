@@ -18,7 +18,7 @@ The web/ directory contains the source code for the web application. It is built
 1. Install dependencies from the project root:
 
 ```bash
-pnpm i
+npm i
 ```
 
 2. Create environment configuration and edit configuration as needed:

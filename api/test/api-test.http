@@ -75,3 +75,8 @@ content-type: application/json
 
 PUT http://localhost:8080/api/templates/1736918912018-template-2
 content-type: application/json
+
+### Get notebook invites
+
+GET http://localhost:8080/api/notebooks/1733801275326-blue-mountains-survey/invites
+content-type: application/json

@@ -65,3 +65,16 @@ export const useGetUsers = (user: User | null) =>
     queryKey: ['users'],
     queryFn: () => get(`/api/users`, user),
   });
+
+/**
+ * useGetInvites hook returns a query for fetching invites.
+ *
+ * @param {User} user - The user object.
+ * @param {string} notebookId - The ID of the notebook.
+ * @returns {Query} A query for fetching invites.
+ */
+export const useGetInvites = (user: User | null, notebookId: string) =>
+  useQuery({
+    queryKey: ['invites', notebookId],
+    queryFn: () => get(`/api/notebooks/${notebookId}/invites`, user),
+  });
