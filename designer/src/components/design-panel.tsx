@@ -55,7 +55,6 @@ export const DesignPanel = () => {
   const maxKeys = Object.keys(viewSets).length;
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    console.log('Switching to tab', newValue);
     setTabIndex(newValue.toString());
   };
 
