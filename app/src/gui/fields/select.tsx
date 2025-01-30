@@ -82,7 +82,6 @@ export const Select = (props: Props & TextFieldProps) => {
     >
       <FormControl
         sx={{
-          m: 1,
           width: '100%',
           backgroundColor: theme.palette.background.default,
         }}

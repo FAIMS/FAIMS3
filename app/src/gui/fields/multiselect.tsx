@@ -132,7 +132,7 @@ export const MuiMultiSelect = ({
   const theme = useTheme();
 
   return (
-    <FormControl sx={{m: 1, width: '100%'}}>
+    <FormControl sx={{width: '100%'}}>
       <Select
         multiple
         onChange={(e: any) => onChange(e.target.value)}
