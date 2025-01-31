@@ -48,7 +48,6 @@ import NotFound404 from './gui/pages/404';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
 import {InitialiseGate, StateProvider} from './context/store';
-import {NotificationProvider} from './context/popup';
 import {MapDownloadComponent} from './gui/components/map/map-download';
 
 // type AppProps = {};
