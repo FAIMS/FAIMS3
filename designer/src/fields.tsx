@@ -458,6 +458,31 @@ const fields: {[key: string]: FieldType} = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
+
+  NumberField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'NumberField',
+    'type-returned': 'faims-core::Number',
+    'component-parameters': {
+      label: 'Number Input',
+      fullWidth: true,
+      helperText: 'Enter a valid number',
+      variant: 'outlined',
+      required: false,
+      InputProps: {
+        type: 'number',
+        // inputProps: {
+        //   min: 0,
+        //   max: 100,
+        //   step: 1,
+        //   inputMode: 'numeric',
+        //   pattern: '[0-9]*',
+        // },
+      },
+    },
+    validationSchema: [['yup.number'], ['yup.min', 0], ['yup.max', 100]],
+    initialValue: 0,
+  },
 };
 
 export const getFieldNames = () => {

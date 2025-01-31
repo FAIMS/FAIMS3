@@ -53,6 +53,7 @@ import {QRCodeFormField} from '../fields/qrcode';
 import {RichTextField} from '../fields/RichText';
 import {AddressField} from '../fields/Address';
 import {FAIMSTextField} from '../fields/FAIMSTextField';
+import NumberField from '../fields/NumberField';
 
 const bundle = null;
 export default bundle;
@@ -291,6 +292,15 @@ registerField(
   'A simple text input field',
   'Text',
   FAIMSTextField
+);
+
+registerField(
+  'faims-custom',
+  'NumberField',
+  'Number Input Field',
+  'Allows users to input numeric values',
+  'Text',
+  NumberField
 );
 
 /*
