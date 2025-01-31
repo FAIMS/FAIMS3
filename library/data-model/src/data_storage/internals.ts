@@ -20,7 +20,12 @@
 
 import {v4 as uuidv4} from 'uuid';
 
-import {getDataDB} from '../index';
+import {
+  getDataDB,
+  getHridFieldNameForViewset,
+  getIdsByFieldName,
+  getUiSpecForProject,
+} from '../index';
 import {HRID_STRING} from '../datamodel/core';
 import {
   AttributeValuePair,
@@ -193,23 +198,42 @@ export async function getLatestRevision(
   }
 }
 
-// TODO update this
 export async function getHRID(
   project_id: ProjectID,
   revision: Revision
 ): Promise<string | null> {
-  let hrid_name: string | null = null;
-  for (const possible_name of Object.keys(revision.avps)) {
-    if (possible_name.startsWith(HRID_STRING)) {
-      hrid_name = possible_name;
-      break;
+  // Need to find a way here to determine the correct field name to use - we
+  // need the uispec at this point
+  const uiSpecification = await getUiSpecForProject({projectId: project_id});
+  const fieldNames = Array.from(Object.keys(revision.avps));
+  const sampleFieldName = fieldNames.length > 0 ? fieldNames[0] : undefined;
+  let hridFieldName = undefined;
+  if (sampleFieldName) {
+    const {viewSetId} = getIdsByFieldName({
+      uiSpecification,
+      fieldName: sampleFieldName,
+    });
+    // get the HRID for the view set - might not succeed
+    hridFieldName = getHridFieldNameForViewset({
+      uiSpecification,
+      viewSetId,
+    });
+  }
+
+  // only try the backup if necessary
+  if (!hridFieldName) {
+    for (const possible_name of Object.keys(revision.avps)) {
+      if (possible_name.startsWith(HRID_STRING)) {
+        hridFieldName = possible_name;
+        break;
+      }
     }
   }
 
-  if (hrid_name === null) {
+  if (!hridFieldName) {
     return null;
   }
-  const hrid_avp_id = revision.avps[hrid_name];
+  const hrid_avp_id = revision.avps[hridFieldName];
   if (hrid_avp_id === undefined) {
     console.warn('No HRID field set for revision');
     return null;

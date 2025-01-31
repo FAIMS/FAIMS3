@@ -170,7 +170,6 @@ export default function Record() {
           setRevisions(all_revisions);
         })
         .catch(logError);
-    // TODO update this
       getHRIDforRecordID(project_id!, record_id!).then(hrid => {
         setHrid(hrid);
         setBreadcrumbs([
@@ -255,6 +254,7 @@ export default function Record() {
   useEffect(() => {
     // this is function to get child information
 
+    // TODO This is not resolving properly!
     const getrelated_Info = async () => {
       try {
         if (uiSpec !== null && type !== null) {
@@ -265,6 +265,7 @@ export default function Record() {
             false
           );
           if (latest_record !== null) {
+            console.log(JSON.stringify(latest_record, undefined, 2));
             //add checking for deleted record, so it can be direct to notebook page
             if (latest_record.deleted === true) {
               dispatch(
@@ -277,6 +278,7 @@ export default function Record() {
                 pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
               });
             }
+            console.log('Running new relationship');
             const newRelationship = await getDetailRelatedInformation(
               uiSpec,
               type,
@@ -286,6 +288,7 @@ export default function Record() {
               record_id!,
               updatedrevision_id!
             );
+            console.log('Got it back');
             setRelatedRecords(newRelationship);
             const newParent = await getParentPersistenceData(
               uiSpec,
@@ -334,6 +337,7 @@ export default function Record() {
           setIs_link_ready(true);
         }
       } catch (error) {
+        console.error(error);
         logError(error);
         //setIs_link_ready(true);
       }

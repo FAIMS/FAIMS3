@@ -402,16 +402,15 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'TemplatedStringField',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Human Readable ID',
+      label: 'Templated String Field',
       fullWidth: true,
-      name: 'hrid-field',
+      name: 'templated-field',
       helperText: 'Human Readable ID',
       required: true,
       template: ' {{}}',
       InputProps: {
         type: 'text', // must be a valid html type
-      },
-      hrid: true,
+      }
     },
     validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',

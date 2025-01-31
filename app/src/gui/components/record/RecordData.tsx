@@ -77,6 +77,7 @@ export default function RecordData(props: RecordDataTypes) {
     setDataTab(newValue);
   };
   const theme = useTheme();
+  console.log(props.is_link_ready);
 
   return (
     <Box bgcolor={grey[100]}>

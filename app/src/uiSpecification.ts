@@ -29,7 +29,8 @@ import {
 } from './conditionals';
 
 export async function getUiSpecForProject(
-  project_id: ProjectID
+  project_id: ProjectID,
+  compile: boolean = true
 ): Promise<ProjectUIModel> {
   try {
     const projdb = await getProjectDB(project_id);
@@ -44,7 +45,9 @@ export async function getUiSpecForProject(
       viewsets: encUIInfo.viewsets,
       visible_types: encUIInfo.visible_types,
     };
-    compileUiSpecConditionals(uiSpec);
+    if (compile) {
+      compileUiSpecConditionals(uiSpec);
+    }
     return uiSpec;
   } catch (err) {
     console.warn('failed to find ui specification for', project_id, err);

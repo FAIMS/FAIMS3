@@ -367,7 +367,7 @@ export async function getRelatedRecords(
   links.forEach((link: any, index: number) => {
     if (!link || typeof link !== 'object' || !('record_id' in link)) {
       throw new Error(
-        `Invalid link at ${multiple ? `index ${index}` : 'value'}: must be an object with record_id property`
+        `Invalid link at ${multiple ? `index ${index}` : 'value'}: must be an object with record_id property. Link was ${JSON.stringify(link)}`
       );
     }
   });
@@ -442,17 +442,18 @@ async function get_field_RelatedFields(
 ): Promise<Array<RecordLinkProps>> {
   // hrid field map
   const hridFieldMap = getHridFieldMap(ui_specification);
-
+  
   for (const index in fields) {
+    const field = fields[index]['field'];
+    const child_record = fields[index]['value'];
+
     // Get the view and viewset ID
     const {viewSetId} = getIdsByFieldName({
       uiSpecification: ui_specification,
-      fieldName: index,
+      fieldName: field,
     });
     const hridFieldName = hridFieldMap[viewSetId];
 
-    const field = fields[index]['field'];
-    const child_record = fields[index]['value'];
 
     const related_type =
       ui_specification['fields'][field]['component-parameters']['related_type'];

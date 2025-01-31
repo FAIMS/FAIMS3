@@ -1,5 +1,11 @@
+import {getProjectDB, UI_SPECIFICATION_NAME} from '.';
 import {HRID_STRING} from './datamodel/core';
-import {ProjectUIModel, ProjectUIViewset} from './types';
+import {
+  EncodedProjectUIModel,
+  ProjectID,
+  ProjectUIModel,
+  ProjectUIViewset,
+} from './types';
 
 /**
  * Retrieves a viewset from the UI specification by its ID
@@ -151,6 +157,13 @@ export const getIdsByFieldName = ({
 }): {viewId: string; viewSetId: string} => {
   // Get all views
   const views = uiSpecification.views;
+  const pprint = (obj: any) => {
+    console.warn(JSON.stringify(obj, undefined, 2));
+  };
+  console.log('Inputs');
+  pprint({uiSpecification, fieldName});
+  console.log('Views');
+  pprint(views)
 
   // Iterate through and find which view has the specific field
   let matchingViewId = undefined;
@@ -250,3 +263,33 @@ export const getFieldToIdsMap = (
 
   return fieldMap;
 };
+
+/**
+ * Gets the raw ui spec (no compiled conditionals) for the given project ID
+ * @param projectId The project ID to fetch the ui spec for
+ * @returns The ui specification (without compiled conditionals)
+ */
+export async function getUiSpecForProject({
+  projectId,
+}: {
+  projectId: ProjectID;
+}): Promise<ProjectUIModel> {
+  try {
+    const projdb = await getProjectDB(projectId);
+    const encUIInfo: EncodedProjectUIModel = await projdb.get(
+      UI_SPECIFICATION_NAME
+    );
+    const uiSpec = {
+      _id: encUIInfo._id,
+      _rev: encUIInfo._rev,
+      fields: encUIInfo.fields,
+      views: encUIInfo.fviews,
+      viewsets: encUIInfo.viewsets,
+      visible_types: encUIInfo.visible_types,
+    };
+    return uiSpec;
+  } catch (err) {
+    console.error('failed to find ui specification for', projectId, err);
+    throw Error(`Could not find ui specification for ${projectId}`);
+  }
+}
