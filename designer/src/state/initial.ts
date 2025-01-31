@@ -110,6 +110,10 @@ export type NotebookUISpec = {
     [key: string]: {
       views: string[];
       label: string;
+      // New optional settings
+      summary_fields?: string[];
+      layout?: 'inline' | 'tabs';
+      hridField?: string;
     };
   };
   visible_types: string[];

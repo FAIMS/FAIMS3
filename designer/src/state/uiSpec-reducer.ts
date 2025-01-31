@@ -414,6 +414,35 @@ export const uiSpecificationReducer = createSlice({
         state.viewsets[viewSetId].label = label;
       }
     },
+    viewSetSummaryFieldsUpdated: (
+      state,
+      action: PayloadAction<{viewSetId: string; fields: string[]}>
+    ) => {
+      const {viewSetId, fields} = action.payload;
+      if (viewSetId in state.viewsets) {
+        // Update the viewset with the proposed summary fields
+        state.viewsets[viewSetId].summary_fields = fields;
+      }
+    },
+    viewSetLayoutUpdated: (
+      state,
+      action: PayloadAction<{viewSetId: string; layout?: 'inline' | 'tabs'}>
+    ) => {
+      const {viewSetId, layout} = action.payload;
+      if (viewSetId in state.viewsets) {
+        // Update the viewset with the proposed summary fields
+        state.viewsets[viewSetId].layout = layout;
+      }
+    },
+    viewSetHridUpdated: (
+      state,
+      action: PayloadAction<{viewSetId: string; hridField?: string}>
+    ) => {
+      const {viewSetId, hridField} = action.payload;
+      if (viewSetId in state.viewsets) {
+        state.viewsets[viewSetId].hridField = hridField;
+      }
+    },
     formVisibilityUpdated: (
       state,
       action: PayloadAction<{
@@ -455,6 +484,8 @@ export const {
   viewSetMoved,
   viewSetRenamed,
   formVisibilityUpdated,
+  viewSetLayoutUpdated,
+  viewSetSummaryFieldsUpdated,
 } = uiSpecificationReducer.actions;
 
 export default uiSpecificationReducer.reducer;

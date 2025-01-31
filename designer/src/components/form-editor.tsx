@@ -46,6 +46,7 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {SectionEditor} from './section-editor';
 import {useState} from 'react';
 import {shallowEqual} from 'react-redux';
+import FormSettingsPanel from './form-settings';
 
 type Props = {
   viewSetId: string;
@@ -428,6 +429,9 @@ export const FormEditor = ({
         </Grid>
       </Grid>
 
+      <Grid container item xs={12}>
+        <FormSettingsPanel viewSetId={viewSetId} />
+      </Grid>
       <Grid item xs={12}>
         <Card variant="outlined">
           <Grid container spacing={2} p={3}>
