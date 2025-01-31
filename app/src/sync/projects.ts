@@ -19,16 +19,28 @@
  */
 
 import {
-  ProjectMetaObject,
-  ProjectDataObject,
-  ProjectInformation,
-  split_full_project_id,
-  ProjectID,
-  PossibleConnectionInfo,
   NonUniqueProjectID,
-  ListingID,
+  PossibleConnectionInfo,
+  ProjectDataObject,
+  ProjectID,
+  ProjectInformation,
+  ProjectMetaObject,
   resolve_project_id,
+  split_full_project_id,
 } from '@faims3/data-model';
+import {DEBUG_APP} from '../buildconfig';
+import {getToken} from '../context/functions';
+import {getServerConnection} from '../context/slices/authSlice';
+import {store} from '../context/store';
+import {logError} from '../logging';
+import {shouldDisplayProject} from '../users';
+import {
+  ConnectionInfo,
+  ping_sync_denied,
+  ping_sync_error,
+  throttled_ping_sync_down,
+  throttled_ping_sync_up,
+} from './connection';
 import {
   ExistingActiveDoc,
   LocalDB,
@@ -37,19 +49,9 @@ import {
   ensure_synced_db,
   metadata_dbs,
 } from './databases';
-import {getTokenForCluster, shouldDisplayProject} from '../users';
-import {all_projects_updated, getListing} from './state';
-import {DEBUG_APP} from '../buildconfig';
-import {logError} from '../logging';
 import {events} from './events';
-import {
-  ConnectionInfo,
-  throttled_ping_sync_down,
-  ping_sync_denied,
-  ping_sync_error,
-  throttled_ping_sync_up,
-} from './connection';
 import {fetchProjectMetadata} from './metadata';
+import {all_projects_updated, getListing} from './state';
 
 /**
  * Temporarily override this type from @faims3/data-model to make
@@ -133,12 +135,23 @@ export async function getProjectInfo(
  *  Used to get the list of active projects to create the side menu
  * @returns an array of ProjectInformation records
  */
-export const getActiveProjectList = async (): Promise<ProjectInformation[]> => {
-  //await waitForStateOnce(() => all_projects_updated);
+export const getActiveProjectList = async (
+  username: string,
+  serverId: string
+): Promise<ProjectInformation[]> => {
+  const state = store.getState();
+  const tokenContents = getServerConnection({state, serverId, username});
+  if (!tokenContents) {
+    throw new Error(
+      'Could not find credentials in auth store for requested user/server combination: ' +
+        serverId +
+        username
+    );
+  }
 
   const output: ProjectInformation[] = [];
   for (const project_id in createdProjects) {
-    if (await shouldDisplayProject(project_id)) {
+    if (await shouldDisplayProject(tokenContents.parsedToken, project_id)) {
       output.push(
         formatProjectInformation(
           project_id,
@@ -158,11 +171,21 @@ export const getActiveProjectList = async (): Promise<ProjectInformation[]> => {
  * @returns An array of ProjectInformation objects
  */
 export async function getAvailableProjectsFromListing(
-  listing_id: ListingID
+  username: string,
+  serverId: string
 ): Promise<ProjectInformation[]> {
+  const state = store.getState();
+  const tokenContents = getServerConnection({state, serverId, username});
+  if (!tokenContents) {
+    throw new Error(
+      'Could not find credentials in auth store for requested user/server combination: ' +
+        serverId +
+        username
+    );
+  }
   const output: ProjectInformation[] = [];
   const projects: ProjectObject[] = [];
-  const listing = getListing(listing_id);
+  const listing = getListing(serverId);
 
   if (listing) {
     const projects_db = listing.projects.local;
@@ -177,8 +200,10 @@ export async function getAvailableProjectsFromListing(
 
     for (const project of projects) {
       const project_id = project._id;
-      const full_project_id = resolve_project_id(listing_id, project_id);
-      if (await shouldDisplayProject(full_project_id)) {
+      const full_project_id = resolve_project_id(serverId, project_id);
+      if (
+        await shouldDisplayProject(tokenContents.parsedToken, full_project_id)
+      ) {
         output.push(formatProjectInformation(full_project_id, project));
       }
     }
@@ -326,7 +351,14 @@ export async function ensure_project_databases(
   // If we must sync with a remote endpoint immediately,
   // do it here: (Otherwise, emit 'paused' anyway to allow
   // other parts of FAIMS to continue)
-  const jwt_token = await getTokenForCluster(active_doc.listing_id);
+
+  // Get token for server
+  const serverId = listing.listing.id;
+  const jwt_token = getToken(serverId);
+  if (!jwt_token) {
+    console.error('Could not get token for listing with ID: ', serverId);
+    return;
+  }
 
   // SC: this little dance is because the db_name in PossibleConnectionObject
   // which is the type of metadata_db in the project object is possibly
@@ -337,8 +369,12 @@ export async function ensure_project_databases(
     data_db_name = project_object.data_db.db_name;
   else data_db_name = 'data-' + project_object._id;
 
+  // TODO understand this - this is creating a connection which requires a token
+  // - what if this token changes due to refreshing tokens in the front end? We
+  // will want couch to respect the token refresh, so we need to ensure that
+  // when tokens are refreshed, the connection information is updated.
   const data_connection_info: ConnectionInfo = {
-    jwt_token: jwt_token,
+    jwt_token: jwt_token.token,
     db_name: data_db_name,
     ...project_object.data_db,
   };

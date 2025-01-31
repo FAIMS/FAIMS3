@@ -40,6 +40,8 @@ import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
 import {Geolocation} from '@capacitor/geolocation';
+import {useAppSelector} from '../../../context/store';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {ImageTileStore} from '../map/tile_source';
 
 interface OverviewMapProps {
@@ -65,6 +67,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
+  const activeUser = useAppSelector(selectActiveUser);
   const [zoomLevel, setZoomLevel] = useState(12); // Default zoom level
   const tileStore = useMemo(() => new ImageTileStore(), []);
 
@@ -92,7 +95,12 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const getFeatures = async () => {
     const f: FeatureProps[] = [];
     if (gisFields.length > 0) {
-      const records = await getMetadataForAllRecords(props.project_id, true);
+      const records = await getMetadataForAllRecords(
+        // TODO what do we do if no active user?
+        activeUser!.parsedToken,
+        props.project_id,
+        true
+      );
       if (records) {
         records.forEach(record => {
           if (record.data) {

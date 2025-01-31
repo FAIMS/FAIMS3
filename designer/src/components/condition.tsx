@@ -61,6 +61,13 @@ const allOperators = new Map([
   ['less', 'Less than'],
   ['less-equal', 'Less than or equal'],
   ['regex', 'Matches regular expression'],
+  ['contains', 'List contains this value'],
+  ['does-not-contain', 'List does not contain this value'],
+  ['contains-regex', 'List contains a value matching this regex'],
+  [
+    'does-not-contain-regex',
+    'List does not contain any value matching this regex',
+  ],
 ]);
 
 const getFieldLabel = (f: FieldType) => {

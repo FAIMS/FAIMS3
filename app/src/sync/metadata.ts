@@ -22,7 +22,7 @@
 
 import {EncodedProjectUIModel, resolve_project_id} from '@faims3/data-model';
 import {getProjectDB} from '.';
-import {getTokenForCluster} from '../users';
+import {getToken} from '../context/functions';
 import {createdListingsInterface} from './state';
 
 export type PropertyMap = {
@@ -46,19 +46,26 @@ type minimalCreatedListing =
  * Fetch project metadata from the server and store it locally for
  * later access.
  *
- * @param lst a createdListing entry (or subset for testing)
+ * @param listing a createdListing entry (or subset for testing)
  * @param project_id short project identifier
  */
 export const fetchProjectMetadata = async (
-  lst: minimalCreatedListing,
+  {listing}: minimalCreatedListing,
   project_id: string
 ) => {
-  const url = `${lst.listing.conductor_url}/api/notebooks/${project_id}`;
-  const jwt_token = await getTokenForCluster(lst.listing.id);
-  const full_project_id = resolve_project_id(lst.listing.id, project_id);
+  const url = `${listing.conductor_url}/api/notebooks/${project_id}`;
+  // In the current auth store, get the token synchronously
+  const serverId = listing.id;
+  const jwt_token = getToken(serverId);
+  if (!jwt_token) {
+    console.error('Could not get token for listing with ID: ', serverId);
+    return;
+  }
+
+  const full_project_id = resolve_project_id(listing.id, project_id);
   const response = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${jwt_token}`,
+      Authorization: `Bearer ${jwt_token.token}`,
     },
   });
   const notebook = await response.json();

@@ -53,6 +53,7 @@ import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
+import {clearReduxAndLocalStorage} from '../../context/store';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -274,12 +275,17 @@ export default function AboutBuild() {
                             variant="contained"
                             disableElevation
                             color={'error'}
-                            onClick={() => {
+                            onClick={async () => {
                               unregisterServiceWorker();
-                              wipe_all_pouch_databases().then(() => {
-                                console.log('User cleaned database');
-                                window.location.reload();
-                              });
+                              wipe_all_pouch_databases()
+                                .then(() => {
+                                  // redux and local storage clear out
+                                  return clearReduxAndLocalStorage();
+                                })
+                                .then(() => {
+                                  console.log('User cleaned database');
+                                  window.location.reload();
+                                });
                             }}
                             startIcon={<StorageIcon />}
                           >
