@@ -27,6 +27,8 @@ const testToken = {
   roles: ['cluster-admin'],
   name: 'Admin User',
   server: 'fake.com',
+  // Five minutes from now
+  exp: Date.now() + 1000 * 60 * 5,
 } satisfies TokenContents;
 
 describe('Check appbarAuth', () => {
@@ -42,7 +44,7 @@ describe('Check appbarAuth', () => {
   it('Check with token', () => {
     render(
       <BrowserRouter>
-        <AppBarAuth token={testToken} />
+        <AppBarAuth />
       </BrowserRouter>
     );
     expect(screen.getByText(testToken.username)).toBeTruthy();

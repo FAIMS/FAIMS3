@@ -1,4 +1,3 @@
-import {ListingsObject} from '@faims3/data-model/src/types';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import InfoIcon from '@mui/icons-material/Info';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -22,22 +21,33 @@ import {
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import {parseToken, setTokenForCluster} from '../../../users';
+import {useNotification} from '../../../context/popup';
 import {useCreateNotebookFromTemplate} from '../../../utils/apiHooks/notebooks';
 import {useGetTemplates} from '../../../utils/apiHooks/templates';
-import {useRefreshToken} from '../../../utils/tokenHooks';
+import {useGetListing} from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
-import {useNotification} from '../../../context/popup';
+import {refreshToken} from '../../../context/slices/authSlice';
 
 export interface NewNotebookForListingProps {
-  listingObject: ListingsObject;
+  serverId: string;
+  username: string;
 }
 const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   // Popup manager
   const popup = useNotification();
 
+  // Get the listing information
+  const listing = useGetListing({serverId: props.serverId});
+
+  // Auth store to force a refresh - note this is an synchronous function which
+  // will a) read state b) run token refresh c) update the state
+  const doRefreshToken = refreshToken;
+
   // Use custom hook to get template list
-  const templates = useGetTemplates({listingId: props.listingObject.id});
+  const templates = useGetTemplates({
+    listingId: props.serverId,
+    username: props.username,
+  });
   // What template has the user selected - if any
   const [selectedTemplate, setSelectedTemplate] = useState<string | undefined>(
     undefined
@@ -46,42 +56,19 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   // What survey name has user inputted, if any
   const [surveyName, setSurveyName] = useState<string | undefined>(undefined);
 
-  // Token refresh mutation using default active username for current listing
-  const refreshTokenMutation = useRefreshToken({
-    listingId: props.listingObject.id,
-  });
-
   // Mutation to create new survey
   const createNotebook = useCreateNotebookFromTemplate({
-    listingId: props.listingObject.id,
+    listingId: props.serverId,
+    username: props.username,
     name: surveyName,
     templateId: selectedTemplate,
     // When we succeed, navigate back to home page
     options: {
       onSuccess: async () => {
-        await refreshTokenMutation
-          .mutateAsync()
-          .then(async t => {
-            // parse the new token
-            const parsedToken = await parseToken(t);
-
-            // and update
-            await setTokenForCluster(
-              t,
-              parsedToken,
-              // use existing refresh token
-              undefined,
-              props.listingObject.id
-            );
-          })
-          .catch(e => {
-            console.error(
-              'Token refresh failed! User may not be able to see new survey.'
-            );
-            console.error(e);
-            return undefined;
-          });
-
+        doRefreshToken({
+          serverId: props.serverId,
+          username: props.username,
+        });
         navigate('/');
         window.location.reload();
       },
@@ -165,7 +152,9 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           component="div"
           sx={{fontWeight: 'bold', fontSize: '18px', padding: theme.spacing(2)}}
         >
-          {props.listingObject.name}
+          {listing.isLoading
+            ? 'Loading ...'
+            : (listing.data?.name ?? 'Error...')}
         </Typography>
       </Box>
       <FormControl

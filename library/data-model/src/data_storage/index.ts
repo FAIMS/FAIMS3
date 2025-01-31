@@ -40,6 +40,7 @@ import {
   RevisionID,
   ProjectRevisionListing,
   RecordRevisionListing,
+  TokenContents,
 } from '../types';
 import {shouldDisplayRecord} from '../index';
 import {
@@ -463,6 +464,7 @@ export async function getPossibleRelatedRecords(
  * @returns an array of record metadata objects (Promise)
  */
 async function filterRecordMetadata(
+  tokenContents: TokenContents,
   project_id: ProjectID,
   record_list: RecordMetadata[],
   filter_deleted: boolean
@@ -471,7 +473,7 @@ async function filterRecordMetadata(
   for (const metadata of record_list) {
     if (
       !(metadata.deleted && filter_deleted) &&
-      (await shouldDisplayRecord(project_id, metadata))
+      (await shouldDisplayRecord(tokenContents, project_id, metadata))
     ) {
       new_record_list.push(metadata);
     }
@@ -492,6 +494,7 @@ function sortByLastUpdated(record_list: RecordMetadata[]): RecordMetadata[] {
 }
 
 export async function getMetadataForSomeRecords(
+  tokenContents: TokenContents,
   project_id: ProjectID,
   record_ids: RecordID[],
   filter_deleted: boolean
@@ -501,6 +504,7 @@ export async function getMetadataForSomeRecords(
       await listRecordMetadata(project_id, record_ids)
     );
     return await filterRecordMetadata(
+      tokenContents,
       project_id,
       sortByLastUpdated(record_list),
       filter_deleted
@@ -513,12 +517,14 @@ export async function getMetadataForSomeRecords(
 }
 
 export async function getMetadataForAllRecords(
+  tokenContents: TokenContents,
   project_id: ProjectID,
   filter_deleted: boolean
 ): Promise<RecordMetadata[]> {
   try {
     const record_list = Object.values(await listRecordMetadata(project_id));
     return await filterRecordMetadata(
+      tokenContents,
       project_id,
       sortByLastUpdated(record_list),
       filter_deleted
@@ -531,6 +537,7 @@ export async function getMetadataForAllRecords(
 }
 
 export async function getRecordsWithRegex(
+  tokenContents: TokenContents,
   project_id: ProjectID,
   regex: string,
   filter_deleted: boolean
@@ -539,7 +546,12 @@ export async function getRecordsWithRegex(
     const record_list = Object.values(
       await getAllRecordsWithRegex(project_id, regex)
     );
-    return await filterRecordMetadata(project_id, record_list, filter_deleted);
+    return await filterRecordMetadata(
+      tokenContents,
+      project_id,
+      record_list,
+      filter_deleted
+    );
   } catch (error) {
     console.debug('Failed to regex search for', project_id, regex);
     logError(error);

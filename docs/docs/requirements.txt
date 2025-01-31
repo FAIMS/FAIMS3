@@ -8,7 +8,7 @@ docutils==0.18.1
 furo==2022.12.7
 idna==3.4
 imagesize==1.4.1
-Jinja2==3.1.2
+Jinja2==3.1.5
 linkify-it-py==2.0.0
 livereload==2.6.3
 markdown-it-py==2.2.0
@@ -36,6 +36,6 @@ sphinxcontrib-jquery==2.0.0
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==1.0.3
 sphinxcontrib-serializinghtml==1.1.5
-tornado==6.2
+tornado==6.4.2
 uc-micro-py==1.0.1
 urllib3==1.26.14

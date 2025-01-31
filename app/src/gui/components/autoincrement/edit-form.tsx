@@ -33,13 +33,13 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {useContext, useState} from 'react';
+import {useState} from 'react';
 
 import {LocalAutoIncrementRange, ProjectID} from '@faims3/data-model';
 import CloseIcon from '@mui/icons-material/Close';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {ActionType} from '../../../context/actions';
-import {store} from '../../../context/store';
+import {addAlert} from '../../../context/slices/syncSlice';
+import {useAppDispatch} from '../../../context/store';
 import {
   createNewAutoincrementRange,
   getLocalAutoincrementRangesForField,
@@ -63,7 +63,7 @@ export const AutoIncrementEditForm = ({
   open,
   handleClose,
 }: Props) => {
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
 
   // useQuery to get the current ranges for the field,
   // we will invalidate the query when we update the ranges
@@ -80,7 +80,6 @@ export const AutoIncrementEditForm = ({
       );
       return ranges;
     },
-    initialData: [],
     enabled: true,
   });
 
@@ -100,21 +99,22 @@ export const AutoIncrementEditForm = ({
       );
       queryClient.invalidateQueries({queryKey: queryKey});
     } catch (err: any) {
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
+      dispatch(
+        addAlert({
           message: err.toString(),
           severity: 'error',
-        },
-      });
+        })
+      );
     }
   };
 
   const updateRange = (index: number) => {
     return (range: LocalAutoIncrementRange) => {
-      const rangesCopy = [...ranges];
-      rangesCopy[index] = range;
-      updateRanges(rangesCopy);
+      if (ranges) {
+        const rangesCopy = [...ranges];
+        rangesCopy[index] = range;
+        updateRanges(rangesCopy);
+      }
     };
   };
 
@@ -207,20 +207,25 @@ type IncremenenterRangeProps = {
  * @param props component props
  */
 const IncrementerRange = (props: IncremenenterRangeProps) => {
-  const [start, setStart] = useState(props.range.start);
-  const [stop, setStop] = useState(props.range.stop);
+  const [start, setStart] = useState<number | string>(props.range.start);
+  const [stop, setStop] = useState<number | string>(props.range.stop);
 
   const handleStartChange = (event: any) => {
+    if (event.target.value === '') {
+      // set start but don't update the range
+      setStart('');
+      return;
+    }
     const newStart = parseInt(event.target.value);
     if (newStart >= 0) {
       setStart(newStart);
       if (newStart >= props.range.stop) {
         // initialise a range of 100 if they enter a start > stop
-        setStop(newStart + 100);
+        setStop(newStart + 99);
         props.updateRange({
           ...props.range,
           start: newStart,
-          stop: newStart + 100,
+          stop: newStart + 99,
         });
       } else {
         props.updateRange({
@@ -232,6 +237,11 @@ const IncrementerRange = (props: IncremenenterRangeProps) => {
   };
 
   const handleStopChange = (event: any) => {
+    if (event.target.value === '') {
+      // set stop but don't update the range
+      setStop('');
+      return;
+    }
     const newStop = parseInt(event.target.value);
     if (newStop > props.range.start) {
       setStop(newStop);

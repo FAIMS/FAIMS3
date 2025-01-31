@@ -25,7 +25,6 @@ import {draft_db} from './draft-storage';
 import {
   directory_db,
   active_db,
-  local_auth_db,
   getLocalStateDB,
   projects_dbs,
   metadata_dbs,
@@ -156,8 +155,6 @@ export async function progressiveSaveFiles(
   if (keepDumping)
     keepDumping = await progressiveDump(getLocalStateDB(), writer(10, 12));
   if (keepDumping)
-    keepDumping = await progressiveDump(local_auth_db, writer(12, 15));
-  if (keepDumping)
     keepDumping = await progressiveDump(draft_db, writer(15, 20));
 
   let start = 20;
@@ -277,7 +274,6 @@ export async function doDumpDownload() {
     'local_state',
     await dumpDatabase(getLocalStateDB())
   );
-  await streamedDumpDownload('local_auth', await dumpDatabase(local_auth_db));
   await streamedDumpDownload('draft', await dumpDatabase(draft_db));
 
   for (const [name, db] of Object.entries(projects_dbs)) {

@@ -38,6 +38,8 @@ import CircleStyle from 'ol/style/Circle';
 import {useCallback, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
+import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useAppSelector} from '../../../context/store';
 import {addCenterControl} from '../../../lib/map/center-control';
 import {
   addCurrentLocationMarker,
@@ -67,6 +69,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
+  const activeUser = useAppSelector(selectActiveUser);
 
   /**
    * Get the names of all GIS fields in this UI Specification
@@ -92,7 +95,12 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const getFeatures = async () => {
     const f: FeatureProps[] = [];
     if (gisFields.length > 0) {
-      const records = await getMetadataForAllRecords(props.project_id, true);
+      const records = await getMetadataForAllRecords(
+        // TODO what do we do if no active user?
+        activeUser!.parsedToken,
+        props.project_id,
+        true
+      );
       if (records) {
         records.forEach(record => {
           if (record.data) {
