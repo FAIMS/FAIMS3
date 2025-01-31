@@ -405,7 +405,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Templated String Field',
       fullWidth: true,
       name: 'templated-field',
-      helperText: 'Human Readable ID',
+      helperText: 'Templated String Field',
       required: true,
       template: ' {{}}',
       InputProps: {

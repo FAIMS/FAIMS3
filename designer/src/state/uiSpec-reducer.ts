@@ -162,21 +162,6 @@ export const uiSpecificationReducer = createSlice({
         newField['component-parameters'].form_id = viewId;
       }
 
-      if (fieldType === 'TemplatedStringField') {
-        // if there is no existing HRID field in this form, then
-        // this field becomes one by getting a name starting 'hrid'
-        let hasHRID = false;
-        for (const fieldName of state.fviews[viewId].fields) {
-          if (fieldName.startsWith('hrid') && fieldName.endsWith(viewId)) {
-            hasHRID = true;
-            break;
-          }
-        }
-        if (!hasHRID) {
-          fieldLabel = 'hrid' + viewId;
-        }
-      }
-
       // add in the meta field
       newField.meta = {
         annotation: {

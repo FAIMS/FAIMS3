@@ -63,7 +63,6 @@ export type ComponentParameters = {
   variant_style?: string;
   html_tag?: string;
   content?: string;
-  hrid?: boolean;
   select?: boolean;
   geoTiff?: string;
   type?: string;

@@ -24,13 +24,6 @@ export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
-  const formHasHRID = useAppSelector(state => {
-    return Object.keys(state.notebook['ui-specification'].fields).some(
-      fieldName => {
-        return fieldName.startsWith('hrid') && fieldName.endsWith(viewId);
-      }
-    );
-  });
   const allFields = useAppSelector(
     state => state.notebook['ui-specification'].fields
   );
@@ -40,10 +33,6 @@ export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
   const [alertMessage, setAlertMessage] = useState('');
 
   const state = field['component-parameters'];
-
-  const isHRID = () => {
-    return fieldName.startsWith('hrid') && fieldName.endsWith(viewId);
-  };
 
   const getFieldLabel = (f: FieldType) => {
     return (
@@ -60,32 +49,9 @@ export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
     };
     newField['component-parameters'].helperText = newState.helperText;
     newField['component-parameters'].template = newState.template;
-    newField['component-parameters'].hrid = newState.hrid;
     dispatch({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},
-    });
-  };
-
-  const setHRID = (newState: boolean) => {
-    let newFieldName = state.InputLabelProps
-      ? state.InputLabelProps.label
-      : fieldName;
-    if (newState) {
-      // need to check whether there is already an HRID field in this form
-      // if so we show an alert
-      if (formHasHRID) {
-        setAlertMessage(
-          'There is already an HRID field in this form.  You can only have one HRID field per form.'
-        );
-        return;
-      } else {
-        newFieldName = 'hrid' + viewId;
-      }
-    }
-    dispatch({
-      type: 'ui-specification/fieldRenamed',
-      payload: {viewId, fieldName, newFieldName},
     });
   };
 
@@ -141,22 +107,6 @@ export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
               helperText="Help text shown along with the field (like this text)."
               onChange={e => updateProperty('helperText', e.target.value)}
             />
-          </Grid>
-          <Grid item sm={6} xs={12} sx={{mx: 1.5, my: 2}}>
-            <FormControlLabel
-              required
-              control={
-                <Checkbox
-                  checked={isHRID()}
-                  onChange={e => setHRID(e.target.checked)}
-                />
-              }
-              label="Use as Human Readable ID"
-            />
-
-            <Typography variant="body2" color="text.secondary">
-              HRID is the primary identifier for the record.
-            </Typography>
           </Grid>
         </Card>
 
