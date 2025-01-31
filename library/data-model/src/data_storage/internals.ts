@@ -193,6 +193,7 @@ export async function getLatestRevision(
   }
 }
 
+// TODO update this
 export async function getHRID(
   project_id: ProjectID,
   revision: Revision

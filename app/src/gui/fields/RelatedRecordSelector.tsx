@@ -30,6 +30,7 @@ import {
   RecordReference,
   getPossibleRelatedRecords,
   RecordMetadata,
+  ProjectUIModel,
 } from '@faims3/data-model';
 import {useLocation} from 'react-router-dom';
 import {Grid, Typography} from '@mui/material';

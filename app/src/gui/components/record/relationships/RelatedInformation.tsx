@@ -31,6 +31,10 @@ import {
   ProjectID,
   RecordMetadata,
   TokenContents,
+  getHridFieldNameForViewset,
+  getIdsByFieldName,
+  getHridFieldMap,
+  getFieldToIdsMap,
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
@@ -436,7 +440,17 @@ async function get_field_RelatedFields(
   relation_type: string,
   current_revision_id: string
 ): Promise<Array<RecordLinkProps>> {
+  // hrid field map
+  const hridFieldMap = getHridFieldMap(ui_specification);
+
   for (const index in fields) {
+    // Get the view and viewset ID
+    const {viewSetId} = getIdsByFieldName({
+      uiSpecification: ui_specification,
+      fieldName: index,
+    });
+    const hridFieldName = hridFieldMap[viewSetId];
+
     const field = fields[index]['field'];
     const child_record = fields[index]['value'];
 
@@ -449,7 +463,8 @@ async function get_field_RelatedFields(
       if (latest_record !== null && revision_id !== undefined) {
         child_record['record_label'] = getHRIDValue(
           child_record['record_id'],
-          latest_record.data
+          latest_record.data,
+          hridFieldName
         );
 
         const linked_vocab =
@@ -517,6 +532,10 @@ export async function addLinkedRecord(
   child_hrid: string,
   current_revision_id: string
 ): Promise<Array<RecordLinkProps>> {
+  // get a map of field names to identity in the UI spec
+  const fieldToIdMap = getFieldToIdsMap(ui_specification);
+  const viewsetToHridFieldMap = getHridFieldMap(ui_specification);
+
   let parent_links: Array<LinkedRelation> = [];
   //add linked from parent
   if (
@@ -555,7 +574,26 @@ export async function addLinkedRecord(
           ? parent_link['relation_type_vocabPair']
           : ['is related to', 'is related to'];
       let type = latest_record?.type;
-      const hrid = getHRIDValue(parent_link.record_id, latest_record?.data);
+
+      // Here we reverse engineer the correct hrid field to look for since we
+      // need to know the viewset ID that a field pertains to in order to get
+      // the correct hrid field name
+      const relevantFormData = latest_record?.data;
+      const fieldNames = Array.from(Object.keys(relevantFormData ?? {})) ?? [];
+      const relevantViewset =
+        fieldNames.length > 0
+          ? fieldToIdMap[fieldNames[0]].viewSetId
+          : undefined;
+      let hrid;
+      if (!relevantViewset) {
+        hrid = parent_link.record_id;
+      } else {
+        hrid = getHRIDValue(
+          parent_link.record_id,
+          relevantFormData,
+          viewsetToHridFieldMap[relevantViewset]
+        );
+      }
 
       if (type !== undefined) type = ui_specification.viewsets[type]['label'];
       const {section, section_label} = get_section(
@@ -652,6 +690,10 @@ export async function getParentPersistenceData(
   parent: Relationship | null,
   record_id: string
 ): Promise<ParentLinkProps[]> {
+  // get a map of field names to identity in the UI spec
+  const fieldToIdMap = getFieldToIdsMap(ui_specification);
+  const viewsetToHridFieldMap = getHridFieldMap(ui_specification);
+
   let parentRecords: ParentLinkProps[] = [];
   if (parent !== null && parent.parent !== undefined) {
     const {latest_record, revision_id} = await getRecordInformation({
@@ -674,7 +716,25 @@ export async function getParentPersistenceData(
         )
       );
 
-      const parent_hrid = getHRIDValue(record_id, latest_record?.data);
+      // Here we reverse engineer the correct hrid field to look for since we
+      // need to know the viewset ID that a field pertains to in order to get
+      // the correct hrid field name
+      const relevantFormData = latest_record?.data;
+      const fieldNames = Array.from(Object.keys(relevantFormData ?? {})) ?? [];
+      const relevantViewset =
+        fieldNames.length > 0
+          ? fieldToIdMap[fieldNames[0]].viewSetId
+          : undefined;
+      let hrid;
+      if (!relevantViewset) {
+        hrid = record_id;
+      } else {
+        hrid = getHRIDValue(
+          record_id,
+          relevantFormData,
+          viewsetToHridFieldMap[relevantViewset]
+        );
+      }
 
       if (
         latest_record !== null &&
@@ -687,7 +747,7 @@ export async function getParentPersistenceData(
       parentRecords = [
         {
           record_id: parent.parent.record_id,
-          hrid: parent_hrid,
+          hrid: hrid,
           lastUpdatedBy: latest_record?.updated_by ?? '',
           section: '',
           field_id: parent.parent.field_id,
@@ -708,11 +768,28 @@ export async function getParentPersistenceData(
   return parentRecords;
 }
 
+/**
+ * Returns the value to be used as the HRID - either the value of a specified
+ * field, OR the record_id.
+ * @param record_id The record ID which is a fallback HRID
+ * @param values The values in the current response
+ * @param hridFieldName The specific HRID field name if available
+ * @returns The value to be used as the HRID
+ */
 function getHRIDValue(
   record_id: string,
-  values: {[field_name: string]: any} | undefined
+  values: {[field_name: string]: any} | undefined,
+  // if we know a specific hridFieldName - then use this
+  hridFieldName: string | undefined
 ) {
   if (values === undefined) return record_id;
+
+  // See if we can use the specified hrid field name
+  if (hridFieldName !== undefined && hridFieldName !== '') {
+    if (values[hridFieldName] !== undefined) {
+      return values[hridFieldName];
+    }
+  }
 
   const possibleHRIDFields = Object.getOwnPropertyNames(values).filter(
     (f: string) => f.startsWith('hrid')
@@ -731,6 +808,10 @@ export async function getDetailRelatedInformation(
   record_id: string,
   current_revision_id: string
 ): Promise<RecordLinkProps[]> {
+  // get a map of field names to identity in the UI spec
+  const fieldToIdMap = getFieldToIdsMap(ui_specification);
+  const viewsetToHridFieldMap = getHridFieldMap(ui_specification);
+
   let record_to_field_links: RecordLinkProps[] = [];
   // get fields that are related field
   const {fields_child, fields_linked} = get_related_valued_fields(
@@ -739,7 +820,23 @@ export async function getDetailRelatedInformation(
     values
   );
 
-  const hrid = getHRIDValue(record_id, values);
+  // Here we reverse engineer the correct hrid field to look for since we
+  // need to know the viewset ID that a field pertains to in order to get
+  // the correct hrid field name
+  const relevantFormData = values;
+  const fieldNames = Array.from(Object.keys(relevantFormData ?? {})) ?? [];
+  const relevantViewset =
+    fieldNames.length > 0 ? fieldToIdMap[fieldNames[0]].viewSetId : undefined;
+  let hrid;
+  if (!relevantViewset) {
+    hrid = record_id;
+  } else {
+    hrid = getHRIDValue(
+      record_id,
+      relevantFormData,
+      viewsetToHridFieldMap[relevantViewset]
+    );
+  }
 
   if (record_to_field_links !== null) {
     // get field child records
@@ -851,13 +948,7 @@ export async function removeRecordLink(
  *
  * @param child_record - the record to be linked to
  * @param parent - a LinkedRelation object including the record being linked from and the link type
- * @param field_label - the field in the parent that will hold this relation
- * @param related_type_label - the name of the type of child record
- * @param form_type - the type of the parent record
- * @param hrid - hrid of parent record
- * @param form_revision_id - revision id of parent from the form
  * @param relation_type - 'Child' or 'Linked'
- * @param relation_type_vocabPair - relation descriptors, eg. ['parent', 'child']
  * @returns the new child record object
  */
 export async function addRecordLink(
@@ -901,10 +992,13 @@ export async function addRecordLink(
     // for the purposes of the caller until such time as we rationalise the Record types
     child_record_meta = latest_record as unknown as RecordMetadata;
     // it's missing the HRID so grab it here
-    child_record_meta.hrid = getHRIDValue(
-      child_record_meta.record_id,
-      child_record_meta.data
-    );
+    // TODO update this
+    // Just use record id here and see what happens ¯\_(ツ)_/¯
+    child_record_meta.hrid = child_record_meta.record_id;
+    //child_record_meta.hrid = getHRIDValue(
+    //  child_record_meta.record_id,
+    //  child_record_meta.data
+    //);
   } catch (error) {
     logError(error);
   }

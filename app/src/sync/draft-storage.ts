@@ -273,6 +273,7 @@ export async function listDraftMetadata(
         existing: record.existing,
         updated: new Date(record.updated),
         type: record.type,
+    // TODO update this
         hrid: getDraftHRID(record) ?? record._id,
         record_id: record.record_id,
       };
@@ -284,6 +285,7 @@ export async function listDraftMetadata(
   }
 }
 
+    // TODO update this
 function getDraftHRID(record: EncodedDraft): string | null {
   let hrid_name: string | null = null;
   for (const possible_name of Object.keys(record.fields)) {

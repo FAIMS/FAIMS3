@@ -170,6 +170,7 @@ export default function Record() {
           setRevisions(all_revisions);
         })
         .catch(logError);
+    // TODO update this
       getHRIDforRecordID(project_id!, record_id!).then(hrid => {
         setHrid(hrid);
         setBreadcrumbs([
