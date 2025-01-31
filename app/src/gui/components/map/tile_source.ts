@@ -40,17 +40,131 @@ export interface TileDBReport {
   size: number;
   average: number;
 }
+
+interface StoredTile {
+  x: number;
+  y: number;
+  z: number;
+  data: Blob;
+}
+
+interface TileSetTile {
+  setName: string;
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface StoredTileSet {
+  setName: string;
+  extent: number[];
+}
+
+type KeyType = string | string[] | null | undefined;
+class IDB<Type> {
+  keyPath: KeyType;
+  db: any;
+  dbName: string;
+
+  constructor(db: any, dbName: string, keyPath: KeyType) {
+    this.keyPath = keyPath;
+    this.db = db;
+    this.dbName = dbName;
+    this.initDB();
+  }
+
+  private initDB() {
+    if (!this.db.objectStoreNames.contains(this.dbName)) {
+      this.db.createObjectStore(this.dbName, {
+        keyPath: this.keyPath,
+      });
+    }
+  }
+
+  async get(query: IDBKeyRange | IDBValidKey): Promise<Type | undefined> {
+    return new Promise<Type | undefined>((resolve, reject) => {
+      if (!this.db) {
+        return;
+      }
+      const transaction = this.db.transaction(this.dbName, 'readonly');
+      const store = transaction.objectStore(this.dbName);
+      const request = store.get(query);
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getAll(): Promise<Type[] | undefined> {
+    return new Promise<Type[] | undefined>((resolve, reject) => {
+      if (!this.db) {
+        return;
+      }
+      const transaction = this.db.transaction(this.dbName, 'readonly');
+      const store = transaction.objectStore(this.dbName);
+      const request = store.getAll();
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async put(object: Type) {
+    return new Promise<IDBValidKey | undefined>((resolve, reject) => {
+      if (!this.db) {
+        return;
+      }
+      const transaction = this.db.transaction(this.dbName, 'readwrite');
+      const store = transaction.objectStore(this.dbName);
+      const request = store.put(object);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async clear() {
+    if (this.db) {
+      return new Promise<void>((resolve, reject) => {
+        const transaction = this.db.transaction(this.dbName, 'readwrite');
+        const store = transaction.objectStore(this.dbName);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        store.clear();
+      });
+    }
+  }
+}
+
 class TileStoreBase {
   static DB_NAME = 'tiles_db';
-  static STORE_NAME = 'tiles';
   static db: IDBDatabase;
+  tileDB!: IDB<StoredTile>;
+  tileSetDB!: IDB<StoredTileSet>;
+  tileTileDB!: IDB<TileSetTile>;
 
   constructor() {
-    if (!TileStoreBase.db) {
-      this.initDB();
-    }
-    console.log('initialized base tile source');
-    this.reportDBSize();
+    this.initDB().then(() => {
+
+      this.tileDB = new IDB<StoredTile>(TileStoreBase.db, 'tiles', [
+        'z',
+        'x',
+        'y',
+      ]);
+      this.tileTileDB = new IDB<TileSetTile>(TileStoreBase.db, 'tileTileSets', [
+        'setName',
+        'x',
+        'y',
+        'z',
+      ]);
+      this.tileSetDB = new IDB<StoredTileSet>(TileStoreBase.db, 'tileSets', [
+        'setName',
+      ]);
+
+      console.log('initialized base tile source');
+      this.reportDBSize();
+    });
   }
 
   private initDB(): Promise<void> {
@@ -60,13 +174,6 @@ class TileStoreBase {
       request.onsuccess = () => {
         TileStoreBase.db = request.result;
         resolve();
-      };
-
-      request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(TileStoreBase.STORE_NAME)) {
-          db.createObjectStore(TileStoreBase.STORE_NAME);
-        }
       };
     });
   }
@@ -78,120 +185,107 @@ class TileStoreBase {
 
   async clearCache() {
     console.log('clearing tile cache');
-    if (TileStoreBase.db) {
-      return new Promise<void>((resolve, reject) => {
-        const db = TileStoreBase.db;
-        const transaction = db.transaction(
-          TileStoreBase.STORE_NAME,
-          'readwrite'
-        );
-        const store = transaction.objectStore(TileStoreBase.STORE_NAME);
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error);
-        store.clear();
-      });
-    }
   }
 
   async reportDBSize() {
-    return new Promise<TileDBReport>((resolve, reject) => {
-      if (!TileStoreBase.db) {
-        return;
-      }
-      const transaction = TileStoreBase.db.transaction(
-        TileStoreBase.STORE_NAME,
-        'readonly'
-      );
-      const store = transaction.objectStore(TileStoreBase.STORE_NAME);
-      const request = store.getAll();
-      let count = 0;
-
-      request.onsuccess = () => {
-        const tiles = request.result;
-        count = tiles.length;
-        // const totalSize = tiles.reduce((acc, tile) => acc + tile.data.size, 0);
-        const sizeMap = tiles.reduce(
-          (sMap, tile) =>
-            sMap.set(tile.set, (sMap.get(tile.set) | 0) + tile.data.size),
-          new Map<string, number>()
-        );
-        console.log('size map', sizeMap);
-
-        sizeMap.set(
-          'total',
-          Array.from(sizeMap.values()).reduce(
-            (acc: unknown, size: unknown) => (acc as number) + (size as number),
-            0
-          ) as number
-        );
-
-        const average_size = sizeMap.get('total') / count;
-
-        resolve({count: tiles.length, size: sizeMap, average: average_size});
-      };
-      request.onerror = () => reject(request.error);
-    });
+    // const tiles = await this.tileDB.getAll();
+    // if (tiles) {
+    //   const count = tiles.length;
+    //   // const totalSize = tiles.reduce((acc, tile) => acc + tile.data.size, 0);
+    //   const sizeMap = tiles.reduce(
+    //     (sMap, tile) => {
+    //         const prev = sMap.get(tile.setName) || 0;
+    //         sMap.set(tile.setName, prev + tile.data.size);
+    //     },
+    //     new Map<string, number>()
+    //   );
+    //   console.log('size map', sizeMap);
+    //   sizeMap.set(
+    //     'total',
+    //     Array.from(sizeMap.values()).reduce(
+    //       (acc: unknown, size: unknown) => (acc as number) + (size as number),
+    //       0
+    //     ) as number
+    //   );
+    //   const average_size = sizeMap.get('total') / count;
+    //   return {count: tiles.length, size: sizeMap, average: average_size};
+    // } else {
+    //   return {count: 0, size: {}, average: 0};
+    // }
   }
 
-  async store(x: number, y: number, z: number, data: Blob, set = 'default') {
-    return new Promise<void>((resolve, reject) => {
-      const transaction = TileStoreBase.db.transaction(
-        TileStoreBase.STORE_NAME,
-        'readwrite'
-      );
-      const store = transaction.objectStore(TileStoreBase.STORE_NAME);
-      const request = store.put({set: set, data: data}, `${z}_${x}_${y}`);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+  /**
+   * Store a tile in the database
+   * @returns the key of the tile in the database
+   */
+  async store(x: number, y: number, z: number, data: Blob) {
+    const tileKey = await this.tileDB.put({x, y, z, data});
+    return tileKey;
   }
 
   async get(x: number, y: number, z: number): Promise<Blob | null> {
-    return new Promise((resolve, reject) => {
-      const transaction = TileStoreBase.db.transaction(
-        TileStoreBase.STORE_NAME,
-        'readonly'
-      );
-      const store = transaction.objectStore(TileStoreBase.STORE_NAME);
-      const request = store.get(`${z}_${x}_${y}`);
-
-      request.onsuccess = () => {
-        // request.result ? console.log('hit') : console.log('miss');
-        resolve(request.result ? request.result.data : null);
-      };
-      request.onerror = () => reject(request.error);
-    });
+    const tile = await this.tileDB.get([z, x, y]);
+    if (tile) {
+      return tile.data;
+    } else {
+      return null;
+    }
   }
 
-  async getTile(
+  async getTileBlob(
     x: number,
     y: number,
-    z: number,
-    setName = 'default',
-    cache = false
-  ): Promise<string | null> {
-    let image = await this.get(x, y, z);
-    if (!image && navigator.onLine) {
-      // console.log('fetching tile', z, x, y);
+    z: number
+  ): Promise<Blob | undefined> {
+    const image = await this.tileDB.get([x, y, z]);
+    if (image) return image.data;
+    else if (navigator.onLine) {
       const url = TILE_URL_MAP[MAP_SOURCE].replace('{z}', z.toString())
         .replace('{x}', x.toString())
         .replace('{y}', y.toString())
         .replace('{key}', MAP_SOURCE_KEY);
       const response = await fetch(url);
-      image = await response.blob();
-      // cache the image if we are told to
-      if (cache) await this.store(x, y, z, image, setName);
-    } else if (!image) {
-      return null;
-    }
+      return await response.blob();
+    } else return undefined;
+  }
+
+  async getTileAsDataURL(
+    x: number,
+    y: number,
+    z: number
+  ): Promise<string | null> {
+    const image = await this.getTileBlob(x, y, z);
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        resolve(reader.result as string);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(image);
+      if (!image) {
+        resolve(null);
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(image);
+      }
     });
+  }
+
+  /**
+   * @param {number} z The tile z coordinate.
+   * @param {number} x The tile x coordinate.
+   * @param {number} y The tile y coordinate.
+   * @param {LoaderOptions} options The loader options.
+   * @return {Promise<HTMLImageElement>} Resolves with a loaded image.
+   */
+  async tileLoader(
+    z: number,
+    x: number,
+    y: number,
+    options: LoaderOptions
+  ): Promise<HTMLImageElement> {
+    const image = new Image();
+    image.crossOrigin = options.crossOrigin ?? null;
+    image.src = (await this.getTileAsDataURL(x, y, z)) || '';
+    return image;
   }
 
   /* estimateSizeForRegion
@@ -208,8 +302,8 @@ class TileStoreBase {
   ) {
     const tileGrid = this.getTileGrid();
 
-    const report = await this.reportDBSize();
-    const average_size = report.average || 20;
+    //    const report = await this.reportDBSize();
+    const average_size = 20;
 
     const tileSet = new Set<string>();
     for (let zoom = minZoom; zoom <= maxZoom; zoom += 2) {
@@ -256,9 +350,15 @@ class TileStoreBase {
     }
     console.log('found', tileCoords.length, 'tiles');
 
+    const tileKeys: IDBValidKey[] = [];
     for (const tileCoord of tileCoords) {
       const [z, x, y] = tileCoord;
-      await this.getTile(x, y, z, setName, true);
+      const tileBlob = await this.getTileBlob(x, y, z);
+      if (tileBlob) {
+        const tileKey = await this.store(x, y, z, tileBlob);
+        console.log('stored tile', tileKey);
+        if (tileKey) tileKeys.push(tileKey);
+      }
     }
     console.log('done');
   }
@@ -288,25 +388,6 @@ export class ImageTileStore extends TileStoreBase {
 
   getAttribution() {
     return this.source.getAttributions();
-  }
-
-  /**
-   * @param {number} z The tile z coordinate.
-   * @param {number} x The tile x coordinate.
-   * @param {number} y The tile y coordinate.
-   * @param {LoaderOptions} options The loader options.
-   * @return {Promise<HTMLImageElement>} Resolves with a loaded image.
-   */
-  async tileLoader(
-    z: number,
-    x: number,
-    y: number,
-    options: LoaderOptions
-  ): Promise<HTMLImageElement> {
-    const image = new Image();
-    image.crossOrigin = options.crossOrigin ?? null;
-    image.src = (await this.getTile(x, y, z)) || '';
-    return image;
   }
 }
 
