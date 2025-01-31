@@ -3,11 +3,7 @@ import {FieldProps} from 'formik';
 import TextField from '@mui/material/TextField';
 import FieldWrapper from './fieldWrapper';
 
-const FAIMSNumberField: React.FC<FieldProps & any> = ({
-  field,
-  form,
-  ...props
-}) => {
+const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
   const {label, helperText, required, min, max, step} = props;
   const error = form.touched[field.name] && Boolean(form.errors[field.name]);
   const errorMessage = error ? String(form.errors[field.name]) : helperText;
@@ -35,4 +31,4 @@ const FAIMSNumberField: React.FC<FieldProps & any> = ({
   );
 };
 
-export default FAIMSNumberField;
+export default NumberField;

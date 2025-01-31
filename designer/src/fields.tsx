@@ -467,7 +467,6 @@ const fields: {[key: string]: FieldType} = {
       label: 'Number Input',
       fullWidth: true,
       helperText: 'Enter a valid number',
-      variant: 'outlined',
       required: false,
       InputProps: {
         type: 'number',
