@@ -281,7 +281,7 @@ export const FormEditor = ({
   return (
     <Grid container spacing={2} pt={3}>
       <Grid container item xs={12} spacing={1.75}>
-        <Grid item xs={12} sm={2}>
+        <Grid item xs={12} sm={2.8}>
           <Button
             variant="text"
             color="error"
@@ -318,7 +318,7 @@ export const FormEditor = ({
           </Dialog>
         </Grid>
 
-        <Grid item xs={12} sm={3}>
+        <Grid item xs={12} sm={2.825}>
           <Button
             variant="text"
             size="medium"
@@ -370,7 +370,7 @@ export const FormEditor = ({
         </Grid>
 
         {moveButtonsDisabled ? (
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={2.5}>
             <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
               <span>
                 <IconButton disabled={true} aria-label="left" size="medium">
@@ -383,7 +383,7 @@ export const FormEditor = ({
             </Tooltip>
           </Grid>
         ) : (
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={2.5}>
             <Tooltip title="Move form left">
               <span>
                 <IconButton
@@ -413,7 +413,7 @@ export const FormEditor = ({
           </Grid>
         )}
 
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3.5}>
           <FormControlLabel
             control={
               <Checkbox

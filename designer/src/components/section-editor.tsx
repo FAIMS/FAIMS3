@@ -25,6 +25,7 @@ import {
   Alert,
 } from '@mui/material';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
@@ -122,7 +123,7 @@ export const SectionEditor = ({
   return (
     <>
       <Grid container spacing={1.75} mb={2}>
-        <Grid item xs={12} sm={3}>
+        <Grid item xs={12} sm={1.9}>
           <Button
             variant="text"
             color="error"
@@ -148,7 +149,32 @@ export const SectionEditor = ({
           </Dialog>
         </Grid>
 
-        <Grid item xs={12} sm={2}>
+        <Grid item xs={12} sm={1.9}>
+          <Button
+            variant="text"
+            size="small"
+            startIcon={<MoveRoundedIcon />}
+            onClick={() => setOpen(true)}
+          >
+            Move section
+          </Button>
+          <Dialog
+            open={open}
+            onClose={handleClose}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <DialogTitle id="alert-dialog-title">
+              Are you sure you want to move this section?
+            </DialogTitle>
+            <DialogActions>
+              <Button onClick={deleteSection}>Yes</Button>
+              <Button onClick={handleClose}>No</Button>
+            </DialogActions>
+          </Dialog>
+        </Grid>
+
+        <Grid item xs={12} sm={1.9}>
           <Button
             variant="text"
             size="small"
@@ -199,7 +225,7 @@ export const SectionEditor = ({
           )}
         </Grid>
 
-        <Grid item xs={12} sm={2}>
+        <Grid item xs={12} sm={1.5}>
           <Tooltip title="Move section left">
             <span>
               <IconButton
@@ -230,7 +256,7 @@ export const SectionEditor = ({
           </Tooltip>
         </Grid>
 
-        <Grid item xs={12} sm={2}>
+        <Grid item xs={12} sm={2.5}>
           <Button
             variant="text"
             size="small"
@@ -287,7 +313,7 @@ export const SectionEditor = ({
           {addAlertMessage && <Alert severity="error">{addAlertMessage}</Alert>}
         </Grid>
 
-        <Grid item xs={12} sm={3}>
+        <Grid item xs={12} sm={2}>
           <ConditionModal
             label={fView.condition ? 'Update Condition' : 'Add Condition'}
             initial={fView.condition}
