@@ -15,7 +15,7 @@
  */
 
 import {ReactNode} from 'react';
-import {TextField as MuiTextField, OutlinedInputProps} from '@mui/material';
+import {TextField as MuiTextField} from '@mui/material';
 import {FieldProps} from 'formik';
 import FieldWrapper from './fieldWrapper';
 
@@ -27,14 +27,12 @@ import FieldWrapper from './fieldWrapper';
  * @property {ReactNode} [helperText] - Helptext for user (subheading).
  * @property {boolean} [required] - Indicates if the field is mandatory.
  * @property {boolean} [fullWidth] - Determines whether the field spans full width.
- * @property {Partial<OutlinedInputProps>} [InputProps] - Additional input properties (e.g., type, margin).
  */
 interface Props {
   label?: ReactNode;
   helperText?: ReactNode;
   required?: boolean;
   fullWidth?: boolean;
-  InputProps?: Partial<OutlinedInputProps>;
 }
 
 /**
@@ -64,21 +62,9 @@ export const FAIMSTextField = (props: FieldProps & Props) => {
         variant="outlined"
         fullWidth={props.fullWidth ?? true}
         required={props.required}
-        type={props.InputProps?.type ?? 'text'}
-        InputProps={{
-          ...(props.InputProps ?? {}), // checking this
-          margin: (props.InputProps?.margin as 'dense' | 'none') || 'none',
-        }}
         value={props.field.value ?? ''} //  no undefined values
         onChange={e => {
-          let newValue: any = e.target.value;
-
-          // handling numeric c values
-          if (props.InputProps?.type === 'number') {
-            newValue =
-              e.target.value.trim() === '' ? null : Number(e.target.value);
-          }
-
+          const newValue = e.target.value.trim() === '' ? '' : e.target.value;
           props.form.setFieldValue(props.field.name, newValue);
         }}
         error={Boolean(hasError)}
