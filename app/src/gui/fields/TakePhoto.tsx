@@ -18,21 +18,21 @@
  */
 
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
-import {Capacitor} from '@capacitor/core';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import {Capacitor} from '@capacitor/core';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
-import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
 import Button from '@mui/material/Button';
+import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {FieldProps} from 'formik';
 import React from 'react';
+import * as ROUTES from '../../constants/routes';
 import {useNavigate} from 'react-router';
 import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 import FieldWrapper from './fieldWrapper';
@@ -206,7 +206,6 @@ const ImageGallery = ({
             </Paper>
           </ImageListItem>
         )}
-
         {/* Image Gallery - Reversed order for newest first */}
         {[...images].reverse().map((image: any, index: number) =>
           image['attachment_id'] === undefined ? (
@@ -361,13 +360,12 @@ export const TakePhoto: React.FC<
   const projectId = props.form.values['_project_id'];
 
   return (
-    <Box sx={{width: '100%'}}>
-      {/* Title and helper text section */}
-      <FieldWrapper
-        heading={props.label}
-        subheading={props.helperText || props.helpertext}
-        required={props.required}
-      >
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText || props.helpertext}
+      required={props.required}
+    >
+      <Box sx={{width: '100%'}}>
         {/* Download Banner */}
         {hasUndownloaded && (
           <Alert severity="info" sx={{mb: 2}}>
@@ -442,8 +440,8 @@ export const TakePhoto: React.FC<
           path={photoPath}
           isSyncing={props.issyncing}
         />
-      </FieldWrapper>
-    </Box>
+      </Box>
+    </FieldWrapper>
   );
 };
 
