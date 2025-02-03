@@ -38,12 +38,14 @@ export const saveState = (state: AppState) => {
 };
 
 export const downloadNotebook = (notebook: Notebook) => {
+  const exportNotebook = JSON.parse(JSON.stringify(notebook));
+
   const element = document.createElement('a');
-  const file = new Blob([JSON.stringify(notebook, null, 2)], {
+  const file = new Blob([JSON.stringify(exportNotebook, null, 2)], {
     type: 'application/json',
   });
   element.href = URL.createObjectURL(file);
-  const name = slugify(notebook.metadata.name as string);
+  const name = slugify(exportNotebook.metadata.name as string);
   element.download = `${name}.json`;
   document.body.appendChild(element);
   element.click();

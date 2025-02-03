@@ -47,7 +47,16 @@ import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
-import {InitialiseGate, StateProvider} from './context/store';
+import {NotificationProvider} from './context/popup';
+import {TestComponent} from './Test';
+
+// type AppProps = {};
+
+// type AppState = {
+//   projects: ProjectsList;
+//   global_error: null | {};
+//   token: boolean;
+// };
 
 // Setup react query
 const queryClient = new QueryClient({
@@ -80,50 +89,50 @@ const queryClient = new QueryClient({
 
 export default function App() {
   return (
-    <StateProvider>
-      <InitialiseGate>
-        <NotificationProvider>
-          <ProjectsProvider>
-            <QueryClientProvider client={queryClient}>
-              <StyledEngineProvider injectFirst>
-                <ThemeProvider theme={theme}>
-                  <Router>
-                    <AppUrlListener></AppUrlListener>
-                    <MainLayout>
-                      <Routes>
-                        <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
-                        <Route
-                          path={ROUTES.AUTH_RETURN}
-                          element={<AuthReturn />}
-                        />
-                        <Route
-                          path={ROUTES.INDEX}
-                          element={
-                            <TolerantPrivateRoute>
-                              <Workspace />
-                            </TolerantPrivateRoute>
-                          }
-                        />
-                        <Route
-                          path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
-                          element={
-                            <TolerantPrivateRoute>
-                              <Notebook />
-                            </TolerantPrivateRoute>
-                          }
-                        />
-                        <Route
-                          path={ROUTES.CREATE_NEW_SURVEY}
-                          element={
-                            // Online only and authenticated
-                            <OnlineOnlyRoute>
-                              <ActivePrivateRoute>
-                                <CreateNewSurvey />
-                              </ActivePrivateRoute>
-                            </OnlineOnlyRoute>
-                          }
-                        />
-                        {/* Draft creation happens by redirecting to a fresh minted UUID
+    <NotificationProvider>
+      <StateProvider>
+        <ProjectsProvider>
+          <QueryClientProvider client={queryClient}>
+            <StyledEngineProvider injectFirst>
+              <ThemeProvider theme={theme}>
+                <Router>
+                  <AppUrlListener></AppUrlListener>
+                  <MainLayout>
+                    <Routes>
+                      <Route
+                        path={ROUTES.USER_ACTIVE_TESTR}
+                        element={<TestComponent />}
+                      />
+                      <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
+                      <Route
+                        path={ROUTES.AUTH_RETURN}
+                        element={<AuthReturn />}
+                      />
+                      <Route
+                        path={ROUTES.INDEX}
+                        element={
+                          <PrivateRoute>
+                            <Workspace />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
+                        element={
+                          <PrivateRoute>
+                            <Notebook />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path={ROUTES.CREATE_NEW_SURVEY}
+                        element={
+                          <PrivateRoute>
+                            <CreateNewSurvey />
+                          </PrivateRoute>
+                        }
+                      />
+                      {/* Draft creation happens by redirecting to a fresh minted UUID
                   This is to keep it stable until the user navigates away. So the
                   draft_id is optional, and when RecordCreate is instantiated
                   without one, it immediately mints a UUID and redirects to it */}

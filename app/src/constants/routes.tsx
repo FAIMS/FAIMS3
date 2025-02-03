@@ -28,7 +28,6 @@ export const AUTH_RETURN = '/auth-return/';
 export const NOT_FOUND = '/not-found';
 
 export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${NOTEBOOK_NAME}s/`;
-export const INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q = 'tab';
 export const NOTEBOOK_LIST_ROUTE = '/';
 
 export const RECORD_LIST = '/records';

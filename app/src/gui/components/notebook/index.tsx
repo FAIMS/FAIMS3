@@ -1,58 +1,46 @@
-import {ProjectUIModel, ProjectUIViewsets} from '@faims3/data-model';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+import React, {useEffect, useState} from 'react';
 import {
+  Tabs,
+  Tab,
+  Typography,
+  Box,
+  Paper,
+  AppBar,
   Alert,
   AlertTitle,
-  AppBar,
-  Box,
   Button,
   Grid,
-  Paper,
-  Tab,
+  TableContainer,
   Table,
   TableBody,
-  TableCell,
-  TableContainer,
   TableRow,
-  Tabs,
-  Typography,
+  TableCell,
 } from '@mui/material';
-import {useTheme} from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import {useQuery} from '@tanstack/react-query';
-import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
+import {ProjectUIViewsets} from '@faims3/data-model';
+import {getUiSpecForProject} from '../../../uiSpecification';
+import {ProjectUIModel} from '@faims3/data-model';
+import DraftsTable from './draft_table';
+import {RecordsBrowseTable} from './record_table';
+import MetadataRenderer from '../metadataRenderer';
+import AddRecordButtons from './add_record_by_type';
+import NotebookSettings from './settings';
+import {useTheme} from '@mui/material/styles';
+import DraftTabBadge from './draft_tab_badge';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import CircularLoading from '../ui/circular_loading';
+import * as ROUTES from '../../../constants/routes';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import {
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
   SHOW_RECORD_SUMMARY_COUNTS,
 } from '../../../buildconfig';
-import * as ROUTES from '../../../constants/routes';
+import {useQuery} from '@tanstack/react-query';
 import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
-import {getUiSpecForProject} from '../../../uiSpecification';
-import {useQueryParams} from '../../../utils/customHooks';
-import MetadataRenderer from '../metadataRenderer';
-import CircularLoading from '../ui/circular_loading';
-import AddRecordButtons from './add_record_by_type';
-import DraftTabBadge from './draft_tab_badge';
-import DraftsTable from './draft_table';
-import {OverviewMap} from './overview_map';
 import RangeHeader from './range_header';
-import {RecordsBrowseTable} from './record_table';
-import NotebookSettings from './settings';
-
-// Define how tabs appear in the query string arguments, providing a two way map
-type TabIndex = 'records' | 'details' | 'settings' | 'map';
-const TAB_TO_INDEX = new Map<TabIndex, number>([
-  ['records', 0],
-  ['details', 1],
-  ['settings', 2],
-  ['map', 3],
-]);
-const INDEX_TO_TAB = new Map<number, TabIndex>(
-  Array.from(TAB_TO_INDEX.entries()).map(([k, v]) => [v, k])
-);
+import {OverviewMap} from './overview_map';
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
@@ -119,18 +107,7 @@ type NotebookComponentProps = {
  * @returns {JSX.Element} - The JSX element for the NotebookComponent.
  */
 export default function NotebookComponent({project}: NotebookComponentProps) {
-  // This manages the tab using a query string arg
-  const {params, setParam} = useQueryParams<{tab: TabIndex}>({
-    tab: {
-      key: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q,
-      defaultValue: 'records',
-    },
-  });
-  const notebookTabValue = TAB_TO_INDEX.get(params.tab ?? 'details') ?? 0;
-  const setNotebookTabValue = (val: number) => {
-    setParam('tab', INDEX_TO_TAB.get(val) ?? 'records');
-  };
-
+  const [notebookTabValue, setNotebookTabValue] = React.useState(0);
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
   const [myRecords, setMyRecords] = useState(0);

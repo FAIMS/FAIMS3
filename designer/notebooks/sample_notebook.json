@@ -1,6 +1,7 @@
 {
     "metadata": {
         "name": "Blue Mountains Survey",
+        "derived-from": "Survey Template",
         "access": {
             "accessFORM1": ["admin"],
             "accessFORM2": ["admin"],

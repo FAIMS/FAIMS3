@@ -24,7 +24,7 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 import {useCreateNotebookFromTemplate} from '../../../utils/apiHooks/notebooks';
 import {useGetTemplates} from '../../../utils/apiHooks/templates';
-import {useGetListing} from '../../../utils/customHooks';
+import {useGetListing} from '../../../utils/custom_hooks';
 import CircularLoading from '../ui/circular_loading';
 import {refreshToken} from '../../../context/slices/authSlice';
 

@@ -24,7 +24,7 @@ import React from 'react';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {useAppSelector} from '../../context/store';
-import {useGetListing} from '../../utils/customHooks';
+import {useGetListing} from '../../utils/custom_hooks';
 import Notebooks from '../components/workspace/notebooks';
 
 export default function Workspace() {

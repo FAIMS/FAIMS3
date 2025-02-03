@@ -27,36 +27,34 @@
  * - React Router: useParams, useNavigate
  * - Material UI: Box, Typography, Chip, IconButton, CircularProgress
  */
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import {
-  Box,
-  Chip,
-  CircularProgress,
-  IconButton,
-  Typography,
-} from '@mui/material';
-import {useTheme} from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import {useContext} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import * as ROUTES from '../../constants/routes';
+import {Box, Chip, IconButton, Typography} from '@mui/material';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import {CircularProgress} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {ProjectsContext} from '../../context/projects-context';
 import NotebookComponent from '../components/notebook';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ErrorIcon from '@mui/icons-material/Error';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import * as ROUTES from '../../constants/routes';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 
 export default function Notebook() {
-  const theme = useTheme();
   const {project_id} = useParams<{
     project_id: string;
   }>();
-  const history = useNavigate();
+
   const project = useContext(ProjectsContext).projects.find(
     project => project_id === project.project_id
   );
+
+  const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
+
+  const history = useNavigate();
   const isActive = project?.activated;
 
   if (!project) return <CircularProgress data-testid="progressbar" />;

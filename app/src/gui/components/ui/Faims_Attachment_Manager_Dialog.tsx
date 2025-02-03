@@ -18,6 +18,7 @@
  *   TODO: download single file
  */
 
+import React from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -58,35 +59,16 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
             position: 'absolute',
             right: 8,
             top: 8,
-            bgcolor: 'rgba(0, 0, 0, 0.5)',
-            '&:hover': {
-              bgcolor: 'rgba(0, 0, 0, 0.7)',
-              transform: 'scale(1.1)',
-            },
-            transition: 'all 0.2s ease-in-out',
           }}
         >
-          <CloseIcon
-            sx={{
-              color: 'white',
-              fontSize: 24,
-            }}
-          />
+          <CloseIcon />
         </IconButton>
       </DialogTitle>
       <DialogContent>
         {path !== null ? (
           <img
             data-testid="dialog-img"
-            style={{
-              maxWidth: '100%',
-              maxHeight: '90vh',
-              width: 'auto',
-              height: 'auto',
-              objectFit: 'contain',
-              display: 'block',
-              margin: '0 auto',
-            }}
+            style={{objectFit: 'none'}}
             src={path}
           />
         ) : isSyncing === 'true' ? (
@@ -106,9 +88,8 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
           </DialogContentText>
         ) : (
           <DialogContentText id="alert-dialog-description">
-            To download existing photos, please go to the{' '}
-            {NOTEBOOK_NAME_CAPITALIZED} Settings Tab and enable attachment
-            download.
+            To download attachments and photos, please go to{' '}
+            {NOTEBOOK_NAME_CAPITALIZED} / Settings Tab and enable it.
           </DialogContentText>
         )}
       </DialogContent>
@@ -123,13 +104,9 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
             color="primary"
             size="large"
             component={RouterLink}
-            to={
-              ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-              project_id +
-              `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
-            }
+            to={ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id}
           >
-            Go to settings
+            CHANGE SETTINGS
           </Button>
         </DialogActions>
       )}
