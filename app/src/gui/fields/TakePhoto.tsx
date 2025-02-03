@@ -18,24 +18,25 @@
  */
 
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
-import {Capacitor} from '@capacitor/core';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import {Capacitor} from '@capacitor/core';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
-import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
 import Button from '@mui/material/Button';
+import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {decode} from 'base64-arraybuffer';
 import {FieldProps} from 'formik';
 import React from 'react';
+import * as ROUTES from '../../constants/routes';
 import {useNavigate} from 'react-router';
 import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
+import FieldWrapper from './fieldWrapper';
 
 /**
  * Converts a base64 encoded image to a Blob object using fetch API instead of
@@ -66,6 +67,7 @@ interface Props {
   label?: string;
   issyncing?: string;
   isconflict?: boolean;
+  required?: boolean;
 }
 
 interface ImageListProps {
@@ -203,7 +205,6 @@ const ImageGallery = ({
             </Paper>
           </ImageListItem>
         )}
-
         {/* Image Gallery - Reversed order for newest first */}
         {[...images].reverse().map((image: any, index: number) => {
           if (image['attachment_id'] === undefined) {
@@ -373,101 +374,88 @@ export const TakePhoto: React.FC<
   const projectId = props.form.values['_project_id'];
 
   return (
-    <Box sx={{width: '100%'}}>
-      {/* Title and helper text section */}
-      <Box sx={{mb: 2}}>
-        {props.label && (
-          <Typography variant="h6" gutterBottom>
-            {props.label}
-          </Typography>
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText || props.helpertext}
+      required={props.required}
+    >
+      <Box sx={{width: '100%'}}>
+        {/* Download Banner */}
+        {hasUndownloaded && (
+          <Alert severity="info" sx={{mb: 2}}>
+            To download existing photos, please go to the{' '}
+            {
+              // Deeplink directly to settings tab
+            }
+            <Link
+              onClick={() => {
+                navigate(
+                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                    projectId +
+                    `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
+                );
+              }}
+            >
+              {NOTEBOOK_NAME_CAPITALIZED} Settings Tab
+            </Link>{' '}
+            and enable attachment download.
+          </Alert>
         )}
-        {(props.helperText || props.helpertext) && (
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            {props.helperText || props.helpertext}
-          </Typography>
-        )}
-      </Box>
 
-      {/* Download Banner */}
-      {hasUndownloaded && (
-        <Alert severity="info" sx={{mb: 2}}>
-          To download existing photos, please go to the{' '}
-          {
-            // Deeplink directly to settings tab
-          }
-          <Link
-            onClick={() => {
-              navigate(
-                ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                  projectId +
-                  `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
-              );
+        {images.length === 0 ? (
+          <EmptyState onAddPhoto={takePhoto} />
+        ) : (
+          <ImageGallery
+            images={images}
+            setOpen={(path: string | null) => {
+              setOpen(true);
+              setPhotoPath(path);
             }}
-          >
-            {NOTEBOOK_NAME_CAPITALIZED} Settings Tab
-          </Link>{' '}
-          and enable attachment download.
-        </Alert>
-      )}
+            setImages={(newfiles: Array<any>) => {
+              props.form.setFieldValue(props.field.name, newfiles, true);
+            }}
+            disabled={disabled}
+            fieldName={props.field.name}
+            onAddPhoto={takePhoto}
+          />
+        )}
 
-      {images.length === 0 ? (
-        <EmptyState onAddPhoto={takePhoto} />
-      ) : (
-        <ImageGallery
-          images={images}
-          setOpen={(path: string | null) => {
-            setOpen(true);
-            setPhotoPath(path);
-          }}
-          setImages={(newfiles: Array<any>) => {
-            props.form.setFieldValue(props.field.name, newfiles, true);
-          }}
-          disabled={disabled}
-          fieldName={props.field.name}
-          onAddPhoto={takePhoto}
+        {noPermission && (
+          <Alert severity="error" sx={{width: '100%', mt: 2}}>
+            {Capacitor.getPlatform() === 'web' && (
+              <>
+                Please enable camera permissions for this page. Look for the
+                camera permissions button in your browser's address bar.
+              </>
+            )}
+            {Capacitor.getPlatform() === 'android' && (
+              <>
+                Please enable camera permissions for {APP_NAME}. Go to your
+                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
+                Camera and select "Ask every time" or "Allow only while using
+                the app".
+              </>
+            )}
+            {Capacitor.getPlatform() === 'ios' && (
+              <>
+                Please enable camera permissions for {APP_NAME}. Go to your
+                device Settings &gt; Privacy & Security &gt; Camera &gt; and
+                ensure that {APP_NAME} is enabled.
+              </>
+            )}
+          </Alert>
+        )}
+
+        <FaimsAttachmentManagerDialog
+          project_id={projectId}
+          open={open}
+          setopen={() => setOpen(false)}
+          filedId={props.id}
+          path={photoPath}
+          isSyncing={props.issyncing}
         />
-      )}
-
-      {noPermission && (
-        <Alert severity="error" sx={{width: '100%', mt: 2}}>
-          {Capacitor.getPlatform() === 'web' && (
-            <>
-              Please enable camera permissions for this page. Look for the
-              camera permissions button in your browser's address bar.
-            </>
-          )}
-          {Capacitor.getPlatform() === 'android' && (
-            <>
-              Please enable camera permissions for {APP_NAME}. Go to your device
-              Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt; Camera
-              and select "Ask every time" or "Allow only while using the app".
-            </>
-          )}
-          {Capacitor.getPlatform() === 'ios' && (
-            <>
-              Please enable camera permissions for {APP_NAME}. Go to your device
-              Settings &gt; Privacy & Security &gt; Camera &gt; and ensure that{' '}
-              {APP_NAME} is enabled.
-            </>
-          )}
-        </Alert>
-      )}
-
-      {error && (
-        <Typography variant="caption" color="error" sx={{mt: 1}}>
-          {errorText}
-        </Typography>
-      )}
-
-      <FaimsAttachmentManagerDialog
-        project_id={projectId}
-        open={open}
-        setopen={() => setOpen(false)}
-        filedId={props.id}
-        path={photoPath}
-        isSyncing={props.issyncing}
-      />
-    </Box>
+      </Box>
+    </FieldWrapper>
   );
 };
 

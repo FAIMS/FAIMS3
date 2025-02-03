@@ -36,6 +36,7 @@ import {useTheme} from '@mui/material/styles';
 import {FieldProps} from 'formik';
 import {TextFieldProps} from 'formik-mui';
 import {ReactNode} from 'react';
+import FieldWrapper from './fieldWrapper';
 
 /**
  * Base properties for multi-select components
@@ -110,12 +111,6 @@ export const ExpandedChecklist = ({
 
   return (
     <FormControl sx={{width: '100%'}}>
-      {label && (
-        <Typography variant="subtitle1" gutterBottom>
-          {label}
-        </Typography>
-      )}
-      {helperText && <FormHelperText>{helperText}</FormHelperText>}
       <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
         {options.map(option => (
           <FormControlLabel
@@ -182,20 +177,11 @@ export const MuiMultiSelect = ({
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
   return (
-    <FormControl sx={{m: 1, width: '100%'}}>
-      <InputLabel
-        id="multi-select-label"
-        style={{backgroundColor: theme.palette.background.default}}
-      >
-        {label}
-      </InputLabel>
+    <FormControl sx={{width: '100%'}}>
       <Select
-        labelId="multi-select-label"
         multiple
-        label={label}
         onChange={handleChange}
         value={value}
-        input={<OutlinedInput label={label} />}
         renderValue={selected => selected.join(', ')}
       >
         {options.map(option => (
@@ -216,7 +202,6 @@ export const MuiMultiSelect = ({
           </MenuItem>
         ))}
       </Select>
-      {helperText && <FormHelperText>{helperText}</FormHelperText>}
     </FormControl>
   );
 };
@@ -241,10 +226,18 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
     exclusiveOptions: props.ElementProps.exclusiveOptions,
   };
 
-  return isExpandedChecklist ? (
-    <ExpandedChecklist {...commonProps} />
-  ) : (
-    <MuiMultiSelect {...commonProps} />
+  return (
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText}
+      required={props.required}
+    >
+      {isExpandedChecklist ? (
+        <ExpandedChecklist {...commonProps} />
+      ) : (
+        <MuiMultiSelect {...commonProps} />
+      )}
+    </FieldWrapper>
   );
 };
 
