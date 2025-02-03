@@ -17,12 +17,7 @@ import {FieldType} from '../../state/initial';
  * hidden in the form. It provides a simple checkbox interface with an
  * explanation tooltip.
  *
- * The component:
- * - Reads the current hidden state from Redux store
- * - Allows toggling the hidden state
- * - Updates the field in the Redux store
- * - Provides helpful explanation via tooltip
- * - Maintains consistent styling with other field editors
+ * Toggles the component ['component-parameters'].ElementProps.hidden
  *
  * @component
  * @param {Object} props - Component props
