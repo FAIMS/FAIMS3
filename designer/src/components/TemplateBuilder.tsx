@@ -116,6 +116,13 @@ const convertMustacheTokenToBlock = (token: any): TemplateBlock | null => {
           content: content,
         };
 
+      case 'name':
+        return {
+          id: Math.random().toString(36).substring(2, 9),
+          type: 'variable',
+          content: content,
+        };
+
       case '#':
         return {
           id: Math.random().toString(36).substring(2, 9),
@@ -200,23 +207,21 @@ const TemplateBlockEditor: React.FC<{
 
         {block.type === 'variable' && (
           <Grid item xs={12} sm>
-            <Tooltip title="Select a variable to insert">
-              <FormControl fullWidth>
-                <InputLabel>Variable</InputLabel>
-                <Select
-                  value={block.content}
-                  label="Variable"
-                  onChange={e => updateBlockContent(e.target.value)}
-                >
-                  <MenuItem value="">Choose variable...</MenuItem>
-                  {allVariables.map(v => (
-                    <MenuItem key={v.name} value={v.name}>
-                      {v.displayName} ({v.type})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Tooltip>
+            <FormControl fullWidth>
+              <InputLabel>Variable</InputLabel>
+              <Select
+                value={block.content}
+                label="Variable"
+                onChange={e => updateBlockContent(e.target.value)}
+              >
+                <MenuItem value="">Choose variable...</MenuItem>
+                {allVariables.map(v => (
+                  <MenuItem key={v.name} value={v.name}>
+                    {v.displayName} ({v.type})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
         )}
 

@@ -44,7 +44,13 @@ export function getFieldsMatchingCondition(
   if (modified.length > 0 || fieldNames.length === 0) {
     // filter the whole set of views
     const result = allFields.filter(field => {
-      return ui_specification.fields[field].conditionFn(values);
+      const fieldDetails = ui_specification.fields[field];
+      return (
+        // Visibility condition function
+        fieldDetails.conditionFn(values) &&
+        // Hidden explicitly in element props - e.g. templated field
+        !fieldDetails['component-parameters']?.ElementProps?.hidden
+      );
     });
     return result;
   } else {
