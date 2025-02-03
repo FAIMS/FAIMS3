@@ -42,6 +42,7 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
+import HiddenFieldEditor from './Fields/HiddenToggle';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -256,7 +257,11 @@ export const FieldEditor = ({
             <OptionsEditor fieldName={fieldName} />
           )) ||
           (fieldComponent === 'MultiSelect' && (
-            <OptionsEditor fieldName={fieldName} showExpandedChecklist={true} showExclusiveOptions={true}/>
+            <OptionsEditor
+              fieldName={fieldName}
+              showExpandedChecklist={true}
+              showExclusiveOptions={true}
+            />
           )) ||
           (fieldComponent === 'AdvancedSelect' && (
             <AdvancedSelectEditor fieldName={fieldName} />
@@ -280,7 +285,13 @@ export const FieldEditor = ({
             <BasicAutoIncrementerEditor fieldName={fieldName} viewId={viewId} />
           )) ||
           (fieldComponent === 'TemplatedStringField' && (
-            <TemplatedStringFieldEditor fieldName={fieldName} viewId={viewId} />
+            <>
+              <TemplatedStringFieldEditor
+                fieldName={fieldName}
+                viewId={viewId}
+              />
+              <HiddenFieldEditor fieldName={fieldName} />
+            </>
           )) || <BaseFieldEditor fieldName={fieldName} />}
       </AccordionDetails>
     </Accordion>

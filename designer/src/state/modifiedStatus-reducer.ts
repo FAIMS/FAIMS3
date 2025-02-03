@@ -39,7 +39,6 @@ const modifiedStatusReducer = createSlice({
   reducers: {
     resetFlag: (_state, action) => {
       const newStatus = action.payload as boolean;
-      console.log('Reached modified reducer ' + newStatus);
       return newStatus;
     },
   },

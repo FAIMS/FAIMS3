@@ -78,10 +78,6 @@ export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
     };
     newField['component-parameters'].helperText = newState.helperText;
     newField['component-parameters'].template = newState.template;
-    newField['component-parameters'].ElementProps = {
-      ...newField['component-parameters'].ElementProps,
-      hidden: newState.ElementProps?.hidden,
-    };
     dispatch({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},
@@ -89,19 +85,8 @@ export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
   };
 
   const updateProperty = (prop: string, value: string | boolean) => {
-    if (prop === 'hidden') {
-      const newState = {
-        ...state,
-        ElementProps: {
-          ...state.ElementProps,
-          hidden: value as boolean,
-        },
-      };
-      updateFieldFromState(newState);
-    } else {
-      const newState = {...state, [prop]: value};
-      updateFieldFromState(newState);
-    }
+    const newState = {...state, [prop]: value};
+    updateFieldFromState(newState);
   };
 
   const handleTemplateChange = (template: string) => {

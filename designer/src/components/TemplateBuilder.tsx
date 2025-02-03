@@ -2,9 +2,11 @@ import {
   Add as AddIcon,
   Code as CodeIcon,
   Delete as DeleteIcon,
+  Error as ErrorIcon,
   Preview as PreviewIcon,
 } from '@mui/icons-material';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -24,23 +26,30 @@ import {
   Tab,
   Tabs,
   TextField,
+  Tooltip,
+  Typography,
 } from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import Mustache from 'mustache';
+import React, {useCallback, useEffect, useState} from 'react';
 
-// Types for template building blocks
-type BlockType = 'text' | 'variable' | 'if' | 'unless' | 'each' | 'helper';
+/**
+ * Supported block types in the template builder
+ */
+type BlockType = 'text' | 'variable' | 'if' | 'unless';
 
-type HelperType = 'uppercase' | 'lowercase' | 'dateFormat' | 'numberFormat';
-
+/**
+ * Represents a single building block in the template
+ */
 interface TemplateBlock {
   id: string;
   type: BlockType;
   content: string;
   children?: TemplateBlock[];
-  helper?: HelperType;
-  helperArgs?: string[];
 }
 
+/**
+ * Represents a variable that can be used in the template
+ */
 interface Variable {
   name: string;
   displayName: string;
@@ -48,175 +57,99 @@ interface Variable {
   value?: string; // For preview purposes
 }
 
+/**
+ * Props for the MustacheTemplateBuilder component
+ */
 interface MustacheBuilderProps {
+  /** Initial template string to populate the builder */
   initialTemplate?: string;
+  /** Available field variables */
   variables: Variable[];
+  /** Available system variables */
   systemVariables: Variable[];
+  /** Callback fired when template is saved */
   onSave: (template: string) => void;
+  /** Controls dialog visibility */
   open: boolean;
+  /** Callback fired when dialog is closed */
   onClose: () => void;
 }
 
 /**
- * Parses a Mustache template string into template blocks
+ * Safely parses a Mustache template string into TemplateBlock format
  */
-const parseTemplate = (template: string): TemplateBlock[] => {
-  const blocks: TemplateBlock[] = [];
-  let currentText = '';
-
-  // Helper to add accumulated text as a block
-  const addTextBlock = () => {
-    if (currentText) {
-      blocks.push({
-        id: Math.random().toString(36).substring(2, 9),
-        type: 'text',
-        content: currentText,
-      });
-      currentText = '';
-    }
-  };
-
-  // Helper to parse a section (like if/unless/each) until its closing tag
-  const parseSection = (
-    template: string,
-    startIndex: number
-  ): [TemplateBlock | null, number] => {
-    const tagMatch = template.slice(startIndex).match(/^\{\{([#^])([^}]+)\}\}/);
-    if (!tagMatch) return [null, startIndex];
-
-    const [fullTag, prefix, content] = tagMatch;
-    const tagType =
-      prefix === '#' ? (content === 'each' ? 'each' : 'if') : 'unless';
-    const tagContent = content.trim();
-
-    // Find the matching closing tag
-    const searchStart = startIndex + fullTag.length;
-    let nested = 0;
-    let currentPos = searchStart;
-
-    while (currentPos < template.length) {
-      const openTag = template.slice(currentPos).match(/\{\{[#^]/);
-      const closeTag = template
-        .slice(currentPos)
-        .match(`\\{\\{/${tagContent}\\}\\}`);
-
-      if (!closeTag) break; // No matching close tag found
-
-      if (!openTag || closeTag.index! < openTag.index!) {
-        if (nested === 0) {
-          // Parse the content between tags recursively
-          const innerContent = template.slice(
-            searchStart,
-            currentPos + closeTag.index!
-          );
-          const children = parseTemplate(innerContent);
-
-          return [
-            {
-              id: Math.random().toString(36).substring(2, 9),
-              type: tagType,
-              content: tagContent,
-              children,
-            },
-            currentPos + closeTag.index! + closeTag[0].length,
-          ];
-        }
-        nested--;
-      } else {
-        nested++;
-      }
-      currentPos =
-        currentPos + (openTag ? openTag.index! + 2 : closeTag.index! + 3);
-    }
-
-    return [null, startIndex + fullTag.length];
-  };
-
-  let currentPos = 0;
-  while (currentPos < template.length) {
-    const nextTag = template.slice(currentPos).match(/\{\{([#^])?([^}]+)\}\}/);
-
-    if (!nextTag) {
-      currentText += template.slice(currentPos);
-      break;
-    }
-
-    const [fullTag, prefix, content] = nextTag;
-    const tagStart = currentPos + nextTag.index!;
-
-    // Add any text before the tag
-    if (tagStart > currentPos) {
-      currentText += template.slice(currentPos, tagStart);
-    }
-
-    // Handle different tag types
-    if (prefix === '#' || prefix === '^') {
-      addTextBlock();
-      const [sectionBlock, newPos] = parseSection(template, tagStart);
-      if (sectionBlock) {
-        blocks.push(sectionBlock);
-      }
-      currentPos = newPos;
-    } else {
-      // Handle regular variables and helpers
-      addTextBlock();
-      if (content.includes(' ')) {
-        // Helper
-        const [helper, variable] = content.trim().split(/\s+/);
-        blocks.push({
+const parseTemplate = (
+  template: string
+): {blocks: TemplateBlock[]; error: string | null} => {
+  try {
+    const tokens = Mustache.parse(template);
+    const blocks = tokens
+      .map(convertMustacheTokenToBlock)
+      .filter(isTemplateBlock);
+    return {blocks, error: null};
+  } catch (error) {
+    return {
+      blocks: [
+        {
           id: Math.random().toString(36).substring(2, 9),
-          type: 'helper',
-          helper: helper as HelperType,
-          content: variable,
-        });
-      } else {
-        // Variable
-        blocks.push({
-          id: Math.random().toString(36).substring(2, 9),
-          type: 'variable',
-          content: content.trim(),
-        });
-      }
-      currentPos = tagStart + fullTag.length;
-    }
+          type: 'text',
+          content: template || '',
+        },
+      ],
+      error: error instanceof Error ? error.message : 'Invalid template syntax',
+    };
   }
-
-  addTextBlock();
-  return blocks;
-};
-
-const HELPER_FUNCTIONS: Record<
-  HelperType,
-  {
-    display: string;
-    description: string;
-    example: string;
-  }
-> = {
-  uppercase: {
-    display: 'Uppercase',
-    description: 'Convert text to uppercase',
-    example: '{{uppercase name}}',
-  },
-  lowercase: {
-    display: 'Lowercase',
-    description: 'Convert text to lowercase',
-    example: '{{lowercase name}}',
-  },
-  dateFormat: {
-    display: 'Date Format',
-    description: 'Format a date (YYYY-MM-DD)',
-    example: '{{dateFormat date "YYYY-MM-DD"}}',
-  },
-  numberFormat: {
-    display: 'Number Format',
-    description: 'Format a number',
-    example: '{{numberFormat number "0.00"}}',
-  },
 };
 
 /**
- * Component for displaying and editing a single template block
+ * Converts a Mustache AST token into our TemplateBlock format
+ */
+const convertMustacheTokenToBlock = (token: any): TemplateBlock | null => {
+  const [tokenType, content, ...rest] = token;
+
+  try {
+    switch (tokenType) {
+      case 'text':
+        return {
+          id: Math.random().toString(36).substring(2, 9),
+          type: 'text',
+          content: content,
+        };
+
+      case '#':
+        return {
+          id: Math.random().toString(36).substring(2, 9),
+          type: 'if',
+          content: content,
+          children: rest[2].map(convertMustacheTokenToBlock).filter(Boolean),
+        };
+
+      case '^':
+        return {
+          id: Math.random().toString(36).substring(2, 9),
+          type: 'unless',
+          content: content,
+          children: rest[2].map(convertMustacheTokenToBlock).filter(Boolean),
+        };
+
+      default:
+        return null;
+    }
+  } catch (error) {
+    console.warn('Error converting token:', error);
+    return null;
+  }
+};
+
+/**
+ * Type guard for TemplateBlock
+ */
+function isTemplateBlock(block: TemplateBlock | null): block is TemplateBlock {
+  return block !== null;
+}
+
+/**
+ * Component for editing a single template block
  */
 const TemplateBlockEditor: React.FC<{
   block: TemplateBlock;
@@ -259,71 +192,32 @@ const TemplateBlockEditor: React.FC<{
             >
               <MenuItem value="text">Text</MenuItem>
               <MenuItem value="variable">Variable</MenuItem>
-              <MenuItem value="if">If Condition</MenuItem>
+              <MenuItem value="if">Conditional</MenuItem>
               <MenuItem value="unless">Unless</MenuItem>
-              <MenuItem value="each">Each Loop</MenuItem>
-              <MenuItem value="helper">Helper</MenuItem>
             </Select>
           </FormControl>
         </Grid>
 
         {block.type === 'variable' && (
           <Grid item xs={12} sm>
-            <FormControl fullWidth>
-              <InputLabel>Variable</InputLabel>
-              <Select
-                value={block.content}
-                label="Variable"
-                onChange={e => updateBlockContent(e.target.value)}
-              >
-                <MenuItem value="">Choose variable...</MenuItem>
-                {allVariables.map(v => (
-                  <MenuItem key={v.name} value={v.name}>
-                    {v.displayName} ({v.type})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-        )}
-
-        {block.type === 'helper' && (
-          <>
-            <Grid item xs={12} sm={3}>
+            <Tooltip title="Select a variable to insert">
               <FormControl fullWidth>
-                <InputLabel>Helper</InputLabel>
-                <Select
-                  value={block.helper}
-                  label="Helper"
-                  onChange={e =>
-                    onUpdate({...block, helper: e.target.value as HelperType})
-                  }
-                >
-                  {Object.entries(HELPER_FUNCTIONS).map(([key, value]) => (
-                    <MenuItem key={key} value={key}>
-                      {value.display}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth>
-                <InputLabel>Apply To</InputLabel>
+                <InputLabel>Variable</InputLabel>
                 <Select
                   value={block.content}
-                  label="Apply To"
+                  label="Variable"
                   onChange={e => updateBlockContent(e.target.value)}
                 >
+                  <MenuItem value="">Choose variable...</MenuItem>
                   {allVariables.map(v => (
                     <MenuItem key={v.name} value={v.name}>
-                      {v.displayName}
+                      {v.displayName} ({v.type})
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
-            </Grid>
-          </>
+            </Tooltip>
+          </Grid>
         )}
 
         {block.type === 'text' && (
@@ -338,9 +232,7 @@ const TemplateBlockEditor: React.FC<{
           </Grid>
         )}
 
-        {(block.type === 'if' ||
-          block.type === 'unless' ||
-          block.type === 'each') && (
+        {(block.type === 'if' || block.type === 'unless') && (
           <Grid item xs={12} sm={4}>
             <FormControl fullWidth>
               <InputLabel>Variable</InputLabel>
@@ -366,9 +258,7 @@ const TemplateBlockEditor: React.FC<{
         </Grid>
       </Grid>
 
-      {(block.type === 'if' ||
-        block.type === 'unless' ||
-        block.type === 'each') && (
+      {(block.type === 'if' || block.type === 'unless') && (
         <Box sx={{mt: 2, mb: 1}}>
           {block.children?.map((child, index) => (
             <TemplateBlockEditor
@@ -405,78 +295,59 @@ const TemplateBlockEditor: React.FC<{
 };
 
 /**
- * Enhanced preview component with proper conditional handling
+ * Component for previewing the template with sample data
  */
 const TemplatePreview: React.FC<{
   template: TemplateBlock[];
   variables: Variable[];
   systemVariables: Variable[];
-}> = ({template, variables, systemVariables}) => {
-  const [previewValues, setPreviewValues] = useState<Record<string, string>>(
-    {}
-  );
+  onTemplateError?: (error: string | null) => void;
+}> = ({template, variables, systemVariables, onTemplateError}) => {
+  const [previewValues, setPreviewValues] = useState<Record<string, any>>({});
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const allVariables = [...variables, ...systemVariables];
 
-  const evaluateCondition = (variableName: string): boolean => {
-    const value = previewValues[variableName];
-    // Consider the condition true if the value exists and isn't empty
-    return !!value && value.trim() !== '';
-  };
+  const compileTemplate = useCallback((blocks: TemplateBlock[]): string => {
+    return blocks
+      .map(block => {
+        switch (block.type) {
+          case 'text':
+            return block.content;
+          case 'variable':
+            return `{{${block.content}}}`;
+          case 'if':
+            return `{{#${block.content}}}${block.children ? compileTemplate(block.children) : ''}{{/${block.content}}}`;
+          case 'unless':
+            return `{{^${block.content}}}${block.children ? compileTemplate(block.children) : ''}{{/${block.content}}}`;
+          default:
+            return '';
+        }
+      })
+      .join('');
+  }, []);
 
-  const applyHelper = (helper: HelperType, value: string): string => {
-    switch (helper) {
-      case 'uppercase':
-        return value.toUpperCase();
-      case 'lowercase':
-        return value.toLowerCase();
-      case 'dateFormat':
-        try {
-          const date = new Date(value);
-          return date.toISOString().split('T')[0]; // YYYY-MM-DD
-        } catch {
-          return value;
-        }
-      case 'numberFormat':
-        try {
-          return parseFloat(value).toFixed(2);
-        } catch {
-          return value;
-        }
-    }
-  };
+  const compiledTemplate = compileTemplate(template);
 
-  const renderBlock = (block: TemplateBlock): string => {
-    switch (block.type) {
-      case 'text':
-        return block.content;
-      case 'variable':
-        return previewValues[block.content] || '';
-      case 'helper':
-        if (block.helper && block.content) {
-          const value = previewValues[block.content] || '';
-          return applyHelper(block.helper, value);
-        }
-        return '';
-      case 'if':
-        if (evaluateCondition(block.content)) {
-          return block.children?.map(renderBlock).join('') || '';
-        }
-        return '';
-      case 'unless':
-        if (!evaluateCondition(block.content)) {
-          return block.children?.map(renderBlock).join('') || '';
-        }
-        return '';
-      case 'each':
-        // For preview, we'll treat 'each' as a simple if condition
-        if (evaluateCondition(block.content)) {
-          return block.children?.map(renderBlock).join('') || '';
-        }
-        return '';
-      default:
-        return '';
+  const renderPreview = useCallback(() => {
+    try {
+      const result = Mustache.render(compiledTemplate, {
+        ...previewValues,
+      });
+      if (previewError) {
+        setPreviewError(null);
+        onTemplateError?.(null);
+      }
+      return result;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error rendering template';
+      if (previewError !== errorMessage) {
+        setPreviewError(errorMessage);
+        onTemplateError?.(errorMessage);
+      }
+      return 'Preview unavailable - check the builder tab to fix template errors';
     }
-  };
+  }, [compiledTemplate, previewValues, previewError, onTemplateError]);
 
   return (
     <Box sx={{mt: 3}}>
@@ -500,6 +371,13 @@ const TemplatePreview: React.FC<{
         ))}
       </Grid>
 
+      {previewError && (
+        <Alert severity="error" sx={{mt: 2}}>
+          <Typography variant="subtitle2">Template Error:</Typography>
+          {previewError}
+        </Alert>
+      )}
+
       <Card sx={{mt: 3}}>
         <CardHeader title="Preview" />
         <CardContent>
@@ -513,7 +391,7 @@ const TemplatePreview: React.FC<{
               minHeight: '100px',
             }}
           >
-            {template.map(renderBlock).join('')}
+            {renderPreview()}
           </Paper>
         </CardContent>
       </Card>
@@ -523,6 +401,8 @@ const TemplatePreview: React.FC<{
 
 /**
  * Main Mustache template builder dialog component
+ * This component provides a user interface for building and editing Mustache templates
+ * with support for variables, text and conditionals.
  */
 export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
   initialTemplate,
@@ -534,21 +414,13 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
 }) => {
   const [template, setTemplate] = useState<TemplateBlock[]>([]);
   const [activeTab, setActiveTab] = useState(0);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialTemplate) {
-      const parsedTemplate = parseTemplate(initialTemplate);
-      setTemplate(
-        parsedTemplate.length
-          ? parsedTemplate
-          : [
-              {
-                id: Math.random().toString(36).substring(2, 9),
-                type: 'text',
-                content: '',
-              },
-            ]
-      );
+      const {blocks, error} = parseTemplate(initialTemplate);
+      setTemplate(blocks);
+      setParseError(error);
     } else if (!template.length) {
       setTemplate([
         {
@@ -560,7 +432,7 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
     }
   }, [initialTemplate]);
 
-  const compileTemplate = (blocks: TemplateBlock[]): string => {
+  const compileTemplate = useCallback((blocks: TemplateBlock[]): string => {
     return blocks
       .map(block => {
         switch (block.type) {
@@ -568,39 +440,137 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
             return block.content;
           case 'variable':
             return `{{${block.content}}}`;
-          case 'helper':
-            return `{{${block.helper} ${block.content}}}`;
           case 'if':
-            return `{{#if ${block.content}}}${block.children ? compileTemplate(block.children) : ''}{{/if}}`;
+            return `{{#${block.content}}}${block.children ? compileTemplate(block.children) : ''}{{/${block.content}}}`;
           case 'unless':
-            return `{{^${block.content}}}${block.children ? compileTemplate(block.children) : ''}{{/unless}}`;
-          case 'each':
-            return `{{#each ${block.content}}}${block.children ? compileTemplate(block.children) : ''}{{/each}}`;
+            return `{{^${block.content}}}${block.children ? compileTemplate(block.children) : ''}{{/${block.content}}}`;
           default:
             return '';
         }
       })
       .join('');
-  };
+  }, []);
+
+  // Validates template syntax without blocking editing
+  const validateTemplate = useCallback(
+    (templateString: string): string | null => {
+      try {
+        // First try to parse the template
+        Mustache.parse(templateString);
+        return null;
+      } catch (error) {
+        // Return error but don't prevent further editing
+        return error instanceof Error
+          ? error.message
+          : 'Invalid template syntax';
+      }
+    },
+    []
+  );
 
   const handleSave = () => {
     const compiledTemplate = compileTemplate(template);
+    const error = validateTemplate(compiledTemplate);
+
+    if (error) {
+      setParseError(error);
+      setActiveTab(0); // Switch to builder tab to show error
+      return;
+    }
+
     onSave(compiledTemplate);
     onClose();
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle>Mustache Template Builder</DialogTitle>
+      <DialogTitle>
+        <Grid container alignItems="center" spacing={1}>
+          <Grid item>Mustache Template Builder</Grid>
+          {parseError && (
+            <Grid item>
+              <Tooltip title={parseError}>
+                <ErrorIcon color="error" />
+              </Tooltip>
+            </Grid>
+          )}
+        </Grid>
+      </DialogTitle>
 
       <DialogContent>
+        {/* Instructions */}
+        <Paper sx={{p: 2, mb: 3, bgcolor: 'background.default'}}>
+          <Typography variant="subtitle2" gutterBottom>
+            How to use this template editor:
+          </Typography>
+          <Typography variant="body2">
+            {
+              '• Add blocks using the + button. Each block can be text, a variable, or a condition'
+            }
+            <br />
+            {
+              '• Variables: Use {{variableName}} syntax to insert dynamic content'
+            }
+            <br />
+            {
+              '• Conditionals: Use {{#variableName}} to show content only when variable is true'
+            }
+            <br />
+            {
+              '• Unless: Use {{^variableName}} to show content only when variable is false'
+            }
+          </Typography>
+        </Paper>
+
+        {/* Live Template String Preview */}
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            mb: 2,
+            bgcolor: 'grey.50',
+            fontFamily: 'monospace',
+            whiteSpace: 'pre-wrap',
+            fontSize: '0.875rem',
+            maxHeight: '100px',
+            overflow: 'auto',
+          }}
+        >
+          <Typography
+            variant="caption"
+            display="block"
+            gutterBottom
+            color="text.secondary"
+          >
+            Template String:
+          </Typography>
+          {compileTemplate(template)}
+        </Paper>
+
+        {parseError && (
+          <Alert severity="error" sx={{mb: 2}}>
+            <Typography variant="subtitle2">Template Error:</Typography>
+            {parseError}
+          </Alert>
+        )}
+
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
           sx={{borderBottom: 1, borderColor: 'divider', mb: 2}}
         >
-          <Tab icon={<CodeIcon />} label="Builder" />
-          <Tab icon={<PreviewIcon />} label="Preview" />
+          <Tab
+            icon={<CodeIcon />}
+            label="Builder"
+            wrapped
+            sx={{minWidth: 120}}
+          />
+          <Tab
+            icon={<PreviewIcon />}
+            label="Preview"
+            wrapped
+            sx={{minWidth: 120}}
+          />
         </Tabs>
 
         {activeTab === 0 && (
@@ -615,6 +585,10 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
                   const newTemplate = [...template];
                   newTemplate[index] = updatedBlock;
                   setTemplate(newTemplate);
+                  // Don't automatically clear parse errors - let validation determine if error is fixed
+                  const compiledTemplate = compileTemplate(newTemplate);
+                  const error = validateTemplate(compiledTemplate);
+                  setParseError(error);
                 }}
                 onDelete={() => {
                   const newTemplate = [...template];
@@ -648,16 +622,30 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
             template={template}
             variables={variables}
             systemVariables={systemVariables}
+            onTemplateError={error => {
+              setParseError(error);
+              if (error) {
+                // If there's an error, show the builder tab so user can fix it
+                setActiveTab(0);
+              }
+            }}
           />
         )}
       </DialogContent>
 
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained" color="primary">
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          color="primary"
+          disabled={!!parseError}
+        >
           Save Template
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
+
+export default MustacheTemplateBuilder;

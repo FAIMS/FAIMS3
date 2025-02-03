@@ -40,8 +40,6 @@ type Props = {
 };
 
 export const FieldList = ({viewSetId, viewId}: Props) => {
-  console.log('FieldList', viewSetId, viewId);
-
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
   );
@@ -65,7 +63,6 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
   };
 
   const addFieldAfterCallback = (fieldName: string) => {
-    console.log('adding a field after', fieldName);
     setAddAfterField(fieldName);
     setDialogOpen(true);
   };
@@ -107,23 +104,6 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
     // section, so reset all fields to be closed
     setIsExpanded(allClosed);
   }, [fView.label]);
-
-  // can't do this with another useEffect because it might fire before
-  // or after the other one, it then opens up random fields
-  //
-  // useEffect(() => {
-  //   // if fViews.fields changes we check if there is a new
-  //   // field (just added) and open it up
-  //   fView.fields.forEach((fieldName: string) => {
-  //     console.log('checking', fieldName, isExpanded[fieldName]);
-  //     if (isExpanded[fieldName] === undefined) {
-  //       setIsExpanded({
-  //         ...isExpanded,
-  //         [fieldName]: true,
-  //       });
-  //     }
-  //   });
-  // }, [fView.fields]);
 
   const handleExpandChange = (fieldName: string) => {
     return (_event: React.SyntheticEvent, expanded: boolean) => {
