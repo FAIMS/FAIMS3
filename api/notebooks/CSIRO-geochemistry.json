@@ -1,11 +1,7 @@
 {
   "metadata": {
     "project_status": "New",
-    "accesses": [
-      "admin",
-      "moderator",
-      "team"
-    ],
+    "accesses": ["admin", "moderator", "team"],
     "forms": {
       "FORM1": {
         "submitActionFORM1": "Save and Return",
@@ -60,27 +56,13 @@
     "sections": {},
     "meta": {},
     "access": {
-      "accessFORM1": [
-        "admin"
-      ],
-      "accessFORM2": [
-        "admin"
-      ],
-      "accessFORM3": [
-        "admin"
-      ],
-      "accessFORM4": [
-        "admin"
-      ],
-      "accessFORM5": [
-        "admin"
-      ],
-      "accessFORM6": [
-        "admin"
-      ],
-      "accessFORM7": [
-        "admin"
-      ]
+      "accessFORM1": ["admin"],
+      "accessFORM2": ["admin"],
+      "accessFORM3": ["admin"],
+      "accessFORM4": ["admin"],
+      "accessFORM5": ["admin"],
+      "accessFORM6": ["admin"],
+      "accessFORM7": ["admin"]
     },
     "ispublic": false,
     "isrequest": false,
@@ -118,15 +100,9 @@
           "numberfield": 1,
           "fieldselect10": "water-sample-id"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -149,15 +125,9 @@
           "form_id": "FORM1SECTION1",
           "label": "Water Sample ID"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -187,15 +157,9 @@
           "id": "station",
           "name": "station"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -227,15 +191,9 @@
           "id": "project",
           "name": "project"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -265,15 +223,9 @@
           "id": "area",
           "name": "area"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -304,15 +256,9 @@
           "id": "site-name",
           "name": "site-name"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -334,18 +280,9 @@
           "variant": "outlined",
           "label": "Take GPS Location"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "Updated Timestamp",
           "annotation": true,
@@ -375,15 +312,9 @@
           "id": "water-table-m",
           "name": "water-table-m"
         },
-        "validationSchema": [
-          [
-            "yup.number"
-          ]
-        ],
+        "validationSchema": [["yup.number"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -413,15 +344,9 @@
           "id": "sample-depth-m",
           "name": "sample-depth-m"
         },
-        "validationSchema": [
-          [
-            "yup.number"
-          ]
-        ],
+        "validationSchema": [["yup.number"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -451,15 +376,9 @@
           "id": "bottom-of-hole-m",
           "name": "bottom-of-hole-m"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -491,15 +410,9 @@
           "id": "basic-water-detail-notes",
           "name": "basic-water-detail-notes"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -521,18 +434,9 @@
           "variant": "outlined",
           "label": "Bore Photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -554,18 +458,9 @@
           "variant": "outlined",
           "label": "Site Photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -587,18 +482,9 @@
           "variant": "outlined",
           "label": "other photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -622,15 +508,9 @@
           "id": "html-text",
           "name": "html-text"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -654,15 +534,9 @@
           "id": "html-text2",
           "name": "html-text2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -696,15 +570,9 @@
           "fieldselect10": "water-sample-id",
           "linked": "water-id"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -731,15 +599,9 @@
           "id": "timestamp",
           "name": "timestamp"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -791,15 +653,9 @@
           "id": "hole-type",
           "name": "hole-type"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -859,15 +715,9 @@
           "id": "hole-lining",
           "name": "hole-lining"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -911,15 +761,9 @@
           "id": "hole-open-closed",
           "name": "hole-open-closed"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -971,15 +815,9 @@
           "id": "pipes-in-hole",
           "name": "pipes-in-hole"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1019,15 +857,9 @@
           "id": "hole-angle",
           "name": "hole-angle"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1071,15 +903,9 @@
           "id": "recirculation",
           "name": "recirculation"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1111,15 +937,9 @@
           "id": "encountered-sampling-issues",
           "name": "encountered-sampling-issues"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1151,15 +971,9 @@
           "id": "sampling-notes",
           "name": "sampling-notes"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1189,15 +1003,9 @@
           "id": "temperature-c",
           "name": "temperature-c"
         },
-        "validationSchema": [
-          [
-            "yup.number"
-          ]
-        ],
+        "validationSchema": [["yup.number"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1227,15 +1035,9 @@
           "id": "conducitivty-s-cm",
           "name": "conducitivty-s-cm"
         },
-        "validationSchema": [
-          [
-            "yup.number"
-          ]
-        ],
+        "validationSchema": [["yup.number"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1265,15 +1067,9 @@
           "id": "fe2",
           "name": "fe2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1303,15 +1099,9 @@
           "id": "s2",
           "name": "s2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1347,15 +1137,9 @@
           "current_form": "FORM1",
           "current_form_label": "Water Sample"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": [],
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1388,15 +1172,9 @@
           "id": "preferred-ph",
           "name": "preferred-ph"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": [],
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1429,15 +1207,9 @@
           "id": "eh",
           "name": "eh"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": [],
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1470,15 +1242,9 @@
           "id": "preferred-eh",
           "name": "preferred-eh"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": [],
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1511,15 +1277,9 @@
           "id": "do",
           "name": "do"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": [],
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1552,15 +1312,9 @@
           "id": "preferred-do",
           "name": "preferred-do"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": [],
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1595,15 +1349,9 @@
           "fieldselect11": "ph-value",
           "fieldselect12": "timestamp-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1639,15 +1387,9 @@
           "fieldselect11": "ph-value",
           "fieldselect12": "timestamp-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1677,15 +1419,9 @@
           "id": "sample-id-2",
           "name": "sample-id-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1715,15 +1451,9 @@
           "id": "ph-value",
           "name": "ph-value"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1749,15 +1479,9 @@
           "id": "timestamp-2",
           "name": "timestamp-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1791,15 +1515,9 @@
           "numberfield": 1,
           "fieldselect10": "sample-id-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1829,15 +1547,9 @@
           "id": "sample-id-3",
           "name": "sample-id-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1867,15 +1579,9 @@
           "id": "eh-value",
           "name": "eh-value"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1905,15 +1611,9 @@
           "id": "timestamp-3",
           "name": "timestamp-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1946,15 +1646,9 @@
           "numberfield": "0",
           "fieldselect10": "sample-id-4"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -1988,15 +1682,9 @@
           "numberfield": "0",
           "fieldselect10": "sample-id-4"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2026,15 +1714,9 @@
           "id": "sample-id-4",
           "name": "sample-id-4"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2064,15 +1746,9 @@
           "id": "do-value",
           "name": "do-value"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2102,15 +1778,9 @@
           "id": "timestamp-4",
           "name": "timestamp-4"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2142,15 +1812,9 @@
           "hrid": true,
           "fieldselect10": "soil-autoincrementer"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2183,15 +1847,9 @@
           "linked": "human-readable-id-2",
           "fieldselect10": "soil-autoincrementer"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2214,15 +1872,9 @@
           "form_id": "FORM5SECTION1",
           "label": "Soil Autoincrementer"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2252,15 +1904,9 @@
           "id": "station-2",
           "name": "station-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2292,15 +1938,9 @@
           "id": "project-2",
           "name": "project-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2330,15 +1970,9 @@
           "id": "area-2",
           "name": "area-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2365,15 +1999,9 @@
           "id": "timestamp-5",
           "name": "timestamp-5"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -2399,15 +2027,9 @@
           "id": "timestamp-6",
           "name": "timestamp-6"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -2429,18 +2051,9 @@
           "variant": "outlined",
           "label": "Take GPS Location"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "Updated Timestamp",
           "annotation": true,
@@ -2470,15 +2083,9 @@
           "id": "sample-depth-m-2",
           "name": "sample-depth-m-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2509,15 +2116,9 @@
           "id": "colour",
           "name": "colour"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -2562,15 +2163,9 @@
           "id": "lag",
           "name": "lag"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "Notes",
           "annotation": true,
@@ -3279,15 +2874,9 @@
           "id": "soil-texture",
           "name": "soil-texture"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3332,15 +2921,9 @@
           "id": "drainage",
           "name": "drainage"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3385,15 +2968,9 @@
           "id": "anthropogenic-contamination",
           "name": "anthropogenic-contamination"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3424,15 +3001,9 @@
           "id": "vegetation",
           "name": "vegetation"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3464,15 +3035,9 @@
           "id": "notes",
           "name": "notes"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3494,18 +3059,9 @@
           "variant": "outlined",
           "label": "Soil Surface"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3527,18 +3083,9 @@
           "variant": "outlined",
           "label": "Photo of Hole"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3560,18 +3107,9 @@
           "variant": "outlined",
           "label": "Photo of sample bag"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3593,18 +3131,9 @@
           "variant": "outlined",
           "label": "Landscape Photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3626,18 +3155,9 @@
           "variant": "outlined",
           "label": "Other Photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3668,15 +3188,9 @@
           },
           "hrid": true
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3708,15 +3222,9 @@
           "hrid": false,
           "linked": "human-readable-id-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3739,15 +3247,9 @@
           "form_id": "FORM6SECTION1",
           "label": "Vegetation Autoincrementer"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3777,15 +3279,9 @@
           "id": "station-3",
           "name": "station-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3817,15 +3313,9 @@
           "id": "project-3",
           "name": "project-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3855,15 +3345,9 @@
           "id": "area-3",
           "name": "area-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -3890,15 +3374,9 @@
           "id": "timestamp-7",
           "name": "timestamp-7"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -3920,18 +3398,9 @@
           "variant": "outlined",
           "label": "Take GPS Location"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "Updated Timestamp",
           "annotation": true,
@@ -4639,15 +4108,9 @@
           "id": "soil",
           "name": "soil"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -4670,18 +4133,9 @@
           "variant": "outlined",
           "label": "Whole Vegetation photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -4703,18 +4157,9 @@
           "variant": "outlined",
           "label": "closeup of leaf"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -4736,18 +4181,9 @@
           "variant": "outlined",
           "label": "Closeup flowers/fruit"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -4769,18 +4205,9 @@
           "variant": "outlined",
           "label": "soil photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -4812,15 +4239,9 @@
           "hrid": true,
           "fieldselect10": "rock-autoincrementer"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -4853,15 +4274,9 @@
           "linked": "human-readable-id-4",
           "fieldselect10": "rock-autoincrementer"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -4884,15 +4299,9 @@
           "form_id": "FORM7SECTION1",
           "label": "Rock Autoincrementer"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -4922,15 +4331,9 @@
           "id": "station-4",
           "name": "station-4"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -4962,15 +4365,9 @@
           "id": "project-4",
           "name": "project-4"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5000,15 +4397,9 @@
           "id": "area-4",
           "name": "area-4"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5031,18 +4422,9 @@
           "variant": "outlined",
           "label": "Take GPS Location"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "Updated Timestamp",
           "annotation": true,
@@ -5090,15 +4472,9 @@
           "id": "inclusion-size",
           "name": "inclusion-size"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5147,15 +4523,9 @@
           "id": "grain-size",
           "name": "grain-size"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5204,15 +4574,9 @@
           "id": "sorting",
           "name": "sorting"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5243,15 +4607,9 @@
           "id": "other-lithological-descriptors",
           "name": "other-lithological-descriptors"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5281,15 +4639,9 @@
           "id": "stratigraphic-unit",
           "name": "stratigraphic-unit"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5319,15 +4671,9 @@
           "id": "large-scale-structure",
           "name": "large-scale-structure"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5357,15 +4703,9 @@
           "id": "alteration",
           "name": "alteration"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5395,15 +4735,9 @@
           "id": "veining",
           "name": "veining"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5435,15 +4769,9 @@
           "id": "notes-2",
           "name": "notes-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5465,18 +4793,9 @@
           "variant": "outlined",
           "label": "Sample Photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5498,18 +4817,9 @@
           "variant": "outlined",
           "label": "Surface Photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5531,18 +4841,9 @@
           "variant": "outlined",
           "label": "Other Photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -5572,15 +4873,9 @@
           "id": "campaign-label",
           "name": "campaign-label"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -5613,15 +4908,9 @@
           "id": "water-sample-ph-workaround",
           "name": "water-sample-ph-workaround"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -5653,15 +4942,9 @@
           "id": "water-sample-eh-workaround",
           "name": "water-sample-eh-workaround"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -5693,15 +4976,9 @@
           "id": "water-sample-do-workaround",
           "name": "water-sample-do-workaround"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -5731,15 +5008,9 @@
           "id": "campaign-label-2",
           "name": "campaign-label-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -6194,15 +5465,9 @@
           "id": "geology",
           "name": "geology"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -6383,15 +5648,9 @@
           "id": "regolith-type",
           "name": "regolith-type"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -6572,15 +5831,9 @@
           "id": "regolith-type-2",
           "name": "regolith-type-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -6868,15 +6121,9 @@
           "id": "landform",
           "name": "landform"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -6907,15 +6154,9 @@
           "id": "campaign-label-3",
           "name": "campaign-label-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -7203,15 +6444,9 @@
           "id": "landform-2",
           "name": "landform-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -7242,15 +6477,9 @@
           "id": "campaign-label-4",
           "name": "campaign-label-4"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -7705,15 +6934,9 @@
           "id": "lithology",
           "name": "lithology"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -7740,15 +6963,9 @@
             "children": "Check here to mark this as the preferred pH"
           }
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -7774,15 +6991,9 @@
             "children": "Check here to mark this as the preferred Eh"
           }
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -7808,15 +7019,9 @@
             "children": "Check here to mark this as the preferred DO"
           }
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -7840,15 +7045,9 @@
           "id": "html-text-3",
           "name": "html-text-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -7872,15 +7071,9 @@
           "id": "html-text-4",
           "name": "html-text-4"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -7904,15 +7097,9 @@
           "id": "html-text-5",
           "name": "html-text-5"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -7977,20 +7164,12 @@
         "label": "pH Eh DO Sub-sample"
       },
       "FORM3SECTION1": {
-        "fields": [
-          "hridFORM3",
-          "sample-id-3",
-          "timestamp-3"
-        ],
+        "fields": ["hridFORM3", "sample-id-3", "timestamp-3"],
         "uidesign": "form",
         "label": "Eh Sample"
       },
       "FORM4SECTION1": {
-        "fields": [
-          "hridFORM4",
-          "sample-id-4",
-          "timestamp-4"
-        ],
+        "fields": ["hridFORM4", "sample-id-4", "timestamp-4"],
         "uidesign": "form",
         "label": "EO Sample"
       },
@@ -8075,51 +7254,37 @@
     },
     "viewsets": {
       "FORM1": {
-        "views": [
-          "FORM1SECTION1"
-        ],
+        "views": ["FORM1SECTION1"],
         "label": "Water Sample",
         "submit_label": "Save and Return"
       },
       "FORM2": {
-        "views": [
-          "FORM2SECTION1"
-        ],
+        "views": ["FORM2SECTION1"],
         "label": "Water pH Eh DO Sample",
         "is_visible": false
       },
       "FORM3": {
-        "views": [
-          "FORM3SECTION1"
-        ],
+        "views": ["FORM3SECTION1"],
         "label": "Water Eh",
         "is_visible": false
       },
       "FORM4": {
-        "views": [
-          "FORM4SECTION1"
-        ],
+        "views": ["FORM4SECTION1"],
         "label": "Water DO",
         "is_visible": false
       },
       "FORM5": {
-        "views": [
-          "FORM5SECTION1"
-        ],
+        "views": ["FORM5SECTION1"],
         "label": "Soil Sample",
         "submit_label": "Save and Return"
       },
       "FORM6": {
-        "views": [
-          "FORM6SECTION1"
-        ],
+        "views": ["FORM6SECTION1"],
         "label": "Vegetation Sample",
         "submit_label": "Save and Return"
       },
       "FORM7": {
-        "views": [
-          "FORM7SECTION1"
-        ],
+        "views": ["FORM7SECTION1"],
         "label": "Rock Sample",
         "submit_label": "Save and Return"
       }

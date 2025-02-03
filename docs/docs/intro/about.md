@@ -12,7 +12,7 @@ Fieldmark™ was built for researchers who want to collect and share high-qualit
 
 ## Customising Notebooks
 
-Notebooks can be created in our Notebook Designer on the web. Some advanced features require editing in .json. Once designed, notebooks can edited and adjusted, even after deployment. For more information see [Notebook Creation](intermediate/notebook-creation).   
+Notebooks can be created in our Notebook Designer on the web. Some advanced features require editing in .json. Once designed, notebooks can edited and adjusted, even after deployment. For more information see [Notebook Creation](intermediate/notebook-creation).
 
 ## Collecting Data
 
@@ -24,4 +24,4 @@ While working online, or within range of an offline server, records will be cont
 
 ## Exporting Data
 
-Data can be exported from Fieldmark™ into .csv, .kml, .json and other formats, as needed. Images, files and folders are renamed in accordance with the record's chosen identifier, saving time when you return from the field. For more information see [Export](export).    
+Data can be exported from Fieldmark™ into .csv, .kml, .json and other formats, as needed. Images, files and folders are renamed in accordance with the record's chosen identifier, saving time when you return from the field. For more information see [Export](export).

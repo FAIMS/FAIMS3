@@ -1,4 +1,4 @@
-version: "3.9"
+version: '3.9'
 services:
   couchdb:
     env_file: .env
@@ -6,12 +6,12 @@ services:
       context: couchdb
       dockerfile: Dockerfile
       # dockerfile relative path is from build context
-    volumes: 
+    volumes:
       - type: volume
         source: couchdb-data
         target: /opt/couchdb/data
     ports:
-      - "0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984"     
+      - '0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984'
     environment:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD
@@ -22,7 +22,7 @@ services:
     build:
       context: ../
       dockerfile: api/Dockerfile
-    command: "npm run watch-api"
+    command: 'npm run watch-api'
     volumes:
       - ./src:/usr/src/api/src
       - ./views:/usr/src/api/views
@@ -30,18 +30,18 @@ services:
       - ./public:/usr/src/api/public
       - ./test:/usr/src/api/test
     ports:
-      - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
+      - '0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}'
     networks:
       - conductor-local-dev
     environment:
-      #  note that some of these are pulled from the environment (.env) 
-      #  while others get values here if the value is known for 
+      #  note that some of these are pulled from the environment (.env)
+      #  while others get values here if the value is known for
       #  docker-compose setup
 
       - PROFILE_NAME
       - CONDUCTOR_INSTANCE_NAME
       - CONDUCTOR_DESCRIPTION
-      
+
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD
 

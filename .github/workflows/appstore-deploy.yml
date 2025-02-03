@@ -2,7 +2,7 @@ name: Deploy to Apple App Store Production, Manual
 
 on:
   workflow_dispatch:
-    
+
 jobs:
   ios-deploy:
     name: Deploying to Production
@@ -34,8 +34,8 @@ jobs:
       - name: Create version string
         shell: bash
         run: |
-          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"        
-      
+          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"
+
       - name: Set up ruby env
         uses: ruby/setup-ruby@v1
         with:
@@ -54,7 +54,7 @@ jobs:
       - name: Use Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10' 
+          python-version: '3.10'
       - name: Building webapp
         run: |
           export platform="github-actions-ios"

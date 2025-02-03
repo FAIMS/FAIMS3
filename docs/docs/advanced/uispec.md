@@ -1,4 +1,5 @@
 (advanced/uispec)=
+
 # UI Specification
 
 UI specification is stored in CouchDB and has the following format:
@@ -19,7 +20,7 @@ UI specification is stored in CouchDB and has the following format:
 ## Fields
 
 The `fields` property is an array of field specifications. Each field has an
-identifier unique in the form.  The notebook builder uses the format `newfield + XXX`
+identifier unique in the form. The notebook builder uses the format `newfield + XXX`
 where `XXX` is a random hex string; there is no meaning to this format so could
 be something more intuitive (takepoint1).
 
@@ -45,35 +46,35 @@ chosen component.
 
 ### Component Name
 
-The component name for this form field.  Used to select the component to use
-when displaying the form field.  This component name needs to have been
+The component name for this form field. Used to select the component to use
+when displaying the form field. This component name needs to have been
 registered with `registerComponent` in `src/gui/component_registry/bundle_components.ts`.
 
 ### Type Returned
 
-The type of data returned by the form field.  Comment in code says "matches
-a type in the Project Model"   Not clear that this is used in the
-FAIMS code.  Note that this field is spelled in the code in some places as `type-return`.  May not be used in the code.  Observed values:
+The type of data returned by the form field. Comment in code says "matches
+a type in the Project Model" Not clear that this is used in the
+FAIMS code. Note that this field is spelled in the code in some places as `type-return`. May not be used in the code. Observed values:
 
-* `faims-core::String`
-* `faims-core::Integer`
-* `faims-core::Bool`
-* `faims-core::JSON` (map field)
-* `faims-core::Json` (advanced select)
-* `faims-core::Child`
-* `faims-core::Linked`
-* `faims-core::Array`
+- `faims-core::String`
+- `faims-core::Integer`
+- `faims-core::Bool`
+- `faims-core::JSON` (map field)
+- `faims-core::Json` (advanced select)
+- `faims-core::Child`
+- `faims-core::Linked`
+- `faims-core::Array`
 
 ### Component Parameters
 
 ```json
 {
-    "fullWidth": true,
-    "name": "newfield5363dcf4",
-    "id": "newfield5363dcf4",
-    "helperText": "Tap to select the starting point for the survey.",
-    "variant": "outlined",
-    "label": "Take GPS Starting Point"
+  "fullWidth": true,
+  "name": "newfield5363dcf4",
+  "id": "newfield5363dcf4",
+  "helperText": "Tap to select the starting point for the survey.",
+  "variant": "outlined",
+  "label": "Take GPS Starting Point"
 }
 ```
 
@@ -123,45 +124,33 @@ FAIMS code.  Note that this field is spelled in the code in some places as `type
 This is passed in to Formik to use for validation of the field value.
 
 ```json
-[
-        [
-          "yup.object"
-        ],
-        [
-          "yup.nullable"
-        ]
-]
+[["yup.object"], ["yup.nullable"]]
 ```
 
 ### Is Logic
 
 ```json
 {
-    "newfield800c3f33": [
-        "Zone Alpha; ",
-        "Zone Charlie; "
-    ]
+  "newfield800c3f33": ["Zone Alpha; ", "Zone Charlie; "]
 }
 ```
 
 ### Access
 
 ```json
-[
-    "admin"
-]
+["admin"]
 ```
 
 ### Meta
 
 ```json
 {
-    "annotation_label": "annotation",
-    "annotation": false,
-    "uncertainty": {
-        "include": false,
-        "label": "uncertainty"
-    }
+  "annotation_label": "annotation",
+  "annotation": false,
+  "uncertainty": {
+    "include": false,
+    "label": "uncertainty"
+  }
 }
 ```
 
@@ -169,26 +158,26 @@ This is passed in to Formik to use for validation of the field value.
 
 Showing namespace and component-name.
 
-* core-material-ui Input
-* core-material-ui Checkbox
-* core-material-ui TextField
-* formik-material-ui TextField
-* formik-material-ui Select
-* formik-material-ui RadioGroup
-* faims-custom Select
-* faims-custom MultiSelect
-* faims-custom AdvancedSelect
-* faims-custom Checkbox
-* faims-custom RadioGroup
-* faims-custom ActionButton
-* faims-custom TakePoint
-* faims-custom TakePhoto
-* faims-custom TemplatedStringField
-* faims-custom BasicAutoIncrementer
-* faims-custom RelatedRecordSelector
-* qrcode QRCodeFormField
-* mapping-plugin MapFormField
-* formik-material-ui MultipleTextField
-* faims-custom FileUploader
-* faims-custom RandomStyle
-* faims-custom DateTimeNow
+- core-material-ui Input
+- core-material-ui Checkbox
+- core-material-ui TextField
+- formik-material-ui TextField
+- formik-material-ui Select
+- formik-material-ui RadioGroup
+- faims-custom Select
+- faims-custom MultiSelect
+- faims-custom AdvancedSelect
+- faims-custom Checkbox
+- faims-custom RadioGroup
+- faims-custom ActionButton
+- faims-custom TakePoint
+- faims-custom TakePhoto
+- faims-custom TemplatedStringField
+- faims-custom BasicAutoIncrementer
+- faims-custom RelatedRecordSelector
+- qrcode QRCodeFormField
+- mapping-plugin MapFormField
+- formik-material-ui MultipleTextField
+- faims-custom FileUploader
+- faims-custom RandomStyle
+- faims-custom DateTimeNow

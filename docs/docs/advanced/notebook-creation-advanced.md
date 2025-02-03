@@ -1,4 +1,5 @@
 (advanced/identifiers)=
+
 # Human Readable Identifiers
 
 A human readable identifier is best edited directly in the JSON for any complexity beyond concatenating one or more fields with `-`. The syntax for the human readable identifier follows the [Mustache](https://mustache.github.io/mustache.5.html) spec, including conditionals.
@@ -13,22 +14,23 @@ The most complex example of a HRID presently in use is in the [CSIRO Geochemistr
 "template": "pH: {{phNumericPhValue}}{{#phCheckboxPreferred}}, Preferred{{/phCheckboxPreferred}}; Eh: {{EhNumericValue}}{{#ehCheckboxPreferred}}, Preferred{{/ehCheckboxPreferred}}; DO: {{doTextValue}}{{#doCheckboxPreferred}}, Preferred{{/doCheckboxPreferred}}; {{phTimestamp}}",
 ```
 
-Taking this in parts. 
-* The key is `component-parameters`.`template` in the element type `"component-name": "TemplatedStringField",`
-* A rendered HRID in its most complex form could look like `pH: 8, Preferred; Eh: 5, Preferred; DO: 30, Preferred; 2023-03-03T07:08:31.330Z`
-* It starts with always-present static text `pH: `, 
-* then gets the field value from the key `phNumericPhValue`
+Taking this in parts.
+
+- The key is `component-parameters`.`template` in the element type `"component-name": "TemplatedStringField",`
+- A rendered HRID in its most complex form could look like `pH: 8, Preferred; Eh: 5, Preferred; DO: 30, Preferred; 2023-03-03T07:08:31.330Z`
+- It starts with always-present static text `pH: `,
+- then gets the field value from the key `phNumericPhValue`
 
 :::{note}
 We recommend editing all keys to be useful keys instead of newfieldhexvalue, to make work like this easier.
 :::
 
-* Then it checks for the presence of the value phCheckboxPreferred, and if present, writes the static text `, Preferred`. 
-* Then it always appends `; Eh: ` and the process repeats for the other values.
+- Then it checks for the presence of the value phCheckboxPreferred, and if present, writes the static text `, Preferred`.
+- Then it always appends `; Eh: ` and the process repeats for the other values.
 
 ## Identifiers with autoincrementers
 
-An autoincrementer, in the json, is merely a field. Use the field key as part of the template, as per the previous section, within `{{fieldKey}}`. 
+An autoincrementer, in the json, is merely a field. Use the field key as part of the template, as per the previous section, within `{{fieldKey}}`.
 
 Here is an example from CSIRO Geochemistry:
 
@@ -123,14 +125,13 @@ Here is an example from CSIRO Geochemistry:
 ...
 ```
 
-
 (advanced/notebook-creation-advanced)=
+
 # Advanced Notebook Customisation
 
 The following instructions provide information for advanced users to customise notebooks without the use of the Notebook Designer.
 
 For an introduction to Fieldmark Notebooks see [Notebook Creation](intermediate/notebook-creation).
-
 
 ## **Hierarchical vocabularies**
 
@@ -141,7 +142,7 @@ A hierarchical vocabulary can save either its leaf node or the full path. Set th
 "valuetype": "full" #full path
 ```
 
-Here is the specification for the hierarchical json: 
+Here is the specification for the hierarchical json:
 
 ```
 name: compulsory
@@ -185,7 +186,6 @@ Example 1, without images:
 2.  Click ‘Save Notebook’ button in Submit Tab
 3.  Check if the image uploaded pop with ID in front of the image under ‘Files Attached’ list (if not, refresh the page)
 4.  Get the ID (example: Attachment-29c68347) for the image and add it into the json field option
-    
 
 ```
 [
@@ -228,6 +228,7 @@ Example 1, without images:
     }
 ]
 ```
+
 :::{note}
 **If attachments edited/added manually (not using above steps), please make sure values have been added into ‘project-metadata-attachfilenames’ meta data**, following example below. "Attachment-f8077299" and "Attachment-6e504881" are the attachment IDs
 :::
@@ -338,7 +339,7 @@ json **controller field**
           "view"
         ]
       }
-#type could be 
+#type could be
 [ "field","section"]#control both views and fields
 [ "field"]#control fields
 [ "view"]#control views
@@ -403,7 +404,7 @@ Example:
 ## Parent/Persistence data inheritance
 
 ```
-# set to display in child record inheritance data 
+# set to display in child record inheritance data
 "displayParent": true
 # persistence data will be displayed in child record inheritance data as well
 "persistent": true
@@ -461,7 +462,7 @@ JSON spec to customise relationships:
 ```
 #type of the relationship,
 # compulsory, value could be "faims-core::Child" or "faims-core::Linked"
-"relation_type": "faims-core::Child", 
+"relation_type": "faims-core::Child",
 # compulsory, link form ID
 "related_type": "FORM2",
 # compulsory, label for the link form, this value should be set as same as "related_type" label(e.g. FORM2 label), if not set, field list will display "related_type" value(e.g. FORM2)
@@ -488,22 +489,21 @@ JSON spec to customise relationships:
 Tips for "relation_linked_vocabPair" :
 
 1.  For "relation_type": "faims-core::Child", default value is
-    
+
     ```
     "relation_linked_vocabPair":[
                 "is child of",
                 "is parent of"
               ]
     ```
-    
+
     If the value of linked_vocabPair is set, please use the same format.
 
     :::{warning}
     **Only set ONE array**, multiple array values will cause a display error.
     :::
-    
+
 2.  For "relation_type": "faims-core::Linked",several arrays can be added
-    
 
 ```
 # only one pair
@@ -646,7 +646,7 @@ Tips for "relation_linked_vocabPair" :
 ```
 # set true :
 #   When the record is first created, populate this field with the current datetime
-"is_auto_pick": true 
+"is_auto_pick": true
 ```
 
 example of DateTimeNow Field

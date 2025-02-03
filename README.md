@@ -55,7 +55,7 @@ This spins up three services
 
 - conductor API (/api) live reloading on http://localhost:8080
 - FAIMS3 app (/app) live reloading on http://localhost:3000
-- couchDB on http://localhost:5984/_utils
+- couchDB on http://localhost:5984/\_utils
 
 ## Initial step-by step setup
 

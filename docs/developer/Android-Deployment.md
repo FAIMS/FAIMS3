@@ -8,12 +8,12 @@ Based on the example given in [this Runway blog post](https://www.runway.team/bl
 ### Create Google Play App
 
 The automated process below can only work once we have created an app on the
-Google Play console and uploaded a first version app bundle.  This means we need
+Google Play console and uploaded a first version app bundle. This means we need
 to do a local build, sign it with an _upload key_ and upload it to the
 Google Play console manually.
 
 Sign in to the Google Play console and create a new app. Fill in the required
-details following the workflow prompts.  
+details following the workflow prompts.
 
 Build the app and open up Android Studio:
 
@@ -45,11 +45,11 @@ is [detailed here](https://docs.fastlane.tools/getting-started/android/setup/), 
 to [the official Google documentation](https://developers.google.com/android-publisher/getting_started/).
 
 Fastlane is written in Ruby and so running it requires Ruby and that you install
-a bunch of 'Gems'.   If you want to do this locally to test then one option is
+a bunch of 'Gems'. If you want to do this locally to test then one option is
 to use [rvm](https://rvm.io/) to manage Ruby versions and Gem installs, another is
-just to install Ruby globally.   I found that installing Ruby globally with
+just to install Ruby globally. I found that installing Ruby globally with
 `brew` (MacOS) was easiest and then used a config setting to get gems installed
-into my home directory rather than globally (`bundle config set --local path /Users/Steve/.gem/ruby/3.3.0`).  You would then run `bundle install` from inside the `app/android`
+into my home directory rather than globally (`bundle config set --local path /Users/Steve/.gem/ruby/3.3.0`). You would then run `bundle install` from inside the `app/android`
 directory to get fastlane etc installed.
 
 #### Google Cloud Project
@@ -57,10 +57,10 @@ directory to get fastlane etc installed.
 The workflow needs to be able to access the Google Play API and to do this we need
 to set up a project on [Google Cloud](https://console.cloud.google.com/) and give it
 permission to access the API. There are instructions on creating a Service Account Key on
-the [Runway Documentation](https://docs.runway.team/integrations/app-stores/google-play-console#service-account-api-key-setup) page.  
+the [Runway Documentation](https://docs.runway.team/integrations/app-stores/google-play-console#service-account-api-key-setup) page.
 
 You are creating a 'service account' which is effectively a proxy account that can
-access the API.  You will give that account email permission to access the project
+access the API. You will give that account email permission to access the project
 on Google Play. When you create the service account you will download a file containing
 the private key for that account (eg. `fieldmark-app-deployment-c243ef36afb3.json`).
 We will use that below to configure the pipeline for app upload.
@@ -71,31 +71,31 @@ Workflow `nightly-android-testbuild.yml` does a nightly build and deploy to the 
 
 Here are the initial setup steps, others are described in more detail below.
 
-- __Checkout__: Checkout the latest version of the code.
-- __Cache Node Modules__: Sets up and/or restores a cache of node modules to speed up npm install
-- __Configure Turborepo Remote Cache__
-Configures a turborepo build cache so that previous builds can be used if there
-are no changes.
-- __Install `jq`__: A command line JSON processor
-- __Declare Some Variables__: Set up `sha_short`, a short hash of the latest git commit and `app_version` which pulls the app version string from `app/package.json` using `jq`.
-- __Create Version String__: Make a version string for the app based on the two variables from the last step
-Version is eg. `1.0.0-android-#AAAFFFEEE`
-- __Cache Gradle Packages__:
-Set up and/or restore a cache of gradle packages for the app build
-- __Use Node.js $version__
-Selects the version of Node to use, currently version 20 (from matrix setting above)
-- __Set up adopt JDK 1.17__:
-Get the right Java version for the build
-- __Set up ruby env__:
-Ruby is used for running `fastlane` to automate the upload to the app store.
-- __Decode Service Account Key JSON File__:
-Decode the `GPLAY_SERVICE_ACCOUNT_KEY_JSON` secret that contains a base64 encoded
-version of the Google Cloud Service Account key which you created earlier.  Resulting file will be used by `fastlane` later as `ANDROID_JSON_KEY_FILE`.
-- __Decode Keystore File__:
-Decode the `KEYSTORE_FILE` secret that contains the base64 encoded content of the
-key store. (How do we make this?)
-- __Setup Android SDK__:
-Runs the action to make the SDK available to the build.
+- **Checkout**: Checkout the latest version of the code.
+- **Cache Node Modules**: Sets up and/or restores a cache of node modules to speed up npm install
+- **Configure Turborepo Remote Cache**
+  Configures a turborepo build cache so that previous builds can be used if there
+  are no changes.
+- **Install `jq`**: A command line JSON processor
+- **Declare Some Variables**: Set up `sha_short`, a short hash of the latest git commit and `app_version` which pulls the app version string from `app/package.json` using `jq`.
+- **Create Version String**: Make a version string for the app based on the two variables from the last step
+  Version is eg. `1.0.0-android-#AAAFFFEEE`
+- **Cache Gradle Packages**:
+  Set up and/or restore a cache of gradle packages for the app build
+- **Use Node.js $version**
+  Selects the version of Node to use, currently version 20 (from matrix setting above)
+- **Set up adopt JDK 1.17**:
+  Get the right Java version for the build
+- **Set up ruby env**:
+  Ruby is used for running `fastlane` to automate the upload to the app store.
+- **Decode Service Account Key JSON File**:
+  Decode the `GPLAY_SERVICE_ACCOUNT_KEY_JSON` secret that contains a base64 encoded
+  version of the Google Cloud Service Account key which you created earlier. Resulting file will be used by `fastlane` later as `ANDROID_JSON_KEY_FILE`.
+- **Decode Keystore File**:
+  Decode the `KEYSTORE_FILE` secret that contains the base64 encoded content of the
+  key store. (How do we make this?)
+- **Setup Android SDK**:
+  Runs the action to make the SDK available to the build.
 
 ### Building Webapp
 
@@ -113,7 +113,7 @@ Then runs `fastlane` to build and deploy the application. Fastlane is driven by
 two files: Appfile and Fastfile. Appfile declares the JSON service account key
 which gives us access
 to the Google Play API and defines a package name which determines which app
-we will be updating.  Both of these come from the environment in our
+we will be updating. Both of these come from the environment in our
 
 ```ruby
 json_key_file(ENV["ANDROID_JSON_KEY_FILE"])
@@ -140,7 +140,7 @@ Fastlane actions are defined by a `lane` in the [Fastfile](../../app/android/fas
                "android.injected.signing.store.file" => JAVA_KEYSTORE,
                "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
                "android.injected.signing.key.alias" => JAVA_KEY,
-               "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
+               "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,
             }
             )
       upload_to_play_store(json_key: ENV["ANDROID_JSON_KEY_FILE"],
@@ -155,19 +155,19 @@ Fastlane actions are defined by a `lane` in the [Fastfile](../../app/android/fas
 
 This is basically two tasks, a gradle build followed by uploading to the app store.  
 We configure the build with a few environment variables, notably the version/version
-name and the means to sign the generated application bundle.  The upload is
+name and the means to sign the generated application bundle. The upload is
 configured with the JSON Service Key file and the track to deploy to. The
 package name has been configured in the Appfile.
 
 Note that the upload here does not upload metadata/images/screenshots. It is
 possible to automate these uploads using fastlane but for now we just upload
-those manually to the Play Console.  There was a step to generate a changelog
+those manually to the Play Console. There was a step to generate a changelog
 that I've removed for now since the result was not used.
 
 ## Variables and Secrets for deployment
 
 The following variables and secrets are set in the the Github repository
-where these workflows will run.  
+where these workflows will run.
 
 - `vars.NIGHTLY_CONDUCTOR_URL` - URL setting for test build
 - `vars.PRODUCTION_CONDUCTOR_URL` - URL setting for production build
@@ -175,7 +175,7 @@ where these workflows will run.
 - `vars.TURBO_API_URL` - Turbo cache URL
 - `vars.APP_ID` - the id of the app on the app store, eg. 'au.edu.faims.fieldmark', needs to be unique per deployment
 - `vars.APP_NAME` - the app name that appears in various places
-= `vars.ANDROID_RELEASE_STATUS` - the release status, normally 'completed' but for a draft (not yet reviewed) app this could be 'draft'
+  = `vars.ANDROID_RELEASE_STATUS` - the release status, normally 'completed' but for a draft (not yet reviewed) app this could be 'draft'
 
 Secrets will not be visible once added so we need to keep copies somewhere safe.
 

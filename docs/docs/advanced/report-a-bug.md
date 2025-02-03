@@ -1,4 +1,5 @@
 (advanced/bug-report)=
+
 # How to submit a bug report
 
 A bug report is a way of telling us about a problem or error that you encounter while using our software. It helps us to identify and fix the issue as soon as possible.
@@ -46,18 +47,17 @@ If there are any available updates, please apply the updates and try to replicat
 
 To reproduce the bug, you need to describe what you were trying to do, what you expected to happen, and what actually happened. You also need to provide any error messages or screenshots that show the problem. You can use this template to format your information:
 
-* Expected action: 
-* Observed action: 
-* Error message (if any): 
-* Screenshot (if any): 
+- Expected action:
+- Observed action:
+- Error message (if any):
+- Screenshot (if any):
 
 For example:
 
-* Expected action: I clicked on the "Submit" button to send my feedback.
-* Observed action: The page froze and nothing happened.
-* Error message (if any): Uncaught TypeError: Cannot read property 'value' of null
-* Screenshot (if any): [attach a file or a link]
-
+- Expected action: I clicked on the "Submit" button to send my feedback.
+- Observed action: The page froze and nothing happened.
+- Error message (if any): Uncaught TypeError: Cannot read property 'value' of null
+- Screenshot (if any): [attach a file or a link]
 
 If the bug occurs in your browser, you can also copy the error message from the console. To do this, follow these steps:
 
@@ -69,14 +69,13 @@ If the bug occurs in your browser, you can also copy the error message from the 
 
 Once you have gathered all this information, write it down or copy-paste it into a text file or an email. You can use this template to format your information:
 
+- Operating system:
+- Browser:
+- Available RAM:
+- Browser version:
+- Operating system patch level:
 
-* Operating system:
-* Browser:
-* Available RAM:
-* Browser version:
-* Operating system patch level: 
-
-* Expected action: 
-* Observed action: 
-* Error message (if any): 
-* Screenshot (if any): 
+- Expected action:
+- Observed action:
+- Error message (if any):
+- Screenshot (if any):

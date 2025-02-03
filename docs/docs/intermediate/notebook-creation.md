@@ -9,11 +9,11 @@ A Fieldmark notebook is comprised of Forms which can be divided into Sections. E
 Published notebooks (that are shared with other uses and ready for synchronisation) are green in colour. Draft notebooks that appear on your local device only are orange.
 
 :::{attention}
-Unpublished, draft notebooks are saved to your local device only. They will be deleted (along with all unsynchronised records) and you will *lose all your work* if you are required to 'Wipe and Reset the App' (see [Troubleshooting](advanced/troubleshooting)). 
+Unpublished, draft notebooks are saved to your local device only. They will be deleted (along with all unsynchronised records) and you will _lose all your work_ if you are required to 'Wipe and Reset the App' (see [Troubleshooting](advanced/troubleshooting)).
 :::
 
-
 (intermediate/notebook-creation)=
+
 # The Fieldmark Notebook Designer
 
 Fieldmark offers a graphic user interface (GUI) for users to create and edit Notebooks. The Notebook Design allows for the creation of simple notebooks with some advanced features including the allocation of identifiers, simple validation and more. Custom features (eg the definition of hierarchical vocabularies) require hand-editing in .json. See [Advanced Notebook Creation](advanced/notebook-creation-advanced) for more information.
@@ -142,9 +142,9 @@ Here you can interact with the form but not enter data.
 
 You can set default Notebook-wide settings on the BEHAVIOUR tab to:
 
--   Automatically save changes a user makes as they occur
--   Allow offline use
--   Store content offline
+- Automatically save changes a user makes as they occur
+- Allow offline use
+- Store content offline
 
 ![Configure your notebook behaviour](notebook-creation-images/notebookdesign_behaviour.jpg)
 

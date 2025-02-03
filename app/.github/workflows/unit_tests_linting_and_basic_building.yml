@@ -20,7 +20,6 @@ on:
     types: # This configuration does not affect the page_build event above
       - created
 
-
 jobs:
   build:
     # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
@@ -51,24 +50,24 @@ jobs:
         #     experimental: true
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    # setup CORS for couchdb
-    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/httpd/enable_cors -d '"true"'
-    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/origins -d '"*"'
-    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/origins -d '"http://localhost"'
-    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/credentials -d '"true"'
-    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/methods -d '"GET, PUT, POST, HEAD, DELETE"'
-    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/headers -d '"accept, authorization, content-type, origin, referer, x-csrf-token"'
-    # do the npm stuff
-    - run: npm ci
-    - run: npm run lint
-    - run: npm run build --if-present || ${{ matrix.experimental }}
-    - run: npm run test  || ${{ matrix.experimental }}
-    - run: npx cap copy || ${{ matrix.experimental }}
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      # setup CORS for couchdb
+      - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/httpd/enable_cors -d '"true"'
+      - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/origins -d '"*"'
+      - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/origins -d '"http://localhost"'
+      - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/credentials -d '"true"'
+      - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/methods -d '"GET, PUT, POST, HEAD, DELETE"'
+      - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/headers -d '"accept, authorization, content-type, origin, referer, x-csrf-token"'
+      # do the npm stuff
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build --if-present || ${{ matrix.experimental }}
+      - run: npm run test  || ${{ matrix.experimental }}
+      - run: npx cap copy || ${{ matrix.experimental }}
     # cap doctor broken for android just now
     # - run: npx cap doctor android || ${{ matrix.experimental }} # ios requires xcode

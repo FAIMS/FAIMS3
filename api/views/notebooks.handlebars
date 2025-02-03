@@ -1,156 +1,157 @@
-<div class="container">
+<div class='container'>
 
-<h1>Notebooks</h1>
+  <h1>Notebooks</h1>
 
-  <p>This page shows a list of the notebooks that you have access to on this server.
+  <p>This page shows a list of the notebooks that you have access to on this
+    server.
   </p>
 
   {{#if can_create_notebooks}}
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
-    New Notebook
-  </button>
+    <button
+      type='button'
+      class='btn btn-primary'
+      data-bs-toggle='modal'
+      data-bs-target='#exampleModal'
+    >
+      New Notebook
+    </button>
 
-  {{#if DESIGNER_URL}}
-    <p>Create a new notebook JSON file with <a href="{{DESIGNER_URL}}">Designer</a></p>
-  {{/if}}
+    {{#if DESIGNER_URL}}
+      <p>Create a new notebook JSON file with
+        <a href='{{DESIGNER_URL}}'>Designer</a></p>
+    {{/if}}
 
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h1 class="modal-title fs-5" id="exampleModalLabel">Add New Notebook</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div
+      class='modal fade'
+      id='exampleModal'
+      tabindex='-1'
+      aria-labelledby='exampleModalLabel'
+      aria-hidden='true'
+    >
+      <div class='modal-dialog'>
+        <div class='modal-content'>
+          <div class='modal-header'>
+            <h1 class='modal-title fs-5' id='exampleModalLabel'>Add New Notebook</h1>
+            <button
+              type='button'
+              class='btn-close'
+              data-bs-dismiss='modal'
+              aria-label='Close'
+            ></button>
+          </div>
+          <form id='upload-notebook-form'>
+            <div class='modal-body'>
+              <div class='mb-3'>
+                Here you can create a new notebook by uploading a JSON notebook
+                specification file.
+              </div>
+
+              <div class='mb-3'>
+                <label for='notebookName'>Notebook Name</label>
+                <input
+                  id='notebookName'
+                  name='name'
+                  class='form-control'
+                  placeholder='Notebook Name'
+                />
+                <div class='form-text'>Optional, if not provided the name
+                  property from the file will be used.</div>
+              </div>
+
+              <div class='mb-3'>
+                <input
+                  type='file'
+                  class='form-control'
+                  name='notebook'
+                  id='notebook'
+                />
+                <div class='form-text'>Select a notebook file in JSON format.</div>
+              </div>
+            </div>
+            <div class='modal-footer'>
+              <button
+                type='button'
+                class='btn btn-secondary'
+                data-bs-dismiss='modal'
+              >Close</button>
+              <input
+                type='submit'
+                class='btn btn-primary'
+                value='Upload Notebook'
+              />
+            </div>
+          </form>
+        </div>
       </div>
-        <form id="upload-notebook-form">
-          <div class="modal-body">
-            <div class="mb-3">
-              Here you can create a new notebook by uploading a JSON 
-              notebook specification file.
-            </div>
-
-            <div class="mb-3">
-              <label for="notebookName">Notebook Name</label>
-              <input id="notebookName" name="name" class="form-control" placeholder="Notebook Name">
-              <div class="form-text">Optional, if not provided the name property from the file will be used.</div>
-            </div>
-
-            <div class="mb-3">
-              <input type="file" class="form-control" name="notebook" id="notebook">
-              <div class="form-text">Select a notebook file in JSON format.</div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <input type="submit" class="btn btn-primary" value="Upload Notebook">
-          </div>
-        </form>
     </div>
-  </div>
-</div>
 
   {{/if}}
 
   <h2>Your Notebooks</h2>
 
-  <p>You are able to manage these notebooks - eg. updating the notebook definition.</p>
+  <p>You are able to manage these notebooks - eg. updating the notebook
+    definition.</p>
 
-  <table class="table">
-      {{#each ownNotebooks}}
-          <tr>
-            <td>
-              <a href="/notebooks/{{this.non_unique_project_id}}">{{this.name}}</a>
-            </td>
-            <td>
-              {{this.metadata.project_lead}}
-            </td>
-            <td>
-              {{#if this.metadata.pre_description}}
-                {{markdown this.metadata.pre_description}}
-              {{/if}}
-            </td>
-          </tr>
-      {{/each}}
+  <table class='table'>
+    {{#each ownNotebooks}}
+      <tr>
+        <td>
+          <a href='/notebooks/{{this.non_unique_project_id}}'>{{this.name}}</a>
+        </td>
+        <td>
+          {{this.metadata.project_lead}}
+        </td>
+        <td>
+          {{#if this.metadata.pre_description}}
+            {{markdown this.metadata.pre_description}}
+          {{/if}}
+        </td>
+      </tr>
+    {{/each}}
   </table>
-
 
   <h2>Other Notebooks</h2>
 
-  <p>These are notebooks you can contribute and download data from but not modify.</p>
-  <table class="table">
-      {{#each otherNotebooks}}
-          <tr>
-            <td>
-              <a href="/notebooks/{{this.non_unique_project_id}}">{{this.name}}</a>
-            </td>
-            <td>
-              {{this.metadata.project_lead}}
-            </td>
-            <td>
-              {{#if this.metadata.pre_description}}
-                {{markdown this.metadata.pre_description}}
-              {{/if}}
-            </td>
-          </tr>
-      {{/each}}
+  <p>These are notebooks you can contribute and download data from but not
+    modify.</p>
+  <table class='table'>
+    {{#each otherNotebooks}}
+      <tr>
+        <td>
+          <a href='/notebooks/{{this.non_unique_project_id}}'>{{this.name}}</a>
+        </td>
+        <td>
+          {{this.metadata.project_lead}}
+        </td>
+        <td>
+          {{#if this.metadata.pre_description}}
+            {{markdown this.metadata.pre_description}}
+          {{/if}}
+        </td>
+      </tr>
+    {{/each}}
   </table>
-
 
 </div>
 
-
 <script>
-  const uploadNotebookHandler = (event) => {
-    event.preventDefault();
-    const url = '/api/notebooks/';
-    const form = event.target;
-    const name = form.querySelector('[name="name"]').value;
-    const fileInput = form.querySelector('[name="notebook"]');
-    if (fileInput) {
-      // parse the contents of the uploaded file as JSON
-      const reader = new FileReader();
-      const filename = fileInput.files[0];
-      reader.readAsText(filename);
-      reader.onload = (evt) => {
-        try {
-          const data = JSON.parse(evt.target.result);
-          // a little bit of validation
-          if (!data.metadata || !data['ui-specification']) {
-            alert('Invalid notebook file');
-            return;
-          }
-          if (!data.metadata.name) {
-            alert('Invalid notebook file');
-            return;
-          }
-          const body = {
-            metadata: data.metadata,
-            'ui-specification': data['ui-specification'],
-            name: name || data.metadata.name,
-          }
-          fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.notebook) {
-              // jump to the page for the new notebook
-              const url = `/notebooks/${data.notebook}`
-              window.location.href = url;
-            } else {
-              alert('Error uploading notebook');
-            }
-          });
-        } catch (e) {
-          alert('Invalid notebook file');
-          return;
-        }
-      }
-
-    }
-  }
-  document.getElementById('upload-notebook-form').onsubmit = uploadNotebookHandler;
+  const uploadNotebookHandler = (event) => { event.preventDefault(); const url =
+  '/api/notebooks/'; const form = event.target; const name =
+  form.querySelector('[name="name"]').value; const fileInput =
+  form.querySelector('[name="notebook"]'); if (fileInput) { // parse the
+  contents of the uploaded file as JSON const reader = new FileReader(); const
+  filename = fileInput.files[0]; reader.readAsText(filename); reader.onload =
+  (evt) => { try { const data = JSON.parse(evt.target.result); // a little bit
+  of validation if (!data.metadata || !data['ui-specification']) {
+  alert('Invalid notebook file'); return; } if (!data.metadata.name) {
+  alert('Invalid notebook file'); return; } const body = { metadata:
+  data.metadata, 'ui-specification': data['ui-specification'], name: name ||
+  data.metadata.name, } fetch(url, { method: 'POST', headers: { 'Content-Type':
+  'application/json', }, body: JSON.stringify(body), }) .then(response =>
+  response.json()) .then(data => { if (data.notebook) { // jump to the page for
+  the new notebook const url = `/notebooks/${data.notebook}`
+  window.location.href = url; } else { alert('Error uploading notebook'); } });
+  } catch (e) { alert('Invalid notebook file'); return; } } } }
+  document.getElementById('upload-notebook-form').onsubmit =
+  uploadNotebookHandler;
 </script>

@@ -7,10 +7,13 @@
         "n/no-unpublished-import": "off",
         "n/no-unpublished-require": "off",
         "prettier/prettier": "warn",
-        "@typescript-eslint/no-unused-vars": ["warn", {
-                "varsIgnorePattern": "[iI]gnored",
-                "argsIgnorePattern": "^_"
-        }],
+        "@typescript-eslint/no-unused-vars": [
+          "warn",
+          {
+            "varsIgnorePattern": "[iI]gnored",
+            "argsIgnorePattern": "^_"
+          }
+        ],
         "no-trailing-spaces": "warn"
       }
     }

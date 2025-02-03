@@ -1,25 +1,25 @@
 <h2>Database Setup Error</h2>
 
-<p>The database is not set up properly. You might be able to fix the problem 
+<p>The database is not set up properly. You might be able to fix the problem
   from this page.</p>
 
-<p>COUCHDB URL: <a href="{{couchdb_url}}">{{couchdb_url}}</a></p>
+<p>COUCHDB URL: <a href='{{couchdb_url}}'>{{couchdb_url}}</a></p>
 
 {{#if report.server_msg}}
- <p>{{report.server_msg}}</p>
+  <p>{{report.server_msg}}</p>
 {{else}}
   <p>Able to connect to database server.</p>
 
   {{#if report.database_errors}}
-  <ul>
-  {{#each report.database_errors}}
-  <li>{{this}}</li>
-  {{/each}}
-  </ul>
+    <ul>
+      {{#each report.database_errors}}
+        <li>{{this}}</li>
+      {{/each}}
+    </ul>
   {{/if}}
 
-  <form action="/fallback-initialise" method="POST">
-    <input type="submit" value="Run Database Initialisation">
+  <form action='/fallback-initialise' method='POST'>
+    <input type='submit' value='Run Database Initialisation' />
   </form>
-  
+
 {{/if}}

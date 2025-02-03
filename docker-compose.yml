@@ -5,7 +5,7 @@ services:
     build:
       target: api
     ports:
-      - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
+      - '0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}'
     volumes:
       - ./api/src:/usr/src/api/src
       - ./api/views:/usr/src/api/views
@@ -17,7 +17,8 @@ services:
     depends_on:
       - couchdb
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:${CONDUCTOR_INTERNAL_PORT}/" ]
+      test:
+        ['CMD', 'curl', '-f', 'http://localhost:${CONDUCTOR_INTERNAL_PORT}/']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -29,7 +30,7 @@ services:
     build:
       target: app
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - ./app/assets:/usr/src/app/assets
       - ./app/public:/usr/src/app/public
@@ -50,7 +51,7 @@ services:
         source: couchdb_data
         target: /opt/couchdb/data
     ports:
-      - "0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984"
+      - '0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984'
 
 volumes:
   couchdb_data:

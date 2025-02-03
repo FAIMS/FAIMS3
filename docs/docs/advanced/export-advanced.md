@@ -1,5 +1,7 @@
 (advanced/export)=
+
 # Advanced Export
+
 :::{note}
 This feature is presently in development.
 :::
@@ -8,7 +10,7 @@ This feature is presently in development.
 
 Developers may fork the [Jupyter Exporter](https://github.com/FAIMS/FAIMS3-Jupyter-Exporter) to engage in advanced export before our {term}`Conductor` based API arrives.
 
-* The file `export_csv.py` prototypes how data may be extracted from `faims3records.py` using the `CouchDBHelper` found in `faims3couchdb.py`.
+- The file `export_csv.py` prototypes how data may be extracted from `faims3records.py` using the `CouchDBHelper` found in `faims3couchdb.py`.
 
 ## JsonLines Exporter
 

@@ -2,47 +2,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;500;700;900&display=swap');
 
 .recordstepper::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
-.support-link{
-    color:black;
-    text-decoration:none;
+.support-link {
+  color: black;
+  text-decoration: none;
 }
-.bg-primary-gradient{
-    background: linear-gradient(#5C5A5A, #EDEEEB);
+.bg-primary-gradient {
+  background: linear-gradient(#5c5a5a, #edeeeb);
 }
 
 /* class for conflict warnings */
-.bg-warning{
-    background-color: #FDF4E7;
+.bg-warning {
+  background-color: #fdf4e7;
 }
 
 /* MUI datagrid pagination: bold for total row count emphasis */
-.MuiTablePagination-displayedRows {font-weight: 600}
+.MuiTablePagination-displayedRows {
+  font-weight: 600;
+}
 
 /* Record links table header*/
-.faims-record-link--header{
-    background-color: #e0e0e0;
-    font-weight:700
+.faims-record-link--header {
+  background-color: #e0e0e0;
+  font-weight: 700;
 }
 
 .ol-center-button {
-    padding: 1px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: rgb(23 23 23);
-    border-radius: 6px;
+  padding: 1px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgb(23 23 23);
+  border-radius: 6px;
 }
-  
+
 .ol-center-box {
-    position: absolute;
-    right: 12px;
-    bottom: 128px;
-    background-color: white;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px;
+  position: absolute;
+  right: 12px;
+  bottom: 128px;
+  background-color: white;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
 }

@@ -10,8 +10,8 @@ then set up keys as specified in Running.
 ## Configuration
 
 The deployment is configured via the `.env` file in the root directory
-of the project.  Copy `.env.dist` to `.env` and the update the values
-as required.  See the deployment docs for full details of the environment
+of the project. Copy `.env.dist` to `.env` and the update the values
+as required. See the deployment docs for full details of the environment
 variables supported.
 
 Environment variables are documented in comments in `.env.dist`.
@@ -45,7 +45,7 @@ will start the couchdb and conductor servers to listen on the configured port.
 ## Running with Node
 
 If you don't plan to use Docker to run or deploy Conductor, you need to get CouchDB
-running on your host and enter the appropriate addresses in the `.env` file. 
+running on your host and enter the appropriate addresses in the `.env` file.
 To run the Conductor server you first need to install dependencies:
 
 ```bash
@@ -71,15 +71,15 @@ instead, which will monitor for changes with `nodemon`.
 Once the services are up and running we need to initialise the CouchDB
 database. This is done by sending a request to the API via a short script.
 This operation will create a local user called `admin` with the same password
-as configured for CouchDB (`COUCHDB_PASSWORD` in `.env`).  The script will
-have no effect if the admin user is already set up.  Run the script with:
+as configured for CouchDB (`COUCHDB_PASSWORD` in `.env`). The script will
+have no effect if the admin user is already set up. Run the script with:
 
 ```bash
 npm run initdb
 ```
 
 There is also a script that will populate the database with notebooks that are
-stored in the `notebooks` directory.  There should be two sample notebooks in
+stored in the `notebooks` directory. There should be two sample notebooks in
 there but you can also create new ones.
 
 This script requires authentication, so you need to get a user token for the admin
@@ -101,8 +101,8 @@ Notebooks can be uploaded to Conductor via the web interface.
 
 There is an alternate docker compose file for development that mounts the
 current working directory inside the container so that you can work on
-code in real time.  To use this you also need a local `node_modules` folder
-since the current directory will shadow the one inside the container. 
+code in real time. To use this you also need a local `node_modules` folder
+since the current directory will shadow the one inside the container.
 
 To create `node_modules` run `npm ci` inside the container:
 

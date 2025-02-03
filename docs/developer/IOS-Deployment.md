@@ -10,7 +10,7 @@ Create an account on the Apple Developer Portal.
 ## Workflows
 
 There are two workflows, one for the nightly build and one for the production build. Both
-are basically the same and use Fastlane to automate the deployment process.  The
+are basically the same and use Fastlane to automate the deployment process. The
 only difference between these is that the TestFlight build is conditional on
 changes to the repository and that it uses a different Fastlane configuration
 to push to the TestFlight deployment.
@@ -30,8 +30,8 @@ up as either secrets or variables in the Github repository.
 <https://developer.apple.com/account>, look for Membership Details. This is an
 alphanumeric identifier.
 
-`APP_STORE_CONNECT_TEAM_ID` - App Store Connect team identifier.  May be the same
-as the  Developer Portal team identifier, find this via App Store Connect
+`APP_STORE_CONNECT_TEAM_ID` - App Store Connect team identifier. May be the same
+as the Developer Portal team identifier, find this via App Store Connect
 by looking at your personal account which will list the id of your team.
 
 `FASTLANE_APPLE_ID` - Apple ID used by Fastlane to publish the app.
@@ -39,8 +39,8 @@ by looking at your personal account which will list the id of your team.
 `GIT_AUTHORIZATION` - A Github personal access token with access to the
 Fastlane secrets repository.
 
-`APPLE_KEY_ID` - The key id from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.
-`APPLE_ISSUER_ID` - the Issuer ID from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.
+`APPLE_KEY_ID` - The key id from the 'Team Key' in App Store Connect. Look under Users and Access > Integrations > App Store Connect API for Team Keys.
+`APPLE_ISSUER_ID` - the Issuer ID from the 'Team Key' in App Store Connect. Look under Users and Access > Integrations > App Store Connect API for Team Keys.
 `APPLE_KEY_CONTENT` - base64 encoded content of the key file. You can only download this on creation of the key.
 
 `BROWSERSTACK_USERNAME` - username on BrowserStack (for app testing);
@@ -58,7 +58,7 @@ general information.
 in the app store, can be different to APP_ID (which is used for the app URL scheme)
 `au.edu.faims.electronicfieldnotebook`.
 
-TODO: make `APPLE_BUNDLE_IDENTIFIER` fully configurable in the build 
+TODO: make `APPLE_BUNDLE_IDENTIFIER` fully configurable in the build
 process. Look at
 the Fastlane `update_app_identifier` action which can do this
 during the build. For now we will keep the Fieldmark id to the

@@ -1,18 +1,10 @@
 {
   "metadata": {
     "access": {
-      "accessFORM1": [
-        "admin"
-      ],
-      "accessFORM2": [
-        "admin"
-      ]
+      "accessFORM1": ["admin"],
+      "accessFORM2": ["admin"]
     },
-    "accesses": [
-      "admin",
-      "moderator",
-      "team"
-    ],
+    "accesses": ["admin", "moderator", "team"],
     "behaviours": {},
     "filenames": [],
     "forms": {
@@ -61,9 +53,7 @@
   "ui-specification": {
     "fields": {
       "colour-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -92,16 +82,10 @@
           }
         },
         "type-returned": "faims-core::Colour",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "date-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -130,16 +114,10 @@
           }
         },
         "type-returned": "faims-core::Date",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "date-and-time-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -168,16 +146,10 @@
           }
         },
         "type-returned": "faims-core::Datetime",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "hridFORM1": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -211,19 +183,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ]
+        "validationSchema": [["yup.string"], ["yup.required"]]
       },
       "hridFORM2": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -257,16 +220,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "month-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -295,16 +252,10 @@
           }
         },
         "type-returned": "faims-core::Date",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -327,11 +278,7 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "rich-text": {
         "component-namespace": "faims-custom",
@@ -343,9 +290,7 @@
         }
       },
       "radio-with-option-for-other": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RadioGroup",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -395,16 +340,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "radio-button": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RadioGroup",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -447,16 +386,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-2": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -479,16 +412,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "controlled-number": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -518,29 +445,14 @@
         },
         "type-returned": "faims-core::String",
         "validationSchema": [
-          [
-            "yup.number"
-          ],
-          [
-            "yup.min",
-            10,
-            "Must be 10 or more"
-          ],
-          [
-            "yup.max",
-            20,
-            "Must be 20 or less"
-          ],
-          [
-            "yup.required",
-            "You must fill this in!"
-          ]
+          ["yup.number"],
+          ["yup.min", 10, "Must be 10 or more"],
+          ["yup.max", 20, "Must be 20 or less"],
+          ["yup.required", "You must fill this in!"]
         ]
       },
       "multi-select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MultiSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -585,16 +497,10 @@
           }
         },
         "type-returned": "faims-core::Array",
-        "validationSchema": [
-          [
-            "yup.array"
-          ]
-        ]
+        "validationSchema": [["yup.array"]]
       },
       "thing-2-human-identifier": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -627,16 +533,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "Select",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -679,16 +579,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-3": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -711,16 +605,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "mapformfield": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MapFormField",
         "component-namespace": "mapping-plugin",
         "component-parameters": {
@@ -745,16 +633,10 @@
           }
         },
         "type-returned": "faims-core::JSON",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "controlled-text-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -784,24 +666,16 @@
         },
         "type-returned": "faims-core::String",
         "validationSchema": [
-          [
-            "yup.string"
-          ],
+          ["yup.string"],
           [
             "yup.required",
             "I do not want to eat these green eggs and ham -- I want a longer string instead!"
           ],
-          [
-            "yup.min",
-            "5",
-            "At least 5 characters, please. Not just ham..."
-          ]
+          ["yup.min", "5", "At least 5 characters, please. Not just ham..."]
         ]
       },
       "required-text-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -830,16 +704,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "hierarchical-picker-full-path": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "AdvancedSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -909,16 +777,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "hierarchical-picker-full-path-only": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "AdvancedSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -988,16 +850,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-4": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1020,16 +876,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "thing-1-unique-id": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1062,19 +912,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ]
+        "validationSchema": [["yup.string"], ["yup.required"]]
       },
       "thing-2-name": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -1103,16 +944,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-5": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1135,16 +970,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "fileuploader": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "FileUploader",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1162,16 +991,10 @@
           }
         },
         "type-returned": "faims-attachment::Files",
-        "validationSchema": [
-          [
-            "yup.mixed"
-          ]
-        ]
+        "validationSchema": [["yup.mixed"]]
       },
       "thing-2-incrementer": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "BasicAutoIncrementer",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1193,16 +1016,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "take-point": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TakePoint",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1223,19 +1040,10 @@
           }
         },
         "type-returned": "faims-pos::Location",
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ]
+        "validationSchema": [["yup.object"], ["yup.nullable"]]
       },
       "html-text-6": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1258,16 +1066,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-7": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1290,16 +1092,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "is-related-to": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1321,14 +1117,8 @@
           "related_type": "FORM2",
           "related_type_label": "Thing 2",
           "relation_linked_vocabPair": [
-            [
-              "is_above",
-              "is below"
-            ],
-            [
-              "is related",
-              "is related to"
-            ]
+            ["is_above", "is below"],
+            ["is related", "is related to"]
           ],
           "relation_type": "faims-core::Linked",
           "required": false,
@@ -1344,16 +1134,10 @@
           }
         },
         "type-returned": "faims-core::Relationship",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "take-photo": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TakePhoto",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1374,19 +1158,10 @@
           }
         },
         "type-returned": "faims-attachment::Files",
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ]
+        "validationSchema": [["yup.object"], ["yup.nullable"]]
       },
       "multi-line-text": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MultipleTextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -1417,16 +1192,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "date-and-time-now": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "DateTimeNow",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1451,16 +1220,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "related-thing": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1492,16 +1255,10 @@
           }
         },
         "type-returned": "faims-core::Relationship",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-8": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1524,16 +1281,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-9": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1556,16 +1307,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-10": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1588,16 +1333,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "take-photo-2": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TakePhoto",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1618,19 +1357,10 @@
           }
         },
         "type-returned": "faims-attachment::Files",
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ]
+        "validationSchema": [["yup.object"], ["yup.nullable"]]
       },
       "linking-relationships": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1652,14 +1382,8 @@
           "related_type": "FORM2",
           "related_type_label": "Thing 2",
           "relation_linked_vocabPair": [
-            [
-              "is_above",
-              "is below"
-            ],
-            [
-              "is related",
-              "is related to"
-            ]
+            ["is_above", "is below"],
+            ["is related", "is related to"]
           ],
           "relation_type": "faims-core::Linked",
           "required": true,
@@ -1675,16 +1399,10 @@
           }
         },
         "type-returned": "faims-core::Relationship",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "checkbox": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "Checkbox",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1709,16 +1427,10 @@
           }
         },
         "type-returned": "faims-core::Bool",
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ]
+        "validationSchema": [["yup.bool"]]
       },
       "uncertain-select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "Select",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1761,16 +1473,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "email": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -1800,19 +1506,12 @@
         },
         "type-returned": "faims-core::Email",
         "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.email",
-            "Enter a valid email"
-          ]
+          ["yup.string"],
+          ["yup.email", "Enter a valid email"]
         ]
       },
       "html-text-11": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1835,16 +1534,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "text-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -1873,16 +1566,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "text-field-prepop": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -1911,16 +1598,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-12": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1943,16 +1624,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-13": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1974,16 +1649,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-14": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -2006,16 +1675,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "parent-child-relationships": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -2051,16 +1714,10 @@
           }
         },
         "type-returned": "faims-core::Relationship",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "new-select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MultiSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -2105,16 +1762,10 @@
           }
         },
         "type-returned": "faims-core::Array",
-        "validationSchema": [
-          [
-            "yup.array"
-          ]
-        ]
+        "validationSchema": [["yup.array"]]
       },
       "html-text-15": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -2136,16 +1787,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-16": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -2168,16 +1813,10 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "number-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -2206,16 +1845,10 @@
           }
         },
         "type-returned": "faims-core::Integer",
-        "validationSchema": [
-          [
-            "yup.number"
-          ]
-        ]
+        "validationSchema": [["yup.number"]]
       },
       "number-field-val": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
@@ -2244,24 +1877,10 @@
           }
         },
         "type-returned": "faims-core::Integer",
-        "validationSchema": [
-          [
-            "yup.number"
-          ],
-          [
-            "yup.min",
-            10
-          ],
-          [
-            "yup.max",
-            20
-          ]
-        ]
+        "validationSchema": [["yup.number"], ["yup.min", 10], ["yup.max", 20]]
       },
       "qr-code-demonstration-button-mobile-device-only": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "QRCodeFormField",
         "component-namespace": "qrcode",
         "component-parameters": {
@@ -2284,11 +1903,7 @@
           }
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       }
     },
     "fviews": {
@@ -2345,12 +1960,7 @@
         "uidesign": "form"
       },
       "FORM1SECTION7": {
-        "fields": [
-          "html-text-2",
-          "html-text-6",
-          "html-text-9",
-          "rich-text"
-        ],
+        "fields": ["html-text-2", "html-text-6", "html-text-9", "rich-text"],
         "label": "Views",
         "uidesign": "form"
       },
@@ -2383,10 +1993,7 @@
         "uidesign": "form"
       },
       "FORM2SECTION2": {
-        "fields": [
-          "parent-child-relationships",
-          "linking-relationships"
-        ],
+        "fields": ["parent-child-relationships", "linking-relationships"],
         "label": "Relationships",
         "uidesign": "form"
       }
@@ -2406,15 +2013,9 @@
       },
       "FORM2": {
         "label": "Thing 2",
-        "views": [
-          "FORM2SECTION1",
-          "FORM2SECTION2"
-        ]
+        "views": ["FORM2SECTION1", "FORM2SECTION2"]
       }
     },
-    "visible_types": [
-      "FORM1",
-      "FORM2"
-    ]
+    "visible_types": ["FORM1", "FORM2"]
   }
 }

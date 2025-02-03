@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '39 20 * * 1-5'
-  
+
 jobs:
   check_date:
     runs-on: ubuntu-latest
@@ -22,7 +22,7 @@ jobs:
         name: check latest commit is less than a day
         if: ${{ github.event_name == 'schedule' }}
         run: test -z $(git rev-list --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
-    
+
   ios-deploy:
     name: Deploying to Testflight
     runs-on: macOS-latest
@@ -56,7 +56,7 @@ jobs:
       - name: Create version string
         shell: bash
         run: |
-          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"        
+          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"
 
       - name: Set up ruby env
         uses: ruby/setup-ruby@v1

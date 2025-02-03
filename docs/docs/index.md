@@ -4,7 +4,6 @@ sd_hide_title: true
 
 # Fieldmark™ User Guide
 
-
 ::::::{div} landing-title
 :style: "padding: 0.1rem 0.5rem 0.6rem 0; background-image: linear-gradient(0deg,#009ffd,#223f8e 58%); clip-path: polygon(0px 0px, 100% 0%, 100% 100%, 0% calc(100% - 1.5rem)); -webkit-clip-path: polygon(0px 0px, 100% 0%, 100% 100%, 0% calc(100% - 1.5rem));"
 
@@ -20,6 +19,7 @@ sd_hide_title: true
 :width: 200px
 :class: sd-m-auto sd-animate-grow50-rot20
 ```
+
 :::
 
 :::{grid-item}
@@ -48,7 +48,6 @@ Get Started
 :::{About this User Guide}
 This **User Guide** is for users wanting to learn about the Web app, Android and iOS versions. Contact [info@fieldnote.au](mailto:info@fieldnote.au) to arrange a **demonstration** or enrol for to a **[trial account](https://forms.gle/N3uqHWyGzxDeKVwz5)** on our web app.
 :::
-
 
 ```{toctree}
 ---
@@ -107,7 +106,6 @@ caption: Frequently Asked Questions
 ---
 faq
 ```
-
 
 ```{toctree}
 ---

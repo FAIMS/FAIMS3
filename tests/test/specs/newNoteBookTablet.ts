@@ -1,142 +1,156 @@
-import {newNoteBookFixture} from "../../fixture/newNoteBook";
-import {scrollDown, scrollUp, tapByCoordinates} from "../utils/scroll";
-import * as assert from "assert";
-import MenuFragment from "../../pages/MenuFragment";
-import NewNoteBookPage from "../../pages/NewNoteBookPage";
-import WelcomePage from "../../pages/WelcomePage";
-import NoteBookPage from "../../pages/NoteBookPage";
-import SignInPage from "../../pages/SignInPage";
-import {userFixture} from "../../fixture/User";
+import {newNoteBookFixture} from '../../fixture/newNoteBook';
+import {scrollDown, scrollUp, tapByCoordinates} from '../utils/scroll';
+import * as assert from 'assert';
+import MenuFragment from '../../pages/MenuFragment';
+import NewNoteBookPage from '../../pages/NewNoteBookPage';
+import WelcomePage from '../../pages/WelcomePage';
+import NoteBookPage from '../../pages/NoteBookPage';
+import SignInPage from '../../pages/SignInPage';
+import {userFixture} from '../../fixture/User';
 
-describe("Create New Note Book", () => {
+describe('Create New Note Book', () => {
+  it('sign-in with pass', async () => {
+    await MenuFragment.menuButtonClick();
 
-    it("sign-in with pass", async () => {
-        await MenuFragment.menuButtonClick()
+    await MenuFragment.newNoteBookButtonClick();
 
-        await MenuFragment.newNoteBookButtonClick()
+    await MenuFragment.backMenuButtonClick();
 
-        await MenuFragment.backMenuButtonClick()
+    assert.equal(
+      await NewNoteBookPage.primaryTabGetText(),
+      'DESIGN',
+      'Tabs not presented'
+    );
+  });
 
-        assert.equal(await NewNoteBookPage.primaryTabGetText(), 'DESIGN', 'Tabs not presented')
-    });
+  it('New noteBook', async () => {
+    await scrollDown();
 
-    it("New noteBook", async () => {
-        await scrollDown()
+    await NewNoteBookPage.projectNameSendValue(newNoteBookFixture.projectName);
+    await NewNoteBookPage.descriptionSendValue(newNoteBookFixture.desc);
+    await NewNoteBookPage.leadSendValue(newNoteBookFixture.lead);
+    await NewNoteBookPage.leadInstitutionSendValue(
+      newNoteBookFixture.leadInstitiution
+    );
 
-        await NewNoteBookPage.projectNameSendValue(newNoteBookFixture.projectName)
-        await NewNoteBookPage.descriptionSendValue(newNoteBookFixture.desc)
-        await NewNoteBookPage.leadSendValue(newNoteBookFixture.lead)
-        await NewNoteBookPage.leadInstitutionSendValue(newNoteBookFixture.leadInstitiution)
+    await NewNoteBookPage.goNextClick();
 
-        await NewNoteBookPage.goNextClick()
+    await NewNoteBookPage.metaFieldSendValue(newNoteBookFixture.newMeta);
+    await NewNoteBookPage.metaAddButtonClick();
 
-        await NewNoteBookPage.metaFieldSendValue(newNoteBookFixture.newMeta)
-        await NewNoteBookPage.metaAddButtonClick()
+    await scrollDown();
 
-        await scrollDown()
+    await NewNoteBookPage.goNextClick();
 
-        await NewNoteBookPage.goNextClick()
+    await NewNoteBookPage.userRoleSendValue(newNoteBookFixture.newRole);
+    await NewNoteBookPage.userAddButtonClick();
 
-        await NewNoteBookPage.userRoleSendValue(newNoteBookFixture.newRole)
-        await NewNoteBookPage.userAddButtonClick()
+    await scrollDown();
 
-        await scrollDown()
+    await NewNoteBookPage.goNextClick();
 
-        await NewNoteBookPage.goNextClick()
+    await NewNoteBookPage.attachFieldClick();
+    await NewNoteBookPage.imageSearchClick();
+    await NewNoteBookPage.imageRootChoiceFile();
+    await scrollDown();
+    await scrollDown();
 
-        await NewNoteBookPage.attachFieldClick()
-        await NewNoteBookPage.imageSearchClick()
-        await NewNoteBookPage.imageRootChoiceFile()
-        await scrollDown()
-        await scrollDown()
+    await NewNoteBookPage.goNextIdButtonClick();
 
-        await NewNoteBookPage.goNextIdButtonClick()
+    await tapByCoordinates();
+    await NewNoteBookPage.inheritCheckBoxClick();
+    await NewNoteBookPage.goNextIdButtonClick();
 
-        await tapByCoordinates()
-        await NewNoteBookPage.inheritCheckBoxClick()
-        await NewNoteBookPage.goNextIdButtonClick()
+    await scrollDown();
+    await NewNoteBookPage.descriptionSectionSendValue('Some desc');
 
+    await NewNoteBookPage.goNextIdButtonClick();
+    await NewNoteBookPage.inputTextFieldSection();
+    await scrollUp();
+    await scrollUp();
 
-        await scrollDown()
-        await NewNoteBookPage.descriptionSectionSendValue('Some desc')
+    await NewNoteBookPage.submitButtonClick();
+    await NewNoteBookPage.submitSaveButtonClick();
 
-        await NewNoteBookPage.goNextIdButtonClick()
-        await NewNoteBookPage.inputTextFieldSection()
-        await scrollUp()
-        await scrollUp()
+    await MenuFragment.menuButtonClick();
+    await MenuFragment.notebooksButtonClick();
+    assert.equal(
+      await MenuFragment.getProjectNameFromNoteBook(),
+      newNoteBookFixture.projectName,
+      'Incorrect project name'
+    );
+    await MenuFragment.backMenuButtonClick();
+  });
 
-        await NewNoteBookPage.submitButtonClick()
-        await NewNoteBookPage.submitSaveButtonClick()
+  it('new Record', async () => {
+    await MenuFragment.menuButtonClick();
+    await MenuFragment.projectNameFromNoteBookClick();
+    await MenuFragment.backMenuButtonClick();
 
-        await MenuFragment.menuButtonClick()
-        await MenuFragment.notebooksButtonClick()
-        assert.equal(await MenuFragment.getProjectNameFromNoteBook(), newNoteBookFixture.projectName, 'Incorrect project name')
-        await MenuFragment.backMenuButtonClick()
-    });
+    await NoteBookPage.infoTabClick();
+    await NoteBookPage.settingsTabClick();
+    await NoteBookPage.recordsTabClick();
 
-    it('new Record', async () => {
-        await MenuFragment.menuButtonClick()
-        await MenuFragment.projectNameFromNoteBookClick()
-        await MenuFragment.backMenuButtonClick()
+    await NoteBookPage.draftsClick();
+    await NoteBookPage.recordsClick();
+  });
 
-        await NoteBookPage.infoTabClick()
-        await NoteBookPage.settingsTabClick()
-        await NoteBookPage.recordsTabClick()
+  it('Refresh notebook', async () => {
+    await NoteBookPage.refreshButtonClick();
+  });
 
-        await NoteBookPage.draftsClick()
-        await NoteBookPage.recordsClick()
-    })
+  it('New record page opened', async () => {
+    await NoteBookPage.newRecordButtonClick();
+    // TODO impl when app was fixed
+  });
 
-    it('Refresh notebook', async () => {
-        await NoteBookPage.refreshButtonClick()
-    })
+  before(async function () {
+    await SignInPage.pushFileToDevice();
+    if (!userFixture.isLocal) {
+      let name = this.test.parent.title;
+      const executorConfigName = {
+        action: 'setSessionName',
+        arguments: {
+          name: name,
+        },
+      };
+      await driver.execute(
+        'browserstack_executor: ' + JSON.stringify(executorConfigName)
+      );
+    }
 
-    it('New record page opened', async () => {
-        await NoteBookPage.newRecordButtonClick()
-        // TODO impl when app was fixed
-    })
+    const contexts = await driver.getContexts(); // get list of context
+    await driver.switchContext(contexts[0].toString()); // set context to APP_NATIVE
+    await WelcomePage.signInHomeButtonClick();
+    await WelcomePage.signInButtonClick();
 
-    before(async function () {
-        await SignInPage.pushFileToDevice()
-        if (!userFixture.isLocal){
-        let name = this.test.parent.title
-        const executorConfigName = {
-            "action": "setSessionName",
-            "arguments": {
-                "name": name
-            }
-        };
-        await driver.execute('browserstack_executor: ' + JSON.stringify(executorConfigName));}
+    if (!userFixture.isLocal) {
+      if (await WelcomePage.webViewButtonIsDisplayed(3000)) {
+        await WelcomePage.chromeChoseClick();
+        await WelcomePage.alwaysClick();
+      }
+    }
 
-        const contexts = await driver.getContexts(); // get list of context
-        await driver.switchContext(contexts[0].toString()); // set context to APP_NATIVE
-        await WelcomePage.signInHomeButtonClick()
-        await WelcomePage.signInButtonClick()
+    if (await WelcomePage.logOutButtonIsDisplayed(10000)) {
+      await WelcomePage.logOutButtonClick();
+      await SignInPage.signInLocal();
+    } else {
+      await SignInPage.signInLocal();
+    }
+  });
 
-        if (!userFixture.isLocal){
-            if (await WelcomePage.webViewButtonIsDisplayed(3000)){
-                await WelcomePage.chromeChoseClick()
-                await WelcomePage.alwaysClick()
-            }
-        }
-
-        if (await WelcomePage.logOutButtonIsDisplayed(10000)){
-            await WelcomePage.logOutButtonClick()
-            await SignInPage.signInLocal()
-        }else {
-            await SignInPage.signInLocal()
-        }
-    });
-
-    after(async  function () {
-        if (!userFixture.isLocal){
-        let state = this.currentTest.state
-        const executorConfig = {
-            "action": "setSessionStatus",
-            "arguments": {
-                "status": state
-            },
-        };
-        await driver.execute('browserstack_executor: ' + JSON.stringify(executorConfig));}
-    });
+  after(async function () {
+    if (!userFixture.isLocal) {
+      let state = this.currentTest.state;
+      const executorConfig = {
+        action: 'setSessionStatus',
+        arguments: {
+          status: state,
+        },
+      };
+      await driver.execute(
+        'browserstack_executor: ' + JSON.stringify(executorConfig)
+      );
+    }
+  });
 });

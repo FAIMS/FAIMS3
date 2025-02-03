@@ -1,11 +1,11 @@
 name: Build & Lint
- 
+
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
   pull_request:
     types: [opened, synchronize]
- 
+
 jobs:
   build:
     name: Build and Test
@@ -14,24 +14,24 @@ jobs:
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
- 
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
- 
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: 20.9.0
           cache: 'npm'
- 
+
       - name: Setup node cache
         id: node-cache
         uses: actions/cache@v3
         with:
-          path: "**/node_modules"
+          path: '**/node_modules'
           key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
           restore-keys: npm-
 
@@ -53,10 +53,10 @@ jobs:
           else
             echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
           fi
-      
+
       - name: Lint
         run: npm run lint
-        
+
       - name: Build
         run: npm run build
 
@@ -67,4 +67,3 @@ jobs:
           ./keymanagement/makeInstanceKeys.sh
           cd ..
           npx turbo run test --filter=@faims3/api --filter=@faims3/data-model
- 

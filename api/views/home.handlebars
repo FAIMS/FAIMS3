@@ -1,63 +1,62 @@
+<div class='card-deck'>
 
-<div class="card-deck">
-
-  <div class="card">
-    <div class="card-header">
-      <h4 class="card-title">Welcome to Fieldmark Conductor</h4>
+  <div class='card'>
+    <div class='card-header'>
+      <h4 class='card-title'>Welcome to Fieldmark Conductor</h4>
     </div>
-    <div class="card-body">
-      <p class="card-text">Conductor is the web server supporting the Fieldmark app. Here you
-        can manage your notebooks and notebook users.</p>
+    <div class='card-body'>
+      <p class='card-text'>Conductor is the web server supporting the Fieldmark
+        app. Here you can manage your notebooks and notebook users.</p>
 
       <ul>
         {{#if WEBAPP_PUBLIC_URL}}
-        <li><a href="{{WEBAPP_PUBLIC_URL}}">Fieldmark on the Web</a></li>
+          <li><a href='{{WEBAPP_PUBLIC_URL}}'>Fieldmark on the Web</a></li>
         {{/if}}
         {{#if IOS_APP_URL}}
-        <li>Install <a href="{{IOS_APP_URL}}">Fieldmark for IOS</a> (App Store)</li>
+          <li>Install
+            <a href='{{IOS_APP_URL}}'>Fieldmark for IOS</a>
+            (App Store)</li>
         {{/if}}
         {{#if ANDROID_APP_URL}}
-        <li>Install <a href="{{ANDROID_APP_URL}}">Fieldmark for Android</a> (Google Play)</li>
+          <li>Install
+            <a href='{{ANDROID_APP_URL}}'>Fieldmark for Android</a>
+            (Google Play)</li>
         {{/if}}
-      </ul>          
+      </ul>
     </div>
   </div>
 
-      <div class="card">
-      <div class="card-header">
-            Need Bearer Token for API Access?
-          </div>
-           <div class="card-body">
-            <p class="card-text">Click below to copy the token that can be used to authenticate
-              in scripts that use the API.
-            </p>
-            <p class="card-text">
-            <div class="btn-group mt-2 mb-4 w-100" role="group">
-              <a class="w-100 btn btn-outline-primary" onClick="copyTokenToClipboard()">Copy Bearer Token to Clipboard</a>
-            </div>
-            </p>
-            <p class="card-text">
-              <details>
-                <summary>Show Bearer Token</summary>
-                  <textarea disabled cols="70" rows="15">{{{token}}}
-                  </textarea>
-                </details>
-              </p>
-            </div>
-      </div>
-
+  <div class='card'>
+    <div class='card-header'>
+      Need Bearer Token for API Access?
+    </div>
+    <div class='card-body'>
+      <p class='card-text'>Click below to copy the token that can be used to
+        authenticate in scripts that use the API.
+      </p>
+      <p class='card-text'>
+        <div class='btn-group mt-2 mb-4 w-100' role='group'>
+          <a
+            class='w-100 btn btn-outline-primary'
+            onClick='copyTokenToClipboard()'
+          >Copy Bearer Token to Clipboard</a>
+        </div>
+      </p>
+      <p class='card-text'>
+        <details>
+          <summary>Show Bearer Token</summary>
+          <textarea disabled cols='70' rows='15'>{{{token}}}
+          </textarea>
+        </details>
+      </p>
+    </div>
+  </div>
 
 </div>
 
-
-  <script>
-const copyTokenToClipboard = () => {
-
-    navigator.clipboard.writeText("{{{token}}}").then(() => {
-        alert("Bearer token copied to clipboard.")
-    }, () => {
-            alert("Could not copy token.")
-    });
-}
+<script>
+  const copyTokenToClipboard = () => { navigator.clipboard.writeText("{{{token}}}").then(()
+  => { alert("Bearer token copied to clipboard.") }, () => { alert("Could not
+  copy token.") }); }
 
 </script>

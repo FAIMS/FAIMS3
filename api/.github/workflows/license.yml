@@ -1,4 +1,4 @@
-name: "Check License Lines"
+name: 'Check License Lines'
 on:
   # Trigger the workflow on push or pull request,
   # but only for the main branch
