@@ -19,7 +19,7 @@
  */
 
 import {Geolocation} from '@capacitor/geolocation';
-import {Box, Button, FormGroup, TextField} from '@mui/material';
+import {Alert, Box, Button, FormGroup, TextField} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
@@ -47,6 +47,7 @@ export const MapDownloadComponent = () => {
   const [zoomLevel, setZoomLevel] = useState(12); // Default zoom level
   const [attribution, setAttribution] = useState<Attribution | null>(null);
   const [downloadSetName, setDownloadSetName] = useState('default');
+  const [message, setMessage] = useState('');
 
   // create state ref that can be accessed in OpenLayers onclick callback function
   //  https://stackoverflow.com/a/60643670
@@ -108,10 +109,16 @@ export const MapDownloadComponent = () => {
     }
   };
 
-  const confirmCacheMapExtent = () => {
+  const confirmCacheMapExtent = async () => {
     if (map) {
       const extent = map.getView().calculateExtent();
-      tileStore.getTilesForRegion(extent, 12, 18, downloadSetName);
+      setMessage('');
+      try {
+        await tileStore.storeTileSet(extent, 12, 18, downloadSetName);
+      } catch (e: any) {
+        console.error(e);
+        setMessage(e.message);
+      }
     }
   };
 
@@ -226,6 +233,7 @@ export const MapDownloadComponent = () => {
 
         <Box>Zoom Level: {zoomLevel}</Box>
         {cacheSize && <Box>Estimated Download Size: {cacheSize}</Box>}
+        {message && <Alert severity="error">{message}</Alert>}
         <Box
           ref={refCallback}
           sx={{

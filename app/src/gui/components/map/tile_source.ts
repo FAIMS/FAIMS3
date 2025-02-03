@@ -46,18 +46,15 @@ interface StoredTile {
   y: number;
   z: number;
   data: Blob;
-}
-
-interface TileSetTile {
-  setName: string;
-  x: number;
-  y: number;
-  z: number;
+  sets: string[];
 }
 
 interface StoredTileSet {
   setName: string;
   extent: number[];
+  minZoom: number;
+  maxZoom: number;
+  tileKeys: IDBValidKey[];
 }
 
 type KeyType = string | string[] | null | undefined;
@@ -152,12 +149,6 @@ class TileStoreBase {
         'x',
         'y',
       ]);
-      this.tileTileDB = new IDB<TileSetTile>(TileStoreBase.db, 'tileTileSets', [
-        'setName',
-        'x',
-        'y',
-        'z',
-      ]);
       this.tileSetDB = new IDB<StoredTileSet>(TileStoreBase.db, 'tileSets', [
         'setName',
       ]);
@@ -218,26 +209,28 @@ class TileStoreBase {
    * Store a tile in the database
    * @returns the key of the tile in the database
    */
-  async store(x: number, y: number, z: number, data: Blob) {
-    const tileKey = await this.tileDB.put({x, y, z, data});
+  async storeTileRecord(
+    z: number,
+    x: number,
+    y: number,
+    data: Blob,
+    set: string
+  ) {
+    const tile = {z, x, y, data, sets: [set]};
+    const existingTile = await this.tileDB.get([z, x, y]);
+    if (existingTile) {
+      tile.sets = [...existingTile.sets, set];
+    }
+    const tileKey = await this.tileDB.put(tile);
     return tileKey;
   }
 
-  async get(x: number, y: number, z: number): Promise<Blob | null> {
-    const tile = await this.tileDB.get([z, x, y]);
-    if (tile) {
-      return tile.data;
-    } else {
-      return null;
-    }
-  }
-
   async getTileBlob(
+    z: number,
     x: number,
-    y: number,
-    z: number
+    y: number
   ): Promise<Blob | undefined> {
-    const image = await this.tileDB.get([x, y, z]);
+    const image = await this.tileDB.get([z, x, y]);
     if (image) return image.data;
     else if (navigator.onLine) {
       const url = TILE_URL_MAP[MAP_SOURCE].replace('{z}', z.toString())
@@ -250,11 +243,11 @@ class TileStoreBase {
   }
 
   async getTileAsDataURL(
+    z: number,
     x: number,
-    y: number,
-    z: number
+    y: number
   ): Promise<string | null> {
-    const image = await this.getTileBlob(x, y, z);
+    const image = await this.getTileBlob(z, x, y);
     return new Promise((resolve, reject) => {
       if (!image) {
         resolve(null);
@@ -284,7 +277,7 @@ class TileStoreBase {
   ): Promise<HTMLImageElement> {
     const image = new Image();
     image.crossOrigin = options.crossOrigin ?? null;
-    image.src = (await this.getTileAsDataURL(x, y, z)) || '';
+    image.src = (await this.getTileAsDataURL(z, x, y)) || '';
     return image;
   }
 
@@ -319,7 +312,7 @@ class TileStoreBase {
     const estimatedSize = Math.round((counter * average_size) / 1024);
     console.log(
       'estimated size',
-      Math.round(estimatedSize),
+      Math.round(estimatedSize*1000)/1000,
       'MB, ',
       counter,
       'tiles'
@@ -328,19 +321,38 @@ class TileStoreBase {
   }
 
   /**
-   * getTilesForRegion - cache tiles for a given region at different zoom levels
+   * storeTileSet - cache tiles for a given region at different zoom levels
    *
    * @param extent The extent of the region to get tiles for
    * @param minZoom Minimum zoom level to download
    * @param maxZoom Maximum zoom level to download
+   * @param setName The name of the set to store the tiles in
    */
-  async getTilesForRegion(
+  async storeTileSet(
     extent: Extent,
     minZoom: number,
     maxZoom: number,
-    setName = 'default'
+    setName: string
   ) {
     console.log('getTilesForRegion', setName, extent, minZoom, maxZoom);
+
+    const existingTileSet = await this.tileSetDB.get([setName]);
+    console.log('existing tile set', existingTileSet);
+    if (existingTileSet) {
+      throw new Error(
+        `Offline map '${setName}' already exists, please choose a different name`
+      );
+    }
+    // create a record for this region
+    const tileSet: StoredTileSet = {
+      setName,
+      extent,
+      minZoom,
+      maxZoom,
+      tileKeys: [],
+    };
+    this.tileSetDB.put(tileSet);
+
     const tileGrid = this.getTileGrid();
     const tileCoords: number[][] = [];
     for (let zoom = minZoom; zoom <= maxZoom; zoom += 2) {
@@ -353,14 +365,21 @@ class TileStoreBase {
     const tileKeys: IDBValidKey[] = [];
     for (const tileCoord of tileCoords) {
       const [z, x, y] = tileCoord;
-      const tileBlob = await this.getTileBlob(x, y, z);
+      const tileBlob = await this.getTileBlob(z, x, y);
       if (tileBlob) {
-        const tileKey = await this.store(x, y, z, tileBlob);
+        const tileKey = await this.storeTileRecord(z, x, y, tileBlob, setName);
         console.log('stored tile', tileKey);
         if (tileKey) tileKeys.push(tileKey);
       }
     }
-    console.log('done');
+    console.log('done, updating tileSet record');
+    tileSet.tileKeys = tileKeys;
+    this.tileSetDB.put(tileSet);
+  }
+
+  async getTileSets() {
+    const tileSets = await this.tileSetDB.getAll();
+    return tileSets;
   }
 }
 
