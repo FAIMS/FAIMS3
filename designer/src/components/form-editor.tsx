@@ -44,7 +44,7 @@ import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {SectionEditor} from './section-editor';
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {shallowEqual} from 'react-redux';
 
 type Props = {
@@ -74,9 +74,6 @@ export const FormEditor = ({
       return shallowEqual(left, right);
     }
   );
-  const sections = viewSet ? viewSet.views : [];
-  console.log('FormEditor', { viewSetId, sections });
-
   const views = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
@@ -100,11 +97,6 @@ export const FormEditor = ({
   const [initialIndex, setInitialIndex] = useState(
     visibleTypes.indexOf(viewSetId)
   );
-
-  useEffect(() => {
-    // reset activeStep when viewSetId changes
-    setActiveStep(0);
-  }, [viewSetId]);
 
   const handleStep = (step: number) => () => {
     setActiveStep(step);
@@ -159,6 +151,27 @@ export const FormEditor = ({
     ) {
       setActiveStep(activeStep - 1);
     }
+  };
+
+  const moveSectionToForm = (
+    sourceViewSetId: string,
+    targetViewSetId: string,
+    viewId: string
+  ) => {
+    try {
+      dispatch({
+        type: 'ui-specification/sectionMovedToForm',
+        payload: {sourceViewSetId, targetViewSetId, viewId},
+      });
+      
+      setActiveStep(0);
+      setAddAlertMessage('');
+      // let sectionEditor component know a section was moved successfully
+      return true;
+    } catch (error: unknown) {
+      error instanceof Error && setAddAlertMessage(error.message);
+    }
+    return false;    
   };
 
   const moveSection = (
@@ -446,17 +459,17 @@ export const FormEditor = ({
                 alternativeLabel
                 sx={{my: 3}}
               >
-                {sections.map((section: string, index: number) => (
-                  <Step key={section}>
+                {viewSet.views.map((view: string, index: number) => (
+                  <Step key={view}>
                     <StepButton color="inherit" onClick={handleStep(index)}>
-                      <Typography>{views[section].label}</Typography>
+                      <Typography>{views[view].label}</Typography>
                     </StepButton>
                   </Step>
                 ))}
               </Stepper>
             </Grid>
 
-            {sections.length === 0 ? (
+            {activeStep === viewSet.views.length ? (
               <Grid item xs={12}>
                 <Grid
                   container
@@ -512,6 +525,7 @@ export const FormEditor = ({
                   viewId={viewSet.views[activeStep] || viewSet.views[0]}
                   viewSet={viewSet}
                   deleteCallback={deleteSection}
+                  moveSectionCallback={moveSectionToForm}
                   addCallback={addNewSection}
                   moveCallback={moveSection}
                 />

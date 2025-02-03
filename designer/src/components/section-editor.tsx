@@ -53,6 +53,11 @@ type Props = {
     viewID: string,
     moveDirection: 'left' | 'right'
   ) => void;
+  moveSectionCallback: (
+    sourceViewSetID: string,
+    targetViewSetID: string,
+    viewID: string
+  ) => boolean;
 };
 
 export const SectionEditor = ({
@@ -60,6 +65,7 @@ export const SectionEditor = ({
   viewId,
   viewSet,
   deleteCallback,
+  moveSectionCallback,
   addCallback,
   moveCallback,
 }: Props) => {
@@ -68,21 +74,44 @@ export const SectionEditor = ({
   );
   const dispatch = useAppDispatch();
 
-  console.log('SectionEditor', { viewId, viewSet, fView });
+  console.log('SectionEditor', viewId, viewSet);
 
-  const [open, setOpen] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openMoveDialog, setOpenMoveDialog] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [addMode, setAddMode] = useState(false);
   const [newSectionName, setNewSectionName] = useState('New Section');
   const [addAlertMessage, setAddAlertMessage] = useState('');
 
-  const handleClose = () => {
-    setOpen(false);
+  const handleCloseDeleteDialog = () => {
+    setOpenDeleteDialog(false);
+  };
+
+  const handleCloseMoveDialog = () => {
+    setOpenMoveDialog(false);
   };
 
   const deleteSection = () => {
     deleteCallback(viewSetId, viewId);
-    handleClose();
+    handleCloseDeleteDialog();
+  };
+
+  const moveSectionToForm = () => {
+    // run the function to move the section to a different form AND save the returned success status to a variable
+    const moveSuccess: boolean = moveSectionCallback(viewSetId, viewSetId, viewId);
+
+    // depending on moveSuccess, set relevant state variables
+    if (moveSuccess) {
+      setAddAlertMessage('');
+    } else {
+      // manually setting the error message
+      setAddAlertMessage(
+        `Failed to move the section to this form.`
+      );
+    };
+
+    handleCloseMoveDialog();
+
   };
 
   const updateSectionLabel = (label: string) => {
@@ -105,7 +134,7 @@ export const SectionEditor = ({
       setAddAlertMessage(
         `Section ${newSectionName} already exists in this form.`
       );
-    }
+    };
   };
 
   const moveSection = (moveDirection: 'left' | 'right') => {
@@ -129,22 +158,22 @@ export const SectionEditor = ({
             color="error"
             size="small"
             startIcon={<DeleteRoundedIcon />}
-            onClick={() => setOpen(true)}
+            onClick={() => setOpenDeleteDialog(true)}
           >
             Delete section
           </Button>
           <Dialog
-            open={open}
-            onClose={handleClose}
+            open={openDeleteDialog}
+            onClose={handleCloseDeleteDialog}
             aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
+            aria-describedby="alert-dialog-description" 
           >
-            <DialogTitle id="alert-dialog-title">
+            <DialogTitle className="alert-dialog-title">
               Are you sure you want to delete this section?
             </DialogTitle>
             <DialogActions>
               <Button onClick={deleteSection}>Yes</Button>
-              <Button onClick={handleClose}>No</Button>
+              <Button onClick={handleCloseDeleteDialog}>No</Button>
             </DialogActions>
           </Dialog>
         </Grid>
@@ -154,22 +183,22 @@ export const SectionEditor = ({
             variant="text"
             size="small"
             startIcon={<MoveRoundedIcon />}
-            onClick={() => setOpen(true)}
+            onClick={() => setOpenMoveDialog(true)}
           >
             Move section
           </Button>
           <Dialog
-            open={open}
-            onClose={handleClose}
+            open={openMoveDialog}
+            onClose={handleCloseMoveDialog}
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
           >
-            <DialogTitle id="alert-dialog-title">
-              Are you sure you want to move this section?
+            <DialogTitle className="alert-dialog-title">
+              Are you sure you want to move the form?
             </DialogTitle>
             <DialogActions>
-              <Button onClick={deleteSection}>Yes</Button>
-              <Button onClick={handleClose}>No</Button>
+              <Button onClick={moveSectionToForm}>Yes</Button>
+              <Button onClick={handleCloseMoveDialog}>No</Button>
             </DialogActions>
           </Dialog>
         </Grid>
