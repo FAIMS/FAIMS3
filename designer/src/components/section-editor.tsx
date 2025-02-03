@@ -18,11 +18,16 @@ import {
   Button,
   Dialog,
   DialogActions,
+  DialogContent,
   DialogTitle,
   InputAdornment,
   Tooltip,
   IconButton,
   Alert,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
 } from '@mui/material';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
@@ -72,12 +77,16 @@ export const SectionEditor = ({
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
   );
+  const viewSets = useAppSelector(
+    state => state.notebook['ui-specification'].viewsets
+  );
   const dispatch = useAppDispatch();
 
   console.log('SectionEditor', viewId, viewSet);
 
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openMoveDialog, setOpenMoveDialog] = useState(false);
+  const [targetViewSetId, setTargetViewSetId] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [addMode, setAddMode] = useState(false);
   const [newSectionName, setNewSectionName] = useState('New Section');
@@ -98,7 +107,7 @@ export const SectionEditor = ({
 
   const moveSectionToForm = () => {
     // run the function to move the section to a different form AND save the returned success status to a variable
-    const moveSuccess: boolean = moveSectionCallback(viewSetId, viewSetId, viewId);
+    const moveSuccess: boolean = moveSectionCallback(viewSetId, targetViewSetId, viewId);
 
     // depending on moveSuccess, set relevant state variables
     if (moveSuccess) {
@@ -108,10 +117,9 @@ export const SectionEditor = ({
       setAddAlertMessage(
         `Failed to move the section to this form.`
       );
-    };
+    }
 
     handleCloseMoveDialog();
-
   };
 
   const updateSectionLabel = (label: string) => {
@@ -165,10 +173,10 @@ export const SectionEditor = ({
           <Dialog
             open={openDeleteDialog}
             onClose={handleCloseDeleteDialog}
-            aria-labelledby="alert-dialog-title"
+            aria-labelledby="alert-delete-dialog-title"
             aria-describedby="alert-dialog-description" 
           >
-            <DialogTitle className="alert-dialog-title">
+            <DialogTitle id="alert-delete-dialog-title">
               Are you sure you want to delete this section?
             </DialogTitle>
             <DialogActions>
@@ -190,15 +198,36 @@ export const SectionEditor = ({
           <Dialog
             open={openMoveDialog}
             onClose={handleCloseMoveDialog}
-            aria-labelledby="alert-dialog-title"
+            aria-labelledby="alert-move-dialog-title"
             aria-describedby="alert-dialog-description"
           >
-            <DialogTitle className="alert-dialog-title">
-              Are you sure you want to move the form?
+            <DialogTitle id="alert-move-dialog-title">
+              Please select the form you want to move this section to.
             </DialogTitle>
+            <DialogContent>
+              <FormControl component="fieldset">
+                <RadioGroup
+                  aria-labelledby="target-form"
+                  name="targetForm"
+                  value={targetViewSetId}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setTargetViewSetId(event.target.value);
+                  }}
+                >
+                  {Object.keys(viewSets).map((formId) => (
+                    <FormControlLabel
+                      key={formId}
+                      value={formId}
+                      control={<Radio />}
+                      label={viewSets[formId].label}
+                    />
+                  ))}
+                </RadioGroup>
+              </FormControl>
+            </DialogContent>
             <DialogActions>
-              <Button onClick={moveSectionToForm}>Yes</Button>
-              <Button onClick={handleCloseMoveDialog}>No</Button>
+              <Button onClick={moveSectionToForm}>Move</Button>
+              <Button onClick={handleCloseMoveDialog}>Cancel</Button>
             </DialogActions>
           </Dialog>
         </Grid>
