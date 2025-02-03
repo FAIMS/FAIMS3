@@ -1,26 +1,57 @@
 import {
   Alert,
-  Grid,
   Card,
-  TextField,
   FormControl,
+  FormControlLabel,
+  Checkbox,
+  Grid,
   InputLabel,
   MenuItem,
   Select,
-  FormControlLabel,
-  Checkbox,
+  TextField,
   Typography,
+  Divider,
 } from '@mui/material';
-import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {MutableRefObject, useRef, useState} from 'react';
-import {ComponentParameters, FieldType} from '../../state/initial';
+import { MutableRefObject, useRef, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../../state/hooks';
+import { ComponentParameters, FieldType } from '../../state/initial';
 
+/**
+ * Mapping of system variables to their display names.
+ * These variables are injected at runtime and are prefixed with an underscore
+ * to distinguish them from regular field references.
+ */
+const SYSTEM_VARIABLES: Array<{ display: string; template: string }> = [
+  { display: 'Creator Name', template: '_CREATOR_NAME' },
+  { display: 'Created Time', template: '_CREATED_TIME' },
+];
+
+/**
+ * Props for the TemplatedStringFieldEditor component
+ */
 type PropType = {
+  /** The name/identifier of the field being edited */
   fieldName: string;
+  /** The ID of the current view */
   viewId: string;
 };
 
-export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
+/**
+ * A component for editing templated string fields with support for field references
+ * and system variables.
+ * 
+ * Features:
+ * - Field label and helper text configuration
+ * - Template content with field references using {{field-id}} syntax
+ * - System variable insertion using predefined variables (e.g. {{_CREATOR_NAME}})
+ * - Field visibility toggle
+ * 
+ * System variables are distinguished from field references by:
+ * - Starting with an underscore
+ * - Using all caps
+ * - Having predefined values that are injected at runtime
+ */
+export const TemplatedStringFieldEditor = ({ fieldName, viewId }: PropType) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
@@ -31,17 +62,24 @@ export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
   const textAreaRef = useRef(null) as MutableRefObject<unknown>;
 
   const [alertMessage, setAlertMessage] = useState('');
+  const [insertType, setInsertType] = useState<'field' | 'system'>('field');
 
   const state = field['component-parameters'];
 
+  /**
+   * Gets the display label for a field, falling back to the field name if no label is set
+   */
   const getFieldLabel = (f: FieldType) => {
     return (
-      (f['component-parameters'].InputLabelProps &&
-        f['component-parameters'].InputLabelProps.label) ||
-      f['component-parameters'].name
+      (f['component-parameters'].InputLabelProps?.label) ||
+      f['component-parameters'].name ||
+      ''
     );
   };
 
+  /**
+   * Updates the field in the store with new component parameters
+   */
   const updateFieldFromState = (newState: ComponentParameters) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
     newField['component-parameters'].InputLabelProps = {
@@ -49,76 +87,104 @@ export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
     };
     newField['component-parameters'].helperText = newState.helperText;
     newField['component-parameters'].template = newState.template;
+    newField['component-parameters'].ElementProps = {
+      ...newField['component-parameters'].ElementProps,
+      hidden: newState.ElementProps?.hidden,
+    };
     dispatch({
       type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
+      payload: { fieldName, newField },
     });
   };
 
-  const updateProperty = (prop: string, value: string) => {
-    const newState = {...state, [prop]: value};
-    updateFieldFromState(newState);
+  /**
+   * Updates a single property in the component state
+   */
+  const updateProperty = (prop: string, value: string | boolean) => {
+    if (prop === 'hidden') {
+      const newState = {
+        ...state,
+        ElementProps: {
+          ...state.ElementProps,
+          hidden: value as boolean,
+        },
+      };
+      updateFieldFromState(newState);
+    } else {
+      const newState = { ...state, [prop]: value };
+      updateFieldFromState(newState);
+    }
   };
 
-  const insertFieldId = (fieldId: string) => {
-    // insert {{fieldId}} at the cursor in the text area
+  /**
+   * Inserts a reference (field or system variable) at the current cursor position
+   * @param reference - For fields, this is the field ID. For system variables, this is the template name
+   * @param type - Whether this is a field reference or system variable
+   */
+  const insertReference = (reference: string, type: 'field' | 'system') => {
     if (textAreaRef.current) {
       const el = textAreaRef.current as HTMLTextAreaElement;
       el.focus();
       const [start, end] = [el.selectionStart, el.selectionEnd];
-      el.setRangeText(`{{${fieldId}}}`, start, end, 'select');
-      el.dispatchEvent(new Event('change', {bubbles: true}));
+      el.setRangeText(`{{${reference}}}`, start, end, 'select');
+      el.dispatchEvent(new Event('change', { bubbles: true }));
     }
   };
 
   return (
     <Grid container spacing={2}>
-      <Grid item xs={12}>
-        {alertMessage && (
+      {alertMessage && (
+        <Grid item xs={12}>
           <Alert
-            onClose={() => {
-              setAlertMessage('');
-            }}
+            onClose={() => setAlertMessage('')}
             severity="error"
           >
             {alertMessage}
           </Alert>
-        )}
-        <Card variant="outlined" sx={{display: 'flex'}}>
-          <Grid item sm={6} xs={12} sx={{mx: 1.5, my: 2}}>
-            <TextField
-              name="label"
-              variant="outlined"
-              label="Label"
-              value={state.label}
-              onChange={e => updateProperty('label', e.target.value)}
-              helperText="Enter a label for the field."
-            />
-          </Grid>
-          <Grid item sm={6} xs={12} sx={{mx: 1.5, my: 2}}>
-            <TextField
-              name="helperText"
-              variant="outlined"
-              label="Helper Text"
-              fullWidth
-              multiline={true}
-              rows={4}
-              value={state.helperText}
-              helperText="Help text shown along with the field (like this text)."
-              onChange={e => updateProperty('helperText', e.target.value)}
-            />
+        </Grid>
+      )}
+
+      <Grid item xs={12}>
+        <Card variant="outlined">
+          <Grid container spacing={2} sx={{ p: 2 }}>
+            <Grid item sm={6} xs={12}>
+              <TextField
+                name="label"
+                variant="outlined"
+                label="Label"
+                fullWidth
+                value={state.label || ''}
+                onChange={e => updateProperty('label', e.target.value)}
+                helperText="Enter a label for the field"
+              />
+            </Grid>
+            <Grid item sm={6} xs={12}>
+              <TextField
+                name="helperText"
+                variant="outlined"
+                label="Helper Text"
+                fullWidth
+                multiline
+                rows={4}
+                value={state.helperText || ''}
+                helperText="Help text shown along with the field"
+                onChange={e => updateProperty('helperText', e.target.value)}
+              />
+            </Grid>
           </Grid>
         </Card>
+      </Grid>
 
-        <Grid item xs={12}>
-          <p>
-            The template can contain any text plus references to field or
-            metadata values in double curly braces (e.g. {'{{field-id}}'}). Use
-            the menu on the right to insert the identifiers of the fields in
-            this notebook.
-          </p>
-          <Card variant="outlined" sx={{display: 'flex'}}>
-            <Grid item sm={6} xs={12} sx={{mx: 1.5, my: 2}}>
+      <Grid item xs={12}>
+        <Typography variant="body2" sx={{ mb: 2 }}>
+          The template can contain text, field references (e.g. {'{{field-id}}'}), 
+          and system variables (e.g. {'{{_CREATED_TIME}}'}).
+          Use the selectors below to insert references.
+        </Typography>
+        
+        <Card variant="outlined">
+          <Grid container spacing={2} sx={{ p: 2 }}>
+            <Grid item xs={12}>
               <TextField
                 name="template"
                 inputRef={(ref: MutableRefObject<HTMLElement>) =>
@@ -127,37 +193,83 @@ export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
                 variant="outlined"
                 fullWidth
                 multiline
-                rows={2}
+                rows={4}
                 label="Template"
-                value={state.template}
+                value={state.template || ''}
                 onChange={e => updateProperty('template', e.target.value)}
-                helperText="Enter the template."
+                helperText="Enter the template text with optional references"
               />
             </Grid>
 
-            <Grid item xs={4} sx={{mx: 1.5, my: 2}}>
-              <FormControl sx={{minWidth: 200}}>
-                <InputLabel id="featureType-label">
-                  Insert Field Identifier
-                </InputLabel>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel id="reference-type-label">Reference Type</InputLabel>
                 <Select
-                  labelId="featureType-label"
-                  label="Insert Field Identifier"
-                  onChange={e => insertFieldId(e.target.value)}
-                  value={''}
+                  labelId="reference-type-label"
+                  label="Reference Type"
+                  value={insertType}
+                  onChange={e => setInsertType(e.target.value as 'field' | 'system')}
                 >
-                  {Object.keys(allFields).map(fieldId => {
-                    return (
-                      <MenuItem key={fieldId} value={fieldId}>
-                        {getFieldLabel(allFields[fieldId])}
-                      </MenuItem>
-                    );
-                  })}
+                  <MenuItem value="field">Field Reference</MenuItem>
+                  <MenuItem value="system">System Variable</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
-          </Card>
-        </Grid>
+
+            <Grid item xs={12}>
+              {insertType === 'field' ? (
+                <FormControl fullWidth>
+                  <InputLabel id="field-insert-label">
+                    Insert Field Reference
+                  </InputLabel>
+                  <Select
+                    labelId="field-insert-label"
+                    label="Insert Field Reference"
+                    onChange={e => insertReference(e.target.value, 'field')}
+                    value=""
+                  >
+                    {Object.keys(allFields).map(fieldId => (
+                      <MenuItem key={fieldId} value={fieldId}>
+                        {getFieldLabel(allFields[fieldId])}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <FormControl fullWidth>
+                  <InputLabel id="system-var-label">
+                    Insert System Variable
+                  </InputLabel>
+                  <Select
+                    labelId="system-var-label"
+                    label="Insert System Variable"
+                    onChange={e => insertReference(e.target.value, 'system')}
+                    value=""
+                  >
+                    {SYSTEM_VARIABLES.map(({ display, template }) => (
+                      <MenuItem key={template} value={template}>
+                        {display}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+            </Grid>
+
+            <Grid item xs={12}>
+              <Divider sx={{ my: 1 }} />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={state.ElementProps?.hidden || false}
+                    onChange={e => updateProperty('hidden', e.target.checked)}
+                  />
+                }
+                label="Hide this field"
+              />
+            </Grid>
+          </Grid>
+        </Card>
       </Grid>
     </Grid>
   );

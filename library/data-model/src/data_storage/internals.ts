@@ -198,6 +198,21 @@ export async function getLatestRevision(
   }
 }
 
+/**
+ * Returns the recommended HRID for this record (which is a revision) - this is
+ * achieved by a) get the ui spec for the project b) look at fields in the
+ * revision (via avp keys) c) determine which viewset these fields are in d)
+ * getting the HRID for that viewset which is either i) the top level configured
+ * hridField for new notebooks or ii) a field starting with hrid...  for the old
+ * style. Returns the value of the HRID field, not the field name.
+ * 
+ * If null is returned, typically a parent would use the record_id as a backup.
+ *
+ * @param project_id The project ID for which to ascertain the HRID
+ * @param revision The revision - this reflects a particular version of a
+ * response
+ * @returns The recommended HRID for this revision/record
+ */
 export async function getHRID(
   project_id: ProjectID,
   revision: Revision

@@ -36,6 +36,8 @@ export type ComponentParameters = {
     // These items must correspond to values in the options[]. Only one of such
     // can be selecting, greying out/excluding other options
     exclusiveOptions?: Array<string>;
+    // This option is for TemplateField's to hide them
+    hidden?: boolean;
     options?: {
       value: string;
       label: string;
