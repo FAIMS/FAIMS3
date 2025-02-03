@@ -282,7 +282,7 @@ export async function getUiSpecForProject({
     };
     return uiSpec;
   } catch (err) {
-    console.log('failed to find ui specification for', projectId);
+    //console.log('failed to find ui specification for', projectId);
     return undefined;
   }
 }
