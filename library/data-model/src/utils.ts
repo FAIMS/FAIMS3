@@ -260,13 +260,13 @@ export const getFieldToIdsMap = (
 /**
  * Gets the raw ui spec (no compiled conditionals) for the given project ID
  * @param projectId The project ID to fetch the ui spec for
- * @returns The ui specification (without compiled conditionals)
+ * @returns The ui specification (without compiled conditionals) or undefined if unavailable
  */
 export async function getUiSpecForProject({
   projectId,
 }: {
   projectId: ProjectID;
-}): Promise<ProjectUIModel> {
+}): Promise<ProjectUIModel | undefined> {
   try {
     const projdb = await getProjectDB(projectId);
     const encUIInfo: EncodedProjectUIModel = await projdb.get(
@@ -282,7 +282,7 @@ export async function getUiSpecForProject({
     };
     return uiSpec;
   } catch (err) {
-    console.error('failed to find ui specification for', projectId, err);
-    throw Error(`Could not find ui specification for ${projectId}`);
+    console.warn('failed to find ui specification for', projectId);
+    return undefined;
   }
 }

@@ -220,19 +220,24 @@ export async function getHRID(
   // Need to find a way here to determine the correct field name to use - we
   // need the uispec at this point
   const uiSpecification = await getUiSpecForProject({projectId: project_id});
-  const fieldNames = Array.from(Object.keys(revision.avps));
-  const sampleFieldName = fieldNames.length > 0 ? fieldNames[0] : undefined;
+
   let hridFieldName = undefined;
-  if (sampleFieldName) {
-    const {viewSetId} = getIdsByFieldName({
-      uiSpecification,
-      fieldName: sampleFieldName,
-    });
-    // get the HRID for the view set - might not succeed
-    hridFieldName = getHridFieldNameForViewset({
-      uiSpecification,
-      viewSetId,
-    });
+
+  // Only try and use the new hrid method if ui spec is available
+  if (uiSpecification) {
+    const fieldNames = Array.from(Object.keys(revision.avps));
+    const sampleFieldName = fieldNames.length > 0 ? fieldNames[0] : undefined;
+    if (sampleFieldName) {
+      const {viewSetId} = getIdsByFieldName({
+        uiSpecification,
+        fieldName: sampleFieldName,
+      });
+      // get the HRID for the view set - might not succeed
+      hridFieldName = getHridFieldNameForViewset({
+        uiSpecification,
+        viewSetId,
+      });
+    }
   }
 
   // only try the backup if necessary
@@ -339,7 +344,7 @@ export async function listRecordMetadata(
     return out;
   } catch (err) {
     console.log(err);
-    throw Error('failed to get metadata');
+    throw Error(`failed to get metadata. ${err}`);
   }
 }
 
