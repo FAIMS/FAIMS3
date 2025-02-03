@@ -589,7 +589,7 @@ export const hydrateRecord = async (
       type: record.revision.type,
     };
     return result;
-  } catch(e) {
+  } catch (e) {
     throw new Error(
       `Failed to get HRID of record ${record.record_id} revision ${record.revision}. ${e}`
     );
