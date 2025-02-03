@@ -14,18 +14,27 @@
  * limitations under the License.
  *
  /*
- * Filename: RichTextField.tsx
- * Description:
- *   A rich text field that will render markdown content.
+ * RichTextField Component
+ *
+ * This component renders a rich text field using Markdown.
+ * - Markdown-formatted content displayed as HTML.
+ *
+ * Props:
+ * - content (string): Markdown content to be rendered.
  */
-
 import React from 'react';
 import MarkdownIt from 'markdown-it';
 
+/**
+ * Props for the RichTextField component.
+ */
 interface Props {
   content: string;
 }
 
+/**
+ * RichTextField Component - Reusable Markdown renderer witth Formik integration.
+ */
 export const RichTextField: React.FC<Props> = ({content}) => {
   const md = new MarkdownIt();
   const renderedContent = md.render(content);

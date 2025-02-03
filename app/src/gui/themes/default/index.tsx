@@ -46,10 +46,11 @@ const theme = createTheme({
     text: {
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
+      helpText: colors.blueGrey[600],
     },
     alert: {
       warningBackground: '#FFF4E5',
-      warningText: '#5F370E',
+      warningText: '#9C5711FF',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
     },

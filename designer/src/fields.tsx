@@ -441,6 +441,35 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.object'], ['yup.nullable']],
   },
+  FAIMSTextField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'FAIMSTextField',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      label: 'FAIMS Text Field',
+      fullWidth: true,
+      helperText: 'Enter text',
+      variant: 'outlined',
+      required: false,
+    },
+    validationSchema: [['yup.string']],
+    initialValue: '',
+  },
+
+  NumberField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'NumberField',
+    'type-returned': 'faims-core::Number',
+    'component-parameters': {
+      label: 'Number Input',
+      fullWidth: true,
+      helperText: 'Enter a valid number',
+      required: false,
+      // min and max can be dynamically added when needed
+    },
+    validationSchema: [['yup.number']],
+    initialValue: '',
+  },
 };
 
 export const getFieldNames = () => {
