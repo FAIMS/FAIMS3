@@ -299,7 +299,7 @@ registerField(
   'NumberField',
   'Number Input Field',
   'Allows users to input numeric values',
-  'Text',
+  'Number',
   NumberField
 );
 

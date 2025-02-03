@@ -465,9 +465,10 @@ const fields: {[key: string]: FieldType} = {
       fullWidth: true,
       helperText: 'Enter a valid number',
       required: false,
+      // min and max can be dynamically added when needed
     },
-    validationSchema: [['yup.number'], ['yup.min', 0], ['yup.max', 100]],
-    initialValue: 0,
+    validationSchema: [['yup.number']],
+    initialValue: '',
   },
 };
 
