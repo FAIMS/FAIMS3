@@ -157,13 +157,6 @@ export const getIdsByFieldName = ({
 }): {viewId: string; viewSetId: string} => {
   // Get all views
   const views = uiSpecification.views;
-  const pprint = (obj: any) => {
-    console.warn(JSON.stringify(obj, undefined, 2));
-  };
-  console.log('Inputs');
-  pprint({uiSpecification, fieldName});
-  console.log('Views');
-  pprint(views)
 
   // Iterate through and find which view has the specific field
   let matchingViewId = undefined;

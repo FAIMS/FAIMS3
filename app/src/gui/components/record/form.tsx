@@ -35,7 +35,7 @@ import {Alert, Box, Divider, Typography} from '@mui/material';
 import {Form, Formik} from 'formik';
 import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
-import {object, ValidationError} from 'yup';
+import {ValidationError} from 'yup';
 import * as ROUTES from '../../../constants/routes';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
 import {
@@ -53,6 +53,11 @@ import {
   getFieldsForViewSet,
   getReturnedTypesForViewSet,
 } from '../../../uiSpecification';
+import {
+  getRecordContextFromRecord,
+  recomputeDerivedFields,
+  ValuesObject,
+} from '../../../utils/formUtilities';
 import CircularLoading from '../ui/circular_loading';
 import {getValidationSchemaForViewset} from '../validation';
 import {
@@ -70,12 +75,6 @@ import {
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
-import {
-  formatTimestamp,
-  getRecordContextFromRecord,
-  recomputeDerivedFields,
-  ValuesObject,
-} from '../../../utils/formUtilities';
 
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -1297,23 +1296,21 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   JSON.stringify(this.state.lastProcessedValues);
 
                 if (valuesChanged) {
-                  // deep copy which can be set
-                  const copyValues = JSON.parse(JSON.stringify(values));
                   // Process the derive fields updates
                   const changed = recomputeDerivedFields({
                     context: this.state.recordContext,
-                    values: copyValues,
+                    values: values,
                     uiSpecification: this.props.ui_specification,
                   });
 
                   // Only update if processing actually changed something
                   if (changed) {
                     // Update form values
-                    setValues(copyValues);
+                    setValues(values);
                   }
 
                   // Store the processed values
-                  this.setState({lastProcessedValues: copyValues});
+                  this.setState({lastProcessedValues: values});
                 }
 
                 const layout =

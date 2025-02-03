@@ -18,7 +18,7 @@
  */
 
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
-import {Capacitor} from '@capacitor/core';
+import {Capacitor, ExceptionCode} from '@capacitor/core';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -35,6 +35,7 @@ import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
+import {decode} from 'base64-arraybuffer';
 
 /**
  * Converts a base64 encoded image to a Blob object using fetch API instead of
@@ -48,11 +49,9 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
     throw Error('No photo data found');
   }
 
-  // Convert base64 to binary using fetch API
-  const response = await fetch(
-    `data:image/${image.format};base64,${image.base64String}`
-  );
-  return await response.blob();
+  return new Blob([new Uint8Array(decode(image.base64String))], {
+    type: `image/${image.format}`,
+  });
 }
 
 // Helper function to check if any images are undownloaded
@@ -206,82 +205,97 @@ const ImageGallery = ({
         )}
 
         {/* Image Gallery - Reversed order for newest first */}
-        {[...images].reverse().map((image: any, index: number) =>
-          image['attachment_id'] === undefined ? (
-            <ImageListItem
-              key={`${fieldName}-image-${index}`}
-              sx={{
-                borderRadius: theme.spacing(1),
-                overflow: 'hidden',
-                boxShadow: theme.shadows[2],
-                aspectRatio: '4/3',
-                '&:hover': {
-                  boxShadow: theme.shadows[4],
-                },
-              }}
-            >
-              <Box
+        {[...images].reverse().map((image: any, index: number) => {
+          if (image['attachment_id'] === undefined) {
+            try {
+              const url = URL.createObjectURL(image);
+              return (
+                <ImageListItem
+                  key={`${fieldName}-image-${index}`}
+                  sx={{
+                    borderRadius: theme.spacing(1),
+                    overflow: 'hidden',
+                    boxShadow: theme.shadows[2],
+                    aspectRatio: '4/3',
+                    '&:hover': {
+                      boxShadow: theme.shadows[4],
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={url}
+                      onClick={() => setopen(url)}
+                      alt={`Photo ${index + 1}`}
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        bgcolor: theme.palette.background.lightBackground,
+                      }}
+                    />
+                    {!disabled && (
+                      <ImageListItemBar
+                        sx={{
+                          background: theme.palette.primary.dark[70],
+                        }}
+                        position="top"
+                        actionIcon={
+                          <IconButton
+                            sx={{color: 'white'}}
+                            onClick={() => handleDelete(index)}
+                            size="large"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        }
+                        actionPosition="right"
+                      />
+                    )}
+                  </Box>
+                </ImageListItem>
+              );
+            } catch (e) {
+              console.error(
+                'URL was not valid for image ',
+                image,
+                '. Ignoring in gallery. Error: ',
+                e
+              );
+              throw(e)
+            }
+          } else {
+            return (
+              <ImageListItem
+                key={`${fieldName}-image-icon-${index}`}
+                // Set to null to show download popup
+                onClick={() => setopen(null)}
                 sx={{
-                  width: '100%',
-                  height: '100%',
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  borderRadius: theme.spacing(1),
+                  overflow: 'hidden',
+                  boxShadow: theme.shadows[2],
+                  aspectRatio: '4/3',
+                  '&:hover': {
+                    boxShadow: theme.shadows[4],
+                  },
                 }}
               >
-                <Box
-                  component="img"
-                  src={URL.createObjectURL(image)}
-                  onClick={() => setopen(URL.createObjectURL(image))}
-                  alt={`Photo ${index + 1}`}
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    bgcolor: theme.palette.background.lightBackground,
-                  }}
-                />
-                {!disabled && (
-                  <ImageListItemBar
-                    sx={{
-                      background: theme.palette.primary.dark[70],
-                    }}
-                    position="top"
-                    actionIcon={
-                      <IconButton
-                        sx={{color: 'white'}}
-                        onClick={() => handleDelete(index)}
-                        size="large"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    }
-                    actionPosition="right"
-                  />
-                )}
-              </Box>
-            </ImageListItem>
-          ) : (
-            <ImageListItem
-              key={`${fieldName}-image-icon-${index}`}
-              // Set to null to show download popup
-              onClick={() => setopen(null)}
-              sx={{
-                cursor: 'pointer',
-                borderRadius: theme.spacing(1),
-                overflow: 'hidden',
-                boxShadow: theme.shadows[2],
-                aspectRatio: '4/3',
-                '&:hover': {
-                  boxShadow: theme.shadows[4],
-                },
-              }}
-            >
-              <UnavailableImage />
-            </ImageListItem>
-          )
-        )}
+                <UnavailableImage />
+              </ImageListItem>
+            );
+          }
+        })}
       </Box>
     </Box>
   );
