@@ -4,6 +4,8 @@ import {
   Delete as DeleteIcon,
   Error as ErrorIcon,
   Preview as PreviewIcon,
+  ArrowDropUpRounded as ArrowDropUpRoundedIcon,
+  ArrowDropDownRounded as ArrowDropDownRoundedIcon,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -164,8 +166,23 @@ const TemplateBlockEditor: React.FC<{
   systemVariables: Variable[];
   onUpdate: (block: TemplateBlock) => void;
   onDelete: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  isFirst?: boolean;
+  isLast?: boolean;
   level?: number;
-}> = ({block, variables, systemVariables, onUpdate, onDelete, level = 0}) => {
+}> = ({
+  block,
+  variables,
+  systemVariables,
+  onUpdate,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+  isFirst,
+  isLast,
+  level = 0,
+}) => {
   const allVariables = [...variables, ...systemVariables];
 
   const updateBlockContent = (content: string) => {
@@ -257,9 +274,21 @@ const TemplateBlockEditor: React.FC<{
         )}
 
         <Grid item>
-          <IconButton onClick={onDelete} size="small" color="error">
-            <DeleteIcon />
-          </IconButton>
+          <Box sx={{display: 'flex', alignItems: 'center'}}>
+            {onMoveUp && !isFirst && (
+              <IconButton onClick={onMoveUp} size="small">
+                <ArrowDropUpRoundedIcon />
+              </IconButton>
+            )}
+            {onMoveDown && !isLast && (
+              <IconButton onClick={onMoveDown} size="small">
+                <ArrowDropDownRoundedIcon />
+              </IconButton>
+            )}
+            <IconButton onClick={onDelete} size="small" color="error">
+              <DeleteIcon />
+            </IconButton>
+          </Box>
         </Grid>
       </Grid>
 
@@ -281,6 +310,28 @@ const TemplateBlockEditor: React.FC<{
                 newChildren.splice(index, 1);
                 onUpdate({...block, children: newChildren});
               }}
+              onMoveUp={() => {
+                if (index > 0) {
+                  const newChildren = [...(block.children || [])];
+                  [newChildren[index - 1], newChildren[index]] = [
+                    newChildren[index],
+                    newChildren[index - 1],
+                  ];
+                  onUpdate({...block, children: newChildren});
+                }
+              }}
+              onMoveDown={() => {
+                if (index < (block.children?.length || 0) - 1) {
+                  const newChildren = [...(block.children || [])];
+                  [newChildren[index], newChildren[index + 1]] = [
+                    newChildren[index + 1],
+                    newChildren[index],
+                  ];
+                  onUpdate({...block, children: newChildren});
+                }
+              }}
+              isFirst={index === 0}
+              isLast={index === (block.children?.length || 0) - 1}
               level={level + 1}
             />
           ))}
@@ -599,6 +650,26 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
                   const newTemplate = [...template];
                   newTemplate.splice(index, 1);
                   setTemplate(newTemplate);
+                }}
+                onMoveUp={() => {
+                  if (index > 0) {
+                    const newTemplate = [...template];
+                    [newTemplate[index - 1], newTemplate[index]] = [
+                      newTemplate[index],
+                      newTemplate[index - 1],
+                    ];
+                    setTemplate(newTemplate);
+                  }
+                }}
+                onMoveDown={() => {
+                  if (index < template.length - 1) {
+                    const newTemplate = [...template];
+                    [newTemplate[index], newTemplate[index + 1]] = [
+                      newTemplate[index + 1],
+                      newTemplate[index],
+                    ];
+                    setTemplate(newTemplate);
+                  }
                 }}
               />
             ))}
