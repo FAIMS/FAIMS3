@@ -327,6 +327,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                     {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
                   />
                   <Tab
+                    label={`All ${recordLabel}s`}
+                    {...a11yProps(1, `${NOTEBOOK_NAME}-records`)}
+                  />
+                  <Tab
                     label={<DraftTabBadge project_id={project.project_id} />}
                     {...a11yProps(1, `${NOTEBOOK_NAME}-records`)}
                   />
@@ -345,11 +349,28 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   handleRefresh={handleRefresh}
                   onRecordsCountChange={handleCountChange}
                   recordLabel={recordLabel}
+                  filterByUser={true} // filter by current user
                 />
               </TabPanel>
               <TabPanel
                 value={recordDraftTabValue}
                 index={1}
+                id={'records-drafts-'}
+              >
+                <RecordsBrowseTable
+                  project_id={project.project_id}
+                  maxRows={25}
+                  viewsets={viewsets}
+                  filter_deleted={true}
+                  handleRefresh={handleRefresh}
+                  onRecordsCountChange={handleCountChange}
+                  recordLabel={recordLabel}
+                  filterByUser={false} // show all records
+                />
+              </TabPanel>
+              <TabPanel
+                value={recordDraftTabValue}
+                index={2}
                 id={'records-drafts-'}
               >
                 <DraftsTable
