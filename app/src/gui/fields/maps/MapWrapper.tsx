@@ -69,7 +69,7 @@ import Feature from 'ol/Feature';
 import {Geometry} from 'ol/geom';
 import {createCenterControl} from '../../components/map/center-control';
 import {useNotification} from '../../../context/popup';
-import {ImageTileStore} from '../../components/map/tile_source';
+import {ImageTileStore} from '../../components/map/tile-source';
 
 const styles = {
   mapContainer: {

@@ -42,7 +42,7 @@ import {createCenterControl} from '../map/center-control';
 import {Geolocation} from '@capacitor/geolocation';
 import {useAppSelector} from '../../../context/store';
 import {selectActiveUser} from '../../../context/slices/authSlice';
-import {ImageTileStore} from '../map/tile_source';
+import {ImageTileStore} from '../map/tile-source';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;

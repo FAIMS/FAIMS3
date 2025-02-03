@@ -31,7 +31,7 @@ import VectorSource from 'ol/source/Vector';
 import {RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
-import {ImageTileStore} from '../map/tile_source';
+import {ImageTileStore} from './tile-source';
 import {Attribution} from 'ol/source/Source';
 
 const defaultMapProjection = 'EPSG:3857';
