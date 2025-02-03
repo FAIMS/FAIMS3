@@ -32,7 +32,7 @@ import {
   Typography,
 } from '@mui/material';
 import Mustache from 'mustache';
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 
 /**
  * Supported block types in the template builder
@@ -363,6 +363,36 @@ const TemplatePreview: React.FC<{
   const [previewError, setPreviewError] = useState<string | null>(null);
   const allVariables = [...variables, ...systemVariables];
 
+  // Function to find all variables used in a block and its children
+  const findUsedVariables = useCallback(
+    (blocks: TemplateBlock[]): Set<string> => {
+      const usedVars = new Set<string>();
+
+      const processBlock = (block: TemplateBlock) => {
+        if (
+          block.type === 'variable' ||
+          block.type === 'if' ||
+          block.type === 'unless'
+        ) {
+          usedVars.add(block.content);
+        }
+        if (block.children) {
+          block.children.forEach(processBlock);
+        }
+      };
+
+      blocks.forEach(processBlock);
+      return usedVars;
+    },
+    []
+  );
+
+  // Get the list of variables actually used in the template
+  const usedVariables = useMemo(() => {
+    const usedVarNames = findUsedVariables(template);
+    return allVariables.filter(v => usedVarNames.has(v.name));
+  }, [template, allVariables, findUsedVariables]);
+
   const compileTemplate = useCallback((blocks: TemplateBlock[]): string => {
     return blocks
       .map(block => {
@@ -407,25 +437,31 @@ const TemplatePreview: React.FC<{
 
   return (
     <Box sx={{mt: 3}}>
-      <Grid container spacing={2}>
-        {allVariables.map(variable => (
-          <Grid item xs={12} sm={6} key={variable.name}>
-            <TextField
-              fullWidth
-              label={variable.displayName}
-              value={previewValues[variable.name] || ''}
-              onChange={e =>
-                setPreviewValues({
-                  ...previewValues,
-                  [variable.name]: e.target.value,
-                })
-              }
-              size="small"
-              placeholder={`Enter ${variable.displayName.toLowerCase()}...`}
-            />
-          </Grid>
-        ))}
-      </Grid>
+      {usedVariables.length > 0 ? (
+        <Grid container spacing={2}>
+          {usedVariables.map(variable => (
+            <Grid item xs={12} sm={6} key={variable.name}>
+              <TextField
+                fullWidth
+                label={variable.displayName}
+                value={previewValues[variable.name] || ''}
+                onChange={e =>
+                  setPreviewValues({
+                    ...previewValues,
+                    [variable.name]: e.target.value,
+                  })
+                }
+                size="small"
+                placeholder={`Enter ${variable.displayName.toLowerCase()}...`}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
+        <Typography color="text.secondary" sx={{mb: 2}}>
+          No variables used in this template
+        </Typography>
+      )}
 
       {previewError && (
         <Alert severity="error" sx={{mt: 2}}>
