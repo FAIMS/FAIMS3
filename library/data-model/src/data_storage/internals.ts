@@ -225,18 +225,29 @@ export async function getHRID(
 
   // Only try and use the new hrid method if ui spec is available
   if (uiSpecification) {
+    // iterate through field names, trying our very best to find one that is
+    // described in the uispec appropriately. Unless the uispec is very broken,
+    // this should succeed.
     const fieldNames = Array.from(Object.keys(revision.avps));
-    const sampleFieldName = fieldNames.length > 0 ? fieldNames[0] : undefined;
-    if (sampleFieldName) {
-      const {viewSetId} = getIdsByFieldName({
-        uiSpecification,
-        fieldName: sampleFieldName,
-      });
-      // get the HRID for the view set - might not succeed
-      hridFieldName = getHridFieldNameForViewset({
-        uiSpecification,
-        viewSetId,
-      });
+    for (const candidateFieldName in fieldNames) {
+      try {
+        const {viewSetId} = getIdsByFieldName({
+          uiSpecification,
+          fieldName: candidateFieldName,
+        });
+        // get the HRID for the view set - might not succeed
+        hridFieldName = getHridFieldNameForViewset({
+          uiSpecification,
+          viewSetId,
+        });
+        if (hridFieldName) {
+          break;
+        }
+      } catch (e) {
+        console.log(
+          `Could not find suitable viewset/HRID for field name: ${candidateFieldName}. Error: ${e}.`
+        );
+      }
     }
   }
 
