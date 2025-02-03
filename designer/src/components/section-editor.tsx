@@ -142,7 +142,7 @@ export const SectionEditor = ({
       setAddAlertMessage(
         `Section ${newSectionName} already exists in this form.`
       );
-    };
+    }
   };
 
   const moveSection = (moveDirection: 'left' | 'right') => {
