@@ -18,28 +18,27 @@
  *   This is the file is to set the values for persistent state
  */
 import {
-  upsertFAIMSData,
-  getFullRecordData,
+  getFieldToIdsMap,
   getFirstRecordHead,
-  ProjectUIModel,
-  RecordReference,
+  getFullRecordData,
+  getHridFieldMap,
+  getIdsByFieldName,
+  getMetadataForSomeRecords,
   LinkedRelation,
   LocationState,
-  Relationship,
-  RecordID,
-  getMetadataForSomeRecords,
   ProjectID,
+  ProjectUIModel,
+  RecordID,
   RecordMetadata,
+  RecordReference,
+  Relationship,
   TokenContents,
-  getHridFieldNameForViewset,
-  getIdsByFieldName,
-  getHridFieldMap,
-  getFieldToIdsMap,
+  upsertFAIMSData,
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
-import {RecordLinkProps, ParentLinkProps} from './types';
-import getLocalDate from '../../../fields/LocalDate';
 import {logError} from '../../../../logging';
+import getLocalDate from '../../../fields/LocalDate';
+import {ParentLinkProps, RecordLinkProps} from './types';
 
 /**
  * Generate an object containing information to be stored in
@@ -442,7 +441,7 @@ async function get_field_RelatedFields(
 ): Promise<Array<RecordLinkProps>> {
   // hrid field map
   const hridFieldMap = getHridFieldMap(ui_specification);
-  
+
   for (const index in fields) {
     const field = fields[index]['field'];
     const child_record = fields[index]['value'];
@@ -453,7 +452,6 @@ async function get_field_RelatedFields(
       fieldName: field,
     });
     const hridFieldName = hridFieldMap[viewSetId];
-
 
     const related_type =
       ui_specification['fields'][field]['component-parameters']['related_type'];
@@ -952,13 +950,16 @@ export async function removeRecordLink(
  * @param relation_type - 'Child' or 'Linked'
  * @returns the new child record object
  */
-export async function addRecordLink(
-  child_record: RecordReference,
-  parent: LinkedRelation,
-  relation_type: string
-): Promise<RecordMetadata | null> {
+export async function addRecordLink({
+  child_record,
+  parent,
+  relation_type,
+}: {
+  child_record: RecordReference;
+  parent: LinkedRelation;
+  relation_type: string;
+}): Promise<RecordMetadata | null> {
   let child_record_meta = null;
-
   try {
     // retrieve information about the child record
     const {latest_record} = await getRecordInformation(child_record);
@@ -989,11 +990,11 @@ export async function addRecordLink(
       new_doc['deleted'] = latest_record.deleted;
       await upsertFAIMSData(child_record.project_id, new_doc);
     }
-    // here we are trusting that Record has enough of the fields of RecordMetadata
-    // for the purposes of the caller until such time as we rationalise the Record types
+    // here we are trusting that Record has enough of the fields of
+    // RecordMetadata for the purposes of the caller until such time as we
+    // rationalise the Record types
     child_record_meta = latest_record as unknown as RecordMetadata;
     // it's missing the HRID so grab it here
-    // TODO update this
     // Just use record id here and see what happens ¯\_(ツ)_/¯
     child_record_meta.hrid = child_record_meta.record_id;
     //child_record_meta.hrid = getHRIDValue(

@@ -818,15 +818,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
 
     // Now do an in-place update of object values to ensure that we have the
     // latest templated fields which may require on current runtime values
-    console.log('Running pre-save template update.');
-    const changed = recomputeDerivedFields({
+    recomputeDerivedFields({
       values: values,
       context: mergedRecordContext,
       uiSpecification: ui_specification,
     });
-    if (changed) {
-      console.info('Template values were changed during pre-save render.');
-    }
 
     const doc = {
       record_id: this.props.record_id,

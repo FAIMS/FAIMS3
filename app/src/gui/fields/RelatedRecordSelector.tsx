@@ -136,7 +136,7 @@ interface RelatedRecordSelectorProps extends FieldProps {
 
 export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const activeToken = useAppSelector(selectActiveToken)!.parsedToken;
-  const project_id = props.form.values['_project_id'];
+  const project_id = props.form.values['_project_id'] as string;
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;
 
@@ -338,7 +338,11 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       field_id: field_name,
       relation_type_vocabPair: relationshipPair,
     };
-    addRecordLink(selectedRecord, current_record, props.relation_type)
+    addRecordLink({
+      child_record: selectedRecord,
+      parent: current_record,
+      relation_type: props.relation_type,
+    })
       .then(child_record => {
         if (child_record !== null) {
           if (!multiple) setRecordsInformation([child_record]);
