@@ -22,7 +22,7 @@ type PropType = {
  * Enhanced TemplatedStringFieldEditor with visual Mustache template building support.
  * Allows users to create and edit templates using a visual builder or direct text input.
  */
-export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
+export const TemplatedStringFieldEditor = ({fieldName}: PropType) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );

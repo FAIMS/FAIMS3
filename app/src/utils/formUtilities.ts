@@ -92,7 +92,7 @@ const CREATED_TIME_ID = '_CREATED_TIME';
 /**
  * Converts the RecordContext into an object mapping from key -> value for use
  * in template replacement
- * @param context 
+ * @param context
  * @returns The context values to inject
  */
 function contextToTemplate(context: RecordContext): ValuesObject {
@@ -129,7 +129,7 @@ function renderTemplate({
 }): string {
   // generate context vars from record context
   const contextVars = contextToTemplate(context);
-  let filteredValues: ValuesObject = {};
+  const filteredValues: ValuesObject = {};
   for (const [k, v] of Object.entries({...values, ...contextVars})) {
     if (!(k in excludedFields)) {
       // Filter out any excluded fields
@@ -144,7 +144,7 @@ function renderTemplate({
 /**
  * Given the existing values, ui spec and context, updates the values.
  * Recomputes derived template field properties.
- * 
+ *
  * Filters out any template fields
  *
  * @param values
@@ -161,8 +161,8 @@ export function recomputeDerivedFields({
   context: RecordContext;
 }): boolean {
   // compute fields to be updated
-  let fieldsToBeUpdated: {template: string; fieldName: string}[] = [];
-  let filterFields: string[] = [];
+  const fieldsToBeUpdated: {template: string; fieldName: string}[] = [];
+  const filterFields: string[] = [];
 
   for (const fieldName of Object.keys(uiSpecification.fields)) {
     // Get info about it

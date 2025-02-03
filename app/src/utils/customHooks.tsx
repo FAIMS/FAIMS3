@@ -1,12 +1,11 @@
 import {ListingsObject} from '@faims3/data-model/src/types';
-import {useQuery, UseQueryResult} from '@tanstack/react-query';
-import React, {useEffect, useRef, useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
+import {useSearchParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {directory_db} from '../sync/databases';
-import {useCallback} from 'react';
-import {useSearchParams} from 'react-router-dom';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**

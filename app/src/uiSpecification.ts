@@ -30,7 +30,7 @@ import {
 
 export async function getUiSpecForProject(
   project_id: ProjectID,
-  compile: boolean = true
+  compile = true
 ): Promise<ProjectUIModel> {
   try {
     const projdb = await getProjectDB(project_id);

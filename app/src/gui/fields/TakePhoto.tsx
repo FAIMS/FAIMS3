@@ -18,7 +18,7 @@
  */
 
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
-import {Capacitor, ExceptionCode} from '@capacitor/core';
+import {Capacitor} from '@capacitor/core';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -28,6 +28,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
+import {decode} from 'base64-arraybuffer';
 import {FieldProps} from 'formik';
 import React from 'react';
 import {useNavigate} from 'react-router';
@@ -35,7 +36,6 @@ import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
-import {decode} from 'base64-arraybuffer';
 
 /**
  * Converts a base64 encoded image to a Blob object using fetch API instead of
@@ -272,7 +272,7 @@ const ImageGallery = ({
                 '. Ignoring in gallery. Error: ',
                 e
               );
-              throw(e)
+              throw e;
             }
           } else {
             return (

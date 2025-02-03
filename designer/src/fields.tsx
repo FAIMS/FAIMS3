@@ -410,7 +410,7 @@ const fields: {[key: string]: FieldType} = {
       template: ' {{}}',
       InputProps: {
         type: 'text', // must be a valid html type
-      }
+      },
     },
     validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',

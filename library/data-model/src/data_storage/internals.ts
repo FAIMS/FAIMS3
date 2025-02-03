@@ -205,7 +205,7 @@ export async function getLatestRevision(
  * getting the HRID for that viewset which is either i) the top level configured
  * hridField for new notebooks or ii) a field starting with hrid...  for the old
  * style. Returns the value of the HRID field, not the field name.
- * 
+ *
  * If null is returned, typically a parent would use the record_id as a backup.
  *
  * @param project_id The project ID for which to ascertain the HRID

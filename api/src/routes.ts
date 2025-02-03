@@ -277,28 +277,6 @@ function make_html_safe(s: string): string {
   return handlebars.escapeExpression(s);
 }
 
-function render_project_roles(roles: AllProjectRoles): handlebars.SafeString {
-  const all_project_sections = [];
-  for (const project in roles) {
-    const project_sections = [];
-    for (const role of roles[project]) {
-      project_sections.push('<li>' + make_html_safe(role) + '</li>');
-    }
-    const safe_name = make_html_safe(project);
-    all_project_sections.push(
-      '<h6>Roles for project "' +
-        `<a href="./notebooks/${safe_name}/">` +
-        safe_name +
-        '</a>' +
-        '"</h6>' +
-        '<ul>' +
-        project_sections.join('') +
-        '</ul>'
-    );
-  }
-  return new handlebars.SafeString(all_project_sections.join(''));
-}
-
 app.get('/send-token/', (req, res) => {
   if (req.user) {
     res.render('send-token', {
