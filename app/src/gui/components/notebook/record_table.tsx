@@ -79,6 +79,7 @@ type RecordsBrowseTableProps = {
   handleRefresh: () => void;
   onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
   recordLabel: string;
+  filterByUser?: boolean;
 };
 
 /**
@@ -546,35 +547,55 @@ function RecordsTable(props: RecordsTableProps) {
  * @returns {JSX.Element} The rendered table for browsing records.
  */
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
-  const {recordLabel} = props;
+  const {recordLabel, filterByUser} = props;
   // TODO validate this is always defined
   const activeToken = useAppSelector(selectActiveUser)!.parsedToken;
-
+  const activeUser = useAppSelector(selectActiveUser);
   const [query, setQuery] = React.useState('');
+
   const {data: records, isLoading: recordsLoading} = useQuery({
-    queryKey: ['allrecords', query, props.project_id],
+    queryKey: ['allrecords', query, props.project_id, filterByUser],
     networkMode: 'always',
     gcTime: 0,
     queryFn: async () => {
       if (query.length === 0) {
-        console.log(
-          'Getting metadata for all records with project ID',
-          props.project_id
-        );
         const rows = await getMetadataForAllRecords(
           activeToken,
           props.project_id,
           props.filter_deleted
         );
-        console.log(rows);
-        return rows;
+
+        const filteredRows = rows.filter(
+          record => !record.record_id.startsWith('drf-')
+        );
+
+        if (filterByUser && activeUser) {
+          return filteredRows.filter(
+            record => record.created_by === activeUser.username
+          );
+        }
+
+        return filteredRows;
       } else {
-        return await getRecordsWithRegex(
+        const filteredRows = await getRecordsWithRegex(
           activeToken,
           props.project_id,
           query,
           props.filter_deleted
         );
+
+        // filter out drafts when searching
+        const nonDraftRows = filteredRows.filter(
+          record => !record.record_id.startsWith('drf-')
+        );
+
+        if (filterByUser && activeUser) {
+          return nonDraftRows.filter(
+            record => record.created_by === activeUser.username
+          );
+        }
+
+        return nonDraftRows;
       }
     },
   });
