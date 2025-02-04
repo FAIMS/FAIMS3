@@ -214,13 +214,15 @@ export const SectionEditor = ({
                     setTargetViewSetId(event.target.value);
                   }}
                 >
-                  {Object.keys(viewSets).map((formId) => (
-                    <FormControlLabel
-                      key={formId}
-                      value={formId}
-                      control={<Radio />}
-                      label={viewSets[formId].label}
-                    />
+                  {Object.keys(viewSets)
+                    .filter(formId => formId !== viewSetId) // exclude the source form
+                    .map(formId => (
+                      <FormControlLabel
+                        key={formId}
+                        value={formId}
+                        control={<Radio />}
+                        label={viewSets[formId].label}
+                      />
                   ))}
                 </RadioGroup>
               </FormControl>
