@@ -229,7 +229,7 @@ export async function getHRID(
     // described in the uispec appropriately. Unless the uispec is very broken,
     // this should succeed.
     const fieldNames = Array.from(Object.keys(revision.avps));
-    for (const candidateFieldName in fieldNames) {
+    for (const candidateFieldName of fieldNames) {
       try {
         const {viewSetId} = getIdsByFieldName({
           uiSpecification,
