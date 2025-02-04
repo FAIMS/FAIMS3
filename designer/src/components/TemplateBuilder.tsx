@@ -35,6 +35,28 @@ import Mustache from 'mustache';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 
 /**
+ * Maintains a counter for generating unique block IDs within a session
+ */
+let blockCounter = 0;
+
+/**
+ * Generates a unique identifier for template blocks
+ * Format: block_[timestamp]_[counter]
+ * 
+ * @returns {string} A unique identifier string
+ */
+export const generateBlockId = (): string => {
+  // Get current timestamp
+  const timestamp = Date.now();
+  
+  // Increment counter
+  blockCounter++;
+  
+  // Create unique ID combining timestamp and counter
+  return `block_${timestamp}_${blockCounter}`;
+};
+
+/**
  * Supported block types in the template builder
  */
 type BlockType = 'text' | 'variable' | 'if' | 'unless';
@@ -93,7 +115,7 @@ const parseTemplate = (
     return {
       blocks: [
         {
-          id: Math.random().toString(36).substring(2, 9),
+          id: generateBlockId(),
           type: 'text',
           content: template || '',
         },
@@ -113,21 +135,21 @@ const convertMustacheTokenToBlock = (token: any): TemplateBlock | null => {
     switch (tokenType) {
       case 'text':
         return {
-          id: Math.random().toString(36).substring(2, 9),
+          id: generateBlockId(),
           type: 'text',
           content: content,
         };
 
       case 'name':
         return {
-          id: Math.random().toString(36).substring(2, 9),
+          id: generateBlockId(),
           type: 'variable',
           content: content,
         };
 
       case '#':
         return {
-          id: Math.random().toString(36).substring(2, 9),
+          id: generateBlockId(),
           type: 'if',
           content: content,
           children: rest[2].map(convertMustacheTokenToBlock).filter(Boolean),
@@ -135,7 +157,7 @@ const convertMustacheTokenToBlock = (token: any): TemplateBlock | null => {
 
       case '^':
         return {
-          id: Math.random().toString(36).substring(2, 9),
+          id: generateBlockId(),
           type: 'unless',
           content: content,
           children: rest[2].map(convertMustacheTokenToBlock).filter(Boolean),
@@ -191,7 +213,7 @@ const TemplateBlockEditor: React.FC<{
 
   const addChildBlock = () => {
     const newBlock: TemplateBlock = {
-      id: Math.random().toString(36).substring(2, 9),
+      id: generateBlockId(),
       type: 'text',
       content: '',
     };
@@ -516,7 +538,7 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
     } else if (!template.length) {
       setTemplate([
         {
-          id: Math.random().toString(36).substring(2, 9),
+          id: generateBlockId(),
           type: 'text',
           content: '',
         },
@@ -578,7 +600,7 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>
         <Grid container alignItems="center" spacing={1}>
-          <Grid item>Mustache Template Builder</Grid>
+          <Grid item>Template Builder</Grid>
           {parseError && (
             <Grid item>
               <Tooltip title={parseError}>
@@ -605,11 +627,11 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
             }
             <br />
             {
-              '• Conditionals: Use {{#variableName}} to show content only when variable is true'
+              '• Conditional: Use {{#variableName}} to show content only when variable is defined'
             }
             <br />
             {
-              '• Unless: Use {{^variableName}} to show content only when variable is false'
+              '• Unless: Use {{^variableName}} to show content only when variable is undefined'
             }
           </Typography>
         </Paper>
@@ -716,7 +738,7 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
                 setTemplate([
                   ...template,
                   {
-                    id: Math.random().toString(36).substring(2, 9),
+                    id: generateBlockId(),
                     type: 'text',
                     content: '',
                   },
