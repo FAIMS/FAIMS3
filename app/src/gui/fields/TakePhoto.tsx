@@ -28,7 +28,6 @@ import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
-import {decode} from 'base64-arraybuffer';
 import {FieldProps} from 'formik';
 import React from 'react';
 import * as ROUTES from '../../constants/routes';
@@ -37,20 +36,24 @@ import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 import FieldWrapper from './fieldWrapper';
+import {Buffer} from 'buffer';
 
 /**
- * Converts a base64 encoded image to a Blob object using fetch API instead of
- * deprecated atob
+ * Converts a base64 encoded image to a Blob object using Buffer
  * @param image - Photo object containing base64 string and format information
  * @returns Promise resolving to a Blob object representing the image
  * @throws Error if base64String is undefined
  */
 async function base64ImageToBlob(image: Photo): Promise<Blob> {
-  if (image.base64String === undefined) {
-    throw Error('No photo data found');
+  if (!image.base64String) {
+    throw new Error('No photo data found');
   }
 
-  return new Blob([new Uint8Array(decode(image.base64String))], {
+  // Convert base64 to buffer
+  const buffer = Buffer.from(image.base64String, 'base64');
+
+  // Create blob from buffer
+  return new Blob([buffer], {
     type: `image/${image.format}`,
   });
 }

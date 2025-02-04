@@ -125,7 +125,6 @@ export const ErrorPage = () => {
 
 export const logError = (error: any) => {
   if (BUGSNAG_KEY) {
-    console.error(error);
     Bugsnag.notify(error);
   } else {
     console.error('LogError:', error);
