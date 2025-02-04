@@ -44,7 +44,7 @@ import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {SectionEditor} from './section-editor';
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {shallowEqual} from 'react-redux';
 
 type Props = {
@@ -53,6 +53,7 @@ type Props = {
   moveButtonsDisabled: boolean;
   handleChangeCallback: (viewSetID: string, ticked: boolean) => void;
   handleDeleteCallback: (viewSetID: string) => void;
+  handleSectionMoveCallback: (targetViewSetId: string) => void;
 };
 
 export const FormEditor = ({
@@ -61,6 +62,7 @@ export const FormEditor = ({
   moveButtonsDisabled,
   handleChangeCallback,
   handleDeleteCallback,
+  handleSectionMoveCallback,
 }: Props) => {
   const visibleTypes = useAppSelector(
     state => state.notebook['ui-specification'].visible_types
@@ -99,11 +101,6 @@ export const FormEditor = ({
   const [initialIndex, setInitialIndex] = useState(
     visibleTypes.indexOf(viewSetId)
   );
-
-  useEffect(() => {
-    // reset activeStep when viewSetId changes
-    setActiveStep(0);
-  }, [viewSetId]);
 
   const handleStep = (step: number) => () => {
     setActiveStep(step);
@@ -178,7 +175,7 @@ export const FormEditor = ({
     } catch (error: unknown) {
       error instanceof Error && setAddAlertMessage(error.message);
     }
-    return false;    
+    return false;
   };
 
   const moveSection = (
@@ -535,6 +532,7 @@ export const FormEditor = ({
                   moveSectionCallback={moveSectionToForm}
                   addCallback={addNewSection}
                   moveCallback={moveSection}
+                  handleSectionMoveCallback={handleSectionMoveCallback}
                 />
               </Grid>
             )}

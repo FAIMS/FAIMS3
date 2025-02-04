@@ -63,6 +63,7 @@ type Props = {
     targetViewSetID: string,
     viewID: string
   ) => boolean;
+  handleSectionMoveCallback: (targetViewSetId: string) => void;
 };
 
 export const SectionEditor = ({
@@ -73,6 +74,7 @@ export const SectionEditor = ({
   moveSectionCallback,
   addCallback,
   moveCallback,
+  handleSectionMoveCallback,
 }: Props) => {
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
@@ -112,6 +114,7 @@ export const SectionEditor = ({
     // depending on moveSuccess, set relevant state variables
     if (moveSuccess) {
       setAddAlertMessage('');
+      handleSectionMoveCallback(targetViewSetId);
     } else {
       // manually setting the error message
       setAddAlertMessage(
@@ -223,7 +226,7 @@ export const SectionEditor = ({
                         control={<Radio />}
                         label={viewSets[formId].label}
                       />
-                  ))}
+                    ))}
                 </RadioGroup>
               </FormControl>
             </DialogContent>
