@@ -70,7 +70,9 @@ export const FormEditor = ({
   );
   const viewSet = useAppSelector(
     state => state.notebook['ui-specification'].viewsets[viewSetId],
-    (left, right) => shallowEqual(left, right)
+    (left, right) => {
+      return shallowEqual(left, right);
+    }
   );
   const sections = viewSet ? viewSet.views : [];
   console.log('FormEditor', {viewSetId, sections});
@@ -127,6 +129,7 @@ export const FormEditor = ({
   };
 
   const handleChange = (ticked: boolean) => {
+    // there must be >1 forms in the notebook, and, therefore, >1 visible forms, in order to be able to untick the checkbox
     if (
       (Object.keys(viewsets).length > 1 && visibleTypes.length > 1) ||
       ticked
@@ -137,7 +140,9 @@ export const FormEditor = ({
         payload: {viewSetId, ticked, initialIndex},
       });
       handleChangeCallback(viewSetId, ticked);
-    } else if (visibleTypes.length === 0) {
+    }
+    // in the case that there are multiple forms in the notebook, but none are visible, allow to re-tick the checkbox
+    else if (visibleTypes.length === 0) {
       setAlertMessage('');
       setChecked(ticked);
       setInitialIndex(0);
@@ -156,6 +161,7 @@ export const FormEditor = ({
       type: 'ui-specification/sectionDeleted',
       payload: {viewSetID, viewID},
     });
+    // making sure the stepper jumps steps (forward or backward) intuitively
     if (
       viewSet.views[viewSet.views.length - 1] === viewID &&
       viewSet.views.length > 1
@@ -174,12 +180,14 @@ export const FormEditor = ({
         type: 'ui-specification/sectionMoved',
         payload: {viewSetId: viewSetID, viewId: viewID, direction: 'left'},
       });
+      // making sure the stepper jumps a step backward intuitively
       setActiveStep(activeStep - 1);
     } else {
       dispatch({
         type: 'ui-specification/sectionMoved',
         payload: {viewSetId: viewSetID, viewId: viewID, direction: 'right'},
       });
+      // making sure the stepper jumps a step forward intuitively
       setActiveStep(activeStep + 1);
     }
   };
@@ -190,8 +198,10 @@ export const FormEditor = ({
         type: 'ui-specification/sectionAdded',
         payload: {viewSetId: viewSetID, sectionLabel: label},
       });
+      // jump to the newly created section (i.e., to the end of the stepper)
       setActiveStep(viewSet.views.length);
       setAddAlertMessage('');
+      // let sectionEditor component know a section was addedd successfully
       return true;
     } catch (error: unknown) {
       error instanceof Error && setAddAlertMessage(error.message);
@@ -214,17 +224,24 @@ export const FormEditor = ({
   };
 
   const findRelatedFieldLocation = (fieldName: string | undefined) => {
+    // making fviews iterable
     const fviewsEntries = Object.entries(views);
     fviewsEntries.forEach((_viewId, idx) => {
+      // iterating over every section's fields array to find fieldName
       fviewsEntries[idx][1].fields.forEach(field => {
         if (field === fieldName) {
+          // extracting which section fieldName belongs to
           const sectionToFind = fviewsEntries[idx][0];
+          // making viewsets iterable
           const viewsetsEntries = Object.entries(viewsets);
           viewsetsEntries.forEach((_viewSetId, idx) => {
+            // iterating over every form's views array to find the section
             viewsetsEntries[idx][1].views.forEach(view => {
               if (view === sectionToFind) {
+                // we made it! now extract the form and section labels
                 const formLabel: string = viewsetsEntries[idx][1].label;
                 const sectionLabel: string = fviewsEntries[idx][1].label;
+                // setting the dialog text here
                 setDeleteAlertTitle('Form cannot be deleted.');
                 setDeleteAlertMessage(
                   `Please update the field '${fieldName}', found in form ${formLabel} section ${sectionLabel}, to remove the reference to allow this form to be deleted.`
@@ -238,12 +255,16 @@ export const FormEditor = ({
   };
 
   const preventFormDelete = () => {
+    // we don't need the field keys, only their values
     const fieldValues = Object.values(fields);
     let flag = false;
+    // search through all the values for mention of the form to be deleted in the related_type param
     fieldValues.forEach(fieldValue => {
       if (fieldValue['component-parameters'].related_type === viewSetId) {
         flag = true;
+        // extracting the name of the field to advise the user
         const relatedFieldName = fieldValue['component-parameters'].name;
+        // finding the exact location of the field in the notebook to advise the user
         findRelatedFieldLocation(relatedFieldName);
       }
     });
@@ -251,6 +272,7 @@ export const FormEditor = ({
   };
 
   const deleteForm = () => {
+    // SANITY CHECK. Don't allow the user to delete the form if they've used it in a RelatedRecordSelector field
     if (preventFormDelete()) {
       setOpen(true);
       setPreventDeleteDialog(true);
