@@ -180,21 +180,6 @@ function SingleComponent(props: SingleComponentProps) {
   );
 }
 
-// New:RG Smooth scroll to field with error
-const scrollToField = (fieldId: string) => {
-  const element = document.getElementById(fieldId);
-  console.log('scrollToField - fieldid', fieldId);
-  console.log('scrollToField - eleemnet', element);
-
-  if (element) {
-    element.scrollIntoView({behavior: 'smooth', block: 'center'});
-    element.classList.add('error-highlight'); // Highlight field temporarily
-
-    // Remove highlight after 3 seconds
-    setTimeout(() => element.classList.remove('error-highlight'), 5000);
-  }
-};
-
 export function ViewComponent(props: ViewProps) {
   const ui_specification = props.ui_specification;
   const fieldNames: string[] = props.fieldNames;
@@ -258,48 +243,28 @@ export function ViewComponent(props: ViewProps) {
   );
 }
 
-// NEW RG
-function displayErrors(errors: any, viewName: string, ui_spec: ProjectUIModel) {
-  return (
-    <ul style={{listStyleType: 'none', padding: 0}}>
-      {Object.keys(errors).map((field, index) => (
-        <li
-          key={index}
-          style={{cursor: 'pointer', padding: '5px 0', color: '#D32F2F'}}
-          onClick={() => scrollToField(field)}
-        >
-          <strong>
-            {getUsefulFieldNameFromUiSpec(field, viewName, ui_spec)}
-          </strong>
-          : {errors[field]}
-        </li>
-      ))}
-    </ul>
-  );
+function displayErrors(
+  errors: any | undefined,
+  thisView: string,
+  ui_specification: ProjectUIModel
+) {
+  if (errors) {
+    return (
+      <dl>
+        {Object.keys(errors).map(field => (
+          <React.Fragment key={field}>
+            <dt>
+              {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
+            </dt>
+            <dd>{errors[field]}</dd>
+          </React.Fragment>
+        ))}
+      </dl>
+    );
+  } else {
+    return <p>No errors to display</p>;
+  }
 }
-
-// function displayErrors(
-//   errors: any | undefined,
-//   thisView: string,
-//   ui_specification: ProjectUIModel
-// ) {
-//   if (errors) {
-//     return (
-//       <dl>
-//         {Object.keys(errors).map(field => (
-//           <React.Fragment key={field}>
-//             <dt>
-//               {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
-//             </dt>
-//             <dd>{errors[field]}</dd>
-//           </React.Fragment>
-//         ))}
-//       </dl>
-//     );
-//   } else {
-//     return <p>No errors to display</p>;
-//   }
-// }
 
 /**
  * Generate a useful field name, <section>:<field> so that a user can see where an error is

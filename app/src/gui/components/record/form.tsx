@@ -713,15 +713,10 @@ class RecordForm extends React.Component<
   }
 
   onChangeStepper(view_name: string, activeStepIndex: number) {
-    this.setState(
-      {
-        view_cached: view_name,
-        activeStep: activeStepIndex,
-      },
-      () => {
-        window.scrollTo({top: 0, behavior: 'smooth'}); // ✅ Smooth scroll on step change
-      }
-    );
+    this.setState({
+      view_cached: view_name,
+      activeStep: activeStepIndex,
+    });
   }
 
   onChangeTab(event: React.ChangeEvent<{}>, newValue: string) {
@@ -1332,18 +1327,12 @@ class RecordForm extends React.Component<
                       {!formProps.isValid &&
                         Object.keys(formProps.errors).length > 0 && (
                           <Alert severity="error">
-                            Form has errors. Click the error to scroll directly:
+                            Form has errors, please scroll up and make changes
+                            before submitting.
                             <div>
                               {Object.keys(formProps.errors).map(field => (
                                 <React.Fragment key={field}>
-                                  <dt
-                                    style={{cursor: 'pointer', color: 'red'}}
-                                    onClick={() =>
-                                      document
-                                        .getElementById(field)
-                                        ?.scrollIntoView({behavior: 'smooth'})
-                                    }
-                                  >
+                                  <dt>
                                     {getUsefulFieldNameFromUiSpec(
                                       field,
                                       viewName,
@@ -1417,14 +1406,6 @@ class RecordForm extends React.Component<
                         ui_specification={ui_specification}
                         onChangeStepper={this.onChangeStepper}
                         views={views}
-                        formErrors={
-                          formProps.errors as {
-                            [key: string]: string | undefined;
-                          }
-                        }
-                        touchedFields={Object.keys(formProps.touched)} // ✅ Pass touched fields
-                        steps={views} // ✅ Add this line to pass the steps
-                        activeStep={view_index}
                       />
                     )}
 

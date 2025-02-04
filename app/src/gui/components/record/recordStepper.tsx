@@ -27,7 +27,6 @@ import {
   Stepper,
   StepButton,
   MobileStepper,
-  Badge,
 } from '@mui/material';
 import {ProjectUIModel} from '@faims3/data-model';
 // import makeStyles from '@mui/styles/makeStyles';
@@ -35,14 +34,8 @@ import {createUseStyles} from 'react-jss';
 type RecordStepperProps = {
   view_index: number;
   ui_specification: ProjectUIModel;
-  onChangeStepper: (view: string, index: number) => void;
+  onChangeStepper: any;
   views: {[key: string]: any};
-
-  //New RG
-  steps: string[];
-  activeStep: number;
-  formErrors: {[key: string]: string | undefined};
-  touchedFields: TouchedFields;
 };
 
 const useStyles = createUseStyles({
@@ -56,49 +49,11 @@ const useStyles = createUseStyles({
       backgroundColor: '#fff',
     },
     '&::-webkit-scrollbar-thumb': {
-      backgroundColor: '#ccc',
-      borderRadius: 5,
+      backgroundColor: '#fff',
+      borderRadius: 2,
     },
   },
-  errorHighlight: {
-    border: '2px solid red',
-    backgroundColor: '#54E3D2FF',
-    transition: 'background-color 0.5s ease',
-  },
 });
-
-// ✅ Get Error Count for Badges
-const getErrorCount = (stepFields: string[] = [], formErrors: FormErrors) => {
-  return stepFields.filter(field => formErrors[field]).length;
-};
-
-type FormErrors = {[key: string]: string | undefined};
-type TouchedFields = string[];
-
-// ✅ Dynamic Step Colors
-const getStepColor = (
-  index: number,
-  formErrors: FormErrors,
-  touchedFields: TouchedFields
-): string => {
-  if (Object.keys(formErrors).some(err => touchedFields.includes(err))) {
-    return 'orange'; // Errors exist
-  }
-  if (touchedFields.length > 0) {
-    return 'green'; // Completed
-  }
-  return 'red'; // Not Started
-};
-
-// ✅ Smooth Scroll to Error
-const scrollToError = (fieldId: string) => {
-  const element = document.getElementById(fieldId);
-  if (element) {
-    element.scrollIntoView({behavior: 'smooth', block: 'center'});
-    element.classList.add('error-highlight');
-    setTimeout(() => element.classList.remove('error-highlight'), 3000);
-  }
-};
 
 export default function RecordStepper(props: RecordStepperProps) {
   const classes = useStyles();
@@ -107,8 +62,6 @@ export default function RecordStepper(props: RecordStepperProps) {
     ui_specification,
     onChangeStepper,
     views, //add for branching logic
-    formErrors,
-    touchedFields,
   } = props;
   // active step has been replaced by view_index because view_index will be updated every time form values updated
   // 20220727 bbs the width 93% gets rid of the overflowX in the PSMIP notebook at most standard resolutions
@@ -123,47 +76,23 @@ export default function RecordStepper(props: RecordStepperProps) {
             alternativeLabel
             className={classes.stepperStyle}
           >
-            {Object.keys(views).map((view_name: string, index: number) => {
-              if (!ui_specification.views[view_name]) {
-                console.warn(`Missing view config for: ${view_name}`);
-                return null;
-              }
-              const errorCount = getErrorCount(
-                views[view_name].fields,
-                formErrors
-              );
-              const stepColor = getStepColor(index, formErrors, touchedFields);
-
-              return (
-                <Step key={view_name}>
-                  <Badge
-                    badgeContent={errorCount > 0 ? errorCount : null}
-                    color="error"
-                    overlap="circular"
-                    anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-                    onClick={() =>
-                      scrollToError(views[view_name]?.fields?.[0] ?? '')
-                    }
-                  >
-                    <StepButton
-                      onClick={() => onChangeStepper(view_name, index)}
-                      sx={{color: stepColor, width: '93%'}}
-                    >
-                      {ui_specification.views[view_name]?.label ||
-                        'Unnamed Step'}
-                    </StepButton>
-                  </Badge>
-                </Step>
-              );
-            })}
+            {views.map((view_name: string, index: number) => (
+              <Step key={view_name}>
+                <StepButton
+                  onClick={() => {
+                    onChangeStepper(view_name, index);
+                  }}
+                  sx={{width: '93%'}}
+                >
+                  {ui_specification.views[view_name].label}
+                </StepButton>
+              </Step>
+            ))}
           </Stepper>
         </div>
       </Box>
-
-      {/* ✅ Mobile View Stepper */}
       <Box display={{xs: 'block', sm: 'none'}}>
         <CustomMobileStepper
-          {...props}
           views={views}
           view_index={view_index}
           onChangeStepper={onChangeStepper}
@@ -182,13 +111,16 @@ export function CustomMobileStepper(props: RecordStepperProps) {
   return (
     <MobileStepper
       variant="text"
-      steps={Array.isArray(views) ? views.length : 0}
+      steps={views.length}
       position="static"
       activeStep={view_index}
       nextButton={
         <Button
           size="small"
-          onClick={() => onChangeStepper(views[view_index + 1], view_index + 1)}
+          onClick={() => {
+            const stepnum = view_index + 1;
+            onChangeStepper(views[stepnum], stepnum);
+          }}
           disabled={view_index === views.length - 1}
         >
           Next
@@ -197,7 +129,10 @@ export function CustomMobileStepper(props: RecordStepperProps) {
       backButton={
         <Button
           size="small"
-          onClick={() => onChangeStepper(views[view_index - 1], view_index - 1)}
+          onClick={() => {
+            const stepnum = view_index - 1;
+            onChangeStepper(views[stepnum], stepnum);
+          }}
           disabled={view_index === 0}
         >
           Back
