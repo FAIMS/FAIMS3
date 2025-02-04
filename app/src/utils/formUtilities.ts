@@ -38,43 +38,72 @@ export function getRecordContextFromRecord({
  * - Out of range values for date components
  */
 export function formatTimestamp(
-  timestamp: string | number | null | undefined
+  timestamp: string | number | null | undefined,
+  timezone: string | undefined = undefined
 ): string {
-  // Handle invalid inputs
   if (timestamp === null || timestamp === undefined) {
     return '';
   }
 
-  // Convert string timestamps to numbers
   const timestampNum =
     typeof timestamp === 'string' ? Number(timestamp) : timestamp;
 
-  // Validate if timestamp is a valid number
   if (isNaN(timestampNum) || !isFinite(timestampNum)) {
     return '';
   }
 
   try {
-    const date = new Date(timestampNum);
+    let date = new Date(timestampNum);
 
-    // Validate if date is valid
-    if (date.toString() === 'Invalid Date') {
-      return '';
+    // If timezone is specified, convert to that timezone
+    if (timezone) {
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: timezone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true,
+      };
+
+      const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(
+        date
+      );
+      const dateParts = parts.reduce(
+        (acc, part) => {
+          acc[part.type] = part.value;
+          return acc;
+        },
+        {} as {[key: string]: string}
+      );
+
+      const day = dateParts.day.padStart(2, '0');
+      const month = dateParts.month.padStart(2, '0');
+      const year = dateParts.year.slice(-2);
+
+      let hours = parseInt(dateParts.hour);
+      if (dateParts.dayPeriod === 'PM' && hours !== 12) hours += 12;
+      if (dateParts.dayPeriod === 'AM' && hours === 12) hours = 0;
+
+      hours = hours % 12 || 12;
+      const minutes = dateParts.minute.padStart(2, '0');
+      const ampm = dateParts.dayPeriod.toLowerCase();
+
+      return `${day}-${month}-${year} ${hours}:${minutes}${ampm}`;
     }
 
-    // Get date components with safe fallbacks
-    const day = String(date.getDate() || 0).padStart(2, '0');
-    const month = String(date.getMonth() + 1 || 0).padStart(2, '0');
-    const year = String(date.getFullYear() || 0).slice(-2);
+    // Default behavior using local timezone
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
 
-    // Get time components with safe fallbacks
-    let hours = date.getHours() || 0;
-    const minutes = String(date.getMinutes() || 0).padStart(2, '0');
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'pm' : 'am';
 
-    // Convert hours to 12-hour format
     hours = hours % 12;
-    hours = hours || 12; // Convert 0 to 12
+    hours = hours || 12;
 
     return `${day}-${month}-${year} ${hours}:${minutes}${ampm}`;
   } catch (error) {
@@ -131,7 +160,7 @@ function renderTemplate({
   const contextVars = contextToTemplate(context);
   const filteredValues: ValuesObject = {};
   for (const [k, v] of Object.entries({...values, ...contextVars})) {
-    if (!(k in excludedFields)) {
+    if (!excludedFields.includes(k)) {
       // Filter out any excluded fields
       filteredValues[k] = v;
     }
