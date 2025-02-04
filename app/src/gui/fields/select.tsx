@@ -13,18 +13,28 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: select.tsx
- * Description:
- *   TODO
+ /*
+ * Select Component
+ *
+ * This component renders a dropdown select field using Material-UI.
+ * It integrates with Formik for managing form state and includes:
+ * - A heading (field label) rendered using FieldWrapper.
+ * - A subheading (help text) rendered using FieldWrapper.
+ * - A Material-UI dropdown select.
+ *
+ * Props:
+ * - label (string, optional): The field label displayed as a heading.
+ * - helperText (string, optional): The field help text displayed below the heading.
+ * - ElementProps (object): Contains the dropdown options.
+ * - field (object): Formik field object for managing value.
+ * - reqired : To visually showif the field is required if it is.
+ * - form (object): Formik form object for managing state and validation.
  */
-
 import React from 'react';
 import MuiTextField from '@mui/material/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import {
   FormControl,
-  FormHelperText,
-  InputLabel,
   ListItemText,
   MenuItem,
   OutlinedInput,
@@ -32,53 +42,70 @@ import {
 } from '@mui/material';
 import {ElementOption} from '@faims3/data-model';
 
+/**
+ * Defines the properties for the dropdown options.
+ */
 interface ElementProps {
   options: Array<ElementOption>;
 }
 
+/**
+ * Props for the Select component.
+ */
 interface Props {
   ElementProps: ElementProps;
   select_others?: string;
 }
 
 import {useTheme} from '@mui/material/styles';
+import FieldWrapper from './fieldWrapper';
 
+/**
+ * Select Component - A reusable dropdown select field with Formik integration.
+ */
 export const Select = (props: Props & TextFieldProps) => {
   const theme = useTheme();
+
+  /**
+   * Handles the change event when a new option is selected.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event.
+   */
   const handleChange = (e: any) => {
     props.form.setFieldValue(props.field.name, e.target.value, true);
   };
 
   return (
-    <FormControl sx={{m: 1, width: '100%'}}>
-      <InputLabel
-        id="multi-select-label"
-        style={{backgroundColor: theme.palette.background.default}}
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText}
+      required={props.required}
+    >
+      <FormControl
+        sx={{
+          width: '100%',
+          backgroundColor: theme.palette.background.default,
+        }}
       >
-        {props.label}
-      </InputLabel>
-      <MuiSelect
-        labelId="multi-select-label"
-        label={props.label}
-        onChange={handleChange}
-        value={props.field.value}
-        input={<OutlinedInput label={props.label} />}
-      >
-        {props.ElementProps.options.map((option: any) => (
-          <MenuItem
-            key={option.key ? option.key : option.value}
-            value={option.value}
-            sx={{
-              whiteSpace: 'normal',
-              wordWrap: 'break-word',
-            }}
-          >
-            <ListItemText primary={option.label} />
-          </MenuItem>
-        ))}
-      </MuiSelect>
-      {props.helperText && <FormHelperText>{props.helperText}</FormHelperText>}
-    </FormControl>
+        <MuiSelect
+          onChange={handleChange}
+          value={props.field.value}
+          input={<OutlinedInput />}
+        >
+          {props.ElementProps.options.map((option: any) => (
+            <MenuItem
+              key={option.key ? option.key : option.value}
+              value={option.value}
+              sx={{
+                whiteSpace: 'normal',
+                wordWrap: 'break-word',
+              }}
+            >
+              <ListItemText primary={option.label} />
+            </MenuItem>
+          ))}
+        </MuiSelect>
+      </FormControl>
+    </FieldWrapper>
   );
 };
 
