@@ -46,7 +46,7 @@ import HiddenFieldEditor from './Fields/HiddenToggle';
 
 type FieldEditorProps = {
   fieldName: string;
-  viewSetId?: string;
+  viewsetId: string;
   viewId: string;
   expanded: boolean;
   addFieldCallback: (fieldName: string) => void;
@@ -56,6 +56,7 @@ type FieldEditorProps = {
 export const FieldEditor = ({
   fieldName,
   viewId,
+  viewsetId,
   expanded,
   addFieldCallback,
   handleExpandChange,
@@ -63,6 +64,7 @@ export const FieldEditor = ({
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
+
   const dispatch = useAppDispatch();
 
   const fieldComponent = field['component-name'];
@@ -289,6 +291,7 @@ export const FieldEditor = ({
               <TemplatedStringFieldEditor
                 fieldName={fieldName}
                 viewId={viewId}
+                viewsetId={viewsetId}
               />
               <HiddenFieldEditor fieldName={fieldName} />
             </>

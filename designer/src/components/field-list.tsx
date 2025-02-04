@@ -39,7 +39,7 @@ type Props = {
   viewId: string;
 };
 
-export const FieldList = ({viewSetId, viewId}: Props) => {
+export const FieldList = ({viewSetId: viewsetId, viewId}: Props) => {
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
   );
@@ -74,7 +74,7 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
         fieldName: dialogState.name,
         fieldType: dialogState.type,
         viewId: viewId,
-        viewSetId: viewSetId,
+        viewSetId: viewsetId,
         addAfter: addAfterField,
       },
     });
@@ -158,7 +158,7 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
           <FieldEditor
             key={fieldName}
             fieldName={fieldName}
-            viewSetId={viewSetId}
+            viewsetId={viewsetId}
             viewId={viewId}
             expanded={isExpanded[fieldName] ?? false}
             addFieldCallback={addFieldAfterCallback}

@@ -8,7 +8,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {MutableRefObject, useRef, useState} from 'react';
+import {MutableRefObject, useMemo, useRef, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {ComponentParameters, FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
@@ -16,13 +16,17 @@ import {MustacheTemplateBuilder} from '../TemplateBuilder';
 type PropType = {
   fieldName: string;
   viewId: string;
+  viewsetId: string;
 };
 
 /**
  * Enhanced TemplatedStringFieldEditor with visual Mustache template building support.
  * Allows users to create and edit templates using a visual builder or direct text input.
  */
-export const TemplatedStringFieldEditor = ({fieldName}: PropType) => {
+export const TemplatedStringFieldEditor = ({
+  fieldName,
+  viewsetId,
+}: PropType) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
@@ -36,6 +40,27 @@ export const TemplatedStringFieldEditor = ({fieldName}: PropType) => {
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
   const state = field['component-parameters'];
+
+  const viewSet = useAppSelector(
+    state => state.notebook['ui-specification'].viewsets[viewsetId]
+  );
+  const fviews = useAppSelector(
+    state => state.notebook['ui-specification'].fviews
+  );
+
+  /**
+   * Collects all fields that belong to any view in the current viewset
+   */
+  const viewSetFields = useMemo(() => {
+    const fieldSet = new Set<string>();
+    viewSet.views.forEach(viewId => {
+      const view = fviews[viewId];
+      if (view) {
+        view.fields.forEach(fieldId => fieldSet.add(fieldId));
+      }
+    });
+    return Array.from(fieldSet);
+  }, [viewSet.views, fviews]);
 
   // Define system variables
   const systemVariables = [
@@ -59,12 +84,14 @@ export const TemplatedStringFieldEditor = ({fieldName}: PropType) => {
     );
   };
 
-  // Convert fields to variables format for template builder
-  const fieldVariables = Object.entries(allFields).map(([name, field]) => ({
-    name,
-    displayName: getFieldLabel(field),
-    type: 'field' as const,
-  }));
+  const fieldVariables = viewSetFields.map(name => {
+    const fieldDetails = allFields[name];
+    return {
+      name,
+      displayName: getFieldLabel(fieldDetails),
+      type: 'field' as const,
+    };
+  });
 
   const updateFieldFromState = (newState: ComponentParameters) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
