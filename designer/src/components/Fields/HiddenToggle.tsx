@@ -31,7 +31,7 @@ export const HiddenFieldEditor = ({fieldName}: {fieldName: string}) => {
   const dispatch = useAppDispatch();
 
   // Get current hidden state, defaulting to false if not set
-  const isHidden = field['component-parameters'].ElementProps?.hidden ?? false;
+  const isHidden = field['component-parameters'].hidden ?? false;
 
   /**
    * Updates the hidden state in Redux store
@@ -41,8 +41,8 @@ export const HiddenFieldEditor = ({fieldName}: {fieldName: string}) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
 
     // Ensure ElementProps exists and update hidden property
-    newField['component-parameters'].ElementProps = {
-      ...(newField['component-parameters'].ElementProps ?? {}),
+    newField['component-parameters'] = {
+      ...newField['component-parameters'],
       hidden: newValue,
     };
 

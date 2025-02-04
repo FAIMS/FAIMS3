@@ -408,9 +408,7 @@ const fields: {[key: string]: FieldType} = {
       helperText: 'Templated String Field',
       required: true,
       template: ' {{}}',
-      InputProps: {
-        type: 'text', // must be a valid html type
-      },
+      hidden: true,
     },
     validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',

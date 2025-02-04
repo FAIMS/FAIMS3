@@ -49,7 +49,7 @@ export function getFieldsMatchingCondition(
         // Visibility condition function
         fieldDetails.conditionFn(values) &&
         // Hidden explicitly in element props - e.g. templated field
-        !fieldDetails['component-parameters']?.ElementProps?.hidden
+        !fieldDetails['component-parameters']?.hidden
       );
     });
     return result;
