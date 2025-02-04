@@ -25,12 +25,21 @@ import {ProjectUIModel} from '@faims3/data-model';
 import RecordDraftState from '../../../sync/draft-state';
 import {getComponentFromFieldConfig} from './fields';
 import {AnnotationField} from './Annotation';
-import {Box, Grid, Paper, Alert, IconButton, Collapse} from '@mui/material';
+import {
+  Box,
+  Grid,
+  Paper,
+  Alert,
+  IconButton,
+  Collapse,
+  Link,
+  Typography,
+} from '@mui/material';
 import {EditConflictDialog} from './conflict/conflictDialog';
 import NoteIcon from '@mui/icons-material/Note';
 import {grey} from '@mui/material/colors';
-// import makeStyles from '@mui/styles/makeStyles';
-// import {useTheme} from '@mui/material/styles';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'; // For collapsible sections
+
 type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;
@@ -66,6 +75,10 @@ function SingleComponent(props: SingleComponentProps) {
   const fieldConfig = fields[fieldName];
   const label = fieldConfig['component-parameters'].label;
   const [expanded, setExpanded] = React.useState(false);
+  const hasError = Boolean(
+    props.formProps.errors[fieldName] && props.formProps.touched[fieldName]
+  );
+  const isTouched = props.formProps.touched[fieldName] && !hasError;
 
   const handleExpandClick = () => {
     setExpanded(!expanded);
@@ -115,6 +128,21 @@ function SingleComponent(props: SingleComponentProps) {
       key={fieldName + props.index}
       mt={isHiddenField ? 0 : 2}
       mb={isHiddenField ? 0 : 2}
+      data-field={fieldName}
+      sx={{
+        borderRadius: '8px',
+        transition: 'background-color 0.4s ease, box-shadow 0.4s ease',
+        background: hasError
+          ? 'linear-gradient(135deg, rgba(255,99,71,0.4), rgba(255,0,0,0.3))'
+          : isTouched
+            ? 'rgba(0, 255, 0, 0.1)' // Greenish background if corrected
+            : 'transparent',
+        boxShadow: hasError
+          ? '0px 0px 12px rgba(255, 0, 0, 0.6)'
+          : isTouched
+            ? '0px 0px 8px rgba(0, 255, 0, 0.5)'
+            : 'none',
+      }}
     >
       <Grid container spacing={isHiddenField ? 0 : 1}>
         <Grid item xs={12} sm>
@@ -185,21 +213,19 @@ export function ViewComponent(props: ViewProps) {
   const fieldNames: string[] = props.fieldNames;
   const fields = ui_specification.fields;
   const [error, setError] = useState(true);
+  const [showErrors, setShowErrors] = useState(true);
+  const [showWarnings, setShowWarnings] = useState(true);
 
   useEffect(() => {
-    let isactive = true;
-    if (isactive) {
-      let iserror = false;
-      fieldNames?.map(field =>
-        props.formProps.errors[field] !== undefined ? (iserror = true) : field
-      );
-      setError(iserror);
-    }
-
-    return () => {
-      isactive = false;
-    }; // cleanup toggles value,
+    let iserror = fieldNames.some(field =>
+      Boolean(props.formProps.errors[field])
+    );
+    setError(iserror);
   }, [props.formProps]);
+
+  const currentSectionErrors = Object.keys(props.formProps.errors).filter(
+    field => fieldNames.includes(field)
+  );
 
   return (
     <React.Fragment>
@@ -219,24 +245,87 @@ export function ViewComponent(props: ViewProps) {
           disabled={props.disabled}
         />
       ))}
-      {!props.hideErrors && !props.formProps.isValid && error !== false && (
-        <Alert severity="error">
-          Form has errors, please scroll up and make changes before submitting.
-          {displayErrors(
-            props.formProps.errors,
-            props.viewName,
-            ui_specification
-          )}
+      {!props.hideErrors && currentSectionErrors.length > 0 && (
+        <Alert
+          severity="error"
+          sx={{
+            mt: 2,
+            p: 2,
+            borderRadius: '8px',
+            boxShadow: '0px 4px 12px rgba(255, 0, 0, 0.5)',
+            maxWidth: '100%',
+            overflowX: 'hidden',
+            wordWrap: 'break-word',
+          }}
+          action={
+            <IconButton
+              color="inherit"
+              size="small"
+              onClick={() => setShowErrors(prev => !prev)}
+            >
+              <ExpandMoreIcon
+                sx={{
+                  transform: showErrors ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease',
+                }}
+              />
+            </IconButton>
+          }
+        >
+          <Typography variant="h6" sx={{fontWeight: 'bold'}}>
+            ⚠️ Form has errors. Click to fix:
+          </Typography>
+
+          <Collapse in={showErrors}>
+            {displayErrors(
+              props.formProps.errors,
+              props.viewName,
+              ui_specification,
+              fieldNames
+            )}
+          </Collapse>
         </Alert>
       )}
+
+      {/* Warning Section */}
       {!props.hideErrors && !props.formProps.isValid && error === false && (
-        <Alert severity="warning">
-          Form has errors, please check other tabs before submitting.
-          {displayErrors(
-            props.formProps.errors,
-            props.viewName,
-            ui_specification
-          )}
+        <Alert
+          severity="warning"
+          sx={{
+            mt: 2,
+            p: 2,
+            background: 'linear-gradient(135deg, #FFF8E1, #FFE57F)',
+            borderRadius: '8px',
+            boxShadow: '0px 4px 12px rgba(255, 165, 0, 0.6)',
+            overflowX: 'hidden',
+          }}
+          action={
+            <IconButton
+              color="inherit"
+              size="small"
+              onClick={() => setShowWarnings(prev => !prev)}
+            >
+              <ExpandMoreIcon
+                sx={{
+                  transform: showWarnings ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease',
+                }}
+              />
+            </IconButton>
+          }
+        >
+          <Typography variant="h6" sx={{fontWeight: 'bold', color: '#FF6F00'}}>
+            Please check other sections before submitting.
+          </Typography>
+
+          <Collapse in={showWarnings}>
+            {displayErrors(
+              props.formProps.errors,
+              props.viewName,
+              ui_specification,
+              fieldNames
+            )}
+          </Collapse>
         </Alert>
       )}
     </React.Fragment>
@@ -246,24 +335,72 @@ export function ViewComponent(props: ViewProps) {
 function displayErrors(
   errors: any | undefined,
   thisView: string,
-  ui_specification: ProjectUIModel
+  ui_specification: ProjectUIModel,
+  currentFields: string[]
 ) {
-  if (errors) {
-    return (
-      <dl>
-        {Object.keys(errors).map(field => (
-          <React.Fragment key={field}>
-            <dt>
-              {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
-            </dt>
-            <dd>{errors[field]}</dd>
-          </React.Fragment>
-        ))}
-      </dl>
-    );
-  } else {
-    return <p>No errors to display</p>;
+  if (!errors) return <p>No errors to display</p>;
+
+  function scrollToField(field: string) {
+    const element = document.querySelector(`[data-field="${field}"]`);
+    if (element) {
+      element.scrollIntoView({behavior: 'smooth', block: 'center'});
+      (element as HTMLElement).style.transition =
+        'background-color 0.5s ease, box-shadow 0.5s ease';
+      (element as HTMLElement).style.backgroundColor = '#FFB3B3';
+      (element as HTMLElement).style.boxShadow =
+        '0px 0px 15px rgba(255, 0, 0, 0.8)';
+
+      setTimeout(() => {
+        (element as HTMLElement).style.backgroundColor = 'inherit';
+        (element as HTMLElement).style.boxShadow = 'none';
+      }, 2000);
+    }
   }
+
+  const filteredErrors = Object.keys(errors).filter(field =>
+    currentFields.includes(field)
+  );
+
+  return (
+    <ul
+      style={{
+        paddingLeft: '20px',
+        marginTop: '10px',
+        overflowX: 'hidden',
+        maxWidth: '100%',
+        whiteSpace: 'normal',
+      }}
+    >
+      {' '}
+      {filteredErrors.map(field => (
+        <li key={field} style={{listStyle: 'none'}}>
+          <Link
+            component="button"
+            variant="body2"
+            onClick={() => scrollToField(field)}
+            sx={{
+              color: 'red',
+              textDecoration: 'underline',
+              fontWeight: 'bold',
+              maxWidth: '100%',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              '&:hover': {
+                transform: 'scale(1.02)',
+                overflow: 'hidden',
+              },
+            }}
+          >
+            🚩 {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
+          </Link>
+          <p style={{fontSize: '14px', margin: '5px 0', color: 'darkred'}}>
+            {errors[field]}
+          </p>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /**
@@ -284,9 +421,11 @@ export function getUsefulFieldNameFromUiSpec(
     // get the view that this field is part of
     let sectionName = '';
     for (const section in ui_specification.views) {
-      if (ui_specification.views[section].fields.indexOf(field) >= 0) {
-        if (section === thisView) sectionName = 'This section';
-        else sectionName = ui_specification.views[section].label || section;
+      if (ui_specification.views[section].fields.includes(field)) {
+        sectionName =
+          section === thisView
+            ? 'This section'
+            : ui_specification.views[section].label || section;
       }
     }
     return `${sectionName} > ${fieldName}`;
