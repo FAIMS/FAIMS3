@@ -44,7 +44,7 @@ import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {SectionEditor} from './section-editor';
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {shallowEqual} from 'react-redux';
 
 type Props = {
@@ -74,6 +74,8 @@ export const FormEditor = ({
       return shallowEqual(left, right);
     }
   );
+  const sections = viewSet ? viewSet.views : [];
+  console.log('FormEditor', { viewSetId, sections });
   const views = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
@@ -97,6 +99,11 @@ export const FormEditor = ({
   const [initialIndex, setInitialIndex] = useState(
     visibleTypes.indexOf(viewSetId)
   );
+
+  useEffect(() => {
+    // reset activeStep when viewSetId changes
+    setActiveStep(0);
+  }, [viewSetId]);
 
   const handleStep = (step: number) => () => {
     setActiveStep(step);
@@ -459,17 +466,17 @@ export const FormEditor = ({
                 alternativeLabel
                 sx={{my: 3}}
               >
-                {viewSet.views.map((view: string, index: number) => (
-                  <Step key={view}>
+                {sections.map((section: string, index: number) => (
+                  <Step key={section}>
                     <StepButton color="inherit" onClick={handleStep(index)}>
-                      <Typography>{views[view].label}</Typography>
+                      <Typography>{views[section].label}</Typography>
                     </StepButton>
                   </Step>
                 ))}
               </Stepper>
             </Grid>
 
-            {activeStep === viewSet.views.length ? (
+            {sections.length === 0 ? (
               <Grid item xs={12}>
                 <Grid
                   container
