@@ -126,15 +126,10 @@ const CREATED_TIME_ID = '_CREATED_TIME';
  */
 function contextToTemplate(context: RecordContext): ValuesObject {
   const vals: ValuesObject = {};
-  if (context.createdBy) {
-    vals[CREATOR_NAME_ID] = context.createdBy;
-  }
-
-  if (context.createdTime) {
-    const displayTimestamp = formatTimestamp(context.createdTime);
-    vals[CREATED_TIME_ID] = displayTimestamp;
-  }
-
+  vals[CREATOR_NAME_ID] = context.createdBy ?? 'Unknown User';
+  vals[CREATED_TIME_ID] = context.createdTime
+    ? formatTimestamp(context.createdTime)
+    : 'Unknown Time';
   return vals;
 }
 

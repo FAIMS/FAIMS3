@@ -35,7 +35,9 @@ describe('formatTimestamp', () => {
   it('handles different timezones', () => {
     const timestamp = 1705324200000;
     expect(formatTimestamp(timestamp, 'GMT')).toBe('15-01-24 1:10pm');
-    expect(formatTimestamp(timestamp, 'Australia/Sydney')).toBe('16-01-24 12:10am');
+    expect(formatTimestamp(timestamp, 'Australia/Sydney')).toBe(
+      '16-01-24 12:10am'
+    );
   });
 
   it('handles invalid inputs gracefully', () => {
@@ -129,7 +131,8 @@ describe('recomputeDerivedFields', () => {
         'templated-status': {
           'component-name': 'TemplatedStringField',
           'component-parameters': {
-            template: 'Status: {{#isActive}}Active{{/isActive}}{{^isActive}}Inactive{{/isActive}}',
+            template:
+              'Status: {{#isActive}}Active{{/isActive}}{{^isActive}}Inactive{{/isActive}}',
           },
         },
       },
@@ -166,7 +169,8 @@ describe('recomputeDerivedFields', () => {
         'templated-nested': {
           'component-name': 'TemplatedStringField',
           'component-parameters': {
-            template: '{{#hasPermission}}{{#isAdmin}}Admin{{/isAdmin}}{{^isAdmin}}User{{/isAdmin}}{{/hasPermission}}{{^hasPermission}}No Access{{/hasPermission}}',
+            template:
+              '{{#hasPermission}}{{#isAdmin}}Admin{{/isAdmin}}{{^isAdmin}}User{{/isAdmin}}{{/hasPermission}}{{^hasPermission}}No Access{{/hasPermission}}',
           },
         },
       },
@@ -223,9 +227,9 @@ describe('recomputeDerivedFields', () => {
     const values = {
       'templated-list': 'Old value',
       items: [
-        { name: 'First', last: false },
-        { name: 'Second', last: false },
-        { name: 'Third', last: true }
+        {name: 'First', last: false},
+        {name: 'Second', last: false},
+        {name: 'Third', last: true},
       ],
     };
 
@@ -372,5 +376,24 @@ describe('recomputeDerivedFields', () => {
     expect(changed).toBe(true);
     expect(values['template1']).toBe('First Test');
     expect(values['template2']).toBe('Second Test');
+  });
+
+  it('uses default "Unknown User and Unknown Time"', () => {
+    const values = {
+      'templated-name': 'Old value',
+    };
+
+    const context: RecordContext = {};
+
+    const changed = recomputeDerivedFields({
+      values,
+      uiSpecification: baseUISpec as unknown as ProjectUIModel,
+      context,
+    });
+
+    expect(changed).toBe(true);
+    expect(values['templated-name']).toMatch(
+      /^Created by Unknown User on Unknown Time$/
+    );
   });
 });
