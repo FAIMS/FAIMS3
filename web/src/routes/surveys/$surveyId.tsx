@@ -20,7 +20,7 @@ const tabs = [
  *
  * @returns {JSX.Element} The rendered Route component.
  */
-export const Route = createFileRoute('/_auth/surveys/$surveyId')({
+export const Route = createFileRoute('/surveys/$surveyId')({
   component: RouteComponent,
 });
 

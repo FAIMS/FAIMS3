@@ -17,8 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import {useAuth, User} from '@/auth';
 import {initials} from '@/lib/utils';
-import {sleep} from '@/utils';
-import {Link, useRouter} from '@tanstack/react-router';
+import {Link} from '@tanstack/react-router';
 
 interface NavUserProps {
   user: User;
@@ -39,23 +38,6 @@ export function NavUser({
 }: NavUserProps) {
   const {isMobile} = useSidebar();
   const auth = useAuth();
-  const router = useRouter();
-
-  /**
-   * Handles the user logout process by invoking the auth.logout method,
-   * waiting for a brief period, and then navigating to the login page.
-   *
-   * @async
-   * @function handleLogout
-   * @returns {Promise<void>} A promise that resolves once the logout process is complete.
-   */
-  const handleLogout = async () => {
-    await auth.logout();
-
-    await sleep(1);
-
-    await router.navigate({to: '/login', search: {redirect: '/'}});
-  };
 
   return (
     <SidebarMenu>
@@ -100,20 +82,23 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/account" className="flex items-center gap-2">
+                <Link to="/account" className="flex items-center gap-2">
                   <BadgeCheck />
                   Account
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/profile" className="flex items-center gap-2">
+                <Link to="/profile" className="flex items-center gap-2">
                   <UserCircle />
                   Profile
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+            <DropdownMenuItem
+              onClick={() => auth.logout()}
+              className="cursor-pointer"
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>

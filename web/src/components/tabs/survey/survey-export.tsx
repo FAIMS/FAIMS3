@@ -17,7 +17,7 @@ import {
  * @param {string} surveyId - The unique identifier of the survey.
  * @returns {JSX.Element} The rendered SurveyExport component.
  */
-const SurveyExport = ({surveyId}: {surveyId: string}) => {
+const SurveyExport = () => {
   return (
     <div className="flex flex-col gap-2">
       <Card className="flex flex-col gap-4 flex-1 justify-between">

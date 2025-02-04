@@ -8,6 +8,7 @@
   "workspaces": [
     "api",
     "app",
+    "web",
     "designer",
     "library/data-model",
     "tests",

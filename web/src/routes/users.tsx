@@ -4,7 +4,7 @@ import {DataTable} from '@/components/data-table/data-table';
 import {createFileRoute} from '@tanstack/react-router';
 import {useGetUsers} from '@/lib/queries';
 
-export const Route = createFileRoute('/_auth/users')({
+export const Route = createFileRoute('/users')({
   component: RouteComponent,
 });
 

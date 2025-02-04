@@ -50,6 +50,10 @@ This will generate a production build in the `build` directory. The build artifa
 
 This will build the application and deploy it to the specified server.
 
+## Styling
+
+Tailwind CSS is used for styling. The `src/index.css` file contains the base styles for the application. You can add custom styles to the `src/index.css` file or create a new file in the `src/components` directory to override the base styles.
+
 ## License
 
 FAIMS3 is licensed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for more information.

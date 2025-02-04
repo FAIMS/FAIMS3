@@ -3,14 +3,7 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {Trash} from 'lucide-react';
 import {Button} from '../ui/button';
 
-export type Payment = {
-  id: string;
-  amount: number;
-  status: 'pending' | 'processing' | 'success' | 'failed';
-  email: string;
-};
-
-export const columns: ColumnDef<Payment>[] = [
+export const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'name',
     header: ({column}) => (

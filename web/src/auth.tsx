@@ -7,6 +7,7 @@ export interface User {
     email: string;
   };
   token: string;
+  refreshToken: string;
 }
 
 export interface AuthContext {
@@ -15,7 +16,14 @@ export interface AuthContext {
     username: string,
     password: string
   ) => Promise<{status: string; message: string}>;
-  logout: () => Promise<void>;
+  loginWithToken: (
+    token?: string,
+    refreshToken?: string
+  ) => Promise<{
+    status: string;
+    message: string;
+  }>;
+  logout: () => void;
   signup: (
     email: string,
     name: string,
@@ -53,12 +61,35 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   const isAuthenticated = !!user;
 
   /**
-   * Logs out the current user by clearing the stored user and updating the state.
-   * @returns {Promise<void>} An empty promise indicating the completion of the logout process.
+   * Logs out the user by removing the stored user object and setting the user to null.
    */
-  const logout = async () => {
+  const logout = () => {
     setStoredUser(null);
     setUser(null);
+  };
+
+  const loginWithToken = async (token?: string, refreshToken = '') => {
+    if (!token) return {status: 'error', message: 'No token provided'};
+
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/users/current`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) return {status: 'error', message: 'Error fetching user'};
+
+    const user = await response.json();
+
+    setStoredUser({user, token, refreshToken});
+    setUser({user, token, refreshToken});
+
+    return {status: 'success', message: ''};
   };
 
   /**
@@ -68,16 +99,19 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
    * @returns {Promise<{status: string; message: string}>} The result of the login operation.
    */
   const login = async (username: string, password: string) => {
-    const response = await fetch('http://localhost:8080/web/login/local', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username,
-        password,
-      }),
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/web/login/local`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      }
+    );
 
     const {status, ok} = response;
 
@@ -101,17 +135,20 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
    * @returns {Promise<{status: string; message: string}>} The result of the signup operation.
    */
   const signup = async (email: string, name: string, password: string) => {
-    const response = await fetch('http://localhost:8080/web/signup/local', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email,
-        name,
-        password,
-      }),
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/web/signup/local`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          name,
+          password,
+        }),
+      }
+    );
 
     if (!response.ok)
       return {
@@ -129,7 +166,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
   return (
     <AuthContext.Provider
-      value={{isAuthenticated, user, login, signup, logout}}
+      value={{isAuthenticated, user, login, loginWithToken, signup, logout}}
     >
       {children}
     </AuthContext.Provider>

@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * Base styles for the application
+ * @see https://v1.tailwindcss.com/docs/adding-base-styles
+ */
 @layer base {
   :root {
     --background: 0 0% 100%;

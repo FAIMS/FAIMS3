@@ -1,10 +1,10 @@
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/surveys';
-import {useAuth, User} from '@/auth';
+import {useAuth} from '@/auth';
 import {useGetSurveys} from '@/lib/queries';
 
-export const Route = createFileRoute('/_auth/surveys/')({
+export const Route = createFileRoute('/surveys/')({
   component: RouteComponent,
 });
 

@@ -1,4 +1,3 @@
-import {useAuth} from '@/auth';
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/survey-invites';
 
@@ -9,9 +8,7 @@ import {columns} from '@/components/tables/survey-invites';
  * @param {string} surveyId - The unique identifier of the survey.
  * @returns {JSX.Element} The rendered SurveyInvites component.
  */
-const SurveyInvites = ({surveyId}: {surveyId: string}) => {
-  const {user} = useAuth();
-
+const SurveyInvites = () => {
   return (
     <DataTable
       columns={columns}

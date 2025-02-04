@@ -9,7 +9,7 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import {useGetSurveys, useGetTemplates} from '@/lib/queries';
-import {Link} from '@tanstack/react-router';
+import {Link, useLocation} from '@tanstack/react-router';
 import {LayoutTemplate, LetterText, Users} from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
@@ -24,6 +24,8 @@ import Logo from '../logo';
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const {user} = useAuth();
 
+  const {pathname} = useLocation();
+
   if (!user) return <></>;
 
   const {data: surveys} = useGetSurveys(user);
@@ -32,7 +34,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <Link href="/">
+        <Link to="/">
           <Logo />
         </Link>
       </SidebarHeader>
@@ -44,6 +46,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               title: 'Templates',
               url: '/templates',
               icon: LayoutTemplate,
+              isActive: pathname.startsWith('/templates'),
               items:
                 templates?.length > 0
                   ? templates.map(({_id, template_name}: any) => ({
@@ -56,6 +59,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               title: 'Surveys',
               url: '/surveys',
               icon: LetterText,
+              isActive: pathname.startsWith('/templates'),
               items:
                 surveys?.length > 0
                   ? surveys.map(({name, non_unique_project_id}: any) => ({

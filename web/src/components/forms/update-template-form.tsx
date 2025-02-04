@@ -29,8 +29,6 @@ export function UpdateTemplateForm({setDialogOpen}: UpdateTemplateFormProps) {
 
     if (!json._id) return {type: 'submit', message: 'Error parsing file'};
 
-    console.log(json);
-
     const response = await fetch(
       `${import.meta.env.VITE_API_URL}/api/templates/${json._id}`,
       {

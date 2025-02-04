@@ -75,3 +75,8 @@ content-type: application/json
 
 PUT http://localhost:8080/api/templates/1736918912018-template-2
 content-type: application/json
+
+
+### Get current user
+GET http://localhost:8080/api/users/current
+content-type: application/json

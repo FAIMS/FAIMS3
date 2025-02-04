@@ -21,10 +21,5 @@ export const columns: ColumnDef<Column>[] = [
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Description" />
     ),
-    cell: ({row}: any) => (
-      <p className="truncate hover:text-clip w-64">
-        {row.original.metadata.pre_description}
-      </p>
-    ),
   },
 ];

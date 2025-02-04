@@ -12,7 +12,7 @@ import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
  * @param {string} templateId - The unique identifier of the template.
  * @returns {JSX.Element} The rendered TemplateActions component.
  */
-const TemplateActions = ({templateId}: {templateId: string}) => {
+const TemplateActions = () => {
   return (
     <div className="flex flex-col gap-2 justify-between">
       <Card className="flex-1">

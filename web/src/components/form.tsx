@@ -13,7 +13,6 @@ import {
 import {Input} from '@/components/ui/input';
 import {useState} from 'react';
 import {Alert, AlertTitle, AlertDescription} from './ui/alert';
-import {DialogClose} from '@radix-ui/react-dialog';
 
 interface Field {
   name: string;
@@ -83,6 +82,7 @@ export function Form<
               key={name}
               control={form.control}
               name={name as Path<TSchema>}
+              /* eslint-disable @typescript-eslint/no-unused-vars */
               render={({field: {value, onChange, ...field}}) => (
                 <FormItem>
                   {label && <FormLabel>{label}</FormLabel>}
@@ -90,6 +90,7 @@ export function Form<
                     <Input
                       {...field}
                       type={type}
+                      className={type === 'file' ? 'cursor-pointer' : ''}
                       onChange={event =>
                         type === 'file'
                           ? event.target.files &&

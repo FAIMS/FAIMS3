@@ -63,5 +63,5 @@ export const useGetTemplates = (user: User | null, templateId?: string) =>
 export const useGetUsers = (user: User | null) =>
   useQuery({
     queryKey: ['users'],
-    queryFn: () => get(`/api/users`, user),
+    queryFn: () => get('/api/users', user),
   });

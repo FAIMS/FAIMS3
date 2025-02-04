@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
 import {List, ListDescription, ListItem} from '../ui/list';
-import {Route} from '@/routes/_auth/templates/$templateId';
+import {Route} from '@/routes/templates/$templateId';
 import {useAuth} from '@/auth';
 import {useGetTemplates} from '@/lib/queries';
 import {UpdateTemplateForm} from '../forms/update-template-form';

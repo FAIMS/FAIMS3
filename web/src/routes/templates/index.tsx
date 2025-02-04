@@ -4,7 +4,7 @@ import {columns} from '@/components/tables/templates';
 import {useAuth} from '@/auth';
 import {useGetTemplates} from '@/lib/queries';
 
-export const Route = createFileRoute('/_auth/templates/')({
+export const Route = createFileRoute('/templates/')({
   component: RouteComponent,
 });
 

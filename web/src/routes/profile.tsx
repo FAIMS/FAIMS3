@@ -2,7 +2,7 @@ import {useAuth} from '@/auth';
 import {Card} from '@/components/ui/card';
 import {createFileRoute} from '@tanstack/react-router';
 
-export const Route = createFileRoute('/_auth/profile')({
+export const Route = createFileRoute('/profile')({
   component: RouteComponent,
 });
 

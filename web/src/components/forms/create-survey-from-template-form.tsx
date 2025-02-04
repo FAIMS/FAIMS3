@@ -1,6 +1,6 @@
 import {useAuth} from '@/auth';
 import {Form} from '@/components/form';
-import {Route} from '@/routes/_auth/templates/$templateId';
+import {Route} from '@/routes/templates/$templateId';
 import {useRouter} from '@tanstack/react-router';
 import {z} from 'zod';
 
@@ -31,7 +31,7 @@ export function CreateSurveyFromTemplateForm() {
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
   const onSubmit = async ({name}: {name: string}) => {
-    const response = await fetch(`http://localhost:8080/api/notebooks`, {
+    const response = await fetch('http://localhost:8080/api/notebooks', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

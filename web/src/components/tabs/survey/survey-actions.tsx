@@ -3,10 +3,6 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 
-interface SurveyActionsProps {
-  surveyId: string;
-}
-
 /**
  * SurveyActions component renders action cards for editing and closing a survey.
  * It provides options to edit the survey design and close the survey, along with
@@ -16,7 +12,7 @@ interface SurveyActionsProps {
  * @param {string} props.surveyId - The unique identifier of the survey.
  * @returns {JSX.Element} The rendered SurveyActions component.
  */
-const SurveyActions = ({surveyId}: SurveyActionsProps): JSX.Element => {
+const SurveyActions = (): JSX.Element => {
   return (
     <div className="flex flex-col gap-2 justify-between">
       <Card className="flex flex-col gap-4 flex-1">
