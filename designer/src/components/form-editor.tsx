@@ -33,7 +33,7 @@ import {
   Checkbox,
   FormControlLabel,
 } from '@mui/material';
-
+import Box from '@mui/material/Box';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
@@ -44,7 +44,7 @@ import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {SectionEditor} from './section-editor';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef, useCallback} from 'react';
 import {shallowEqual} from 'react-redux';
 
 type Props = {
@@ -70,12 +70,10 @@ export const FormEditor = ({
   );
   const viewSet = useAppSelector(
     state => state.notebook['ui-specification'].viewsets[viewSetId],
-    (left, right) => {
-      return shallowEqual(left, right);
-    }
+    (left, right) => shallowEqual(left, right)
   );
   const sections = viewSet ? viewSet.views : [];
-  console.log('FormEditor', { viewSetId, sections });
+  console.log('FormEditor', {viewSetId, sections});
 
   const views = useAppSelector(
     state => state.notebook['ui-specification'].fviews
@@ -101,10 +99,24 @@ export const FormEditor = ({
     visibleTypes.indexOf(viewSetId)
   );
 
+  // Refs for the scroll container and section steps.
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [showRightGradient, setShowRightGradient] = useState(true);
+
   useEffect(() => {
-    // reset activeStep when viewSetId changes
+    // Reset activeStep when viewSetId changes.
     setActiveStep(0);
   }, [viewSetId]);
+
+  // Update overflow gradient overlay on scroll, hidng it when scrolled to the end.
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      const {scrollLeft, scrollWidth, clientWidth} = container;
+      setShowRightGradient(scrollLeft + clientWidth < scrollWidth - 1);
+    }
+  };
 
   const handleStep = (step: number) => () => {
     setActiveStep(step);
@@ -115,31 +127,24 @@ export const FormEditor = ({
   };
 
   const handleChange = (ticked: boolean) => {
-    // there must be >1 forms in the notebook, and, therefore, >1 visible forms, in order to be able to untick the checkbox
     if (
       (Object.keys(viewsets).length > 1 && visibleTypes.length > 1) ||
       ticked
     ) {
       setAlertMessage('');
-
       dispatch({
         type: 'ui-specification/formVisibilityUpdated',
         payload: {viewSetId, ticked, initialIndex},
       });
-
       handleChangeCallback(viewSetId, ticked);
-    }
-    // in the case that there are multiple forms in the notebook, but none are visible, allow to re-tick the checkbox
-    else if (visibleTypes.length === 0) {
+    } else if (visibleTypes.length === 0) {
       setAlertMessage('');
       setChecked(ticked);
       setInitialIndex(0);
-
       dispatch({
         type: 'ui-specification/formVisibilityUpdated',
         payload: {viewSetId, ticked: checked, initialIndex: initialIndex},
       });
-
       handleChangeCallback(viewSetId, checked);
     } else {
       setAlertMessage('This must remain ticked in at least one (1) form.');
@@ -151,8 +156,6 @@ export const FormEditor = ({
       type: 'ui-specification/sectionDeleted',
       payload: {viewSetID, viewID},
     });
-
-    // making sure the stepper jumps steps (forward or backward) intuitively
     if (
       viewSet.views[viewSet.views.length - 1] === viewID &&
       viewSet.views.length > 1
@@ -171,16 +174,12 @@ export const FormEditor = ({
         type: 'ui-specification/sectionMoved',
         payload: {viewSetId: viewSetID, viewId: viewID, direction: 'left'},
       });
-
-      // making sure the stepper jumps a step backward intuitively
       setActiveStep(activeStep - 1);
     } else {
       dispatch({
         type: 'ui-specification/sectionMoved',
         payload: {viewSetId: viewSetID, viewId: viewID, direction: 'right'},
       });
-
-      // making sure the stepper jumps a step forward intuitively
       setActiveStep(activeStep + 1);
     }
   };
@@ -191,12 +190,8 @@ export const FormEditor = ({
         type: 'ui-specification/sectionAdded',
         payload: {viewSetId: viewSetID, sectionLabel: label},
       });
-
-      // jump to the newly created section (i.e., to the end of the stepper)
       setActiveStep(viewSet.views.length);
       setAddAlertMessage('');
-
-      // let sectionEditor component know a section was addedd successfully
       return true;
     } catch (error: unknown) {
       error instanceof Error && setAddAlertMessage(error.message);
@@ -219,25 +214,17 @@ export const FormEditor = ({
   };
 
   const findRelatedFieldLocation = (fieldName: string | undefined) => {
-    // making fviews iterable
     const fviewsEntries = Object.entries(views);
     fviewsEntries.forEach((_viewId, idx) => {
-      // iterating over every section's fields array to find fieldName
       fviewsEntries[idx][1].fields.forEach(field => {
         if (field === fieldName) {
-          // extracting which section fieldName belongs to
           const sectionToFind = fviewsEntries[idx][0];
-          // making viewsets iterable
           const viewsetsEntries = Object.entries(viewsets);
           viewsetsEntries.forEach((_viewSetId, idx) => {
-            // iterating over every form's views array to find the section
             viewsetsEntries[idx][1].views.forEach(view => {
               if (view === sectionToFind) {
-                // we made it! now extract the form and section labels
                 const formLabel: string = viewsetsEntries[idx][1].label;
                 const sectionLabel: string = fviewsEntries[idx][1].label;
-
-                // setting the dialog text here
                 setDeleteAlertTitle('Form cannot be deleted.');
                 setDeleteAlertMessage(
                   `Please update the field '${fieldName}', found in form ${formLabel} section ${sectionLabel}, to remove the reference to allow this form to be deleted.`
@@ -251,16 +238,12 @@ export const FormEditor = ({
   };
 
   const preventFormDelete = () => {
-    // we don't need the field keys, only their values
     const fieldValues = Object.values(fields);
     let flag = false;
-    // search through all the values for mention of the form to be deleted in the related_type param
     fieldValues.forEach(fieldValue => {
       if (fieldValue['component-parameters'].related_type === viewSetId) {
         flag = true;
-        // extracting the name of the field to advise the user
         const relatedFieldName = fieldValue['component-parameters'].name;
-        // finding the exact location of the field in the notebook to advise the user
         findRelatedFieldLocation(relatedFieldName);
       }
     });
@@ -268,7 +251,6 @@ export const FormEditor = ({
   };
 
   const deleteForm = () => {
-    // SANITY CHECK. Don't allow the user to delete the form if they've used it in a RelatedRecordSelector field
     if (preventFormDelete()) {
       setOpen(true);
       setPreventDeleteDialog(true);
@@ -285,6 +267,32 @@ export const FormEditor = ({
   const moveForm = (viewSetID: string, moveDirection: 'left' | 'right') => {
     moveCallback(viewSetID, moveDirection);
   };
+
+  // Scroll the active step into view.
+  const scrollActiveStepIntoView = useCallback(() => {
+    const container = scrollContainerRef.current;
+    const selected = stepRefs.current[activeStep];
+    if (container && selected) {
+      const containerRect = container.getBoundingClientRect();
+      const selectedRect = selected.getBoundingClientRect();
+      if (
+        selectedRect.left < containerRect.left ||
+        selectedRect.right > containerRect.right
+      ) {
+        selected.scrollIntoView({behavior: 'smooth', inline: 'center'});
+      }
+    }
+  }, [activeStep]);
+
+  useEffect(() => {
+    scrollActiveStepIntoView();
+  }, [activeStep, scrollActiveStepIntoView]);
+
+  useEffect(() => {
+    // event listener is used to scroll the active step into view when the window is resized.
+    window.addEventListener('resize', scrollActiveStepIntoView);
+    return () => window.removeEventListener('resize', scrollActiveStepIntoView);
+  }, [scrollActiveStepIntoView]);
 
   return (
     <Grid container spacing={2} pt={3}>
@@ -440,20 +448,72 @@ export const FormEditor = ({
         <Card variant="outlined">
           <Grid container spacing={2} p={3}>
             <Grid item xs={12}>
-              <Stepper
-                nonLinear
-                activeStep={activeStep}
-                alternativeLabel
-                sx={{my: 3}}
-              >
-                {sections.map((section: string, index: number) => (
-                  <Step key={section}>
-                    <StepButton color="inherit" onClick={handleStep(index)}>
-                      <Typography>{views[section].label}</Typography>
-                    </StepButton>
-                  </Step>
-                ))}
-              </Stepper>
+              <Box sx={{position: 'relative'}}>
+                {/* outer scroll container */}
+                <Box
+                  ref={scrollContainerRef}
+                  sx={{
+                    overflowX: 'auto',
+                    display: 'flex',
+                    justifyContent: 'center',
+                  }}
+                  onScroll={handleScroll}
+                >
+                  {/*
+                    inner scroll container:
+                    - min width of 70% of  available space.
+                    - uses flex layout.
+                    - if only a few steps, they expand to fill the space.
+                    - once  there are many steps each step shrinks only to its minimum width (120px)
+                      and the container’s total width exceeds the viewport so scrolling is enabled.
+                  */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexWrap: 'nowrap',
+                      minWidth: '70%',
+                      width: '100%',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <Stepper
+                      nonLinear
+                      activeStep={activeStep}
+                      alternativeLabel
+                      sx={{my: 3, width: '100%'}}
+                    >
+                      {sections.map((section: string, index: number) => (
+                        <Step
+                          key={section}
+                          // each step is flexible and has a minimum width.
+                          sx={{flex: '1 1 0', minWidth: '120px'}}
+                        >
+                          <StepButton
+                            color="inherit"
+                            onClick={handleStep(index)}
+                          >
+                            <Typography>{views[section].label}</Typography>
+                          </StepButton>
+                        </Step>
+                      ))}
+                    </Stepper>
+                  </Box>
+                </Box>
+                {showRightGradient && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      width: 40,
+                      height: '100%',
+                      pointerEvents: 'none',
+                      background: theme =>
+                        `linear-gradient(to left, ${theme.palette.background.paper}, transparent)`,
+                    }}
+                  />
+                )}
+              </Box>
             </Grid>
 
             {sections.length === 0 ? (
