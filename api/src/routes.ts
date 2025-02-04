@@ -65,13 +65,11 @@ import {
   initialiseDatabases,
   verifyCouchDBConnection,
 } from './couchdb';
-import {addAPIAuthRoutes} from './api/auth';
 
 export {app};
 
 add_auth_providers(CONDUCTOR_AUTH_PROVIDERS);
 add_auth_routes(app, CONDUCTOR_AUTH_PROVIDERS);
-addAPIAuthRoutes(app);
 
 /**
  * Home Page
