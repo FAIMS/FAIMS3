@@ -349,7 +349,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   handleRefresh={handleRefresh}
                   onRecordsCountChange={handleCountChange}
                   recordLabel={recordLabel}
-                  filterByUser={true} // filter by current user
                 />
               </TabPanel>
               <TabPanel
@@ -365,7 +364,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   handleRefresh={handleRefresh}
                   onRecordsCountChange={handleCountChange}
                   recordLabel={recordLabel}
-                  filterByUser={false} // show all records
                 />
               </TabPanel>
               <TabPanel
