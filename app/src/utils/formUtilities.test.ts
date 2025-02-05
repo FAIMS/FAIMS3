@@ -1,8 +1,10 @@
 import {expect, it, describe} from 'vitest';
 import {
   formatTimestamp,
+  getHridFromValuesAndSpec,
   getRecordContextFromRecord,
   recomputeDerivedFields,
+  ValuesObject,
 } from './formUtilities';
 import {ProjectUIModel, Record} from '@faims3/data-model';
 import {RecordContext} from '../gui/components/record/form';
@@ -395,5 +397,115 @@ describe('recomputeDerivedFields', () => {
     expect(values['templated-name']).toMatch(
       /^Created by Unknown User on Unknown Time$/
     );
+  });
+});
+
+describe('getHridFromValuesAndSpec', () => {
+  // This is used to help test out the old/new hrid - it is a subset of ProjectUIModel
+  let baseUISpec = {
+    fields: {
+      regularFieldA: {},
+      hridOldFieldA: {},
+      newHridFieldA: {},
+      regularFieldB: {},
+      hridOldFieldB: {},
+      newHridFieldB: {},
+    },
+    views: {
+      sectionA: {fields: ['regularFieldA', 'hridOldFieldA', 'newHridFieldA']},
+      sectionB: {fields: ['regularFieldB', 'hridOldFieldB', 'newHridFieldB']},
+    },
+    viewsets: {
+      A: {views: ['sectionA']},
+      B: {views: ['sectionB']},
+    } as {[key: string]: {views: string[]; hridField?: string}},
+  };
+
+  it('finds old hrid field properly', () => {
+    let values: ValuesObject = {
+      hridOldFieldA: 'test',
+    };
+    const result = getHridFromValuesAndSpec({
+      values,
+      uiSpecification: baseUISpec as unknown as ProjectUIModel,
+    });
+
+    expect(result).to.equal('test');
+  });
+
+  it('finds old hrid field properly on B view', () => {
+    let values: ValuesObject = {
+      hridOldFieldB: 'test',
+    };
+    const result = getHridFromValuesAndSpec({
+      values,
+      uiSpecification: baseUISpec as unknown as ProjectUIModel,
+    });
+
+    expect(result).to.equal('test');
+  });
+
+  it('returns undefined if old hrid is not present', () => {
+    let values: ValuesObject = {};
+    const result = getHridFromValuesAndSpec({
+      values,
+      uiSpecification: baseUISpec as unknown as ProjectUIModel,
+    });
+
+    expect(result).to.be.undefined;
+  });
+
+  it('finds new hrid on either form', () => {
+    let values: ValuesObject = {
+      newHridFieldA: 'testA',
+    };
+
+    // set hrid field for A
+    baseUISpec.viewsets['A'].hridField = 'newHridFieldA';
+
+    let result = getHridFromValuesAndSpec({
+      values,
+      uiSpecification: baseUISpec as unknown as ProjectUIModel,
+    });
+
+    expect(result).to.equal('testA');
+    // unset hrid field for A
+    baseUISpec.viewsets['A'].hridField = undefined;
+
+    values = {
+      newHridFieldB: 'testB',
+    };
+
+    // set hrid field for B
+    baseUISpec.viewsets['B'].hridField = 'newHridFieldB';
+
+    result = getHridFromValuesAndSpec({
+      values,
+      uiSpecification: baseUISpec as unknown as ProjectUIModel,
+    });
+
+    expect(result).to.equal('testB');
+
+    // unset hrid field for B
+    baseUISpec.viewsets['B'].hridField = undefined;
+  });
+
+  it('prioritises new hrid over old', () => {
+    let values: ValuesObject = {
+      newHridFieldA: 'new',
+      hridOldFieldA: 'old',
+    };
+
+    // set hrid field for A
+    baseUISpec.viewsets['A'].hridField = 'newHridFieldA';
+
+    let result = getHridFromValuesAndSpec({
+      values,
+      uiSpecification: baseUISpec as unknown as ProjectUIModel,
+    });
+
+    expect(result).to.equal('new');
+    // unset hrid field for A
+    baseUISpec.viewsets['A'].hridField = undefined;
   });
 });
