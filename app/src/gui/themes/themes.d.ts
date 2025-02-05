@@ -41,6 +41,7 @@ declare module '@mui/material/styles' {
       rowBorder: string;
       columnSeparator: string;
     };
+    stepperGradient: string[];
   }
 
   interface PaletteOptions {
@@ -85,5 +86,6 @@ declare module '@mui/material/styles' {
       rowBorder: string;
       columnSeparator: string;
     };
+    stepperGradient?: string[];
   }
 }
