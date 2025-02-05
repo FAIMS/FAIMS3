@@ -12,10 +12,6 @@ export interface User {
 
 export interface AuthContext {
   isAuthenticated: boolean;
-  login: (
-    username: string,
-    password: string
-  ) => Promise<{status: string; message: string}>;
   loginWithToken: (
     token?: string,
     refreshToken?: string
@@ -24,11 +20,6 @@ export interface AuthContext {
     message: string;
   }>;
   logout: () => void;
-  signup: (
-    email: string,
-    name: string,
-    password: string
-  ) => Promise<{status: string; message: string}>;
   user: User | null;
 }
 
@@ -92,81 +83,9 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     return {status: 'success', message: ''};
   };
 
-  /**
-   * Logs in a user using the provided username and password.
-   * @param {string} username - The username of the user.
-   * @param {string} password - The password of the user.
-   * @returns {Promise<{status: string; message: string}>} The result of the login operation.
-   */
-  const login = async (username: string, password: string) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/web/login/local`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      }
-    );
-
-    const {status, ok} = response;
-
-    if (status === 401)
-      return {status: 'error', message: 'Invalid username or password'};
-    if (!ok) return {status: 'error', message: 'Unknown error'};
-
-    const user = (await response.json()) as User;
-
-    setStoredUser(user);
-    setUser(user);
-
-    return {status: 'success', message: ''};
-  };
-
-  /**
-   * Signs up a new user with an email, name, and password.
-   * @param {string} email - The email of the user.
-   * @param {string} name - The name of the user.
-   * @param {string} password - The password of the user.
-   * @returns {Promise<{status: string; message: string}>} The result of the signup operation.
-   */
-  const signup = async (email: string, name: string, password: string) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/web/signup/local`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          name,
-          password,
-        }),
-      }
-    );
-
-    if (!response.ok)
-      return {
-        status: 'error',
-        message: (await response.text()) || 'Error signing up',
-      };
-
-    const user = (await response.json()) as User;
-
-    setStoredUser(user);
-    setUser(user);
-
-    return {status: 'success', message: ''};
-  };
-
   return (
     <AuthContext.Provider
-      value={{isAuthenticated, user, login, loginWithToken, signup, logout}}
+      value={{isAuthenticated, user, loginWithToken, logout}}
     >
       {children}
     </AuthContext.Provider>

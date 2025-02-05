@@ -2,18 +2,13 @@ import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {Trash} from 'lucide-react';
 import {Button} from '../ui/button';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 export const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'name',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Name" />
-    ),
-  },
-  {
-    accessorKey: 'email',
-    header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Email" />
     ),
   },
   {
@@ -25,7 +20,10 @@ export const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'survey-role',
     header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Survey Role" />
+      <DataTableColumnHeader
+        column={column}
+        title={`${NOTEBOOK_NAME_CAPITALIZED} Role`}
+      />
     ),
   },
   {

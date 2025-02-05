@@ -1,8 +1,8 @@
 import {createFileRoute} from '@tanstack/react-router';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import TemplateDetails from '@/components/tabs/templates/template-details';
-import TemplateSurveys from '@/components/tabs/templates/template-surveys';
-import TemplateActions from '@/components/tabs/templates/template-actions';
+import TemplateDetails from '@/components/tabs/templates/details';
+import TemplateSurveys from '@/components/tabs/templates/projects';
+import TemplateActions from '@/components/tabs/templates/actions';
 
 const tabs = [
   {

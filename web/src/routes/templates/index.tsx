@@ -1,8 +1,8 @@
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/templates';
-import {useAuth} from '@/auth';
-import {useGetTemplates} from '@/lib/queries';
+import {useAuth} from '@/context/auth-provider';
+import {useGetTemplates} from '@/hooks/get-hooks';
 
 export const Route = createFileRoute('/templates/')({
   component: RouteComponent,

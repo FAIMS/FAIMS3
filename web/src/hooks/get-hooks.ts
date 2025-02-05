@@ -1,5 +1,5 @@
 import {useQuery} from '@tanstack/react-query';
-import {User} from '@/auth';
+import {User} from '@/context/auth-provider';
 
 /**
  * get function is a utility function for making GET requests to the API.
@@ -25,15 +25,15 @@ const get = async (path: string, user: User | null) => {
 };
 
 /**
- * useGetSurveys hook returns a query for fetching surveys.
+ * useGetProjects hook returns a query for fetching projects.
  *
  * @param {User} user - The user object.
- * @returns {Query} A query for fetching surveys.
+ * @returns {Query} A query for fetching projects.
  */
-export const useGetSurveys = (user: User | null, surveyId?: string) =>
+export const useGetProjects = (user: User | null, projectId?: string) =>
   useQuery({
-    queryKey: ['surveys', surveyId],
-    queryFn: () => get(`/api/notebooks/${surveyId || ''}`, user),
+    queryKey: ['projects', projectId],
+    queryFn: () => get(`/api/notebooks/${projectId || ''}`, user),
   });
 
 /**

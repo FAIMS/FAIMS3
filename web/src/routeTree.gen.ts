@@ -16,9 +16,9 @@ import { Route as ProfileImport } from './routes/profile'
 import { Route as AccountImport } from './routes/account'
 import { Route as IndexImport } from './routes/index'
 import { Route as TemplatesIndexImport } from './routes/templates/index'
-import { Route as SurveysIndexImport } from './routes/surveys/index'
+import { Route as ProjectsIndexImport } from './routes/projects/index'
 import { Route as TemplatesTemplateIdImport } from './routes/templates/$templateId'
-import { Route as SurveysSurveyIdImport } from './routes/surveys/$surveyId'
+import { Route as ProjectsProjectIdImport } from './routes/projects/$projectId'
 
 // Create/Update Routes
 
@@ -52,9 +52,9 @@ const TemplatesIndexRoute = TemplatesIndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const SurveysIndexRoute = SurveysIndexImport.update({
-  id: '/surveys/',
-  path: '/surveys/',
+const ProjectsIndexRoute = ProjectsIndexImport.update({
+  id: '/projects/',
+  path: '/projects/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -64,9 +64,9 @@ const TemplatesTemplateIdRoute = TemplatesTemplateIdImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const SurveysSurveyIdRoute = SurveysSurveyIdImport.update({
-  id: '/surveys/$surveyId',
-  path: '/surveys/$surveyId',
+const ProjectsProjectIdRoute = ProjectsProjectIdImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -102,11 +102,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersImport
       parentRoute: typeof rootRoute
     }
-    '/surveys/$surveyId': {
-      id: '/surveys/$surveyId'
-      path: '/surveys/$surveyId'
-      fullPath: '/surveys/$surveyId'
-      preLoaderRoute: typeof SurveysSurveyIdImport
+    '/projects/$projectId': {
+      id: '/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof ProjectsProjectIdImport
       parentRoute: typeof rootRoute
     }
     '/templates/$templateId': {
@@ -116,11 +116,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TemplatesTemplateIdImport
       parentRoute: typeof rootRoute
     }
-    '/surveys/': {
-      id: '/surveys/'
-      path: '/surveys'
-      fullPath: '/surveys'
-      preLoaderRoute: typeof SurveysIndexImport
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsIndexImport
       parentRoute: typeof rootRoute
     }
     '/templates/': {
@@ -140,9 +140,9 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/profile': typeof ProfileRoute
   '/users': typeof UsersRoute
-  '/surveys/$surveyId': typeof SurveysSurveyIdRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
-  '/surveys': typeof SurveysIndexRoute
+  '/projects': typeof ProjectsIndexRoute
   '/templates': typeof TemplatesIndexRoute
 }
 
@@ -151,9 +151,9 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/profile': typeof ProfileRoute
   '/users': typeof UsersRoute
-  '/surveys/$surveyId': typeof SurveysSurveyIdRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
-  '/surveys': typeof SurveysIndexRoute
+  '/projects': typeof ProjectsIndexRoute
   '/templates': typeof TemplatesIndexRoute
 }
 
@@ -163,9 +163,9 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/profile': typeof ProfileRoute
   '/users': typeof UsersRoute
-  '/surveys/$surveyId': typeof SurveysSurveyIdRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
-  '/surveys/': typeof SurveysIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/templates/': typeof TemplatesIndexRoute
 }
 
@@ -176,9 +176,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/profile'
     | '/users'
-    | '/surveys/$surveyId'
+    | '/projects/$projectId'
     | '/templates/$templateId'
-    | '/surveys'
+    | '/projects'
     | '/templates'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -186,9 +186,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/profile'
     | '/users'
-    | '/surveys/$surveyId'
+    | '/projects/$projectId'
     | '/templates/$templateId'
-    | '/surveys'
+    | '/projects'
     | '/templates'
   id:
     | '__root__'
@@ -196,9 +196,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/profile'
     | '/users'
-    | '/surveys/$surveyId'
+    | '/projects/$projectId'
     | '/templates/$templateId'
-    | '/surveys/'
+    | '/projects/'
     | '/templates/'
   fileRoutesById: FileRoutesById
 }
@@ -208,9 +208,9 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   ProfileRoute: typeof ProfileRoute
   UsersRoute: typeof UsersRoute
-  SurveysSurveyIdRoute: typeof SurveysSurveyIdRoute
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   TemplatesTemplateIdRoute: typeof TemplatesTemplateIdRoute
-  SurveysIndexRoute: typeof SurveysIndexRoute
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
   TemplatesIndexRoute: typeof TemplatesIndexRoute
 }
 
@@ -219,9 +219,9 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   ProfileRoute: ProfileRoute,
   UsersRoute: UsersRoute,
-  SurveysSurveyIdRoute: SurveysSurveyIdRoute,
+  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   TemplatesTemplateIdRoute: TemplatesTemplateIdRoute,
-  SurveysIndexRoute: SurveysIndexRoute,
+  ProjectsIndexRoute: ProjectsIndexRoute,
   TemplatesIndexRoute: TemplatesIndexRoute,
 }
 
@@ -239,9 +239,9 @@ export const routeTree = rootRoute
         "/account",
         "/profile",
         "/users",
-        "/surveys/$surveyId",
+        "/projects/$projectId",
         "/templates/$templateId",
-        "/surveys/",
+        "/projects/",
         "/templates/"
       ]
     },
@@ -257,14 +257,14 @@ export const routeTree = rootRoute
     "/users": {
       "filePath": "users.tsx"
     },
-    "/surveys/$surveyId": {
-      "filePath": "surveys/$surveyId.tsx"
+    "/projects/$projectId": {
+      "filePath": "projects/$projectId.tsx"
     },
     "/templates/$templateId": {
       "filePath": "templates/$templateId.tsx"
     },
-    "/surveys/": {
-      "filePath": "surveys/index.tsx"
+    "/projects/": {
+      "filePath": "projects/index.tsx"
     },
     "/templates/": {
       "filePath": "templates/index.tsx"

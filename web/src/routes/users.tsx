@@ -1,8 +1,8 @@
-import {useAuth} from '@/auth';
+import {useAuth} from '@/context/auth-provider';
 import {columns} from '@/components/tables/users';
 import {DataTable} from '@/components/data-table/data-table';
 import {createFileRoute} from '@tanstack/react-router';
-import {useGetUsers} from '@/lib/queries';
+import {useGetUsers} from '@/hooks/get-hooks';
 
 export const Route = createFileRoute('/users')({
   component: RouteComponent,

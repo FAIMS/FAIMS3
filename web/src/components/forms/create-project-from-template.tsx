@@ -1,24 +1,25 @@
-import {useAuth} from '@/auth';
+import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
 import {Route} from '@/routes/templates/$templateId';
 import {useRouter} from '@tanstack/react-router';
 import {z} from 'zod';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 export const fields = [
   {
     name: 'name',
-    label: 'Survey Name',
-    schema: z
-      .string()
-      .min(3, {message: 'Survey name must be at least 3 characters.'}),
+    label: `${NOTEBOOK_NAME_CAPITALIZED} Name`,
+    schema: z.string().min(5, {
+      message: `${NOTEBOOK_NAME_CAPITALIZED} name must be at least 3 characters.`,
+    }),
   },
 ];
 
 /**
- * Component for rendering a form to create a survey from a template.
+ * Component for rendering a form to create a project from a template.
  * @returns {JSX.Element} The rendered form component.
  */
-export function CreateSurveyFromTemplateForm() {
+export function CreateProjectFromTemplateForm() {
   const {user} = useAuth();
   if (!user) return null;
 
@@ -26,7 +27,7 @@ export function CreateSurveyFromTemplateForm() {
   const router = useRouter();
 
   /**
-   * Handles form submission for creating a survey.
+   * Handles form submission for creating a project.
    * @param {{name: string}} params - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
@@ -43,18 +44,19 @@ export function CreateSurveyFromTemplateForm() {
       }),
     });
 
-    if (!response.ok) return {type: 'submit', message: 'Error creating survey'};
+    if (!response.ok)
+      return {type: 'submit', message: `Error creating ${NOTEBOOK_NAME}.`};
 
     const json = await response.json();
 
-    await router.navigate({to: `/surveys/${json.notebook}`});
+    await router.navigate({to: `/${NOTEBOOK_NAME}s/${json.notebook}`});
   };
 
   return (
     <Form
       fields={fields}
       onSubmit={onSubmit}
-      submitButtonText="Create Survey"
+      submitButtonText={`Create ${NOTEBOOK_NAME_CAPITALIZED}`}
     />
   );
 }

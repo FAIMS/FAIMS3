@@ -1,9 +1,9 @@
-import {useAuth} from '@/auth';
+import {useAuth} from '@/context/auth-provider';
 import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
-import {useGetTemplates} from '@/lib/queries';
+import {useGetTemplates} from '@/hooks/get-hooks';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},

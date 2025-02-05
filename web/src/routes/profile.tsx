@@ -1,4 +1,4 @@
-import {useAuth} from '@/auth';
+import {useAuth} from '@/context/auth-provider';
 import {Card} from '@/components/ui/card';
 import {createFileRoute} from '@tanstack/react-router';
 

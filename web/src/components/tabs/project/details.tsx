@@ -1,9 +1,9 @@
-import {useAuth} from '@/auth';
+import {useAuth} from '@/context/auth-provider';
 import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
-import {useGetSurveys} from '@/lib/queries';
+import {useGetProjects} from '@/hooks/get-hooks';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -14,16 +14,16 @@ const detailsFields = [
 ];
 
 /**
- * SurveyDetails component renders a list of details for a survey.
- * It displays the survey name, description, created by, team, and version.
+ * ProjectDetails component renders a list of details for a project.
+ * It displays the project name, description, created by, team, and version.
  *
- * @param {string} surveyId - The unique identifier of the survey.
- * @returns {JSX.Element} The rendered SurveyDetails component.
+ * @param {string} projectId - The unique identifier of the project.
+ * @returns {JSX.Element} The rendered ProjectDetails component.
  */
-const SurveyDetails = ({surveyId}: {surveyId: string}) => {
+const ProjectDetails = ({projectId}: {projectId: string}) => {
   const {user} = useAuth();
 
-  const {data, isPending} = useGetSurveys(user, surveyId);
+  const {data, isPending} = useGetProjects(user, projectId);
 
   return (
     <Card>
@@ -43,4 +43,4 @@ const SurveyDetails = ({surveyId}: {surveyId: string}) => {
   );
 };
 
-export default SurveyDetails;
+export default ProjectDetails;

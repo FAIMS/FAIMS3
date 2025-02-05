@@ -1,12 +1,13 @@
 import {EditTemplateDialog} from '@/components/dialogs/edit-template';
-import {SurveyFromTemplateDialog} from '@/components/dialogs/survey-from-template';
+import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-template';
 import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 /**
- * TemplateActions component renders action cards for creating a survey from a template,
+ * TemplateActions component renders action cards for creating a project from a template,
  * editing the template, and archiving the template.
  *
  * @param {string} templateId - The unique identifier of the template.
@@ -18,12 +19,12 @@ const TemplateActions = () => {
       <Card className="flex-1">
         <List className="flex flex-col gap-4">
           <ListItem>
-            <ListLabel>Create Survey</ListLabel>
+            <ListLabel>Create {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
             <ListDescription>
-              Create a new survey based on this template.
+              Create a new {NOTEBOOK_NAME} based on this template.
             </ListDescription>
           </ListItem>
-          <SurveyFromTemplateDialog />
+          <ProjectFromTemplateDialog />
         </List>
       </Card>
       <Card className="flex-1">
@@ -45,8 +46,8 @@ const TemplateActions = () => {
             <Alert variant="destructive">
               <AlertTitle>Warning</AlertTitle>
               <AlertDescription>
-                Archiving the template will prevent surveys from being created
-                from it.
+                Archiving the template will prevent {NOTEBOOK_NAME}s from being
+                created from it.
               </AlertDescription>
             </Alert>
           </ListItem>

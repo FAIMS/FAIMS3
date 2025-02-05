@@ -15,7 +15,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import {useAuth, User} from '@/auth';
+import {useAuth, User} from '@/context/auth-provider';
 import {initials} from '@/lib/utils';
 import {Link} from '@tanstack/react-router';
 

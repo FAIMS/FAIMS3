@@ -35,17 +35,6 @@ export const columns: ColumnDef<any>[] = [
       </div>
     ),
   },
-  // {
-  //   id: 'manage-roles',
-  //   cell: () => (
-  //     <div className="flex justify-center items-center">
-  //       <Button variant="outline" size="icon">
-  //         <Pencil className="h-4 w-4" />
-  //       </Button>
-  //     </div>
-  //   ),
-  //   header: 'Manage Roles',
-  // },
   {
     id: 'remove',
     cell: ({row}: any) => (

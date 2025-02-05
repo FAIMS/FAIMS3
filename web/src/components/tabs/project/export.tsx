@@ -8,23 +8,25 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
+import {NOTEBOOK_NAME} from '@/constants';
 
 /**
- * SurveyExport component renders a card with options to export a survey's data.
- * It allows users to export the survey's data to CSV, JSON, or XLSX formats,
+ * ProjectExport component renders a card with options to export a project's data.
+ * It allows users to export the project's data to CSV, JSON, or XLSX formats,
  * as well as to download a ZIP file containing all photos.
  *
- * @param {string} surveyId - The unique identifier of the survey.
- * @returns {JSX.Element} The rendered SurveyExport component.
+ * @param {string} projectId - The unique identifier of the project.
+ * @returns {JSX.Element} The rendered ProjectExport component.
  */
-const SurveyExport = () => {
+const ProjectExport = () => {
   return (
     <div className="flex flex-col gap-2">
       <Card className="flex flex-col gap-4 flex-1 justify-between">
         <ListItem>
           <ListLabel>Data export</ListLabel>
           <ListDescription>
-            Export all responses for this survey to a CSV, JSON or XLSX file.
+            Export all responses for this {NOTEBOOK_NAME} to a CSV, JSON or XLSX
+            file.
           </ListDescription>
         </ListItem>
         <Select>
@@ -43,7 +45,7 @@ const SurveyExport = () => {
         <ListItem>
           <ListLabel>Photo export</ListLabel>
           <ListDescription>
-            Export all photos for this survey to a ZIP file.
+            Export all photos for this {NOTEBOOK_NAME} to a ZIP file.
           </ListDescription>
         </ListItem>
         <Button className="justify-self-end">Download ZIP</Button>
@@ -52,4 +54,4 @@ const SurveyExport = () => {
   );
 };
 
-export default SurveyExport;
+export default ProjectExport;

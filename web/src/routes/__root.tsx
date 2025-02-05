@@ -1,4 +1,4 @@
-import {AuthContext, useAuth} from '@/auth';
+import {AuthContext, useAuth} from '@/context/auth-provider';
 import Breadcrumbs from '@/components/breadcrumbs';
 import {ModeToggle} from '@/components/mode-toggle';
 import {AppSidebar} from '@/components/side-bar/app-sidebar';
