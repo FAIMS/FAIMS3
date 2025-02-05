@@ -32,7 +32,7 @@ declare module '@mui/material/styles' {
       main: string;
       contrastText: string;
     };
-    icon?: {
+    icon: {
       main: string;
       light: string;
       required: string;
@@ -58,7 +58,7 @@ declare module '@mui/material/styles' {
       contrastText: string;
     };
 
-    icon?: {
+    icon: {
       main: string;
       light: string;
       required: string;
