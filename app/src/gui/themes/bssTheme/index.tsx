@@ -1,5 +1,6 @@
 import {createTheme} from '@mui/material';
 import typography from '../default/typography';
+import {generateStepperGradient} from '../../../utils/stepperColors';
 
 const primaryMainColor = '#000000';
 
@@ -54,6 +55,7 @@ const theme = createTheme({
       rowBorder: '#D3D1D1FF',
       columnSeparator: '#828789FF',
     },
+    stepperGradient: generateStepperGradient(10, 'bss'), // dynamically adjusting colors as there could be any number of stepper stages
   },
   typography,
   components: {
