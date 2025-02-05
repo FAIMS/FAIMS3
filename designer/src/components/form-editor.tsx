@@ -311,7 +311,6 @@ export const FormEditor = ({
   }, [activeStep, scrollActiveStepIntoView]);
 
   useEffect(() => {
-    // event listener is used to scroll the active step into view when the window is resized.
     window.addEventListener('resize', scrollActiveStepIntoView);
     return () => window.removeEventListener('resize', scrollActiveStepIntoView);
   }, [scrollActiveStepIntoView]);
