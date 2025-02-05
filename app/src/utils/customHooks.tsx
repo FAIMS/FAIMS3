@@ -1,5 +1,5 @@
 import {ListingsObject} from '@faims3/data-model/src/types';
-import {useQuery, UseQueryResult} from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
 import React, {useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import * as ROUTES from '../constants/routes';
@@ -191,7 +191,7 @@ export function useQueryParams<T extends Record<string, any>>(config: {
       let hasUpdates = false;
 
       // Check each configured parameter
-      Object.entries(config).forEach(([_, paramConfig]) => {
+      Object.entries(config).forEach(([, paramConfig]) => {
         const value = searchParams.get(paramConfig.key);
         // If param is missing from URL but has a default value, add it
         if (value === null && paramConfig.defaultValue !== undefined) {

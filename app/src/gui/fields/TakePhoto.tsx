@@ -347,13 +347,6 @@ export const TakePhoto: React.FC<
     }
   };
 
-  const error = props.form.errors[props.field.name];
-  const errorText = error ? (
-    <span {...props.ErrorTextProps}>{error as string}</span>
-  ) : (
-    <span {...props.NoErrorTextProps}></span>
-  );
-
   const images = props.form.values[props.field.name] ?? [];
   const disabled = props.disabled ?? false;
   const hasUndownloaded = hasUndownloadedImages(images);

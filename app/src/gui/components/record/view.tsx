@@ -217,7 +217,7 @@ export function ViewComponent(props: ViewProps) {
   const [showWarnings, setShowWarnings] = useState(true);
 
   useEffect(() => {
-    let iserror = fieldNames.some(field =>
+    const iserror = fieldNames.some(field =>
       Boolean(props.formProps.errors[field])
     );
     setError(iserror);
