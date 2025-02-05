@@ -1,6 +1,6 @@
 import {createTheme} from '@mui/material';
 import typography from '../default/typography';
-import {generateStepperGradient} from '../../../utils/stepperColors';
+import {generateStepperColors} from '../../../utils/generateStepperColors';
 
 const primaryMainColor = '#000000';
 
@@ -49,13 +49,14 @@ const theme = createTheme({
     icon: {
       main: '#197A01',
       light: '#EAEAEA',
+      required: '#5E0000',
     },
     table: {
       divider: '#828789FF',
       rowBorder: '#D3D1D1FF',
       columnSeparator: '#828789FF',
     },
-    stepperGradient: generateStepperGradient(10, 'bss'), // dynamically adjusting colors as there could be any number of stepper stages
+    stepperGradient: generateStepperColors(10, 'bss'), // dynamically adjusting colors as there could be any number of stepper stages
   },
   typography,
   components: {
