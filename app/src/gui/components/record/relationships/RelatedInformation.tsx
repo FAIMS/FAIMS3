@@ -18,23 +18,26 @@
  *   This is the file is to set the values for persistent state
  */
 import {
-  upsertFAIMSData,
-  getFullRecordData,
   getFirstRecordHead,
-  ProjectUIModel,
-  RecordReference,
+  getFullRecordData,
+  getMetadataForSomeRecords,
   LinkedRelation,
   LocationState,
-  Relationship,
-  RecordID,
-  getMetadataForSomeRecords,
   ProjectID,
+  ProjectUIModel,
+  RecordID,
   RecordMetadata,
+  RecordReference,
+  Relationship,
+  TokenContents,
+  upsertFAIMSData,
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
-import {RecordLinkProps, ParentLinkProps} from './types';
-import getLocalDate from '../../../fields/LocalDate';
 import {logError} from '../../../../logging';
+import {getUiSpecForProject} from '../../../../uiSpecification';
+import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
+import getLocalDate from '../../../fields/LocalDate';
+import {ParentLinkProps, RecordLinkProps} from './types';
 
 /**
  * Generate an object containing information to be stored in
@@ -328,6 +331,7 @@ function getRelatedFields(
  * @returns an array of RecordMetadata for the linked records
  */
 export async function getRelatedRecords(
+  token: TokenContents,
   project_id: ProjectID,
   values: {[field_name: string]: any},
   field_name: string,
@@ -361,13 +365,18 @@ export async function getRelatedRecords(
   links.forEach((link: any, index: number) => {
     if (!link || typeof link !== 'object' || !('record_id' in link)) {
       throw new Error(
-        `Invalid link at ${multiple ? `index ${index}` : 'value'}: must be an object with record_id property`
+        `Invalid link at ${multiple ? `index ${index}` : 'value'}: must be an object with record_id property. Link was ${JSON.stringify(link)}`
       );
     }
   });
 
   const record_ids = links.map((link: any) => link.record_id);
-  const records = await getMetadataForSomeRecords(project_id, record_ids, true);
+  const records = await getMetadataForSomeRecords(
+    token,
+    project_id,
+    record_ids,
+    true
+  );
   return records;
 }
 
@@ -440,10 +449,15 @@ async function get_field_RelatedFields(
         fields[index]['value']
       );
       if (latest_record !== null && revision_id !== undefined) {
-        child_record['record_label'] = getHRIDValue(
-          child_record['record_id'],
-          latest_record.data
-        );
+        // Try and get the HRID and fall back to the record ID
+        const hrid =
+          getHridFromValuesAndSpec({
+            values: latest_record.data,
+            uiSpecification: ui_specification,
+          }) ?? child_record['record_id'];
+
+        // inject the hrid
+        child_record['record_label'] = hrid;
 
         const linked_vocab =
           child_record['relation_type_vocabPair'] !== null &&
@@ -548,7 +562,13 @@ export async function addLinkedRecord(
           ? parent_link['relation_type_vocabPair']
           : ['is related to', 'is related to'];
       let type = latest_record?.type;
-      const hrid = getHRIDValue(parent_link.record_id, latest_record?.data);
+
+      // get hrid for the parent link record
+      const hrid =
+        getHridFromValuesAndSpec({
+          values: latest_record?.data ?? {},
+          uiSpecification: ui_specification,
+        }) ?? parent_link.record_id;
 
       if (type !== undefined) type = ui_specification.viewsets[type]['label'];
       const {section, section_label} = get_section(
@@ -639,16 +659,32 @@ function get_field_label(ui_specification: ProjectUIModel, field: string) {
   }
 }
 
-export async function getParentPersistenceData(
-  ui_specification: ProjectUIModel,
-  project_id: string,
-  parent: Relationship | null,
-  record_id: string
-): Promise<ParentLinkProps[]> {
+/**
+ * For a given child, fetches the parent persistent data for use in infilling
+ * default values from the parent
+ *
+ * TODO: this appears to generate way more information than is actually needed
+ * to fulfil this purpose.
+ *
+ * @param ui_specification The ui specification for the current project
+ * @param project_id The project ID
+ * @param parent The parent relationship
+ * @param record_id The current record ID (which would be the child record)
+ * @returns A list of parent records with persistent data made available
+ */
+export async function getParentPersistenceData({
+  uiSpecification,
+  projectId,
+  parent,
+}: {
+  uiSpecification: ProjectUIModel;
+  projectId: string;
+  parent: Relationship | null;
+}): Promise<ParentLinkProps[]> {
   let parentRecords: ParentLinkProps[] = [];
   if (parent !== null && parent.parent !== undefined) {
     const {latest_record, revision_id} = await getRecordInformation({
-      project_id: project_id,
+      project_id: projectId,
       record_id: parent.parent.record_id,
       record_label: parent.parent.record_id,
     });
@@ -658,61 +694,56 @@ export async function getParentPersistenceData(
       let type = latest_record?.type;
 
       //get persistent data from parent record not from local DB
-      ui_specification.viewsets[type]['views'].map((view: string) =>
-        ui_specification.views[view]['fields'].map((field: string) =>
-          ui_specification.fields[field]['displayParent'] ||
-          ui_specification.fields[field]['persistent']
+      uiSpecification.viewsets[type]['views'].map((view: string) =>
+        uiSpecification.views[view]['fields'].map((field: string) =>
+          uiSpecification.fields[field]['displayParent'] ||
+          uiSpecification.fields[field]['persistent']
             ? (persistentvalue[field] = latest_record?.data[field])
             : field
         )
       );
 
-      const parent_hrid = getHRIDValue(record_id, latest_record?.data);
+      // get hrid for the parent record
+      const hrid =
+        getHridFromValuesAndSpec({
+          uiSpecification: uiSpecification,
+          values: latest_record?.data,
+        }) ?? parent.parent.record_id;
 
       if (
         latest_record !== null &&
         type !== undefined &&
-        ui_specification.viewsets[type] !== undefined &&
-        ui_specification.viewsets[type]['label'] !== undefined
+        uiSpecification.viewsets[type] !== undefined &&
+        uiSpecification.viewsets[type]['label'] !== undefined
       )
-        type = ui_specification.viewsets[type]['label'] ?? '';
+        type = uiSpecification.viewsets[type]['label'] ?? '';
 
       parentRecords = [
         {
+          // It seems the other fields are not used, only these?
+          type: type,
+          persistentData: {data: persistentvalue},
+
+          // other details...
           record_id: parent.parent.record_id,
-          hrid: parent_hrid,
+          // This HRID is for the parent record
+          hrid: hrid,
           lastUpdatedBy: latest_record?.updated_by ?? '',
           section: '',
           field_id: parent.parent.field_id,
           field_label: parent.parent.field_id,
           route: ROUTES.getRecordRoute(
-            project_id,
+            projectId,
             parent.parent.record_id,
             revision_id
           ),
-          type: type,
           children: [],
-          persistentData: {data: persistentvalue},
           deleted: latest_record?.deleted,
         },
       ];
     }
   }
   return parentRecords;
-}
-
-function getHRIDValue(
-  record_id: string,
-  values: {[field_name: string]: any} | undefined
-) {
-  if (values === undefined) return record_id;
-
-  const possibleHRIDFields = Object.getOwnPropertyNames(values).filter(
-    (f: string) => f.startsWith('hrid')
-  );
-
-  if (possibleHRIDFields.length === 1) return values[possibleHRIDFields[0]];
-  else return record_id;
 }
 
 export async function getDetailRelatedInformation(
@@ -732,7 +763,9 @@ export async function getDetailRelatedInformation(
     values
   );
 
-  const hrid = getHRIDValue(record_id, values);
+  const hrid =
+    getHridFromValuesAndSpec({uiSpecification: ui_specification, values}) ??
+    record_id;
 
   if (record_to_field_links !== null) {
     // get field child records
@@ -844,36 +877,46 @@ export async function removeRecordLink(
  *
  * @param child_record - the record to be linked to
  * @param parent - a LinkedRelation object including the record being linked from and the link type
- * @param field_label - the field in the parent that will hold this relation
- * @param related_type_label - the name of the type of child record
- * @param form_type - the type of the parent record
- * @param hrid - hrid of parent record
- * @param form_revision_id - revision id of parent from the form
  * @param relation_type - 'Child' or 'Linked'
- * @param relation_type_vocabPair - relation descriptors, eg. ['parent', 'child']
  * @returns the new child record object
  */
-export async function addRecordLink(
-  child_record: RecordReference,
-  parent: LinkedRelation,
-  relation_type: string
-): Promise<RecordMetadata | null> {
-  let child_record_meta = null;
+export async function addRecordLink({
+  childRecord,
+  parent,
+  relationType,
+  projectId,
+}: {
+  projectId: string;
+  childRecord: RecordReference;
+  parent: LinkedRelation;
+  relationType: string;
+}): Promise<RecordMetadata | null> {
+  // get uncompiled ui spec - useful for hrid generation
+  const uiSpecification = await getUiSpecForProject(projectId, false);
 
+  let child_record_meta = null;
   try {
     // retrieve information about the child record
-    const {latest_record} = await getRecordInformation(child_record);
+    const {latest_record} = await getRecordInformation(childRecord);
+
+    // Use the data and spec to get the HRID
+    const childRecordHrid = latest_record?.data
+      ? (getHridFromValuesAndSpec({
+          values: latest_record?.data,
+          uiSpecification: uiSpecification,
+        }) ?? latest_record.record_id)
+      : (latest_record?.record_id ?? '');
 
     // Find the relation object (if any) and then either add or
     // remove the parent/link as appropriate
     // Since there can only be one parent, that is done directly
     // but links use AddLink/RemoveLink because they can be many-many
     const relation = latest_record?.relationship ?? {};
-    if (relation_type === 'faims-core::Child') relation['parent'] = parent;
-    else if (relation_type === 'faims-core::Linked')
+    if (relationType === 'faims-core::Child') relation['parent'] = parent;
+    else if (relationType === 'faims-core::Linked')
       relation['linked'] = AddLink(relation, parent);
     else {
-      logError(`Error: unknown relation type ${relation_type}`);
+      logError(`Error: unknown relation type ${relationType}`);
       return null;
     }
 
@@ -881,23 +924,20 @@ export async function addRecordLink(
     const now = new Date();
     if (
       latest_record !== null &&
-      child_record.project_id !== undefined &&
+      childRecord.project_id !== undefined &&
       latest_record.deleted !== true
     ) {
       const new_doc = latest_record;
       new_doc['relationship'] = relation;
       new_doc['updated'] = now;
       new_doc['deleted'] = latest_record.deleted;
-      await upsertFAIMSData(child_record.project_id, new_doc);
+      await upsertFAIMSData(childRecord.project_id, new_doc);
     }
-    // here we are trusting that Record has enough of the fields of RecordMetadata
-    // for the purposes of the caller until such time as we rationalise the Record types
+    // here we are trusting that Record has enough of the fields of
+    // RecordMetadata for the purposes of the caller until such time as we
+    // rationalise the Record types
     child_record_meta = latest_record as unknown as RecordMetadata;
-    // it's missing the HRID so grab it here
-    child_record_meta.hrid = getHRIDValue(
-      child_record_meta.record_id,
-      child_record_meta.data
-    );
+    child_record_meta.hrid = childRecordHrid;
   } catch (error) {
     logError(error);
   }

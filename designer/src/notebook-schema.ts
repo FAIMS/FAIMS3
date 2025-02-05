@@ -243,7 +243,6 @@ export const schema = {
         variant_style: {type: 'string'},
         html_tag: {type: 'string'},
         content: {type: 'string'},
-        hrid: {type: 'boolean'},
         select: {type: 'boolean'},
         geoTiff: {type: 'string'},
         type: {type: 'string'},

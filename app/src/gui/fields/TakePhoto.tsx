@@ -15,207 +15,316 @@
  *
  * Filename: TakePhoto.tsx
  * Description:
- *   TODO : to add function check if photo be downloaded
  */
 
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
+import {Capacitor} from '@capacitor/core';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
-import Button, {ButtonProps} from '@mui/material/Button';
-import {FieldProps} from 'formik';
-import React from 'react';
-
-// import ImageList from '@mui/material/ImageList';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
-import {Alert, List, ListItem, Typography, useMediaQuery} from '@mui/material';
+import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
+import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
-import {createTheme, styled} from '@mui/material/styles';
+import {Buffer} from 'buffer';
+import {FieldProps} from 'formik';
+import React from 'react';
+import {useNavigate} from 'react-router';
+import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
-import {Capacitor} from '@capacitor/core';
-import {APP_NAME} from '../../buildconfig';
+import FieldWrapper from './fieldWrapper';
 
-function base64image_to_blob(image: Photo): Blob {
-  if (image.base64String === undefined) {
-    throw Error('No photo data found');
+/**
+ * Converts a base64 encoded image to a Blob object using Buffer
+ * @param image - Photo object containing base64 string and format information
+ * @returns Promise resolving to a Blob object representing the image
+ * @throws Error if base64String is undefined
+ */
+async function base64ImageToBlob(image: Photo): Promise<Blob> {
+  if (!image.base64String) {
+    throw new Error('No photo data found');
   }
-  // from https://stackoverflow.com/a/62144916/1306020
-  const rawData = atob(image.base64String);
-  const bytes = new Array(rawData.length);
-  for (let x = 0; x < rawData.length; x++) {
-    bytes[x] = rawData.charCodeAt(x);
-  }
-  const arr = new Uint8Array(bytes);
-  const blob = new Blob([arr], {type: 'image/' + image.format});
-  return blob;
+
+  // Convert base64 to buffer
+  const buffer = Buffer.from(image.base64String, 'base64');
+
+  // Create blob from buffer
+  return new Blob([buffer], {
+    type: `image/${image.format}`,
+  });
 }
 
+// Helper function to check if any images are undownloaded
+const hasUndownloadedImages = (images: Array<any>): boolean => {
+  return images.some(image => image['attachment_id'] !== undefined);
+};
+
 interface Props {
-  helpertext?: string; // this should be removed but will appear in older notebooks
+  // this should be removed but will appear in older notebooks
+  helpertext?: string;
   helperText?: string;
   label?: string;
   issyncing?: string;
   isconflict?: boolean;
+  required?: boolean;
 }
 
-type ImageListProps = {
+interface ImageListProps {
   images: Array<any>;
-  setopen: any;
-  setimage: any;
+  // if null, this indicates the image is not downloaded
+  setOpen: (path: string | null) => void;
+  setImages: (newFiles: Array<any>) => void;
   disabled: boolean;
   fieldName: string;
-};
-const theme = createTheme();
-/******** create own Image List for dynamic loading images TODO: need to test if it's working on browsers and phone *** Kate */
-const ImageGalleryList = styled('ul')(() => ({
-  display: 'grid',
-  padding: 0,
-  margin: theme.spacing(0, 4),
-  gap: 8,
-  [theme.breakpoints.up('sm')]: {
-    gridTemplateColumns: 'repeat(2, 1fr)',
-  },
-  [theme.breakpoints.up('md')]: {
-    gridTemplateColumns: 'repeat(4, 1fr)',
-  },
-  [theme.breakpoints.up('lg')]: {
-    gridTemplateColumns: 'repeat(5, 1fr)',
-  },
-}));
+  onAddPhoto: () => void;
+}
 
-const FAIMSViewImageList = (props: {
-  images: Array<any>;
-  fieldName: string;
-  setopen: Function;
-}) => {
+/**
+ * Displays a placeholder component when no images are present
+ */
+const EmptyState = ({onAddPhoto}: {onAddPhoto: () => void}) => {
+  const theme = useTheme();
   return (
-    <List>
-      {props.images.map((image, index) =>
-        image['attachment_id'] === undefined ? (
-          <ListItem
-            key={props.fieldName + index}
-            id={props.fieldName + index + 'image'}
-          >
-            <img
-              // {...srcset(item.img, 121, item.rows, item.cols)}
-              style={{maxHeight: 300, maxWidth: 200}}
-              src={URL.createObjectURL(image)}
-              loading="lazy"
-            />
-          </ListItem>
-        ) : (
-          // ?? not allow user to delete image if the image is not download yet
-          <FAIMSImageIconList
-            index={index}
-            setopen={props.setopen}
-            fieldName={props.fieldName}
-          />
-        )
-      )}
-    </List>
+    <Paper
+      sx={{
+        padding: theme.spacing(4),
+        textAlign: 'center',
+        bgcolor: theme.palette.grey[100],
+        borderRadius: theme.spacing(2),
+        marginTop: theme.spacing(2),
+      }}
+    >
+      <CameraAltIcon sx={{fontSize: 48, color: 'text.secondary', mb: 2}} />
+      <Typography variant="h6" gutterBottom>
+        No Photos Yet
+      </Typography>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={onAddPhoto}
+        startIcon={<CameraAltIcon />}
+      >
+        Take First Photo
+      </Button>
+    </Paper>
   );
 };
 
-const FAIMSImageIconList = (props: {
-  index: number;
-  setopen: Function;
-  fieldName: string;
-}) => {
-  const {index, setopen} = props;
+/**
+ * Displays a placeholder when an image is unavailable or cannot be loaded
+ */
+const UnavailableImage = () => {
+  const theme = useTheme();
   return (
-    <ImageListItem key={`${props.fieldName}-image-icon-${index}`}>
-      <IconButton aria-label="image" onClick={() => setopen(null)}>
-        <ImageIcon />
-      </IconButton>
-    </ImageListItem>
+    <Box
+      sx={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.palette.background.lightBackground,
+      }}
+    >
+      <ImageIcon sx={{fontSize: 48, color: 'text.secondary'}} />
+    </Box>
   );
 };
 
-const FAIMSImageList = (props: ImageListProps) => {
-  const {images, setopen, setimage, fieldName} = props;
-  const disabled = props.disabled ?? false;
-  const handelonClick = (index: number) => {
+/**
+ * Displays a grid of images with add and delete functionality
+ */
+const ImageGallery = ({
+  images,
+  setOpen: setopen,
+  setImages,
+  disabled,
+  fieldName,
+  onAddPhoto,
+}: ImageListProps) => {
+  const theme = useTheme();
+  // Handler for deleting images from the gallery
+  const handleDelete = (index: number) => {
     if (images.length > index) {
-      const newimages = images.filter((image: any, i: number) => i !== index);
-      setimage(newimages);
+      // need to reverse the index here to account for reverse display
+      const originalIndex = images.length - 1 - index;
+      const newImages = images.filter(
+        (_: any, i: number) => i !== originalIndex
+      );
+      setImages(newImages);
     }
   };
 
-  if (images === null || images === undefined)
-    return <span>No photo taken.</span>;
-  if (disabled === true)
-    return (
-      <FAIMSViewImageList
-        images={props.images}
-        fieldName={props.fieldName}
-        setopen={setopen}
-      />
-    );
   return (
-    <ImageGalleryList>
-      {props.images.map((image: any, index: number) =>
-        image['attachment_id'] === undefined ? (
-          <ImageListItem key={`${fieldName}-image-${index}`}>
-            <img
-              style={{
-                objectFit: 'scale-down',
-                cursor: 'allowed',
-              }}
-              src={URL.createObjectURL(image)}
-              onClick={() => setopen(URL.createObjectURL(image))}
-            />
-
-            <ImageListItemBar
+    <Box sx={{width: '100%'}}>
+      <Box
+        sx={{
+          display: 'grid',
+          gap: theme.spacing(1),
+          padding: theme.spacing(1),
+          gridTemplateColumns: {
+            // Show 3 images per row on mobile
+            xs: 'repeat(3, 1fr)',
+            // Show 4 images per row on tablet
+            sm: 'repeat(4, 1fr)',
+            // Show 6 images per row on small desktop
+            md: 'repeat(6, 1fr)',
+            // Show 8 images per row on big desktop
+            lg: 'repeat(8, 1fr)',
+          },
+          width: '100%',
+        }}
+      >
+        {/* Add Photo Button */}
+        {!disabled && (
+          <ImageListItem
+            sx={{
+              borderRadius: theme.spacing(1),
+              overflow: 'hidden',
+              boxShadow: theme.shadows[2],
+              aspectRatio: '4/3',
+              '&:hover': {
+                boxShadow: theme.shadows[4],
+              },
+            }}
+          >
+            <Paper
               sx={{
-                background:
-                  'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, ' +
-                  'rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
               }}
-              title={''}
-              position="top"
-              actionIcon={
-                <IconButton
-                  sx={{color: 'white'}}
-                  aria-label={`star ${index}`}
-                  onClick={() => handelonClick(index)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              }
-              actionPosition="left"
-            />
+              onClick={onAddPhoto}
+            >
+              <AddCircleIcon
+                sx={{fontSize: 48, color: theme.palette.primary.main}}
+              />
+            </Paper>
           </ImageListItem>
-        ) : (
-          // ?? not allow user to delete image if the image is not download yet
-          <FAIMSImageIconList
-            key={`${fieldName}-image-${index}`}
-            index={index}
-            setopen={setopen}
-            fieldName={fieldName}
-          />
-        )
-      )}{' '}
-    </ImageGalleryList>
+        )}
+        {/* Image Gallery - Reversed order for newest first */}
+        {[...images].reverse().map((image: any, index: number) => {
+          if (image['attachment_id'] === undefined) {
+            try {
+              const url = URL.createObjectURL(image);
+              return (
+                <ImageListItem
+                  key={`${fieldName}-image-${index}`}
+                  sx={{
+                    borderRadius: theme.spacing(1),
+                    overflow: 'hidden',
+                    boxShadow: theme.shadows[2],
+                    aspectRatio: '4/3',
+                    '&:hover': {
+                      boxShadow: theme.shadows[4],
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={url}
+                      onClick={() => setopen(url)}
+                      alt={`Photo ${index + 1}`}
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        bgcolor: theme.palette.background.lightBackground,
+                      }}
+                    />
+                    {!disabled && (
+                      <ImageListItemBar
+                        sx={{
+                          background: theme.palette.primary.dark[70],
+                        }}
+                        position="top"
+                        actionIcon={
+                          <IconButton
+                            sx={{color: 'white'}}
+                            onClick={() => handleDelete(index)}
+                            size="large"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        }
+                        actionPosition="right"
+                      />
+                    )}
+                  </Box>
+                </ImageListItem>
+              );
+            } catch (e) {
+              console.error(
+                'URL was not valid for image ',
+                image,
+                '. Ignoring in gallery. Error: ',
+                e
+              );
+              throw e;
+            }
+          } else {
+            return (
+              <ImageListItem
+                key={`${fieldName}-image-icon-${index}`}
+                // Set to null to show download popup
+                onClick={() => setopen(null)}
+                sx={{
+                  cursor: 'pointer',
+                  borderRadius: theme.spacing(1),
+                  overflow: 'hidden',
+                  boxShadow: theme.shadows[2],
+                  aspectRatio: '4/3',
+                  '&:hover': {
+                    boxShadow: theme.shadows[4],
+                  },
+                }}
+              >
+                <UnavailableImage />
+              </ImageListItem>
+            );
+          }
+        })}
+      </Box>
+    </Box>
   );
 };
 
+/**
+ * A photo capture and management component. Supports taking photos via device
+ * camera, displaying them in a grid, and instructing re: permissions across
+ * different platforms
+ */
 export const TakePhoto: React.FC<
   FieldProps &
     Props &
-    ButtonProps & {
-      ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
-      ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
-      NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
+    React.ButtonHTMLAttributes<HTMLButtonElement> & {
+      ValueTextProps?: React.HTMLAttributes<HTMLSpanElement>;
+      ErrorTextProps?: React.HTMLAttributes<HTMLSpanElement>;
+      NoErrorTextProps?: React.HTMLAttributes<HTMLSpanElement>;
     }
 > = props => {
   const [open, setOpen] = React.useState(false);
   const [photoPath, setPhotoPath] = React.useState<string | null>(null);
   const [noPermission, setNoPermission] = React.useState<boolean>(false);
+  const navigate = useNavigate();
 
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
+  // Handles photo capture with permission checks
   const takePhoto = async () => {
     if (Capacitor.getPlatform() === 'web') {
       const permission = await navigator.permissions.query({
@@ -237,15 +346,15 @@ export const TakePhoto: React.FC<
     }
 
     try {
-      const image = base64image_to_blob(
-        await Camera.getPhoto({
-          quality: 90,
-          allowEditing: false,
-          resultType: CameraResultType.Base64,
-          correctOrientation: true,
-          promptLabelHeader: 'Take/Select a photo (drag to view more)',
-        })
-      );
+      const photoResult = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Base64,
+        correctOrientation: true,
+        promptLabelHeader: 'Take or select a photo',
+      });
+
+      const image = await base64ImageToBlob(photoResult);
       const newImages =
         props.field.value !== null ? props.field.value.concat(image) : [image];
       props.form.setFieldValue(props.field.name, newImages, true);
@@ -255,81 +364,98 @@ export const TakePhoto: React.FC<
     }
   };
 
-  const error = props.form.errors[props.field.name];
-  const errorText = error ? (
-    <span {...props.ErrorTextProps}>{error as string}</span>
-  ) : (
-    <span {...props.NoErrorTextProps}></span>
-  );
-
-  const title = props.label;
-  const helperText = props.helpertext ?? props.helperText ?? undefined;
+  const images = props.form.values[props.field.name] ?? [];
+  const disabled = props.disabled ?? false;
+  const hasUndownloaded = hasUndownloadedImages(images);
+  const projectId = props.form.values['_project_id'];
 
   return (
-    <div>
-      {title && <h3>{title}</h3>}
-      {helperText && <p>{helperText}</p>}
-      <Button
-        variant="contained"
-        color="primary"
-        fullWidth={isMobile ? true : false}
-        onClick={takePhoto}
-      >
-        Take photo
-        <span style={{width: 10}} />
-        <CameraAltIcon />
-      </Button>
-      {noPermission && (
-        <Alert severity="error" sx={{width: '100%'}}>
-          {Capacitor.getPlatform() === 'web' && (
-            <>
-              Please enable camera permissions this page. In your browser, look
-              to the left of the web address bar for a button that gives access
-              to browser settings for this page.
-            </>
-          )}
-          {Capacitor.getPlatform() === 'android' && (
-            <>
-              Please enable camera permissions for {APP_NAME}. Go to your device
-              Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt; Camera
-              and select "Ask every time" or "Allow only while using the app".
-            </>
-          )}
-          {Capacitor.getPlatform() === 'ios' && (
-            <>
-              Please enable camera permissions for {APP_NAME}. Go to your device
-              Settings &gt; Privacy & Security &gt; Camera &gt; and ensure that{' '}
-              {APP_NAME} is enabled.
-            </>
-          )}
-        </Alert>
-      )}
-      <FAIMSImageList
-        images={props.form.values[props.field.name] ?? []}
-        setopen={(path: string) => {
-          setOpen(true);
-          setPhotoPath(path);
-        }}
-        setimage={(newfiles: Array<any>) => {
-          props.form.setFieldValue(props.field.name, newfiles, true);
-        }}
-        disabled={props.disabled ?? false}
-        fieldName={props.field.name}
-      />
-      <Typography variant="caption" color="textSecondary">
-        {errorText}
-      </Typography>
-      <FaimsAttachmentManagerDialog
-        project_id={props.form.values['_project_id']}
-        open={open}
-        setopen={() => setOpen(false)}
-        filedId={props.id}
-        path={photoPath}
-        isSyncing={props.issyncing}
-      />
-    </div>
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText || props.helpertext}
+      required={props.required}
+    >
+      <Box sx={{width: '100%'}}>
+        {/* Download Banner */}
+        {hasUndownloaded && (
+          <Alert severity="info" sx={{mb: 2}}>
+            To download existing photos, please go to the{' '}
+            {
+              // Deeplink directly to settings tab
+            }
+            <Link
+              onClick={() => {
+                navigate(
+                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                    projectId +
+                    `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
+                );
+              }}
+            >
+              {NOTEBOOK_NAME_CAPITALIZED} Settings Tab
+            </Link>{' '}
+            and enable attachment download.
+          </Alert>
+        )}
+
+        {images.length === 0 ? (
+          <EmptyState onAddPhoto={takePhoto} />
+        ) : (
+          <ImageGallery
+            images={images}
+            setOpen={(path: string | null) => {
+              setOpen(true);
+              setPhotoPath(path);
+            }}
+            setImages={(newfiles: Array<any>) => {
+              props.form.setFieldValue(props.field.name, newfiles, true);
+            }}
+            disabled={disabled}
+            fieldName={props.field.name}
+            onAddPhoto={takePhoto}
+          />
+        )}
+
+        {noPermission && (
+          <Alert severity="error" sx={{width: '100%', mt: 2}}>
+            {Capacitor.getPlatform() === 'web' && (
+              <>
+                Please enable camera permissions for this page. Look for the
+                camera permissions button in your browser's address bar.
+              </>
+            )}
+            {Capacitor.getPlatform() === 'android' && (
+              <>
+                Please enable camera permissions for {APP_NAME}. Go to your
+                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
+                Camera and select "Ask every time" or "Allow only while using
+                the app".
+              </>
+            )}
+            {Capacitor.getPlatform() === 'ios' && (
+              <>
+                Please enable camera permissions for {APP_NAME}. Go to your
+                device Settings &gt; Privacy & Security &gt; Camera &gt; and
+                ensure that {APP_NAME} is enabled.
+              </>
+            )}
+          </Alert>
+        )}
+
+        <FaimsAttachmentManagerDialog
+          project_id={projectId}
+          open={open}
+          setopen={() => setOpen(false)}
+          filedId={props.id}
+          path={photoPath}
+          isSyncing={props.issyncing}
+        />
+      </Box>
+    </FieldWrapper>
   );
 };
+
+export default TakePhoto;
 
 // const uiSpec = {
 //   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from

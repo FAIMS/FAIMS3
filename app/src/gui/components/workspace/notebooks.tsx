@@ -37,11 +37,12 @@ import * as ROUTES from '../../../constants/routes';
 import {useNotification} from '../../../context/popup';
 import {ProjectsContext} from '../../../context/projects-context';
 import {ProjectExtended} from '../../../types/project';
-import {CREATE_NOTEBOOK_ROLES, userHasRoleInAnyListing} from '../../../users';
-import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
+import {userCanCreateNotebooks} from '../../../users';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
+import {useAppSelector} from '../../../context/store';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 
 // Survey status naming conventions
 
@@ -64,10 +65,20 @@ export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 export const DE_ACTIVATE_VERB = 'De-activate';
 
 export default function NoteBooks() {
-  const [refresh, setRefresh] = useState(false);
-  const {projects, syncProjects} = useContext(ProjectsContext);
+  const [refresh, setRefreshing] = useState(false);
 
-  const activatedProjects = projects.filter(({activated}) => activated);
+  // get the active user - this will allow us to check roles against it
+  // TODO what do we do if this is not defined
+  const activeUser = useAppSelector(selectActiveUser);
+  const activeServerId = activeUser?.serverId;
+  const activeUserToken = activeUser?.parsedToken;
+
+  const {projects: allProjects, syncProjects} = useContext(ProjectsContext);
+  const projects = allProjects.filter(p => {
+    return p.listing === activeServerId;
+  });
+
+  const activeUserActivatedProjects = projects.filter(nb => nb.activated);
 
   const [tabID, setTabID] = useState('1');
 
@@ -205,11 +216,8 @@ export default function NoteBooks() {
         },
       ];
 
-  // fetch all user info then determine if any listing has permission to create notebooks
-  const allUserInfo = useGetAllUserInfo();
-  const showCreateNewNotebookButton = allUserInfo?.data
-    ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
-    : false;
+  const showCreateNewNotebookButton =
+    activeUserToken && userCanCreateNotebooks(activeUserToken);
 
   // What type of layout are we using?
   const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
@@ -234,9 +242,9 @@ export default function NoteBooks() {
 
   const notActivatedAdvice = (
     <>
-      You have {activatedProjects.length} {NOTEBOOK_NAME}
-      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
-      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
+      You have {activeUserActivatedProjects.length} {NOTEBOOK_NAME}
+      {activeUserActivatedProjects.length !== 1 ? 's' : ''} currently{' '}
+      {ACTIVATED_LABEL} on this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (
@@ -287,7 +295,7 @@ export default function NoteBooks() {
             sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
             startIcon={<RefreshOutlined />}
             onClick={async () => {
-              setRefresh(true);
+              setRefreshing(true);
               await syncProjects()
                 .then(() => {
                   notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
@@ -298,7 +306,7 @@ export default function NoteBooks() {
                     `Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`
                   );
                 });
-              setRefresh(false);
+              setRefreshing(false);
             }}
           >
             Refresh {NOTEBOOK_NAME}s

@@ -117,7 +117,7 @@ export class FaimsConductor extends Construct {
 
     // Add container to the task definition
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const conductorContainerDfn = conductorTaskDfn.addContainer(
+    const _conductorContainerDfn = conductorTaskDfn.addContainer(
       'conductor-container-dfn',
       {
         image: conductorContainerImage,

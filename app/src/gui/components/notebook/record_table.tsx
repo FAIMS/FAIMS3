@@ -23,6 +23,7 @@ import {
   ProjectUIModel,
   ProjectUIViewsets,
   RecordMetadata,
+  TokenContents,
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '@faims3/data-model';
@@ -34,7 +35,6 @@ import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {useGetCurrentUser} from '../../../utils/useGetCurrentUser';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
@@ -45,6 +45,8 @@ import {
   getUiSpecForProject,
   getVisibleTypes,
 } from '../../../uiSpecification';
+import {useAppSelector} from '../../../context/store';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 
 /**
  * Props for the RecordsTable component
@@ -88,7 +90,7 @@ type RecordsBrowseTableProps = {
  */
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading, onRecordsCountChange} = props;
-  const {data: currentUser} = useGetCurrentUser(project_id);
+  const activeUser = useAppSelector(selectActiveUser);
 
   const theme = useTheme();
   const history = useNavigate();
@@ -160,7 +162,8 @@ function RecordsTable(props: RecordsTableProps) {
    * @returns Count filtered by  current user
    */
   const getUserRecordCount = (records: RecordMetadata[]) => {
-    return records.filter(record => record.created_by === currentUser).length;
+    return records.filter(record => record.created_by === activeUser?.username)
+      .length;
   };
 
   const rowTypeColumn = {
@@ -386,13 +389,13 @@ function RecordsTable(props: RecordsTableProps) {
     }
 
     const totalRecords = visible_rows.length;
-    const myRecords = currentUser ? getUserRecordCount(visible_rows) : 0;
+    const myRecords = activeUser ? getUserRecordCount(visible_rows) : 0;
 
     // Send count to parent with callback  - onRecordsCountChangee
     if (onRecordsCountChange) {
       onRecordsCountChange({total: totalRecords, myRecords});
     }
-  }, [rows, currentUser, onRecordsCountChange]);
+  }, [rows, activeUser, onRecordsCountChange]);
 
   return (
     <React.Fragment>
@@ -538,6 +541,25 @@ function RecordsTable(props: RecordsTableProps) {
 }
 
 /**
+ * Filters out draft records from the dataset.
+ *
+ * Draft records are identified by the prefix `drf-` in their `record_id`.
+ */
+const filterOutDrafts = (rows: RecordMetadata[]) => {
+  return rows.filter(record => !record.record_id.startsWith('drf-'));
+};
+
+/**
+ * Filters records to include only thosse created by the active user.
+ *
+ * @param rows - The dataset of records.
+ * @param username - The active user's username.
+ */
+const filterByActiveUser = (rows: RecordMetadata[], username: string) => {
+  return rows.filter(record => record.created_by === username);
+};
+
+/**
  * Component to handle browsing records and querying with search.
  *
  * @param {RecordsBrowseTableProps} props - The properties passed to RecordsBrowseTable.
@@ -545,27 +567,45 @@ function RecordsTable(props: RecordsTableProps) {
  */
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {recordLabel} = props;
+  // TODO validate this is always defined
+  const activeUser = useAppSelector(selectActiveUser);
+  const activeToken = activeUser?.parsedToken as TokenContents;
+
   const [query, setQuery] = React.useState('');
+
   const {data: records, isLoading: recordsLoading} = useQuery({
-    queryKey: ['allrecords', query, props.project_id],
+    queryKey: ['allrecords', query, props.project_id, activeUser?.username],
     networkMode: 'always',
     gcTime: 0,
     queryFn: async () => {
+      let rows;
+
       if (query.length === 0) {
-        return await getMetadataForAllRecords(
+        rows = await getMetadataForAllRecords(
+          activeToken,
           props.project_id,
           props.filter_deleted
         );
       } else {
-        return await getRecordsWithRegex(
+        rows = await getRecordsWithRegex(
+          activeToken,
           props.project_id,
           query,
           props.filter_deleted
         );
       }
+
+      // filterr drafts based on `drf-` prefix
+      const filteredRows = filterOutDrafts(rows);
+
+      // filterrecords created by the active user
+      if (activeUser) {
+        return filterByActiveUser(filteredRows, activeUser.username);
+      }
+
+      return filteredRows;
     },
   });
-
   return (
     <RecordsTable
       project_id={props.project_id}

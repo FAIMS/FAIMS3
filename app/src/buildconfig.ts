@@ -196,7 +196,11 @@ function cluster_admin_group_name(): string {
 // If VITE_BUGSNAG_KEY is not defined then we don't use Bugsnag
 function get_bugsnag_key(): string | false {
   const bugsnag_key = import.meta.env.VITE_BUGSNAG_KEY;
-  if (bugsnag_key === '' || bugsnag_key === undefined) {
+  if (
+    bugsnag_key === '' ||
+    bugsnag_key === undefined ||
+    bugsnag_key === 'false'
+  ) {
     return false;
   }
   return bugsnag_key;
@@ -332,6 +336,61 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
+// Consider a refresh every 15 seconds
+const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 15000;
+
+/**
+ * @returns The interval by which we attempt to refresh all tokens
+ */
+function tokenRefreshIntervalMs(): number {
+  const tokenRefreshIntervalMs = import.meta.env.VITE_TOKEN_REFRESH_INTERVAL_MS;
+  if (tokenRefreshIntervalMs === '' || tokenRefreshIntervalMs === undefined) {
+    return DEFAULT_TOKEN_REFRESH_INTERVAL_MS;
+  }
+  try {
+    return parseInt(tokenRefreshIntervalMs);
+  } catch (err) {
+    logError(err);
+    return DEFAULT_TOKEN_REFRESH_INTERVAL_MS;
+  }
+}
+
+// Try and refresh before it hits 60 seconds till expiry
+const DEFAULT_TOKEN_REFRESH_WINDOW_MS = 60000;
+
+/**
+ * @returns The minimum valid time for a token before attempting refreshes
+ */
+function tokenRefreshWindowMs(): number {
+  const tokenRefreshWindowMs = import.meta.env.VITE_TOKEN_REFRESH_WINDOW_MS;
+  if (tokenRefreshWindowMs === '' || tokenRefreshWindowMs === undefined) {
+    return DEFAULT_TOKEN_REFRESH_WINDOW_MS;
+  }
+  try {
+    return parseInt(tokenRefreshWindowMs);
+  } catch (err) {
+    logError(err);
+    return DEFAULT_TOKEN_REFRESH_WINDOW_MS;
+  }
+}
+
+// Ignore the expiry from the JWT - use 1 year expiry instead - disables token
+// refreshing - debug/compat usage only!
+const DEFAULT_IGNORE_TOKEN_EXP = false;
+
+/**
+ * @returns Flag indicating to spoof/ignore the token expiry if present - if
+ * True then the expiry will be ignored from any JWT intercepted, and set for 1
+ * year. Must === true (case insensitive).
+ */
+function ignoreTokenExp(): boolean {
+  const ignoreTokenExp = import.meta.env.VITE_IGNORE_TOKEN_EXP;
+  if (ignoreTokenExp === '' || ignoreTokenExp === undefined) {
+    return DEFAULT_IGNORE_TOKEN_EXP;
+  }
+  return ignoreTokenExp.toUpperCase() === 'TRUE';
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -354,3 +413,6 @@ export const APP_NAME = get_app_name();
 export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();
 export const SHOW_RECORD_SUMMARY_COUNTS = showRecordCounts();
+export const TOKEN_REFRESH_INTERVAL_MS = tokenRefreshIntervalMs();
+export const TOKEN_REFRESH_WINDOW_MS = tokenRefreshWindowMs();
+export const IGNORE_TOKEN_EXP = ignoreTokenExp();

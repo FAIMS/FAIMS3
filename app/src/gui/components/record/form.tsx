@@ -18,23 +18,10 @@
  *   Record/Draft form file
  */
 
-import {Form, Formik} from 'formik';
-import React from 'react';
-
-import {Box, Divider, Typography, Alert} from '@mui/material';
-
-import {
-  getFieldsMatchingCondition,
-  getViewsMatchingCondition,
-} from './branchingLogic';
-import {firstDefinedFromList} from './helpers';
-
-import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
-
-import {ActionType} from '../../../context/actions';
-
 import {
   Annotations,
+  generateFAIMSDataID,
+  getFirstRecordHead,
   getFullRecordData,
   ProjectID,
   ProjectUIModel,
@@ -44,35 +31,51 @@ import {
   RevisionID,
   upsertFAIMSData,
 } from '@faims3/data-model';
+import {Alert, Box, Divider, Typography} from '@mui/material';
+import {Form, Formik} from 'formik';
+import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
+import {ValidationError} from 'yup';
 import * as ROUTES from '../../../constants/routes';
+import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
+import {
+  NotificationContext,
+  NotificationContextType,
+} from '../../../context/popup';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {store} from '../../../context/store';
+import {percentComplete, requiredFields} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
+import {logError} from '../../../logging';
 import RecordDraftState from '../../../sync/draft-state';
 import {
   getFieldNamesFromFields,
   getFieldsForViewSet,
   getReturnedTypesForViewSet,
 } from '../../../uiSpecification';
-import {getCurrentUserId} from '../../../users';
+import {
+  getRecordContextFromRecord,
+  recomputeDerivedFields,
+  ValuesObject,
+} from '../../../utils/formUtilities';
+import CircularLoading from '../ui/circular_loading';
 import {getValidationSchemaForViewset} from '../validation';
+import {
+  getFieldsMatchingCondition,
+  getViewsMatchingCondition,
+} from './branchingLogic';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
+import FormButtonGroup from './formButton';
+import {firstDefinedFromList} from './helpers';
 import RecordStepper from './recordStepper';
-
 import {
   generateLocationState,
   generateRelationship,
   getParentLinkInfo,
 } from './relationships/RelatedInformation';
-
-import {generateFAIMSDataID, getFirstRecordHead} from '@faims3/data-model';
-import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
-import {percentComplete, requiredFields} from '../../../lib/form-utils';
-import {logError} from '../../../logging';
-import CircularLoading from '../ui/circular_loading';
-import FormButtonGroup from './formButton';
 import UGCReport from './UGCReport';
-//import {RouteComponentProps} from 'react-router';
+import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
+
 type RecordFormProps = {
   navigate: NavigateFunction;
   project_id: ProjectID;
@@ -119,13 +122,20 @@ type RecordFormProps = {
     }
 );
 
+export interface RecordContext {
+  // timestamp ms created
+  createdTime?: number;
+  // First Last name of creator - if any
+  createdBy?: string;
+}
+
 type RecordFormState = {
   // This is set by formChanged() function,
   type_cached: string | null;
   view_cached: string | null;
   activeStep: number;
   revision_cached: string | undefined;
-  initialValues: {[fieldName: string]: unknown} | null;
+  initialValues: ValuesObject | null;
   annotation: {[field_name: string]: Annotations};
   /**
    * Set only by newDraftListener, but this is only non-null
@@ -138,6 +148,8 @@ type RecordFormState = {
   relationship: Relationship | null;
   fieldNames: string[];
   views: string[];
+  recordContext: RecordContext;
+  lastProcessedValues: ValuesObject | null;
 };
 
 /*
@@ -151,12 +163,7 @@ type RecordFormState = {
     - this one works ok
 */
 
-class RecordForm extends React.Component<
-  // RecordFormProps & RouteComponentProps,
-  // RecordFormState
-  any,
-  RecordFormState
-> {
+class RecordForm extends React.Component<any, RecordFormState> {
   draftState: RecordDraftState | null = null;
 
   // List of timeouts that unmount must cancel
@@ -228,6 +235,8 @@ class RecordForm extends React.Component<
       relationship: {},
       fieldNames: [],
       views: [],
+      recordContext: {},
+      lastProcessedValues: null,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -292,13 +301,9 @@ class RecordForm extends React.Component<
       } else {
         this.props.handleSetIsDraftSaving(false);
         this.props.handleSetDraftError(error_message);
-        (this.context as any).dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: 'Could not load previous data: ' + error_message,
-            severity: 'warning',
-          },
-        });
+        (this.context as NotificationContextType).showError(
+          'Could not load previous data: ' + error_message
+        );
       }
     }
   }
@@ -327,14 +332,9 @@ class RecordForm extends React.Component<
           this.props.handleSetDraftError(
             `Could not find data for record ${this.props.record_id}`
           );
-          (this.context as any).dispatch({
-            type: ActionType.ADD_ALERT,
-            payload: {
-              message:
-                'Could not load existing record: ' + this.props.record_id,
-              severity: 'warning',
-            },
-          });
+          (this.context as NotificationContextType).showError(
+            'Could not load existing record: ' + this.props.record_id
+          );
           return false;
         } else {
           viewSetName = latest_record.type;
@@ -381,6 +381,7 @@ class RecordForm extends React.Component<
     ) {
       viewName = this.state.view_cached;
     }
+
     this.setState({
       type_cached: viewSetName,
       view_cached: viewName,
@@ -409,13 +410,9 @@ class RecordForm extends React.Component<
     }
     // work out the record type or default it
     if (!(await this.identifyRecordType(revision_id))) {
-      (this.context as any).dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: 'Project is not fully downloaded or not setup correctly',
-          severity: 'error',
-        },
-      });
+      (this.context as NotificationContextType).showError(
+        'Project is not fully downloaded or not setup correctly'
+      );
       // This form cannot be shown at all. No recovery except go back to project.
       this.props.navigate(-1);
       return;
@@ -450,13 +447,11 @@ class RecordForm extends React.Component<
       await this.setInitialValues(revision_id);
     } catch (err: any) {
       logError(err);
-      (this.context as any).dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: 'Could not load previous data: ' + err.message,
-          severity: 'warning',
-        },
-      });
+
+      (this.context as NotificationContextType).showError(
+        'Could not load previous data: ' + err.message
+      );
+
       // Show an empty form
       this.setState({
         initialValues: {
@@ -508,16 +503,17 @@ class RecordForm extends React.Component<
        * Formik requires a single object for initialValues, collect these from the
        * (in order high priority to last resort): draft storage, database, ui schema
        */
-      const fromdb: any =
-        revision_id === undefined
-          ? {}
-          : (await getFullRecordData(
-              this.props.project_id,
-              this.props.record_id,
-              revision_id
-            )) || {};
-      const database_data = fromdb.data ?? {};
-      const database_annotations = fromdb.annotations ?? {};
+      const fromdb = revision_id
+        ? ((await getFullRecordData(
+            this.props.project_id,
+            this.props.record_id,
+            revision_id
+          )) ?? undefined)
+        : undefined;
+
+      // data and annotations or nothing
+      const database_data = fromdb ? fromdb.data : {};
+      const database_annotations = fromdb ? fromdb.annotations : {};
 
       const [staged_data, staged_annotations] =
         await this.draftState.getInitialValues();
@@ -616,7 +612,7 @@ class RecordForm extends React.Component<
         this.draftState.data.state !== 'uninitialized' &&
         this.draftState.data.relationship !== undefined
       )
-        parent = fromdb.relationship?.parent;
+        parent = fromdb?.relationship?.parent;
 
       if (
         parent !== null &&
@@ -631,7 +627,7 @@ class RecordForm extends React.Component<
         this.draftState.data.state !== 'uninitialized' &&
         this.draftState.data.relationship !== undefined
       )
-        linked = fromdb.relationship?.linked;
+        linked = fromdb?.relationship?.linked;
       if (linked !== null && linked !== undefined && linked.length > 0)
         related['linked'] = linked;
 
@@ -642,10 +638,18 @@ class RecordForm extends React.Component<
       );
       initialValues['fieldNames'] = [];
       initialValues['views'] = [];
+
+      // work out the record context
+      const context = fromdb
+        ? getRecordContextFromRecord({record: fromdb})
+        : {};
+
       this.setState({
         initialValues: initialValues,
         annotation: annotations,
-        relationship: fromdb.relationship ?? relationship,
+        relationship: fromdb?.relationship ?? relationship,
+        // pass in context - this helps compute derived fields
+        recordContext: context,
       });
     }
   }
@@ -776,63 +780,87 @@ class RecordForm extends React.Component<
       this.state.annotation,
       ui_specification
     );
+
+    // This is a synchronous call to the store - not an ideal to do this... TODO
+    // consider rewriting the form as a functional component so we can use hooks
+    // properly and consider implications if the active user is no longer
+    // defined
+    const currentUser = selectActiveUser(store.getState())?.username;
+
+    // TODO no idea how to handle errors appropriately here!
+    if (!currentUser) {
+      const message =
+        'Expected to find current user when interacting with the form, but it was not set. The application does not know which user is trying to interact with the form.';
+      console.error(message);
+      (this.context as NotificationContextType).showError(message);
+      setSubmitting(false);
+      return new Promise(() => {
+        return;
+      });
+    }
+
+    const now = new Date();
+    const contextInfo = {
+      updated_by: currentUser,
+      updated: now,
+    };
+
+    // merge parent form context into new context - makes the assumption that if
+    // the record context doesn't have created person information then we should
+    // use the current user as above
+    const mergedRecordContext: RecordContext = {
+      createdBy: this.state.recordContext.createdBy ?? contextInfo.updated_by,
+      createdTime:
+        this.state.recordContext.createdTime ??
+        // ms timestamp
+        contextInfo.updated.getTime(),
+    };
+
+    // Now do an in-place update of object values to ensure that we have the
+    // latest templated fields which may require on current runtime values
+    recomputeDerivedFields({
+      values: values,
+      context: mergedRecordContext,
+      uiSpecification: ui_specification,
+    });
+
+    const doc = {
+      record_id: this.props.record_id,
+      revision_id: this.state.revision_cached ?? null,
+      type: this.state.type_cached!,
+      data: this.filterValues(values),
+      annotations: this.state.annotation ?? {},
+      field_types: getReturnedTypesForViewSet(ui_specification, viewsetName),
+      ugc_comment: this.state.ugc_comment || '',
+      relationship: this.state.relationship ?? {},
+      deleted: false,
+      ...contextInfo,
+    };
     return (
-      getCurrentUserId(this.props.project_id)
-        // prepare the record for saving
-        .then(userid => {
-          const now = new Date();
-          const doc = {
-            record_id: this.props.record_id,
-            revision_id: this.state.revision_cached ?? null,
-            type: this.state.type_cached!,
-            data: this.filterValues(values),
-            updated_by: userid,
-            updated: now,
-            annotations: this.state.annotation ?? {},
-            field_types: getReturnedTypesForViewSet(
-              ui_specification,
-              viewsetName
-            ),
-            ugc_comment: this.state.ugc_comment || '',
-            relationship: this.state.relationship ?? {},
-            deleted: false,
-          };
-          return doc;
-        })
-        // store the record
-        .then(doc => {
-          return upsertFAIMSData(this.props.project_id, doc).then(
-            revision_id => {
-              // update the component state with the new revision id and notify the parent
-              try {
-                this.setState({revision_cached: revision_id});
-                // SC. Removing this call since it prevents deletion of the draft
-                // later on (draftState.clear())
-                // by changing the draft state to 'uninitialised'
-                //
-                //this.formChanged(true, revision_id);
-                if (this.props.setRevision_id !== undefined)
-                  this.props.setRevision_id(revision_id); //pass the revision id back
-              } catch (error) {
-                logError(error);
-              }
-              return is_close === 'close'
-                ? (doc.data['hrid' + this.state.type_cached] ??
-                    this.props.record_id)
-                : revision_id; // return revision id for save and continue function
-            }
-          );
+      upsertFAIMSData(this.props.project_id, doc)
+        .then(revision_id => {
+          // update the component state with the new revision id and notify the parent
+          try {
+            this.setState({revision_cached: revision_id});
+            // SC. Removing this call since it prevents deletion of the draft
+            // later on (draftState.clear())
+            // by changing the draft state to 'uninitialised'
+            //
+            //this.formChanged(true, revision_id);
+            if (this.props.setRevision_id !== undefined)
+              this.props.setRevision_id(revision_id); //pass the revision id back
+          } catch (error) {
+            logError(error);
+          }
+          return is_close === 'close'
+            ? (doc.data['hrid' + this.state.type_cached] ??
+                this.props.record_id)
+            : revision_id; // return revision id for save and continue function
         })
         // generate a success alert
         .then(hrid => {
           const message = 'Record successfully saved';
-          (this.context as any).dispatch({
-            type: ActionType.ADD_ALERT,
-            payload: {
-              message: message,
-              severity: 'success',
-            },
-          });
+          (this.context as NotificationContextType).showSuccess(message);
           return hrid;
         })
         // Could not save record error
@@ -841,13 +869,7 @@ class RecordForm extends React.Component<
         .catch(err => {
           const message = 'Could not save record';
           logError(`Could not save record: ${JSON.stringify(err)}`);
-          (this.context as any).dispatch({
-            type: ActionType.ADD_ALERT,
-            payload: {
-              message: message,
-              severity: 'error',
-            },
-          });
+          (this.context as NotificationContextType).showError(message);
           logError('Unsaved record error:' + err);
         })
         // Clear the current draft area (Possibly after redirecting back to project page)
@@ -1131,6 +1153,63 @@ class RecordForm extends React.Component<
     this.setState({...this.state, annotation: annotation});
   }
 
+  /**
+   * This method filters errors to only those which are visible taking into
+   * account a) conditional logic for the individual field b) conditional logic
+   * for sections. Returns a filtered error object with the same type.
+   *
+   * @param errors The object with map from fieldname -> error
+   * @param viewsetName The name of the current viewset
+   * @param values The values in the form at this time
+   * @returns The filtered error object
+   */
+  filterErrors({
+    errors,
+    viewsetName,
+    values,
+  }: {
+    errors: {[key: string]: string};
+    viewsetName: string;
+    values: object;
+  }): {[key: string]: string} {
+    if (!errors) return {};
+    // Build a set of visible fields within visible views
+    const views = getViewsMatchingCondition(
+      this.props.ui_specification,
+      values,
+      [],
+      viewsetName,
+      {}
+    );
+    const visibleFields = new Set();
+    for (const v of views) {
+      const fieldsMatching = getFieldsMatchingCondition(
+        this.props.ui_specification,
+        values,
+        [],
+        v,
+        {}
+      );
+      // Add all fields to visible fields set
+      for (const f of fieldsMatching) {
+        visibleFields.add(f);
+      }
+    }
+
+    // Work through the errors and
+    return Object.entries(errors).reduce(
+      (filtered: {[key: string]: string}, [fieldName, error]) => {
+        // Check if field is visible in any view
+        const isVisible = visibleFields.has(fieldName);
+        if (isVisible) {
+          filtered[fieldName] = error;
+        }
+        return filtered;
+      },
+      {}
+    );
+  }
+
   render() {
     if (this.isReady()) {
       const viewName = this.requireView();
@@ -1148,20 +1227,88 @@ class RecordForm extends React.Component<
           <div>
             <Formik
               initialValues={initialValues}
-              validationSchema={validationSchema}
+              // We are manually running the validate function now - if you
+              // leave this here this schema validation will take precedence
+              // over the manual validate function
+              // validationSchema={validationSchema}
               validateOnMount={true}
               validateOnChange={false}
               validateOnBlur={true}
+              // This manually runs the validate function which formik triggers
+              // validation due to the above conditions, we use the yup
+              // validation schema to attempt data validation, filtering errors
+              // for only visible fields.
+              validate={values => {
+                try {
+                  // Run the validation function which will check the form
+                  // data against the yup schema. This throws exceptions which
+                  // represent errors.
+                  validationSchema.validateSync(values, {abortEarly: false});
+
+                  // If validation passes, no errors
+                  return {};
+                } catch (err) {
+                  try {
+                    const errors = err as ValidationError;
+
+                    const processedErrors = errors.inner.reduce(
+                      (acc: {[key: string]: string}, error) => {
+                        if (error.path) acc[error.path] = error.message;
+                        return acc;
+                      },
+                      {}
+                    );
+                    return this.filterErrors({
+                      errors: processedErrors,
+                      values,
+                      viewsetName: viewsetName,
+                    });
+                  } catch (e) {
+                    // An exception occurred during error processing - this is a
+                    // problem - it might be due to our type casting the error
+                    // response, or some error in the filtering logic
+                    console.error(
+                      'During error processing in the validate loop, an exception \
+                      occurred while trying to parse and filter the yup validation \
+                      errors. Defaulting to showing no errors to allow user to \
+                      proceed. Err: ',
+                      e
+                    );
+                    return {};
+                  }
+                }
+              }}
               onSubmit={(values, {setSubmitting}) => {
                 setSubmitting(true);
-                return this.save(values, 'continue', setSubmitting).then(
-                  result => {
-                    return result;
-                  }
-                );
+                return this.save(values, 'continue', setSubmitting);
               }}
             >
               {formProps => {
+                // Recompute derived values if something has changed
+                const {values, setValues} = formProps;
+                // Compare current values with last processed values
+                const valuesChanged =
+                  JSON.stringify(values) !==
+                  JSON.stringify(this.state.lastProcessedValues);
+
+                if (valuesChanged) {
+                  // Process the derive fields updates
+                  const changed = recomputeDerivedFields({
+                    context: this.state.recordContext,
+                    values: values,
+                    uiSpecification: this.props.ui_specification,
+                  });
+
+                  // Only update if processing actually changed something
+                  if (changed) {
+                    // Update form values
+                    setValues(values);
+                  }
+
+                  // Store the processed values
+                  this.setState({lastProcessedValues: values});
+                }
+
                 const layout =
                   this.props.ui_specification.viewsets[viewsetName]?.layout;
                 const views = getViewsMatchingCondition(
@@ -1262,7 +1409,7 @@ class RecordForm extends React.Component<
                                       ui_specification
                                     )}
                                   </dt>
-                                  <dd>{formProps.errors[field]}</dd>
+                                  <dd>{formProps.errors[field] as string}</dd>
                                 </React.Fragment>
                               ))}
                             </div>
@@ -1411,5 +1558,5 @@ class RecordForm extends React.Component<
     }
   }
 }
-RecordForm.contextType = store;
+RecordForm.contextType = NotificationContext;
 export default RecordForm;

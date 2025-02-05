@@ -18,18 +18,17 @@
  *   Create the main local databases and provide access to them
  */
 
-import PouchDB from 'pouchdb-browser';
-import {POUCH_BATCH_SIZE, POUCH_BATCHES_LIMIT} from '../buildconfig';
 import {
-  ProjectMetaObject,
-  ProjectDataObject,
-  ProjectID,
   ListingID,
   NonUniqueProjectID,
-  TokenContents,
+  ProjectDataObject,
+  ProjectID,
+  ProjectMetaObject,
 } from '@faims3/data-model';
 import {ListingsObject} from '@faims3/data-model/src/types';
-import {ProjectObject} from './projects';
+import PouchDB from 'pouchdb-browser';
+import {POUCH_BATCH_SIZE, POUCH_BATCHES_LIMIT} from '../buildconfig';
+import {db as projects_db} from '../dbs/projects-db';
 import {logError} from '../logging';
 import {
   ConnectionInfo,
@@ -37,8 +36,7 @@ import {
   local_pouch_options,
 } from './connection';
 import {draft_db} from './draft-storage';
-
-import {db as projects_db} from '../dbs/projects-db';
+import {ProjectObject} from './projects';
 
 export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
@@ -139,34 +137,6 @@ export const getLocalStateDB = () => {
 };
 
 /**
- * Login tokens for each FAIMS Cluster that needs it
- */
-export type JWTToken = string;
-
-export interface JWTTokenInfo {
-  token: JWTToken;
-  // Might have a refresh token we can use to get a new token
-  refreshToken?: JWTToken;
-  parsedToken: TokenContents;
-}
-
-export type JWTTokenMap = {[k: string]: JWTTokenInfo};
-
-export interface LocalAuthDoc {
-  _id: string; // Corresponds to a listings ID
-  _rev?: string; // optional as we may want to include the raw json in places
-  current_username: string;
-  // Map from username -> TokenContents - this is serialised as a JS object but
-  // interacted with through ObjectMap
-  available_tokens: JWTTokenMap;
-}
-
-export const local_auth_db = new PouchDB<LocalAuthDoc>(
-  'local_auth',
-  local_pouch_options
-);
-
-/**
  * Each listing has a Projects database and Users DBs
  */
 export const projects_dbs: LocalDBList<ProjectObject> = {};
@@ -239,6 +209,9 @@ export function ensure_synced_db<Content extends {}>(
   }
 
   // Already connected/connecting, or local-only database
+
+  // This checks for a diff so as to not unnecessarily recreate synced
+  // connections without any changes
   if (
     global_dbs[local_db_id].remote !== null &&
     JSON.stringify(global_dbs[local_db_id].remote!.info) ===
@@ -384,7 +357,6 @@ export async function wipe_all_pouch_databases() {
     active_db,
     local_state_db,
     draft_db,
-    local_auth_db,
     projects_db,
   ];
   await delete_synced_dbs(data_dbs);
@@ -401,4 +373,57 @@ export async function wipe_all_pouch_databases() {
   // TODO: work out how best to recreate the databases, currently using a
   // redirect and having FAIMS reinitialise seems to be the best
   console.debug('Deleted dbs');
+}
+
+/**
+ * Sets the remote sync connection jwt_token property for all activated projects
+ * data DBs to a new token as specified.
+ *
+ * NOTE uses the ensure_synced_db method which will check for a diff in the
+ * connection info, prompting recreation of the remote db
+ *
+ * TODO this could be more specific to the username + listing combination once
+ * the data dbs are tracked to logged in users that activated them
+ *
+ * @param serverId Listing/server to target for a token refresh
+ * @param newToken The new token to set as the connection info for the remote db
+ * sync
+ */
+export async function refreshDataDbTokens({
+  serverId,
+  newToken,
+}: {
+  serverId: string;
+  newToken: string;
+}) {
+  const activeRecords = (await active_db.allDocs({include_docs: true})).rows
+    .map(d => d.doc)
+    .filter(d => !!d);
+
+  for (const record of activeRecords) {
+    // This is server/project combinations
+    const {listing_id} = record;
+
+    if (listing_id !== serverId) {
+      continue;
+    }
+
+    const dbKey = record._id;
+
+    // Get the associated data DB for this active db
+    const db = data_dbs[dbKey];
+
+    if (!db.remote) {
+      continue;
+    }
+
+    // Take existing remote DB connection info, replace token with new token
+    const newConnectionInfo: ConnectionInfo = {
+      ...db.remote?.info,
+      jwt_token: newToken,
+    };
+
+    // run the synced db operation which will update the
+    ensure_synced_db(dbKey, newConnectionInfo, data_dbs);
+  }
 }

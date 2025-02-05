@@ -1,177 +1,236 @@
-/*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
- * Filename: store.tsx
- * Description:
- *   Define a global Context store to hold the state of sync and alerts
- */
-
+import {configureStore} from '@reduxjs/toolkit';
+import React, {useEffect, useRef} from 'react';
 import {
-  createContext,
-  useReducer,
-  Dispatch,
-  useEffect,
-  useState,
-  useRef,
-} from 'react';
-
-import {v4 as uuidv4} from 'uuid';
-
-import {getSyncStatusCallbacks} from '../utils/status';
-import {SyncingActions, AlertActions, ActionType} from './actions';
+  Provider,
+  TypedUseSelectorHook,
+  useDispatch,
+  useSelector,
+} from 'react-redux';
+import {
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  persistReducer,
+  persistStore,
+  PURGE,
+  REGISTER,
+  REHYDRATE,
+} from 'redux-persist';
+import {PersistGate} from 'redux-persist/integration/react';
+import storage from 'redux-persist/lib/storage';
 import LoadingApp from '../gui/components/loadingApp';
-import {initialize} from '../sync/initialize';
 import {set_sync_status_callbacks} from '../sync/connection';
-import {AlertColor} from '@mui/material/Alert/Alert';
+import {initialize} from '../sync/initialize';
+import {getSyncStatusCallbacks} from '../utils/status';
+import authReducer, {
+  refreshAllUsers,
+  refreshIsAuthenticated,
+  selectIsAuthenticated,
+} from './slices/authSlice';
+import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
+import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 
-interface InitialStateProps {
-  isSyncingUp: boolean;
-  isSyncingDown: boolean;
-  hasUnsyncedChanges: boolean;
-  isSyncError: boolean;
+// Configure persistence for the auth slice
+const persistConfig = {key: 'auth', storage};
+const persistedAuthReducer = persistReducer(persistConfig, authReducer);
 
-  alerts: Array<
-    {
-      severity: AlertColor;
-      key: string;
-    } & ({message: string} | {element: JSX.Element[]})
-  >;
-}
-
-const InitialState = {
-  isSyncingUp: false,
-  isSyncingDown: false,
-  hasUnsyncedChanges: false,
-  isSyncError: false,
-  alerts: [],
-};
-
-export interface ContextType {
-  state: InitialStateProps;
-  dispatch: Dispatch<SyncingActions | AlertActions>;
-}
-
-const store = createContext<ContextType>({
-  state: InitialState,
-  dispatch: () => null,
+// Configure the store
+export const store = configureStore({
+  reducer: {
+    // auth slice (persisted)
+    auth: persistedAuthReducer,
+    // sync slice
+    sync: syncReducer,
+  },
+  middleware: getDefaultMiddleware =>
+    getDefaultMiddleware({
+      // TODO fix this
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }),
+  devTools: process.env.NODE_ENV !== 'production',
 });
 
-const {Provider} = store;
+// Setup persistor export for app persist gate
+const persistor = persistStore(store);
 
-const StateProvider = (props: any) => {
-  const [initialized, setInitialized] = useState(false);
-  const startedInitialisation = useRef(false);
+// Infer types from store
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
 
-  const [state, dispatch] = useReducer(
-    (state: InitialStateProps, action: SyncingActions | AlertActions) => {
-      switch (action.type) {
-        case ActionType.IS_SYNCING_UP: {
-          return {
-            ...state,
-            isSyncingUp: action.payload,
-          };
-        }
-        case ActionType.IS_SYNCING_DOWN: {
-          return {
-            ...state,
-            isSyncingDown: action.payload,
-          };
-        }
-        case ActionType.HAS_UNSYNCED_CHANGES: {
-          return {
-            ...state,
-            hasUnsyncedChanges: action.payload,
-          };
-        }
-        case ActionType.IS_SYNC_ERROR: {
-          return {
-            ...state,
-            isSyncError: action.payload,
-          };
-        }
+// Create typed hooks
+export const useAppDispatch: () => AppDispatch = useDispatch;
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
-        case ActionType.ADD_ALERT: {
-          const alert = {
-            ...action.payload,
-            key: uuidv4(),
-            message: action.payload.message,
-            severity: action.payload.severity,
-          };
-          return {
-            ...state,
-            alerts: [...state.alerts, alert],
-          };
-        }
-        case ActionType.DELETE_ALERT: {
-          return {
-            ...state,
-            alerts: state.alerts.filter(
-              alert => alert.key !== action.payload.key
-            ),
-          };
-        }
-        case ActionType.ADD_CUSTOM_ALERT: {
-          const alert = {
-            ...action.payload,
-            key: uuidv4(),
-            element: action.payload.element,
-            severity: action.payload.severity,
-          };
-          return {
-            ...state,
-            alerts: [...state.alerts, alert],
-          };
-        }
-        default:
-          throw new Error();
+const LoadingComponent = LoadingApp;
+
+// Provider component
+export const StateProvider: React.FC<{children: React.ReactNode}> = ({
+  children,
+}) => {
+  return (
+    <Provider store={store}>
+      {
+        // Persistence gate to ensure app is not loaded before auth slice persists
       }
-    },
-    InitialState
+      <PersistGate loading={<LoadingComponent />} persistor={persistor}>
+        {children}
+      </PersistGate>
+    </Provider>
   );
+};
 
-  set_sync_status_callbacks(getSyncStatusCallbacks(dispatch));
+/**
+ * TokenRefreshTimer component
+ * Handles periodic token refresh attempts and authentication status checks
+ */
+const TokenRefreshTimer: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   useEffect(() => {
-    if (startedInitialisation.current) {
+    const refreshTokenAndCheckAuth = async () => {
+      try {
+        // This dispatch handles the case where there is no active user or
+        // similar concerns - avoids us needing to worry about reading state
+        // synchronously here
+        await dispatch(refreshAllUsers());
+      } finally {
+        // Always check authentication status after refresh attempt
+        dispatch(refreshIsAuthenticated({}));
+      }
+    };
+
+    // Initial check
+    refreshTokenAndCheckAuth();
+
+    // Set up interval
+    const intervalId = setInterval(
+      refreshTokenAndCheckAuth,
+      TOKEN_REFRESH_INTERVAL_MS
+    );
+
+    // Cleanup
+    return () => clearInterval(intervalId);
+  }, [dispatch, isAuthenticated]);
+
+  return null;
+};
+
+/**
+ * NetworkUpHandler component
+ *
+ * Attaches to the network up condition a token
+ * refresh so that a token refresh is always attempted when the network comes
+ * back up.
+ */
+const NetworkUpHandler: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
+  useEffect(() => {
+    const promptRefresh = async () => {
+      try {
+        // This dispatch handles the case where there is no active user or
+        // similar concerns - avoids us needing to worry about reading state
+        // synchronously here
+        await dispatch(refreshAllUsers());
+      } finally {
+        // Always check authentication status after refresh attempt
+        dispatch(refreshIsAuthenticated({}));
+      }
+    };
+
+    // Attach to network up handler
+    window.addEventListener('online', promptRefresh);
+
+    return () => {
+      // Detach for cleanup
+      window.removeEventListener('online', promptRefresh);
+    };
+  }, [dispatch, isAuthenticated]);
+
+  return null;
+};
+
+/**
+ * InitialiseGate component This checks that the app store is initialised,
+ * returning loading fall back. Initiates if not, and only runs once.
+ *
+ * It also starts a timer process which refreshes the token.
+ */
+export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
+  children,
+}) => {
+  const dispatch = useAppDispatch();
+  const mounted = useRef(false);
+
+  // Initialised state
+  const isInitialized = useAppSelector(state => state.sync.isInitialized);
+
+  useEffect(() => {
+    // Don't initialise twice
+    if (mounted.current) {
       return;
     }
 
-    // Mark that we've started
-    startedInitialisation.current = true;
-    initialize()
-      .then(() => {
-        setInitialized(true);
-      })
-      .catch(err => {
-        console.log('Could not initialize: ', err);
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {message: err.message, severity: 'error'},
+    // mark as started
+    mounted.current = true;
+
+    const init = async () => {
+      await initialize()
+        .then(() => {
+          dispatch(setInitialized(true));
+        })
+        .catch(err => {
+          console.error('Could not initialize: ', err);
+          dispatch(
+            addAlert({
+              message:
+                err instanceof Error ? err.message : 'Initialization failed',
+              severity: 'error',
+            })
+          );
         });
-      });
+    };
+
+    // Run initialisation logic
+    init();
+
+    // And setup callbacks for sync operations (only done once)
+    set_sync_status_callbacks(getSyncStatusCallbacks(dispatch));
+
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
-  if (initialized) {
-    return <Provider value={{state, dispatch}}>{props.children}</Provider>;
-  } else {
-    return (
-      <Provider value={{state, dispatch}}>
-        <LoadingApp />
-      </Provider>
-    );
+  if (!isInitialized) {
+    return <LoadingComponent />;
   }
+
+  return (
+    <>
+      {
+        // Include timer
+      }
+      <TokenRefreshTimer />
+      <NetworkUpHandler />
+      {children}
+    </>
+  );
 };
 
-export {store, StateProvider};
+/**
+ * Dangerous function which resets the redux store, purges persistence, and
+ * clears all localStorage
+ */
+export const clearReduxAndLocalStorage = async () => {
+  // Reset the store
+  store.dispatch({type: 'RESET_STORE'});
+  // then ensure persistence is cleared out
+  await persistor.purge();
+  // then also clear all local storage
+  localStorage.clear();
+};

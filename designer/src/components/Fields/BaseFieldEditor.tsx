@@ -62,7 +62,6 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   };
 
   const setFieldLabel = (newField: FieldType, label: string) => {
-    console.log('setFieldLabel', newField, label);
     newField['component-parameters'].label = label;
   };
 
@@ -121,7 +120,6 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
-    console.log('Field Condition Changed', condition);
     if (condition) {
       const newState: StateType = {...state, condition: condition};
       updateFieldFromState(newState);
