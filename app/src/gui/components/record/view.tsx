@@ -135,7 +135,7 @@ function SingleComponent(props: SingleComponentProps) {
         background: hasError
           ? 'linear-gradient(135deg, rgba(255,99,71,0.4), rgba(255,0,0,0.3))'
           : isTouched
-            ? 'rgba(0, 255, 0, 0.1)' // Greenish background if corrected
+            ? 'rgba(0, 255, 0, 0.1)'
             : 'transparent',
         boxShadow: hasError
           ? '0px 0px 12px rgba(255, 0, 0, 0.6)'
