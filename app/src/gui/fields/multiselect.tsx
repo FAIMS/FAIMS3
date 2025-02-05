@@ -24,15 +24,10 @@ import {
   Checkbox,
   FormControl,
   FormControlLabel,
-  FormHelperText,
-  InputLabel,
   ListItemText,
   MenuItem,
-  OutlinedInput,
   Select,
-  Typography,
 } from '@mui/material';
-import {useTheme} from '@mui/material/styles';
 import {FieldProps} from 'formik';
 import {TextFieldProps} from 'formik-mui';
 import {ReactNode} from 'react';
@@ -86,8 +81,6 @@ export const ExpandedChecklist = ({
   options,
   value,
   onChange,
-  label,
-  helperText,
   exclusiveOptions = [],
 }: ExpandedChecklistProps) => {
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
@@ -146,12 +139,8 @@ export const MuiMultiSelect = ({
   options,
   value,
   onChange,
-  label,
-  helperText,
   exclusiveOptions = [],
 }: MuiMultiSelectProps) => {
-  const theme = useTheme();
-
   const handleChange = (event: any) => {
     const selectedValues = event.target.value;
 

@@ -18,33 +18,30 @@
  *   TODO
  */
 
-import React, {useEffect} from 'react';
-
-import {FieldProps} from 'formik';
-
-import * as ROUTES from '../../constants/routes';
 import {
-  generateFAIMSDataID,
   FAIMSTypeName,
-  LocationState,
-  RecordReference,
+  generateFAIMSDataID,
   getPossibleRelatedRecords,
+  LocationState,
   RecordMetadata,
+  RecordReference,
 } from '@faims3/data-model';
+import {Grid, SelectChangeEvent, Typography} from '@mui/material';
+import {FieldProps} from 'formik';
+import React, {useEffect} from 'react';
 import {useLocation} from 'react-router-dom';
-import {Grid, Typography} from '@mui/material';
+import * as ROUTES from '../../constants/routes';
+import {selectActiveToken} from '../../context/slices/authSlice';
+import {useAppSelector} from '../../context/store';
+import {logError} from '../../logging';
 import {
-  getRelatedRecords,
   addRecordLink,
+  getRelatedRecords,
   remove_link_from_list,
   removeRecordLink,
 } from '../components/record/relationships/RelatedInformation';
-import {DataGridFieldLinksComponent} from '../components/record/relationships/field_level_links/datagrid';
-import {SelectChangeEvent} from '@mui/material';
 import CreateLinkComponent from '../components/record/relationships/create_links';
-import {logError} from '../../logging';
-import {useAppSelector} from '../../context/store';
-import {selectActiveToken} from '../../context/slices/authSlice';
+import {DataGridFieldLinksComponent} from '../components/record/relationships/field_level_links/datagrid';
 
 function get_default_relation_label(
   multiple: boolean,
@@ -135,7 +132,7 @@ interface RelatedRecordSelectorProps extends FieldProps {
 
 export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const activeToken = useAppSelector(selectActiveToken)!.parsedToken;
-  const project_id = props.form.values['_project_id'];
+  const project_id = props.form.values['_project_id'] as string;
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;
 
@@ -337,7 +334,12 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       field_id: field_name,
       relation_type_vocabPair: relationshipPair,
     };
-    addRecordLink(selectedRecord, current_record, props.relation_type)
+    addRecordLink({
+      childRecord: selectedRecord,
+      parent: current_record,
+      relationType: props.relation_type,
+      projectId: project_id,
+    })
       .then(child_record => {
         if (child_record !== null) {
           if (!multiple) setRecordsInformation([child_record]);

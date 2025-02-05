@@ -46,6 +46,7 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {SectionEditor} from './section-editor';
 import {useState, useEffect} from 'react';
 import {shallowEqual} from 'react-redux';
+import FormSettingsPanel from './form-settings';
 
 type Props = {
   viewSetId: string;
@@ -75,7 +76,7 @@ export const FormEditor = ({
     }
   );
   const sections = viewSet ? viewSet.views : [];
-  console.log('FormEditor', { viewSetId, sections });
+  console.log('FormEditor', {viewSetId, sections});
 
   const views = useAppSelector(
     state => state.notebook['ui-specification'].fviews
@@ -84,8 +85,6 @@ export const FormEditor = ({
     state => state.notebook['ui-specification'].fields
   );
   const dispatch = useAppDispatch();
-
-  console.log('FormEditor', viewSetId);
 
   const [activeStep, setActiveStep] = useState(0);
   const [newSectionName, setNewSectionName] = useState('New Section');
@@ -436,6 +435,9 @@ export const FormEditor = ({
         </Grid>
       </Grid>
 
+      <Grid container item xs={12}>
+        <FormSettingsPanel viewSetId={viewSetId} />
+      </Grid>
       <Grid item xs={12}>
         <Card variant="outlined">
           <Grid container spacing={2} p={3}>

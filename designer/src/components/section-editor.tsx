@@ -67,8 +67,6 @@ export const SectionEditor = ({
   );
   const dispatch = useAppDispatch();
 
-  console.log('SectionEditor', { viewId, viewSet, fView });
-
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [addMode, setAddMode] = useState(false);
@@ -112,7 +110,6 @@ export const SectionEditor = ({
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
-    console.log('condition changed', condition);
     dispatch({
       type: 'ui-specification/sectionConditionChanged',
       payload: {viewId, condition},
