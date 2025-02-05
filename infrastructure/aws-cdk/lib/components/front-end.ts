@@ -202,7 +202,7 @@ export class FaimsFrontEnd extends Construct {
                 // Build list of export commands
                 const envs = Object.keys(environment)
                   .map(key => {
-                    return `export ${key}=${environment[key] as string}`;
+                    return `export ${key}="${environment[key] as string}"`;
                   })
                   .join(' && ');
 
