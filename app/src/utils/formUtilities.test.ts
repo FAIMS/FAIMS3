@@ -402,7 +402,7 @@ describe('recomputeDerivedFields', () => {
 
 describe('getHridFromValuesAndSpec', () => {
   // This is used to help test out the old/new hrid - it is a subset of ProjectUIModel
-  let baseUISpec = {
+  const baseUISpec = {
     fields: {
       regularFieldA: {},
       hridOldFieldA: {},
@@ -422,7 +422,7 @@ describe('getHridFromValuesAndSpec', () => {
   };
 
   it('finds old hrid field properly', () => {
-    let values: ValuesObject = {
+    const values: ValuesObject = {
       hridOldFieldA: 'test',
     };
     const result = getHridFromValuesAndSpec({
@@ -434,7 +434,7 @@ describe('getHridFromValuesAndSpec', () => {
   });
 
   it('finds old hrid field properly on B view', () => {
-    let values: ValuesObject = {
+    const values: ValuesObject = {
       hridOldFieldB: 'test',
     };
     const result = getHridFromValuesAndSpec({
@@ -446,7 +446,7 @@ describe('getHridFromValuesAndSpec', () => {
   });
 
   it('returns undefined if old hrid is not present', () => {
-    let values: ValuesObject = {};
+    const values: ValuesObject = {};
     const result = getHridFromValuesAndSpec({
       values,
       uiSpecification: baseUISpec as unknown as ProjectUIModel,
@@ -491,7 +491,7 @@ describe('getHridFromValuesAndSpec', () => {
   });
 
   it('prioritises new hrid over old', () => {
-    let values: ValuesObject = {
+    const values: ValuesObject = {
       newHridFieldA: 'new',
       hridOldFieldA: 'old',
     };
@@ -499,7 +499,7 @@ describe('getHridFromValuesAndSpec', () => {
     // set hrid field for A
     baseUISpec.viewsets['A'].hridField = 'newHridFieldA';
 
-    let result = getHridFromValuesAndSpec({
+    const result = getHridFromValuesAndSpec({
       values,
       uiSpecification: baseUISpec as unknown as ProjectUIModel,
     });

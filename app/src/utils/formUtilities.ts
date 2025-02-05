@@ -58,7 +58,7 @@ export function formatTimestamp(
   }
 
   try {
-    let date = new Date(timestampNum);
+    const date = new Date(timestampNum);
 
     // If timezone is specified, convert to that timezone
     if (timezone) {

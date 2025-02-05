@@ -18,25 +18,25 @@
  */
 
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {Capacitor} from '@capacitor/core';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
-import Button from '@mui/material/Button';
 import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
+import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
+import {Buffer} from 'buffer';
 import {FieldProps} from 'formik';
 import React from 'react';
-import * as ROUTES from '../../constants/routes';
 import {useNavigate} from 'react-router';
 import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 import FieldWrapper from './fieldWrapper';
-import {Buffer} from 'buffer';
 
 /**
  * Converts a base64 encoded image to a Blob object using Buffer
@@ -363,13 +363,6 @@ export const TakePhoto: React.FC<
       props.form.setFieldError(props.field.name, err.message);
     }
   };
-
-  const error = props.form.errors[props.field.name];
-  const errorText = error ? (
-    <span {...props.ErrorTextProps}>{error as string}</span>
-  ) : (
-    <span {...props.NoErrorTextProps}></span>
-  );
 
   const images = props.form.values[props.field.name] ?? [];
   const disabled = props.disabled ?? false;

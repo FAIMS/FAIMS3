@@ -20,12 +20,8 @@
  */
 import {NonUniqueProjectID} from '@faims3/data-model';
 import {body, validationResult} from 'express-validator';
-import handlebars from 'handlebars';
 import QRCode from 'qrcode';
 import {app} from './core';
-import {AllProjectRoles} from './datamodel/users';
-
-// BBS 20221101 Adding this as a proxy for the pouch db url
 import {add_auth_providers} from './auth_providers';
 import {add_auth_routes} from './auth_routes';
 import {generateUserToken} from './authkeys/create';
@@ -272,10 +268,6 @@ app.get(
     }
   }
 );
-
-function make_html_safe(s: string): string {
-  return handlebars.escapeExpression(s);
-}
 
 app.get('/send-token/', (req, res) => {
   if (req.user) {

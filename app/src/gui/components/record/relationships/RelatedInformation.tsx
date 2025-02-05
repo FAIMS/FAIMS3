@@ -18,10 +18,8 @@
  *   This is the file is to set the values for persistent state
  */
 import {
-  getFieldToIdsMap,
   getFirstRecordHead,
   getFullRecordData,
-  getHridFieldMap,
   getMetadataForSomeRecords,
   LinkedRelation,
   LocationState,
@@ -36,14 +34,10 @@ import {
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {logError} from '../../../../logging';
-import {
-  getHridFromValuesAndSpec,
-  ValuesObject,
-} from '../../../../utils/formUtilities';
+import {getUiSpecForProject} from '../../../../uiSpecification';
+import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
 import {ParentLinkProps, RecordLinkProps} from './types';
-import {getUiSpecForProject} from '../../../../uiSpecification';
-import {projectIsActivated} from '../../../../sync/projects';
 
 /**
  * Generate an object containing information to be stored in
@@ -750,37 +744,6 @@ export async function getParentPersistenceData({
     }
   }
   return parentRecords;
-}
-
-/**
- * Returns the value to be used as the HRID - either the value of a specified
- * field, OR the record_id.
- * @param record_id The record ID which is a fallback HRID
- * @param values The values in the current response
- * @param hridFieldName The specific HRID field name if available
- * @returns The value to be used as the HRID
- */
-function getHRIDValue(
-  record_id: string,
-  values: {[field_name: string]: any} | undefined,
-  // if we know a specific hridFieldName - then use this
-  hridFieldName: string | undefined
-) {
-  if (values === undefined) return record_id;
-
-  // See if we can use the specified hrid field name
-  if (hridFieldName !== undefined && hridFieldName !== '') {
-    if (values[hridFieldName] !== undefined) {
-      return values[hridFieldName];
-    }
-  }
-
-  const possibleHRIDFields = Object.getOwnPropertyNames(values).filter(
-    (f: string) => f.startsWith('hrid')
-  );
-
-  if (possibleHRIDFields.length === 1) return values[possibleHRIDFields[0]];
-  else return record_id;
 }
 
 export async function getDetailRelatedInformation(

@@ -42,16 +42,16 @@ let blockCounter = 0;
 /**
  * Generates a unique identifier for template blocks
  * Format: block_[timestamp]_[counter]
- * 
+ *
  * @returns {string} A unique identifier string
  */
 export const generateBlockId = (): string => {
   // Get current timestamp
   const timestamp = Date.now();
-  
+
   // Increment counter
   blockCounter++;
-  
+
   // Create unique ID combining timestamp and counter
   return `block_${timestamp}_${blockCounter}`;
 };
