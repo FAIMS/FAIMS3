@@ -39,7 +39,9 @@ type Props = {
   viewId: string;
 };
 
-export const FieldList = ({viewSetId: viewsetId, viewId}: Props) => {
+export const FieldList = ({viewSetId, viewId}: Props) => {
+  console.log('FieldList', viewSetId, viewId);
+
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
   );
@@ -63,6 +65,7 @@ export const FieldList = ({viewSetId: viewsetId, viewId}: Props) => {
   };
 
   const addFieldAfterCallback = (fieldName: string) => {
+    console.log('adding a field after', fieldName);
     setAddAfterField(fieldName);
     setDialogOpen(true);
   };
@@ -74,7 +77,7 @@ export const FieldList = ({viewSetId: viewsetId, viewId}: Props) => {
         fieldName: dialogState.name,
         fieldType: dialogState.type,
         viewId: viewId,
-        viewSetId: viewsetId,
+        viewSetId: viewSetId,
         addAfter: addAfterField,
       },
     });
@@ -104,6 +107,23 @@ export const FieldList = ({viewSetId: viewsetId, viewId}: Props) => {
     // section, so reset all fields to be closed
     setIsExpanded(allClosed);
   }, [fView.label]);
+
+  // can't do this with another useEffect because it might fire before
+  // or after the other one, it then opens up random fields
+  //
+  // useEffect(() => {
+  //   // if fViews.fields changes we check if there is a new
+  //   // field (just added) and open it up
+  //   fView.fields.forEach((fieldName: string) => {
+  //     console.log('checking', fieldName, isExpanded[fieldName]);
+  //     if (isExpanded[fieldName] === undefined) {
+  //       setIsExpanded({
+  //         ...isExpanded,
+  //         [fieldName]: true,
+  //       });
+  //     }
+  //   });
+  // }, [fView.fields]);
 
   const handleExpandChange = (fieldName: string) => {
     return (_event: React.SyntheticEvent, expanded: boolean) => {
@@ -158,7 +178,7 @@ export const FieldList = ({viewSetId: viewsetId, viewId}: Props) => {
           <FieldEditor
             key={fieldName}
             fieldName={fieldName}
-            viewsetId={viewsetId}
+            viewSetId={viewSetId}
             viewId={viewId}
             expanded={isExpanded[fieldName] ?? false}
             addFieldCallback={addFieldAfterCallback}
