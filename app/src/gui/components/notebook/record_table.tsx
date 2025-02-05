@@ -23,6 +23,7 @@ import {
   ProjectUIModel,
   ProjectUIViewsets,
   RecordMetadata,
+  TokenContents,
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '@faims3/data-model';
@@ -540,6 +541,25 @@ function RecordsTable(props: RecordsTableProps) {
 }
 
 /**
+ * Filters out draft records from the dataset.
+ *
+ * Draft records are identified by the prefix `drf-` in their `record_id`.
+ */
+const filterOutDrafts = (rows: RecordMetadata[]) => {
+  return rows.filter(record => !record.record_id.startsWith('drf-'));
+};
+
+/**
+ * Filters records to include only thosse created by the active user.
+ *
+ * @param rows - The dataset of records.
+ * @param username - The active user's username.
+ */
+const filterByActiveUser = (rows: RecordMetadata[], username: string) => {
+  return rows.filter(record => record.created_by === username);
+};
+
+/**
  * Component to handle browsing records and querying with search.
  *
  * @param {RecordsBrowseTableProps} props - The properties passed to RecordsBrowseTable.
@@ -548,37 +568,44 @@ function RecordsTable(props: RecordsTableProps) {
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {recordLabel} = props;
   // TODO validate this is always defined
-  const activeToken = useAppSelector(selectActiveUser)!.parsedToken;
+  const activeUser = useAppSelector(selectActiveUser);
+  const activeToken = activeUser?.parsedToken as TokenContents;
 
   const [query, setQuery] = React.useState('');
+
   const {data: records, isLoading: recordsLoading} = useQuery({
-    queryKey: ['allrecords', query, props.project_id],
+    queryKey: ['allrecords', query, props.project_id, activeUser?.username],
     networkMode: 'always',
     gcTime: 0,
     queryFn: async () => {
+      let rows;
+
       if (query.length === 0) {
-        console.log(
-          'Getting metadata for all records with project ID',
-          props.project_id
-        );
-        const rows = await getMetadataForAllRecords(
+        rows = await getMetadataForAllRecords(
           activeToken,
           props.project_id,
           props.filter_deleted
         );
-        console.log(rows);
-        return rows;
       } else {
-        return await getRecordsWithRegex(
+        rows = await getRecordsWithRegex(
           activeToken,
           props.project_id,
           query,
           props.filter_deleted
         );
       }
+
+      // filterr drafts based on `drf-` prefix
+      const filteredRows = filterOutDrafts(rows);
+
+      // filterrecords created by the active user
+      if (activeUser) {
+        return filterByActiveUser(filteredRows, activeUser.username);
+      }
+
+      return filteredRows;
     },
   });
-
   return (
     <RecordsTable
       project_id={props.project_id}
