@@ -20,7 +20,7 @@
 
 import {createTheme, colors} from '@mui/material';
 import typography from './typography';
-import {generateStepperGradient} from '../../../utils/stepperColors';
+import {generateStepperColors} from '../../../utils/generateStepperColors';
 
 const theme = createTheme({
   palette: {
@@ -68,13 +68,14 @@ const theme = createTheme({
     icon: {
       main: '#E18200',
       light: '#edeeeb',
+      required: '#5E0000',
     },
     table: {
       divider: '#828789FF',
       rowBorder: '#D3D1D1FF',
       columnSeparator: '#828789FF',
     },
-    stepperGradient: generateStepperGradient(10, 'default'),
+    stepperGradient: generateStepperColors(10, 'default'),
   },
   typography,
   components: {
