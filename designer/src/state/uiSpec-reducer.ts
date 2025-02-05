@@ -63,6 +63,38 @@ export const uiSpecificationReducer = createSlice({
         );
       }
     },
+    toggleFieldProtection: (
+      state,
+      action: PayloadAction<{
+        fieldName: string;
+        protection: 'protected' | 'allow-hiding' | 'none';
+      }>
+    ) => {
+      const {fieldName, protection} = action.payload;
+
+      if (fieldName in state.fields) {
+        state.fields[fieldName].protection = protection;
+
+        if (protection === 'protected' && state.fields[fieldName].hidden) {
+          state.fields[fieldName].hidden = false;
+        }
+      } else {
+        throw new Error(
+          `Cannot toggle protection for unknown field ${fieldName}`
+        );
+      }
+    },
+    toggleFieldHidden: (
+      state,
+      action: PayloadAction<{fieldName: string; hidden: boolean}>
+    ) => {
+      const {fieldName, hidden} = action.payload;
+      if (fieldName in state.fields) {
+        state.fields[fieldName].hidden = hidden;
+      } else {
+        throw new Error(`Cannot toggle hidden for unknown field ${fieldName}`);
+      }
+    },
     fieldMoved: (
       state,
       action: PayloadAction<{
@@ -162,6 +194,21 @@ export const uiSpecificationReducer = createSlice({
         newField['component-parameters'].form_id = viewId;
       }
 
+      if (fieldType === 'TemplatedStringField') {
+        // if there is no existing HRID field in this form, then
+        // this field becomes one by getting a name starting 'hrid'
+        let hasHRID = false;
+        for (const fieldName of state.fviews[viewId].fields) {
+          if (fieldName.startsWith('hrid') && fieldName.endsWith(viewId)) {
+            hasHRID = true;
+            break;
+          }
+        }
+        if (!hasHRID) {
+          fieldLabel = 'hrid' + viewId;
+        }
+      }
+
       // add in the meta field
       newField.meta = {
         annotation: {
@@ -208,17 +255,19 @@ export const uiSpecificationReducer = createSlice({
       action: PayloadAction<{fieldName: string; viewId: string}>
     ) => {
       const {fieldName, viewId} = action.payload;
-      // remove the field from fields and the viewSet
       if (fieldName in state.fields) {
+        const protection = state.fields[fieldName]?.protection;
+        if (protection === 'protected') {
+          throw new Error(
+            `Field ${fieldName} is protected and cannot be deleted.`
+          );
+        }
         delete state.fields[fieldName];
-        const newView = state.fviews[viewId].fields.filter(
+        state.fviews[viewId].fields = state.fviews[viewId].fields.filter(
           field => field !== fieldName
         );
-        state.fviews[viewId].fields = newView;
       } else {
-        throw new Error(
-          `Cannot delete unknown field ${fieldName} via fieldDeleted action`
-        );
+        throw new Error(`Cannot delete unknown field ${fieldName}`);
       }
     },
     sectionRenamed: (
@@ -399,35 +448,6 @@ export const uiSpecificationReducer = createSlice({
         state.viewsets[viewSetId].label = label;
       }
     },
-    viewSetSummaryFieldsUpdated: (
-      state,
-      action: PayloadAction<{viewSetId: string; fields: string[]}>
-    ) => {
-      const {viewSetId, fields} = action.payload;
-      if (viewSetId in state.viewsets) {
-        // Update the viewset with the proposed summary fields
-        state.viewsets[viewSetId].summary_fields = fields;
-      }
-    },
-    viewSetLayoutUpdated: (
-      state,
-      action: PayloadAction<{viewSetId: string; layout?: 'inline' | 'tabs'}>
-    ) => {
-      const {viewSetId, layout} = action.payload;
-      if (viewSetId in state.viewsets) {
-        // Update the viewset with the proposed summary fields
-        state.viewsets[viewSetId].layout = layout;
-      }
-    },
-    viewSetHridUpdated: (
-      state,
-      action: PayloadAction<{viewSetId: string; hridField?: string}>
-    ) => {
-      const {viewSetId, hridField} = action.payload;
-      if (viewSetId in state.viewsets) {
-        state.viewsets[viewSetId].hridField = hridField;
-      }
-    },
     formVisibilityUpdated: (
       state,
       action: PayloadAction<{
@@ -469,8 +489,6 @@ export const {
   viewSetMoved,
   viewSetRenamed,
   formVisibilityUpdated,
-  viewSetLayoutUpdated,
-  viewSetSummaryFieldsUpdated,
 } = uiSpecificationReducer.actions;
 
 export default uiSpecificationReducer.reducer;

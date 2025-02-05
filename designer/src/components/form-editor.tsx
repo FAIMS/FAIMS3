@@ -76,7 +76,7 @@ export const FormEditor = ({
     }
   );
   const sections = viewSet ? viewSet.views : [];
-  console.log('FormEditor', {viewSetId, sections});
+  console.log('FormEditor', { viewSetId, sections });
 
   const views = useAppSelector(
     state => state.notebook['ui-specification'].fviews
@@ -85,6 +85,8 @@ export const FormEditor = ({
     state => state.notebook['ui-specification'].fields
   );
   const dispatch = useAppDispatch();
+
+  console.log('FormEditor', viewSetId);
 
   const [activeStep, setActiveStep] = useState(0);
   const [newSectionName, setNewSectionName] = useState('New Section');

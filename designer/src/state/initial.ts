@@ -31,13 +31,8 @@ export type ComponentParameters = {
   multiline?: boolean;
   multiple?: boolean;
   SelectProps?: unknown;
-  // Hide this field but keep values being updated etc.
-  hidden?: boolean;
   ElementProps?: {
     expandedChecklist?: boolean;
-    // These items must correspond to values in the options[]. Only one of such
-    // can be selecting, greying out/excluding other options
-    exclusiveOptions?: Array<string>;
     options?: {
       value: string;
       label: string;
@@ -65,6 +60,7 @@ export type ComponentParameters = {
   variant_style?: string;
   html_tag?: string;
   content?: string;
+  hrid?: boolean;
   select?: boolean;
   geoTiff?: string;
   type?: string;
@@ -84,6 +80,8 @@ export type FieldType = {
   condition?: ConditionType | null;
   persistent?: boolean;
   displayParent?: boolean;
+  protection?: 'protected' | 'allow-hiding' | 'none';
+  hidden?: boolean;
   meta?: {
     annotation: {
       include: boolean;
@@ -111,10 +109,6 @@ export type NotebookUISpec = {
     [key: string]: {
       views: string[];
       label: string;
-      // New optional settings
-      summary_fields?: string[];
-      layout?: 'inline' | 'tabs';
-      hridField?: string;
     };
   };
   visible_types: string[];
