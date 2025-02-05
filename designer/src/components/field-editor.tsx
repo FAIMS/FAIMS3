@@ -306,11 +306,11 @@ export const FieldEditor = ({
                   </Tooltip>
                   <Tooltip
                     title={
-                      protection === 'protected'
-                        ? 'Protected fields cannot be deleted.'
-                        : protection === 'allow-hiding'
-                          ? 'Protected fields cannot be deleted.'
-                          : 'Delete Field'
+                      isDerivedFromSet &&
+                      (protection === 'protected' ||
+                        protection === 'allow-hiding')
+                        ? 'This protected field cannot be deleted in a derived template.'
+                        : 'Delete Field'
                     }
                   >
                     <span>
@@ -319,8 +319,9 @@ export const FieldEditor = ({
                         aria-label="delete"
                         size="small"
                         disabled={
-                          protection === 'protected' ||
-                          protection === 'allow-hiding'
+                          isDerivedFromSet &&
+                          (protection === 'protected' ||
+                            protection === 'allow-hiding')
                         }
                       >
                         <DeleteRoundedIcon />
