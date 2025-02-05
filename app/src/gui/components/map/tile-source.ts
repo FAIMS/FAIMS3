@@ -121,6 +121,19 @@ class IDB<Type> {
     });
   }
 
+  async delete(key: IDBValidKey) {
+    return new Promise<void>((resolve, reject) => {
+      if (!this.db) {
+        return;
+      }
+      const transaction = this.db.transaction(this.dbName, 'readwrite');
+      const store = transaction.objectStore(this.dbName);
+      const request = store.delete(key);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
   async clear() {
     if (this.db) {
       return new Promise<void>((resolve, reject) => {
@@ -312,7 +325,7 @@ class TileStoreBase {
     const estimatedSize = Math.round((counter * average_size) / 1024);
     console.log(
       'estimated size',
-      Math.round(estimatedSize*1000)/1000,
+      Math.round(estimatedSize * 1000) / 1000,
       'MB, ',
       counter,
       'tiles'
@@ -380,6 +393,29 @@ class TileStoreBase {
   async getTileSets() {
     const tileSets = await this.tileSetDB.getAll();
     return tileSets;
+  }
+
+  async removeTileSet(setName: string) {
+    const tileSet = await this.tileSetDB.get(setName);
+    if (!tileSet) {
+      throw new Error(`Offline map '${setName}' does not exist`);
+    }
+    // delete the tile set
+    await this.tileSetDB.delete(setName);
+    // delete the tiles if they are not part of another set
+    for (const tileKey of tileSet.tileKeys) {
+      const tileRecord = await this.tileDB.get(tileKey);
+      if (tileRecord) {
+        const tileSetNames = tileRecord.sets;
+        if (tileSetNames.length === 1) {
+          await this.tileDB.delete(tileKey);
+        } else {
+          // remove the tile set name from the tile record
+          tileSetNames.splice(tileSetNames.indexOf(setName), 1);
+          await this.tileDB.put(tileRecord);
+        }
+      }
+    }
   }
 }
 
