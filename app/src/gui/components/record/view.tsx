@@ -38,7 +38,9 @@ import {
 import {EditConflictDialog} from './conflict/conflictDialog';
 import NoteIcon from '@mui/icons-material/Note';
 import {grey} from '@mui/material/colors';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'; // For collapsible sections
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {theme} from '../../themes';
+import FlagIcon from '@mui/icons-material/Flag';
 
 type ViewProps = {
   viewName: string;
@@ -131,17 +133,14 @@ function SingleComponent(props: SingleComponentProps) {
       data-field={fieldName}
       sx={{
         borderRadius: '8px',
-        transition: 'background-color 0.4s ease, box-shadow 0.4s ease',
+        transition:
+          'background-color 0.4s ease-in-out, box-shadow 0.4s ease-in-out',
         background: hasError
-          ? 'linear-gradient(135deg, rgba(255,99,71,0.4), rgba(255,0,0,0.3))'
-          : isTouched
-            ? 'rgba(0, 255, 0, 0.1)'
-            : 'transparent',
+          ? 'rgba(206, 0, 0, 0.01)'
+          : 'rgba(200, 200, 200, 0.1)',
         boxShadow: hasError
-          ? '0px 0px 12px rgba(255, 0, 0, 0.6)'
-          : isTouched
-            ? '0px 0px 8px rgba(0, 255, 0, 0.5)'
-            : 'none',
+          ? '0px 0px 5px rgba(250, 0, 0, 0.3)'
+          : '0px 0px 5px rgba(0, 0, 0, 0.1)',
       }}
     >
       <Grid container spacing={isHiddenField ? 0 : 1}>
@@ -256,6 +255,7 @@ export function ViewComponent(props: ViewProps) {
             maxWidth: '100%',
             overflowX: 'hidden',
             wordWrap: 'break-word',
+            marginBottom: 2,
           }}
           action={
             <IconButton
@@ -273,7 +273,7 @@ export function ViewComponent(props: ViewProps) {
           }
         >
           <Typography variant="h6" sx={{fontWeight: 'bold'}}>
-            ⚠️ Form has errors. Click to fix:
+            Form has errors. Click to fix:
           </Typography>
 
           <Collapse in={showErrors}>
@@ -345,10 +345,18 @@ function displayErrors(
     if (element) {
       element.scrollIntoView({behavior: 'smooth', block: 'center'});
       (element as HTMLElement).style.transition =
-        'background-color 0.5s ease, box-shadow 0.5s ease';
-      (element as HTMLElement).style.backgroundColor = '#FFB3B3';
+        'background-color 0.5s ease-in-out, box-shadow 0.6s ease-in-out';
+      (element as HTMLElement).style.backgroundColor = '#FCCCCCD7';
       (element as HTMLElement).style.boxShadow =
-        '0px 0px 15px rgba(255, 0, 0, 0.8)';
+        '0px 0px 15px rgba(255, 0, 0, 0.4)';
+
+      // fade in-out before clearing
+      setTimeout(() => {
+        (element as HTMLElement).style.backgroundColor =
+          'rgba(255, 0, 0, 0.05)';
+        (element as HTMLElement).style.boxShadow =
+          '0px 0px 10px rgba(255, 0, 0, 0.4)';
+      }, 800);
 
       setTimeout(() => {
         (element as HTMLElement).style.backgroundColor = 'inherit';
@@ -364,22 +372,26 @@ function displayErrors(
   return (
     <ul
       style={{
-        paddingLeft: '20px',
+        paddingLeft: '15px',
         marginTop: '10px',
         overflowX: 'hidden',
         maxWidth: '100%',
         whiteSpace: 'normal',
+        listStyleType: 'none',
       }}
     >
       {' '}
       {filteredErrors.map(field => (
-        <li key={field} style={{listStyle: 'none'}}>
+        <li
+          key={field}
+          style={{marginBottom: '6px', display: 'flex', alignItems: 'center'}}
+        >
           <Link
             component="button"
             variant="body2"
             onClick={() => scrollToField(field)}
             sx={{
-              color: 'red',
+              color: theme.palette.highlightColor.main,
               textDecoration: 'underline',
               fontWeight: 'bold',
               maxWidth: '100%',
@@ -388,15 +400,20 @@ function displayErrors(
               textOverflow: 'ellipsis',
               '&:hover': {
                 transform: 'scale(1.02)',
+                color: theme.palette.secondary.main,
+                textDecoration: 'underline',
                 overflow: 'hidden',
               },
             }}
           >
-            🚩 {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
+            {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
           </Link>
-          <p style={{fontSize: '14px', margin: '5px 0', color: 'darkred'}}>
+          <Typography
+            variant="body2"
+            sx={{color: theme.palette.icon?.required, marginLeft: '20px'}}
+          >
             {errors[field]}
-          </p>
+          </Typography>
         </li>
       ))}
     </ul>
@@ -418,17 +435,19 @@ export function getUsefulFieldNameFromUiSpec(
     const fieldInfo = ui_specification.fields[field];
     const fieldName =
       fieldInfo.label || fieldInfo['component-parameters'].label || field;
-    // get the view that this field is part of
-    let sectionName = '';
-    for (const section in ui_specification.views) {
-      if (ui_specification.views[section].fields.includes(field)) {
-        sectionName =
-          section === thisView
-            ? 'This section'
-            : ui_specification.views[section].label || section;
-      }
-    }
-    return `${sectionName} > ${fieldName}`;
+
+    return (
+      <span style={{display: 'flex', alignItems: 'center'}}>
+        <FlagIcon
+          fontSize="small"
+          sx={{
+            color: theme.palette.highlightColor.contrastText,
+            marginRight: '5px',
+          }}
+        />
+        {fieldName}
+      </span>
+    );
   } else {
     return field;
   }
