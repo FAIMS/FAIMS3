@@ -402,16 +402,13 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'TemplatedStringField',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Human Readable ID',
+      label: 'Templated String Field',
       fullWidth: true,
-      name: 'hrid-field',
-      helperText: 'Human Readable ID',
+      name: 'templated-field',
+      helperText: 'Templated String Field',
       required: true,
       template: ' {{}}',
-      InputProps: {
-        type: 'text', // must be a valid html type
-      },
-      hrid: true,
+      hidden: true,
     },
     validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',
@@ -440,6 +437,35 @@ const fields: {[key: string]: FieldType} = {
       label: 'Address',
     },
     validationSchema: [['yup.object'], ['yup.nullable']],
+  },
+  FAIMSTextField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'FAIMSTextField',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      label: 'FAIMS Text Field',
+      fullWidth: true,
+      helperText: 'Enter text',
+      variant: 'outlined',
+      required: false,
+    },
+    validationSchema: [['yup.string']],
+    initialValue: '',
+  },
+
+  NumberField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'NumberField',
+    'type-returned': 'faims-core::Number',
+    'component-parameters': {
+      label: 'Number Input',
+      fullWidth: true,
+      helperText: 'Enter a valid number',
+      required: false,
+      // min and max can be dynamically added when needed
+    },
+    validationSchema: [['yup.number']],
+    initialValue: '',
   },
 };
 

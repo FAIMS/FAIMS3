@@ -46,6 +46,7 @@ const theme = createTheme({
     text: {
       primary: '#000000FF',
       secondary: '#000000',
+      helpText: '#000000',
     },
     alert: {
       warningBackground: '#FFFFFF',

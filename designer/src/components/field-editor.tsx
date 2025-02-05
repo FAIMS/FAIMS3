@@ -42,10 +42,11 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
+import HiddenFieldEditor from './Fields/HiddenToggle';
 
 type FieldEditorProps = {
   fieldName: string;
-  viewSetId?: string;
+  viewsetId: string;
   viewId: string;
   expanded: boolean;
   addFieldCallback: (fieldName: string) => void;
@@ -55,6 +56,7 @@ type FieldEditorProps = {
 export const FieldEditor = ({
   fieldName,
   viewId,
+  viewsetId,
   expanded,
   addFieldCallback,
   handleExpandChange,
@@ -62,6 +64,7 @@ export const FieldEditor = ({
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
+
   const dispatch = useAppDispatch();
 
   const fieldComponent = field['component-name'];
@@ -256,7 +259,11 @@ export const FieldEditor = ({
             <OptionsEditor fieldName={fieldName} />
           )) ||
           (fieldComponent === 'MultiSelect' && (
-            <OptionsEditor fieldName={fieldName} showExpandedChecklist={true} showExclusiveOptions={true}/>
+            <OptionsEditor
+              fieldName={fieldName}
+              showExpandedChecklist={true}
+              showExclusiveOptions={true}
+            />
           )) ||
           (fieldComponent === 'AdvancedSelect' && (
             <AdvancedSelectEditor fieldName={fieldName} />
@@ -280,7 +287,14 @@ export const FieldEditor = ({
             <BasicAutoIncrementerEditor fieldName={fieldName} viewId={viewId} />
           )) ||
           (fieldComponent === 'TemplatedStringField' && (
-            <TemplatedStringFieldEditor fieldName={fieldName} viewId={viewId} />
+            <>
+              <TemplatedStringFieldEditor
+                fieldName={fieldName}
+                viewId={viewId}
+                viewsetId={viewsetId}
+              />
+              <HiddenFieldEditor fieldName={fieldName} />
+            </>
           )) || <BaseFieldEditor fieldName={fieldName} />}
       </AccordionDetails>
     </Accordion>

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJECT_DIR="${SCRIPT_DIR}/../"
+
 APP_NAME_PLACEHOLDER=APPNAME
 APP_ID_PLACEHOLDER=org.fedarch.faims3
 
@@ -54,10 +57,7 @@ fi
 # Setting the IOS build version
 # https://pgu.dev/2020/12/16/ios-build-versioning.html
 
-#version=$(grep '"version":' $PROJECT_DIR/package.json | cut -d: -f 2 | sed -e 's/[", ]//g')
-# since we previously published 1.0.0 on app store we need a higher version
-# number, set that here until we get the main version above this
-version=1.0.5
+version=$(grep '"version":' $PROJECT_DIR/package.json | cut -d: -f 2 | sed -e 's/[", ]//g')
 buildNumber=$(date -u "+%Y%m%d%H%M")
 
 if test -f /usr/libexec/PlistBuddy; then
