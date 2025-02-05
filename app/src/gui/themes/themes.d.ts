@@ -32,9 +32,10 @@ declare module '@mui/material/styles' {
       main: string;
       contrastText: string;
     };
-    icon: {
+    icon?: {
       main: string;
       light: string;
+      required: string;
     };
     table?: {
       divider: string;
@@ -60,6 +61,7 @@ declare module '@mui/material/styles' {
     icon?: {
       main: string;
       light: string;
+      required: string;
     };
 
     progressBar?: {
