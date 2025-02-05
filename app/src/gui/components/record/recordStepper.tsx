@@ -31,11 +31,14 @@ import {
 import {ProjectUIModel} from '@faims3/data-model';
 // import makeStyles from '@mui/styles/makeStyles';
 import {createUseStyles} from 'react-jss';
+import {theme} from '../../themes';
+import {generateStepperGradient} from '../../../utils/stepperColors';
 type RecordStepperProps = {
   view_index: number;
   ui_specification: ProjectUIModel;
   onChangeStepper: any;
   views: {[key: string]: any};
+  formErrors?: {[fieldName: string]: unknown};
 };
 
 const useStyles = createUseStyles({
@@ -55,6 +58,25 @@ const useStyles = createUseStyles({
   },
 });
 
+// determine step color based on theming that'sset
+const getStepColor = (index: number, totalSteps: number, errors: any) => {
+  const gradientColors =
+    theme.palette.stepperGradient.length >= totalSteps
+      ? theme.palette.stepperGradient
+      : generateStepperGradient(
+          totalSteps,
+          theme.palette.primary.main === '#000000' ? 'bss' : 'default' // default
+        );
+
+  const color = gradientColors[index] || theme.palette.grey[400];
+
+  if (index === totalSteps - 1) return '#32CD32'; //  green for final step to indicate completion
+  if (errors && errors[index]) return '#B10000'; // error Step (Red)
+  if (index === index) return color; // current Step
+  if (index < totalSteps) return color; // completed Step
+  return theme.palette.grey[400]; // defaulting to grey for unvisited Steps
+};
+
 export default function RecordStepper(props: RecordStepperProps) {
   const classes = useStyles();
   const {
@@ -66,6 +88,7 @@ export default function RecordStepper(props: RecordStepperProps) {
   // active step has been replaced by view_index because view_index will be updated every time form values updated
   // 20220727 bbs the width 93% gets rid of the overflowX in the PSMIP notebook at most standard resolutions
   // Client didn't want the absence of the stepper in sm-md resolutions, so reverted md->sm and am making text changes
+
   return (
     <>
       <Box display={{xs: 'none', sm: 'block'}} py={1}>
@@ -82,7 +105,24 @@ export default function RecordStepper(props: RecordStepperProps) {
                   onClick={() => {
                     onChangeStepper(view_name, index);
                   }}
-                  sx={{width: '93%'}}
+                  sx={{
+                    width: '93%',
+                    '& .MuiStepLabel-label': {
+                      color: getStepColor(
+                        index,
+                        views.length,
+                        props.formErrors
+                      ),
+                      fontWeight: index === view_index ? 'bold' : 'normal',
+                    },
+                    '& .MuiStepIcon-root': {
+                      color: getStepColor(
+                        index,
+                        views.length,
+                        props.formErrors
+                      ),
+                    },
+                  }}
                 >
                   {ui_specification.views[view_name].label}
                 </StepButton>
@@ -114,6 +154,14 @@ export function CustomMobileStepper(props: RecordStepperProps) {
       steps={views.length}
       position="static"
       activeStep={view_index}
+      style={{
+        backgroundColor: getStepColor(
+          view_index,
+          views.length,
+          props.formErrors
+        ),
+        color: view_index === views.length - 1 ? '#FFFFFF' : '#000000',
+      }}
       nextButton={
         <Button
           size="small"
