@@ -2,7 +2,7 @@ import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
-import { NOTEBOOK_NAME } from '@/constants';
+import {NOTEBOOK_NAME} from '@/constants';
 
 export const fields = [
   {

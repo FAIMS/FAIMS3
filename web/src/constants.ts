@@ -1,2 +1,2 @@
-export const NOTEBOOK_NAME: string = 'project';
-export const NOTEBOOK_NAME_CAPITALIZED: string = 'Project';
+export const NOTEBOOK_NAME = 'project';
+export const NOTEBOOK_NAME_CAPITALIZED = 'Project';

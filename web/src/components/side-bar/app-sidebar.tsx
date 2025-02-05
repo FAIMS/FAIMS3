@@ -13,7 +13,7 @@ import {Link, useLocation} from '@tanstack/react-router';
 import {LayoutTemplate, LetterText, Users} from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
-import { NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED } from '@/constants';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 /**
  * AppSidebar component renders the main application sidebar with navigation items
@@ -62,7 +62,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               icon: LetterText,
               isActive: pathname.startsWith('/templates'),
               items:
-              projects?.length > 0
+                projects?.length > 0
                   ? projects.map(({name, non_unique_project_id}: any) => ({
                       title: name,
                       url: `/${NOTEBOOK_NAME}s/${non_unique_project_id}`,
