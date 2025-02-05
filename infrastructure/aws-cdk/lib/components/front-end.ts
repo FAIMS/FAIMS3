@@ -29,8 +29,12 @@ export interface FaimsFrontEndProps {
   uiTheme: 'bubble' | 'default' | 'bssTheme';
   notebookListType: 'tabs' | 'headings';
   notebookName: string;
+  // App display name
   appName: string;
+  // Top banner to display - defaults to appName
   headingAppName?: string;
+  // Used for mobile app builds etc
+  appId: string;
 
   // Designer standalone website
   designerHz: IHostedZone;
@@ -146,6 +150,8 @@ export class FaimsFrontEnd extends Construct {
       VITE_SHOW_NEW_NOTEBOOK: 'true',
       VITE_SHOW_MINIFAUXTON: 'true',
       VITE_APP_NAME: props.appName,
+      // TODO add app ID
+      VITE_APP_ID: props.appId,
       VITE_HEADING_APP_NAME: props.headingAppName ?? props.appName,
 
       // Theme: default or bubble
