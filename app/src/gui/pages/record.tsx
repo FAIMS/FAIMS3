@@ -285,12 +285,11 @@ export default function Record() {
               updatedrevision_id!
             );
             setRelatedRecords(newRelationship);
-            const newParent = await getParentPersistenceData(
-              uiSpec,
-              project_id!,
-              latest_record.relationship ?? null,
-              record_id!
-            );
+            const newParent = await getParentPersistenceData({
+              uiSpecification: uiSpec,
+              projectId: project_id!,
+              parent: latest_record.relationship ?? null,
+            });
             setParentLinks(newParent);
             let newBreadcrumbs = [
               // {link: ROUTES.INDEX, title: 'Home'},
@@ -382,12 +381,11 @@ export default function Record() {
           if (uiSpec !== null) {
             setRelatedRecords(result.newRelationship);
 
-            getParentPersistenceData(
-              uiSpec,
-              project_id!,
-              result.new_relation ?? {},
-              record_id!
-            ).then(newParent => {
+            getParentPersistenceData({
+              uiSpecification: uiSpec,
+              projectId: project_id!,
+              parent: result.new_relation,
+            }).then(newParent => {
               setParentLinks(newParent);
             });
           }

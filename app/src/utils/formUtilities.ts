@@ -1,4 +1,9 @@
-import {ProjectUIModel, Record} from '@faims3/data-model';
+import {
+  getFieldToIdsMap,
+  getHridFieldMap,
+  ProjectUIModel,
+  Record,
+} from '@faims3/data-model';
 import Mustache from 'mustache';
 import {RecordContext} from '../gui/components/record/form';
 
@@ -237,4 +242,68 @@ export function recomputeDerivedFields({
   }
 
   return changeDetected;
+}
+
+/**
+ * Uses the UI specification to reverse engineer the viewset that the values are
+ * a part of. Then tries to look for hridField or hrid prefix to determine the
+ * ideal HRID. Returns the value, if present, or undefined.
+ *
+ * @param values The field values which is an object mapping field name -> value
+ * @param uiSpecification The ui specification for this value set
+ *
+ * @returns The likely HRID - either the specified HRID from the hridField in
+ * the ui spec, if present, then the hrid prefix field as a backup, undefined if
+ * not available or the values are undefined
+ */
+export function getHridFromValuesAndSpec({
+  values,
+  uiSpecification,
+}: {
+  values: ValuesObject;
+  uiSpecification: ProjectUIModel;
+}): string | undefined {
+  // Get necessary maps re: UI specification
+  const fieldToIdMap = getFieldToIdsMap(uiSpecification);
+  const viewsetToHridFieldMap = getHridFieldMap(uiSpecification);
+
+  // Here we reverse engineer the correct hrid field to look for since we
+  // need to know the viewset ID that a field pertains to in order to get
+  // the correct hrid field name
+  const fieldNames = Array.from(Object.keys(values ?? {})) ?? [];
+
+  // try to find any field name which has a viewset in the ui spec!
+  let relevantViewset = undefined;
+  for (const fieldName of fieldNames) {
+    relevantViewset = fieldToIdMap[fieldName]?.viewSetId;
+    if (relevantViewset !== undefined) {
+      break;
+    }
+  }
+
+  // Here we have found a matching viewset, which is a good start
+  if (relevantViewset) {
+    // See if we have a matching ideal case
+    const hridFieldName = viewsetToHridFieldMap[relevantViewset];
+    if (hridFieldName && values[hridFieldName]) {
+      return values[hridFieldName];
+    }
+  }
+
+  // If there is no viewset which this corresponds to for ANY value, we really
+  // are in a bad state - but let's still give it a shot using the old approach
+  const possibleHRIDFields = Object.getOwnPropertyNames(values).filter(
+    (f: string) => f.startsWith('hrid')
+  );
+
+  // Try to get any matching hrid field
+  for (const fieldName of possibleHRIDFields) {
+    if (values[fieldName]) {
+      return values[fieldName];
+    }
+  }
+
+  // This is really grim - nothing worked, return undefined and let the parent
+  // function fall back to their preferred backup option
+  return undefined;
 }

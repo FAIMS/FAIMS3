@@ -203,12 +203,11 @@ function DraftEdit(props: DraftEditProps) {
             relation_type_vocabPair: props.state.relation_type_vocabPair,
           },
         };
-        const newParent = await getParentPersistenceData(
-          uiSpec,
-          project_id,
+        const newParent = await getParentPersistenceData({
+          uiSpecification: uiSpec,
+          projectId: project_id,
           parent,
-          record_id
-        );
+        });
         setParentLinks(newParent);
         setIs_link_ready(true);
       } else {

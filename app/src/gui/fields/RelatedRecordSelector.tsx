@@ -335,9 +335,10 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       relation_type_vocabPair: relationshipPair,
     };
     addRecordLink({
-      child_record: selectedRecord,
+      childRecord: selectedRecord,
       parent: current_record,
-      relation_type: props.relation_type,
+      relationType: props.relation_type,
+      projectId: project_id,
     })
       .then(child_record => {
         if (child_record !== null) {

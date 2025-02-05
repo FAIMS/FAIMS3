@@ -22,7 +22,6 @@ import {
   getFirstRecordHead,
   getFullRecordData,
   getHridFieldMap,
-  getIdsByFieldName,
   getMetadataForSomeRecords,
   LinkedRelation,
   LocationState,
@@ -37,8 +36,14 @@ import {
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {logError} from '../../../../logging';
+import {
+  getHridFromValuesAndSpec,
+  ValuesObject,
+} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
 import {ParentLinkProps, RecordLinkProps} from './types';
+import {getUiSpecForProject} from '../../../../uiSpecification';
+import {projectIsActivated} from '../../../../sync/projects';
 
 /**
  * Generate an object containing information to be stored in
@@ -439,19 +444,9 @@ async function get_field_RelatedFields(
   relation_type: string,
   current_revision_id: string
 ): Promise<Array<RecordLinkProps>> {
-  // hrid field map
-  const hridFieldMap = getHridFieldMap(ui_specification);
-
   for (const index in fields) {
     const field = fields[index]['field'];
     const child_record = fields[index]['value'];
-
-    // Get the view and viewset ID
-    const {viewSetId} = getIdsByFieldName({
-      uiSpecification: ui_specification,
-      fieldName: field,
-    });
-    const hridFieldName = hridFieldMap[viewSetId];
 
     const related_type =
       ui_specification['fields'][field]['component-parameters']['related_type'];
@@ -460,11 +455,15 @@ async function get_field_RelatedFields(
         fields[index]['value']
       );
       if (latest_record !== null && revision_id !== undefined) {
-        child_record['record_label'] = getHRIDValue(
-          child_record['record_id'],
-          latest_record.data,
-          hridFieldName
-        );
+        // Try and get the HRID and fall back to the record ID
+        const hrid =
+          getHridFromValuesAndSpec({
+            values: latest_record.data,
+            uiSpecification: ui_specification,
+          }) ?? child_record['record_id'];
+
+        // inject the hrid
+        child_record['record_label'] = hrid;
 
         const linked_vocab =
           child_record['relation_type_vocabPair'] !== null &&
@@ -531,10 +530,6 @@ export async function addLinkedRecord(
   child_hrid: string,
   current_revision_id: string
 ): Promise<Array<RecordLinkProps>> {
-  // get a map of field names to identity in the UI spec
-  const fieldToIdMap = getFieldToIdsMap(ui_specification);
-  const viewsetToHridFieldMap = getHridFieldMap(ui_specification);
-
   let parent_links: Array<LinkedRelation> = [];
   //add linked from parent
   if (
@@ -574,25 +569,12 @@ export async function addLinkedRecord(
           : ['is related to', 'is related to'];
       let type = latest_record?.type;
 
-      // Here we reverse engineer the correct hrid field to look for since we
-      // need to know the viewset ID that a field pertains to in order to get
-      // the correct hrid field name
-      const relevantFormData = latest_record?.data;
-      const fieldNames = Array.from(Object.keys(relevantFormData ?? {})) ?? [];
-      const relevantViewset =
-        fieldNames.length > 0
-          ? fieldToIdMap[fieldNames[0]].viewSetId
-          : undefined;
-      let hrid;
-      if (!relevantViewset) {
-        hrid = parent_link.record_id;
-      } else {
-        hrid = getHRIDValue(
-          parent_link.record_id,
-          relevantFormData,
-          viewsetToHridFieldMap[relevantViewset]
-        );
-      }
+      // get hrid for the parent link record
+      const hrid =
+        getHridFromValuesAndSpec({
+          values: latest_record?.data ?? {},
+          uiSpecification: ui_specification,
+        }) ?? parent_link.record_id;
 
       if (type !== undefined) type = ui_specification.viewsets[type]['label'];
       const {section, section_label} = get_section(
@@ -683,20 +665,32 @@ function get_field_label(ui_specification: ProjectUIModel, field: string) {
   }
 }
 
-export async function getParentPersistenceData(
-  ui_specification: ProjectUIModel,
-  project_id: string,
-  parent: Relationship | null,
-  record_id: string
-): Promise<ParentLinkProps[]> {
-  // get a map of field names to identity in the UI spec
-  const fieldToIdMap = getFieldToIdsMap(ui_specification);
-  const viewsetToHridFieldMap = getHridFieldMap(ui_specification);
-
+/**
+ * For a given child, fetches the parent persistent data for use in infilling
+ * default values from the parent
+ *
+ * TODO: this appears to generate way more information than is actually needed
+ * to fulfil this purpose.
+ *
+ * @param ui_specification The ui specification for the current project
+ * @param project_id The project ID
+ * @param parent The parent relationship
+ * @param record_id The current record ID (which would be the child record)
+ * @returns A list of parent records with persistent data made available
+ */
+export async function getParentPersistenceData({
+  uiSpecification,
+  projectId,
+  parent,
+}: {
+  uiSpecification: ProjectUIModel;
+  projectId: string;
+  parent: Relationship | null;
+}): Promise<ParentLinkProps[]> {
   let parentRecords: ParentLinkProps[] = [];
   if (parent !== null && parent.parent !== undefined) {
     const {latest_record, revision_id} = await getRecordInformation({
-      project_id: project_id,
+      project_id: projectId,
       record_id: parent.parent.record_id,
       record_label: parent.parent.record_id,
     });
@@ -706,59 +700,50 @@ export async function getParentPersistenceData(
       let type = latest_record?.type;
 
       //get persistent data from parent record not from local DB
-      ui_specification.viewsets[type]['views'].map((view: string) =>
-        ui_specification.views[view]['fields'].map((field: string) =>
-          ui_specification.fields[field]['displayParent'] ||
-          ui_specification.fields[field]['persistent']
+      uiSpecification.viewsets[type]['views'].map((view: string) =>
+        uiSpecification.views[view]['fields'].map((field: string) =>
+          uiSpecification.fields[field]['displayParent'] ||
+          uiSpecification.fields[field]['persistent']
             ? (persistentvalue[field] = latest_record?.data[field])
             : field
         )
       );
 
-      // Here we reverse engineer the correct hrid field to look for since we
-      // need to know the viewset ID that a field pertains to in order to get
-      // the correct hrid field name
-      const relevantFormData = latest_record?.data;
-      const fieldNames = Array.from(Object.keys(relevantFormData ?? {})) ?? [];
-      const relevantViewset =
-        fieldNames.length > 0
-          ? fieldToIdMap[fieldNames[0]].viewSetId
-          : undefined;
-      let hrid;
-      if (!relevantViewset) {
-        hrid = record_id;
-      } else {
-        hrid = getHRIDValue(
-          record_id,
-          relevantFormData,
-          viewsetToHridFieldMap[relevantViewset]
-        );
-      }
+      // get hrid for the parent record
+      const hrid =
+        getHridFromValuesAndSpec({
+          uiSpecification: uiSpecification,
+          values: latest_record?.data,
+        }) ?? parent.parent.record_id;
 
       if (
         latest_record !== null &&
         type !== undefined &&
-        ui_specification.viewsets[type] !== undefined &&
-        ui_specification.viewsets[type]['label'] !== undefined
+        uiSpecification.viewsets[type] !== undefined &&
+        uiSpecification.viewsets[type]['label'] !== undefined
       )
-        type = ui_specification.viewsets[type]['label'] ?? '';
+        type = uiSpecification.viewsets[type]['label'] ?? '';
 
       parentRecords = [
         {
+          // It seems the other fields are not used, only these?
+          type: type,
+          persistentData: {data: persistentvalue},
+
+          // other details...
           record_id: parent.parent.record_id,
+          // This HRID is for the parent record
           hrid: hrid,
           lastUpdatedBy: latest_record?.updated_by ?? '',
           section: '',
           field_id: parent.parent.field_id,
           field_label: parent.parent.field_id,
           route: ROUTES.getRecordRoute(
-            project_id,
+            projectId,
             parent.parent.record_id,
             revision_id
           ),
-          type: type,
           children: [],
-          persistentData: {data: persistentvalue},
           deleted: latest_record?.deleted,
         },
       ];
@@ -807,10 +792,6 @@ export async function getDetailRelatedInformation(
   record_id: string,
   current_revision_id: string
 ): Promise<RecordLinkProps[]> {
-  // get a map of field names to identity in the UI spec
-  const fieldToIdMap = getFieldToIdsMap(ui_specification);
-  const viewsetToHridFieldMap = getHridFieldMap(ui_specification);
-
   let record_to_field_links: RecordLinkProps[] = [];
   // get fields that are related field
   const {fields_child, fields_linked} = get_related_valued_fields(
@@ -819,23 +800,9 @@ export async function getDetailRelatedInformation(
     values
   );
 
-  // Here we reverse engineer the correct hrid field to look for since we
-  // need to know the viewset ID that a field pertains to in order to get
-  // the correct hrid field name
-  const relevantFormData = values;
-  const fieldNames = Array.from(Object.keys(relevantFormData ?? {})) ?? [];
-  const relevantViewset =
-    fieldNames.length > 0 ? fieldToIdMap[fieldNames[0]].viewSetId : undefined;
-  let hrid;
-  if (!relevantViewset) {
-    hrid = record_id;
-  } else {
-    hrid = getHRIDValue(
-      record_id,
-      relevantFormData,
-      viewsetToHridFieldMap[relevantViewset]
-    );
-  }
+  const hrid =
+    getHridFromValuesAndSpec({uiSpecification: ui_specification, values}) ??
+    record_id;
 
   if (record_to_field_links !== null) {
     // get field child records
@@ -951,29 +918,42 @@ export async function removeRecordLink(
  * @returns the new child record object
  */
 export async function addRecordLink({
-  child_record,
+  childRecord,
   parent,
-  relation_type,
+  relationType,
+  projectId,
 }: {
-  child_record: RecordReference;
+  projectId: string;
+  childRecord: RecordReference;
   parent: LinkedRelation;
-  relation_type: string;
+  relationType: string;
 }): Promise<RecordMetadata | null> {
+  // get uncompiled ui spec - useful for hrid generation
+  const uiSpecification = await getUiSpecForProject(projectId, false);
+
   let child_record_meta = null;
   try {
     // retrieve information about the child record
-    const {latest_record} = await getRecordInformation(child_record);
+    const {latest_record} = await getRecordInformation(childRecord);
+
+    // Use the data and spec to get the HRID
+    const childRecordHrid = latest_record?.data
+      ? (getHridFromValuesAndSpec({
+          values: latest_record?.data,
+          uiSpecification: uiSpecification,
+        }) ?? latest_record.record_id)
+      : (latest_record?.record_id ?? '');
 
     // Find the relation object (if any) and then either add or
     // remove the parent/link as appropriate
     // Since there can only be one parent, that is done directly
     // but links use AddLink/RemoveLink because they can be many-many
     const relation = latest_record?.relationship ?? {};
-    if (relation_type === 'faims-core::Child') relation['parent'] = parent;
-    else if (relation_type === 'faims-core::Linked')
+    if (relationType === 'faims-core::Child') relation['parent'] = parent;
+    else if (relationType === 'faims-core::Linked')
       relation['linked'] = AddLink(relation, parent);
     else {
-      logError(`Error: unknown relation type ${relation_type}`);
+      logError(`Error: unknown relation type ${relationType}`);
       return null;
     }
 
@@ -981,26 +961,20 @@ export async function addRecordLink({
     const now = new Date();
     if (
       latest_record !== null &&
-      child_record.project_id !== undefined &&
+      childRecord.project_id !== undefined &&
       latest_record.deleted !== true
     ) {
       const new_doc = latest_record;
       new_doc['relationship'] = relation;
       new_doc['updated'] = now;
       new_doc['deleted'] = latest_record.deleted;
-      await upsertFAIMSData(child_record.project_id, new_doc);
+      await upsertFAIMSData(childRecord.project_id, new_doc);
     }
     // here we are trusting that Record has enough of the fields of
     // RecordMetadata for the purposes of the caller until such time as we
     // rationalise the Record types
     child_record_meta = latest_record as unknown as RecordMetadata;
-    // it's missing the HRID so grab it here
-    // Just use record id here and see what happens ¯\_(ツ)_/¯
-    child_record_meta.hrid = child_record_meta.record_id;
-    //child_record_meta.hrid = getHRIDValue(
-    //  child_record_meta.record_id,
-    //  child_record_meta.data
-    //);
+    child_record_meta.hrid = childRecordHrid;
   } catch (error) {
     logError(error);
   }
