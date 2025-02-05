@@ -1406,6 +1406,7 @@ class RecordForm extends React.Component<
                         ui_specification={ui_specification}
                         onChangeStepper={this.onChangeStepper}
                         views={views}
+                        formErrors={formProps.errors}
                       />
                     )}
 
