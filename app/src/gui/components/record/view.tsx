@@ -55,6 +55,7 @@ type ViewProps = {
   fieldNames: string[]; //add for branching logic
   disabled?: boolean; // add for view tab or edit tab
   hideErrors?: boolean;
+  formErrors?: {[fieldName: string]: unknown};
 };
 type SingleComponentProps = {
   fieldName: string;
@@ -70,6 +71,35 @@ type SingleComponentProps = {
   disabled?: boolean; // add for view tab or edit tab
 };
 
+/**
+ * @function SingleComponent
+ * @description
+ *   Renders an individual form field component dynamically based on the provided configuration.
+ *   Handles form validation errors, conflict indicators, annotations, and uncertainty details.
+ *   Supports expand/collapse functionality for annotations and displays visual cues for errors.
+ *
+ * @param {SingleComponentProps} props
+ *   - `fieldName`: Name of the form field to render.
+ *   - `fields`: Field configuration object from the UI specification.
+ *   - `formProps`: Formik form properties for managing state and validation.
+ *   - `annotation`: Annotation data associated with the field.
+ *   - `handleAnnotation`: Function to handle annotation changes.
+ *   - `draftState`: Optional draft state for syncing.
+ *   - `conflictfields`: List of fields with data conflicts.
+ *   - `handleChangeTab`: Function to switch tabs when resolving conflicts.
+ *   - `isSyncing`: Indicates syncing status.
+ *   - `disabled`: Determines if the field is read-only.
+ *
+ * @returns {JSX.Element}
+ *   The rendered form field with optional annotation and conflict resolution UI.
+ *
+ * @features
+ *   - Dynamic field rendering based on UI configuration.
+ *   - Error highlighting and conflict resolution dialog support.
+ *   - Annotation and uncertainty field support with expand/collapse toggle.
+ *   - Visual indicators for validation errors using smooth transitions.
+ */
+
 function SingleComponent(props: SingleComponentProps) {
   const conflictfields = props.conflictfields;
   const fieldName = props.fieldName;
@@ -80,7 +110,6 @@ function SingleComponent(props: SingleComponentProps) {
   const hasError = Boolean(
     props.formProps.errors[fieldName] && props.formProps.touched[fieldName]
   );
-  const isTouched = props.formProps.touched[fieldName] && !hasError;
 
   const handleExpandClick = () => {
     setExpanded(!expanded);
@@ -207,24 +236,58 @@ function SingleComponent(props: SingleComponentProps) {
   );
 }
 
+/**
+ * @function ViewComponent
+ * @description
+ *   Renders a collection of form fields as specified by the UI model. It handles validation
+ *   errors, warnings, and integrates field-level annotations and conflict resolutions.
+ *   Displays dynamic alerts for form errors and warnings, with interactive error navigation.
+ *
+ * @param {ViewProps} props
+ *   - `viewName`: The name of the current view being rendered.
+ *   - `ui_specification`: The UI model defining field configurations.
+ *   - `formProps`: Formik properties for managing form state and validation.
+ *   - `draftState`: Optional draft state to handle syncing operations.
+ *   - `annotation`: Annotation data for fields.
+ *   - `handleAnnotation`: Handler function for updating annotations.
+ *   - `isSyncing`: Indicates syncing status of the form data.
+ *   - `conflictfields`: List of fields with conflicts needing resolution.
+ *   - `handleChangeTab`: Function to switch between form tabs.
+ *   - `fieldNames`: Array of field names to be rendered in this view.
+ *   - `disabled`: Disables form fields if set to true (read-only mode).
+ *   - `hideErrors`: Determines if error messages should be hidden.
+ *   - `formErrors`: Optional map of field errors for custom error handling.
+ *
+ * @returns {JSX.Element}
+ *   A rendered form view with all configured fields, including error/warning messages
+ *   and interactive conflict resolution components.
+ *
+ * @features
+ *   - Dynamic rendering of form fields based on the UI specification.
+ *   - Integrated form validation with real-time error/warning indicators.
+ *   - Conflict detection and resolution interface.
+ *   - Smooth scrolling to error fields for better UX.
+ */
+
 export function ViewComponent(props: ViewProps) {
   const ui_specification = props.ui_specification;
   const fieldNames: string[] = props.fieldNames;
   const fields = ui_specification.fields;
-  const [error, setError] = useState(true);
   const [showErrors, setShowErrors] = useState(true);
   const [showWarnings, setShowWarnings] = useState(true);
 
   useEffect(() => {
-    const iserror = fieldNames.some(field =>
-      Boolean(props.formProps.errors[field])
-    );
-    setError(iserror);
-  }, [props.formProps]);
+    const hasError = fieldNames.some(field => props.formProps.errors[field]);
+    if (hasError) {
+      setShowErrors(true);
+    }
+  }, [props.formProps.errors]);
 
   const currentSectionErrors = Object.keys(props.formProps.errors).filter(
     field => fieldNames.includes(field)
   );
+  const hasWarnings =
+    !props.formProps.isValid && currentSectionErrors.length === 0;
 
   return (
     <React.Fragment>
@@ -288,7 +351,7 @@ export function ViewComponent(props: ViewProps) {
       )}
 
       {/* Warning Section */}
-      {!props.hideErrors && !props.formProps.isValid && error === false && (
+      {hasWarnings && (
         <Alert
           severity="warning"
           sx={{
