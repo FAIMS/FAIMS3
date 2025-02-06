@@ -308,10 +308,6 @@ export function CustomMobileStepper(props: RecordStepperProps) {
         borderBottom: '1px solid #ccc',
       }}
     >
-      {/* Step count with error indicator */}
-      <Typography variant="h6" align="center" sx={{fontWeight: 'bold', mb: 1}}>
-        Step {view_index + 1} of {totalSteps} {hasError && ' 🔴'}
-      </Typography>
       <MobileStepper
         variant="text"
         steps={views.length}
