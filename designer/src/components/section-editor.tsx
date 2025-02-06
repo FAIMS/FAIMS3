@@ -67,7 +67,7 @@ export const SectionEditor = ({
   );
   const dispatch = useAppDispatch();
 
-  console.log('SectionEditor', { viewId, viewSet, fView });
+  console.log('SectionEditor', {viewId, viewSet, fView});
 
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -81,7 +81,27 @@ export const SectionEditor = ({
 
   const deleteSection = () => {
     deleteCallback(viewSetId, viewId);
-    handleClose();
+    handleCloseDeleteDialog();
+  };
+
+  const moveSectionToForm = () => {
+    // run the function to move the section to a different form AND save the returned success status to a variable
+    const moveSuccess: boolean = moveSectionCallback(
+      viewSetId,
+      targetViewSetId,
+      viewId
+    );
+
+    // depending on moveSuccess, set relevant state variables
+    if (moveSuccess) {
+      setAddAlertMessage('');
+      handleSectionMoveCallback(targetViewSetId);
+    } else {
+      // manually setting the error message
+      setAddAlertMessage('Failed to move the section to this form.');
+    }
+
+    handleCloseMoveDialog();
   };
 
   const updateSectionLabel = (label: string) => {
