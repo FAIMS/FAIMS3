@@ -142,6 +142,16 @@ export const DesignPanel = () => {
     navigate(index);
   };
 
+  const handleSectionMove = (targetViewSetId: string) => {
+    // get the combined array of forms in order
+    const combinedArray = [...visibleTypes, ...untickedForms];
+    const targetIndex = combinedArray.indexOf(targetViewSetId);
+
+    if (targetIndex >= 0) {
+      setIndexAndNavigate(targetIndex.toString());
+    }
+  };
+
   return (
     <TabContext value={tabIndex}>
       <Alert severity="info" sx={{marginBottom: 2}}>
@@ -268,6 +278,7 @@ export const DesignPanel = () => {
                   moveButtonsDisabled={false}
                   handleChangeCallback={handleCheckboxTabChange}
                   handleDeleteCallback={handleDeleteFormTabChange}
+                  handleSectionMoveCallback={handleSectionMove}
                 />
               }
             />
@@ -287,6 +298,7 @@ export const DesignPanel = () => {
                   moveButtonsDisabled={true}
                   handleChangeCallback={handleCheckboxTabChange}
                   handleDeleteCallback={handleDeleteFormTabChange}
+                  handleSectionMoveCallback={handleSectionMove}
                 />
               }
             />

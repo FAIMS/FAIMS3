@@ -18,30 +18,30 @@ import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRound
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Chip,
-  Grid,
-  IconButton,
-  Stack,
-  Tooltip,
-  Typography,
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
+    Chip,
+    Grid,
+    IconButton,
+    Stack,
+    Tooltip,
+    Typography,
 } from '@mui/material';
-import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
-import {BaseFieldEditor} from './Fields/BaseFieldEditor';
-import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
-import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
-import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
-import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
-import {OptionsEditor} from './Fields/OptionsEditor';
-import {RandomStyleEditor} from './Fields/RandomStyleEditor';
-import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
-import {RichTextEditor} from './Fields/RichTextEditor';
-import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
-import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
-import {TextFieldEditor} from './Fields/TextFieldEditor';
+import { useAppDispatch, useAppSelector } from '../state/hooks';
+import { AdvancedSelectEditor } from './Fields/AdvancedSelectEditor';
+import { BaseFieldEditor } from './Fields/BaseFieldEditor';
+import { BasicAutoIncrementerEditor } from './Fields/BasicAutoIncrementer';
+import { DateTimeNowEditor } from './Fields/DateTimeNowEditor';
+import { MapFormFieldEditor } from './Fields/MapFormFieldEditor';
+import { MultipleTextFieldEditor } from './Fields/MultipleTextField';
+import { OptionsEditor } from './Fields/OptionsEditor';
+import { RandomStyleEditor } from './Fields/RandomStyleEditor';
+import { RelatedRecordEditor } from './Fields/RelatedRecordEditor';
+import { RichTextEditor } from './Fields/RichTextEditor';
+import { TakePhotoFieldEditor } from './Fields/TakePhotoField';
+import { TemplatedStringFieldEditor } from './Fields/TemplatedStringFieldEditor';
+import { TextFieldEditor } from './Fields/TextFieldEditor';
 
 type FieldEditorProps = {
   fieldName: string;
