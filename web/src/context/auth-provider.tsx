@@ -1,4 +1,4 @@
-import * as React from 'react';
+import {useEffect, createContext, useState, useContext} from 'react';
 
 export interface User {
   user: {
@@ -23,7 +23,7 @@ export interface AuthContext {
   user: User | null;
 }
 
-const AuthContext = React.createContext<AuthContext | null>(null);
+const AuthContext = createContext<AuthContext | null>(null);
 
 const key = 'user';
 
@@ -45,7 +45,7 @@ function setStoredUser(user: User | null) {
  * @returns {JSX.Element} The AuthProvider component.
  */
 export function AuthProvider({children}: {children: React.ReactNode}) {
-  const [user, setUser] = React.useState<User | null>(
+  const [user, setUser] = useState<User | null>(
     JSON.parse(localStorage.getItem(key) || 'null')
   );
 
@@ -59,6 +59,12 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     setUser(null);
   };
 
+  /**
+   * Logs in the user with a token and refresh token.
+   * @param {string} token - The token to use for authentication.
+   * @param {string} refreshToken - The refresh token to use for authentication.
+   * @returns {Promise<{status: string, message: string}>} A promise that resolves to an object containing the status and message.
+   */
   const loginWithToken = async (token?: string, refreshToken = '') => {
     if (!token) return {status: 'error', message: 'No token provided'};
 
@@ -83,6 +89,49 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     return {status: 'success', message: ''};
   };
 
+  /**
+   * Refreshes the user's token by making a POST request to the API.
+   * @returns {Promise<{status: string, message: string}>} A promise that resolves to an object containing the status and message.
+   */
+  const refreshToken = async () => {
+    if (!user) return {status: 'error', message: 'No user to refresh'};
+
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/auth/refresh`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({refreshToken: user.refreshToken}),
+      }
+    );
+
+    if (!response.ok) {
+      setStoredUser(null);
+      setUser(null);
+
+      return {status: 'error', message: 'Refresh token failed'};
+    }
+
+    const {token} = await response.json();
+
+    setStoredUser({...user, token});
+    setUser({...user, token});
+
+    return {status: 'success', message: ''};
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshToken();
+
+      const intervalId = setInterval(refreshToken, 5 * 60 * 1000);
+      return () => clearInterval(intervalId);
+    }
+  }, [isAuthenticated]);
+
   return (
     <AuthContext.Provider
       value={{isAuthenticated, user, loginWithToken, logout}}
@@ -98,7 +147,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
  * @throws Will throw an error if used outside of an AuthProvider.
  */
 export function useAuth() {
-  const context = React.useContext(AuthContext);
+  const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
