@@ -39,7 +39,6 @@ import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {BaseFieldEditor} from './Fields/BaseFieldEditor';
 import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
 import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
-import HiddenFieldEditor from './Fields/HiddenToggle';
 import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
 import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
 import {OptionsEditor} from './Fields/OptionsEditor';
@@ -74,8 +73,8 @@ export const FieldEditor = ({
   const dispatch = useAppDispatch();
 
   const fieldComponent = field['component-name'];
-  const protection = field?.protection || 'none';
-  const isHidden = field?.hidden || false;
+  const protection = field['component-parameters'].protection || 'none';
+  const isHidden = field['component-parameters'].hidden || false;
   const isRequired = field['component-parameters']?.required || false;
 
   const notebookMetadata = useAppSelector(state => state.notebook.metadata);
@@ -160,7 +159,9 @@ export const FieldEditor = ({
     ? 'Protected Field. Users that import this template will not be able to modify or delete it.'
     : protection === 'protected'
       ? 'This field is protected. You may not modify or delete it.'
-      : `This field is protected. You may not modify or delete it. ${!isHidden ? 'However, you can hide it.' : ''}`;
+      : `This field is protected. You may not modify or delete it. ${
+          !isHidden ? 'However, you can hide it.' : ''
+        }`;
 
   return (
     <Accordion
@@ -196,7 +197,6 @@ export const FieldEditor = ({
         <Grid container rowGap={1} alignItems={'center'}>
           <Grid item xs={12} sm={8}>
             <Stack direction="column" spacing={1} pr={{xs: 0, sm: 2}}>
-              {/* Field Title */}
               <Typography
                 variant="subtitle2"
                 sx={{
@@ -212,8 +212,6 @@ export const FieldEditor = ({
               >
                 {label}
               </Typography>
-
-              {/* Chips Below Title (Tighter Spacing) */}
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Chip
                   label={fieldComponent}
@@ -227,13 +225,10 @@ export const FieldEditor = ({
                     },
                   }}
                 />
-
                 {field['component-parameters'].required && (
                   <Chip label="Required" size="small" color="primary" />
                 )}
               </Stack>
-
-              {/* Helper Text (More Spacing from Chips) */}
               {field['component-parameters'].helperText && (
                 <Typography
                   variant="body2"
@@ -241,7 +236,7 @@ export const FieldEditor = ({
                   fontWeight={400}
                   fontStyle="italic"
                   sx={{
-                    mt: 1.5, // Added extra spacing here
+                    mt: 1.5,
                     display: '-webkit-box',
                     WebkitLineClamp: 3,
                     WebkitBoxOrient: 'vertical',
@@ -254,7 +249,6 @@ export const FieldEditor = ({
               )}
             </Stack>
           </Grid>
-
           <Grid item xs={12} sm={4}>
             <Stack
               direction="row"
@@ -366,7 +360,6 @@ export const FieldEditor = ({
                       </IconButton>
                     </Tooltip>
                   )}
-
                   <FieldProtectionMenu
                     anchorEl={anchorEl}
                     menuOpen={menuOpen}
@@ -381,7 +374,6 @@ export const FieldEditor = ({
           </Grid>
         </Grid>
       </AccordionSummary>
-
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
         {(protection === 'protected' || protection === 'allow-hiding') && (
           <Stack
@@ -409,7 +401,6 @@ export const FieldEditor = ({
             </Typography>
           </Stack>
         )}
-
         <div
           style={{
             pointerEvents: disableEditing ? 'none' : 'auto',

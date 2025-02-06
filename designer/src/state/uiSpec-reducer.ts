@@ -71,12 +71,13 @@ export const uiSpecificationReducer = createSlice({
       }>
     ) => {
       const {fieldName, protection} = action.payload;
-
       if (fieldName in state.fields) {
-        state.fields[fieldName].protection = protection;
-
-        if (protection === 'protected' && state.fields[fieldName].hidden) {
-          state.fields[fieldName].hidden = false;
+        state.fields[fieldName]['component-parameters'].protection = protection;
+        if (
+          protection === 'protected' &&
+          state.fields[fieldName]['component-parameters'].hidden
+        ) {
+          state.fields[fieldName]['component-parameters'].hidden = false;
         }
       } else {
         throw new Error(
@@ -90,7 +91,7 @@ export const uiSpecificationReducer = createSlice({
     ) => {
       const {fieldName, hidden} = action.payload;
       if (fieldName in state.fields) {
-        state.fields[fieldName].hidden = hidden;
+        state.fields[fieldName]['component-parameters'].hidden = hidden;
       } else {
         throw new Error(`Cannot toggle hidden for unknown field ${fieldName}`);
       }
@@ -256,7 +257,8 @@ export const uiSpecificationReducer = createSlice({
     ) => {
       const {fieldName, viewId} = action.payload;
       if (fieldName in state.fields) {
-        const protection = state.fields[fieldName]?.protection;
+        const protection =
+          state.fields[fieldName]['component-parameters'].protection;
         if (protection === 'protected') {
           throw new Error(
             `Field ${fieldName} is protected and cannot be deleted.`
@@ -322,7 +324,8 @@ export const uiSpecificationReducer = createSlice({
         );
         state.viewsets[viewSetID].views = newViewSetViews;
       }
-    },sectionMovedToForm: (
+    },
+    sectionMovedToForm: (
       state,
       action: PayloadAction<{
         sourceViewSetId: string;
@@ -336,7 +339,7 @@ export const uiSpecificationReducer = createSlice({
       const newSourceViews = sourceViews.filter(view => view !== viewId);
       state.viewsets[sourceViewSetId].views = newSourceViews;
       // add the section to the target form
-      state.viewsets[targetViewSetId].views.push(viewId);    
+      state.viewsets[targetViewSetId].views.push(viewId);
     },
     sectionMoved: (
       state,
@@ -386,6 +389,7 @@ export const uiSpecificationReducer = createSlice({
       const newViewSet = {
         label: formName,
         views: [],
+        hridField: '',
       };
       const formID = slugify(formName);
       // add this to the viewsets

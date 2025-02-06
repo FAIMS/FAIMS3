@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-
-
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -16,26 +14,26 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
- 	<key>CFBundlePackageType</key>
- 	<string>APPL</string>
- 	<key>CFBundleShortVersionString</key>
- 	<string>1.0.4</string>
- 	<key>CFBundleURLTypes</key>
- 	<array>
- 		<dict>
- 			<key>CFBundleURLName</key>
- 			<string>org.fedarch.faims3</string>
- 			<key>CFBundleURLSchemes</key>
- 			<array>
- 				<string>org.fedarch.faims3</string>
- 			</array>
- 		</dict>
- 	</array>
- 	<key>CFBundleVersion</key>
- 	<string>202501170634</string>
- 	<key>ITSAppUsesNonExemptEncryption</key>
- 	<false/>
- 	<key>LSRequiresIPhoneOS</key>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.1.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string></string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string></string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>202502061122</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>To scan QR codes and to allow you to add photos or videos to your form inputs.</string>

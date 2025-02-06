@@ -55,12 +55,13 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
 
   const [hiddenExpanded, setHiddenExpanded] = useState(true);
 
+  // Updated to check 'component-parameters.hidden'
   const hiddenFields = fView.fields.filter(
-    fieldName => fields[fieldName]?.hidden
+    fieldName => fields[fieldName]?.['component-parameters']?.hidden
   );
 
   const visibleFields = fView.fields.filter(
-    fieldName => !fields[fieldName]?.hidden
+    fieldName => !fields[fieldName]?.['component-parameters']?.hidden
   );
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -109,9 +110,6 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
   const updateAllToggles = () => {
     fView.fields.forEach((fieldName: string) => {
       allClosed[fieldName] = false;
-    });
-
-    fView.fields.forEach((fieldName: string) => {
       allOpen[fieldName] = true;
     });
   };
@@ -119,44 +117,8 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
   updateAllToggles();
 
   useEffect(() => {
-    // if fView.label changes we are viewing a different
-    // section, so reset all fields to be closed
     setIsExpanded(allClosed);
   }, [fView.label]);
-
-  // can't do this with another useEffect because it might fire before
-  // or after the other one, it then opens up random fields
-  //
-  // useEffect(() => {
-  //   // if fViews.fields changes we check if there is a new
-  //   // field (just added) and open it up
-  //   fView.fields.forEach((fieldName: string) => {
-  //     console.log('checking', fieldName, isExpanded[fieldName]);
-  //     if (isExpanded[fieldName] === undefined) {
-  //       setIsExpanded({
-  //         ...isExpanded,
-  //         [fieldName]: true,
-  //       });
-  //     }
-  //   });
-  // }, [fView.fields]);
-
-  // can't do this with another useEffect because it might fire before
-  // or after the other one, it then opens up random fields
-  //
-  // useEffect(() => {
-  //   // if fViews.fields changes we check if there is a new
-  //   // field (just added) and open it up
-  //   fView.fields.forEach((fieldName: string) => {
-  //     console.log('checking', fieldName, isExpanded[fieldName]);
-  //     if (isExpanded[fieldName] === undefined) {
-  //       setIsExpanded({
-  //         ...isExpanded,
-  //         [fieldName]: true,
-  //       });
-  //     }
-  //   });
-  // }, [fView.fields]);
 
   const handleExpandChange = (fieldName: string) => {
     return (_event: React.SyntheticEvent, expanded: boolean) => {
@@ -227,7 +189,6 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
       {hiddenFields.length > 0 ? (
         <>
           <div style={{padding: '16px 0'}}>
-            {' '}
             <Button
               variant="outlined"
               size="small"
