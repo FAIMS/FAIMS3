@@ -30,7 +30,7 @@ import {
 } from '@mui/material';
 import {ProjectUIModel} from '@faims3/data-model';
 import {createUseStyles} from 'react-jss';
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {getStepperColors} from '../../../utils/stepperUtils';
 
 type RecordStepperProps = {
@@ -63,7 +63,22 @@ const useStyles = createUseStyles({
 });
 
 /**
- * Determines the color of each step based on current state
+ * @function getStepColor
+ * @description
+ *   Determines the color of each step in the stepper based on its validation status,
+ *   current selection, and whether it has been visited. Highlights steps with errors
+ *   in red, valid steps with dynamic colors, and pending steps in gray.
+ *
+ * @param {number} index - The current step index being evaluated.
+ * @param {number} totalSteps - The total number of steps in the stepper.
+ * @param {object} errors - The form errors object from Formik.
+ * @param {number} currentStep - The index of the currently active step.
+ * @param {string[]} stepperColors - Array of colors assigned to each step.
+ * @param {number[]} visitedSteps - List of steps that have been visited.
+ * @param {number[]} validSteps - List of steps marked as valid (no errors).
+ *
+ * @returns {string}
+ *   The color code for the step based on its state (error, valid, or default).
  */
 const getStepColor = (
   index: number,
@@ -74,50 +89,86 @@ const getStepColor = (
   visitedSteps: number[],
   validSteps: number[]
 ) => {
-  if (errors && errors[index]) return '#B10000';
+  const isVisited = visitedSteps.includes(index);
+  const isValid = validSteps.includes(index);
+  const hasErrors =
+    errors &&
+    Object.keys(errors).some(field => field.startsWith(`step_${index}`));
 
-  // Keep color if visited, otherwise gray
-  if (visitedSteps.includes(index) && validSteps.includes(index)) {
-    return stepperColors[index];
-  }
-  // Current Step
-  if (index === currentStep) return stepperColors[index];
+  if (index === currentStep && hasErrors) return '#B10000';
 
-  // Completed Steps
-  // if (index < currentStep) return stepperColors[index];
+  if (hasErrors) return '#BDBDBD';
 
-  // Unvisited Steps
+  if (isVisited && isValid) return stepperColors[index];
+
+  if (isVisited && !isValid) return '#FFD700';
+
   return '#BDBDBD';
 };
 
 /**
- * RecordStepper Component
- * Displays the stepper for large screens with dynamic colors and transitions.
+ * @function RecordStepper
+ * @description
+ *   Displays a stepper component for multi-step forms, allowing navigation
+ *   between different views or sections. Handles visual indicators for visited steps,
+ *   validation status, and current active step. Adjusts layout responsively
+ *   for desktop and mobile views.
+ *
+ * @param {RecordStepperProps} props
+ *   - `view_index`: The index of the currently active view/step.
+ *   - `ui_specification`: The UI model containing view metadata and labels.
+ *   - `onChangeStepper`: Callback function to handle step changes.
+ *   - `views`: An array of view names representing form sections.
+ *   - `formErrors`: (Optional) Object representing validation errors for fields.
+ *
+ * @returns {JSX.Element}
+ *   A stepper UI for navigating through form sections with error indicators
+ *   and dynamic styling.
+ *
+ * @features
+ *   - Dynamic step color updates based on validation status.
+ *   - Tracks visited and valid steps.
+ *   - Responsive layout: horizontal stepper for large screens,
+ *     and mobile stepper for smaller screens.
  */
+
 export default function RecordStepper(props: RecordStepperProps) {
   const classes = useStyles();
   const {view_index, ui_specification, onChangeStepper, views, formErrors} =
     props;
   const stepperColors = getStepperColors(views.length);
+
   const [visitedSteps, setVisitedSteps] = useState<number[]>([]);
   const [validSteps, setValidSteps] = useState<number[]>([]);
 
-  //  update visited steps
+  // Check for errors in the current view
+  const hasErrors = useCallback(
+    (index: number) => {
+      const currentViewFields = ui_specification.views[views[index]].fields;
+      return currentViewFields.some(
+        (field: string) => formErrors && formErrors[field]
+      );
+    },
+    [formErrors, ui_specification, views]
+  );
+
+  // Track Visited and Valid Steps
   useEffect(() => {
     if (!visitedSteps.includes(view_index)) {
       setVisitedSteps(prev => [...prev, view_index]);
     }
 
-    const currentViewFields = ui_specification.views[views[view_index]].fields;
-    const hasErrors = currentViewFields.some(
-      field => formErrors && formErrors[field]
-    );
+    const currentHasErrors = hasErrors(view_index);
 
-    // update valid steps
-    if (!hasErrors && !validSteps.includes(view_index)) {
-      setValidSteps(prev => [...prev, view_index]);
-    }
-  }, [view_index, formErrors]);
+    setValidSteps(prev => {
+      if (!currentHasErrors && !prev.includes(view_index)) {
+        return [...prev, view_index];
+      } else if (currentHasErrors && prev.includes(view_index)) {
+        return prev.filter(step => step !== view_index);
+      }
+      return prev;
+    });
+  }, [view_index, formErrors, hasErrors]);
 
   return (
     <>
@@ -197,7 +248,7 @@ export default function RecordStepper(props: RecordStepperProps) {
           </Stepper>
         </div>
       </Box>
-      {/* <Box display={{xs: 'block', sm: 'none'}}>
+      <Box display={{xs: 'block', sm: 'none'}}>
         <CustomMobileStepper
           views={views}
           view_index={view_index}
@@ -208,15 +259,35 @@ export default function RecordStepper(props: RecordStepperProps) {
         <Typography variant="h5" align="center">
           {ui_specification.views[views[view_index]]?.label}
         </Typography>
-      </Box> */}
+      </Box>
     </>
   );
 }
 
 /**
- * CustomMobileStepper Component
- * Handles the mobile version of the stepper with basic navigation controls.
+ * @function CustomMobileStepper
+ * @description
+ *   Renders a mobile-friendly stepper component with "Next" and "Back" navigation controls,
+ *   allowing users to switch between form sections easily. Displays the current step count
+ *   and an error indicator if validation errors exist on the current step. Designed to be
+ *   responsive and sticky at the top of the viewport for better accessibility on mobile devices.
+ *
+ * @param {RecordStepperProps} props
+ *   - `views`: An array of view names representing different form sections.
+ *   - `view_index`: The index of the currently active view/step.
+ *   - `onChangeStepper`: Callback function to handle step transitions (forward or backward).
+ *   - `formErrors`: (Optional) Object representing validation errors for specific fields.
+ *
+ * @returns {JSX.Element}
+ *   A mobile-optimized stepper with navigation buttons, step indicators, and error notifications.
+ *
+ * @features
+ *   - "Next" and "Back" buttons for easy navigation between steps.
+ *   - Displays the current step number and highlights errors with an indicator.
+ *   - Sticky positioning for persistent visibility during scrolling.
+ *   - Responsive design optimized for small screens using Material-UI's `MobileStepper`.
  */
+
 export function CustomMobileStepper(props: RecordStepperProps) {
   const {views, view_index, onChangeStepper, formErrors} = props;
   const totalSteps = views.length;
