@@ -12,40 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import {
-  Grid,
   Alert,
-  Stepper,
-  Typography,
-  Step,
   Button,
-  StepButton,
-  TextField,
+  Card,
+  Checkbox,
   Dialog,
-  DialogTitle,
   DialogActions,
   DialogContent,
   DialogContentText,
-  Card,
-  InputAdornment,
-  Tooltip,
-  IconButton,
-  Checkbox,
+  DialogTitle,
   FormControlLabel,
+  Grid,
+  IconButton,
+  InputAdornment,
+  Step,
+  StepButton,
+  Stepper,
+  TextField,
+  Tooltip,
+  Typography,
 } from '@mui/material';
+import Box from '@mui/material/Box';
 
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
-
-import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {SectionEditor} from './section-editor';
-import {useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
+import {useAppDispatch, useAppSelector} from '../state/hooks';
+import FormSettingsPanel from './form-settings';
+import {SectionEditor} from './section-editor';
 
 type Props = {
   viewSetId: string;
@@ -77,7 +78,7 @@ export const FormEditor = ({
     }
   );
   const sections = viewSet ? viewSet.views : [];
-  console.log('FormEditor', { viewSetId, sections });
+  console.log('FormEditor', {viewSetId, sections});
   const views = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
@@ -85,8 +86,6 @@ export const FormEditor = ({
     state => state.notebook['ui-specification'].fields
   );
   const dispatch = useAppDispatch();
-
-  console.log('FormEditor', viewSetId);
 
   const [activeStep, setActiveStep] = useState(0);
   const [newSectionName, setNewSectionName] = useState('New Section');
@@ -101,6 +100,25 @@ export const FormEditor = ({
   const [initialIndex, setInitialIndex] = useState(
     visibleTypes.indexOf(viewSetId)
   );
+
+  // Refs for the scroll container and section steps.
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [showRightGradient, setShowRightGradient] = useState(true);
+
+  useEffect(() => {
+    // Reset activeStep when viewSetId changes.
+    setActiveStep(0);
+  }, [viewSetId]);
+
+  // Update overflow gradient overlay on scroll, hidng it when scrolled to the end.
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      const {scrollLeft, scrollWidth, clientWidth} = container;
+      setShowRightGradient(scrollLeft + clientWidth < scrollWidth - 1);
+    }
+  };
 
   const handleStep = (step: number) => () => {
     setActiveStep(step);
@@ -117,12 +135,10 @@ export const FormEditor = ({
       ticked
     ) {
       setAlertMessage('');
-
       dispatch({
         type: 'ui-specification/formVisibilityUpdated',
         payload: {viewSetId, ticked, initialIndex},
       });
-
       handleChangeCallback(viewSetId, ticked);
     }
     // in the case that there are multiple forms in the notebook, but none are visible, allow to re-tick the checkbox
@@ -130,12 +146,10 @@ export const FormEditor = ({
       setAlertMessage('');
       setChecked(ticked);
       setInitialIndex(0);
-
       dispatch({
         type: 'ui-specification/formVisibilityUpdated',
         payload: {viewSetId, ticked: checked, initialIndex: initialIndex},
       });
-
       handleChangeCallback(viewSetId, checked);
     } else {
       setAlertMessage('This must remain ticked in at least one (1) form.');
@@ -147,7 +161,6 @@ export const FormEditor = ({
       type: 'ui-specification/sectionDeleted',
       payload: {viewSetID, viewID},
     });
-
     // making sure the stepper jumps steps (forward or backward) intuitively
     if (
       viewSet.views[viewSet.views.length - 1] === viewID &&
@@ -167,7 +180,7 @@ export const FormEditor = ({
         type: 'ui-specification/sectionMovedToForm',
         payload: {sourceViewSetId, targetViewSetId, viewId},
       });
-      
+
       setActiveStep(0);
       setAddAlertMessage('');
       // let sectionEditor component know a section was moved successfully
@@ -188,7 +201,6 @@ export const FormEditor = ({
         type: 'ui-specification/sectionMoved',
         payload: {viewSetId: viewSetID, viewId: viewID, direction: 'left'},
       });
-
       // making sure the stepper jumps a step backward intuitively
       setActiveStep(activeStep - 1);
     } else {
@@ -196,7 +208,6 @@ export const FormEditor = ({
         type: 'ui-specification/sectionMoved',
         payload: {viewSetId: viewSetID, viewId: viewID, direction: 'right'},
       });
-
       // making sure the stepper jumps a step forward intuitively
       setActiveStep(activeStep + 1);
     }
@@ -208,11 +219,9 @@ export const FormEditor = ({
         type: 'ui-specification/sectionAdded',
         payload: {viewSetId: viewSetID, sectionLabel: label},
       });
-
       // jump to the newly created section (i.e., to the end of the stepper)
       setActiveStep(viewSet.views.length);
       setAddAlertMessage('');
-
       // let sectionEditor component know a section was addedd successfully
       return true;
     } catch (error: unknown) {
@@ -253,7 +262,6 @@ export const FormEditor = ({
                 // we made it! now extract the form and section labels
                 const formLabel: string = viewsetsEntries[idx][1].label;
                 const sectionLabel: string = fviewsEntries[idx][1].label;
-
                 // setting the dialog text here
                 setDeleteAlertTitle('Form cannot be deleted.');
                 setDeleteAlertMessage(
@@ -302,6 +310,31 @@ export const FormEditor = ({
   const moveForm = (viewSetID: string, moveDirection: 'left' | 'right') => {
     moveCallback(viewSetID, moveDirection);
   };
+
+  // Scroll the active step into view.
+  const scrollActiveStepIntoView = useCallback(() => {
+    const container = scrollContainerRef.current;
+    const selected = stepRefs.current[activeStep];
+    if (container && selected) {
+      const containerRect = container.getBoundingClientRect();
+      const selectedRect = selected.getBoundingClientRect();
+      if (
+        selectedRect.left < containerRect.left ||
+        selectedRect.right > containerRect.right
+      ) {
+        selected.scrollIntoView({behavior: 'smooth', inline: 'center'});
+      }
+    }
+  }, [activeStep]);
+
+  useEffect(() => {
+    scrollActiveStepIntoView();
+  }, [activeStep, scrollActiveStepIntoView]);
+
+  useEffect(() => {
+    window.addEventListener('resize', scrollActiveStepIntoView);
+    return () => window.removeEventListener('resize', scrollActiveStepIntoView);
+  }, [scrollActiveStepIntoView]);
 
   return (
     <Grid container spacing={2} pt={3}>
@@ -453,24 +486,79 @@ export const FormEditor = ({
         </Grid>
       </Grid>
 
+      <Grid container item xs={12}>
+        <FormSettingsPanel viewSetId={viewSetId} />
+      </Grid>
       <Grid item xs={12}>
         <Card variant="outlined">
           <Grid container spacing={2} p={3}>
             <Grid item xs={12}>
-              <Stepper
-                nonLinear
-                activeStep={activeStep}
-                alternativeLabel
-                sx={{my: 3}}
-              >
-                {sections.map((section: string, index: number) => (
-                  <Step key={section}>
-                    <StepButton color="inherit" onClick={handleStep(index)}>
-                      <Typography>{views[section].label}</Typography>
-                    </StepButton>
-                  </Step>
-                ))}
-              </Stepper>
+              <Box sx={{position: 'relative'}}>
+                {/* outer scroll container */}
+                <Box
+                  ref={scrollContainerRef}
+                  sx={{
+                    overflowX: 'auto',
+                    display: 'flex',
+                    justifyContent: 'center',
+                  }}
+                  onScroll={handleScroll}
+                >
+                  {/*
+                    inner scroll container:
+                    - min width of 70% of  available space.
+                    - uses flex layout.
+                    - if only a few steps, they expand to fill the space.
+                    - once  there are many steps each step shrinks only to its minimum width (120px)
+                      and the container’s total width exceeds the viewport so scrolling is enabled.
+                  */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexWrap: 'nowrap',
+                      minWidth: '70%',
+                      width: '100%',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <Stepper
+                      nonLinear
+                      activeStep={activeStep}
+                      alternativeLabel
+                      sx={{my: 3, width: '100%'}}
+                    >
+                      {sections.map((section: string, index: number) => (
+                        <Step
+                          key={section}
+                          // each step is flexible and has a minimum width.
+                          sx={{flex: '1 1 0', minWidth: '120px'}}
+                        >
+                          <StepButton
+                            color="inherit"
+                            onClick={handleStep(index)}
+                          >
+                            <Typography>{views[section].label}</Typography>
+                          </StepButton>
+                        </Step>
+                      ))}
+                    </Stepper>
+                  </Box>
+                </Box>
+                {showRightGradient && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      width: 40,
+                      height: '100%',
+                      pointerEvents: 'none',
+                      background: theme =>
+                        `linear-gradient(to left, ${theme.palette.background.paper}, transparent)`,
+                    }}
+                  />
+                )}
+              </Box>
             </Grid>
 
             {sections.length === 0 ? (

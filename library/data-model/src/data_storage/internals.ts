@@ -20,7 +20,12 @@
 
 import {v4 as uuidv4} from 'uuid';
 
-import {getDataDB} from '../index';
+import {
+  getDataDB,
+  getHridFieldNameForViewset,
+  getIdsByFieldName,
+  getUiSpecForProject,
+} from '../index';
 import {HRID_STRING} from '../datamodel/core';
 import {
   AttributeValuePair,
@@ -193,22 +198,73 @@ export async function getLatestRevision(
   }
 }
 
+/**
+ * Returns the recommended HRID for this record (which is a revision) - this is
+ * achieved by a) get the ui spec for the project b) look at fields in the
+ * revision (via avp keys) c) determine which viewset these fields are in d)
+ * getting the HRID for that viewset which is either i) the top level configured
+ * hridField for new notebooks or ii) a field starting with hrid...  for the old
+ * style. Returns the value of the HRID field, not the field name.
+ *
+ * If null is returned, typically a parent would use the record_id as a backup.
+ *
+ * @param project_id The project ID for which to ascertain the HRID
+ * @param revision The revision - this reflects a particular version of a
+ * response
+ * @returns The recommended HRID for this revision/record
+ */
 export async function getHRID(
   project_id: ProjectID,
   revision: Revision
 ): Promise<string | null> {
-  let hrid_name: string | null = null;
-  for (const possible_name of Object.keys(revision.avps)) {
-    if (possible_name.startsWith(HRID_STRING)) {
-      hrid_name = possible_name;
-      break;
+  // Need to find a way here to determine the correct field name to use - we
+  // need the uispec at this point
+  const uiSpecification = await getUiSpecForProject({projectId: project_id});
+
+  let hridFieldName = undefined;
+
+  // Only try and use the new hrid method if ui spec is available
+  if (uiSpecification) {
+    // iterate through field names, trying our very best to find one that is
+    // described in the uispec appropriately. Unless the uispec is very broken,
+    // this should succeed.
+    const fieldNames = Array.from(Object.keys(revision.avps));
+    for (const candidateFieldName of fieldNames) {
+      try {
+        const {viewSetId} = getIdsByFieldName({
+          uiSpecification,
+          fieldName: candidateFieldName,
+        });
+        // get the HRID for the view set - might not succeed
+        hridFieldName = getHridFieldNameForViewset({
+          uiSpecification,
+          viewSetId,
+        });
+        if (hridFieldName) {
+          break;
+        }
+      } catch (e) {
+        console.log(
+          `Could not find suitable viewset/HRID for field name: ${candidateFieldName}. Error: ${e}.`
+        );
+      }
     }
   }
 
-  if (hrid_name === null) {
+  // only try the backup if necessary
+  if (!hridFieldName) {
+    for (const possible_name of Object.keys(revision.avps)) {
+      if (possible_name.startsWith(HRID_STRING)) {
+        hridFieldName = possible_name;
+        break;
+      }
+    }
+  }
+
+  if (!hridFieldName) {
     return null;
   }
-  const hrid_avp_id = revision.avps[hrid_name];
+  const hrid_avp_id = revision.avps[hridFieldName];
   if (hrid_avp_id === undefined) {
     console.warn('No HRID field set for revision');
     return null;
@@ -299,7 +355,7 @@ export async function listRecordMetadata(
     return out;
   } catch (err) {
     console.log(err);
-    throw Error('failed to get metadata');
+    throw Error(`failed to get metadata. ${err}`);
   }
 }
 

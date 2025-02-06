@@ -172,8 +172,6 @@ export async function shouldDisplayRecord(
 ): Promise<boolean> {
   // TODO - consider the context in which this is being run - should only be
   // active user notebooks!
-  console.log(full_proj_id);
-  console.log('Record metadata: ', record_metadata);
   // TODO understand why this is coming through as a full project instead of just project id
   const split_id = split_full_project_id(full_proj_id);
   const user_id = contents.username;

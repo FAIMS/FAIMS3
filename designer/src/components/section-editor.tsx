@@ -12,37 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
+import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import {
-  Grid,
-  TextField,
+  Alert,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  InputAdornment,
-  Tooltip,
+  FormControl,
+  FormControlLabel,
+  Grid,
   IconButton,
-  Alert,
+  InputAdornment,
   Radio,
   RadioGroup,
-  FormControlLabel,
-  FormControl,
+  TextField,
+  Tooltip,
 } from '@mui/material';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
-import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 
-import {FieldList} from './field-list';
-import {useAppSelector, useAppDispatch} from '../state/hooks';
 import {useState} from 'react';
+import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {ConditionModal, ConditionTranslation, ConditionType} from './condition';
+import {FieldList} from './field-list';
 
 type Props = {
   viewSetId: string;
@@ -84,8 +84,6 @@ export const SectionEditor = ({
   );
   const dispatch = useAppDispatch();
 
-  console.log('SectionEditor', viewId, viewSet);
-
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openMoveDialog, setOpenMoveDialog] = useState(false);
   const [targetViewSetId, setTargetViewSetId] = useState('');
@@ -109,7 +107,11 @@ export const SectionEditor = ({
 
   const moveSectionToForm = () => {
     // run the function to move the section to a different form AND save the returned success status to a variable
-    const moveSuccess: boolean = moveSectionCallback(viewSetId, targetViewSetId, viewId);
+    const moveSuccess: boolean = moveSectionCallback(
+      viewSetId,
+      targetViewSetId,
+      viewId
+    );
 
     // depending on moveSuccess, set relevant state variables
     if (moveSuccess) {
@@ -117,9 +119,7 @@ export const SectionEditor = ({
       handleSectionMoveCallback(targetViewSetId);
     } else {
       // manually setting the error message
-      setAddAlertMessage(
-        `Failed to move the section to this form.`
-      );
+      setAddAlertMessage(`Failed to move the section to this form.`);
     }
 
     handleCloseMoveDialog();
@@ -153,7 +153,6 @@ export const SectionEditor = ({
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
-    console.log('condition changed', condition);
     dispatch({
       type: 'ui-specification/sectionConditionChanged',
       payload: {viewId, condition},
@@ -177,7 +176,7 @@ export const SectionEditor = ({
             open={openDeleteDialog}
             onClose={handleCloseDeleteDialog}
             aria-labelledby="alert-delete-dialog-title"
-            aria-describedby="alert-dialog-description" 
+            aria-describedby="alert-dialog-description"
           >
             <DialogTitle id="alert-delete-dialog-title">
               Are you sure you want to delete this section?

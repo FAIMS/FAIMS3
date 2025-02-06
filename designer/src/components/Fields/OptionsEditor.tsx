@@ -521,7 +521,7 @@ export const OptionsEditor = ({
                 border: '1px solid rgba(0, 0, 0, 0.12)',
                 boxShadow: 'none',
                 borderRadius: 1,
-                maxHeight: '400px',
+                maxHeight: '1000px',
                 overflow: 'auto',
               }}
             >
