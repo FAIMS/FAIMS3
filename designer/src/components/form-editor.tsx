@@ -12,41 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import {
-  Grid,
   Alert,
-  Stepper,
-  Typography,
-  Step,
   Button,
-  StepButton,
-  TextField,
+  Card,
+  Checkbox,
   Dialog,
-  DialogTitle,
   DialogActions,
   DialogContent,
   DialogContentText,
-  Card,
-  InputAdornment,
-  Tooltip,
-  IconButton,
-  Checkbox,
+  DialogTitle,
   FormControlLabel,
+  Grid,
+  IconButton,
+  InputAdornment,
+  Step,
+  StepButton,
+  Stepper,
+  TextField,
+  Tooltip,
+  Typography,
 } from '@mui/material';
 import Box from '@mui/material/Box';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 
-import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {SectionEditor} from './section-editor';
-import {useState, useEffect, useRef, useCallback} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
+import {useAppDispatch, useAppSelector} from '../state/hooks';
 import FormSettingsPanel from './form-settings';
+import {SectionEditor} from './section-editor';
 
 type Props = {
   viewSetId: string;
@@ -54,6 +54,7 @@ type Props = {
   moveButtonsDisabled: boolean;
   handleChangeCallback: (viewSetID: string, ticked: boolean) => void;
   handleDeleteCallback: (viewSetID: string) => void;
+  handleSectionMoveCallback: (targetViewSetId: string) => void;
 };
 
 export const FormEditor = ({
@@ -62,6 +63,7 @@ export const FormEditor = ({
   moveButtonsDisabled,
   handleChangeCallback,
   handleDeleteCallback,
+  handleSectionMoveCallback,
 }: Props) => {
   const visibleTypes = useAppSelector(
     state => state.notebook['ui-specification'].visible_types
@@ -77,7 +79,6 @@ export const FormEditor = ({
   );
   const sections = viewSet ? viewSet.views : [];
   console.log('FormEditor', {viewSetId, sections});
-
   const views = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
@@ -167,6 +168,27 @@ export const FormEditor = ({
     ) {
       setActiveStep(activeStep - 1);
     }
+  };
+
+  const moveSectionToForm = (
+    sourceViewSetId: string,
+    targetViewSetId: string,
+    viewId: string
+  ) => {
+    try {
+      dispatch({
+        type: 'ui-specification/sectionMovedToForm',
+        payload: {sourceViewSetId, targetViewSetId, viewId},
+      });
+
+      setActiveStep(0);
+      setAddAlertMessage('');
+      // let sectionEditor component know a section was moved successfully
+      return true;
+    } catch (error: unknown) {
+      error instanceof Error && setAddAlertMessage(error.message);
+    }
+    return false;
   };
 
   const moveSection = (
@@ -317,7 +339,7 @@ export const FormEditor = ({
   return (
     <Grid container spacing={2} pt={3}>
       <Grid container item xs={12} spacing={1.75}>
-        <Grid item xs={12} sm={2}>
+        <Grid item xs={12} sm={2.8}>
           <Button
             variant="text"
             color="error"
@@ -354,7 +376,7 @@ export const FormEditor = ({
           </Dialog>
         </Grid>
 
-        <Grid item xs={12} sm={3}>
+        <Grid item xs={12} sm={2.825}>
           <Button
             variant="text"
             size="medium"
@@ -406,7 +428,7 @@ export const FormEditor = ({
         </Grid>
 
         {moveButtonsDisabled ? (
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={2.5}>
             <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
               <span>
                 <IconButton disabled={true} aria-label="left" size="medium">
@@ -419,7 +441,7 @@ export const FormEditor = ({
             </Tooltip>
           </Grid>
         ) : (
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={2.5}>
             <Tooltip title="Move form left">
               <span>
                 <IconButton
@@ -449,7 +471,7 @@ export const FormEditor = ({
           </Grid>
         )}
 
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3.5}>
           <FormControlLabel
             control={
               <Checkbox
@@ -595,8 +617,10 @@ export const FormEditor = ({
                   viewId={viewSet.views[activeStep] || viewSet.views[0]}
                   viewSet={viewSet}
                   deleteCallback={deleteSection}
+                  moveSectionCallback={moveSectionToForm}
                   addCallback={addNewSection}
                   moveCallback={moveSection}
+                  handleSectionMoveCallback={handleSectionMoveCallback}
                 />
               </Grid>
             )}
