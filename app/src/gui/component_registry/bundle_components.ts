@@ -52,6 +52,8 @@ import {
 import {QRCodeFormField} from '../fields/qrcode';
 import {RichTextField} from '../fields/RichText';
 import {AddressField} from '../fields/Address';
+import {FAIMSTextField} from '../fields/FAIMSTextField';
+import NumberField from '../fields/NumberField';
 
 const bundle = null;
 export default bundle;
@@ -281,6 +283,24 @@ registerField(
   'TZ-aware DateTime field with Now button',
   'Special',
   DateTimeNow
+);
+
+registerField(
+  'faims-custom',
+  'FAIMSTextField',
+  'MUI Text Field',
+  'A simple text input field',
+  'Text',
+  FAIMSTextField
+);
+
+registerField(
+  'faims-custom',
+  'NumberField',
+  'Number Input Field',
+  'Allows users to input numeric values',
+  'Number',
+  NumberField
 );
 
 /*

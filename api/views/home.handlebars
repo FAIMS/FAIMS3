@@ -1,33 +1,27 @@
-<div>
-    <div class="btn-group mt-2 mb-4 w-100" role="group">
-        <a href="/send-token/" class="w-100 btn btn-outline-primary" >Return to App<i class="bi bi-arrow-return-left"></i></a>
+
+<div class="card-deck">
+
+  <div class="card">
+    <div class="card-header">
+      <h4 class="card-title">Welcome to Fieldmark Conductor</h4>
     </div>
-</div>
+    <div class="card-body">
+      <p class="card-text">Conductor is the web server supporting the Fieldmark app. Here you
+        can manage your notebooks and notebook users.</p>
 
-<div class="card-group">
-  
-        <div class="card">
-          <div class="card-header">
-            Assigned Roles
-          </div>
-          <div class="card-body">
-              {{{ project_roles }}}
-            <ul>
-              {{#each other_roles}}
-                <li>{{ this }}</li>
-              {{/each}}
-            </ul>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            Switching User?
-          </div>
-          <div class="card-body">
-              <p class="card-text">To sign in as a different user, you need to
-                 <a href="/logout/">logout</a> first.</p>
-          </div>
-        </div>
+      <ul>
+        {{#if WEBAPP_PUBLIC_URL}}
+        <li><a href="{{WEBAPP_PUBLIC_URL}}">Fieldmark on the Web</a></li>
+        {{/if}}
+        {{#if IOS_APP_URL}}
+        <li>Install <a href="{{IOS_APP_URL}}">Fieldmark for IOS</a> (App Store)</li>
+        {{/if}}
+        {{#if ANDROID_APP_URL}}
+        <li>Install <a href="{{ANDROID_APP_URL}}">Fieldmark for Android</a> (Google Play)</li>
+        {{/if}}
+      </ul>          
+    </div>
+  </div>
 
       <div class="card">
       <div class="card-header">

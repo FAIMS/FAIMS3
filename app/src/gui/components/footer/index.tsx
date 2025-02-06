@@ -20,17 +20,12 @@
 
 import React from 'react';
 import {useLocation} from 'react-router-dom';
-
+import * as ROUTES from '../../../constants/routes';
 import FullFooter from './fullFooter';
 import SlimFooter from './slimFooter';
-// import {EHTML} from './footerEHTML';
 
-import {TokenContents} from '@faims3/data-model';
-import * as ROUTES from '../../../constants/routes';
-interface FooterProps {
-  token?: null | undefined | TokenContents;
-}
-export default function Footer(props: FooterProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function Footer() {
   /**
    * Display a large footer for INDEX and WORKSPACE routes
    * Show only the SlimFooter otherwise
@@ -42,17 +37,10 @@ export default function Footer(props: FooterProps) {
   // version and can do things with it
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const location = useLocation().pathname;
-  const showFullFooter = [
-    ROUTES.INDEX,
-    // ROUTES.SIGN_IN,
-  ].includes(location);
+  const showFullFooter = [ROUTES.INDEX].includes(location);
   return (
     <React.Fragment>
-      {showFullFooter ? (
-        <FullFooter token={props.token} />
-      ) : (
-        <SlimFooter token={props.token} />
-      )}
+      {showFullFooter ? <FullFooter /> : <SlimFooter />}
     </React.Fragment>
   );
 }

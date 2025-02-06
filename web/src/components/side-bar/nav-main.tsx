@@ -14,7 +14,8 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
-import {Link} from '@tanstack/react-router';
+import {Link, useLocation} from '@tanstack/react-router';
+import {cn} from '@/lib/utils';
 
 interface NavItem {
   title: string;
@@ -41,6 +42,8 @@ interface NavMainProps {
  * @returns {JSX.Element} The rendered navigation component.
  */
 export function NavMain({title, items}: NavMainProps) {
+  const {pathname} = useLocation();
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{title}</SidebarGroupLabel>
@@ -49,14 +52,20 @@ export function NavMain({title, items}: NavMainProps) {
           <Collapsible
             key={item.title}
             asChild
-            defaultOpen={item.isActive}
+            defaultOpen={pathname.startsWith(item.url)}
             className="group/collapsible"
           >
             <SidebarMenuItem>
               {item.items ? (
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <Link href={item.url} className="flex items-center gap-2">
+                    <Link
+                      to={item.url}
+                      className={cn(
+                        'flex items-center gap-2',
+                        pathname === item.url && 'bg-sidebar-accent'
+                      )}
+                    >
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
                       <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -65,7 +74,7 @@ export function NavMain({title, items}: NavMainProps) {
                 </CollapsibleTrigger>
               ) : (
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link href={item.url} className="flex items-center gap-2">
+                  <Link to={item.url} className="flex items-center gap-2">
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </Link>
@@ -77,8 +86,17 @@ export function NavMain({title, items}: NavMainProps) {
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
                         {subItem.url ? (
-                          <Link href={subItem.url}>
-                            <span>{subItem.title}</span>
+                          <Link
+                            to={subItem.url}
+                            className={
+                              pathname === subItem.url
+                                ? 'bg-sidebar-accent'
+                                : ''
+                            }
+                          >
+                            <span className="text-muted-foreground">
+                              {subItem.title}
+                            </span>
                           </Link>
                         ) : (
                           <div className={'cursor-default'}>

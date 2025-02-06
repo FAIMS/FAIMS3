@@ -66,6 +66,8 @@ export interface TokenContents {
   roles: string[];
   name?: string;
   server: string;
+  // This is required now - all tokens must have an expiry
+  exp: number;
 }
 
 export type ProjectRole = string;
@@ -448,14 +450,20 @@ export interface ProjectUIFields {
   [key: string]: any;
 }
 
+export interface ProjectUIViewset {
+  label?: string;
+  views: string[];
+  submit_label?: string;
+  is_visible?: boolean;
+  summary_fields?: Array<string>;
+  // Which field should be used as the hrid?
+  hridField?: string;
+  // Layout option
+  layout?: 'inline' | 'tabs';
+}
+
 export interface ProjectUIViewsets {
-  [type: string]: {
-    label?: string;
-    views: string[];
-    submit_label?: string;
-    is_visible?: boolean;
-    summary_fields?: Array<string>;
-  };
+  [type: string]: ProjectUIViewset;
 }
 
 export interface ConditionalExpression {

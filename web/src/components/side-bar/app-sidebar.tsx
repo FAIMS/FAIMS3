@@ -1,4 +1,4 @@
-import {useAuth} from '@/auth';
+import {useAuth} from '@/context/auth-provider';
 import {NavMain} from '@/components/side-bar/nav-main';
 import {NavUser} from '@/components/side-bar/nav-user';
 import {
@@ -8,15 +8,16 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {useGetSurveys, useGetTemplates} from '@/lib/queries';
-import {Link} from '@tanstack/react-router';
+import {useGetProjects, useGetTemplates} from '@/hooks/get-hooks';
+import {Link, useLocation} from '@tanstack/react-router';
 import {LayoutTemplate, LetterText, Users} from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 /**
  * AppSidebar component renders the main application sidebar with navigation items
- * based on the authenticated user's data, including surveys and templates.
+ * based on the authenticated user's data, including projects and templates.
  *
  * @param {React.ComponentProps<typeof Sidebar>} props - The properties to pass to the Sidebar component.
  * @returns {JSX.Element} The rendered sidebar component, or an empty fragment if no user is authenticated.
@@ -24,15 +25,17 @@ import Logo from '../logo';
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const {user} = useAuth();
 
+  const {pathname} = useLocation();
+
   if (!user) return <></>;
 
-  const {data: surveys} = useGetSurveys(user);
+  const {data: projects} = useGetProjects(user);
   const {data: templates} = useGetTemplates(user);
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <Link href="/">
+        <Link to="/">
           <Logo />
         </Link>
       </SidebarHeader>
@@ -44,6 +47,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               title: 'Templates',
               url: '/templates',
               icon: LayoutTemplate,
+              isActive: pathname.startsWith('/templates'),
               items:
                 templates?.length > 0
                   ? templates.map(({_id, template_name}: any) => ({
@@ -53,16 +57,17 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                   : [{title: 'No templates...'}],
             },
             {
-              title: 'Surveys',
-              url: '/surveys',
+              title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+              url: `/${NOTEBOOK_NAME}s`,
               icon: LetterText,
+              isActive: pathname.startsWith('/templates'),
               items:
-                surveys?.length > 0
-                  ? surveys.map(({name, non_unique_project_id}: any) => ({
+                projects?.length > 0
+                  ? projects.map(({name, non_unique_project_id}: any) => ({
                       title: name,
-                      url: `/surveys/${non_unique_project_id}`,
+                      url: `/${NOTEBOOK_NAME}s/${non_unique_project_id}`,
                     }))
-                  : [{title: 'No surveys...'}],
+                  : [{title: `No ${NOTEBOOK_NAME}s...`}],
             },
           ]}
         />

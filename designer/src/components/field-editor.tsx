@@ -42,10 +42,11 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
+import HiddenFieldEditor from './Fields/HiddenToggle';
 
 type FieldEditorProps = {
   fieldName: string;
-  viewSetId?: string;
+  viewsetId: string;
   viewId: string;
   expanded: boolean;
   addFieldCallback: (fieldName: string) => void;
@@ -55,6 +56,7 @@ type FieldEditorProps = {
 export const FieldEditor = ({
   fieldName,
   viewId,
+  viewsetId,
   expanded,
   addFieldCallback,
   handleExpandChange,
@@ -62,6 +64,7 @@ export const FieldEditor = ({
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
+
   const dispatch = useAppDispatch();
 
   const fieldComponent = field['component-name'];
@@ -171,35 +174,32 @@ export const FieldEditor = ({
               <Chip label="Required" size="small" color="primary" />
             )}
           </Grid>
+
           <Grid
-            container
             item
             xs={12}
             sm={4}
-            alignItems="center"
+            sx={{display: 'flex', alignItems: 'center'}}
             pl={{xs: 0, sm: 1}}
+            zeroMinWidth
           >
-            {field['component-parameters'].helperText &&
-            field['component-parameters'].helperText.length > 60 ? (
-              <Typography
-                variant="body2"
-                fontSize={12}
-                fontWeight={400}
-                fontStyle="italic"
-              >
-                {field['component-parameters'].helperText.substring(0, 59)}...
-              </Typography>
-            ) : (
-              <Typography
-                variant="body2"
-                fontSize={12}
-                fontWeight={400}
-                fontStyle="italic"
-              >
-                {field['component-parameters'].helperText}
-              </Typography>
-            )}
+            <Typography
+              variant="body2"
+              fontSize={12}
+              fontWeight={400}
+              fontStyle="italic"
+              noWrap
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                pr: 4,
+              }}
+            >
+              {field['component-parameters'].helperText}
+            </Typography>
           </Grid>
+
           <Grid item xs={12} sm={3}>
             <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
               <Tooltip title="Delete Field">
@@ -256,7 +256,11 @@ export const FieldEditor = ({
             <OptionsEditor fieldName={fieldName} />
           )) ||
           (fieldComponent === 'MultiSelect' && (
-            <OptionsEditor fieldName={fieldName} />
+            <OptionsEditor
+              fieldName={fieldName}
+              showExpandedChecklist={true}
+              showExclusiveOptions={true}
+            />
           )) ||
           (fieldComponent === 'AdvancedSelect' && (
             <AdvancedSelectEditor fieldName={fieldName} />
@@ -280,7 +284,14 @@ export const FieldEditor = ({
             <BasicAutoIncrementerEditor fieldName={fieldName} viewId={viewId} />
           )) ||
           (fieldComponent === 'TemplatedStringField' && (
-            <TemplatedStringFieldEditor fieldName={fieldName} viewId={viewId} />
+            <>
+              <TemplatedStringFieldEditor
+                fieldName={fieldName}
+                viewId={viewId}
+                viewsetId={viewsetId}
+              />
+              <HiddenFieldEditor fieldName={fieldName} />
+            </>
           )) || <BaseFieldEditor fieldName={fieldName} />}
       </AccordionDetails>
     </Accordion>

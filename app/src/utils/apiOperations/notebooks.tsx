@@ -17,12 +17,14 @@ import FetchManager from './client';
  */
 export const createNotebookFromTemplate = async (input: {
   listingId: string;
+  username: string;
   templateId: string;
   name: string;
 }): Promise<PostCreateNotebookResponse> => {
   // Create a new notebook
   return await FetchManager.post<PostCreateNotebookResponse>(
     input.listingId,
+    input.username,
     '/api/notebooks',
     {template_id: input.templateId, name: input.name} as PostCreateNotebookInput
   );

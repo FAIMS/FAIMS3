@@ -22,9 +22,12 @@ import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {Route, BrowserRouter as Router, Routes} from 'react-router-dom';
 import './App.css';
-import {PrivateRoute} from './constants/privateRouter';
+import {
+  ActivePrivateRoute,
+  OnlineOnlyRoute,
+  TolerantPrivateRoute,
+} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
-import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';
 import AboutBuild from './gui/pages/about-build';
 import Notebook from './gui/pages/notebook';
@@ -37,21 +40,14 @@ import Workspace from './gui/pages/workspace';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 
-import {theme} from './gui/themes';
+import {NotificationProvider} from './context/popup';
 import {ProjectsProvider} from './context/projects-context';
 import {AuthReturn} from './gui/components/authentication/auth_return';
 import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
+import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
-import {NotificationProvider} from './context/popup';
-
-// type AppProps = {};
-
-// type AppState = {
-//   projects: ProjectsList;
-//   global_error: null | {};
-//   token: boolean;
-// };
+import {InitialiseGate, StateProvider} from './context/store';
 
 // Setup react query
 const queryClient = new QueryClient({
@@ -84,80 +80,84 @@ const queryClient = new QueryClient({
 
 export default function App() {
   return (
-    <NotificationProvider>
-      <StateProvider>
-        <ProjectsProvider>
-          <QueryClientProvider client={queryClient}>
-            <StyledEngineProvider injectFirst>
-              <ThemeProvider theme={theme}>
-                <Router>
-                  <AppUrlListener></AppUrlListener>
-                  <MainLayout>
-                    <Routes>
-                      <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
-                      <Route
-                        path={ROUTES.AUTH_RETURN}
-                        element={<AuthReturn />}
-                      />
-                      <Route
-                        path={ROUTES.INDEX}
-                        element={
-                          <PrivateRoute>
-                            <Workspace />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
-                        element={
-                          <PrivateRoute>
-                            <Notebook />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={ROUTES.CREATE_NEW_SURVEY}
-                        element={
-                          <PrivateRoute>
-                            <CreateNewSurvey />
-                          </PrivateRoute>
-                        }
-                      />
-                      {/* Draft creation happens by redirecting to a fresh minted UUID
+    <StateProvider>
+      <InitialiseGate>
+        <NotificationProvider>
+          <ProjectsProvider>
+            <QueryClientProvider client={queryClient}>
+              <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={theme}>
+                  <Router>
+                    <AppUrlListener></AppUrlListener>
+                    <MainLayout>
+                      <Routes>
+                        <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
+                        <Route
+                          path={ROUTES.AUTH_RETURN}
+                          element={<AuthReturn />}
+                        />
+                        <Route
+                          path={ROUTES.INDEX}
+                          element={
+                            <TolerantPrivateRoute>
+                              <Workspace />
+                            </TolerantPrivateRoute>
+                          }
+                        />
+                        <Route
+                          path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
+                          element={
+                            <TolerantPrivateRoute>
+                              <Notebook />
+                            </TolerantPrivateRoute>
+                          }
+                        />
+                        <Route
+                          path={ROUTES.CREATE_NEW_SURVEY}
+                          element={
+                            // Online only and authenticated
+                            <OnlineOnlyRoute>
+                              <ActivePrivateRoute>
+                                <CreateNewSurvey />
+                              </ActivePrivateRoute>
+                            </OnlineOnlyRoute>
+                          }
+                        />
+                        {/* Draft creation happens by redirecting to a fresh minted UUID
                   This is to keep it stable until the user navigates away. So the
                   draft_id is optional, and when RecordCreate is instantiated
                   without one, it immediately mints a UUID and redirects to it */}
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
-                          ROUTES.RECORD_CREATE +
-                          ':type_name' +
-                          ROUTES.RECORD_DRAFT +
-                          ':draft_id' + //added for keep the record id same for draft
-                          ROUTES.RECORD_RECORD +
-                          ':record_id'
-                        }
-                        element={
-                          <PrivateRoute>
-                            <RecordCreate />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
-                          ROUTES.RECORD_CREATE +
-                          ':type_name'
-                        }
-                        element={
-                          <PrivateRoute>
-                            <RecordCreate />
-                          </PrivateRoute>
-                        }
-                      />
-                      {/*Record editing and viewing is a separate affair, separated by
+                        <Route
+                          path={
+                            ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            ':project_id' +
+                            ROUTES.RECORD_CREATE +
+                            ':type_name' +
+                            ROUTES.RECORD_DRAFT +
+                            ':draft_id' + //added for keep the record id same for draft
+                            ROUTES.RECORD_RECORD +
+                            ':record_id'
+                          }
+                          element={
+                            <TolerantPrivateRoute>
+                              <RecordCreate />
+                            </TolerantPrivateRoute>
+                          }
+                        />
+                        <Route
+                          path={
+                            ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            ':project_id' +
+                            ROUTES.RECORD_CREATE +
+                            ':type_name'
+                          }
+                          element={
+                            <TolerantPrivateRoute>
+                              <RecordCreate />
+                            </TolerantPrivateRoute>
+                          }
+                        />
+                        {/*Record editing and viewing is a separate affair, separated by
                   the presence/absence of draft_id prop OR draft_id being in the
                   state of the Record component. So if the user clicks a draft to
                   make continued changes, the draft_id is in the URL here.
@@ -165,48 +165,52 @@ export default function App() {
                   should at some point, TODO, redirect to the same Record form but
                   with the newly minted draft_id attached. BUt this TODO is in the
                   record/form.tsx*/}
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
-                          ROUTES.RECORD_EXISTING +
-                          ':record_id' +
-                          ROUTES.REVISION +
-                          ':revision_id'
-                        }
-                        element={
-                          <PrivateRoute>
-                            <Record />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
-                          ROUTES.RECORD_EXISTING +
-                          ':record_id' +
-                          ROUTES.REVISION +
-                          ':revision_id' +
-                          ROUTES.RECORD_DRAFT +
-                          ':draft_id'
-                        }
-                        element={
-                          <PrivateRoute>
-                            <Record />
-                          </PrivateRoute>
-                        }
-                      />
-                      <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
-                      <Route path={'*'} Component={NotFound404} />
-                    </Routes>
-                  </MainLayout>
-                </Router>
-              </ThemeProvider>
-            </StyledEngineProvider>
-          </QueryClientProvider>
-        </ProjectsProvider>
-      </StateProvider>
-    </NotificationProvider>
+                        <Route
+                          path={
+                            ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            ':project_id' +
+                            ROUTES.RECORD_EXISTING +
+                            ':record_id' +
+                            ROUTES.REVISION +
+                            ':revision_id'
+                          }
+                          element={
+                            <TolerantPrivateRoute>
+                              <Record />
+                            </TolerantPrivateRoute>
+                          }
+                        />
+                        <Route
+                          path={
+                            ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            ':project_id' +
+                            ROUTES.RECORD_EXISTING +
+                            ':record_id' +
+                            ROUTES.REVISION +
+                            ':revision_id' +
+                            ROUTES.RECORD_DRAFT +
+                            ':draft_id'
+                          }
+                          element={
+                            <TolerantPrivateRoute>
+                              <Record />
+                            </TolerantPrivateRoute>
+                          }
+                        />
+                        <Route
+                          path={ROUTES.ABOUT_BUILD}
+                          Component={AboutBuild}
+                        />
+                        <Route path={'*'} Component={NotFound404} />
+                      </Routes>
+                    </MainLayout>
+                  </Router>
+                </ThemeProvider>
+              </StyledEngineProvider>
+            </QueryClientProvider>
+          </ProjectsProvider>
+        </NotificationProvider>
+      </InitialiseGate>
+    </StateProvider>
   );
 }

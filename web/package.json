@@ -8,7 +8,11 @@
     "dev": "vite --port=3001",
     "build": "vite build",
     "serve": "vite preview",
-    "start": "vite"
+    "start": "vite",
+    "clean": "gts clean",
+    "lint": "gts lint",
+    "compile": "tsc",
+    "fix": "gts fix"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "^5.62.16",
@@ -17,6 +21,7 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.2",
+    "gts": "^5.3.1",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "prettier": "^3.4.2",

@@ -1,10 +1,10 @@
 import {StrictMode} from 'react';
 import ReactDOM from 'react-dom/client';
 import {RouterProvider, createRouter} from '@tanstack/react-router';
-import {ThemeProvider} from '@/components/theme-provider';
+import {ThemeProvider} from '@/context/theme-provider';
 import {routeTree} from './routeTree.gen';
 import './index.css';
-import {AuthProvider, useAuth} from './auth';
+import {AuthProvider, useAuth} from './context/auth-provider';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 /**

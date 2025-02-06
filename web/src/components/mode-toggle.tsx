@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {useTheme} from '@/components/theme-provider';
+import {useTheme} from '@/context/theme-provider';
 
 /**
  * ModeToggle component renders a button with a dropdown menu for switching between light and dark themes.

@@ -20,12 +20,8 @@
  */
 import {NonUniqueProjectID} from '@faims3/data-model';
 import {body, validationResult} from 'express-validator';
-import handlebars from 'handlebars';
 import QRCode from 'qrcode';
 import {app} from './core';
-import {AllProjectRoles} from './datamodel/users';
-
-// BBS 20221101 Adding this as a proxy for the pouch db url
 import {add_auth_providers} from './auth_providers';
 import {add_auth_routes} from './auth_routes';
 import {generateUserToken} from './authkeys/create';
@@ -34,6 +30,7 @@ import {
   CONDUCTOR_AUTH_PROVIDERS,
   CONDUCTOR_PUBLIC_URL,
   COUCHDB_INTERNAL_URL,
+  DESIGNER_URL,
   DEVELOPER_MODE,
   IOS_APP_URL,
   WEBAPP_PUBLIC_URL,
@@ -65,13 +62,11 @@ import {
   initialiseDatabases,
   verifyCouchDBConnection,
 } from './couchdb';
-import {addAPIAuthRoutes} from './api/auth';
 
 export {app};
 
 add_auth_providers(CONDUCTOR_AUTH_PROVIDERS);
 add_auth_routes(app, CONDUCTOR_AUTH_PROVIDERS);
-addAPIAuthRoutes(app);
 
 /**
  * Home Page
@@ -80,11 +75,6 @@ addAPIAuthRoutes(app);
 app.get('/', async (req, res) => {
   if (databaseValidityReport.valid) {
     if (req.user && req.user._id) {
-      // Handlebars is pretty useless at including render logic in templates, just
-      // parse the raw, pre-processed string in...
-      const rendered_project_roles = render_project_roles(
-        req.user.project_roles
-      );
       const provider = Object.keys(req.user.profiles)[0];
       // No need for a refresh here
       const token = await generateUserToken(req.user, false);
@@ -92,12 +82,13 @@ app.get('/', async (req, res) => {
       res.render('home', {
         user: req.user,
         token: token.token,
-        project_roles: rendered_project_roles,
-        other_roles: req.user.other_roles,
         cluster_admin: userIsClusterAdmin(req.user),
         can_create_notebooks: userCanCreateNotebooks(req.user),
         provider: provider,
         developer: DEVELOPER_MODE,
+        ANDROID_APP_URL: ANDROID_APP_URL,
+        IOS_APP_URL: IOS_APP_URL,
+        WEBAPP_PUBLIC_URL: WEBAPP_PUBLIC_URL,
       });
     } else {
       res.redirect('/auth/');
@@ -189,6 +180,7 @@ app.get('/notebooks/', requireAuthentication, async (req, res) => {
       cluster_admin: userIsClusterAdmin(user),
       can_create_notebooks: userCanCreateNotebooks(user),
       developer: DEVELOPER_MODE,
+      DESIGNER_URL: DESIGNER_URL,
     });
   } else {
     res.status(401).end();
@@ -229,6 +221,7 @@ app.get(
           return {label: uiSpec.viewsets[key].label, id: key};
         }),
         developer: DEVELOPER_MODE,
+        DESIGNER_URL: DESIGNER_URL,
       });
     } else {
       res.sendStatus(404);
@@ -275,32 +268,6 @@ app.get(
     }
   }
 );
-
-function make_html_safe(s: string): string {
-  return handlebars.escapeExpression(s);
-}
-
-function render_project_roles(roles: AllProjectRoles): handlebars.SafeString {
-  const all_project_sections = [];
-  for (const project in roles) {
-    const project_sections = [];
-    for (const role of roles[project]) {
-      project_sections.push('<li>' + make_html_safe(role) + '</li>');
-    }
-    const safe_name = make_html_safe(project);
-    all_project_sections.push(
-      '<h6>Roles for project "' +
-        `<a href="./notebooks/${safe_name}/">` +
-        safe_name +
-        '</a>' +
-        '"</h6>' +
-        '<ul>' +
-        project_sections.join('') +
-        '</ul>'
-    );
-  }
-  return new handlebars.SafeString(all_project_sections.join(''));
-}
 
 app.get('/send-token/', (req, res) => {
   if (req.user) {

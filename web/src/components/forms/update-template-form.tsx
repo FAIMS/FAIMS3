@@ -1,7 +1,8 @@
-import {useAuth} from '@/auth';
+import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
+import {NOTEBOOK_NAME} from '@/constants';
 
 export const fields = [
   {
@@ -25,14 +26,12 @@ export function UpdateTemplateForm({setDialogOpen}: UpdateTemplateFormProps) {
 
     if (!jsonString) return {type: 'submit', message: 'Error reading file'};
 
-    const json = JSON.parse(jsonString);
+    const {_id} = JSON.parse(jsonString);
 
-    if (!json._id) return {type: 'submit', message: 'Error parsing file'};
-
-    console.log(json);
+    if (!_id) return {type: 'submit', message: 'Error parsing file'};
 
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/templates/${json._id}`,
+      `${import.meta.env.VITE_API_URL}/api/templates/${_id}`,
       {
         method: 'PUT',
         headers: {
@@ -55,7 +54,7 @@ export function UpdateTemplateForm({setDialogOpen}: UpdateTemplateFormProps) {
       onSubmit={onSubmit}
       submitButtonText="Update Template"
       submitButtonVariant="destructive"
-      warningMessage="Editing the template may result in inconsistencies between the surveys created from it."
+      warningMessage={`Editing the template may result in inconsistencies between the ${NOTEBOOK_NAME} created from it.`}
     />
   );
 }

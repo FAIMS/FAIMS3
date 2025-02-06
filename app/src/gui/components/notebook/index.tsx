@@ -1,46 +1,58 @@
-import React, {useEffect, useState} from 'react';
+import {ProjectUIModel, ProjectUIViewsets} from '@faims3/data-model';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import {
-  Tabs,
-  Tab,
-  Typography,
-  Box,
-  Paper,
-  AppBar,
   Alert,
   AlertTitle,
+  AppBar,
+  Box,
   Button,
   Grid,
-  TableContainer,
+  Paper,
+  Tab,
   Table,
   TableBody,
-  TableRow,
   TableCell,
+  TableContainer,
+  TableRow,
+  Tabs,
+  Typography,
 } from '@mui/material';
-import {useNavigate} from 'react-router-dom';
-import {ProjectUIViewsets} from '@faims3/data-model';
-import {getUiSpecForProject} from '../../../uiSpecification';
-import {ProjectUIModel} from '@faims3/data-model';
-import DraftsTable from './draft_table';
-import {RecordsBrowseTable} from './record_table';
-import MetadataRenderer from '../metadataRenderer';
-import AddRecordButtons from './add_record_by_type';
-import NotebookSettings from './settings';
 import {useTheme} from '@mui/material/styles';
-import DraftTabBadge from './draft_tab_badge';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import CircularLoading from '../ui/circular_loading';
-import * as ROUTES from '../../../constants/routes';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+import {useQuery} from '@tanstack/react-query';
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
   SHOW_RECORD_SUMMARY_COUNTS,
 } from '../../../buildconfig';
-import {useQuery} from '@tanstack/react-query';
+import * as ROUTES from '../../../constants/routes';
 import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
-import RangeHeader from './range_header';
+import {getUiSpecForProject} from '../../../uiSpecification';
+import {useQueryParams} from '../../../utils/customHooks';
+import MetadataRenderer from '../metadataRenderer';
+import CircularLoading from '../ui/circular_loading';
+import AddRecordButtons from './add_record_by_type';
+import DraftTabBadge from './draft_tab_badge';
+import DraftsTable from './draft_table';
 import {OverviewMap} from './overview_map';
+import RangeHeader from './range_header';
+import {RecordsBrowseTable} from './record_table';
+import NotebookSettings from './settings';
+
+// Define how tabs appear in the query string arguments, providing a two way map
+type TabIndex = 'records' | 'details' | 'settings' | 'map';
+const TAB_TO_INDEX = new Map<TabIndex, number>([
+  ['records', 0],
+  ['details', 1],
+  ['settings', 2],
+  ['map', 3],
+]);
+const INDEX_TO_TAB = new Map<number, TabIndex>(
+  Array.from(TAB_TO_INDEX.entries()).map(([k, v]) => [v, k])
+);
 
 /**
  * TabPanelProps defines the properties for the TabPanel component.
@@ -107,7 +119,18 @@ type NotebookComponentProps = {
  * @returns {JSX.Element} - The JSX element for the NotebookComponent.
  */
 export default function NotebookComponent({project}: NotebookComponentProps) {
-  const [notebookTabValue, setNotebookTabValue] = React.useState(0);
+  // This manages the tab using a query string arg
+  const {params, setParam} = useQueryParams<{tab: TabIndex}>({
+    tab: {
+      key: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q,
+      defaultValue: 'records',
+    },
+  });
+  const notebookTabValue = TAB_TO_INDEX.get(params.tab ?? 'details') ?? 0;
+  const setNotebookTabValue = (val: number) => {
+    setParam('tab', INDEX_TO_TAB.get(val) ?? 'records');
+  };
+
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
   const [myRecords, setMyRecords] = useState(0);
@@ -327,6 +350,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                     {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
                   />
                   <Tab
+                    label={`All ${recordLabel}s`}
+                    {...a11yProps(1, `${NOTEBOOK_NAME}-records`)}
+                  />
+                  <Tab
                     label={<DraftTabBadge project_id={project.project_id} />}
                     {...a11yProps(1, `${NOTEBOOK_NAME}-records`)}
                   />
@@ -350,6 +377,21 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               <TabPanel
                 value={recordDraftTabValue}
                 index={1}
+                id={'records-drafts-'}
+              >
+                <RecordsBrowseTable
+                  project_id={project.project_id}
+                  maxRows={25}
+                  viewsets={viewsets}
+                  filter_deleted={true}
+                  handleRefresh={handleRefresh}
+                  onRecordsCountChange={handleCountChange}
+                  recordLabel={recordLabel}
+                />
+              </TabPanel>
+              <TabPanel
+                value={recordDraftTabValue}
+                index={2}
                 id={'records-drafts-'}
               >
                 <DraftsTable

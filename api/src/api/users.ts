@@ -17,7 +17,7 @@
  *   This module contains user based API routes at /api/users
  */
 
-import express from 'express';
+import express, {Response} from 'express';
 import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 import {
@@ -72,14 +72,36 @@ api.post(
   }
 );
 
-// GET all users
-api.get('/', requireAuthenticationAPI, async (req, res) => {
-  if (!req.user) {
-    throw new Exceptions.UnauthorizedException(
-      'You are not allowed to get users.'
-    );
-  }
+// GET current user
+api.get(
+  '/current',
+  requireAuthenticationAPI,
+  async (
+    req: any,
+    res: Response<{id: string; name: string; email: string}>
+  ) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to get the current user.'
+      );
+    }
 
-  const users = await getUsers();
-  res.json(users);
-});
+    const {_id: id, name, emails} = req.user;
+    return res.json({id, name, email: emails[0]});
+  }
+);
+
+// GET all users
+api.get(
+  '/',
+  requireAuthenticationAPI,
+  async (req: any, res: Response<Express.User[]>) => {
+    if (!req.user || !userIsClusterAdmin(req.user)) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to get users.'
+      );
+    }
+
+    return res.json(await getUsers());
+  }
+);

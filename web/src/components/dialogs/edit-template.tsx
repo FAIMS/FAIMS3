@@ -8,15 +8,17 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
 import {List, ListDescription, ListItem} from '../ui/list';
-import {Route} from '@/routes/_auth/templates/$templateId';
-import {useAuth} from '@/auth';
-import {useGetTemplates} from '@/lib/queries';
+import {Route} from '@/routes/templates/$templateId';
+import {useAuth} from '@/context/auth-provider';
+import {useGetTemplates} from '@/hooks/get-hooks';
 import {UpdateTemplateForm} from '../forms/update-template-form';
 import {useState} from 'react';
 
 /**
- * Component for rendering a dialog to create a new survey from a template.
- * @returns {JSX.Element} The rendered dialog component.
+ * EditTemplateDialog component renders a dialog for editing a template.
+ * It provides a button to open the dialog and a form to update the template.
+ *
+ * @returns {JSX.Element} The rendered EditTemplateDialog component.
  */
 export const EditTemplateDialog = () => {
   const {user} = useAuth();

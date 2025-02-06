@@ -1,15 +1,15 @@
-import {TokenContents} from '@faims3/data-model';
 import {Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import Obfuscate from 'react-obfuscate';
 import {COMMIT_VERSION, CONDUCTOR_URLS} from '../../../buildconfig';
+import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useAppSelector} from '../../../context/store';
 
-interface SupportEmailProps {
-  token?: null | undefined | TokenContents;
-}
-
-export default function SupportEmail(props: SupportEmailProps) {
+export default function SupportEmail() {
   const theme = useTheme();
+  // Get active user
+  const activeUser = useAppSelector(selectActiveUser);
+
   let supportEmail = 'support@fieldmark.au';
   if (
     import.meta.env.VITE_COMMIT_VERSION !== undefined &&
@@ -20,11 +20,11 @@ export default function SupportEmail(props: SupportEmailProps) {
   const bodyContent =
     `Server: ${CONDUCTOR_URLS.join(', ')} \r` +
     `Commit Version: ${COMMIT_VERSION} \r` +
-    `Username: ${
-      props.token?.username ? props.token.username : 'Unauthenticated'
-    } \r` +
+    `Username: ${activeUser?.username ?? 'Unauthenticated'} \r` +
     `Roles: ${
-      props.token?.roles ? JSON.stringify(props.token.roles) : 'Unauthenticated'
+      activeUser?.parsedToken.roles
+        ? JSON.stringify(activeUser?.parsedToken.roles)
+        : 'Unauthenticated'
     }`;
 
   return (

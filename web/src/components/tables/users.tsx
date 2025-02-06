@@ -1,17 +1,10 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import {Pencil, Trash} from 'lucide-react';
+import {Trash} from 'lucide-react';
 import {Button} from '../ui/button';
 import Role from '../ui/role-card';
 
-export type Payment = {
-  id: string;
-  amount: number;
-  status: 'pending' | 'processing' | 'success' | 'failed';
-  email: string;
-};
-
-export const columns: ColumnDef<Payment>[] = [
+export const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'name',
     header: ({column}) => (
@@ -38,17 +31,6 @@ export const columns: ColumnDef<Payment>[] = [
       </div>
     ),
   },
-  // {
-  //   id: 'manage-roles',
-  //   cell: () => (
-  //     <div className="flex justify-center items-center">
-  //       <Button variant="outline" size="icon">
-  //         <Pencil className="h-4 w-4" />
-  //       </Button>
-  //     </div>
-  //   ),
-  //   header: 'Manage Roles',
-  // },
   {
     id: 'remove',
     cell: ({row}: any) => (

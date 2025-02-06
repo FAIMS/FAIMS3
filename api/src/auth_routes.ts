@@ -133,8 +133,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
   app.get<{}, {}, {}, RequestQueryRedirect>(
     '/logout/',
     (req, res, next: any) => {
-      const redirect = validateRedirect(req.query?.redirect || '/');
-
       if (req.user) {
         req.logout((err: any) => {
           if (err) {
@@ -142,7 +140,10 @@ export function add_auth_routes(app: Router, handlers: string[]) {
           }
         });
       }
-      res.redirect(redirect);
+
+      const redirect = req.query?.redirect;
+
+      res.redirect(redirect ? `auth?redirect=${redirect}` : '/auth/');
     }
   );
 

@@ -1,6 +1,6 @@
 {
   "name": "faims3",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "engines": {
     "node": "^20.9.0"
@@ -8,6 +8,7 @@
   "workspaces": [
     "api",
     "app",
+    "web",
     "designer",
     "library/data-model",
     "tests",

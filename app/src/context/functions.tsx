@@ -2,12 +2,17 @@ import {
   active_db,
   directory_db_pouch,
   ExistingActiveDoc,
-  JWTTokenInfo,
-  local_auth_db,
 } from '../sync/databases';
 import {ProjectObject, resolve_project_id} from '@faims3/data-model';
 import {ProjectExtended} from '../types/project';
-import ObjectMap from '../utils/ObjectMap';
+import {
+  getServerConnection,
+  selectActiveUser,
+  selectAllServerUsers,
+  selectSpecificServer,
+  TokenInfo,
+} from './slices/authSlice';
+import {store} from './store';
 
 /**
  * Retrieves a list of listings from the directory database.
@@ -26,56 +31,60 @@ const getListings = async () => {
  *
  * This will throw an error if there is no token for the given ID.
  *
- * @param id - The ID of the listing to get the token for
+ * TODO ensure that there is a sensible reason for choosing the particular
+ * user's token when in the non active server.
+ *
+ * @param serverId - The ID of the listing to get the token for
  * @returns The token associated with the specified ID.
  * @throws 404 error from pouch if not found
  */
-export const getToken = async (id: string) => {
-  const {available_tokens, current_username} = await local_auth_db.get(id);
+export const getToken = (serverId: string): TokenInfo | undefined => {
+  // TODO this is not ideal because we are just guessing which 'user' we should
+  // use to make the request - unless we want to track active users across both
+  // listings and globally, then this is just going to take the first one
+  const serverUsers = selectSpecificServer(store.getState(), serverId);
+  const activeUser = selectActiveUser(store.getState());
 
-  return ObjectMap.get(available_tokens, current_username);
-};
-
-/**
- * Fetches the listings, gets the first one if present, then gets token for that
- * listing. Does not parse or validate it.
- * @returns Unparsed, unvalidated JWT
- */
-export const getDefaultToken = async (): Promise<JWTTokenInfo | undefined> => {
-  // Get listings
-  const listings = await getListings();
-
-  // If there is an entry, use first
-  if (listings.length > 0) {
-    return getToken(listings[0]._id);
+  // First try and use the active user
+  if (activeUser?.serverId === serverId) {
+    return activeUser;
+  } else {
+    // Server ID != active user, try any token!
+    const keys = Object.keys(serverUsers);
+    const jwt_token = keys.length > 0 ? serverUsers[keys[0]] : null;
+    if (!jwt_token) {
+      console.error(
+        'Could not get token for listing with ID: ',
+        serverId,
+        'This logic is highly suspect!'
+      );
+      return undefined;
+    }
+    return jwt_token;
   }
-
-  // Otherwise no tokens
-  return undefined;
 };
 
 /**
  * Fetches the listings and looks for any listing which has a token
  * @returns Unparsed, unvalidated JWT
  */
-export const getAnyToken = async (): Promise<JWTTokenInfo | undefined> => {
-  // Get listings
-  const listings = await getListings();
+export const getAnyToken = (): TokenInfo | undefined => {
+  const state = store.getState();
+  const activeUser = selectActiveUser(state);
+  const serverUsers = selectAllServerUsers(state);
 
-  // If there is an entry, use first
-  for (const listing of listings) {
-    try {
-      const possibleToken = await getToken(listing._id);
-      if (possibleToken !== undefined) {
-        return possibleToken;
-      }
-    } catch {
-      continue;
-    }
+  // First try getting the active token
+  if (activeUser) {
+    return activeUser;
   }
 
-  // Otherwise no tokens
-  return undefined;
+  // Otherwise try getting any - ask for first one
+  if (serverUsers.length > 0) {
+    // get targeted info
+    return getServerConnection({state, ...serverUsers[0]});
+  } else {
+    return undefined;
+  }
 };
 
 /**

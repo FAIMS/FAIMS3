@@ -31,7 +31,7 @@ import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import TuneIcon from '@mui/icons-material/Tune';
-import {usePrevious} from '../../../utils/custom_hooks';
+import {usePrevious} from '../../../utils/customHooks';
 import {theme} from '../../themes';
 
 interface ToolbarProps {

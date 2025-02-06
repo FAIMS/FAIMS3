@@ -7,7 +7,7 @@ import {
   BreadcrumbSeparator,
 } from './ui/breadcrumb';
 import {capitalize} from '@/lib/utils';
-import {useAuth} from '@/auth';
+import {useAuth} from '@/context/auth-provider';
 import {Fragment} from 'react';
 
 /**
