@@ -49,7 +49,6 @@ import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
 import {FieldProtectionMenu} from './field-protection-menu';
-import HiddenFieldEditor from './Fields/HiddenToggle';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -376,59 +375,91 @@ export const FieldEditor = ({
         </Grid>
       </AccordionSummary>
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
-        {(fieldComponent === 'MultipleTextField' && (
-          <MultipleTextFieldEditor fieldName={fieldName} />
-        )) ||
-          (fieldComponent === 'TakePhoto' && (
-            <TakePhotoFieldEditor fieldName={fieldName} />
+        {(protection === 'protected' || protection === 'allow-hiding') && (
+          <Stack
+            direction="column"
+            alignItems="center"
+            justifyContent="center"
+            spacing={1}
+            sx={{
+              width: '100%',
+              padding: 2,
+              marginBottom: 2,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              borderRadius: 1,
+              border: '1px solid #546e7a',
+              boxSizing: 'border-box',
+              textAlign: 'center',
+            }}
+          >
+            <LockRounded sx={{color: '#546e7a', fontSize: 24}} />
+            <Typography
+              variant="body2"
+              sx={{fontWeight: 500, color: '#546e7a'}}
+            >
+              {protectionMessage}
+            </Typography>
+          </Stack>
+        )}
+        <div
+          style={{
+            pointerEvents: disableEditing ? 'none' : 'auto',
+            opacity: disableEditing ? 0.5 : 1,
+          }}
+        >
+          {(fieldComponent === 'MultipleTextField' && (
+            <MultipleTextFieldEditor fieldName={fieldName} />
           )) ||
-          (fieldComponent === 'TextField' && (
-            <TextFieldEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'DateTimeNow' && (
-            <DateTimeNowEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'Select' && (
-            <OptionsEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'MultiSelect' && (
-            <OptionsEditor
-              fieldName={fieldName}
-              showExpandedChecklist={true}
-              showExclusiveOptions={true}
-            />
-          )) ||
-          (fieldComponent === 'AdvancedSelect' && (
-            <AdvancedSelectEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RadioGroup' && (
-            <OptionsEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'MapFormField' && (
-            <MapFormFieldEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RandomStyle' && (
-            <RandomStyleEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RichText' && (
-            <RichTextEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'RelatedRecordSelector' && (
-            <RelatedRecordEditor fieldName={fieldName} />
-          )) ||
-          (fieldComponent === 'BasicAutoIncrementer' && (
-            <BasicAutoIncrementerEditor fieldName={fieldName} viewId={viewId} />
-          )) ||
-          (fieldComponent === 'TemplatedStringField' && (
-            <>
+            (fieldComponent === 'TakePhoto' && (
+              <TakePhotoFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'TextField' && (
+              <TextFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'DateTimeNow' && (
+              <DateTimeNowEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'Select' && (
+              <OptionsEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'MultiSelect' && (
+              <OptionsEditor
+                fieldName={fieldName}
+                showExpandedChecklist={true}
+              />
+            )) ||
+            (fieldComponent === 'AdvancedSelect' && (
+              <AdvancedSelectEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RadioGroup' && (
+              <OptionsEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'MapFormField' && (
+              <MapFormFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RandomStyle' && (
+              <RandomStyleEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RichText' && (
+              <RichTextEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'RelatedRecordSelector' && (
+              <RelatedRecordEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'BasicAutoIncrementer' && (
+              <BasicAutoIncrementerEditor
+                fieldName={fieldName}
+                viewId={viewId}
+              />
+            )) ||
+            (fieldComponent === 'TemplatedStringField' && (
               <TemplatedStringFieldEditor
                 fieldName={fieldName}
                 viewId={viewId}
                 viewsetId={viewSetId}
               />
-              <HiddenFieldEditor fieldName={fieldName} />
-            </>
-          )) || <BaseFieldEditor fieldName={fieldName} />}
+            )) || <BaseFieldEditor fieldName={fieldName} />}
+        </div>
       </AccordionDetails>
     </Accordion>
   );
