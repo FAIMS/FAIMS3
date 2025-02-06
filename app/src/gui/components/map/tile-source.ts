@@ -49,11 +49,14 @@ interface StoredTile {
   sets: string[];
 }
 
-interface StoredTileSet {
+export interface StoredTileSet {
   setName: string;
   extent: number[];
   minZoom: number;
   maxZoom: number;
+  size: number;
+  expectedTileCount: number;
+  created: Date;
   tileKeys: IDBValidKey[];
 }
 
@@ -67,10 +70,12 @@ class IDB<Type> {
     this.keyPath = keyPath;
     this.db = db;
     this.dbName = dbName;
-    this.initDB();
   }
 
-  private initDB() {
+  // Create the object store for this database, called in
+  // onupgradeneeded for the database
+  createObjectStore() {
+    console.log('createObjectStore', this.dbName);
     if (!this.db.objectStoreNames.contains(this.dbName)) {
       this.db.createObjectStore(this.dbName, {
         keyPath: this.keyPath,
@@ -98,6 +103,7 @@ class IDB<Type> {
       if (!this.db) {
         return;
       }
+      console.log('getAll', this.dbName);
       const transaction = this.db.transaction(this.dbName, 'readonly');
       const store = transaction.objectStore(this.dbName);
       const request = store.getAll();
@@ -148,36 +154,61 @@ class IDB<Type> {
 }
 
 class TileStoreBase {
+  // The database is a static member of this class, there is only
+  // one connection to the DB in the app
   static DB_NAME = 'tiles_db';
   static db: IDBDatabase;
+  // references to the individual object stores within the database
   tileDB!: IDB<StoredTile>;
   tileSetDB!: IDB<StoredTileSet>;
-  tileTileDB!: IDB<TileSetTile>;
 
   constructor() {
-    this.initDB().then(() => {
-
-      this.tileDB = new IDB<StoredTile>(TileStoreBase.db, 'tiles', [
-        'z',
-        'x',
-        'y',
-      ]);
-      this.tileSetDB = new IDB<StoredTileSet>(TileStoreBase.db, 'tileSets', [
-        'setName',
-      ]);
-
-      console.log('initialized base tile source');
-      this.reportDBSize();
-    });
+    this.initDB();
   }
 
-  private initDB(): Promise<void> {
+  // initDB is called from the constructor but clients may want
+  // to call it directly and wait for it to resolve if they
+  // need to ensure that the databases are ready
+  initDB(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(TileStoreBase.DB_NAME, 1);
+      // incrementing the version number will allow update to the schema
+      const DB_VERSION = 1;
+      const request = indexedDB.open(TileStoreBase.DB_NAME, DB_VERSION);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
+        console.log('running onsuccess');
         TileStoreBase.db = request.result;
+        if (!this.tileDB)
+          this.tileDB = new IDB<StoredTile>(TileStoreBase.db, 'tiles', [
+            'z',
+            'x',
+            'y',
+          ]);
+        if (!this.tileSetDB)
+          this.tileSetDB = new IDB<StoredTileSet>(
+            TileStoreBase.db,
+            'tileSets',
+            ['setName']
+          );
+        console.log('initialized base tile source');
+        this.reportDBSize();
         resolve();
+      };
+      request.onupgradeneeded = (event: any) => {
+        console.log('onupgradeneeded', event);
+        if (event.target) {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('tiles')) {
+            db.createObjectStore('tiles', {
+              keyPath: ['z', 'x', 'y'],
+            });
+          }
+          if (!db.objectStoreNames.contains('tileSets')) {
+            db.createObjectStore('tileSets', {
+              keyPath: ['setName'],
+            });
+          }
+        }
       };
     });
   }
@@ -235,7 +266,8 @@ class TileStoreBase {
       tile.sets = [...existingTile.sets, set];
     }
     const tileKey = await this.tileDB.put(tile);
-    return tileKey;
+    const size = tile.data.size;
+    return {tileKey, size};
   }
 
   async getTileBlob(
@@ -244,8 +276,10 @@ class TileStoreBase {
     y: number
   ): Promise<Blob | undefined> {
     const image = await this.tileDB.get([z, x, y]);
+    if (image) console.log('got tile from cache', z, x, y);
     if (image) return image.data;
     else if (navigator.onLine) {
+      console.log('fetching tile', z, x, y);
       const url = TILE_URL_MAP[MAP_SOURCE].replace('{z}', z.toString())
         .replace('{x}', x.toString())
         .replace('{y}', y.toString())
@@ -333,24 +367,23 @@ class TileStoreBase {
     return estimatedSize;
   }
 
+
+
   /**
-   * storeTileSet - cache tiles for a given region at different zoom levels
+   * createTileSet - create a tile set that will be used to cache tiles
    *
    * @param extent The extent of the region to get tiles for
    * @param minZoom Minimum zoom level to download
    * @param maxZoom Maximum zoom level to download
    * @param setName The name of the set to store the tiles in
    */
-  async storeTileSet(
+  async createTileSet(
     extent: Extent,
     minZoom: number,
     maxZoom: number,
     setName: string
   ) {
-    console.log('getTilesForRegion', setName, extent, minZoom, maxZoom);
-
     const existingTileSet = await this.tileSetDB.get([setName]);
-    console.log('existing tile set', existingTileSet);
     if (existingTileSet) {
       throw new Error(
         `Offline map '${setName}' already exists, please choose a different name`
@@ -362,56 +395,107 @@ class TileStoreBase {
       extent,
       minZoom,
       maxZoom,
+      size: 0,
+      expectedTileCount: 0,
+      created: new Date(),
       tileKeys: [],
     };
     this.tileSetDB.put(tileSet);
 
+    return tileSet;
+  }
+
+  /**
+   * downloadTileSet - download tiles for a tileSet if not already cached
+   *   this can take a long time so is separated from the creation of the
+   *   tileset above
+   *
+   * @param extent The extent of the region to get tiles for
+   * @param minZoom Minimum zoom level to download
+   * @param maxZoom Maximum zoom level to download
+   * @param setName The name of the set to store the tiles in
+   */
+  async downloadTileSet(setName: string) {
+    const tileSet = await this.tileSetDB.get([setName]);
+    if (!tileSet) {
+      throw new Error(`No offline map '${setName}' found`);
+    }
+    console.log('downloading tiles for ', tileSet);
+
     const tileGrid = this.getTileGrid();
     const tileCoords: number[][] = [];
-    for (let zoom = minZoom; zoom <= maxZoom; zoom += 2) {
-      tileGrid?.forEachTileCoord(extent, Math.ceil(zoom), tileCoord => {
+    for (let zoom = tileSet.minZoom; zoom <= tileSet.maxZoom; zoom += 2) {
+      tileGrid?.forEachTileCoord(tileSet.extent, Math.ceil(zoom), tileCoord => {
         tileCoords.push(tileCoord);
       });
     }
     console.log('found', tileCoords.length, 'tiles');
 
-    const tileKeys: IDBValidKey[] = [];
+    // update the record with the tile count
+    tileSet.expectedTileCount = tileCoords.length;
+    this.tileSetDB.put(tileSet);
+
     for (const tileCoord of tileCoords) {
       const [z, x, y] = tileCoord;
       const tileBlob = await this.getTileBlob(z, x, y);
       if (tileBlob) {
-        const tileKey = await this.storeTileRecord(z, x, y, tileBlob, setName);
-        console.log('stored tile', tileKey);
-        if (tileKey) tileKeys.push(tileKey);
+        const {tileKey, size} = await this.storeTileRecord(
+          z,
+          x,
+          y,
+          tileBlob,
+          tileSet.setName
+        );
+        console.log('stored tile', tileSet.setName, tileKey);
+        if (tileKey) {
+          tileSet.tileKeys.push(tileKey);
+          tileSet.size += size;
+          // update DB after each download to enable live progress
+          this.tileSetDB.put(tileSet);
+          console.log('tileSet', tileSet);
+          // signal to anyone listening that we have made progress
+          const event = new CustomEvent('offline-map-download', {
+            detail: tileSet,
+          });
+          dispatchEvent(event);
+        }
       }
     }
-    console.log('done, updating tileSet record');
-    tileSet.tileKeys = tileKeys;
-    this.tileSetDB.put(tileSet);
   }
 
   async getTileSets() {
-    const tileSets = await this.tileSetDB.getAll();
-    return tileSets;
+    if (this.tileSetDB) {
+      const tileSets = await this.tileSetDB.getAll();
+      return tileSets?.toSorted(
+        (a, b) => b.created.getTime() - a.created.getTime()
+      );
+    } else {
+      return [];
+    }
   }
 
   async removeTileSet(setName: string) {
-    const tileSet = await this.tileSetDB.get(setName);
+    const tileSet = await this.tileSetDB.get([setName]);
     if (!tileSet) {
       throw new Error(`Offline map '${setName}' does not exist`);
     }
+    console.log('going to delete', tileSet);
     // delete the tile set
-    await this.tileSetDB.delete(setName);
+    await this.tileSetDB.delete([setName]);
     // delete the tiles if they are not part of another set
     for (const tileKey of tileSet.tileKeys) {
       const tileRecord = await this.tileDB.get(tileKey);
       if (tileRecord) {
         const tileSetNames = tileRecord.sets;
         if (tileSetNames.length === 1) {
+          console.log('deleting tile', tileKey);
           await this.tileDB.delete(tileKey);
         } else {
+          console.log(`removing ${setName} from ${tileSetNames}`);
           // remove the tile set name from the tile record
           tileSetNames.splice(tileSetNames.indexOf(setName), 1);
+          console.log(`result is ${tileSetNames}`);
+          console.log('updating tile', tileRecord);
           await this.tileDB.put(tileRecord);
         }
       }

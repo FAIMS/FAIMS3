@@ -19,7 +19,15 @@
  */
 
 import {Geolocation} from '@capacitor/geolocation';
-import {Alert, Box, Button, FormGroup, TextField} from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  FormGroup,
+  Grid,
+  Paper,
+  TextField,
+} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
@@ -27,14 +35,16 @@ import GeoJSON from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform} from 'ol/proj';
+import {Attribution} from 'ol/source/Source';
 import VectorSource from 'ol/source/Vector';
 import {RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
-import {ImageTileStore} from './tile-source';
-import {Attribution} from 'ol/source/Source';
+import {ImageTileStore, StoredTileSet} from './tile-source';
 
 const defaultMapProjection = 'EPSG:3857';
+const MAX_ZOOM = 20;
+const MIN_ZOOM = 12;
 
 /**
  * Create an overview map of the records in the notebook.
@@ -44,10 +54,11 @@ const defaultMapProjection = 'EPSG:3857';
 export const MapDownloadComponent = () => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [cacheSize, setCacheSize] = useState('');
-  const [zoomLevel, setZoomLevel] = useState(12); // Default zoom level
+  const [zoomLevel, setZoomLevel] = useState(MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<Attribution | null>(null);
-  const [downloadSetName, setDownloadSetName] = useState('default');
+  const [downloadSetName, setDownloadSetName] = useState('Default');
   const [message, setMessage] = useState('');
+  const [tileSets, setTileSets] = useState<StoredTileSet[]>([]);
 
   // create state ref that can be accessed in OpenLayers onclick callback function
   //  https://stackoverflow.com/a/60643670
@@ -60,10 +71,29 @@ export const MapDownloadComponent = () => {
   const {data: map_center, isLoading: loadingLocation} = useQuery({
     queryKey: ['current_location'],
     queryFn: async (): Promise<[number, number]> => {
-      const position = await Geolocation.getCurrentPosition();
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      });
       return [position.coords.longitude, position.coords.latitude];
     },
   });
+
+  useEffect(() => {
+    const fn = async () => {
+      await tileStore.initDB();
+      await updateTileSets();
+    };
+    fn();
+  }, []);
+
+  // Update the list of tilesets for display, called on init and when we remove
+  // a tileset
+  const updateTileSets = async () => {
+    const sets = await tileStore.getTileSets();
+    if (sets) setTileSets(sets);
+  };
 
   /**
    * Create the OpenLayers map element
@@ -96,7 +126,7 @@ export const MapDownloadComponent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
       let sizeStr = '';
-      tileStore.estimateSizeForRegion(extent, 12, 18).then(size => {
+      tileStore.estimateSizeForRegion(extent, MIN_ZOOM, MAX_ZOOM).then(size => {
         if (size > 1024 * 1024) {
           sizeStr = (size / 1024 / 1024).toFixed(2) + ' TB';
         } else if (size > 1024) {
@@ -114,7 +144,16 @@ export const MapDownloadComponent = () => {
       const extent = map.getView().calculateExtent();
       setMessage('');
       try {
-        await tileStore.storeTileSet(extent, 12, 18, downloadSetName);
+        await tileStore.createTileSet(
+          extent,
+          MIN_ZOOM,
+          MAX_ZOOM,
+          downloadSetName
+        );
+        // when something happens, get the new tilesets
+        addEventListener('offline-map-download', updateTileSets);
+        tileStore.downloadTileSet(downloadSetName);
+        updateTileSets();
       } catch (e: any) {
         console.error(e);
         setMessage(e.message);
@@ -198,53 +237,85 @@ export const MapDownloadComponent = () => {
     [map, createMap]
   );
 
-  const handleGetDBSize = async () => {
-    await tileStore.reportDBSize();
+  const handleDeleteTileSet = async (setName: string) => {
+    await tileStore.removeTileSet(setName);
+    await updateTileSets();
   };
 
-  const handleClearDB = async () => {
-    await tileStore.clearCache();
+  const handleShowExtent = (tileSet: StoredTileSet) => {
+    console.log('extent', tileSet.extent);
+    if (map) map.getView().fit(tileSet.extent);
   };
-  if (loadingLocation) {
-    return <div>Loading location...</div>;
-  } else {
-    return (
-      <>
-        <FormGroup row>
-          <TextField
-            label="Name for Downloaded Map"
-            value={downloadSetName}
-            onChange={e => setDownloadSetName(e.target.value)}
-          />
-          <Button variant="outlined" onClick={confirmCacheMapExtent}>
-            Download Offline Map
-          </Button>
+
+  return (
+    <>
+      <Grid container spacing={2}>
+        <Grid item xs={8}>
+          {loadingLocation ? (
+            <div>Loading location...</div>
+          ) : (
+            <>
+              <Box
+                ref={refCallback}
+                sx={{
+                  height: 600,
+                  width: '100%',
+                }}
+              />
+              <Box>
+                {attribution && (
+                  <p dangerouslySetInnerHTML={{__html: attribution}} />
+                )}
+              </Box>
+            </>
+          )}
+        </Grid>
+        <Grid item>
+          <p>Zoom: {zoomLevel}</p>
+          <h3>Offline Maps</h3>
+
+          <p>Download the current region for offline use.</p>
+          <FormGroup row>
+            <TextField
+              label="Name for Downloaded Map"
+              value={downloadSetName}
+              onChange={e => setDownloadSetName(e.target.value)}
+            />
+            <Button variant="outlined" onClick={confirmCacheMapExtent}>
+              Download
+            </Button>
+          </FormGroup>
+          {cacheSize && <Box>Estimated Download Size: {cacheSize}</Box>}
+          {message && <Alert severity="error">{message}</Alert>}
           <Button variant="outlined" onClick={handleCacheMapExtent}>
-            Estimate Download Size
+            Estimate Size
           </Button>
-        </FormGroup>
-
-        <Button variant="outlined" onClick={handleGetDBSize}>
-          DB Size
-        </Button>
-        <Button variant="outlined" onClick={handleClearDB}>
-          Clear DB
-        </Button>
-
-        <Box>Zoom Level: {zoomLevel}</Box>
-        {cacheSize && <Box>Estimated Download Size: {cacheSize}</Box>}
-        {message && <Alert severity="error">{message}</Alert>}
-        <Box
-          ref={refCallback}
-          sx={{
-            height: 600,
-            width: '100%',
-          }}
-        />
-        <Box>
-          {attribution && <p dangerouslySetInnerHTML={{__html: attribution}} />}
-        </Box>
-      </>
-    );
-  }
+          <h4>Maps Downloaded</h4>
+          {tileSets.length === 0 && <p>No maps downloaded.</p>}
+          {tileSets.map((mapSet: StoredTileSet, idx: number) => (
+            <Paper key={idx}>
+              <h4>{mapSet.setName}</h4>
+              <p>
+                Size: {Math.round((100 * mapSet.size) / 1024 / 1024) / 100} MB
+              </p>
+              <p>Tiles: {mapSet.tileKeys.length}</p>
+              <p>Downloaded on: {mapSet.created.toLocaleDateString()}</p>
+              <Button
+                variant="outlined"
+                onClick={() => handleDeleteTileSet(mapSet.setName)}
+              >
+                Delete
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => handleShowExtent(mapSet)}
+              >
+                Show Download Area
+              </Button>
+            </Paper>
+          ))}
+        </Grid>
+      </Grid>
+    </>
+  );
 };

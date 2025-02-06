@@ -18,17 +18,17 @@
  *   Display an overview map of the records in the notebook.
  */
 
+import {Geolocation} from '@capacitor/geolocation';
 import {
   getMetadataForAllRecords,
   ProjectID,
   ProjectUIModel,
 } from '@faims3/data-model';
-import {Box, Button, Popover} from '@mui/material';
+import {Box, Popover} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
 import GeoJSON from 'ol/format/GeoJSON';
-import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform} from 'ol/proj';
@@ -38,10 +38,9 @@ import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {createCenterControl} from '../map/center-control';
-import {Geolocation} from '@capacitor/geolocation';
-import {useAppSelector} from '../../../context/store';
 import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useAppSelector} from '../../../context/store';
+import {createCenterControl} from '../map/center-control';
 import {ImageTileStore} from '../map/tile-source';
 
 interface OverviewMapProps {
