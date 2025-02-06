@@ -367,8 +367,6 @@ class TileStoreBase {
     return estimatedSize;
   }
 
-
-
   /**
    * createTileSet - create a tile set that will be used to cache tiles
    *

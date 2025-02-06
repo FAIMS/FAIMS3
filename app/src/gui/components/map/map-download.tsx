@@ -150,7 +150,7 @@ export const MapDownloadComponent = () => {
           MAX_ZOOM,
           downloadSetName
         );
-        // when something happens, get the new tilesets
+        // when something happens, get the new tileSets
         addEventListener('offline-map-download', updateTileSets);
         tileStore.downloadTileSet(downloadSetName);
         updateTileSets();

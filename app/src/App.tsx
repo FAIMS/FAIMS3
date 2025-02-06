@@ -211,10 +211,10 @@ export default function App() {
                           Component={AboutBuild}
                         />
                         <Route
-                        path={ROUTES.OFFLINE_MAPS}
-                        Component={MapDownloadComponent}
-                      />
-                      <Route path={'*'} Component={NotFound404} />
+                          path={ROUTES.OFFLINE_MAPS}
+                          Component={MapDownloadComponent}
+                        />
+                        <Route path={'*'} Component={NotFound404} />
                       </Routes>
                     </MainLayout>
                   </Router>
