@@ -131,7 +131,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     setParam('tab', INDEX_TO_TAB.get(val) ?? 'records');
   };
 
-  const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
+  const [tabIndex, setTabIndex] = React.useState<0 | 1 | 2>(0);
   const [totalRecords, setTotalRecords] = useState(0);
   const [myRecords, setMyRecords] = useState(0);
   /**
@@ -140,11 +140,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
    * @param {React.SyntheticEvent} event - The event triggered by the tab change.
    * @param {number} newValue - The index of the selected tab.
    */
-  const handleRecordDraftTabChange = (
-    event: React.SyntheticEvent,
-    newValue: number
+  const handleTabChange = (
+    _event: React.SyntheticEvent,
+    newValue: 0 | 1 | 2
   ) => {
-    setRecordDraftTabValue(newValue);
+    setTabIndex(newValue);
   };
 
   /**
@@ -338,19 +338,19 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             <Box mt={2}>
               <Box mb={1}>
                 <Tabs
-                  value={recordDraftTabValue}
-                  onChange={handleRecordDraftTabChange}
+                  value={tabIndex}
+                  onChange={handleTabChange}
                   aria-label={`${NOTEBOOK_NAME}-records`}
                   sx={{
                     backgroundColor: theme.palette.background.tabsBackground,
                   }}
                 >
                   <Tab
-                    label={`My ${recordLabel}s`}
+                    label={`My ${recordLabel}s (${myRecords})`}
                     {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
                   />
                   <Tab
-                    label={`All ${recordLabel}s`}
+                    label={`All ${recordLabel}s (${totalRecords})`}
                     {...a11yProps(1, `${NOTEBOOK_NAME}-records`)}
                   />
                   <Tab
@@ -359,12 +359,9 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   />
                 </Tabs>
               </Box>
-              <TabPanel
-                value={recordDraftTabValue}
-                index={0}
-                id={'records-drafts-'}
-              >
+              <TabPanel value={tabIndex} index={0} id={'records-mine'}>
                 <RecordsBrowseTable
+                  key={'myrecordstable'}
                   project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
@@ -372,14 +369,13 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   handleRefresh={handleRefresh}
                   onRecordsCountChange={handleCountChange}
                   recordLabel={recordLabel}
+                  // Just my records
+                  myRecordsOnly={true}
                 />
               </TabPanel>
-              <TabPanel
-                value={recordDraftTabValue}
-                index={1}
-                id={'records-drafts-'}
-              >
+              <TabPanel value={tabIndex} index={1} id={'records-all'}>
                 <RecordsBrowseTable
+                  key={'allrecordstable'}
                   project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
@@ -387,13 +383,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   handleRefresh={handleRefresh}
                   onRecordsCountChange={handleCountChange}
                   recordLabel={recordLabel}
+                  // Everyone's records
+                  myRecordsOnly={false}
                 />
               </TabPanel>
-              <TabPanel
-                value={recordDraftTabValue}
-                index={2}
-                id={'records-drafts-'}
-              >
+              <TabPanel value={tabIndex} index={2} id={'record-drafts'}>
                 <DraftsTable
                   project_id={project.project_id}
                   maxRows={25}

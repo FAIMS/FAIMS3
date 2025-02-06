@@ -23,9 +23,6 @@ import {
   ProjectUIModel,
   ProjectUIViewsets,
   RecordMetadata,
-  TokenContents,
-  getMetadataForAllRecords,
-  getRecordsWithRegex,
 } from '@faims3/data-model';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {Alert, Box, Grid, Link, Paper, Typography} from '@mui/material';
@@ -35,18 +32,18 @@ import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {NotebookDataGridToolbar} from './datagrid_toolbar';
-import RecordDelete from './delete';
-import getLocalDate from '../../fields/LocalDate';
-import {useQuery} from '@tanstack/react-query';
+import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useAppSelector} from '../../../context/store';
 import {
   getFieldLabel,
   getSummaryFields,
   getUiSpecForProject,
   getVisibleTypes,
 } from '../../../uiSpecification';
-import {useAppSelector} from '../../../context/store';
-import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useRecordList} from '../../../utils/customHooks';
+import getLocalDate from '../../fields/LocalDate';
+import {NotebookDataGridToolbar} from './datagrid_toolbar';
+import RecordDelete from './delete';
 
 /**
  * Props for the RecordsTable component
@@ -68,7 +65,6 @@ type RecordsTableProps = {
   viewsets?: ProjectUIViewsets | null;
   handleQueryFunction: Function;
   handleRefresh: () => void;
-  onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
   recordLabel: string;
 };
 
@@ -80,6 +76,9 @@ type RecordsBrowseTableProps = {
   handleRefresh: () => void;
   onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
   recordLabel: string;
+  // If true, then only show active user records, else, show all that the user
+  // has permission to see
+  myRecordsOnly: boolean;
 };
 
 /**
@@ -89,7 +88,7 @@ type RecordsBrowseTableProps = {
  * @returns {JSX.Element} The rendered DataGrid with record metadata.
  */
 function RecordsTable(props: RecordsTableProps) {
-  const {project_id, maxRows, rows, loading, onRecordsCountChange} = props;
+  const {project_id, maxRows, rows, loading} = props;
   const activeUser = useAppSelector(selectActiveUser);
 
   const theme = useTheme();
@@ -155,16 +154,6 @@ function RecordsTable(props: RecordsTableProps) {
       ? (props.viewsets[params.row.type.toString()].label ?? params.row.type)
       : params.row.type;
   }
-
-  /**
-   * Counts the records filtering by current user
-   * @param records The list of records
-   * @returns Count filtered by  current user
-   */
-  const getUserRecordCount = (records: RecordMetadata[]) => {
-    return records.filter(record => record.created_by === activeUser?.username)
-      .length;
-  };
 
   const rowTypeColumn = {
     field: 'type',
@@ -382,21 +371,6 @@ function RecordsTable(props: RecordsTableProps) {
 
   columns.push(deleteColumn);
 
-  useEffect(() => {
-    if (!visible_rows || visible_rows.length === 0) {
-      if (onRecordsCountChange) onRecordsCountChange({total: 0, myRecords: 0});
-      return;
-    }
-
-    const totalRecords = visible_rows.length;
-    const myRecords = activeUser ? getUserRecordCount(visible_rows) : 0;
-
-    // Send count to parent with callback  - onRecordsCountChangee
-    if (onRecordsCountChange) {
-      onRecordsCountChange({total: totalRecords, myRecords});
-    }
-  }, [rows, activeUser, onRecordsCountChange]);
-
   return (
     <React.Fragment>
       <Box
@@ -541,25 +515,6 @@ function RecordsTable(props: RecordsTableProps) {
 }
 
 /**
- * Filters out draft records from the dataset.
- *
- * Draft records are identified by the prefix `drf-` in their `record_id`.
- */
-const filterOutDrafts = (rows: RecordMetadata[]) => {
-  return rows.filter(record => !record.record_id.startsWith('drf-'));
-};
-
-/**
- * Filters records to include only thosse created by the active user.
- *
- * @param rows - The dataset of records.
- * @param username - The active user's username.
- */
-const filterByActiveUser = (rows: RecordMetadata[], username: string) => {
-  return rows.filter(record => record.created_by === username);
-};
-
-/**
  * Component to handle browsing records and querying with search.
  *
  * @param {RecordsBrowseTableProps} props - The properties passed to RecordsBrowseTable.
@@ -567,55 +522,35 @@ const filterByActiveUser = (rows: RecordMetadata[], username: string) => {
  */
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {recordLabel} = props;
-  // TODO validate this is always defined
-  const activeUser = useAppSelector(selectActiveUser);
-  const activeToken = activeUser?.parsedToken as TokenContents;
-
   const [query, setQuery] = React.useState('');
 
-  const {data: records, isLoading: recordsLoading} = useQuery({
-    queryKey: ['allrecords', query, props.project_id, activeUser?.username],
-    networkMode: 'always',
-    gcTime: 0,
-    queryFn: async () => {
-      let rows;
-
-      if (query.length === 0) {
-        rows = await getMetadataForAllRecords(
-          activeToken,
-          props.project_id,
-          props.filter_deleted
-        );
-      } else {
-        rows = await getRecordsWithRegex(
-          activeToken,
-          props.project_id,
-          query,
-          props.filter_deleted
-        );
-      }
-
-      // filterr drafts based on `drf-` prefix
-      const filteredRows = filterOutDrafts(rows);
-
-      // filterrecords created by the active user
-      if (activeUser) {
-        return filterByActiveUser(filteredRows, activeUser.username);
-      }
-
-      return filteredRows;
-    },
+  // Fetch records from the (local) DB with 10 second auto refetch
+  const records = useRecordList({
+    query: query,
+    projectId: props.project_id,
+    filterDeleted: props.filter_deleted,
+    // refetch every 10 seconds (local only fetch - no network traffic here)
+    refreshIntervalMs: 10000,
   });
+
+  // Update counts when the unfiltered or filtered list is updated
+  useEffect(() => {
+    props.onRecordsCountChange?.({
+      total: records.allRecords.length,
+      myRecords: records.myRecords.length,
+    });
+  }, [records.allRecords.length, records.myRecords.length]);
+
   return (
     <RecordsTable
       project_id={props.project_id}
       maxRows={props.maxRows}
-      rows={records}
-      loading={recordsLoading}
+      // Show the appropriate list depending on filter
+      rows={props.myRecordsOnly ? records.myRecords : records.allRecords}
+      loading={records.query.isLoading}
       viewsets={props.viewsets}
       handleQueryFunction={setQuery}
       handleRefresh={props.handleRefresh}
-      onRecordsCountChange={props.onRecordsCountChange}
       recordLabel={recordLabel}
     />
   );

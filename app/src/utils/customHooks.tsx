@@ -1,9 +1,16 @@
+import {
+  getMetadataForAllRecords,
+  getRecordsWithRegex,
+  RecordMetadata,
+} from '@faims3/data-model';
 import {ListingsObject} from '@faims3/data-model/src/types';
 import {useQuery} from '@tanstack/react-query';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {useSearchParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
+import {selectActiveUser} from '../context/slices/authSlice';
+import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {directory_db} from '../sync/databases';
 
@@ -293,3 +300,96 @@ export function useQueryParams<T extends Record<string, any>>(config: {
     removeAllParams,
   };
 }
+
+/**
+ * Filters out draft records from the dataset.
+ *
+ * Draft records are identified by the prefix `drf-` in their `record_id`.
+ */
+const filterOutDrafts = (rows: RecordMetadata[]) => {
+  return rows.filter(record => !record.record_id.startsWith('drf-'));
+};
+
+/**
+ * Filters records to include only thosse created by the active user.
+ *
+ * @param rows - The dataset of records.
+ * @param username - The active user's username.
+ */
+const filterByActiveUser = (rows: RecordMetadata[], username: string) => {
+  return rows.filter(record => record.created_by === username);
+};
+
+/**
+ * Returns a list of all records, and active user records.
+ * @param query The search string, if any - regex match
+ * @param projectId Project ID to get records for
+ * @param filterDeleted Whether to filter out deleted records
+ * @param refreshIntervalMs Supply a refresh interval if desired
+ */
+export const useRecordList = ({
+  query,
+  projectId,
+  filterDeleted,
+  refreshIntervalMs,
+}: {
+  query: string;
+  projectId: string;
+  filterDeleted: boolean;
+  refreshIntervalMs?: number | undefined | false;
+}) => {
+  const activeUser = useAppSelector(selectActiveUser);
+  const token = activeUser?.parsedToken;
+
+  const records = useQuery({
+    queryKey: [
+      'allrecords',
+      query,
+      projectId,
+      filterDeleted,
+      activeUser?.username,
+      token,
+    ],
+    networkMode: 'always',
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchInterval: refreshIntervalMs,
+    queryFn: async () => {
+      console.log('Running query');
+      if (!token) {
+        // Trying to run without token!
+        console.warn('Trying to fetch record list without user token.');
+        return [];
+      }
+      let rows;
+      if (query.length === 0) {
+        rows = await getMetadataForAllRecords(token, projectId, filterDeleted);
+      } else {
+        rows = await getRecordsWithRegex(
+          token,
+          projectId,
+          query,
+          filterDeleted
+        );
+      }
+
+      return rows;
+    },
+  });
+
+  // Get all rows - defaulting to an empty list
+  const allRows = records.data ?? [];
+
+  // Memoize the calculation of the current user rows
+  const myUserRows = useMemo(() => {
+    let filtered = filterOutDrafts(allRows);
+    if (activeUser) {
+      filtered = filterByActiveUser(filtered, activeUser.username);
+    }
+    return filtered;
+  }, [records, activeUser]);
+
+  // return both curated record lists and the underlying query where necessary
+  return {allRecords: allRows, myRecords: myUserRows, query: records};
+};
