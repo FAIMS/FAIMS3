@@ -174,35 +174,32 @@ export const FieldEditor = ({
               <Chip label="Required" size="small" color="primary" />
             )}
           </Grid>
+
           <Grid
-            container
             item
             xs={12}
             sm={4}
-            alignItems="center"
+            sx={{display: 'flex', alignItems: 'center'}}
             pl={{xs: 0, sm: 1}}
+            zeroMinWidth
           >
-            {field['component-parameters'].helperText &&
-            field['component-parameters'].helperText.length > 60 ? (
-              <Typography
-                variant="body2"
-                fontSize={12}
-                fontWeight={400}
-                fontStyle="italic"
-              >
-                {field['component-parameters'].helperText.substring(0, 59)}...
-              </Typography>
-            ) : (
-              <Typography
-                variant="body2"
-                fontSize={12}
-                fontWeight={400}
-                fontStyle="italic"
-              >
-                {field['component-parameters'].helperText}
-              </Typography>
-            )}
+            <Typography
+              variant="body2"
+              fontSize={12}
+              fontWeight={400}
+              fontStyle="italic"
+              noWrap
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                pr: 4,
+              }}
+            >
+              {field['component-parameters'].helperText}
+            </Typography>
           </Grid>
+
           <Grid item xs={12} sm={3}>
             <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
               <Tooltip title="Delete Field">
