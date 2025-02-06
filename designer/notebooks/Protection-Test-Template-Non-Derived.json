@@ -72,7 +72,8 @@
               }
             ]
           },
-          "helperText": "Make sure you choose the right one!"
+          "helperText": "Make sure you choose the right one!",
+          "protection": "allow-hiding"
         },
         "validationSchema": [
           [
@@ -89,8 +90,7 @@
             "include": true,
             "label": "uncertainty"
           }
-        },
-        "protection": "allow-hiding"
+        }
       },
       "Field-with-Full-Protection": {
         "component-namespace": "mapping-plugin",
@@ -104,7 +104,8 @@
           "featureType": "Point",
           "zoom": 12,
           "label": "Field with Full Protection",
-          "geoTiff": ""
+          "geoTiff": "",
+          "protection": "protected"
         },
         "validationSchema": [
           [
@@ -121,8 +122,7 @@
             "include": true,
             "label": "uncertainty"
           }
-        },
-        "protection": "protected"
+        }
       },
       "No-Protection-2": {
         "component-namespace": "faims-custom",
@@ -163,7 +163,8 @@
           "id": "checkbox-field",
           "required": false,
           "type": "checkbox",
-          "helperText": "Checkbox help."
+          "helperText": "Checkbox help.",
+          "protection": "allow-hiding"
         },
         "validationSchema": [
           [
@@ -180,8 +181,7 @@
             "include": true,
             "label": "uncertainty"
           }
-        },
-        "protection": "allow-hiding"
+        }
       },
       "Full-Protection-2": {
         "component-namespace": "faims-custom",
@@ -193,7 +193,8 @@
           "id": "checkbox-field",
           "required": false,
           "type": "checkbox",
-          "helperText": "Checkbox help."
+          "helperText": "Checkbox help.",
+          "protection": "protected"
         },
         "validationSchema": [
           [
@@ -210,8 +211,7 @@
             "include": true,
             "label": "uncertainty"
           }
-        },
-        "protection": "protected"
+        }
       }
     },
     "fviews": {
