@@ -39,6 +39,7 @@ import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {BaseFieldEditor} from './Fields/BaseFieldEditor';
 import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
 import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
+import HiddenFieldEditor from './Fields/HiddenToggle';
 import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
 import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
 import {OptionsEditor} from './Fields/OptionsEditor';
@@ -52,7 +53,7 @@ import {FieldProtectionMenu} from './field-protection-menu';
 
 type FieldEditorProps = {
   fieldName: string;
-  viewSetId?: string;
+  viewSetId: string;
   viewId: string;
   expanded: boolean;
   addFieldCallback: (fieldName: string) => void;
@@ -61,8 +62,8 @@ type FieldEditorProps = {
 
 export const FieldEditor = ({
   fieldName,
-  viewSetId,
   viewId,
+  viewSetId,
   expanded,
   addFieldCallback,
   handleExpandChange,
@@ -192,70 +193,69 @@ export const FieldEditor = ({
           },
         }}
       >
-        <Grid container rowGap={1}>
-          <Grid
-            container
-            item
-            xs={12}
-            sm={5}
-            columnGap={1}
-            rowGap={0.5}
-            alignItems="center"
-          >
-            {typeof label === 'string' && label.length > 25 ? (
-              <Typography variant="subtitle2">
-                {label.substring(0, 24)}...
+        <Grid container rowGap={1} alignItems={'center'}>
+          <Grid item xs={12} sm={8}>
+            <Stack direction="column" spacing={1} pr={{xs: 0, sm: 2}}>
+              {/* Field Title */}
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  minWidth: 210,
+                  maxWidth: 210,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'normal',
+                }}
+              >
+                {label}
               </Typography>
-            ) : (
-              <Typography variant="subtitle2">{label}</Typography>
-            )}
 
-            <Chip
-              label={fieldComponent}
-              size="small"
-              variant="outlined"
-              sx={{
-                '&.MuiChip-outlined': {
-                  background: '#f9fafb',
-                  color: '#546e7a',
-                  borderColor: '#546e7a',
-                },
-              }}
-            />
-            {field['component-parameters'].required && (
-              <Chip label="Required" size="small" color="primary" />
-            )}
+              {/* Chips Below Title (Tighter Spacing) */}
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Chip
+                  label={fieldComponent}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    '&.MuiChip-outlined': {
+                      background: '#f9fafb',
+                      color: '#546e7a',
+                      borderColor: '#546e7a',
+                    },
+                  }}
+                />
+
+                {field['component-parameters'].required && (
+                  <Chip label="Required" size="small" color="primary" />
+                )}
+              </Stack>
+
+              {/* Helper Text (More Spacing from Chips) */}
+              {field['component-parameters'].helperText && (
+                <Typography
+                  variant="body2"
+                  fontSize={12}
+                  fontWeight={400}
+                  fontStyle="italic"
+                  sx={{
+                    mt: 1.5, // Added extra spacing here
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {field['component-parameters'].helperText}
+                </Typography>
+              )}
+            </Stack>
           </Grid>
-          <Grid
-            container
-            item
-            xs={12}
-            sm={4}
-            alignItems="center"
-            pl={{xs: 0, sm: 1}}
-          >
-            {field['component-parameters'].helperText &&
-            field['component-parameters'].helperText.length > 60 ? (
-              <Typography
-                variant="body2"
-                fontSize={12}
-                fontWeight={400}
-                fontStyle="italic"
-              >
-                {field['component-parameters'].helperText.substring(0, 59)}...
-              </Typography>
-            ) : (
-              <Typography
-                variant="body2"
-                fontSize={12}
-                fontWeight={400}
-                fontStyle="italic"
-              >
-                {field['component-parameters'].helperText}
-              </Typography>
-            )}
-          </Grid>
-          <Grid item xs={12} sm={3}>
+
+          <Grid item xs={12} sm={4}>
             <Stack
               direction="row"
               justifyContent={{sm: 'right', xs: 'left'}}
@@ -465,7 +465,7 @@ export const FieldEditor = ({
               <TemplatedStringFieldEditor
                 fieldName={fieldName}
                 viewId={viewId}
-                viewsetId={viewSetId ?? ''}
+                viewsetId={viewSetId}
               />
             )) || <BaseFieldEditor fieldName={fieldName} />}
         </div>

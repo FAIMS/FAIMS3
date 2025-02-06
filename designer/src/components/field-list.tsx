@@ -141,6 +141,23 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
   //   });
   // }, [fView.fields]);
 
+  // can't do this with another useEffect because it might fire before
+  // or after the other one, it then opens up random fields
+  //
+  // useEffect(() => {
+  //   // if fViews.fields changes we check if there is a new
+  //   // field (just added) and open it up
+  //   fView.fields.forEach((fieldName: string) => {
+  //     console.log('checking', fieldName, isExpanded[fieldName]);
+  //     if (isExpanded[fieldName] === undefined) {
+  //       setIsExpanded({
+  //         ...isExpanded,
+  //         [fieldName]: true,
+  //       });
+  //     }
+  //   });
+  // }, [fView.fields]);
+
   const handleExpandChange = (fieldName: string) => {
     return (_event: React.SyntheticEvent, expanded: boolean) => {
       setIsExpanded(prevState => ({
