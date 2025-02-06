@@ -321,7 +321,10 @@ const filterByActiveUser = (rows: RecordMetadata[], username: string) => {
 };
 
 /**
- * Returns a list of all records, and active user records.
+ * Returns a list of all records, and active user records. This applies the
+ * built in getMetadataForAllRecords filtering (which does client side
+ * permission filtering) and also provides my records vs all records list(s).
+ * 
  * @param query The search string, if any - regex match
  * @param projectId Project ID to get records for
  * @param filterDeleted Whether to filter out deleted records
