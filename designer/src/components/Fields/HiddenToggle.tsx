@@ -26,16 +26,35 @@ import {
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 
+/**
+ * HiddenFieldEditor is a component for managing whether a field should be
+ * hidden in the form. It provides a simple checkbox interface with an
+ * explanation tooltip.
+ *
+ * Toggles the component ['component-parameters'].ElementProps.hidden
+ *
+ * @component
+ * @param {Object} props - Component props
+ * @param {string} props.fieldName - Name of the field being edited
+ */
+
 export const HiddenFieldEditor = ({fieldName}: {fieldName: string}) => {
+  // Get field state from Redux store
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
+  // Get current hidden state, defaulting to false if not set
   const isHidden = field['component-parameters'].hidden ?? false;
 
+  /**
+   * Updates the hidden state in Redux store
+   * @param {boolean} newValue - New hidden state value
+   */
   const updateHiddenState = (newValue: boolean) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    // Ensure ElementProps exists and update hidden property
     newField['component-parameters'] = {
       ...newField['component-parameters'],
       hidden: newValue,
@@ -50,6 +69,7 @@ export const HiddenFieldEditor = ({fieldName}: {fieldName: string}) => {
     <Grid container>
       <Paper sx={{width: '100%', mt: 2, p: 3}}>
         <Box>
+          {/* Info alert explaining the feature */}
           <Alert
             severity="info"
             sx={{
@@ -64,6 +84,7 @@ export const HiddenFieldEditor = ({fieldName}: {fieldName: string}) => {
             still be used in TemplatedString fields, and are available in
             exported data, but won't be visible to users.
           </Alert>
+          {/* Hidden toggle checkbox with tooltip */}
           <FormControlLabel
             control={
               <Checkbox
