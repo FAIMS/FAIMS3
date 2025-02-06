@@ -37,6 +37,7 @@ import Button, {ButtonProps} from '@mui/material/Button';
 import CloseIcon from '@mui/icons-material/Close';
 import GeoJSON from 'ol/format/GeoJSON';
 import Zoom from 'ol/control/Zoom';
+import MapIcon from '@mui/icons-material/LocationOn';
 
 // define some EPSG codes - these are for two sample images
 // TODO: we need to have a better way to include a useful set or allow
@@ -64,11 +65,19 @@ interface MapProps extends ButtonProps {
   setNoPermission: (flag: boolean) => void;
 }
 
-import {AppBar, Dialog, IconButton, Toolbar, Typography} from '@mui/material';
+import {
+  AppBar,
+  Box,
+  Dialog,
+  IconButton,
+  Toolbar,
+  Typography,
+} from '@mui/material';
 import Feature from 'ol/Feature';
 import {Geometry} from 'ol/geom';
 import {createCenterControl} from '../../components/map/center-control';
 import {useNotification} from '../../../context/popup';
+import {theme} from '../../themes';
 
 const styles = {
   mapContainer: {
@@ -260,29 +269,82 @@ function MapWrapper(props: MapProps) {
     }
   };
 
-  // render component
   return (
     <div>
-      <Button variant="outlined" fullWidth={true} onClick={handleClickOpen}>
-        {props.label}
+      <Button
+        variant="contained"
+        fullWidth
+        onClick={handleClickOpen}
+        sx={{
+          width: {xs: '100%', sm: '75%', md: '50%'},
+          backgroundColor: theme.palette.secondary.main,
+          color: theme.palette.secondary.contrastText,
+          padding: '12px',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          borderRadius: '12px',
+          boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
+          transition: 'all 0.3s ease-in-out',
+          display: 'flex',
+          alignItems: 'left',
+          justifyContent: 'center',
+          '&:hover': {
+            backgroundColor: theme.palette.primary.main,
+            transform: 'scale(1.03)',
+            boxShadow: '0px 6px 14px rgba(0, 0, 0, 0.3)',
+          },
+        }}
+      >
+        <Box sx={{display: 'flex', alignItems: 'center', gap: 3}}>
+          <MapIcon
+            sx={{
+              fontSize: 26,
+              color: 'red',
+              transform: 'scale(1.5)',
+            }}
+          />
+
+          <Typography variant="h6" sx={{fontWeight: 'bold', fontSize: '18px'}}>
+            {props.label}
+          </Typography>
+        </Box>
       </Button>
 
       <Dialog fullScreen open={mapOpen} onClose={handleClose}>
-        <AppBar sx={{position: 'relative'}}>
+        <AppBar
+          sx={{
+            position: 'relative',
+            backgroundColor: theme.palette.background.default,
+          }}
+        >
           <Toolbar>
             <IconButton
               edge="start"
               color="inherit"
               onClick={handleClose}
               aria-label="close"
+              sx={{
+                color: theme.palette.dialogButton.cancel,
+              }}
             >
               <CloseIcon />
             </IconButton>
             <Typography sx={{ml: 2, flex: 1}} variant="h6" component="div">
               {props.label}
             </Typography>
-            <Button autoFocus color="inherit" onClick={handleClose}>
-              save
+            <Button
+              autoFocus
+              color="inherit"
+              onClick={handleClose}
+              sx={{
+                backgroundColor: theme.palette.dialogButton.confirm,
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: theme.palette.success.light,
+                },
+              }}
+            >
+              Save
             </Button>
           </Toolbar>
         </AppBar>

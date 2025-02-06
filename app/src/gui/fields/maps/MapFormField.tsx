@@ -18,18 +18,29 @@
  *   Implement MapFormField for entry of data via maps in FAIMS
  */
 
-import React, {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import './MapFormField.css';
 import MapWrapper from './MapWrapper';
-
 import {Geolocation} from '@capacitor/geolocation';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
-
 import {FieldProps} from 'formik';
-import {Alert} from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Typography,
+  useMediaQuery,
+  useTheme,
+  Zoom,
+} from '@mui/material';
 import {Capacitor} from '@capacitor/core';
 import {APP_NAME} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
+import FieldWrapper from '../fieldWrapper';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import MapIcon from '@mui/icons-material/Map';
+import {theme} from '../../themes';
 
 // If no center is available - pass this through
 // Sydney CBD
@@ -43,6 +54,8 @@ export interface MapFieldProps extends FieldProps {
   center?: Array<number>;
   zoom?: number;
   FormLabelProps?: any;
+  helperText: string;
+  required: boolean;
 }
 
 export function MapFormField({
@@ -75,13 +88,40 @@ export function MapFormField({
   // default label
   const label = props.label ?? `Get ${props.featureType}`;
 
-  const mapCallback = (theFeatures: GeoJSONFeatureCollection) => {
-    setDrawnFeatures(theFeatures);
-    form.setFieldValue(field.name, theFeatures, true);
-  };
+  // state for visual indicators
+  const [isLocationSelected, setIsLocationSelected] = useState(false);
+  const [showCheckmark, setShowCheckmark] = useState(false);
+  const [showCross, setShowCross] = useState(false);
+  const [animateCheck, setAnimateCheck] = useState(false);
 
   // notification manager
   const notify = useNotification();
+
+  // Callback function when a location is selected
+  const mapCallback = (theFeatures: GeoJSONFeatureCollection) => {
+    setDrawnFeatures(theFeatures);
+    form.setFieldValue(field.name, theFeatures, true);
+
+    if (theFeatures.features.length > 0) {
+      setIsLocationSelected(true);
+      setShowCross(false);
+      setShowCheckmark(false);
+
+      // Adding a delay for animation effect
+      setTimeout(() => {
+        setShowCheckmark(true);
+        setAnimateCheck(true);
+        setTimeout(() => setAnimateCheck(false), 1200);
+      }, 500);
+
+      notify.showSuccess('Location successfully selected!');
+    } else {
+      setIsLocationSelected(false);
+      setShowCheckmark(false);
+      setShowCross(true);
+      notify.showWarning('No location selected. Please choose a point.');
+    }
+  };
 
   useEffect(() => {
     const getCoords = async () => {
@@ -111,7 +151,7 @@ export function MapFormField({
     getCoords();
   }, []);
 
-  let valueText = '';
+  let valueText = 'No location selected';
   if (drawnFeatures.features && drawnFeatures.features.length > 0) {
     const geom = drawnFeatures.features[0].geometry;
     switch (geom.type) {
@@ -130,9 +170,22 @@ export function MapFormField({
         break;
     }
   }
+
   return (
-    <div>
-      <div>
+    <FieldWrapper
+      heading="Location"
+      subheading={props.helperText}
+      required={props.required}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+          width: '100%',
+        }}
+      >
+        {/* Map Interaction */}
         <MapWrapper
           label={label}
           featureType={featureType}
@@ -145,37 +198,82 @@ export function MapFormField({
           projection={props.projection}
           setNoPermission={setNoPermission}
         />
-        {noPermission && (
-          <Alert severity="error" sx={{width: '100%'}}>
-            {Capacitor.getPlatform() === 'web' && (
-              <>
-                Please enable location permissions for this page. In your
-                browser, look to the left of the web address bar for a button
-                that gives access to browser settings for this page.
-              </>
-            )}
-            {Capacitor.getPlatform() === 'android' && (
-              <>
-                Please enable location permissions for {APP_NAME}. Go to your
-                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
-                Location and select "Allow all the time" or "Allow only while
-                using the app".
-              </>
-            )}
-            {Capacitor.getPlatform() === 'ios' && (
-              <>
-                Please enable location permissions for {APP_NAME}. Go to your
-                device Settings &gt; Privacy & Security &gt; Location Services
-                &gt;
-                {APP_NAME} and select "While Using the App".
-              </>
-            )}
-          </Alert>
-        )}
-        <p>{valueText}</p>
-      </div>
-    </div>
+
+        {/* Status Icons Below Field with Animation */}
+        <Box sx={{display: 'flex', alignItems: 'center', marginTop: 1}}>
+          <Typography
+            variant="body1"
+            sx={{
+              fontWeight: 'bold',
+              color: isLocationSelected
+                ? theme.palette.success.main
+                : theme.palette.error.main,
+              transition: 'color 0.4s ease-in-out',
+            }}
+          >
+            {isLocationSelected
+              ? `Selected Point: ${drawnFeatures.features[0]?.geometry.coordinates[0].toFixed(2)}, ${drawnFeatures.features[0]?.geometry.coordinates[1].toFixed(2)}`
+              : 'No location selected, click above to choose a point!'}
+          </Typography>
+
+          <Zoom in={showCheckmark}>
+            <CheckCircleIcon
+              sx={{
+                color: 'green',
+                fontSize: 30,
+                marginLeft: 2,
+                transition: 'transform 0.3s ease-in-out',
+                transform: showCheckmark
+                  ? animateCheck
+                    ? 'scale(1.2)'
+                    : 'scale(1)'
+                  : 'scale(0.5)',
+              }}
+            />
+          </Zoom>
+
+          <Zoom in={showCross}>
+            <CancelIcon
+              sx={{
+                color: 'red',
+                fontSize: 30,
+                marginLeft: 2,
+                transition: 'transform 0.3s ease-in-out',
+                transform: showCross ? 'scale(1)' : 'scale(0.5)',
+              }}
+            />
+          </Zoom>
+        </Box>
+      </Box>
+
+      {/*  Show error if no permission */}
+      {noPermission && (
+        <Alert severity="error" sx={{width: '100%', marginTop: 1}}>
+          {Capacitor.getPlatform() === 'web' && (
+            <>
+              Please enable location permissions for this page. In your browser,
+              look to the left of the web address bar for a button that gives
+              access to browser settings for this page.
+            </>
+          )}
+          {Capacitor.getPlatform() === 'android' && (
+            <>
+              Please enable location permissions for {APP_NAME}. Go to your
+              device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
+              Location and select "Allow all the time" or "Allow only while
+              using the app".
+            </>
+          )}
+          {Capacitor.getPlatform() === 'ios' && (
+            <>
+              Please enable location permissions for {APP_NAME}. Go to your
+              device Settings &gt; Privacy & Security &gt; Location Services
+              &gt;
+              {APP_NAME} and select "While Using the App".
+            </>
+          )}
+        </Alert>
+      )}
+    </FieldWrapper>
   );
 }
-
-//
