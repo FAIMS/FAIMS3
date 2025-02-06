@@ -18,30 +18,31 @@ import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRound
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import {
-    Accordion,
-    AccordionDetails,
-    AccordionSummary,
-    Chip,
-    Grid,
-    IconButton,
-    Stack,
-    Tooltip,
-    Typography,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Chip,
+  Grid,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
 } from '@mui/material';
-import { useAppDispatch, useAppSelector } from '../state/hooks';
-import { AdvancedSelectEditor } from './Fields/AdvancedSelectEditor';
-import { BaseFieldEditor } from './Fields/BaseFieldEditor';
-import { BasicAutoIncrementerEditor } from './Fields/BasicAutoIncrementer';
-import { DateTimeNowEditor } from './Fields/DateTimeNowEditor';
-import { MapFormFieldEditor } from './Fields/MapFormFieldEditor';
-import { MultipleTextFieldEditor } from './Fields/MultipleTextField';
-import { OptionsEditor } from './Fields/OptionsEditor';
-import { RandomStyleEditor } from './Fields/RandomStyleEditor';
-import { RelatedRecordEditor } from './Fields/RelatedRecordEditor';
-import { RichTextEditor } from './Fields/RichTextEditor';
-import { TakePhotoFieldEditor } from './Fields/TakePhotoField';
-import { TemplatedStringFieldEditor } from './Fields/TemplatedStringFieldEditor';
-import { TextFieldEditor } from './Fields/TextFieldEditor';
+import {useAppDispatch, useAppSelector} from '../state/hooks';
+import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
+import {BaseFieldEditor} from './Fields/BaseFieldEditor';
+import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
+import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
+import HiddenFieldEditor from './Fields/HiddenToggle';
+import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
+import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
+import {OptionsEditor} from './Fields/OptionsEditor';
+import {RandomStyleEditor} from './Fields/RandomStyleEditor';
+import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
+import {RichTextEditor} from './Fields/RichTextEditor';
+import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
+import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
+import {TextFieldEditor} from './Fields/TextFieldEditor';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -138,7 +139,7 @@ export const FieldEditor = ({
           },
         }}
       >
-        <Grid container rowGap={1}>
+        <Grid container rowGap={1} alignItems={'center'}>
           <Grid item xs={12} sm={8}>
             <Stack direction="column" spacing={1} pr={{xs: 0, sm: 2}}>
               {/* Field Title */}
@@ -179,22 +180,24 @@ export const FieldEditor = ({
               </Stack>
 
               {/* Helper Text (More Spacing from Chips) */}
-              <Typography
-                variant="body2"
-                fontSize={12}
-                fontWeight={400}
-                fontStyle="italic"
-                sx={{
-                  mt: 1.5, // Added extra spacing here
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {field['component-parameters'].helperText}
-              </Typography>
+              {field['component-parameters'].helperText && (
+                <Typography
+                  variant="body2"
+                  fontSize={12}
+                  fontWeight={400}
+                  fontStyle="italic"
+                  sx={{
+                    mt: 1.5, // Added extra spacing here
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {field['component-parameters'].helperText}
+                </Typography>
+              )}
             </Stack>
           </Grid>
 
@@ -282,11 +285,14 @@ export const FieldEditor = ({
             <BasicAutoIncrementerEditor fieldName={fieldName} viewId={viewId} />
           )) ||
           (fieldComponent === 'TemplatedStringField' && (
-            <TemplatedStringFieldEditor
-              fieldName={fieldName}
-              viewId={viewId}
-              viewsetId={viewSetId}
-            />
+            <>
+              <TemplatedStringFieldEditor
+                fieldName={fieldName}
+                viewId={viewId}
+                viewsetId={viewSetId}
+              />
+              <HiddenFieldEditor fieldName={fieldName} />
+            </>
           )) || <BaseFieldEditor fieldName={fieldName} />}
       </AccordionDetails>
     </Accordion>
