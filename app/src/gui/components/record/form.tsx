@@ -1304,6 +1304,7 @@ class RecordForm extends React.Component<
                                 fieldNames={fieldNames}
                                 disabled={this.props.disabled}
                                 hideErrors={true}
+                                formErrors={formProps.errors}
                               />
                             </Form>
                           </div>
@@ -1326,7 +1327,7 @@ class RecordForm extends React.Component<
                       )}
                       {!formProps.isValid &&
                         Object.keys(formProps.errors).length > 0 && (
-                          <Alert severity="error">
+                          <Alert severity="error" sx={{mt: 2}}>
                             Form has errors, please scroll up and make changes
                             before submitting.
                             <div>
