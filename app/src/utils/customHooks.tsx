@@ -12,7 +12,8 @@ import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
-import {directory_db} from '../sync/databases';
+import {data_dbs, directory_db} from '../sync/databases';
+import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -324,7 +325,7 @@ const filterByActiveUser = (rows: RecordMetadata[], username: string) => {
  * Returns a list of all records, and active user records. This applies the
  * built in getMetadataForAllRecords filtering (which does client side
  * permission filtering) and also provides my records vs all records list(s).
- * 
+ *
  * @param query The search string, if any - regex match
  * @param projectId Project ID to get records for
  * @param filterDeleted Whether to filter out deleted records
@@ -351,12 +352,10 @@ export const useRecordList = ({
       projectId,
       filterDeleted,
       activeUser?.username,
-      token,
+      token?.roles,
     ],
     networkMode: 'always',
     gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
     refetchInterval: refreshIntervalMs,
     queryFn: async () => {
       console.log('Running query');
@@ -385,14 +384,50 @@ export const useRecordList = ({
   const allRows = records.data ?? [];
 
   // Memoize the calculation of the current user rows
-  const myUserRows = useMemo(() => {
-    let filtered = filterOutDrafts(allRows);
+  const {myRecords, otherRecords} = useMemo(() => {
+    const noDrafts = filterOutDrafts(allRows);
+    let justMyRecords: RecordMetadata[] = [];
+
+    // Get just my records
     if (activeUser) {
-      filtered = filterByActiveUser(filtered, activeUser.username);
+      justMyRecords = filterByActiveUser(noDrafts, activeUser.username);
     }
-    return filtered;
+
+    // Get all other records
+    const otherRecords = noDrafts.filter(r => {
+      // other records are all drafts are not in the my records list
+      return !justMyRecords.map(r => r.record_id).includes(r.record_id);
+    });
+
+    return {myRecords: justMyRecords, otherRecords: otherRecords};
   }, [records, activeUser]);
 
   // return both curated record lists and the underlying query where necessary
-  return {allRecords: allRows, myRecords: myUserRows, query: records};
+  return {allRecords: allRows, myRecords, otherRecords, query: records};
+};
+
+/**
+ * Does a potentially auto-refetching fetch of the drafts list for use in
+ * the draft list.
+ */
+export const useDraftsList = ({
+  projectId,
+  refreshIntervalMs,
+  filter,
+}: {
+  projectId: string;
+  refreshIntervalMs?: number | undefined | false;
+  filter: DraftFilters;
+}) => {
+  const records = useQuery({
+    queryKey: ['drafts', projectId, filter],
+    networkMode: 'always',
+    gcTime: 0,
+    refetchInterval: refreshIntervalMs,
+    queryFn: async () => {
+      return Object.values(await listDraftMetadata(projectId, filter));
+    },
+  });
+
+  return records;
 };

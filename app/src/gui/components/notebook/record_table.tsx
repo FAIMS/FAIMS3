@@ -19,30 +19,27 @@
  */
 
 import {
-  ProjectID,
-  ProjectUIModel,
-  ProjectUIViewsets,
-  RecordMetadata,
+    ProjectID,
+    ProjectUIModel,
+    ProjectUIViewsets,
+    RecordMetadata,
 } from '@faims3/data-model';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import {Alert, Box, Grid, Link, Paper, Typography} from '@mui/material';
-import {useTheme} from '@mui/material/styles';
+import { Alert, Box, Grid, Link, Paper, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import { DataGrid, GridCellParams, GridEventListener } from '@mui/x-data-grid';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {selectActiveUser} from '../../../context/slices/authSlice';
-import {useAppSelector} from '../../../context/store';
 import {
-  getFieldLabel,
-  getSummaryFields,
-  getUiSpecForProject,
-  getVisibleTypes,
+    getFieldLabel,
+    getSummaryFields,
+    getUiSpecForProject,
+    getVisibleTypes,
 } from '../../../uiSpecification';
-import {useRecordList} from '../../../utils/customHooks';
 import getLocalDate from '../../fields/LocalDate';
-import {NotebookDataGridToolbar} from './datagrid_toolbar';
+import { NotebookDataGridToolbar } from './datagrid_toolbar';
 import RecordDelete from './delete';
 
 /**
@@ -68,18 +65,6 @@ type RecordsTableProps = {
   recordLabel: string;
 };
 
-type RecordsBrowseTableProps = {
-  project_id: ProjectID;
-  maxRows: number | null;
-  viewsets?: ProjectUIViewsets | null;
-  filter_deleted: boolean;
-  handleRefresh: () => void;
-  onRecordsCountChange?: (counts: {total: number; myRecords: number}) => void;
-  recordLabel: string;
-  // If true, then only show active user records, else, show all that the user
-  // has permission to see
-  myRecordsOnly: boolean;
-};
 
 /**
  * Component to render the records in a DataGrid table.
@@ -87,10 +72,8 @@ type RecordsBrowseTableProps = {
  * @param {RecordsTableProps} props - The properties passed to the RecordsTable.
  * @returns {JSX.Element} The rendered DataGrid with record metadata.
  */
-function RecordsTable(props: RecordsTableProps) {
+export function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
-  const activeUser = useAppSelector(selectActiveUser);
-
   const theme = useTheme();
   const history = useNavigate();
 
@@ -513,48 +496,3 @@ function RecordsTable(props: RecordsTableProps) {
     </React.Fragment>
   );
 }
-
-/**
- * Component to handle browsing records and querying with search.
- *
- * @param {RecordsBrowseTableProps} props - The properties passed to RecordsBrowseTable.
- * @returns {JSX.Element} The rendered table for browsing records.
- */
-export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
-  const {recordLabel} = props;
-  const [query, setQuery] = React.useState('');
-
-  // Fetch records from the (local) DB with 10 second auto refetch
-  const records = useRecordList({
-    query: query,
-    projectId: props.project_id,
-    filterDeleted: props.filter_deleted,
-    // refetch every 10 seconds (local only fetch - no network traffic here)
-    refreshIntervalMs: 10000,
-  });
-
-  // Update counts when the unfiltered or filtered list is updated
-  useEffect(() => {
-    props.onRecordsCountChange?.({
-      total: records.allRecords.length,
-      myRecords: records.myRecords.length,
-    });
-  }, [records.allRecords.length, records.myRecords.length]);
-
-  return (
-    <RecordsTable
-      project_id={props.project_id}
-      maxRows={props.maxRows}
-      // Show the appropriate list depending on filter
-      rows={props.myRecordsOnly ? records.myRecords : records.allRecords}
-      loading={records.query.isLoading}
-      viewsets={props.viewsets}
-      handleQueryFunction={setQuery}
-      handleRefresh={props.handleRefresh}
-      recordLabel={recordLabel}
-    />
-  );
-}
-RecordsBrowseTable.defaultProps = {
-  maxRows: null,
-};
