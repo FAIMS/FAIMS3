@@ -66,8 +66,9 @@ export function MapFormField({
     form.values[field.name] ?? {}
   );
 
+  console.log('map field props', props);
   // Default zoom level
-  const zoom = props.zoom ?? 14;
+  const zoom = typeof props.zoom === 'number' ? props.zoom : 14;
 
   // default to point if not specified
   const featureType = props.featureType ?? 'Point';

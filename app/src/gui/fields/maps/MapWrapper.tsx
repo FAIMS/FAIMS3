@@ -88,6 +88,8 @@ function MapWrapper(props: MapProps) {
   // notifications
   const notify = useNotification();
 
+  console.log('map props', props);
+
   // create state ref that can be accessed in OpenLayers onclick callback function
   //  https://stackoverflow.com/a/60643670
   const mapRef = useRef<Map | undefined>();
@@ -129,6 +131,7 @@ function MapWrapper(props: MapProps) {
           projection: props.projection || defaultMapProjection,
           center: center,
           zoom: props.zoom,
+          maxZoom: 20,
         });
       }
 
