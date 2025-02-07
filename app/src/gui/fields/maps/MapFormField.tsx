@@ -129,7 +129,7 @@ export function MapFormField({
       }
       setShowCheckmark(false);
       setAnimateCheck(true);
-      notify.showInfo('Location selection was cancelled.');
+      notify.showError('Location selection was cancelled.');
       setTimeout(() => setAnimateCheck(false), 1200);
     }
   };
