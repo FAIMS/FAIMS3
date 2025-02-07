@@ -311,7 +311,7 @@ function hasMatchingConnection<Content extends {}>(
  * Creates a new synchronisation (PouchDB.sync) between the specified local and
  * remote DB. This uses the preferred sync options to avoid misconfiguration in
  * caller functions. Two way sync is always enabled, with live and retry. If
- * attachment filter is supplied, the pull sync options are overrided with a
+ * attachment filter is supplied, the pull sync options are overridden with a
  * filter.
  *
  * @param attachmentDownload Download attachments iff true
