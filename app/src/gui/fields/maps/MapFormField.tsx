@@ -93,33 +93,44 @@ export function MapFormField({
   const [showCheckmark, setShowCheckmark] = useState(false);
   const [showCross, setShowCross] = useState(false);
   const [animateCheck, setAnimateCheck] = useState(false);
-
+  const [hasSavedLocation, setHasSavedLocation] = useState(false);
   // notification manager
   const notify = useNotification();
 
   // Callback function when a location is selected
-  const mapCallback = (theFeatures: GeoJSONFeatureCollection) => {
-    setDrawnFeatures(theFeatures);
-    form.setFieldValue(field.name, theFeatures, true);
-
-    if (theFeatures.features.length > 0) {
+  const mapCallback = (
+    theFeatures: GeoJSONFeatureCollection,
+    action?: 'save' | 'clear' | 'close'
+  ) => {
+    if (action === 'save') {
+      setDrawnFeatures(theFeatures);
+      form.setFieldValue(field.name, theFeatures, true);
       setIsLocationSelected(true);
       setShowCross(false);
-      setShowCheckmark(false);
-
-      // Adding a delay for animation effect
-      setTimeout(() => {
-        setShowCheckmark(true);
-        setAnimateCheck(true);
-        setTimeout(() => setAnimateCheck(false), 1200);
-      }, 500);
-
+      setShowCheckmark(true);
+      setHasSavedLocation(true);
+      setAnimateCheck(true);
       notify.showSuccess('Location successfully selected!');
-    } else {
+      setTimeout(() => setAnimateCheck(false), 1200);
+    } else if (action === 'clear') {
+      setDrawnFeatures({});
+      form.setFieldValue(field.name, {}, true);
       setIsLocationSelected(false);
       setShowCheckmark(false);
       setShowCross(true);
-      notify.showWarning('No location selected. Please choose a point.');
+      setHasSavedLocation(false);
+      setAnimateCheck(true);
+      notify.showWarning('Location selection cleared.');
+      setTimeout(() => setAnimateCheck(false), 1200);
+    } else if (action === 'close') {
+      if (!hasSavedLocation) {
+        // Only show corss if no location was ever saved
+        setShowCross(true);
+      }
+      setShowCheckmark(false);
+      setAnimateCheck(true);
+      notify.showInfo('Location selection was cancelled.');
+      setTimeout(() => setAnimateCheck(false), 1200);
     }
   };
 
@@ -199,7 +210,7 @@ export function MapFormField({
           setNoPermission={setNoPermission}
         />
 
-        {/* Status Icons Below Field with Animation */}
+        {/* Status Icons with Animation */}
         <Box sx={{display: 'flex', alignItems: 'center', marginTop: 1}}>
           <Typography
             variant="body1"
@@ -212,7 +223,7 @@ export function MapFormField({
             }}
           >
             {isLocationSelected
-              ? `Selected Point: ${drawnFeatures.features[0]?.geometry.coordinates[0].toFixed(2)}, ${drawnFeatures.features[0]?.geometry.coordinates[1].toFixed(2)}`
+              ? valueText
               : 'No location selected, click above to choose a point!'}
           </Typography>
 
@@ -222,10 +233,10 @@ export function MapFormField({
                 color: 'green',
                 fontSize: 30,
                 marginLeft: 2,
-                transition: 'transform 0.3s ease-in-out',
+                transition: 'transform 0.5s ease-in-out',
                 transform: showCheckmark
                   ? animateCheck
-                    ? 'scale(1.2)'
+                    ? 'scale(1.3)'
                     : 'scale(1)'
                   : 'scale(0.5)',
               }}
@@ -237,9 +248,12 @@ export function MapFormField({
               sx={{
                 color: 'red',
                 fontSize: 30,
-                marginLeft: 2,
-                transition: 'transform 0.3s ease-in-out',
-                transform: showCross ? 'scale(1)' : 'scale(0.5)',
+                transition: 'transform 0.5s ease-in-out',
+                transform: showCross
+                  ? animateCheck
+                    ? 'scale(1.3)'
+                    : 'scale(1)'
+                  : 'scale(0.5)',
               }}
             />
           </Zoom>

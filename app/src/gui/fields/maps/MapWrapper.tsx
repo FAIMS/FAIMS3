@@ -61,7 +61,7 @@ interface MapProps extends ButtonProps {
   zoom: number;
   center: Array<number>;
   fallbackCenter: boolean;
-  callbackFn: (features: object) => void;
+  callbackFn: (features: object, action?: 'save' | 'clear' | 'close') => void;
   setNoPermission: (flag: boolean) => void;
 }
 
@@ -89,7 +89,6 @@ const styles = {
 } as const;
 
 function MapWrapper(props: MapProps) {
-  // set initial state
   const [mapOpen, setMapOpen] = useState<boolean>(false);
   const [map, setMap] = useState<Map | undefined>();
   const [featuresLayer, setFeaturesLayer] =
@@ -221,9 +220,10 @@ function MapWrapper(props: MapProps) {
     [setFeaturesLayer]
   );
 
-  const handleClose = () => {
+  const handleClose = (action: 'save' | 'clear' | 'close') => {
     if (featuresLayer) {
       const source = featuresLayer.getSource();
+
       if (source) {
         const features = source.getFeatures();
 
@@ -234,12 +234,21 @@ function MapWrapper(props: MapProps) {
             rightHanded: true,
           });
 
-          props.callbackFn(geoJsonFeatures);
-
-          source.clear();
+          if (action === 'save') {
+            // Only update lat/long if "save" is clicked
+            props.callbackFn(geoJsonFeatures, 'save');
+            notify.showSuccess('Location saved successfully!');
+          } else if (action === 'clear') {
+            // reset selection if "clear" is clicked
+            source.clear();
+            props.callbackFn({}, 'clear'); // Send empty features to reset
+            notify.showWarning('Location selection cleared.');
+          } else {
+            // "close" case - do nothing
+            props.callbackFn({}, 'close');
+          }
         }
       }
-      // TODO: should we delete the map element? Memory?
       setMap(undefined);
     }
     setMapOpen(false);
@@ -276,7 +285,8 @@ function MapWrapper(props: MapProps) {
         fullWidth
         onClick={handleClickOpen}
         sx={{
-          width: {xs: '100%', sm: '75%', md: '50%'},
+          width: {xs: '100%', sm: '50%', md: '40%'},
+          maxWidth: '450px',
           backgroundColor: theme.palette.secondary.main,
           color: theme.palette.secondary.contrastText,
           padding: '12px',
@@ -299,7 +309,7 @@ function MapWrapper(props: MapProps) {
           <MapIcon
             sx={{
               fontSize: 26,
-              color: 'red',
+              color: theme.palette.highlightColor.main,
               transform: 'scale(1.5)',
             }}
           />
@@ -310,7 +320,7 @@ function MapWrapper(props: MapProps) {
         </Box>
       </Button>
 
-      <Dialog fullScreen open={mapOpen} onClose={handleClose}>
+      <Dialog fullScreen open={mapOpen} onClose={() => handleClose('close')}>
         <AppBar
           sx={{
             position: 'relative',
@@ -321,7 +331,7 @@ function MapWrapper(props: MapProps) {
             <IconButton
               edge="start"
               color="inherit"
-              onClick={handleClose}
+              onClick={() => handleClose('close')}
               aria-label="close"
               sx={{
                 color: theme.palette.dialogButton.cancel,
@@ -329,19 +339,28 @@ function MapWrapper(props: MapProps) {
             >
               <CloseIcon />
             </IconButton>
+
             <Typography sx={{ml: 2, flex: 1}} variant="h6" component="div">
               {props.label}
             </Typography>
+
             <Button
-              autoFocus
               color="inherit"
-              onClick={handleClose}
+              onClick={() => handleClose('clear')}
+              sx={{
+                backgroundColor: theme.palette.dialogButton.cancel,
+                color: theme.palette.dialogButton.dialogText,
+                mr: 1,
+              }}
+            >
+              Clear
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => handleClose('save')}
               sx={{
                 backgroundColor: theme.palette.dialogButton.confirm,
-                color: 'white',
-                '&:hover': {
-                  backgroundColor: theme.palette.success.light,
-                },
+                color: theme.palette.dialogButton.dialogText,
               }}
             >
               Save
