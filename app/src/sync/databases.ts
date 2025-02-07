@@ -341,7 +341,16 @@ export function createPouchDbSync<Content extends {}>({
     // Retry on fail
     retry: true,
     // Back off reasonably slowly
-    back_off_function: (delay: number) => delay * 1.5,
+    back_off_function: (delay: number) => {
+      // initial delay is zero
+      if (delay === 0) {
+        // initially 1500ms
+        return 1500;
+      } else {
+        // then 1.5x after that
+        return delay * 1.5;
+      }
+    },
     // Timeout after 15 seconds
     timeout: 15000,
     // Sync batch sizing options
