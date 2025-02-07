@@ -351,6 +351,12 @@ function MapWrapper(props: MapProps) {
                 backgroundColor: theme.palette.dialogButton.cancel,
                 color: theme.palette.dialogButton.dialogText,
                 mr: 1,
+                transition:
+                  'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                '&:hover': {
+                  backgroundColor: theme.palette.progressBar.complete,
+                  transform: 'scale(1.05)',
+                },
               }}
             >
               Clear
@@ -361,6 +367,12 @@ function MapWrapper(props: MapProps) {
               sx={{
                 backgroundColor: theme.palette.dialogButton.confirm,
                 color: theme.palette.dialogButton.dialogText,
+                transition:
+                  'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                '&:hover': {
+                  backgroundColor: theme.palette.alert.infoText,
+                  transform: 'scale(1.05)',
+                },
               }}
             >
               Save
