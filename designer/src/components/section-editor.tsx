@@ -12,31 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
+import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import {
-  Grid,
-  TextField,
+  Alert,
   Button,
   Dialog,
   DialogActions,
+  DialogContent,
   DialogTitle,
-  InputAdornment,
-  Tooltip,
+  FormControl,
+  FormControlLabel,
+  Grid,
   IconButton,
-  Alert,
+  InputAdornment,
+  Radio,
+  RadioGroup,
+  TextField,
+  Tooltip,
 } from '@mui/material';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
-import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
-import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
-import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 
-import {FieldList} from './field-list';
-import {useAppSelector, useAppDispatch} from '../state/hooks';
 import {useState} from 'react';
+import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {ConditionModal, ConditionTranslation, ConditionType} from './condition';
+import {FieldList} from './field-list';
 
 type Props = {
   viewSetId: string;
@@ -52,6 +58,12 @@ type Props = {
     viewID: string,
     moveDirection: 'left' | 'right'
   ) => void;
+  moveSectionCallback: (
+    sourceViewSetID: string,
+    targetViewSetID: string,
+    viewID: string
+  ) => boolean;
+  handleSectionMoveCallback: (targetViewSetId: string) => void;
 };
 
 export const SectionEditor = ({
@@ -59,29 +71,58 @@ export const SectionEditor = ({
   viewId,
   viewSet,
   deleteCallback,
+  moveSectionCallback,
   addCallback,
   moveCallback,
+  handleSectionMoveCallback,
 }: Props) => {
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
   );
+  const viewSets = useAppSelector(
+    state => state.notebook['ui-specification'].viewsets
+  );
   const dispatch = useAppDispatch();
 
-  console.log('SectionEditor', viewId, viewSet);
-
-  const [open, setOpen] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openMoveDialog, setOpenMoveDialog] = useState(false);
+  const [targetViewSetId, setTargetViewSetId] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [addMode, setAddMode] = useState(false);
   const [newSectionName, setNewSectionName] = useState('New Section');
   const [addAlertMessage, setAddAlertMessage] = useState('');
 
-  const handleClose = () => {
-    setOpen(false);
+  const handleCloseDeleteDialog = () => {
+    setOpenDeleteDialog(false);
+  };
+
+  const handleCloseMoveDialog = () => {
+    setOpenMoveDialog(false);
   };
 
   const deleteSection = () => {
     deleteCallback(viewSetId, viewId);
-    handleClose();
+    handleCloseDeleteDialog();
+  };
+
+  const moveSectionToForm = () => {
+    // run the function to move the section to a different form AND save the returned success status to a variable
+    const moveSuccess: boolean = moveSectionCallback(
+      viewSetId,
+      targetViewSetId,
+      viewId
+    );
+
+    // depending on moveSuccess, set relevant state variables
+    if (moveSuccess) {
+      setAddAlertMessage('');
+      handleSectionMoveCallback(targetViewSetId);
+    } else {
+      // manually setting the error message
+      setAddAlertMessage(`Failed to move the section to this form.`);
+    }
+
+    handleCloseMoveDialog();
   };
 
   const updateSectionLabel = (label: string) => {
@@ -112,7 +153,6 @@ export const SectionEditor = ({
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
-    console.log('condition changed', condition);
     dispatch({
       type: 'ui-specification/sectionConditionChanged',
       payload: {viewId, condition},
@@ -122,33 +162,81 @@ export const SectionEditor = ({
   return (
     <>
       <Grid container spacing={1.75} mb={2}>
-        <Grid item xs={12} sm={3}>
+        <Grid item xs={12} sm={1.9}>
           <Button
             variant="text"
             color="error"
             size="small"
             startIcon={<DeleteRoundedIcon />}
-            onClick={() => setOpen(true)}
+            onClick={() => setOpenDeleteDialog(true)}
           >
             Delete section
           </Button>
           <Dialog
-            open={open}
-            onClose={handleClose}
-            aria-labelledby="alert-dialog-title"
+            open={openDeleteDialog}
+            onClose={handleCloseDeleteDialog}
+            aria-labelledby="alert-delete-dialog-title"
             aria-describedby="alert-dialog-description"
           >
-            <DialogTitle id="alert-dialog-title">
+            <DialogTitle id="alert-delete-dialog-title">
               Are you sure you want to delete this section?
             </DialogTitle>
             <DialogActions>
               <Button onClick={deleteSection}>Yes</Button>
-              <Button onClick={handleClose}>No</Button>
+              <Button onClick={handleCloseDeleteDialog}>No</Button>
             </DialogActions>
           </Dialog>
         </Grid>
 
-        <Grid item xs={12} sm={2}>
+        <Grid item xs={12} sm={1.9}>
+          <Button
+            variant="text"
+            size="small"
+            startIcon={<MoveRoundedIcon />}
+            onClick={() => setOpenMoveDialog(true)}
+          >
+            Move section
+          </Button>
+          <Dialog
+            open={openMoveDialog}
+            onClose={handleCloseMoveDialog}
+            aria-labelledby="alert-move-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <DialogTitle id="alert-move-dialog-title">
+              Please select the form you want to move this section to.
+            </DialogTitle>
+            <DialogContent>
+              <FormControl component="fieldset">
+                <RadioGroup
+                  aria-labelledby="target-form"
+                  name="targetForm"
+                  value={targetViewSetId}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setTargetViewSetId(event.target.value);
+                  }}
+                >
+                  {Object.keys(viewSets)
+                    .filter(formId => formId !== viewSetId) // exclude the source form
+                    .map(formId => (
+                      <FormControlLabel
+                        key={formId}
+                        value={formId}
+                        control={<Radio />}
+                        label={viewSets[formId].label}
+                      />
+                    ))}
+                </RadioGroup>
+              </FormControl>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={moveSectionToForm}>Move</Button>
+              <Button onClick={handleCloseMoveDialog}>Cancel</Button>
+            </DialogActions>
+          </Dialog>
+        </Grid>
+
+        <Grid item xs={12} sm={1.9}>
           <Button
             variant="text"
             size="small"
@@ -199,7 +287,7 @@ export const SectionEditor = ({
           )}
         </Grid>
 
-        <Grid item xs={12} sm={2}>
+        <Grid item xs={12} sm={1.5}>
           <Tooltip title="Move section left">
             <span>
               <IconButton
@@ -230,7 +318,7 @@ export const SectionEditor = ({
           </Tooltip>
         </Grid>
 
-        <Grid item xs={12} sm={2}>
+        <Grid item xs={12} sm={2.5}>
           <Button
             variant="text"
             size="small"
@@ -287,7 +375,7 @@ export const SectionEditor = ({
           {addAlertMessage && <Alert severity="error">{addAlertMessage}</Alert>}
         </Grid>
 
-        <Grid item xs={12} sm={3}>
+        <Grid item xs={12} sm={2}>
           <ConditionModal
             label={fView.condition ? 'Update Condition' : 'Add Condition'}
             initial={fView.condition}

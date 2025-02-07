@@ -27,10 +27,11 @@ const theme = createTheme({
     text: {
       primary: '#000000FF',
       secondary: '#000000',
+      helpText: '#737373',
     },
     alert: {
       warningBackground: '#FFFFFF',
-      warningText: '#BC0505',
+      warningText: '#EA0E0EFF',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
     },

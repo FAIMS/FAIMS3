@@ -197,7 +197,11 @@ function cluster_admin_group_name(): string {
 // If VITE_BUGSNAG_KEY is not defined then we don't use Bugsnag
 function get_bugsnag_key(): string | false {
   const bugsnag_key = import.meta.env.VITE_BUGSNAG_KEY;
-  if (bugsnag_key === '' || bugsnag_key === undefined) {
+  if (
+    bugsnag_key === '' ||
+    bugsnag_key === undefined ||
+    bugsnag_key === 'false'
+  ) {
     return false;
   }
   return bugsnag_key;

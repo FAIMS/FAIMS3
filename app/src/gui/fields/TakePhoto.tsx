@@ -28,6 +28,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
+import {Buffer} from 'buffer';
 import {FieldProps} from 'formik';
 import React from 'react';
 import {useNavigate} from 'react-router';
@@ -35,24 +36,26 @@ import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
+import FieldWrapper from './fieldWrapper';
 
 /**
- * Converts a base64 encoded image to a Blob object using fetch API instead of
- * deprecated atob
+ * Converts a base64 encoded image to a Blob object using Buffer
  * @param image - Photo object containing base64 string and format information
  * @returns Promise resolving to a Blob object representing the image
  * @throws Error if base64String is undefined
  */
 async function base64ImageToBlob(image: Photo): Promise<Blob> {
-  if (image.base64String === undefined) {
-    throw Error('No photo data found');
+  if (!image.base64String) {
+    throw new Error('No photo data found');
   }
 
-  // Convert base64 to binary using fetch API
-  const response = await fetch(
-    `data:image/${image.format};base64,${image.base64String}`
-  );
-  return await response.blob();
+  // Convert base64 to buffer
+  const buffer = Buffer.from(image.base64String, 'base64');
+
+  // Create blob from buffer
+  return new Blob([buffer], {
+    type: `image/${image.format}`,
+  });
 }
 
 // Helper function to check if any images are undownloaded
@@ -67,6 +70,7 @@ interface Props {
   label?: string;
   issyncing?: string;
   isconflict?: boolean;
+  required?: boolean;
 }
 
 interface ImageListProps {
@@ -204,84 +208,98 @@ const ImageGallery = ({
             </Paper>
           </ImageListItem>
         )}
-
         {/* Image Gallery - Reversed order for newest first */}
-        {[...images].reverse().map((image: any, index: number) =>
-          image['attachment_id'] === undefined ? (
-            <ImageListItem
-              key={`${fieldName}-image-${index}`}
-              sx={{
-                borderRadius: theme.spacing(1),
-                overflow: 'hidden',
-                boxShadow: theme.shadows[2],
-                aspectRatio: '4/3',
-                '&:hover': {
-                  boxShadow: theme.shadows[4],
-                },
-              }}
-            >
-              <Box
+        {[...images].reverse().map((image: any, index: number) => {
+          if (image['attachment_id'] === undefined) {
+            try {
+              const url = URL.createObjectURL(image);
+              return (
+                <ImageListItem
+                  key={`${fieldName}-image-${index}`}
+                  sx={{
+                    borderRadius: theme.spacing(1),
+                    overflow: 'hidden',
+                    boxShadow: theme.shadows[2],
+                    aspectRatio: '4/3',
+                    '&:hover': {
+                      boxShadow: theme.shadows[4],
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={url}
+                      onClick={() => setopen(url)}
+                      alt={`Photo ${index + 1}`}
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        bgcolor: theme.palette.background.lightBackground,
+                      }}
+                    />
+                    {!disabled && (
+                      <ImageListItemBar
+                        sx={{
+                          background: theme.palette.primary.dark[70],
+                        }}
+                        position="top"
+                        actionIcon={
+                          <IconButton
+                            sx={{color: 'white'}}
+                            onClick={() => handleDelete(index)}
+                            size="large"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        }
+                        actionPosition="right"
+                      />
+                    )}
+                  </Box>
+                </ImageListItem>
+              );
+            } catch (e) {
+              console.error(
+                'URL was not valid for image ',
+                image,
+                '. Ignoring in gallery. Error: ',
+                e
+              );
+              throw e;
+            }
+          } else {
+            return (
+              <ImageListItem
+                key={`${fieldName}-image-icon-${index}`}
+                // Set to null to show download popup
+                onClick={() => setopen(null)}
                 sx={{
-                  width: '100%',
-                  height: '100%',
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  borderRadius: theme.spacing(1),
+                  overflow: 'hidden',
+                  boxShadow: theme.shadows[2],
+                  aspectRatio: '4/3',
+                  '&:hover': {
+                    boxShadow: theme.shadows[4],
+                  },
                 }}
               >
-                <Box
-                  component="img"
-                  src={URL.createObjectURL(image)}
-                  onClick={() => setopen(URL.createObjectURL(image))}
-                  alt={`Photo ${index + 1}`}
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    bgcolor: theme.palette.background.lightBackground,
-                  }}
-                />
-                {!disabled && (
-                  <ImageListItemBar
-                    sx={{
-                      background: theme.palette.primary.dark[70],
-                    }}
-                    position="top"
-                    actionIcon={
-                      <IconButton
-                        sx={{color: 'white'}}
-                        onClick={() => handleDelete(index)}
-                        size="large"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    }
-                    actionPosition="right"
-                  />
-                )}
-              </Box>
-            </ImageListItem>
-          ) : (
-            <ImageListItem
-              key={`${fieldName}-image-icon-${index}`}
-              // Set to null to show download popup
-              onClick={() => setopen(null)}
-              sx={{
-                cursor: 'pointer',
-                borderRadius: theme.spacing(1),
-                overflow: 'hidden',
-                boxShadow: theme.shadows[2],
-                aspectRatio: '4/3',
-                '&:hover': {
-                  boxShadow: theme.shadows[4],
-                },
-              }}
-            >
-              <UnavailableImage />
-            </ImageListItem>
-          )
-        )}
+                <UnavailableImage />
+              </ImageListItem>
+            );
+          }
+        })}
       </Box>
     </Box>
   );
@@ -346,114 +364,94 @@ export const TakePhoto: React.FC<
     }
   };
 
-  const error = props.form.errors[props.field.name];
-  const errorText = error ? (
-    <span {...props.ErrorTextProps}>{error as string}</span>
-  ) : (
-    <span {...props.NoErrorTextProps}></span>
-  );
-
   const images = props.form.values[props.field.name] ?? [];
   const disabled = props.disabled ?? false;
   const hasUndownloaded = hasUndownloadedImages(images);
   const projectId = props.form.values['_project_id'];
 
   return (
-    <Box sx={{width: '100%'}}>
-      {/* Title and helper text section */}
-      <Box sx={{mb: 2}}>
-        {props.label && (
-          <Typography variant="h6" gutterBottom>
-            {props.label}
-          </Typography>
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText || props.helpertext}
+      required={props.required}
+    >
+      <Box sx={{width: '100%'}}>
+        {/* Download Banner */}
+        {hasUndownloaded && (
+          <Alert severity="info" sx={{mb: 2}}>
+            To download existing photos, please go to the{' '}
+            {
+              // Deeplink directly to settings tab
+            }
+            <Link
+              onClick={() => {
+                navigate(
+                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                    projectId +
+                    `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
+                );
+              }}
+            >
+              {NOTEBOOK_NAME_CAPITALIZED} Settings Tab
+            </Link>{' '}
+            and enable attachment download.
+          </Alert>
         )}
-        {(props.helperText || props.helpertext) && (
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            {props.helperText || props.helpertext}
-          </Typography>
-        )}
-      </Box>
 
-      {/* Download Banner */}
-      {hasUndownloaded && (
-        <Alert severity="info" sx={{mb: 2}}>
-          To download existing photos, please go to the{' '}
-          {
-            // Deeplink directly to settings tab
-          }
-          <Link
-            onClick={() => {
-              navigate(
-                ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                  projectId +
-                  `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
-              );
+        {images.length === 0 ? (
+          <EmptyState onAddPhoto={takePhoto} />
+        ) : (
+          <ImageGallery
+            images={images}
+            setOpen={(path: string | null) => {
+              setOpen(true);
+              setPhotoPath(path);
             }}
-          >
-            {NOTEBOOK_NAME_CAPITALIZED} Settings Tab
-          </Link>{' '}
-          and enable attachment download.
-        </Alert>
-      )}
+            setImages={(newfiles: Array<any>) => {
+              props.form.setFieldValue(props.field.name, newfiles, true);
+            }}
+            disabled={disabled}
+            fieldName={props.field.name}
+            onAddPhoto={takePhoto}
+          />
+        )}
 
-      {images.length === 0 ? (
-        <EmptyState onAddPhoto={takePhoto} />
-      ) : (
-        <ImageGallery
-          images={images}
-          setOpen={(path: string | null) => {
-            setOpen(true);
-            setPhotoPath(path);
-          }}
-          setImages={(newfiles: Array<any>) => {
-            props.form.setFieldValue(props.field.name, newfiles, true);
-          }}
-          disabled={disabled}
-          fieldName={props.field.name}
-          onAddPhoto={takePhoto}
+        {noPermission && (
+          <Alert severity="error" sx={{width: '100%', mt: 2}}>
+            {Capacitor.getPlatform() === 'web' && (
+              <>
+                Please enable camera permissions for this page. Look for the
+                camera permissions button in your browser's address bar.
+              </>
+            )}
+            {Capacitor.getPlatform() === 'android' && (
+              <>
+                Please enable camera permissions for {APP_NAME}. Go to your
+                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
+                Camera and select "Ask every time" or "Allow only while using
+                the app".
+              </>
+            )}
+            {Capacitor.getPlatform() === 'ios' && (
+              <>
+                Please enable camera permissions for {APP_NAME}. Go to your
+                device Settings &gt; Privacy & Security &gt; Camera &gt; and
+                ensure that {APP_NAME} is enabled.
+              </>
+            )}
+          </Alert>
+        )}
+
+        <FaimsAttachmentManagerDialog
+          project_id={projectId}
+          open={open}
+          setopen={() => setOpen(false)}
+          filedId={props.id}
+          path={photoPath}
+          isSyncing={props.issyncing}
         />
-      )}
-
-      {noPermission && (
-        <Alert severity="error" sx={{width: '100%', mt: 2}}>
-          {Capacitor.getPlatform() === 'web' && (
-            <>
-              Please enable camera permissions for this page. Look for the
-              camera permissions button in your browser's address bar.
-            </>
-          )}
-          {Capacitor.getPlatform() === 'android' && (
-            <>
-              Please enable camera permissions for {APP_NAME}. Go to your device
-              Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt; Camera
-              and select "Ask every time" or "Allow only while using the app".
-            </>
-          )}
-          {Capacitor.getPlatform() === 'ios' && (
-            <>
-              Please enable camera permissions for {APP_NAME}. Go to your device
-              Settings &gt; Privacy & Security &gt; Camera &gt; and ensure that{' '}
-              {APP_NAME} is enabled.
-            </>
-          )}
-        </Alert>
-      )}
-
-      {error && (
-        <Typography variant="caption" color="error" sx={{mt: 1}}>
-          {errorText}
-        </Typography>
-      )}
-
-      <FaimsAttachmentManagerDialog
-        project_id={projectId}
-        open={open}
-        setopen={() => setOpen(false)}
-        filedId={props.id}
-        path={photoPath}
-        isSyncing={props.issyncing}
-      />
-    </Box>
+      </Box>
+    </FieldWrapper>
   );
 };
 

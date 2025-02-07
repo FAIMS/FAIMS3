@@ -47,6 +47,9 @@ export const migrateNotebook = (notebook: unknown) => {
   // fix bad autoincrementer initial value
   fixAutoIncrementerInitialValue(notebookCopy);
 
+  // fix old hrid format
+  fixOldHridPrefix(notebookCopy);
+
   return notebookCopy;
 };
 
@@ -70,7 +73,7 @@ export const validateNotebook = (n: unknown) => {
   const validate = ajv.compile<Notebook>(schema);
 
   const valid = validate(n);
-  console.log('valid', valid);
+  console.log('valid? ', valid);
   if (!valid) {
     if (validate.errors) {
       console.log('Validation Errors:', validate.errors);
@@ -265,4 +268,43 @@ const fixAutoIncrementerInitialValue = (notebook: Notebook) => {
   }
 
   notebook['ui-specification'].fields = fields;
+};
+
+/**
+ * Move any hrid prefix fields to hridField in the viewset settings.
+ * @param notebook A notebook that might be out of date, modified
+ */
+const fixOldHridPrefix = (notebook: Notebook) => {
+  const fieldToViewset: {[key: string]: string} = {};
+
+  // Build map of fields to their containing viewsets
+  for (const viewsetId of Object.keys(notebook['ui-specification'].viewsets)) {
+    const viewset = notebook['ui-specification'].viewsets[viewsetId];
+    for (const viewId of viewset.views) {
+      const view = notebook['ui-specification'].fviews[viewId];
+      for (const fieldName of view.fields) {
+        fieldToViewset[fieldName] = viewsetId;
+      }
+    }
+  }
+
+  // Process fields, moving HRID fields to viewset settings
+  for (const fieldName of Object.keys(notebook['ui-specification'].fields)) {
+    // Always strip off the hrid true property - this is no longer present
+    const params =
+      notebook['ui-specification'].fields[fieldName]['component-parameters'];
+    if (params && 'hrid' in params) {
+      delete params.hrid;
+    }
+
+    if (fieldName.startsWith('hrid')) {
+      const viewsetName = fieldToViewset[fieldName];
+      if (viewsetName) {
+        notebook['ui-specification'].viewsets[viewsetName].hridField =
+          fieldName;
+      }
+    }
+  }
+
+  return notebook;
 };

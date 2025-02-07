@@ -31,10 +31,13 @@ import {
   EncodedDraft,
   DraftMetadataList,
   attachment_to_file,
+  getIdsByFieldName,
+  getHridFieldNameForViewset,
 } from '@faims3/data-model';
 import {DEBUG_APP} from '../buildconfig';
 import {local_pouch_options} from './connection';
 import {logError} from '../logging';
+import {getUiSpecForProject} from '../uiSpecification';
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
 
@@ -265,7 +268,7 @@ export async function listDraftMetadata(
   try {
     const records = await listDraftsEncoded(project_id, filter);
     const out: DraftMetadataList = {};
-    records.forEach(record => {
+    records.forEach(async record => {
       out[record._id] = {
         project_id: project_id,
         _id: record._id,
@@ -273,7 +276,7 @@ export async function listDraftMetadata(
         existing: record.existing,
         updated: new Date(record.updated),
         type: record.type,
-        hrid: getDraftHRID(record) ?? record._id,
+        hrid: (await getDraftHRID(record)) ?? record._id,
         record_id: record.record_id,
       };
     });
@@ -284,20 +287,39 @@ export async function listDraftMetadata(
   }
 }
 
-function getDraftHRID(record: EncodedDraft): string | null {
-  let hrid_name: string | null = null;
-  for (const possible_name of Object.keys(record.fields)) {
-    if (possible_name.startsWith(HRID_STRING)) {
-      hrid_name = possible_name;
-      break;
+async function getDraftHRID(record: EncodedDraft): Promise<string | null> {
+  // Need to find a way here to determine the correct field name to use - we
+  // need the uispec at this point
+  const uiSpecification = await getUiSpecForProject(record.project_id, false);
+  const fieldNames = Array.from(Object.keys(record.fields));
+  const sampleFieldName = fieldNames.length > 0 ? fieldNames[0] : undefined;
+  let hridFieldName = undefined;
+  if (sampleFieldName) {
+    const {viewSetId} = getIdsByFieldName({
+      uiSpecification,
+      fieldName: sampleFieldName,
+    });
+    // get the HRID for the view set - might not succeed
+    hridFieldName = getHridFieldNameForViewset({
+      uiSpecification,
+      viewSetId,
+    });
+  }
+
+  if (!hridFieldName) {
+    for (const possible_name of Object.keys(record.fields)) {
+      if (possible_name.startsWith(HRID_STRING)) {
+        hridFieldName = possible_name;
+        break;
+      }
     }
   }
 
-  if (hrid_name === null) {
+  if (!hridFieldName) {
     return null;
   }
 
-  const hrid_id = record.fields[hrid_name] as string | undefined | null;
+  const hrid_id = record.fields[hridFieldName] as string | undefined | null;
   if (hrid_id === undefined || hrid_id === null) {
     return null;
   }

@@ -1,36 +1,35 @@
+import {Edit as EditIcon} from '@mui/icons-material';
 import {
   Alert,
-  Grid,
+  Box,
+  Button,
   Card,
+  Grid,
   TextField,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  FormControlLabel,
-  Checkbox,
   Typography,
 } from '@mui/material';
+import {MutableRefObject, useMemo, useRef, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {MutableRefObject, useRef, useState} from 'react';
 import {ComponentParameters, FieldType} from '../../state/initial';
+import {MustacheTemplateBuilder} from '../TemplateBuilder';
 
 type PropType = {
   fieldName: string;
   viewId: string;
+  viewsetId: string;
 };
 
-export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
+/**
+ * Enhanced TemplatedStringFieldEditor with visual Mustache template building support.
+ * Allows users to create and edit templates using a visual builder or direct text input.
+ */
+export const TemplatedStringFieldEditor = ({
+  fieldName,
+  viewsetId,
+}: PropType) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
-  const formHasHRID = useAppSelector(state => {
-    return Object.keys(state.notebook['ui-specification'].fields).some(
-      fieldName => {
-        return fieldName.startsWith('hrid') && fieldName.endsWith(viewId);
-      }
-    );
-  });
   const allFields = useAppSelector(
     state => state.notebook['ui-specification'].fields
   );
@@ -38,177 +37,169 @@ export const TemplatedStringFieldEditor = ({fieldName, viewId}: PropType) => {
   const textAreaRef = useRef(null) as MutableRefObject<unknown>;
 
   const [alertMessage, setAlertMessage] = useState('');
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
   const state = field['component-parameters'];
 
-  const isHRID = () => {
-    return fieldName.startsWith('hrid') && fieldName.endsWith(viewId);
-  };
+  const viewSet = useAppSelector(
+    state => state.notebook['ui-specification'].viewsets[viewsetId]
+  );
+  const fviews = useAppSelector(
+    state => state.notebook['ui-specification'].fviews
+  );
+
+  /**
+   * Collects all fields that belong to any view in the current viewset
+   */
+  const viewSetFields = useMemo(() => {
+    const fieldSet = new Set<string>();
+    viewSet.views.forEach(viewId => {
+      const view = fviews[viewId];
+      if (view) {
+        view.fields.forEach(fieldId => fieldSet.add(fieldId));
+      }
+    });
+    return Array.from(fieldSet);
+  }, [viewSet.views, fviews]);
+
+  // Define system variables
+  const systemVariables = [
+    {
+      name: '_CREATOR_NAME',
+      displayName: 'Creator Name',
+      type: 'system' as const,
+    },
+    {
+      name: '_CREATED_TIME',
+      displayName: 'Created Time',
+      type: 'system' as const,
+    },
+  ];
 
   const getFieldLabel = (f: FieldType) => {
     return (
-      (f['component-parameters'].InputLabelProps &&
-        f['component-parameters'].InputLabelProps.label) ||
-      f['component-parameters'].name
+      f['component-parameters'].InputLabelProps?.label ||
+      f['component-parameters'].name ||
+      ''
     );
   };
 
+  const fieldVariables = viewSetFields.map(name => {
+    const fieldDetails = allFields[name];
+    return {
+      name,
+      displayName: getFieldLabel(fieldDetails),
+      type: 'field' as const,
+    };
+  });
+
   const updateFieldFromState = (newState: ComponentParameters) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     newField['component-parameters'].InputLabelProps = {
       label: newState.label || fieldName,
     };
     newField['component-parameters'].helperText = newState.helperText;
     newField['component-parameters'].template = newState.template;
-    newField['component-parameters'].hrid = newState.hrid;
     dispatch({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},
     });
   };
 
-  const setHRID = (newState: boolean) => {
-    let newFieldName = state.InputLabelProps
-      ? state.InputLabelProps.label
-      : fieldName;
-    if (newState) {
-      // need to check whether there is already an HRID field in this form
-      // if so we show an alert
-      if (formHasHRID) {
-        setAlertMessage(
-          'There is already an HRID field in this form.  You can only have one HRID field per form.'
-        );
-        return;
-      } else {
-        newFieldName = 'hrid' + viewId;
-      }
-    }
-    dispatch({
-      type: 'ui-specification/fieldRenamed',
-      payload: {viewId, fieldName, newFieldName},
-    });
-  };
-
-  const updateProperty = (prop: string, value: string) => {
+  const updateProperty = (prop: string, value: string | boolean) => {
     const newState = {...state, [prop]: value};
     updateFieldFromState(newState);
   };
 
-  const insertFieldId = (fieldId: string) => {
-    // insert {{fieldId}} at the cursor in the text area
-    if (textAreaRef.current) {
-      const el = textAreaRef.current as HTMLTextAreaElement;
-      el.focus();
-      const [start, end] = [el.selectionStart, el.selectionEnd];
-      el.setRangeText(`{{${fieldId}}}`, start, end, 'select');
-      el.dispatchEvent(new Event('change', {bubbles: true}));
-    }
+  const handleTemplateChange = (template: string) => {
+    updateProperty('template', template);
   };
 
   return (
     <Grid container spacing={2}>
-      <Grid item xs={12}>
-        {alertMessage && (
-          <Alert
-            onClose={() => {
-              setAlertMessage('');
-            }}
-            severity="error"
-          >
+      {alertMessage && (
+        <Grid item xs={12}>
+          <Alert onClose={() => setAlertMessage('')} severity="error">
             {alertMessage}
           </Alert>
-        )}
-        <Card variant="outlined" sx={{display: 'flex'}}>
-          <Grid item sm={6} xs={12} sx={{mx: 1.5, my: 2}}>
-            <TextField
-              name="label"
-              variant="outlined"
-              label="Label"
-              value={state.label}
-              onChange={e => updateProperty('label', e.target.value)}
-              helperText="Enter a label for the field."
-            />
-          </Grid>
-          <Grid item sm={6} xs={12} sx={{mx: 1.5, my: 2}}>
-            <TextField
-              name="helperText"
-              variant="outlined"
-              label="Helper Text"
-              fullWidth
-              multiline={true}
-              rows={4}
-              value={state.helperText}
-              helperText="Help text shown along with the field (like this text)."
-              onChange={e => updateProperty('helperText', e.target.value)}
-            />
-          </Grid>
-          <Grid item sm={6} xs={12} sx={{mx: 1.5, my: 2}}>
-            <FormControlLabel
-              required
-              control={
-                <Checkbox
-                  checked={isHRID()}
-                  onChange={e => setHRID(e.target.checked)}
-                />
-              }
-              label="Use as Human Readable ID"
-            />
+        </Grid>
+      )}
 
-            <Typography variant="body2" color="text.secondary">
-              HRID is the primary identifier for the record.
-            </Typography>
-          </Grid>
-        </Card>
-
-        <Grid item xs={12}>
-          <p>
-            The template can contain any text plus references to field or
-            metadata values in double curly braces (e.g. {'{{field-id}}'}). Use
-            the menu on the right to insert the identifiers of the fields in
-            this notebook.
-          </p>
-          <Card variant="outlined" sx={{display: 'flex'}}>
-            <Grid item sm={6} xs={12} sx={{mx: 1.5, my: 2}}>
+      <Grid item xs={12}>
+        <Card variant="outlined">
+          <Grid container spacing={2} sx={{p: 2}}>
+            <Grid item sm={6} xs={12}>
               <TextField
-                name="template"
-                inputRef={(ref: MutableRefObject<HTMLElement>) =>
-                  (textAreaRef.current = ref)
-                }
+                name="label"
                 variant="outlined"
+                label="Label"
                 fullWidth
-                multiline
-                rows={2}
-                label="Template"
-                value={state.template}
-                onChange={e => updateProperty('template', e.target.value)}
-                helperText="Enter the template."
+                value={state.label || ''}
+                onChange={e => updateProperty('label', e.target.value)}
+                helperText="Enter a label for the field"
               />
             </Grid>
-
-            <Grid item xs={4} sx={{mx: 1.5, my: 2}}>
-              <FormControl sx={{minWidth: 200}}>
-                <InputLabel id="featureType-label">
-                  Insert Field Identifier
-                </InputLabel>
-                <Select
-                  labelId="featureType-label"
-                  label="Insert Field Identifier"
-                  onChange={e => insertFieldId(e.target.value)}
-                  value={''}
-                >
-                  {Object.keys(allFields).map(fieldId => {
-                    return (
-                      <MenuItem key={fieldId} value={fieldId}>
-                        {getFieldLabel(allFields[fieldId])}
-                      </MenuItem>
-                    );
-                  })}
-                </Select>
-              </FormControl>
+            <Grid item sm={6} xs={12}>
+              <TextField
+                name="helperText"
+                variant="outlined"
+                label="Helper Text"
+                fullWidth
+                multiline
+                rows={4}
+                value={state.helperText || ''}
+                helperText="Help text shown along with the field"
+                onChange={e => updateProperty('helperText', e.target.value)}
+              />
             </Grid>
-          </Card>
-        </Grid>
+          </Grid>
+        </Card>
       </Grid>
+
+      <Grid item xs={12}>
+        <Card variant="outlined">
+          <Box sx={{p: 2}}>
+            <Typography variant="subtitle2" sx={{mb: 2}}>
+              Template
+            </Typography>
+
+            <Grid container spacing={2}>
+              <Grid item xs>
+                <TextField
+                  name="template"
+                  inputRef={textAreaRef}
+                  variant="outlined"
+                  fullWidth
+                  multiline
+                  rows={4}
+                  value={state.template || ''}
+                  onChange={e => updateProperty('template', e.target.value)}
+                  helperText="Enter the template or use the visual builder"
+                />
+              </Grid>
+              <Grid item>
+                <Button
+                  variant="outlined"
+                  startIcon={<EditIcon />}
+                  onClick={() => setIsBuilderOpen(true)}
+                  sx={{height: '56px'}}
+                >
+                  Visual Builder
+                </Button>
+              </Grid>
+            </Grid>
+          </Box>
+        </Card>
+      </Grid>
+
+      <MustacheTemplateBuilder
+        open={isBuilderOpen}
+        onClose={() => setIsBuilderOpen(false)}
+        initialTemplate={state.template}
+        variables={fieldVariables}
+        systemVariables={systemVariables}
+        onSave={handleTemplateChange}
+      />
     </Grid>
   );
 };
