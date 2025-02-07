@@ -19,7 +19,6 @@
  *   which server to use and whether to include test data
  */
 
-import {off} from 'process';
 import {BUILD_VERSION, BUILD_VERSION_DEFAULT} from './version';
 
 // need to define a local logError here since logging.tsx imports this file
