@@ -346,7 +346,7 @@ class TileStoreBase {
     const average_size = 20;
 
     const tileSet = new Set<string>();
-    for (let zoom = minZoom; zoom <= maxZoom; zoom += 2) {
+    for (let zoom = minZoom; zoom <= maxZoom; zoom += 1) {
       tileGrid?.forEachTileCoord(
         extent,
         Math.ceil(zoom),
@@ -422,7 +422,7 @@ class TileStoreBase {
 
     const tileGrid = this.getTileGrid();
     const tileCoords: number[][] = [];
-    for (let zoom = tileSet.minZoom; zoom <= tileSet.maxZoom; zoom += 2) {
+    for (let zoom = tileSet.minZoom; zoom <= tileSet.maxZoom; zoom += 1) {
       tileGrid?.forEachTileCoord(tileSet.extent, Math.ceil(zoom), tileCoord => {
         tileCoords.push(tileCoord);
       });

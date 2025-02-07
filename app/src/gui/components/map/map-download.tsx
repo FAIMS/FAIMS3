@@ -40,7 +40,7 @@ import VectorSource from 'ol/source/Vector';
 import {RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
-import {ImageTileStore, StoredTileSet, VectorTileStore} from './tile-source';
+import {ImageTileStore, StoredTileSet} from './tile-source';
 
 const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
@@ -104,6 +104,7 @@ export const MapDownloadComponent = () => {
     const view = new View({
       projection: defaultMapProjection,
       zoom: zoomLevel,
+      maxZoom: MAX_ZOOM,
     });
 
     const theMap = new Map({
@@ -298,7 +299,13 @@ export const MapDownloadComponent = () => {
               <p>
                 Size: {Math.round((100 * mapSet.size) / 1024 / 1024) / 100} MB
               </p>
-              <p>Tiles: {mapSet.tileKeys.length}</p>
+              <p>
+                Tiles: {mapSet.tileKeys.length}/{mapSet.expectedTileCount} (avg.{' '}
+                {Math.round(
+                  (100 * mapSet.size) / mapSet.tileKeys.length / 1024
+                ) / 100}{' '}
+                Kb)
+              </p>
               <p>Downloaded on: {mapSet.created.toLocaleDateString()}</p>
               <Button
                 variant="outlined"
