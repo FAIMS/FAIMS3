@@ -12,7 +12,7 @@ import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
-import {data_dbs, directory_db} from '../sync/databases';
+import {directory_db} from '../sync/databases';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {

@@ -19,27 +19,27 @@
  */
 
 import {
-    ProjectID,
-    ProjectUIModel,
-    ProjectUIViewsets,
-    RecordMetadata,
+  ProjectID,
+  ProjectUIModel,
+  ProjectUIViewsets,
+  RecordMetadata,
 } from '@faims3/data-model';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import { Alert, Box, Grid, Link, Paper, Typography } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import {Alert, Box, Grid, Link, Paper, Typography} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { DataGrid, GridCellParams, GridEventListener } from '@mui/x-data-grid';
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {
-    getFieldLabel,
-    getSummaryFields,
-    getUiSpecForProject,
-    getVisibleTypes,
+  getFieldLabel,
+  getSummaryFields,
+  getUiSpecForProject,
+  getVisibleTypes,
 } from '../../../uiSpecification';
 import getLocalDate from '../../fields/LocalDate';
-import { NotebookDataGridToolbar } from './datagrid_toolbar';
+import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 
 /**
@@ -64,7 +64,6 @@ type RecordsTableProps = {
   handleRefresh: () => void;
   recordLabel: string;
 };
-
 
 /**
  * Component to render the records in a DataGrid table.

@@ -18,6 +18,7 @@
  *   TODO need to check created draft route
  */
 
+import {DraftMetadata, ProjectID, ProjectUIViewsets} from '@faims3/data-model';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {Box, Grid, Link, Paper, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
@@ -25,20 +26,9 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
-
-import {DraftMetadata, ProjectID, ProjectUIViewsets} from '@faims3/data-model';
 import * as ROUTES from '../../../constants/routes';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
-
-type DraftsTableProps = {
-  project_id: ProjectID;
-  maxRows: number | null;
-  viewsets?: ProjectUIViewsets | null;
-  handleRefresh: () => void;
-  drafts: DraftMetadata[];
-  loading: boolean;
-};
 
 type DraftsRecordProps = {
   project_id: ProjectID;
