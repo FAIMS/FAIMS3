@@ -33,7 +33,7 @@ import {
   ExistingActiveDoc,
   active_db,
   directory_db,
-  ensure_local_db,
+  ensureLocalDb,
   projects_dbs,
 } from './databases';
 import {events} from './events';
@@ -177,13 +177,13 @@ async function get_projects_from_conductor(listing: ListingsObject) {
 
   // make sure there is a local projects database
   // projects_did_change is true if this made a new database
-  const [projects_did_change, projects_local] = ensure_local_db(
-    'projects',
-    listing.id,
-    true,
-    projects_dbs,
-    true
-  );
+  const [projects_did_change, projects_local] = ensureLocalDb({
+    prefix: 'projects',
+    localDbId: listing.id,
+    initiateSync: true,
+    globalDbs: projects_dbs,
+    startSyncAttachments: true,
+  });
 
   const previous_listing = getListing(listing.id);
   addOrUpdateListing(listing.id, listing, projects_local);

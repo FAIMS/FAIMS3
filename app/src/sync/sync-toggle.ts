@@ -21,103 +21,15 @@
  */
 
 import {ProjectID} from '@faims3/data-model';
-import {ProjectDataObject} from '@faims3/data-model';
 import {logError} from '../logging';
 import {
   active_db,
+  createUpdateAndSavePouchSync,
   data_dbs,
   ExistingActiveDoc,
-  LocalDB,
-  LocalDBRemote,
-  setLocalConnection,
 } from './databases';
 import {events} from './events';
 import {getProject} from './projects';
-import {NOTEBOOK_NAME} from '../buildconfig';
-
-export function listenSyncingProject(
-  active_id: ProjectID,
-  callback: (syncing: boolean) => unknown
-): () => void {
-  const project_update_cb = (
-    _type: unknown,
-    _mc: unknown,
-    _dc: unknown,
-    active: ExistingActiveDoc
-  ) => {
-    if (active._id === active_id) {
-      callback(active.is_sync);
-    }
-  };
-  events.on('project_update', project_update_cb);
-  return events.removeListener.bind(
-    events,
-    'project_update',
-    project_update_cb
-  );
-}
-
-export function isSyncingProject(active_id: ProjectID): boolean {
-  return data_dbs[active_id]!.is_sync;
-}
-
-export async function setSyncingProject(
-  active_id: ProjectID,
-  syncing: boolean
-) {
-  if (syncing === isSyncingProject(active_id)) {
-    logError(`Did not change sync for project ${active_id}`);
-    return; //Nothing to do, already same value
-  }
-  console.info('Change sync for project', active_id, syncing);
-  const data_db = data_dbs[active_id];
-  data_db.is_sync = syncing;
-
-  const has_remote = (
-    db: typeof data_db
-  ): db is LocalDB<ProjectDataObject> & {
-    remote: LocalDBRemote<ProjectDataObject>;
-  } => {
-    return db.remote !== null;
-  };
-
-  if (has_remote(data_db)) {
-    setLocalConnection(data_db);
-  } else {
-    console.log('project is local only');
-  }
-
-  try {
-    const active_doc = await active_db.get(active_id);
-    active_doc.is_sync = syncing;
-    await active_db.put(active_doc);
-  } catch (err) {
-    logError(err);
-    throw Error(
-      `Could not change sync for this ${NOTEBOOK_NAME} (${active_id}). Contact Support.`
-    );
-  }
-
-  const created = await getProject(active_id);
-
-  events.emit(
-    'project_update',
-    [
-      'update',
-      {
-        ...created,
-        active: {
-          ...created.active,
-          is_sync: !syncing,
-        },
-      },
-    ],
-    false,
-    false,
-    created.active,
-    created.project
-  );
-}
 
 export function listenSyncingProjectAttachments(
   active_id: ProjectID,
@@ -153,22 +65,21 @@ export async function setSyncingProjectAttachments(
     logError(`Did not change attachment sync for project ${active_id}`);
     return; //Nothing to do, already same value
   }
+
+  // Get the current database
   const data_db = data_dbs[active_id];
+
+  // update the sync property
   data_db.is_sync_attachments = syncing;
 
-  const has_remote = (
-    db: typeof data_db
-  ): db is LocalDB<ProjectDataObject> & {
-    remote: LocalDBRemote<ProjectDataObject>;
-  } => {
-    return db.remote !== null;
-  };
-
-  if (has_remote(data_db)) {
-    setLocalConnection(data_db);
-  } else {
-    console.log('project is local only');
-  }
+  // This creates and updates the sync connection so that it streams the
+  // attachments appropriately
+  createUpdateAndSavePouchSync({
+    // If local only - this method will handle it
+    connectionInfo: data_db.remote?.info ?? null,
+    globalDbs: data_dbs,
+    localDbId: active_id,
+  });
 
   try {
     const active_doc = await active_db.get(active_id);

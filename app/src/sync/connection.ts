@@ -112,34 +112,34 @@ export function ping_sync_denied() {
 
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
- * @param connection_info Network address/database info to use to initialize the connection
+ * @param connectionInfo Network address/database info to use to initialize the connection
  * @returns A new PouchDB.Database, interfacing to the remote Couch/Pouch instance
  */
-export function ConnectionInfo_create_pouch<Content extends {}>(
-  connection_info: ConnectionInfo
+export function createPouchDbFromConnectionInfo<Content extends {}>(
+  connectionInfo: ConnectionInfo
 ): PouchDB.Database<Content> {
   const pouch_options: PouchDB.Configuration.RemoteDatabaseConfiguration = {
     skip_setup: true,
   };
 
   // Username & password auth is optional
-  if ('auth' in connection_info && connection_info.auth !== undefined) {
+  if ('auth' in connectionInfo && connectionInfo.auth !== undefined) {
     pouch_options.auth = {
-      username: connection_info.auth.username,
-      password: connection_info.auth.password,
+      username: connectionInfo.auth.username,
+      password: connectionInfo.auth.password,
     };
   }
   // TODO: Use a new enough pouchdb such that we don't need the fetch hook, see
   // https://github.com/pouchdb/pouchdb/issues/8387
   pouch_options.fetch = function (url: any, opts: any) {
     if (
-      'jwt_token' in connection_info &&
-      connection_info.jwt_token !== undefined
+      'jwt_token' in connectionInfo &&
+      connectionInfo.jwt_token !== undefined
     ) {
       // if (DEBUG_APP) {
       //   console.debug('Using JWT for connection', connection_info);
       // }
-      opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
+      opts.headers.set('Authorization', `Bearer ${connectionInfo.jwt_token}`);
     }
     throttled_ping_sync_up();
     throttled_ping_sync_down();
@@ -150,19 +150,19 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
   };
   let db_url: string;
   // if we have a base_url configured, make the connection url from that
-  if (connection_info.base_url) {
-    if (connection_info.base_url.endsWith('/'))
-      db_url = connection_info.base_url + connection_info.db_name;
-    else db_url = connection_info.base_url + '/' + connection_info.db_name;
+  if (connectionInfo.base_url) {
+    if (connectionInfo.base_url.endsWith('/'))
+      db_url = connectionInfo.base_url + connectionInfo.db_name;
+    else db_url = connectionInfo.base_url + '/' + connectionInfo.db_name;
   } else {
     db_url =
-      encodeURIComponent(connection_info.proto || 'http') +
+      encodeURIComponent(connectionInfo.proto || 'http') +
       '://' +
-      encodeURIComponent(connection_info.host || 'localhost') +
+      encodeURIComponent(connectionInfo.host || 'localhost') +
       ':' +
-      encodeURIComponent(connection_info.port || '5984') +
+      encodeURIComponent(connectionInfo.port || '5984') +
       '/' +
-      encodeURIComponent(connection_info.db_name);
+      encodeURIComponent(connectionInfo.db_name);
   }
 
   return new PouchDB(db_url, pouch_options);

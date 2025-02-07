@@ -99,7 +99,7 @@ export async function getDataDB(
   if (active_id in data_dbs) {
     return data_dbs[active_id].local;
   } else {
-    throw `Data DB of project ${active_id} is not known`;
+    throw `Data DB of project ${active_id} is not known. Current DBs available = ${Object.keys(data_dbs)}`;
   }
 }
 

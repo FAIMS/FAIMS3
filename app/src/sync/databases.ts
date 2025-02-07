@@ -32,7 +32,7 @@ import {db as projects_db} from '../dbs/projects-db';
 import {logError} from '../logging';
 import {
   ConnectionInfo,
-  ConnectionInfo_create_pouch,
+  createPouchDbFromConnectionInfo,
   local_pouch_options,
 } from './connection';
 import {draft_db} from './draft-storage';
@@ -157,32 +157,38 @@ export const metadata_dbs: LocalDBList<ProjectMetaObject> = {};
 
 /**
  * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix
- * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
- * @param global_dbs projects_db
+ * @param localDbId id is per-object of type, to discriminate between them. i.e. a project ID
+ * @param globalDbs projects_db
  * @returns Flag if newly created =true, already existing=false & The local DB
  */
-export function ensure_local_db<Content extends {}>(
-  prefix: string,
-  local_db_id: string,
-  start_sync: boolean,
-  global_dbs: LocalDBList<Content>,
-  start_sync_attachments: boolean
-): [boolean, LocalDB<Content>] {
-  if (global_dbs[local_db_id]) {
-    global_dbs[local_db_id].is_sync = start_sync;
-    return [false, global_dbs[local_db_id]];
+export function ensureLocalDb<Content extends {}>({
+  prefix,
+  localDbId,
+  initiateSync,
+  globalDbs,
+  startSyncAttachments,
+}: {
+  prefix: string;
+  localDbId: string;
+  initiateSync: boolean;
+  globalDbs: LocalDBList<Content>;
+  startSyncAttachments: boolean;
+}): [boolean, LocalDB<Content>] {
+  if (globalDbs[localDbId]) {
+    globalDbs[localDbId].is_sync = initiateSync;
+    return [false, globalDbs[localDbId]];
   } else {
     const db = new PouchDB<Content>(
-      prefix + POUCH_SEPARATOR + local_db_id,
+      prefix + POUCH_SEPARATOR + localDbId,
       local_pouch_options
     );
     return [
       true,
-      (global_dbs[local_db_id] = {
+      (globalDbs[localDbId] = {
         local: db,
         changes: db.changes(default_changes_opts),
-        is_sync: start_sync,
-        is_sync_attachments: start_sync_attachments,
+        is_sync: initiateSync,
+        is_sync_attachments: startSyncAttachments,
         remote: null,
       }),
     ];
@@ -190,144 +196,194 @@ export function ensure_local_db<Content extends {}>(
 }
 
 /**
- * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
- * @param global_dbs projects_db
- * @param connection_info Info to use to connect to remote
- * @param options PouchDB options. Defaults to live: true, retry: true.
- *                if options.sync is defined, then this turns into ensuring the DB
- *                is pushing to the remote as well as pulling.
- * @returns Flag if newly created =true, already existing=false & The local DB & remote
+ * Manages synchronization between local and remote PouchDB databases.
+ *
+ * This function ensures proper synchronization between a local database and its
+ * remote counterpart by:
+ *
+ * 1. Validating the local database exists
+ * 2. Maintaining existing sync if configuration hasn't changed
+ * 3. Creating new sync connections when needed
+ * 4. Cleaning up old resources (sync and pouch DBs)
+ *
+ * NOTE: this method will write the updates to the global DB
+ *
+ * @param localDbId - Identifier for the local database
+ * @param connectionInfo - Remote connection configuration (null for local-only DBs)
+ * @param globalDbs - Registry of all local databases
+ * @returns [boolean, LocalDB<Content>] - [true if new sync created, updated database info]
+ * @throws Error if local database is not initialized
  */
-export function ensure_synced_db<Content extends {}>(
-  local_db_id: string,
-  connection_info: ConnectionInfo | null,
-  global_dbs: LocalDBList<Content>,
-  options: DBReplicateOptions = {}
-): [boolean, LocalDB<Content>] {
-  if (global_dbs[local_db_id] === undefined) {
-    throw 'Logic error: ensure_local_db must be called before this code';
+export function createUpdateAndSavePouchSync<Content extends {}>({
+  localDbId,
+  connectionInfo,
+  globalDbs,
+}: {
+  localDbId: string;
+  connectionInfo: ConnectionInfo | null;
+  globalDbs: LocalDBList<Content>;
+}): [boolean, LocalDB<Content>] {
+  // Verify local database exists
+  const localDb = globalDbs[localDbId];
+  if (!localDb) {
+    throw new Error(
+      'Local database must be initialized before creating sync connection'
+    );
   }
 
-  // Already connected/connecting, or local-only database
-
-  // This checks for a diff so as to not unnecessarily recreate synced
-  // connections without any changes
-  if (
-    global_dbs[local_db_id].remote !== null &&
-    JSON.stringify(global_dbs[local_db_id].remote!.info) ===
-      JSON.stringify(connection_info) &&
-    JSON.stringify(global_dbs[local_db_id].remote!.options) ===
-      JSON.stringify(options)
-  ) {
-    return [
-      false,
-      {
-        ...global_dbs[local_db_id],
-        remote: global_dbs[local_db_id].remote!,
-      },
-    ];
+  // Handle local-only databases (no remote connection needed)
+  if (connectionInfo === null) {
+    return [false, localDb];
   }
 
-  // Special case for local-only projects
-  if (connection_info === null) {
-    return [false, global_dbs[local_db_id]];
+  // Check if existing remote connection matches new configuration
+  if (hasMatchingConnection(localDb.remote, connectionInfo)) {
+    return [false, localDb];
   }
 
-  const db_info = (global_dbs[local_db_id] = {
-    ...global_dbs[local_db_id],
-    remote: {
-      db: ConnectionInfo_create_pouch(connection_info),
-      connection: null, //Connection initialized in setLocalConnection
-      info: connection_info,
-      options: options,
-    },
+  // Helper function to stop existing connection
+  const cleanupPouchState = (db: LocalDB<Content>) => {
+    // First remove any sync
+    if (db.remote?.connection) {
+      console.log('Closing existing sync connection');
+      // Remove all listeners
+      db.remote.connection.removeAllListeners();
+      // Cancel the connection
+      db.remote.connection.cancel();
+      // Set it to null
+      db.remote.connection = null;
+    }
+
+    // And if the db itself is still there, clean it up too
+    if (db.remote?.db) {
+      console.log('Closing existing remote DB');
+      db.remote.db.close();
+    }
+  };
+
+  // cleanup the old PouchDB object and the related sync
+  cleanupPouchState(localDb);
+
+  // Create updated database configuration with new remote connection and new
+  // PouchDB object
+  const newDb = createPouchDbFromConnectionInfo<Content>(connectionInfo);
+  const {sync: newSync, options} = createPouchDbSync({
+    attachmentDownload: localDb.is_sync,
+    localDb: localDb.local,
+    remoteDb: newDb,
   });
 
-  setLocalConnection(db_info);
-  return [true, db_info];
+  const updatedDb = {
+    ...localDb,
+    remote: {
+      db: newDb,
+      connection: newSync,
+      info: connectionInfo,
+      options,
+    },
+  };
+
+  // Update the global DB as specified
+  globalDbs[localDbId] = updatedDb;
+
+  // Return those details
+  return [true, updatedDb];
 }
 
 /**
- * If the given remote DB is not synced, starts syncing, and visa versa.
- * db_info.remote.{connection, handler} are modified based on what's in
- * db_info.is_sync, db_info.remote.info, db_info.remote.create_handler.
- *
- * This does NOT ensure that the existing connection info (URL, port, proto)
- * matches anything. that's left to ensure_synced_db
- *
- * @param db_info info to use to create a DB connection:
- *                Remote connection info, is_sync, the local DB to sync with,
+ * Determines if an existing remote connection matches new connection parameters
+ * by comparing their serialized configurations.
  */
-export function setLocalConnection<Content extends {}>(
-  db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-) {
-  const options = db_info.remote.options;
-
-  if (db_info.is_sync) {
-    if (db_info.remote.connection !== null) {
-      // Stop an existing connection
-      db_info.remote.connection.cancel();
-      db_info.remote.connection = null;
-      console.debug('Removed sync for', db_info);
-    }
-    // Start a new connection
-    const push_too = (options as {push?: unknown}).push !== undefined;
-    let connection:
-      | PouchDB.Replication.Replication<Content>
-      | PouchDB.Replication.Sync<Content>;
-
-    const pull_filter = db_info.is_sync_attachments
-      ? {}
-      : {filter: '_view', view: 'attachment_filter/attachment_filter'};
-
-    if (push_too) {
-      const options_sync = options as PouchDB.Replication.SyncOptions;
-      console.debug(
-        'Pushing and pulling from',
-        db_info,
-        options_sync.push,
-        options_sync.pull,
-        pull_filter
-      );
-      connection = PouchDB.sync(db_info.local, db_info.remote.db, {
-        push: {
-          live: true,
-          retry: true,
-          checkpoint: 'source',
-          batch_size: POUCH_BATCH_SIZE,
-          batches_limit: POUCH_BATCHES_LIMIT,
-          ...options_sync.push,
-        },
-        pull: {
-          live: true,
-          retry: true,
-          checkpoint: 'target',
-          batch_size: POUCH_BATCH_SIZE,
-          batches_limit: POUCH_BATCHES_LIMIT,
-          ...pull_filter,
-          ...(options_sync.pull || {}),
-        },
-      });
-    } else {
-      console.debug('Pulling only from', db_info, options);
-      connection = PouchDB.replicate(db_info.remote.db, db_info.local, {
-        live: true,
-        retry: true,
-        checkpoint: 'target',
-        ...options,
-      });
-    }
-
-    db_info.remote.connection = connection;
-    console.debug('Added sync for', db_info);
-  } else if (!db_info.is_sync && db_info.remote.connection !== null) {
-    // Stop an existing connection
-    db_info.remote.connection.cancel();
-    db_info.remote.connection = null;
-    console.debug('Removed sync for', db_info);
-  } else {
-    logError(`Sync is still off ${db_info}`);
+function hasMatchingConnection<Content extends {}>(
+  existingRemote: LocalDBRemote<Content> | null,
+  newConnectionInfo: ConnectionInfo
+): boolean {
+  if (!existingRemote) {
+    return false;
   }
+
+  return (
+    JSON.stringify(existingRemote.info) === JSON.stringify(newConnectionInfo)
+  );
+}
+
+/**
+ * Creates a new synchronisation (PouchDB.sync) between the specified local and
+ * remote DB. This uses the preferred sync options to avoid misconfiguration in
+ * caller functions. Two way sync is always enabled, with live and retry. If
+ * attachment filter is supplied, the pull sync options are overridden with a
+ * filter.
+ *
+ * @param attachmentDownload Download attachments iff true
+ * @param localDb The local DB to sync
+ * @param remoteDb The remote DB to sync
+ *
+ * @returns sync The new sync object
+ * @returns options The sync options used (since parent caller likes to know)
+ */
+export function createPouchDbSync<Content extends {}>({
+  attachmentDownload,
+  localDb,
+  remoteDb,
+}: {
+  attachmentDownload: boolean;
+  localDb: PouchDB.Database<Content>;
+  remoteDb: PouchDB.Database<Content>;
+}) {
+  // Configure attachment filtering if needed
+  const pullFilter = attachmentDownload
+    ? {}
+    : {filter: '_view', view: 'attachment_filter/attachment_filter'};
+
+  const options: DBReplicateOptions = {
+    // Live sync mode (i.e. poll)
+    live: true,
+    // Retry on fail
+    retry: true,
+    // Back off reasonably slowly (okay with default for now)
+    /*
+    back_off_function: (delay: number) => {
+      // initial delay is zero
+      if (delay === 0) {
+        // initially 1500ms
+        return 1500;
+      } else {
+        // then 1.5x after that
+        return delay * 1.5;
+      }
+    },
+    */
+    // Timeout after 15 seconds
+    timeout: 15000,
+    // Sync batch sizing options
+    batch_size: POUCH_BATCH_SIZE,
+    batches_limit: POUCH_BATCHES_LIMIT,
+    // Push and pull specific options
+    push: {
+      checkpoint: 'source',
+    },
+    pull: {
+      checkpoint: 'target',
+      ...pullFilter,
+    },
+  };
+
+  return {
+    options,
+    sync: PouchDB.sync(localDb, remoteDb, options)
+      .on('error', err => {
+        console.warn('❌ Sync error occurred:', {
+          error: err,
+          dbName: localDb.name,
+        });
+      })
+      .on('denied', err => {
+        console.warn('🚫 Sync access denied:', {
+          error: err,
+          dbName: localDb.name,
+        });
+      }),
+  };
 }
 
 async function delete_synced_db(name: string, db: LocalDB<any>) {
@@ -404,16 +460,24 @@ export async function refreshDataDbTokens({
     // This is server/project combinations
     const {listing_id} = record;
 
+    // Only consider this server's DBs
     if (listing_id !== serverId) {
       continue;
     }
 
+    // This is the database ID
     const dbKey = record._id;
 
     // Get the associated data DB for this active db
     const db = data_dbs[dbKey];
 
     if (!db.remote) {
+      console.error(
+        "Couldn't get remote for db with key ",
+        dbKey,
+        'More details about the DB that was found',
+        db
+      );
       continue;
     }
 
@@ -423,7 +487,11 @@ export async function refreshDataDbTokens({
       jwt_token: newToken,
     };
 
-    // run the synced db operation which will update the
-    ensure_synced_db(dbKey, newConnectionInfo, data_dbs);
+    // run the synced db operation which will update the token
+    createUpdateAndSavePouchSync({
+      localDbId: dbKey,
+      connectionInfo: newConnectionInfo,
+      globalDbs: data_dbs,
+    });
   }
 }
