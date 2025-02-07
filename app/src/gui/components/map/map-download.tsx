@@ -251,7 +251,23 @@ export const MapDownloadComponent = () => {
   return (
     <>
       <Grid container spacing={2}>
-        <Grid item xs={8}>
+        <Grid item xs={12} sm={8} md={8}>
+          <p>Download the current region for offline use.</p>
+          <FormGroup row>
+            <TextField
+              label="Name for Downloaded Map"
+              value={downloadSetName}
+              onChange={e => setDownloadSetName(e.target.value)}
+            />
+            <Button variant="outlined" onClick={confirmCacheMapExtent}>
+              Download
+            </Button>
+            <Button variant="outlined" onClick={handleCacheMapExtent}>
+              Estimate Size
+            </Button>
+            {cacheSize && <Box>Estimated Download Size: {cacheSize}</Box>}
+          </FormGroup>
+
           {loadingLocation ? (
             <div>Loading location...</div>
           ) : (
@@ -271,26 +287,11 @@ export const MapDownloadComponent = () => {
             </>
           )}
         </Grid>
-        <Grid item>
-          <p>Zoom: {zoomLevel}</p>
+        <Grid item xs={12} sm={4} md={4}>
           <h3>Offline Maps</h3>
 
-          <p>Download the current region for offline use.</p>
-          <FormGroup row>
-            <TextField
-              label="Name for Downloaded Map"
-              value={downloadSetName}
-              onChange={e => setDownloadSetName(e.target.value)}
-            />
-            <Button variant="outlined" onClick={confirmCacheMapExtent}>
-              Download
-            </Button>
-          </FormGroup>
-          {cacheSize && <Box>Estimated Download Size: {cacheSize}</Box>}
           {message && <Alert severity="error">{message}</Alert>}
-          <Button variant="outlined" onClick={handleCacheMapExtent}>
-            Estimate Size
-          </Button>
+
           <h4>Maps Downloaded</h4>
           {tileSets.length === 0 && <p>No maps downloaded.</p>}
           {tileSets.map((mapSet: StoredTileSet, idx: number) => (

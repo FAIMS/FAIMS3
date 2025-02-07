@@ -341,9 +341,7 @@ class TileStoreBase {
     maxZoom: number
   ) {
     const tileGrid = this.getTileGrid();
-
-    //    const report = await this.reportDBSize();
-    const average_size = 20;
+    const average_size = 10; // kb
 
     const tileSet = new Set<string>();
     for (let zoom = minZoom; zoom <= maxZoom; zoom += 1) {
