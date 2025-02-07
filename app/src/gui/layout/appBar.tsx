@@ -47,7 +47,11 @@ import clsx from 'clsx';
 import React, {useContext, useState} from 'react';
 import {createUseStyles as makeStyles} from 'react-jss';
 import {Link as RouterLink} from 'react-router-dom';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+  OFFLINE_MAPS,
+} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {ProjectsContext} from '../../context/projects-context';
 import {
@@ -264,28 +268,29 @@ export default function MainAppBar() {
       to: ROUTES.ABOUT_BUILD,
       disabled: false,
     },
-
-    {
+  ];
+  if (OFFLINE_MAPS)
+    bottomMenuItems.push({
       title: 'Offline Maps',
       icon: <SettingsIcon />,
       to: ROUTES.OFFLINE_MAPS,
       disabled: false,
-    },
+    });
 
-    isAuthenticated
-      ? {
-          title: 'Sign out',
-          icon: <AccountCircleIcon />,
-          to: ROUTES.SIGN_IN,
-          disabled: false,
-        }
-      : {
-          title: 'Sign out',
-          icon: <AccountCircleIcon />,
-          to: '/',
-          disabled: true,
-        },
-  ];
+  if (isAuthenticated)
+    bottomMenuItems.push({
+      title: 'Sign out',
+      icon: <AccountCircleIcon />,
+      to: ROUTES.SIGN_IN,
+      disabled: false,
+    });
+  else
+    bottomMenuItems.push({
+      title: 'Sign out',
+      icon: <AccountCircleIcon />,
+      to: '/',
+      disabled: true,
+    });
 
   const [nestedMenuOpen, setNestedMenuOpen] = useState<{
     [key: string]: boolean;

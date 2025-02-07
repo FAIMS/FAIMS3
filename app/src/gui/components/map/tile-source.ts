@@ -546,8 +546,7 @@ export class VectorTileStore extends TileStoreBase {
     super();
     this.source = new VectorTileSource({
       attributions: ATTRIBUTION,
-      //      url: 'https://api.maptiler.com/tiles/v3-openmaptiles/{z}/{x}/{y}.pbf?key=XS7BaYII4la5ZbVgh8i2',
-      url: 'http://localhost:8080/data/v3/{z}/{x}/{y}.pbf',
+      url: 'https://api.maptiler.com/tiles/v3-openmaptiles/{z}/{x}/{y}.pbf?key={key}',
       format: new MVT(),
       //tileLoadFunction: this.tileLoader.bind(this),
     });

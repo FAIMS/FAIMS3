@@ -19,6 +19,7 @@
  *   which server to use and whether to include test data
  */
 
+import {off} from 'process';
 import {BUILD_VERSION, BUILD_VERSION_DEFAULT} from './version';
 
 // need to define a local logError here since logging.tsx imports this file
@@ -403,6 +404,14 @@ function get_map_key(): string {
   return map_key || '';
 }
 
+function offline_maps(): boolean {
+  const offline_maps = import.meta.env.VITE_OFFLINE_MAPS === 'true';
+  const map_source = get_map_source();
+  console.log('OFFLINE_MAPS', offline_maps);
+  // OSM does not allow bulk downloads so we can't enable offline maps
+  return (offline_maps && map_source !== 'osm') || false;
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -428,5 +437,6 @@ export const SHOW_RECORD_SUMMARY_COUNTS = showRecordCounts();
 export const TOKEN_REFRESH_INTERVAL_MS = tokenRefreshIntervalMs();
 export const TOKEN_REFRESH_WINDOW_MS = tokenRefreshWindowMs();
 export const IGNORE_TOKEN_EXP = ignoreTokenExp();
+export const OFFLINE_MAPS = offline_maps();
 export const MAP_SOURCE_KEY = get_map_key();
 export const MAP_SOURCE = get_map_source();
