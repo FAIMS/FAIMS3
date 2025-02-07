@@ -385,7 +385,6 @@ export async function ensure_project_databases(
     connectionInfo: data_connection_info,
     globalDbs: data_dbs,
   });
-  console.log('Global state after update', data_dbs[active_id]);
 
   if (data_remote.remote !== null && data_remote.remote.connection !== null) {
     data_remote.remote.connection!.once('paused', data_pause());

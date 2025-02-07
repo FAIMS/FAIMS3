@@ -49,9 +49,8 @@ type DraftsRecordProps = {
   handleRefresh: () => void;
 };
 
-function DraftRecord(props: DraftsRecordProps) {
+export function DraftsTable(props: DraftsRecordProps) {
   const {project_id, maxRows, rows, loading} = props;
-  console.log('DraftRecord rows', rows);
   const theme = useTheme();
   const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
@@ -275,19 +274,3 @@ function DraftRecord(props: DraftsRecordProps) {
     </React.Fragment>
   );
 }
-export default function DraftsTable(props: DraftsTableProps) {
-  const {project_id, maxRows} = props;
-  return (
-    <DraftRecord
-      project_id={project_id}
-      maxRows={maxRows}
-      rows={props.drafts}
-      loading={props.loading}
-      viewsets={props.viewsets}
-      handleRefresh={props.handleRefresh}
-    />
-  );
-}
-DraftsTable.defaultProps = {
-  maxRows: null,
-};

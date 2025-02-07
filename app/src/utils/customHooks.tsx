@@ -358,7 +358,6 @@ export const useRecordList = ({
     gcTime: 0,
     refetchInterval: refreshIntervalMs,
     queryFn: async () => {
-      console.log('Running query');
       if (!token) {
         // Trying to run without token!
         console.warn('Trying to fetch record list without user token.');

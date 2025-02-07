@@ -40,7 +40,7 @@ import MetadataRenderer from '../metadataRenderer';
 import CircularLoading from '../ui/circular_loading';
 import AddRecordButtons from './add_record_by_type';
 import DraftTabBadge from './draft_tab_badge';
-import DraftsTable from './draft_table';
+import {DraftsTable} from './draft_table';
 import {OverviewMap} from './overview_map';
 import RangeHeader from './range_header';
 import {RecordsTable} from './record_table';
@@ -152,6 +152,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     projectId: project.project_id,
     filter: 'all',
   });
+  const forceDraftRefresh = drafts.refetch;
 
   /**
    * Handles the change event when the user switches between the Records and Drafts tabs.
@@ -406,10 +407,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 <DraftsTable
                   project_id={project.project_id}
                   maxRows={25}
-                  drafts={drafts.data ?? []}
+                  rows={drafts.data ?? []}
                   loading={drafts.isLoading}
                   viewsets={viewsets}
-                  handleRefresh={handleRefresh}
+                  handleRefresh={forceDraftRefresh}
                 />
               </TabPanel>
             </Box>
