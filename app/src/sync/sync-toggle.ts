@@ -72,7 +72,8 @@ export async function setSyncingProjectAttachments(
   // update the sync property
   data_db.is_sync_attachments = syncing;
 
-  // This creates and updates the
+  // This creates and updates the sync connection so that it streams the
+  // attachments appropriately
   createUpdateAndSavePouchSync({
     // If local only - this method will handle it
     connectionInfo: data_db.remote?.info ?? null,
