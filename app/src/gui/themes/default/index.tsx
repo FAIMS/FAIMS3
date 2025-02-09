@@ -55,7 +55,7 @@ const theme = createTheme({
       infoText: '#084C61',
     },
     dialogButton: {
-      cancel: '#669907',
+      cancel: '#E18200',
       confirm: '#669911',
       dialogText: '#FFFFFF',
       hoverBackground: '#50790DFF',
@@ -67,6 +67,7 @@ const theme = createTheme({
     icon: {
       main: '#E18200',
       light: '#edeeeb',
+      highlight: '#B10000',
     },
     table: {
       divider: '#828789FF',

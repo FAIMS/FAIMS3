@@ -35,6 +35,7 @@ declare module '@mui/material/styles' {
     icon: {
       main: string;
       light: string;
+      highlight: string;
     };
     table?: {
       divider: string;
@@ -59,6 +60,7 @@ declare module '@mui/material/styles' {
     icon?: {
       main: string;
       light: string;
+      highlight: string;
     };
 
     progressBar?: {

@@ -94,6 +94,7 @@ export function MapFormField({
   const [showCross, setShowCross] = useState(false);
   const [animateCheck, setAnimateCheck] = useState(false);
   const [hasSavedLocation, setHasSavedLocation] = useState(false);
+
   // notification manager
   const notify = useNotification();
 
@@ -111,7 +112,7 @@ export function MapFormField({
       setHasSavedLocation(true);
       setAnimateCheck(true);
       notify.showSuccess('Location successfully selected!');
-      setTimeout(() => setAnimateCheck(false), 1200);
+      setTimeout(() => setAnimateCheck(false), 1000);
     } else if (action === 'clear') {
       setDrawnFeatures({});
       form.setFieldValue(field.name, {}, true);
@@ -121,7 +122,7 @@ export function MapFormField({
       setHasSavedLocation(false);
       setAnimateCheck(true);
       notify.showWarning('Location selection cleared.');
-      setTimeout(() => setAnimateCheck(false), 1200);
+      setTimeout(() => setAnimateCheck(false), 1000);
     } else if (action === 'close') {
       if (!hasSavedLocation) {
         // Only show corss if no location was ever saved
@@ -129,8 +130,8 @@ export function MapFormField({
       }
       setShowCheckmark(false);
       setAnimateCheck(true);
-      notify.showError('Location selection was cancelled.');
-      setTimeout(() => setAnimateCheck(false), 1200);
+      notify.showInfo('Location selection was cancelled.');
+      setTimeout(() => setAnimateCheck(false), 1000);
     }
   };
 
@@ -162,6 +163,14 @@ export function MapFormField({
     getCoords();
   }, []);
 
+  // dynamically determine feature label based on featureType
+  const featureLabel =
+    props.featureType === 'Polygon'
+      ? 'polygon'
+      : props.featureType === 'LineString'
+        ? 'line'
+        : 'point';
+
   let valueText = 'No location selected';
   if (drawnFeatures.features && drawnFeatures.features.length > 0) {
     const geom = drawnFeatures.features[0].geometry;
@@ -180,6 +189,9 @@ export function MapFormField({
         valueText = 'Line String: ' + geom.coordinates.length + ' points';
         break;
     }
+  } else {
+    // if no location selected update msg dynamically.
+    valueText = `No ${featureLabel} selected, click above to choose one!`;
   }
 
   return (
@@ -196,7 +208,6 @@ export function MapFormField({
           width: '100%',
         }}
       >
-        {/* Map Interaction */}
         <MapWrapper
           label={label}
           featureType={featureType}
@@ -210,7 +221,6 @@ export function MapFormField({
           setNoPermission={setNoPermission}
         />
 
-        {/* Status Icons with Animation */}
         <Box sx={{display: 'flex', alignItems: 'center', marginTop: 1}}>
           <Typography
             variant="body1"
@@ -222,9 +232,7 @@ export function MapFormField({
               transition: 'color 0.4s ease-in-out',
             }}
           >
-            {isLocationSelected
-              ? valueText
-              : 'No location selected, click above to choose a point!'}
+            {valueText}
           </Typography>
 
           <Zoom in={showCheckmark}>

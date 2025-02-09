@@ -18,7 +18,7 @@ const theme = createTheme({
     },
     highlightColor: {
       main: '#B10000',
-      contrastText: 'F4F4F4',
+      contrastText: '#F4F4F4',
     },
     secondary: {
       main: '#12B0FB',
@@ -48,6 +48,7 @@ const theme = createTheme({
     icon: {
       main: '#197A01',
       light: '#EAEAEA',
+      highlight: '#B10000',
     },
     table: {
       divider: '#828789FF',
