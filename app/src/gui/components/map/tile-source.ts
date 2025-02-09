@@ -31,7 +31,10 @@ import {MAP_SOURCE, MAP_SOURCE_KEY} from '../../../buildconfig';
 const TILE_URL_MAP: {[key: string]: string} = {
   'lima-labs': 'https://cdn.lima-labs.com/{z}/{x}/{y}.png?api={key}',
   osm: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  maptiler: 'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key={key}',
+  maptiler:
+    //'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key={key}',
+    'https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key={key}',
+  //'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.jpg?key={key}',
 };
 
 // Type returned by reportDBSize
