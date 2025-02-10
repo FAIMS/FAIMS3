@@ -18,32 +18,36 @@
  *   TODO
  */
 
-import {getProjectDB} from './sync';
-import {ProjectID, FAIMSTypeName} from '@faims3/data-model';
-import {UI_SPECIFICATION_NAME, EncodedProjectUIModel} from '@faims3/data-model';
-import {ProjectUIModel} from '@faims3/data-model';
+import {
+  EncodedProjectUIModel,
+  FAIMSTypeName,
+  ProjectID,
+  ProjectUIModel,
+  UI_SPECIFICATION_NAME,
+} from '@faims3/data-model';
 import {
   compileExpression,
   compileIsLogic,
   getDependantFields,
 } from './conditionals';
+import {getMetadataDbForProject} from './sync';
 
 export async function getUiSpecForProject(
   project_id: ProjectID,
   compile = true
 ): Promise<ProjectUIModel> {
   try {
-    const projdb = await getProjectDB(project_id);
-    const encUIInfo: EncodedProjectUIModel = await projdb.get(
+    const metadataDb = await getMetadataDbForProject(project_id);
+    const encodedUiInfo: EncodedProjectUIModel = await metadataDb.get(
       UI_SPECIFICATION_NAME
     );
     const uiSpec = {
-      _id: encUIInfo._id,
-      _rev: encUIInfo._rev,
-      fields: encUIInfo.fields,
-      views: encUIInfo.fviews,
-      viewsets: encUIInfo.viewsets,
-      visible_types: encUIInfo.visible_types,
+      _id: encodedUiInfo._id,
+      _rev: encodedUiInfo._rev,
+      fields: encodedUiInfo.fields,
+      views: encodedUiInfo.fviews,
+      viewsets: encodedUiInfo.viewsets,
+      visible_types: encodedUiInfo.visible_types,
     };
     if (compile) {
       compileUiSpecConditionals(uiSpec);
@@ -59,7 +63,7 @@ export async function setUiSpecForProject(
   project_id: ProjectID,
   uiInfo: ProjectUIModel
 ) {
-  const projdb = await getProjectDB(project_id);
+  const metadataDb = await getMetadataDbForProject(project_id);
   const encUIInfo: EncodedProjectUIModel = {
     _id: UI_SPECIFICATION_NAME,
     fields: uiInfo.fields,
@@ -68,7 +72,7 @@ export async function setUiSpecForProject(
     visible_types: uiInfo.visible_types,
   };
   try {
-    const existing_encUIInfo = await projdb.get(encUIInfo._id);
+    const existing_encUIInfo = await metadataDb.get(encUIInfo._id);
     encUIInfo._rev = existing_encUIInfo._rev;
   } catch (err: any) {
     // Probably no existing UI info
@@ -78,7 +82,7 @@ export async function setUiSpecForProject(
   }
 
   try {
-    return await projdb.put(encUIInfo);
+    return await metadataDb.put(encUIInfo);
   } catch (err) {
     console.warn('failed to set ui specification', err);
     throw Error('failed to set ui specification');
@@ -237,14 +241,14 @@ export function getReturnedTypesForViewSet(
 export async function dumpMetadataDBContents(
   project_id: ProjectID
 ): Promise<object[]> {
-  const projdb = await getProjectDB(project_id);
+  const metadataDb = await getMetadataDbForProject(project_id);
   try {
-    const db_contents = await projdb.allDocs({
+    const dbContents = await metadataDb.allDocs({
       include_docs: true,
       attachments: true,
     });
     const docs = [];
-    for (const o of db_contents.rows) {
+    for (const o of dbContents.rows) {
       docs.push(o.doc as object);
     }
     return docs;

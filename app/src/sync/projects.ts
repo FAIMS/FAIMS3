@@ -275,6 +275,35 @@ export function delete_project(
 }
 
 /**
+ * Refreshes the metadata DB for the givne listing/project by fetching the
+ * details from the API and writing back metadata entries.
+ *
+ * @param projectId The listing specific project ID
+ * @param listingId The listing ID to use
+ */
+
+export async function refreshMetadataDb({
+  projectId,
+  listingId,
+}: {
+  // Listing and project IDs
+  projectId: string;
+  listingId: string;
+}): Promise<void> {
+  // get project metadata and UiSpec and store them in the db
+  const listing = getListing(listingId);
+
+  try {
+    // refresh and write the project metadata
+    await fetchProjectMetadata(listing, projectId);
+  } catch (e) {
+    // Unable to fetch project metadata - probably offline - that's okay - we
+    // already had it
+    console.log('Unable to fetch project metadata. Error: ', e);
+  }
+}
+
+/**
  * Creates or updates the local DBs for a project, using the info
  * The databases might already exist in browser local storage, but this
  * creates the corresponding PouchDBs.
