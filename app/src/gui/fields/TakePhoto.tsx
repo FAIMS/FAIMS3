@@ -22,14 +22,13 @@ import {Capacitor} from '@capacitor/core';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ImageIcon from '@mui/icons-material/Image';
+import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
+import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import ImageIcon from '@mui/icons-material/Image';
-import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
@@ -171,7 +170,7 @@ const ImageGallery = ({
           padding: theme.spacing(1),
           gridTemplateColumns: {
             // Show 3 images per row on mobile
-            xs: 'repeat(3, 1fr)',
+            xs: 'repeat(1, 1fr)',
             // Show 4 images per row on tablet
             sm: 'repeat(4, 1fr)',
             // Show 6 images per row on small desktop
