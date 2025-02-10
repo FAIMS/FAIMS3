@@ -22,6 +22,11 @@ import {Capacitor} from '@capacitor/core';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import ImageIcon from '@mui/icons-material/Image';
 import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
 import Button from '@mui/material/Button';
@@ -147,16 +152,14 @@ const ImageGallery = ({
   onAddPhoto,
 }: ImageListProps) => {
   const theme = useTheme();
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [photoToDelete, setPhotoToDelete] = React.useState<number | null>(null);
+
   // Handler for deleting images from the gallery
   const handleDelete = (index: number) => {
-    if (images.length > index) {
-      // need to reverse the index here to account for reverse display
-      const originalIndex = images.length - 1 - index;
-      const newImages = images.filter(
-        (_: any, i: number) => i !== originalIndex
-      );
-      setImages(newImages);
-    }
+    setPhotoToDelete(index);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -301,6 +304,55 @@ const ImageGallery = ({
           }
         })}
       </Box>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: theme.spacing(2),
+          },
+        }}
+      >
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this photo? This action cannot be
+            undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{px: 3, pb: 3}}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            sx={{
+              borderRadius: theme.spacing(1),
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              if (photoToDelete !== null && images.length > photoToDelete) {
+                // need to reverse the index here to account for reverse display
+                const originalIndex = images.length - 1 - photoToDelete;
+                const newImages = images.filter(
+                  (_: any, i: number) => i !== originalIndex
+                );
+                setImages(newImages);
+              }
+              setPhotoToDelete(null);
+              setDeleteDialogOpen(false);
+            }}
+            variant="contained"
+            color="error"
+            sx={{
+              borderRadius: theme.spacing(1),
+              ml: 2,
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
