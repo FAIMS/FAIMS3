@@ -119,7 +119,10 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       });
     }
     res.render('auth', {
-      providers: available_provider_info,
+      providers:
+        available_provider_info.length > 0
+          ? available_provider_info
+          : undefined,
       localAuth: true, // maybe make this configurable?
       messages: req.flash(),
       redirect: redirect,
@@ -268,7 +271,10 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         res.render('register', {
           invite: invite_id,
           loginURL: `/auth?redirect=${encodedRedirect}`,
-          providers: available_provider_info,
+          providers:
+            available_provider_info.length > 0
+              ? available_provider_info
+              : undefined,
           redirect: redirect,
           localAuth: true, // maybe make this configurable?
           messages: req.flash(),

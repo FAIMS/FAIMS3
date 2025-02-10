@@ -21,12 +21,15 @@
     </div>
     <button type="submit" class="auth-button">Sign in</button>
 </form>
+{{/if}}
 
+{{#if (and localAuth providers)}}
 <div class="divider">
     <span>or</span>
 </div>
 {{/if}}
 
+{{#if providers}}
 <div class="sso-options">
     {{#each providers}}
     <a href="/auth/{{ this.label }}/?redirect={{../redirect}}" 
@@ -36,3 +39,4 @@
     </a>
     {{/each}}
 </div>
+{{/if}}
