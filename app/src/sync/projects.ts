@@ -275,7 +275,7 @@ export function delete_project(
 }
 
 /**
- * Refreshes the metadata DB for the givne listing/project by fetching the
+ * Refreshes the metadata DB for the given listing/project by fetching the
  * details from the API and writing back metadata entries.
  *
  * @param projectId The listing specific project ID
