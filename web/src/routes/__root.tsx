@@ -40,7 +40,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
     window.location.href = `${
       import.meta.env.VITE_API_URL
-    }/logout?redirect=${import.meta.env.VITE_WEB_URL}`;
+    }/auth?redirect=${import.meta.env.VITE_WEB_URL}`;
   },
   component: RootLayout,
 });

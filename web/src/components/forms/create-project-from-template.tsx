@@ -32,17 +32,20 @@ export function CreateProjectFromTemplateForm() {
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
   const onSubmit = async ({name}: {name: string}) => {
-    const response = await fetch('http://localhost:8080/api/notebooks', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${user.token}`,
-      },
-      body: JSON.stringify({
-        template_id: templateId,
-        name,
-      }),
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/notebooks`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          template_id: templateId,
+          name,
+        }),
+      }
+    );
 
     if (!response.ok)
       return {type: 'submit', message: `Error creating ${NOTEBOOK_NAME}.`};
