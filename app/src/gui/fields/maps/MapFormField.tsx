@@ -94,6 +94,7 @@ export function MapFormField({
   const [showCross, setShowCross] = useState(false);
   const [animateCheck, setAnimateCheck] = useState(false);
   const [hasSavedLocation, setHasSavedLocation] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // notification manager
   const notify = useNotification();
@@ -104,6 +105,11 @@ export function MapFormField({
     action?: 'save' | 'clear' | 'close'
   ) => {
     if (action === 'save') {
+      // If user tries to save an empty location, show a confirmation dialog
+      if (!theFeatures.features || theFeatures.features.length === 0) {
+        setShowConfirmDialog(true);
+        return;
+      }
       setDrawnFeatures(theFeatures);
       form.setFieldValue(field.name, theFeatures, true);
       setIsLocationSelected(true);
@@ -111,7 +117,6 @@ export function MapFormField({
       setShowCheckmark(true);
       setHasSavedLocation(true);
       setAnimateCheck(true);
-      notify.showSuccess('Location successfully selected!');
       setTimeout(() => setAnimateCheck(false), 1000);
     } else if (action === 'clear') {
       setDrawnFeatures({});
@@ -121,7 +126,6 @@ export function MapFormField({
       setShowCross(true);
       setHasSavedLocation(false);
       setAnimateCheck(true);
-      notify.showWarning('Location selection cleared.');
       setTimeout(() => setAnimateCheck(false), 1000);
     } else if (action === 'close') {
       if (!hasSavedLocation) {
@@ -130,7 +134,6 @@ export function MapFormField({
       }
       setShowCheckmark(false);
       setAnimateCheck(true);
-      notify.showInfo('Location selection was cancelled.');
       setTimeout(() => setAnimateCheck(false), 1000);
     }
   };
