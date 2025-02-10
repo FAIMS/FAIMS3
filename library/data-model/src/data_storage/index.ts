@@ -469,16 +469,10 @@ async function filterRecordMetadata(
   record_list: RecordMetadata[],
   filter_deleted: boolean
 ): Promise<RecordMetadata[]> {
-  const new_record_list: RecordMetadata[] = [];
-  for (const metadata of record_list) {
-    if (
-      !(metadata.deleted && filter_deleted) &&
-      (await shouldDisplayRecord(tokenContents, project_id, metadata))
-    ) {
-      new_record_list.push(metadata);
-    }
-  }
-  return new_record_list;
+  return record_list.filter(async metadata => {
+    !(metadata.deleted && filter_deleted) &&
+      (await shouldDisplayRecord(tokenContents, project_id, metadata));
+  });
 }
 
 function sortByLastUpdated(record_list: RecordMetadata[]): RecordMetadata[] {
