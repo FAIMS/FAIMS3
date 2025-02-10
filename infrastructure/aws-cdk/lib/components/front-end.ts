@@ -48,6 +48,9 @@ export interface FaimsFrontEndProps {
 
   // conductor e.g. https://api.com
   conductorUrl: string;
+
+  // web config
+  webDomainName: string;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -56,19 +59,33 @@ export class FaimsFrontEnd extends Construct {
   faimsBucketArnCfnOutput: CfnOutput;
   faimsBucketNameCfnOutput: CfnOutput;
 
+  webBucket: aws_s3.IBucket;
+  webDistribution: IDistribution;
+  webBucketArnCfnOutput: CfnOutput;
+  webBucketNameCfnOutput: CfnOutput;
+
   designerBucket: aws_s3.IBucket;
   designerDistribution: IDistribution;
   designerBucketArnCfnOutput: CfnOutput;
   designerBucketNameCfnOutput: CfnOutput;
 
+  // derived property
+  designerUrl: string;
+
   constructor(scope: Construct, id: string, props: FaimsFrontEndProps) {
     super(scope, id);
+
+    // use the first domain name to form canonical URL
+    this.designerUrl = `https://${props.designerDomainNames[0]}`;
 
     // Main Faims frontend
     this.deployFaims(props);
 
     // Designer standalone
     this.deployDesigner(props);
+
+    // Designer standalone
+    this.deployWeb(props);
   }
 
   deployFaims(props: FaimsFrontEndProps) {
@@ -216,6 +233,136 @@ export class FaimsFrontEnd extends Construct {
                   envs,
                   `cd ${buildPath}`,
                   'npm i && npm run github-build-app',
+                  `cd ${appPath}`,
+                  `cp -R ${outputPath}/* ${outputDir}`,
+                ];
+                console.log(commands);
+                exec(commands.join('&& '), {stdio: 'inherit'});
+                // Return true because bundling is complete
+                return true;
+              },
+            },
+          },
+        }),
+      ],
+    });
+  }
+
+  deployWeb(props: FaimsFrontEndProps) {
+    // setup distribution and static bucket hosting
+    this.setupWebDistribution(props);
+
+    // Deploy into this bucket
+    this.setupWebBundling(props);
+
+    // Bucket arn
+    this.webBucketArnCfnOutput = new CfnOutput(this, 'WebBucketArn', {
+      value: this.webBucket.bucketArn,
+      description:
+        'The ARN of S3 bucket used to deploy the website static contents.',
+    });
+
+    // Bucket name
+    this.webBucketNameCfnOutput = new CfnOutput(this, 'WebBucketName', {
+      value: this.webBucket.bucketName,
+      description:
+        'The name of S3 bucket used to deploy the website static contents.',
+    });
+  }
+
+  setupWebDistribution(props: FaimsFrontEndProps) {
+    const website = new StaticWebsite(this, 'web-website', {
+      hostedZone: props.faimsHz,
+      domainNames: [props.webDomainName],
+      removalPolicy: RemovalPolicy.DESTROY,
+      errorResponses: [
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          ttl: Duration.seconds(300),
+          responsePagePath: '/index.html',
+        },
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          ttl: Duration.seconds(300),
+          responsePagePath: '/index.html',
+        },
+      ],
+      certificate: props.faimsUsEast1Certificate,
+      securityHeadersBehavior: {
+        contentSecurityPolicy: {
+          // enable connection to the API URL
+          contentSecurityPolicy: `connect-src 'self' ${props.conductorUrl}`,
+          override: true,
+        },
+      },
+    });
+
+    this.webBucket = website.bucket;
+    this.webDistribution = website.distribution;
+  }
+
+  setupWebBundling(props: FaimsFrontEndProps) {
+    const buildPath = getPathToRoot();
+    const appPath = 'web';
+    const outputPath = 'dist';
+
+    const environment: {[key: string]: string} = {
+      VITE_WEB_URL: `https://${props.webDomainName}`,
+      VITE_API_URL: props.conductorUrl,
+      // This may not be defined so ensure deployDesigner is called first
+      VITE_DESIGNER_URL: this.designerUrl,
+    };
+
+    // Setup a deployment into this bucket with static files
+    new aws_s3_deployment.BucketDeployment(this, 'web-deploy', {
+      destinationBucket: this.webBucket,
+      // Setup with distribution so that the deployment will invalidate
+      // distribution cache when the files are redeployed
+      distribution: this.webDistribution,
+      distributionPaths: ['/*'],
+      sources: [
+        Source.asset(buildPath, {
+          // TODO optimise
+          exclude: ['infrastructure'],
+          // Hash the app folder source files only
+          assetHash: getPathHash(`${getPathToRoot()}/${appPath}`, [outputPath]),
+          assetHashType: AssetHashType.CUSTOM,
+
+          bundling: {
+            // Include env variables for bundling
+            environment,
+            // Use node image for non local bundling
+            image: aws_lambda.Runtime.NODEJS_20_X.bundlingImage,
+            // Docker build expects input/output of asset-input/output
+            command: [
+              'bash',
+              '-c',
+              `
+            cd /asset-input && npm i && npm run build-web && cd ${appPath} && cp -R ${outputPath}/* /asset-output
+            `,
+            ],
+            // Local bundling is faster for quick local deploy
+            local: {
+              tryBundle(outputDir: string) {
+                // Implement the logic to check if Docker is available
+                console.log('Trying local bundling of build files.');
+
+                // Build list of export commands
+                const envs = Object.keys(environment)
+                  .map(key => {
+                    return `export ${key}="${environment[key] as string}"`;
+                  })
+                  .join(' && ');
+
+                // Perform the same bundling operations performed in the Docker container
+                const exec = require('child_process').execSync;
+                const commands = [
+                  //export environment variables - not included by default
+                  envs,
+                  `cd ${buildPath}`,
+                  'npm i && npm run build-web',
                   `cd ${appPath}`,
                   `cp -R ${outputPath}/* ${outputDir}`,
                 ];
