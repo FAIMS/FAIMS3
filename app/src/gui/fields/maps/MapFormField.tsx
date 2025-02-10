@@ -91,7 +91,11 @@ export function MapFormField({
       if (!gpsCenterRequested.current) {
         // Mark that we've requested already
         gpsCenterRequested.current = true;
-        Geolocation.getCurrentPosition()
+        Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        })
           .then(result => {
             // Only store the center result if we actually need it
             if (center === undefined) {

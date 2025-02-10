@@ -37,13 +37,6 @@ const TILE_URL_MAP: {[key: string]: string} = {
   //'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.jpg?key={key}',
 };
 
-// Type returned by reportDBSize
-export interface TileDBReport {
-  count: number;
-  size: number;
-  average: number;
-}
-
 interface StoredTile {
   x: number;
   y: number;
@@ -194,7 +187,6 @@ class TileStoreBase {
             ['setName']
           );
         console.log('initialized base tile source');
-        this.reportDBSize();
         resolve();
       };
       request.onupgradeneeded = (event: any) => {
@@ -214,42 +206,6 @@ class TileStoreBase {
         }
       };
     });
-  }
-
-  // get a tile grid, may be overridden by subclasses
-  getTileGrid() {
-    return new OSM().getTileGrid();
-  }
-
-  async clearCache() {
-    console.log('clearing tile cache');
-  }
-
-  async reportDBSize() {
-    // const tiles = await this.tileDB.getAll();
-    // if (tiles) {
-    //   const count = tiles.length;
-    //   // const totalSize = tiles.reduce((acc, tile) => acc + tile.data.size, 0);
-    //   const sizeMap = tiles.reduce(
-    //     (sMap, tile) => {
-    //         const prev = sMap.get(tile.setName) || 0;
-    //         sMap.set(tile.setName, prev + tile.data.size);
-    //     },
-    //     new Map<string, number>()
-    //   );
-    //   console.log('size map', sizeMap);
-    //   sizeMap.set(
-    //     'total',
-    //     Array.from(sizeMap.values()).reduce(
-    //       (acc: unknown, size: unknown) => (acc as number) + (size as number),
-    //       0
-    //     ) as number
-    //   );
-    //   const average_size = sizeMap.get('total') / count;
-    //   return {count: tiles.length, size: sizeMap, average: average_size};
-    // } else {
-    //   return {count: 0, size: {}, average: 0};
-    // }
   }
 
   /**
@@ -310,25 +266,6 @@ class TileStoreBase {
         reader.readAsDataURL(image);
       }
     });
-  }
-
-  /**
-   * @param {number} z The tile z coordinate.
-   * @param {number} x The tile x coordinate.
-   * @param {number} y The tile y coordinate.
-   * @param {LoaderOptions} options The loader options.
-   * @return {Promise<HTMLImageElement>} Resolves with a loaded image.
-   */
-  async tileLoader(
-    z: number,
-    x: number,
-    y: number,
-    options: LoaderOptions
-  ): Promise<HTMLImageElement> {
-    const image = new Image();
-    image.crossOrigin = options.crossOrigin ?? null;
-    image.src = (await this.getTileAsDataURL(z, x, y)) || '';
-    return image;
   }
 
   /* estimateSizeForRegion
@@ -428,7 +365,6 @@ class TileStoreBase {
         tileCoords.push(tileCoord);
       });
     }
-    console.log('found', tileCoords.length, 'tiles');
 
     // update the record with the tile count
     tileSet.expectedTileCount = tileCoords.length;
@@ -445,13 +381,11 @@ class TileStoreBase {
           tileBlob,
           tileSet.setName
         );
-        console.log('stored tile', tileSet.setName, tileKey);
         if (tileKey) {
           tileSet.tileKeys.push(tileKey);
           tileSet.size += size;
           // update DB after each download to enable live progress
           this.tileSetDB.put(tileSet);
-          console.log('tileSet', tileSet);
           // signal to anyone listening that we have made progress
           const event = new CustomEvent('offline-map-download', {
             detail: tileSet,
@@ -478,7 +412,6 @@ class TileStoreBase {
     if (!tileSet) {
       throw new Error(`Offline map '${setName}' does not exist`);
     }
-    console.log('going to delete', tileSet);
     // delete the tile set
     await this.tileSetDB.delete([setName]);
     // delete the tiles if they are not part of another set
@@ -487,14 +420,10 @@ class TileStoreBase {
       if (tileRecord) {
         const tileSetNames = tileRecord.sets;
         if (tileSetNames.length === 1) {
-          console.log('deleting tile', tileKey);
           await this.tileDB.delete(tileKey);
         } else {
-          console.log(`removing ${setName} from ${tileSetNames}`);
           // remove the tile set name from the tile record
           tileSetNames.splice(tileSetNames.indexOf(setName), 1);
-          console.log(`result is ${tileSetNames}`);
-          console.log('updating tile', tileRecord);
           await this.tileDB.put(tileRecord);
         }
       }
@@ -513,7 +442,6 @@ export class ImageTileStore extends TileStoreBase {
       loader: this.tileLoader.bind(this),
     });
     this.tileLayer = new TileLayer({source: this.source});
-    console.log('initialized image tile source');
   }
 
   getTileGrid() {
@@ -526,6 +454,25 @@ export class ImageTileStore extends TileStoreBase {
 
   getAttribution() {
     return this.source.getAttributions();
+  }
+
+  /**
+   * @param {number} z The tile z coordinate.
+   * @param {number} x The tile x coordinate.
+   * @param {number} y The tile y coordinate.
+   * @param {LoaderOptions} options The loader options.
+   * @return {Promise<HTMLImageElement>} Resolves with a loaded image.
+   */
+  async tileLoader(
+    z: number,
+    x: number,
+    y: number,
+    options: LoaderOptions
+  ): Promise<HTMLImageElement> {
+    const image = new Image();
+    image.crossOrigin = options.crossOrigin ?? null;
+    image.src = (await this.getTileAsDataURL(z, x, y)) || '';
+    return image;
   }
 }
 
@@ -555,6 +502,10 @@ export class VectorTileStore extends TileStoreBase {
       source: this.source,
     });
     console.log('initialized vector tile source');
+  }
+
+  getTileGrid() {
+    return this.source.getTileGrid();
   }
 
   getTileLayer() {
