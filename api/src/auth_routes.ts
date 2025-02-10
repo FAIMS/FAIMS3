@@ -123,6 +123,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       localAuth: true, // maybe make this configurable?
       messages: req.flash(),
       redirect: redirect,
+      layout: 'auth',
     });
   });
 
@@ -271,6 +272,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
           redirect: redirect,
           localAuth: true, // maybe make this configurable?
           messages: req.flash(),
+          layout: 'auth',
         });
       }
     }

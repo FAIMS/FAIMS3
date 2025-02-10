@@ -273,7 +273,8 @@ export const uiSpecificationReducer = createSlice({
         );
         state.viewsets[viewSetID].views = newViewSetViews;
       }
-    },sectionMovedToForm: (
+    },
+    sectionMovedToForm: (
       state,
       action: PayloadAction<{
         sourceViewSetId: string;
@@ -287,7 +288,7 @@ export const uiSpecificationReducer = createSlice({
       const newSourceViews = sourceViews.filter(view => view !== viewId);
       state.viewsets[sourceViewSetId].views = newSourceViews;
       // add the section to the target form
-      state.viewsets[targetViewSetId].views.push(viewId);    
+      state.viewsets[targetViewSetId].views.push(viewId);
     },
     sectionMoved: (
       state,

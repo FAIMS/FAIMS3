@@ -80,6 +80,12 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
     }
   }, [value]);
 
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      handleSubmit();
+    }
+  };
+
   return (
     <Box
       component={Paper}
@@ -97,6 +103,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
             placeholder="Search record data (case sensitive)"
             value={value}
             onChange={handleChange}
+            onKeyDown={handleKeyPress}
             variant="outlined"
             size="small"
             fullWidth

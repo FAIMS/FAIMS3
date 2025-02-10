@@ -19,38 +19,7 @@
  */
 
 import {ProjectID, RecordID} from '@faims3/data-model';
-import {draft_db, listDraftMetadata} from './sync/draft-storage';
-import {DraftMetadataList} from '@faims3/data-model';
-import {logError} from './logging';
-
-export function listenDrafts(
-  project_id: ProjectID,
-  filter: 'updates' | 'created' | 'all',
-  callback: (draftList: DraftMetadataList) => unknown
-): () => void {
-  const runCallback = () =>
-    listDraftMetadata(project_id, filter)
-      .then(callback)
-      .catch(err => logError(err)); // 'Uncaught draft list error'
-
-  const changes = draft_db
-    .changes({
-      since: 'now',
-      include_docs: true,
-      live: true,
-    })
-    .on('change', info => {
-      console.log('change in drafts database', info);
-      if (info.doc!.project_id === project_id) {
-        runCallback();
-      }
-    })
-    .on('error', err => logError(err)); // 'Uncaught draft list error'
-
-  runCallback();
-
-  return changes.cancel.bind(changes);
-}
+import {draft_db} from './sync/draft-storage';
 
 export async function deleteDraftsForRecord(
   project_id: ProjectID,

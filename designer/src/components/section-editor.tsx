@@ -119,7 +119,7 @@ export const SectionEditor = ({
       handleSectionMoveCallback(targetViewSetId);
     } else {
       // manually setting the error message
-      setAddAlertMessage(`Failed to move the section to this form.`);
+      setAddAlertMessage('Failed to move the section to this form.');
     }
 
     handleCloseMoveDialog();

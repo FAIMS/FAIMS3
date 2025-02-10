@@ -205,7 +205,6 @@ export class ListingFetchManager {
     let server = this.serverMap.get(serverId);
     if (!server) {
       const ids = getAllListingIDs();
-      console.log(ids);
       ids.forEach(id => {
         const listingObj = getListing(id);
         this.serverMap.set(id, listingObj.listing);
