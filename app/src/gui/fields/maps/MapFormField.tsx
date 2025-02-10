@@ -28,6 +28,7 @@ import {
   Alert,
   Box,
   Button,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -41,6 +42,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import MapIcon from '@mui/icons-material/Map';
 import {theme} from '../../themes';
+import EditIcon from '@mui/icons-material/Edit';
 
 // If no center is available - pass this through
 // Sydney CBD
@@ -105,7 +107,6 @@ export function MapFormField({
     action?: 'save' | 'clear' | 'close'
   ) => {
     if (action === 'save') {
-      // If user tries to save an empty location, show a confirmation dialog
       if (!theFeatures.features || theFeatures.features.length === 0) {
         setShowConfirmDialog(true);
         return;
@@ -237,6 +238,22 @@ export function MapFormField({
           >
             {valueText}
           </Typography>
+
+          {isLocationSelected ? (
+            <Tooltip title="Edit location">
+              <EditIcon
+                sx={{
+                  color: theme.palette.success.main,
+                  fontSize: 24,
+                  marginLeft: 1,
+                  cursor: 'pointer',
+                }}
+                onClick={() => mapCallback({}, 'clear')}
+              />
+            </Tooltip>
+          ) : (
+            <CancelIcon sx={{color: 'red', fontSize: 30, marginLeft: 2}} />
+          )}
 
           <Zoom in={showCheckmark}>
             <CheckCircleIcon
