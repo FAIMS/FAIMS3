@@ -112,8 +112,9 @@ const handlebarsConfig = {
       htmlText = htmlText.replace(/<table>/g, '<table class="table">');
       return new handlebars.SafeString(htmlText);
     },
-    and: function () {
-      return Array.prototype.slice.call(arguments, 0, -1).every(Boolean);
+    and: (...args: any[]) => {
+      // Remove the last argument (Handlebars options object)
+      return args.slice(0, -1).every(Boolean);
     },
   },
 };
