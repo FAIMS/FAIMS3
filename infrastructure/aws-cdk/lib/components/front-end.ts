@@ -311,7 +311,6 @@ export class FaimsFrontEnd extends Construct {
     const environment: {[key: string]: string} = {
       VITE_WEB_URL: `https://${props.webDomainName}`,
       VITE_API_URL: props.conductorUrl,
-      // This may not be defined so ensure deployDesigner is called first
       VITE_DESIGNER_URL: this.designerUrl,
     };
 
