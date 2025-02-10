@@ -146,6 +146,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     // refetch every 10 seconds (local only fetch - no network traffic here)
     refreshIntervalMs: 10000,
   });
+  const forceRecordRefresh = records.query.refetch;
 
   // Fetch drafts
   const drafts = useDraftsList({
@@ -153,6 +154,26 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     filter: 'all',
   });
   const forceDraftRefresh = drafts.refetch;
+
+  // Query to get the ui spec
+  const uiSpec = useQuery({
+    queryKey: ['uispecquery', project.project_id],
+    queryFn: async () => {
+      return getUiSpecForProject(project.project_id);
+    },
+  });
+  const viewsets = uiSpec.data?.viewsets;
+
+  // Get the metadata for the template ID
+  const {data: template_id} = useQuery({
+    queryKey: ['project-template-id', project.project_id],
+    queryFn: async (): Promise<string | null> => {
+      // don't return undefined from queryFn
+      const id = await getMetadataValue(project.project_id, 'template_id');
+      if (id !== undefined) return id as string;
+      else return null;
+    },
+  });
 
   /**
    * Handles the change event when the user switches between the Records and Drafts tabs.
@@ -180,74 +201,20 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     setNotebookTabValue(newValue);
   };
 
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState('');
-  const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
-  const [uiSpec, setUiSpec] = useState<null | ProjectUIModel>(null);
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
 
   // recordLabel based on viewsets
   const recordLabel =
-    uiSpec?.visible_types?.length === 1
-      ? uiSpec.viewsets[uiSpec.visible_types[0]]?.label ||
-        uiSpec.visible_types[0]
+    uiSpec.data?.visible_types?.length === 1
+      ? uiSpec.data?.viewsets[uiSpec.data.visible_types[0]]?.label ||
+        uiSpec.data.visible_types[0]
       : 'Record';
-
-  const {data: template_id} = useQuery({
-    queryKey: ['project-template-id', project.project_id],
-    queryFn: async (): Promise<string | null> => {
-      // don't return undefined from queryFn
-      const id = await getMetadataValue(project.project_id, 'template_id');
-      if (id !== undefined) return id as string;
-      else return null;
-    },
-  });
-
-  /**
-   * Fetches the UI specification and viewsets for the project
-   */
-  const pageLoader = () => {
-    // Starting state reset
-    setViewsets(null);
-    setUiSpec(null);
-    setErr('');
-    setLoading(true);
-
-    if (project.listing && project._id) {
-      getUiSpecForProject(project.project_id)
-        .then(spec => {
-          setUiSpec(spec);
-          setViewsets(spec.viewsets);
-          setLoading(false);
-          setErr('');
-        })
-
-        .catch(err => {
-          setLoading(false);
-          setErr(err.message);
-        });
-    }
-  };
-
-  /**
-   * Fetches the UI specification and viewsets for the project when the
-   * component mounts or the project changes.
-   */
-  useEffect(() => {
-    pageLoader();
-  }, [project]);
-
-  // trigger a refresh of the content because something changed down below (a
-  // record or draft was deleted)
-  const handleRefresh = () => {
-    pageLoader();
-  };
 
   return (
     <Box>
-      {err ? (
+      {uiSpec.isError ? (
         <Alert severity="error">
           <AlertTitle>
             {' '}
@@ -255,7 +222,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           </AlertTitle>
           Your device may be offline.
           <br />
-          <Typography variant={'caption'}>{err}</Typography>
+          <Typography variant={'caption'}>{uiSpec.error.message}</Typography>
           <br />
           <br />
           Go to
@@ -268,7 +235,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             Workspace
           </Button>
         </Alert>
-      ) : loading ? (
+      ) : uiSpec.isLoading || !uiSpec.data ? (
         <CircularLoading label={`${NOTEBOOK_NAME_CAPITALIZED} is loading`} />
       ) : (
         <Box>
@@ -387,7 +354,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   loading={records.query.isLoading}
                   viewsets={viewsets}
                   handleQueryFunction={setQuery}
-                  handleRefresh={handleRefresh}
+                  handleRefresh={forceRecordRefresh}
                   recordLabel={recordLabel}
                 />
               </TabPanel>
@@ -399,7 +366,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   loading={records.query.isLoading}
                   viewsets={viewsets}
                   handleQueryFunction={setQuery}
-                  handleRefresh={handleRefresh}
+                  handleRefresh={forceRecordRefresh}
                   recordLabel={recordLabel}
                 />
               </TabPanel>
@@ -625,12 +592,15 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           </TabPanel>
 
           <TabPanel value={notebookTabValue} index={2} id={'notebook'}>
-            {uiSpec !== null && <NotebookSettings uiSpec={uiSpec} />}
+            {uiSpec !== null && <NotebookSettings uiSpec={uiSpec.data} />}
           </TabPanel>
 
           <TabPanel value={notebookTabValue} index={3} id={'notebook'}>
             {uiSpec !== null && (
-              <OverviewMap project_id={project.project_id} uiSpec={uiSpec} />
+              <OverviewMap
+                project_id={project.project_id}
+                uiSpec={uiSpec.data}
+              />
             )}
           </TabPanel>
         </Box>
