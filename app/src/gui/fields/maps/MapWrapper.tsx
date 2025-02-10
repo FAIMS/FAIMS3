@@ -328,7 +328,7 @@ function MapWrapper(props: MapProps) {
           <MapIcon
             sx={{
               fontSize: 26,
-              color: theme.palette.icon.highlight,
+              color: theme.palette.background.default,
               transform: 'scale(1.5)',
             }}
           />
@@ -382,11 +382,11 @@ function MapWrapper(props: MapProps) {
               >
                 <CloseIcon
                   sx={{
-                    stroke: theme.palette.highlightColor.main,
+                    stroke: theme.palette.background.default,
                     strokeWidth: '1.5',
                   }}
                 />
-                Close
+                Cancel
               </IconButton>
             </Box>
 
@@ -400,7 +400,7 @@ function MapWrapper(props: MapProps) {
                 color="inherit"
                 onClick={() => handleClose('clear')}
                 sx={{
-                  backgroundColor: theme.palette.dialogButton.cancel,
+                  backgroundColor: theme.palette.dialogButton.confirm,
                   color: theme.palette.dialogButton.dialogText,
                   borderRadius: '6px',
                   fontWeight: 'bold',
@@ -419,7 +419,7 @@ function MapWrapper(props: MapProps) {
                 color="inherit"
                 onClick={() => handleClose('save')}
                 sx={{
-                  backgroundColor: theme.palette.dialogButton.confirm,
+                  backgroundColor: theme.palette.icon.main,
                   color: theme.palette.dialogButton.dialogText,
                   borderRadius: '6px',
                   fontWeight: 'bold',
