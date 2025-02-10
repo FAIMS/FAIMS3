@@ -668,6 +668,10 @@ const csvFormatValue = (
       result[fieldName + '_longitude'] =
         value.features[0].geometry.coordinates[0];
       return result;
+    } else {
+      result[fieldName] = value;
+      result[fieldName + '_latitude'] = '';
+      result[fieldName + '_longitude'] = '';
     }
   }
 
