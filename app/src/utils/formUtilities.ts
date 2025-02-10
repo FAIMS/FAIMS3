@@ -7,6 +7,26 @@ import {
 import Mustache from 'mustache';
 import {RecordContext} from '../gui/components/record/form';
 
+/*
+Patch mustache to not escape values.
+
+This addresses JIRA BSS-714 where Observation/Point of Interest was being
+rendered as "Observation&#x2F;Point of Interest"
+
+This is generally a risky approach but safe enough in our use case provided the
+output is never:
+
+- Inserted into the DOM using .innerHTML
+- Used as an HTML attribute value
+- Evaluated as JavaScript
+- Used in a <script> tag
+- Used in a CSS value
+- Used in a URL
+*/
+Mustache.escape = function (text: string) {
+  return text;
+};
+
 /**
  * Converts a record (real or draft) into record context used in the form
  * @param record
