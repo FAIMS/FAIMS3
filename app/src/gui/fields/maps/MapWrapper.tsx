@@ -338,7 +338,7 @@ function MapWrapper(props: MapProps) {
                 justifyContent: 'center',
                 width: 80,
                 height: 80,
-                backgroundColor: '#f0f0f0',
+                backgroundColor: '#dfdfdf',
                 borderRadius: '6px',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease-in-out',
