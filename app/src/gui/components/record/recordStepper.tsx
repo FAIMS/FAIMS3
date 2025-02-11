@@ -40,6 +40,7 @@ type RecordStepperProps = {
   onChangeStepper: (view_id: string, index: number) => void;
   views: string[];
   formErrors?: {[fieldName: string]: unknown};
+  visitedSteps: Set<string>;
 };
 
 const useStyles = createUseStyles({
@@ -95,16 +96,15 @@ export default function RecordStepper(props: RecordStepperProps) {
     props;
 
   // track visited steps by their unique section ID instead of index
-  const [visitedSteps, setVisitedSteps] = useState<string[]>([]);
+  const [visitedSteps, setVisitedSteps] = useState<Set<string>>(new Set());
   const [validSteps, setValidSteps] = useState<string[]>([]);
 
   // Check for errors in the current view
   const hasErrors = useCallback(
     (sectionId: string) => {
-      if (!visitedSteps.includes(sectionId)) return false; // don't show form-errors if not visited
+      if (!visitedSteps.has(sectionId)) return false; // ✅ Only show if visited
 
       const currentViewFields = ui_specification.views[sectionId]?.fields || [];
-
       return currentViewFields.some(
         (field: string) => formErrors && formErrors[field]
       );
@@ -116,10 +116,16 @@ export default function RecordStepper(props: RecordStepperProps) {
   useEffect(() => {
     const currentSectionId = views[view_index];
 
-    if (!visitedSteps.includes(currentSectionId)) {
-      setVisitedSteps(prev => [...prev, currentSectionId]);
+    // Track visited steps ONLY when the user LEAVES a step
+    if (!visitedSteps.has(currentSectionId)) {
+      setVisitedSteps(prev => {
+        const newVisitedSteps = new Set(prev);
+        newVisitedSteps.add(currentSectionId);
+        return newVisitedSteps;
+      });
     }
 
+    // Show errors only if user has visited AND left this step unaddressed
     const currentHasErrors = hasErrors(currentSectionId);
 
     setValidSteps(prev => {
@@ -152,7 +158,7 @@ export default function RecordStepper(props: RecordStepperProps) {
                 <Step key={sectionId}>
                   <StepButton
                     onClick={() => {
-                      onChangeStepper(sectionId, index);
+                      props.onChangeStepper(sectionId, index);
                     }}
                     sx={{
                       width: '94%',
@@ -210,6 +216,7 @@ export default function RecordStepper(props: RecordStepperProps) {
           onChangeStepper={onChangeStepper}
           ui_specification={ui_specification}
           formErrors={formErrors}
+          visitedSteps={visitedSteps}
         />
         <Typography variant="h5" align="center">
           {ui_specification.views[views[view_index]]?.label}
