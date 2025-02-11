@@ -25,22 +25,78 @@ import {
   RecordMetadata,
 } from '@faims3/data-model';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import {Alert, Box, Grid, Link, Paper, Typography} from '@mui/material';
+import {
+  Alert,
+  Box,
+  Grid,
+  Link,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  Typography,
+} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
+import {
+  DataGrid,
+  GridCellParams,
+  GridColDef,
+  GridEventListener,
+} from '@mui/x-data-grid';
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {
   getFieldLabel,
-  getSummaryFields,
+  getSummaryFieldInformation,
   getUiSpecForProject,
   getVisibleTypes,
 } from '../../../uiSpecification';
+import {prettifyFieldName} from '../../../utils/formUtilities';
 import getLocalDate from '../../fields/LocalDate';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
-import RecordDelete from './delete';
+
+/**
+ * A simple display for key value pair data - used in vertical summary stack
+ * layout
+ * @returns
+ */
+const KeyValueTable = ({data}: {data: {[key: string]: string}}) => {
+  return (
+    <TableContainer>
+      <Table size="small">
+        <TableBody>
+          {Object.entries(data).map(([key, val]) => (
+            <TableRow key={key}>
+              <TableCell
+                sx={{
+                  width: '40%',
+                  borderBottom: 'none',
+                  padding: '4px 8px',
+                  fontWeight: 'bold',
+                }}
+              >
+                {key}
+              </TableCell>
+              <TableCell
+                sx={{
+                  width: '60%',
+                  borderBottom: 'none',
+                  padding: '4px 8px',
+                }}
+              >
+                {val}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+};
 
 /**
  * Props for the RecordsTable component
@@ -96,9 +152,12 @@ export function RecordsTable(props: RecordsTableProps) {
     get();
   }, [props.project_id]);
 
-  // Filter rows so we only show records from visible_types if that is configured
-  //
-  let visible_rows = rows;
+  // Filter rows so we only show records from visible_types if that is
+  // configured Append the summaryVerticalStack property - this is added to each
+  // row where needed
+  let visible_rows = rows as (RecordMetadata & {
+    summaryVerticalStack?: {[fieldName: string]: string};
+  })[];
   if (rows && visibleTypes.length > 0) {
     visible_rows = rows.filter(
       (row: RecordMetadata) => visibleTypes.indexOf(row.type) >= 0
@@ -145,24 +204,6 @@ export function RecordsTable(props: RecordsTableProps) {
     hide: true,
     minWidth: 70,
     valueGetter: getRowType,
-  };
-
-  const deleteColumn = {
-    field: 'delete',
-    headerName: 'Delete',
-    type: 'actions',
-    renderCell: (params: GridCellParams) => {
-      return (
-        <RecordDelete
-          project_id={project_id}
-          record_id={params.row.record_id}
-          revision_id={params.row.revision_id}
-          draft_id={null}
-          show_label={false}
-          handleRefresh={props.handleRefresh}
-        />
-      );
-    },
   };
 
   const hridBasicColumn = {
@@ -263,32 +304,78 @@ export function RecordsTable(props: RecordsTableProps) {
 
   // if we have one visible type and summary fields we add these
   // to the table
-  let summary_added = false;
+  let summaryAdded = false;
   if (uiSpec && visibleTypes.length === 1) {
-    const summary_fields = getSummaryFields(uiSpec, visibleTypes[0]);
-    if (summary_fields.length > 0) {
-      summary_added = true;
-      summary_fields.forEach(field => {
+    const summaryFieldInfo = getSummaryFieldInformation(
+      uiSpec,
+      visibleTypes[0]
+    );
+    const summaryFields = summaryFieldInfo.enabled
+      ? summaryFieldInfo.fieldNames
+      : [];
+    const isVerticalStackLayout = !!summaryFieldInfo.verticalStack;
+    const summaryColumnLabel =
+      summaryFieldInfo.verticalStack?.columnLabel ?? 'Label';
+
+    if (summaryFields.length > 0) {
+      summaryAdded = true;
+
+      if (isVerticalStackLayout) {
         columns.push({
-          field: field,
-          headerName: getFieldLabel(uiSpec, field),
+          field: 'summaryVerticalStack',
+          headerName: summaryColumnLabel,
           type: 'string',
           filterable: true,
-          minWidth: 70,
-          flex: 1,
+          minWidth: 200,
+          flex: 3,
           renderCell: (params: GridCellParams) => {
-            return (
-              <Typography>
-                {params.row.data ? params.row.data[field] : 'missing'}
-              </Typography>
-            );
+            try {
+              // Build a set of k,v fields to render vertically
+              const summary: {[fieldName: string]: string} = {};
+              for (const summaryField of summaryFields) {
+                const val = params.row.data?.[summaryField];
+                let key = prettifyFieldName(summaryField);
+                const stringVal = val ? String(val) : undefined;
+                if (stringVal && stringVal.length > 0) {
+                  summary[key] = stringVal;
+                } else {
+                  summary[key] = '-';
+                }
+              }
+              return <KeyValueTable data={summary} />;
+            } catch (e) {
+              console.warn(
+                'Failed to render the vertical stack summary field, error: ',
+                e
+              );
+              return 'Error';
+            }
           },
+        } as GridColDef);
+      } else {
+        // Typical layout
+        summaryFields.forEach(field => {
+          columns.push({
+            field: field,
+            headerName: getFieldLabel(uiSpec, field),
+            type: 'string',
+            filterable: true,
+            minWidth: 70,
+            flex: 1,
+            renderCell: (params: GridCellParams) => {
+              return (
+                <Typography>
+                  {params.row.data ? params.row.data[field] : 'missing'}
+                </Typography>
+              );
+            },
+          });
         });
-      });
+      }
     }
   }
   // if we didn't add the summary fields, add the hrid field instead
-  if (!summary_added) {
+  if (!summaryAdded) {
     if (mobileView) columns.push(hridDetailColumn);
     else columns.push(hridBasicColumn);
   }
@@ -350,8 +437,6 @@ export function RecordsTable(props: RecordsTableProps) {
       });
     }
   }
-
-  columns.push(deleteColumn);
 
   return (
     <React.Fragment>
