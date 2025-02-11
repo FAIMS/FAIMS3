@@ -56,6 +56,8 @@ type ViewProps = {
   disabled?: boolean; // add for view tab or edit tab
   hideErrors?: boolean;
   formErrors?: {[fieldName: string]: unknown};
+  visitedSteps: Set<string>;
+  currentStepId: string;
 };
 type SingleComponentProps = {
   fieldName: string;
@@ -273,22 +275,47 @@ export function ViewComponent(props: ViewProps) {
   const ui_specification = props.ui_specification;
   const fieldNames: string[] = props.fieldNames;
   const fields = ui_specification.fields;
-  const [showErrors, setShowErrors] = useState(true);
-  const [showWarnings, setShowWarnings] = useState(true);
 
-  useEffect(() => {
-    const hasError = fieldNames.some(field => props.formProps.errors[field]);
-    if (hasError) {
-      setShowErrors(true);
-    }
-  }, [props.formProps.errors]);
-
-  const currentSectionErrors = Object.keys(props.formProps.errors).filter(
-    field => fieldNames.includes(field)
+  // Track which steppers have been interacted with
+  const [interactedSteppers, setInteractedSteppers] = useState<Set<string>>(
+    new Set()
   );
-  const hasWarnings =
-    !props.formProps.isValid && currentSectionErrors.length === 0;
 
+  // Get the stepper ID
+  const stepperId = props.viewName;
+
+  // Check if any field in this stepper is touched
+  const isCurrentStepperTouched = fieldNames.some(
+    field => !!props.formProps.touched[field]
+  );
+
+  // Check if this stepper has errors
+  const hasErrors = fieldNames.some(field => !!props.formProps.errors[field]);
+
+  // Ensure form errors are displayed as soon as a stepper turns red
+  useEffect(() => {
+    if (hasErrors) {
+      setInteractedSteppers(prev => new Set(prev).add(stepperId));
+    }
+  }, [hasErrors]);
+
+  // Ensure errors appear only after user interacts
+  useEffect(() => {
+    if (isCurrentStepperTouched) {
+      setInteractedSteppers(prev => new Set(prev).add(stepperId));
+    }
+  }, [isCurrentStepperTouched]);
+  // Show errors if the stepper has been interacted with OR if it has turned red
+  const shouldShowErrors = interactedSteppers.has(stepperId) && hasErrors;
+
+  // Identify other sections with errors that have been interacted with
+  const otherSectionsWithErrors = Array.from(interactedSteppers)
+    .filter(section => section !== stepperId) // Exclude the current stepper
+    .filter(section =>
+      Object.keys(props.formProps.errors).some(field =>
+        props.ui_specification.views[section]?.fields.includes(field)
+      )
+    );
   return (
     <React.Fragment>
       {fieldNames?.map((fieldName, index) => (
@@ -307,7 +334,9 @@ export function ViewComponent(props: ViewProps) {
           disabled={props.disabled}
         />
       ))}
-      {!props.hideErrors && currentSectionErrors.length > 0 && (
+
+      {/* Only show errors if this stepper has been interacted with */}
+      {shouldShowErrors && (
         <Alert
           severity="error"
           sx={{
@@ -320,75 +349,43 @@ export function ViewComponent(props: ViewProps) {
             wordWrap: 'break-word',
             marginBottom: 2,
           }}
-          action={
-            <IconButton
-              color="inherit"
-              size="small"
-              onClick={() => setShowErrors(prev => !prev)}
-            >
-              <ExpandMoreIcon
-                sx={{
-                  transform: showErrors ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.3s ease',
-                }}
-              />
-            </IconButton>
-          }
         >
           <Typography variant="h6" sx={{fontWeight: 'bold'}}>
             Form has errors. Click to fix:
           </Typography>
 
-          <Collapse in={showErrors}>
-            {displayErrors(
-              props.formProps.errors,
-              props.viewName,
-              ui_specification,
-              fieldNames
-            )}
-          </Collapse>
-        </Alert>
-      )}
+          {displayErrors(
+            props.formProps.errors,
+            props.viewName,
+            ui_specification,
+            fieldNames
+          )}
 
-      {/* Warning Section */}
-      {hasWarnings && (
-        <Alert
-          severity="warning"
-          sx={{
-            mt: 2,
-            p: 2,
-            background: 'linear-gradient(135deg, #FFF8E1, #FFE57F)',
-            borderRadius: '8px',
-            boxShadow: '0px 4px 12px rgba(255, 165, 0, 0.6)',
-            overflowX: 'hidden',
-          }}
-          action={
-            <IconButton
-              color="inherit"
-              size="small"
-              onClick={() => setShowWarnings(prev => !prev)}
-            >
-              <ExpandMoreIcon
-                sx={{
-                  transform: showWarnings ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.3s ease',
-                }}
-              />
-            </IconButton>
-          }
-        >
-          <Typography variant="h6" sx={{fontWeight: 'bold', color: '#FF6F00'}}>
-            Please check other sections before submitting.
-          </Typography>
-
-          <Collapse in={showWarnings}>
-            {displayErrors(
-              props.formProps.errors,
-              props.viewName,
-              ui_specification,
-              fieldNames
-            )}
-          </Collapse>
+          {/* Show other stepper names with errors if they have been interacted with */}
+          {otherSectionsWithErrors.length > 0 && (
+            <Box mt={2}>
+              <Typography variant="subtitle1" sx={{fontWeight: 'bold'}}>
+                Other sections with errors:
+              </Typography>
+              {otherSectionsWithErrors.map(section => (
+                <Link
+                  key={section}
+                  component="button"
+                  variant="body2"
+                  onClick={() => props.handleChangeTab(section)}
+                  sx={{
+                    display: 'block',
+                    color: theme.palette.primary.main,
+                    textDecoration: 'underline',
+                    '&:hover': {color: theme.palette.secondary.main},
+                    mt: 1,
+                  }}
+                >
+                  {ui_specification.views[section]?.label || section}
+                </Link>
+              ))}
+            </Box>
+          )}
         </Alert>
       )}
     </React.Fragment>
