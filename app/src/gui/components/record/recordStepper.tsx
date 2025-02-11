@@ -37,7 +37,7 @@ import {theme} from '../../themes';
 type RecordStepperProps = {
   view_index: number;
   ui_specification: ProjectUIModel;
-  onChangeStepper: any;
+  onChangeStepper: (view_id: string, index: number) => void;
   views: string[];
   formErrors?: {[fieldName: string]: unknown};
 };
@@ -57,7 +57,7 @@ const useStyles = createUseStyles({
       borderRadius: 2,
     },
     '& .MuiStepConnector-line': {
-      borderColor: '#867D7AFF',
+      borderColor: '#383534FF',
       borderTopWidth: 2,
     },
   },
@@ -93,35 +93,40 @@ export default function RecordStepper(props: RecordStepperProps) {
   const classes = useStyles();
   const {view_index, ui_specification, onChangeStepper, views, formErrors} =
     props;
-  const [visitedSteps, setVisitedSteps] = useState<number[]>([]);
-  const [validSteps, setValidSteps] = useState<number[]>([]);
+
+  // track visited steps by their unique section ID instead of index
+  const [visitedSteps, setVisitedSteps] = useState<string[]>([]);
+  const [validSteps, setValidSteps] = useState<string[]>([]);
 
   // Check for errors in the current view
   const hasErrors = useCallback(
-    (index: number) => {
-      if (!visitedSteps.includes(index)) return false; // don't show form-errors if not visited
+    (sectionId: string) => {
+      if (!visitedSteps.includes(sectionId)) return false; // don't show form-errors if not visited
 
-      const currentViewFields = ui_specification.views[views[index]].fields;
+      const currentViewFields = ui_specification.views[sectionId]?.fields || [];
+
       return currentViewFields.some(
         (field: string) => formErrors && formErrors[field]
       );
     },
-    [formErrors, ui_specification, views]
+    [formErrors, ui_specification, visitedSteps]
   );
 
   // Track Visited and Valid Steps
   useEffect(() => {
-    if (!visitedSteps.includes(view_index)) {
-      setVisitedSteps(prev => [...prev, view_index]);
+    const currentSectionId = views[view_index];
+
+    if (!visitedSteps.includes(currentSectionId)) {
+      setVisitedSteps(prev => [...prev, currentSectionId]);
     }
 
-    const currentHasErrors = hasErrors(view_index);
+    const currentHasErrors = hasErrors(currentSectionId);
 
     setValidSteps(prev => {
-      if (!currentHasErrors && !prev.includes(view_index)) {
-        return [...prev, view_index];
-      } else if (currentHasErrors && prev.includes(view_index)) {
-        return prev.filter(step => step !== view_index);
+      if (!currentHasErrors && !prev.includes(currentSectionId)) {
+        return [...prev, currentSectionId];
+      } else if (currentHasErrors && prev.includes(currentSectionId)) {
+        return prev.filter(step => step !== currentSectionId);
       }
       return prev;
     });
@@ -142,33 +147,27 @@ export default function RecordStepper(props: RecordStepperProps) {
             className={classes.stepperStyle}
             sx={{padding: '15px 0'}}
           >
-            {views.map((view_name: string, index: number) => {
+            {views.map((sectionId: string, index: number) => {
               return (
-                <Step key={view_name}>
+                <Step key={sectionId}>
                   <StepButton
                     onClick={() => {
-                      onChangeStepper(view_name, index);
+                      onChangeStepper(sectionId, index);
                     }}
                     sx={{
                       width: '94%',
                       '& .MuiStepLabel-label': {
-                        color: getStepColor(
-                          index,
-                          view_index,
-                          hasErrors(index),
-                          visitedSteps,
-                          themeType
-                        ),
-                        fontWeight: index === view_index ? 'bold' : 'normal',
+                        color: theme.palette.primary.dark,
+                        fontweight: 'bold',
                         transition: 'color 0.3s ease-in-out',
                         fontSize: '1rem',
                       },
 
                       '& .MuiStepIcon-root': {
                         color: getStepColor(
-                          index,
-                          view_index,
-                          hasErrors(index),
+                          sectionId,
+                          views[view_index],
+                          hasErrors(sectionId),
                           visitedSteps,
                           themeType
                         ),
@@ -178,7 +177,7 @@ export default function RecordStepper(props: RecordStepperProps) {
                         width: '26px',
                         height: '26px',
                         boxShadow:
-                          index === view_index
+                          sectionId === views[view_index]
                             ? '0px 4px 12px rgba(0, 0, 0, 0.3)'
                             : '0px 2px 4px rgba(0, 0, 0, 0.15)',
                         transition: 'all 0.3s ease-in-out',
@@ -196,7 +195,7 @@ export default function RecordStepper(props: RecordStepperProps) {
                       },
                     }}
                   >
-                    {ui_specification.views[view_name].label}
+                    {ui_specification.views[sectionId]?.label}
                   </StepButton>
                 </Step>
               );
