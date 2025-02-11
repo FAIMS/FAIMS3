@@ -99,6 +99,8 @@ export default function RecordStepper(props: RecordStepperProps) {
   // Check for errors in the current view
   const hasErrors = useCallback(
     (index: number) => {
+      if (!visitedSteps.includes(index)) return false; // don't show form-errors if not visited
+
       const currentViewFields = ui_specification.views[views[index]].fields;
       return currentViewFields.some(
         (field: string) => formErrors && formErrors[field]
@@ -243,13 +245,7 @@ export default function RecordStepper(props: RecordStepperProps) {
  */
 
 export function CustomMobileStepper(props: RecordStepperProps) {
-  const {views, view_index, onChangeStepper, formErrors} = props;
-  const totalSteps = views.length;
-
-  // Check if current step has errors
-  const hasError = Object.keys(formErrors || {}).some(field =>
-    views[view_index].includes(field)
-  );
+  const {views, view_index, onChangeStepper} = props;
 
   return (
     <Box
