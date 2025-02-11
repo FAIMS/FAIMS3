@@ -456,10 +456,6 @@ export interface ProjectUIViewset {
   submit_label?: string;
   is_visible?: boolean;
   summary_fields?: Array<string>;
-  // Show the summary fields as a vertical stack? If so, provide label
-  verticalStackSummary?: {
-    columnLabel: string;
-  };
   // Which field should be used as the hrid?
   hridField?: string;
   // Layout option
