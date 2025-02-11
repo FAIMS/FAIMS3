@@ -21,7 +21,7 @@
  */
 
 import {EncodedProjectUIModel, resolve_project_id} from '@faims3/data-model';
-import {getProjectDB} from '.';
+import {getMetadataDbForProject} from '.';
 import {getToken} from '../context/functions';
 import {createdListingsInterface} from './state';
 
@@ -73,18 +73,26 @@ export const fetchProjectMetadata = async (
   const uiSpec = notebook['ui-specification'] as EncodedProjectUIModel;
 
   // store them in the local database
-  const metaDB = await getProjectDB(full_project_id);
+  const metaDB = await getMetadataDbForProject(full_project_id);
   try {
     const existing = await metaDB.get('metadata');
     metadata._rev = existing._rev;
-  } catch {
+  } catch (e) {
+    console.log(
+      'Failed to update _rev for existing metadata entry in metadata DB. Error: ',
+      e
+    );
     // nop
   }
 
   try {
     const existing = await metaDB.get('ui-specification');
     uiSpec._rev = existing._rev;
-  } catch {
+  } catch (e) {
+    console.log(
+      'Failed to update _rev for existing uiSpec entry in metadata DB. Error: ',
+      e
+    );
     // nop
   }
 
@@ -117,7 +125,7 @@ export const fetchProjectMetadata = async (
  * @returns the value of the given key for this project or undefined if not present
  */
 export const getMetadataValue = async (project_id: string, key: string) => {
-  const metaDB = await getProjectDB(project_id);
+  const metaDB = await getMetadataDbForProject(project_id);
   try {
     const metadata = (await metaDB.get('metadata')) as PropertyMap;
     return metadata[key];
@@ -133,7 +141,7 @@ export const getMetadataValue = async (project_id: string, key: string) => {
  * @returns all metadata values as a PropertyMap
  */
 export const getAllMetadata = async (project_id: string) => {
-  const metaDB = await getProjectDB(project_id);
+  const metaDB = await getMetadataDbForProject(project_id);
   try {
     const metadata = (await metaDB.get('metadata')) as PropertyMap;
     return metadata;

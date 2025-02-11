@@ -156,6 +156,8 @@ export const data_dbs: LocalDBList<ProjectDataObject> = {};
 export const metadata_dbs: LocalDBList<ProjectMetaObject> = {};
 
 /**
+ * Creates a local only pouchDB (if it doesn't exist already)
+ *
  * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix
  * @param localDbId id is per-object of type, to discriminate between them. i.e. a project ID
  * @param globalDbs projects_db
