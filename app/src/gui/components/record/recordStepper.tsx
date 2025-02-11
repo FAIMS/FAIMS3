@@ -31,8 +31,8 @@ import {
 import {ProjectUIModel} from '@faims3/data-model';
 import {createUseStyles} from 'react-jss';
 import {useCallback, useEffect, useState} from 'react';
-import {getStepperColors} from '../../../utils/stepperUtils';
 import {getStepColor} from '../../../utils/generateStepperColors';
+import {theme} from '../../themes';
 
 type RecordStepperProps = {
   view_index: number;
@@ -93,8 +93,6 @@ export default function RecordStepper(props: RecordStepperProps) {
   const classes = useStyles();
   const {view_index, ui_specification, onChangeStepper, views, formErrors} =
     props;
-  const stepperColors = getStepperColors(views.length);
-
   const [visitedSteps, setVisitedSteps] = useState<number[]>([]);
   const [validSteps, setValidSteps] = useState<number[]>([]);
 
@@ -126,6 +124,9 @@ export default function RecordStepper(props: RecordStepperProps) {
       return prev;
     });
   }, [view_index, formErrors, hasErrors]);
+
+  const themeType =
+    theme.palette.primary.main === '#000000' ? 'bss' : 'default';
 
   return (
     <>

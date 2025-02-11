@@ -1,4 +1,4 @@
-type ThemeType = 'bss' | 'default';
+export type ThemeType = 'bss' | 'default';
 
 // Designated colors based on step status
 const stepColors = {
