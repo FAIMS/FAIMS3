@@ -136,6 +136,8 @@ type RecordFormState = {
   relationship: Relationship | null;
   fieldNames: string[];
   views: string[];
+  visitedSteps: Set<string>; // Change to Set to ensure uniqueness
+  // currentStepId: string;
 };
 
 /*
@@ -226,6 +228,8 @@ class RecordForm extends React.Component<
       relationship: {},
       fieldNames: [],
       views: [],
+      visitedSteps: new Set<string>(), // new rg
+      // currentStepId: string;
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -233,6 +237,13 @@ class RecordForm extends React.Component<
     this.onChangeStepper = this.onChangeStepper.bind(this);
     this.onChangeTab = this.onChangeTab.bind(this);
   }
+
+  // Function to update visited steps when needed
+  updateVisitedSteps = (stepId: string) => {
+    this.setState(prevState => ({
+      visitedSteps: new Set(prevState.visitedSteps).add(stepId),
+    }));
+  };
 
   async componentDidMount() {
     // moved from constructor since it has a side-effect of setting up a global timer
@@ -713,10 +724,11 @@ class RecordForm extends React.Component<
   }
 
   onChangeStepper(view_name: string, activeStepIndex: number) {
-    this.setState({
+    this.setState(prevState => ({
       view_cached: view_name,
       activeStep: activeStepIndex,
-    });
+      visitedSteps: new Set(prevState.visitedSteps).add(view_name),
+    }));
   }
 
   onChangeTab(event: React.ChangeEvent<{}>, newValue: string) {
@@ -1305,6 +1317,11 @@ class RecordForm extends React.Component<
                                 disabled={this.props.disabled}
                                 hideErrors={true}
                                 formErrors={formProps.errors}
+                                visitedSteps={this.state.visitedSteps}
+                                currentStepId={this.state.view_cached ?? ''}
+                                // currentStepId={this.state.view_cached ?? ''}
+                                // views={this.state.views}
+                                // onChangeStepper={this.onChangeStepper} // ✅ Pass function to ViewComponent
                               />
                             </Form>
                           </div>
@@ -1399,6 +1416,7 @@ class RecordForm extends React.Component<
                 const view_index = views.indexOf(viewName);
                 const is_final_view = view_index + 1 === views.length;
 
+                // new rg below
                 return (
                   <Form>
                     {views.length > 1 && (
@@ -1408,6 +1426,7 @@ class RecordForm extends React.Component<
                         onChangeStepper={this.onChangeStepper}
                         views={views}
                         formErrors={formProps.errors}
+                        visitedSteps={this.state.visitedSteps} // Pass visited steps
                       />
                     )}
 
@@ -1432,6 +1451,12 @@ class RecordForm extends React.Component<
                       handleChangeTab={this.props.handleChangeTab}
                       fieldNames={fieldNames}
                       disabled={this.props.disabled}
+                      visitedSteps={this.state.visitedSteps}
+                      currentStepId={this.state.view_cached ?? ''}
+
+                      // currentStepId={this.state.view_cached ?? ''}
+                      // views={this.state.views}
+                      // onChangeStepper={this.onChangeStepper} // ✅ Pass function to ViewComponent
                     />
                     <FormButtonGroup
                       project_id={this.props.project_id}
