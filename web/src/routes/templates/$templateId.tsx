@@ -1,8 +1,9 @@
 import {createFileRoute} from '@tanstack/react-router';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import TemplateDetails from '@/components/tabs/templates/details';
-import TemplateSurveys from '@/components/tabs/templates/projects';
+import TemplateProjects from '@/components/tabs/templates/projects';
 import TemplateActions from '@/components/tabs/templates/actions';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 const tabs = [
   {
@@ -10,8 +11,8 @@ const tabs = [
     Component: TemplateDetails,
   },
   {
-    name: 'Surveys',
-    Component: TemplateSurveys,
+    name: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+    Component: TemplateProjects,
   },
   {
     name: 'Actions',

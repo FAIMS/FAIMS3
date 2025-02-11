@@ -1,7 +1,6 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import RoleCard from '../ui/role-card';
-import {Checkbox} from '../ui/checkbox';
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -20,10 +19,5 @@ export const columns: ColumnDef<any>[] = [
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Access Code" />
     ),
-  },
-  {
-    id: 'active',
-    cell: () => <Checkbox value={1} />,
-    header: () => <div>Active</div>,
   },
 ];

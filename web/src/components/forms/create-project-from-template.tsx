@@ -1,9 +1,9 @@
 import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
 import {Route} from '@/routes/templates/$templateId';
-import {useRouter} from '@tanstack/react-router';
 import {z} from 'zod';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {useQueryClient} from '@tanstack/react-query';
 
 export const fields = [
   {
@@ -15,16 +15,23 @@ export const fields = [
   },
 ];
 
+interface CreateProjectFromTemplateFormProps {
+  setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
 /**
  * Component for rendering a form to create a project from a template.
  * @returns {JSX.Element} The rendered form component.
  */
-export function CreateProjectFromTemplateForm() {
+export function CreateProjectFromTemplateForm({
+  setDialogOpen,
+}: CreateProjectFromTemplateFormProps) {
   const {user} = useAuth();
   if (!user) return null;
 
   const {templateId} = Route.useParams();
-  const router = useRouter();
+
+  const QueryClient = useQueryClient();
 
   /**
    * Handles form submission for creating a project.
@@ -32,24 +39,27 @@ export function CreateProjectFromTemplateForm() {
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
   const onSubmit = async ({name}: {name: string}) => {
-    const response = await fetch('http://localhost:8080/api/notebooks', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${user.token}`,
-      },
-      body: JSON.stringify({
-        template_id: templateId,
-        name,
-      }),
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/notebooks`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          template_id: templateId,
+          name,
+        }),
+      }
+    );
 
     if (!response.ok)
       return {type: 'submit', message: `Error creating ${NOTEBOOK_NAME}.`};
 
-    const json = await response.json();
+    QueryClient.invalidateQueries({queryKey: ['projects', undefined]});
 
-    await router.navigate({to: `/${NOTEBOOK_NAME}s/${json.notebook}`});
+    setDialogOpen(false);
   };
 
   return (
