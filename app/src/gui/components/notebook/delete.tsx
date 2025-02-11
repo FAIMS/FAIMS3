@@ -72,7 +72,7 @@ async function deleteFromDB(
     );
     await deleteDraftsForRecord(project_id, record_id);
   }
-  await callback();
+  callback();
 }
 
 export default function RecordDelete(props: RecordDeleteProps) {
