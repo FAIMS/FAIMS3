@@ -45,7 +45,7 @@ import {
   GridEventListener,
 } from '@mui/x-data-grid';
 import {useQuery} from '@tanstack/react-query';
-import {useCallback, useMemo} from 'react';
+import {ReactNode, useCallback, useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {
@@ -264,7 +264,7 @@ function buildColumnFromSystemField({
         ...baseColumn,
         type: 'boolean',
         flex: 0,
-        minWidth: 70,
+        minWidth: 125,
         renderCell: (params: GridCellParams) => (
           <Box sx={{display: 'flex', alignItems: 'center'}}>
             {params.row.conflicts && (
@@ -416,11 +416,13 @@ function buildVerticalStackColumn({
   columnLabel,
   uiSpecification,
   includeKind,
+  hasConflict,
 }: {
   summaryFields: string[];
   uiSpecification: ProjectUIModel;
   columnLabel: string;
   includeKind: boolean;
+  hasConflict: boolean;
 }): GridColumnType {
   return {
     field: 'summaryVerticalStack',
@@ -431,7 +433,7 @@ function buildVerticalStackColumn({
     renderCell: (params: GridCellParams) => {
       try {
         // Build a set of k,v fields to render vertically
-        const kvp: {[fieldName: string]: string} = {};
+        const kvp: {[fieldName: string]: string | ReactNode} = {};
 
         // Add the kind property if needed (put this first)
         if (includeKind) {
@@ -472,6 +474,23 @@ function buildVerticalStackColumn({
               uiSpecification,
             }) ?? CONSTANTS.MISSING_DATA_PLACEHOLDER;
         }
+
+        // Add the conflict field if there is a conflict
+        if (hasConflict) {
+          const val = getDataForColumn({
+            column: 'CONFLICTS',
+            record: params.row,
+            uiSpecification,
+          });
+          // Only put this in if necessary
+          if (val === 'Yes') {
+            // And a pretty key
+            kvp[COLUMN_TO_LABEL_MAP.get('CONFLICTS') ?? 'Conflicts'] = (
+              <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
+            );
+          }
+        }
+
         return <KeyValueTable data={kvp} />;
       } catch (e) {
         console.warn(
@@ -487,10 +506,12 @@ function buildVerticalStackColumn({
 /**
  * Builds column definitions for the data grid based on UI specifications and screen width.
  *
- * @param {Object} params - The parameters object
- * @param {ProjectUIModel} params.uiSpecification - The UI specification for the project
- * @param {string} params.viewsetId - The ID of the current viewset
- * @param {('small' | 'medium' | 'large')} params.width - The screen width category
+ * @param uiSpecification Ui spec
+ * @param viewsetId the viewset relevant (if known/single entity type)
+ * @param width the screen size
+ * @param includeKind should we include record type in relevant display
+ * @param hasConflict does any item have a conflict? If so include column for it
+ *
  * @returns {GridColumnType[]} Array of column definitions for the DataGrid
  *
  * @description
@@ -504,11 +525,13 @@ function buildColumnDefinitions({
   viewsetId,
   width,
   includeKind,
+  hasConflict,
 }: {
   uiSpecification: ProjectUIModel;
   viewsetId?: string;
   width: SizeCategory;
   includeKind: boolean;
+  hasConflict: boolean;
 }): GridColumnType[] {
   // Get the UI spec information
   let summaryFields: string[] = [];
@@ -531,6 +554,7 @@ function buildColumnDefinitions({
         summaryFields,
         uiSpecification,
         includeKind,
+        hasConflict,
       })
     );
   } else if (width === 'md') {
@@ -565,6 +589,12 @@ function buildColumnDefinitions({
         })
       );
     });
+    // Add conflict column if needed
+    if (hasConflict) {
+      columnList.push(
+        buildColumnFromSystemField({columnType: 'CONFLICTS', uiSpecification})
+      );
+    }
   } else if (width === 'lg') {
     // Add kind column (if needed)
     if (includeKind) {
@@ -597,6 +627,13 @@ function buildColumnDefinitions({
         })
       );
     });
+
+    // Add conflict column if needed
+    if (hasConflict) {
+      columnList.push(
+        buildColumnFromSystemField({columnType: 'CONFLICTS', uiSpecification})
+      );
+    }
   }
 
   return columnList;
@@ -607,7 +644,7 @@ function buildColumnDefinitions({
  * layout
  * @returns
  */
-const KeyValueTable = ({data}: {data: {[key: string]: string}}) => {
+const KeyValueTable = ({data}: {data: {[key: string]: string | ReactNode}}) => {
   return (
     <TableContainer>
       <Table size="small">
@@ -700,19 +737,25 @@ const useScreenSize = () => {
 /**
  * Manages column definitions based on UI specifications and screen size
  */
-const useTableColumns = (
-  uiSpec: ProjectUIModel | null,
-  visibleTypes: string[],
-  viewsets: ProjectUIViewsets | null | undefined,
-  size: SizeCategory
-) => {
+const useTableColumns = ({
+  uiSpec,
+  visibleTypes,
+  viewsets,
+  size,
+  hasConflict,
+}: {
+  uiSpec: ProjectUIModel | null;
+  visibleTypes: string[];
+  viewsets: ProjectUIViewsets | null | undefined;
+  size: SizeCategory;
+  hasConflict: boolean;
+}) => {
   return useMemo(() => {
     if (!uiSpec) return [];
     let cols: GridColumnType[] = [];
 
     // Should the kind property be included?
     const includeKind = visibleTypes.length > 1;
-
     const viewsetId = visibleTypes.length === 1 ? visibleTypes[0] : '';
     return cols.concat(
       buildColumnDefinitions({
@@ -720,22 +763,35 @@ const useTableColumns = (
         viewsetId,
         width: size,
         includeKind,
+        hasConflict,
       })
     );
-  }, [uiSpec, visibleTypes, viewsets, size]);
+  }, [uiSpec, visibleTypes, viewsets, size, hasConflict]);
 };
 
 /**
- * Manages row filtering based on visible types
+ * Manages row filtering based on visible types.
+ * Specifies whether any row has conflicts.
  */
 const useTableRows = (
   rows: RecordMetadata[] | undefined,
   visibleTypes: string[]
 ) => {
   return useMemo(() => {
-    if (!rows) return [];
-    if (visibleTypes.length === 0) return rows;
-    return rows.filter(row => visibleTypes.includes(row.type));
+    let relevantRows: RecordMetadata[] = [];
+    if (!rows) {
+      relevantRows = [];
+    } else if (visibleTypes.length === 0) {
+      relevantRows = rows;
+    } else {
+      relevantRows = rows.filter(row => visibleTypes.includes(row.type));
+    }
+    return {
+      rows: relevantRows,
+      hasConflict: relevantRows.some(r => {
+        return r.conflicts;
+      }),
+    };
   }, [rows, visibleTypes]);
 };
 
@@ -870,8 +926,14 @@ export function RecordsTable(props: RecordsTableProps) {
   const {currentSize, pageSize} = useScreenSize();
 
   // Column and row management
-  const columns = useTableColumns(uiSpec, visibleTypes, viewsets, currentSize);
-  const visibleRows = useTableRows(rows, visibleTypes);
+  const {rows: visibleRows, hasConflict} = useTableRows(rows, visibleTypes);
+  const columns = useTableColumns({
+    uiSpec,
+    visibleTypes,
+    viewsets,
+    size: currentSize,
+    hasConflict,
+  });
 
   // Event handlers
   const handleRowClick = useCallback<GridEventListener<'rowClick'>>(
