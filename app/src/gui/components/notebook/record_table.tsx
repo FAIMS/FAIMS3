@@ -338,7 +338,7 @@ function getDisplayDataFromRecordMetadata({
       case 'object':
         if (Array.isArray(value)) {
           // Filter out null/undefined and join array elements
-          return value.filter(item => item != null).join(', ') || undefined;
+          return value.filter(item => item !== null).join(', ') || undefined;
         }
         // For dates
         if (value instanceof Date) {
@@ -733,7 +733,7 @@ const useTableColumns = ({
 }) => {
   return useMemo(() => {
     if (!uiSpec) return [];
-    let cols: GridColumnType[] = [];
+    const cols: GridColumnType[] = [];
 
     // Should the kind property be included?
     const includeKind = visibleTypes.length > 1;

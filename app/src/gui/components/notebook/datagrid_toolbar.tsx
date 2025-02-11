@@ -181,7 +181,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
                       color: theme.palette.primary.main,
                       fontSize: '1.85rem',
                       fontWeight: 'bold',
-                      marginRight: theme.spacing(1)
+                      marginRight: theme.spacing(1),
                     }}
                   />
                 ),
