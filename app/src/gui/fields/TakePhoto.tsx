@@ -314,8 +314,7 @@ const ImageGallery = ({
       >
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete this photo? This action cannot be
-            undone.
+            Are you sure you want to delete this photo?
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{px: 3, pb: 3}}>
