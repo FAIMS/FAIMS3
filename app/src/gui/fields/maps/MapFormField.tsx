@@ -81,10 +81,16 @@ export function MapFormField({
   // default label
   const label = props.label ?? `Get ${props.featureType}`;
 
+  // innitialize state  based on saved location to avoid flickering
+  const isInitialLocationSelected =
+    drawnFeatures.features && drawnFeatures.features.length > 0;
+
   // state for visual indicators
-  const [isLocationSelected, setIsLocationSelected] = useState(false);
-  const [showCheckmark, setShowCheckmark] = useState(false);
-  const [showCross, setShowCross] = useState(false);
+  const [isLocationSelected, setIsLocationSelected] = useState(
+    isInitialLocationSelected
+  );
+  const [showCheckmark, setShowCheckmark] = useState(isInitialLocationSelected);
+  const [showCross, setShowCross] = useState(!isInitialLocationSelected);
   const [animateCheck, setAnimateCheck] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
