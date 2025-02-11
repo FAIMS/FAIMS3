@@ -99,17 +99,17 @@ export async function getDataDB(
   if (active_id in data_dbs) {
     return data_dbs[active_id].local;
   } else {
-    throw `Data DB of project ${active_id} is not known`;
+    throw `Data DB of project ${active_id} is not known. Current DBs available = ${Object.keys(data_dbs)}`;
   }
 }
 
 /**
  * Returns the current Meta PouchDB of a project.
  *
- * @param active_id Full Project ID to get Pouch data DB of.
+ * @param active_id Full Project ID to get Pouch metadata DB of.
  * @returns Pouch Data DB
  */
-export async function getProjectDB(
+export async function getMetadataDbForProject(
   active_id: ProjectID
 ): Promise<PouchDB.Database<ProjectMetaObject>> {
   if (active_id in metadata_dbs) {

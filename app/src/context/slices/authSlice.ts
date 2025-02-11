@@ -153,9 +153,7 @@ const authSlice = createSlice({
         state.activeUser.parsedToken = parsedToken;
       }
 
-      console.log('Checking is authenticated');
       state.isAuthenticated = checkAuthenticationStatus(state);
-      console.log('True/false, ', state.isAuthenticated);
     },
 
     setActiveUser: (state, action: PayloadAction<ServerUserIdentity>) => {
@@ -418,7 +416,6 @@ export const refreshToken = createAsyncThunk<
         refreshToken: connection.refreshToken,
       })
     );
-    console.log('Token refresh request successful');
   } catch (error) {
     console.warn('Token refresh failed:', error);
   }
@@ -432,8 +429,6 @@ export const refreshActiveUser = createAsyncThunk<void, void>(
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async (_, {dispatch, getState}) => {
-    console.log('Initiating active user token refresh.');
-
     // cast and get state
     const state = getState() as RootState;
     const appDispatch = dispatch as AppDispatch;
@@ -465,8 +460,6 @@ export const refreshAllUsers = createAsyncThunk<void, void>(
   'auth/refreshAll',
   // eslint-disable-next-line no-unused-vars
   async (_, {dispatch, getState}) => {
-    console.log('Initiating all user token refresh.');
-
     // cast and get state
     const state = getState() as RootState;
     const appDispatch = dispatch as AppDispatch;

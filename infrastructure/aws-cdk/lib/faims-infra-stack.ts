@@ -184,6 +184,8 @@ export const UiConfiguration = z.object({
   notebookName: z.string(),
   /** The name of the App in app store etc - heading by default */
   appName: z.string(),
+  /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
+  appId: z.string(),
   /** Override the heading text in banner */
   headingAppName: z.string().optional(),
 });
@@ -405,6 +407,7 @@ export class FaimsInfraStack extends cdk.Stack {
       notebookListType: config.uiConfiguration.notebookListType,
       notebookName: config.uiConfiguration.notebookName,
       appName: config.uiConfiguration.appName,
+      appId: config.uiConfiguration.appId,
       headingAppName: config.uiConfiguration.headingAppName,
     });
 

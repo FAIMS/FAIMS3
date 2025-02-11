@@ -44,9 +44,9 @@ import {
 import {
   ExistingActiveDoc,
   LocalDB,
+  createUpdateAndSavePouchSync,
   data_dbs,
-  ensure_local_db,
-  ensure_synced_db,
+  ensureLocalDb,
   metadata_dbs,
 } from './databases';
 import {events} from './events';
@@ -275,6 +275,35 @@ export function delete_project(
 }
 
 /**
+ * Refreshes the metadata DB for the given listing/project by fetching the
+ * details from the API and writing back metadata entries.
+ *
+ * @param projectId The listing specific project ID
+ * @param listingId The listing ID to use
+ */
+
+export async function refreshMetadataDb({
+  projectId,
+  listingId,
+}: {
+  // Listing and project IDs
+  projectId: string;
+  listingId: string;
+}): Promise<void> {
+  // get project metadata and UiSpec and store them in the db
+  const listing = getListing(listingId);
+
+  try {
+    // refresh and write the project metadata
+    await fetchProjectMetadata(listing, projectId);
+  } catch (e) {
+    // Unable to fetch project metadata - probably offline - that's okay - we
+    // already had it
+    console.log('Unable to fetch project metadata. Error: ', e);
+  }
+}
+
+/**
  * Creates or updates the local DBs for a project, using the info
  * The databases might already exist in browser local storage, but this
  * creates the corresponding PouchDBs.
@@ -298,21 +327,21 @@ export async function ensure_project_databases(
   const active_id = active_doc._id;
 
   // get meta and data databases for the active project
-  const [meta_did_change, meta_local] = ensure_local_db(
-    'metadata',
-    active_id,
-    active_doc.is_sync,
-    metadata_dbs,
-    true
-  );
+  const [meta_did_change, meta_local] = ensureLocalDb({
+    prefix: 'metadata',
+    localDbId: active_id,
+    initiateSync: active_doc.is_sync,
+    globalDbs: metadata_dbs,
+    startSyncAttachments: true,
+  });
 
-  const [data_did_change, data_local] = ensure_local_db(
-    'data',
-    active_id,
-    active_doc.is_sync,
-    data_dbs,
-    active_doc.is_sync_attachments
-  );
+  const [data_did_change, data_local] = ensureLocalDb({
+    prefix: 'data',
+    localDbId: active_id,
+    initiateSync: active_doc.is_sync,
+    globalDbs: data_dbs,
+    startSyncAttachments: active_doc.is_sync_attachments,
+  });
 
   // These createdProjects objects are created as soon as possible
   // (As soon as the DBs are available)
@@ -380,15 +409,11 @@ export async function ensure_project_databases(
   };
 
   // set up remote sync for data database
-  const [, data_remote] = ensure_synced_db(
-    active_id,
-    data_connection_info,
-    data_dbs,
-    {
-      push: {},
-      pull: {},
-    }
-  );
+  const [, data_remote] = createUpdateAndSavePouchSync({
+    localDbId: active_id,
+    connectionInfo: data_connection_info,
+    globalDbs: data_dbs,
+  });
 
   if (data_remote.remote !== null && data_remote.remote.connection !== null) {
     data_remote.remote.connection!.once('paused', data_pause());
