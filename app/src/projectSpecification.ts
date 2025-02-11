@@ -18,11 +18,15 @@
  *   TODO
  */
 
-import {getProjectDB} from './sync/index';
-import PouchDB from 'pouchdb-browser';
-import {ProjectID, FAIMSTypeName} from '@faims3/data-model';
-import {PROJECT_SPECIFICATION_PREFIX, ProjectSchema} from '@faims3/data-model';
-import {FAIMSType, FAIMSConstant} from '@faims3/data-model';
+import {
+  FAIMSConstant,
+  FAIMSType,
+  FAIMSTypeName,
+  PROJECT_SPECIFICATION_PREFIX,
+  ProjectID,
+  ProjectSchema,
+} from '@faims3/data-model';
+import {getMetadataDbForProject} from './sync/index';
 
 export const FAIMS_NAMESPACES = [
   'faims-core',
@@ -151,15 +155,15 @@ async function getOrCreateSpecDoc(
   project_id: ProjectID,
   namespace: string
 ): Promise<ProjectSchema & PouchDB.Core.IdMeta> {
-  const projdb = await getProjectDB(project_id);
+  const metadataDb = await getMetadataDbForProject(project_id);
   try {
-    const specdoc = (await projdb.get(
+    const specDoc = (await metadataDb.get(
       PROJECT_SPECIFICATION_PREFIX + '-' + namespace
     )) as PouchDB.Core.ExistingDocument<ProjectSchema>;
-    if (specdoc.namespace !== namespace) {
+    if (specDoc.namespace !== namespace) {
       throw Error('namespace names do not match!');
     }
-    return specdoc;
+    return specDoc;
   } catch (err: any) {
     if (err.status === 404) {
       return {
@@ -180,9 +184,9 @@ async function lookupProjectReference(
 ): Promise<FAIMSConstant | FAIMSType> {
   const project_id = context.project_id;
   try {
-    const specdoc = await getOrCreateSpecDoc(project_id, faimsRef['namespace']);
+    const specDoc = await getOrCreateSpecDoc(project_id, faimsRef['namespace']);
     if (specOpt === ProjectSpecOptions.constants) {
-      const refVal = specdoc.constants[faimsRef['name']];
+      const refVal = specDoc.constants[faimsRef['name']];
       if (refVal === undefined) {
         throw Error(
           `Constant ${faimsRef['name']} not in ${faimsRef['namespace']}`
@@ -190,7 +194,7 @@ async function lookupProjectReference(
       }
       return refVal;
     } else if (specOpt === ProjectSpecOptions.types) {
-      const refVal = specdoc.types[faimsRef['name']];
+      const refVal = specDoc.types[faimsRef['name']];
       if (refVal === undefined) {
         throw Error(`Type ${faimsRef['name']} not in ${faimsRef['namespace']}`);
       }
@@ -271,9 +275,9 @@ export async function upsertFAIMSType(
     throw Error('failed to get document');
   }
 
-  const projdb = await getProjectDB(project_id);
+  const metadataDb = await getMetadataDbForProject(project_id);
   try {
-    return projdb.put(specdoc);
+    return metadataDb.put(specdoc);
   } catch (err) {
     console.warn(err);
     throw Error('Failed to add type');
@@ -300,12 +304,12 @@ export async function upsertFAIMSConstant(
     throw Error('invalid type information');
   }
 
-  const specdoc = await getOrCreateSpecDoc(project_id, parsedName['namespace']);
-  specdoc.constants[parsedName['name']] = validatedInfo;
+  const specDoc = await getOrCreateSpecDoc(project_id, parsedName['namespace']);
+  specDoc.constants[parsedName['name']] = validatedInfo;
 
-  const projdb = await getProjectDB(project_id);
+  const metadataDb = await getMetadataDbForProject(project_id);
   try {
-    return projdb.put(specdoc);
+    return metadataDb.put(specDoc);
   } catch (err) {
     console.warn(err);
     throw Error('Failed to add constant');

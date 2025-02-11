@@ -8,6 +8,7 @@ import {
 import {activate_project} from '../sync/process-initialization';
 import {ProjectExtended} from '../types/project';
 import {getLocalActiveMap, getProjectMap, getRemoteProjects} from './functions';
+import {refreshMetadataDb} from '../sync/projects';
 
 export const ProjectsContext = createContext<{
   projects: ProjectExtended[];
@@ -86,8 +87,10 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
    * @returns {Promise<void>} Resolves when the project synchronization is complete.
    */
   const syncProjects = async () => {
+    // Get the remote projects
     const remoteProjects = await getRemoteProjects();
 
+    // Create a copy of the original project map
     const projectsMap = getProjectMap(projects);
     const newProjectsMap = getProjectMap(projects);
 
@@ -104,6 +107,21 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
 
     updateProjectsDB(newProjects);
     setProjects(newProjects);
+
+    // Refresh activated project metadata DB
+    for (const project of newProjects) {
+      if (project.activated) {
+        // NOTE: This does not work offline
+
+        // This refreshes the UI spec and metadata for the existing metadata DB
+        await refreshMetadataDb({
+          // this _id is the listing specific ID
+          projectId: project._id,
+          // this is the listing ID
+          listingId: project.listing,
+        });
+      }
+    }
   };
 
   /**
