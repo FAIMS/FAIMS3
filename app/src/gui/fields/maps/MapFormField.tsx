@@ -154,6 +154,18 @@ export function MapFormField({
     getCoords();
   }, []);
 
+  useEffect(() => {
+    if (drawnFeatures.features && drawnFeatures.features.length > 0) {
+      setIsLocationSelected(true);
+      setShowCheckmark(true);
+      setShowCross(false);
+    } else {
+      setIsLocationSelected(false);
+      setShowCheckmark(false);
+      setShowCross(true);
+    }
+  }, [drawnFeatures]);
+
   // dynamically determine feature label based on featureType
   const featureLabel =
     props.featureType === 'Polygon'

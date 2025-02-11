@@ -303,7 +303,7 @@ function MapWrapper(props: MapProps) {
             borderRadius: '12px',
             boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
             transition: 'all 0.3s ease-in-out',
-            display: 'flex',
+            display: props.isLocationSelected ? 'none' : 'block',
             alignItems: 'left',
             justifyContent: 'center',
             '&:hover': {
