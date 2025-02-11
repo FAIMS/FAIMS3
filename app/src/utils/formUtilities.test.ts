@@ -594,7 +594,9 @@ describe('prettifyFieldName', () => {
   it('handles numbers between words', () => {
     expect(prettifyFieldName('user123name')).toBe('user 123 name');
     expect(prettifyFieldName('data42analysis')).toBe('data 42 analysis');
-    expect(prettifyFieldName('test789DEBUG123log')).toBe('test 789 DEBUG 123 log');
+    expect(prettifyFieldName('test789DEBUG123log')).toBe(
+      'test 789 DEBUG 123 log'
+    );
   });
 
   it('handles multiple number sequences', () => {

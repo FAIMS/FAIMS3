@@ -28,14 +28,14 @@ import {addNativeHooks} from './native_hooks';
 //import reportWebVitals from './reportWebVitals';
 import React from 'react';
 import {registerClient} from '@faims3/data-model';
-import {getDataDB, getProjectDB} from './sync';
+import {getDataDB, getMetadataDbForProject} from './sync';
 import {shouldDisplayRecord} from './users';
 import {APP_NAME} from './buildconfig';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
   getDataDB: getDataDB,
-  getProjectDB: getProjectDB,
+  getProjectDB: getMetadataDbForProject,
   shouldDisplayRecord: shouldDisplayRecord,
 });
 
