@@ -17,9 +17,6 @@
  * Description:
  *   Internals of map generation for MapFormField
  */
-
-// start of mapwrapper component
-
 import React, {useState, useRef, useCallback} from 'react';
 
 // openlayers
@@ -521,5 +518,3 @@ export default MapWrapper;
 //   Submit
 // </Button>
 // </div>
-
-// end of mapwrapper component

@@ -18,8 +18,6 @@
  *   Implement MapFormField for entry of data via maps in FAIMS
  */
 
-// Start of mapformfield.tsx component
-
 import {useEffect, useRef, useState} from 'react';
 import './MapFormField.css';
 import MapWrapper from './MapWrapper';
@@ -316,4 +314,3 @@ export function MapFormField({
     </FieldWrapper>
   );
 }
-// end of mapformfield.tsx component
