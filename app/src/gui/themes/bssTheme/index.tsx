@@ -34,6 +34,7 @@ const theme = createTheme({
       warningText: '#EA0E0EFF',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
+      successBackground: '#197A01',
     },
     dialogButton: {
       cancel: '#606060',

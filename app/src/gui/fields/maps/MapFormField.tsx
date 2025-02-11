@@ -18,31 +18,22 @@
  *   Implement MapFormField for entry of data via maps in FAIMS
  */
 
+// Start of mapformfield.tsx component
+
 import {useEffect, useRef, useState} from 'react';
 import './MapFormField.css';
 import MapWrapper from './MapWrapper';
 import {Geolocation} from '@capacitor/geolocation';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {FieldProps} from 'formik';
-import {
-  Alert,
-  Box,
-  Button,
-  Tooltip,
-  Typography,
-  useMediaQuery,
-  useTheme,
-  Zoom,
-} from '@mui/material';
+import {Alert, Box, Typography, Zoom} from '@mui/material';
 import {Capacitor} from '@capacitor/core';
 import {APP_NAME} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 import FieldWrapper from '../fieldWrapper';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
-import MapIcon from '@mui/icons-material/Map';
 import {theme} from '../../themes';
-import EditIcon from '@mui/icons-material/Edit';
 
 // If no center is available - pass this through
 // Sydney CBD
@@ -95,7 +86,6 @@ export function MapFormField({
   const [showCheckmark, setShowCheckmark] = useState(false);
   const [showCross, setShowCross] = useState(false);
   const [animateCheck, setAnimateCheck] = useState(false);
-  const [hasSavedLocation, setHasSavedLocation] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // notification manager
@@ -116,7 +106,6 @@ export function MapFormField({
       setIsLocationSelected(true);
       setShowCross(false);
       setShowCheckmark(true);
-      setHasSavedLocation(true);
       setAnimateCheck(true);
       setTimeout(() => setAnimateCheck(false), 1000);
     } else if (action === 'clear') {
@@ -125,12 +114,10 @@ export function MapFormField({
       setIsLocationSelected(false);
       setShowCheckmark(false);
       setShowCross(true);
-      setHasSavedLocation(false);
       setAnimateCheck(true);
       setTimeout(() => setAnimateCheck(false), 1000);
     } else if (action === 'close') {
-      if (!hasSavedLocation) {
-        // Only show corss if no location was ever saved
+      if (!isLocationSelected) {
         setShowCross(true);
       }
       setShowCheckmark(false);
@@ -200,7 +187,7 @@ export function MapFormField({
 
   return (
     <FieldWrapper
-      heading="Location"
+      heading={props.label}
       subheading={props.helperText}
       required={props.required}
     >
@@ -223,9 +210,18 @@ export function MapFormField({
           geoTiff={props.geoTiff}
           projection={props.projection}
           setNoPermission={setNoPermission}
+          isLocationSelected={isLocationSelected}
         />
 
-        <Box sx={{display: 'flex', alignItems: 'center', marginTop: 1}}>
+        <Box
+          sx={{
+            alignItems: 'center',
+            marginTop: 1,
+            display: 'inline-flex',
+            gap: '6px',
+            position: 'relative',
+          }}
+        >
           <Typography
             variant="body1"
             sx={{
@@ -239,28 +235,11 @@ export function MapFormField({
             {valueText}
           </Typography>
 
-          {isLocationSelected ? (
-            <Tooltip title="Edit location">
-              <EditIcon
-                sx={{
-                  color: theme.palette.success.main,
-                  fontSize: 24,
-                  marginLeft: 1,
-                  cursor: 'pointer',
-                }}
-                onClick={() => mapCallback({}, 'clear')}
-              />
-            </Tooltip>
-          ) : (
-            <CancelIcon sx={{color: 'red', fontSize: 30, marginLeft: 2}} />
-          )}
-
           <Zoom in={showCheckmark}>
             <CheckCircleIcon
               sx={{
                 color: 'green',
                 fontSize: 30,
-                marginLeft: 2,
                 transition: 'transform 0.5s ease-in-out',
                 transform: showCheckmark
                   ? animateCheck
@@ -319,3 +298,4 @@ export function MapFormField({
     </FieldWrapper>
   );
 }
+// end of mapformfield.tsx component
