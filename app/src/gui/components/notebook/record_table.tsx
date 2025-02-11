@@ -334,7 +334,7 @@ export function RecordsTable(props: RecordsTableProps) {
               const summary: {[fieldName: string]: string} = {};
               for (const summaryField of summaryFields) {
                 const val = params.row.data?.[summaryField];
-                let key = prettifyFieldName(summaryField);
+                const key = prettifyFieldName(summaryField);
                 const stringVal = val ? String(val) : undefined;
                 if (stringVal && stringVal.length > 0) {
                   summary[key] = stringVal;
