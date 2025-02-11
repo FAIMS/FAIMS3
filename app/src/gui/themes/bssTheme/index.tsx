@@ -16,6 +16,7 @@ const theme = createTheme({
     primary: {
       main: primaryMainColor,
       light: '#FFFFFF',
+      dark: '#000000',
     },
     highlightColor: {
       main: '#B10000',
