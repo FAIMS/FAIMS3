@@ -1,4 +1,3 @@
-import {ProjectUIModel, ProjectUIViewsets} from '@faims3/data-model';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {
   Alert,
@@ -20,7 +19,7 @@ import {
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQuery} from '@tanstack/react-query';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {
   NOTEBOOK_NAME,
@@ -119,8 +118,8 @@ type NotebookComponentProps = {
  * NotebookComponent is a component that displays the main interface for the notebook.
  * It includes tabs for Records, Details, Access, Layers, and Settings.
  *
- * @param {NotebookComponentProps} props - The properties for the NotebookComponent.
- * @returns {JSX.Element} - The JSX element for the NotebookComponent.
+ * @param props - The properties for the NotebookComponent.
+ * @returns The JSX element for the NotebookComponent.
  */
 export default function NotebookComponent({project}: NotebookComponentProps) {
   // This manages the tab using a query string arg
