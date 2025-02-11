@@ -55,6 +55,7 @@ type Props = {
   handleChangeCallback: (viewSetID: string, ticked: boolean) => void;
   handleDeleteCallback: (viewSetID: string) => void;
   handleSectionMoveCallback: (targetViewSetId: string) => void;
+  handleFieldMoveCallback: (targetViewId: string) => void;
 };
 
 export const FormEditor = ({
@@ -64,6 +65,7 @@ export const FormEditor = ({
   handleChangeCallback,
   handleDeleteCallback,
   handleSectionMoveCallback,
+  handleFieldMoveCallback,
 }: Props) => {
   const visibleTypes = useAppSelector(
     state => state.notebook['ui-specification'].visible_types
@@ -621,6 +623,7 @@ export const FormEditor = ({
                   addCallback={addNewSection}
                   moveCallback={moveSection}
                   handleSectionMoveCallback={handleSectionMoveCallback}
+                  handleFieldMoveCallback={handleFieldMoveCallback}
                 />
               </Grid>
             )}

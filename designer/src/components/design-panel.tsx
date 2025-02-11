@@ -152,6 +152,22 @@ export const DesignPanel = () => {
     }
   };
 
+  const handleFieldMove = (targetViewId: string) => {
+    // find which form contains the target section
+    for (const [formId, form] of Object.entries(viewSets)) {
+      if (form.views.includes(targetViewId)) {
+        // get the combined array of forms in order
+        const combinedArray = [...visibleTypes, ...untickedForms];
+        const targetIndex = combinedArray.indexOf(formId);
+
+        if (targetIndex >= 0) {
+          setIndexAndNavigate(targetIndex.toString());
+        }
+        break;
+      }
+    }
+  };
+
   return (
     <TabContext value={tabIndex}>
       <Alert severity="info" sx={{marginBottom: 2}}>
@@ -279,6 +295,7 @@ export const DesignPanel = () => {
                   handleChangeCallback={handleCheckboxTabChange}
                   handleDeleteCallback={handleDeleteFormTabChange}
                   handleSectionMoveCallback={handleSectionMove}
+                  handleFieldMoveCallback={handleFieldMove}
                 />
               }
             />
@@ -299,6 +316,7 @@ export const DesignPanel = () => {
                   handleChangeCallback={handleCheckboxTabChange}
                   handleDeleteCallback={handleDeleteFormTabChange}
                   handleSectionMoveCallback={handleSectionMove}
+                  handleFieldMoveCallback={handleFieldMove}
                 />
               }
             />

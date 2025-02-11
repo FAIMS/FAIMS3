@@ -38,22 +38,22 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useAppDispatch, useAppSelector } from '../state/hooks';
-import { AdvancedSelectEditor } from './Fields/AdvancedSelectEditor';
-import { BaseFieldEditor } from './Fields/BaseFieldEditor';
-import { BasicAutoIncrementerEditor } from './Fields/BasicAutoIncrementer';
-import { DateTimeNowEditor } from './Fields/DateTimeNowEditor';
+import {useAppDispatch, useAppSelector} from '../state/hooks';
+import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
+import {BaseFieldEditor} from './Fields/BaseFieldEditor';
+import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
+import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
 import HiddenFieldEditor from './Fields/HiddenToggle';
-import { MapFormFieldEditor } from './Fields/MapFormFieldEditor';
-import { MultipleTextFieldEditor } from './Fields/MultipleTextField';
-import { OptionsEditor } from './Fields/OptionsEditor';
-import { RandomStyleEditor } from './Fields/RandomStyleEditor';
-import { RelatedRecordEditor } from './Fields/RelatedRecordEditor';
-import { RichTextEditor } from './Fields/RichTextEditor';
-import { TakePhotoFieldEditor } from './Fields/TakePhotoField';
-import { TemplatedStringFieldEditor } from './Fields/TemplatedStringFieldEditor';
-import { TextFieldEditor } from './Fields/TextFieldEditor';
-import { useState } from 'react';
+import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
+import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
+import {OptionsEditor} from './Fields/OptionsEditor';
+import {RandomStyleEditor} from './Fields/RandomStyleEditor';
+import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
+import {RichTextEditor} from './Fields/RichTextEditor';
+import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
+import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
+import {TextFieldEditor} from './Fields/TextFieldEditor';
+import {useState} from 'react';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -62,6 +62,7 @@ type FieldEditorProps = {
   expanded: boolean;
   addFieldCallback: (fieldName: string) => void;
   handleExpandChange: (event: React.SyntheticEvent, newState: boolean) => void;
+  moveFieldCallback: (targetViewId: string) => void;
 };
 
 export const FieldEditor = ({
@@ -71,6 +72,7 @@ export const FieldEditor = ({
   expanded,
   addFieldCallback,
   handleExpandChange,
+  moveFieldCallback,
 }: FieldEditorProps) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
@@ -102,7 +104,7 @@ export const FieldEditor = ({
     event.stopPropagation();
     dispatch({
       type: 'ui-specification/fieldMoved',
-      payload: { fieldName, viewId, direction: 'down' },
+      payload: {fieldName, viewId, direction: 'down'},
     });
   };
 
@@ -110,7 +112,7 @@ export const FieldEditor = ({
     event.stopPropagation();
     dispatch({
       type: 'ui-specification/fieldMoved',
-      payload: { fieldName, viewId, direction: 'up' },
+      payload: {fieldName, viewId, direction: 'up'},
     });
   };
 
@@ -118,7 +120,7 @@ export const FieldEditor = ({
     event.stopPropagation();
     dispatch({
       type: 'ui-specification/fieldDeleted',
-      payload: { fieldName, viewId },
+      payload: {fieldName, viewId},
     });
   };
 
@@ -142,6 +144,7 @@ export const FieldEditor = ({
         },
       });
       handleCloseMoveDialog();
+      moveFieldCallback(targetViewId);
     }
   };
 
@@ -165,7 +168,7 @@ export const FieldEditor = ({
       }}
     >
       <AccordionSummary
-        expandIcon={<ArrowForwardIosRoundedIcon sx={{ fontSize: '1rem' }} />}
+        expandIcon={<ArrowForwardIosRoundedIcon sx={{fontSize: '1rem'}} />}
         sx={{
           backgroundColor: '#EEF1F0',
           flexDirection: 'row-reverse',
@@ -179,7 +182,7 @@ export const FieldEditor = ({
       >
         <Grid container rowGap={1} alignItems={'center'}>
           <Grid item xs={12} sm={8}>
-            <Stack direction="column" spacing={1} pr={{ xs: 0, sm: 2 }}>
+            <Stack direction="column" spacing={1} pr={{xs: 0, sm: 2}}>
               {/* Field Title */}
               <Typography
                 variant="subtitle2"
@@ -240,7 +243,7 @@ export const FieldEditor = ({
           </Grid>
 
           <Grid item xs={12} sm={4}>
-            <Stack direction="row" justifyContent={{ sm: 'right', xs: 'left' }}>
+            <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
               <Tooltip title="Delete Field">
                 <IconButton
                   onClick={deleteField}
@@ -331,7 +334,7 @@ export const FieldEditor = ({
         </DialogActions>
       </Dialog>
 
-      <AccordionDetails sx={{ padding: 3, backgroundColor: '#00804004' }}>
+      <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
         {(fieldComponent === 'MultipleTextField' && (
           <MultipleTextFieldEditor fieldName={fieldName} />
         )) ||
