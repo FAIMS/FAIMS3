@@ -361,7 +361,7 @@ export function ViewComponent(props: ViewProps) {
             fieldNames
           )}
 
-          {/* Show other stepper names with errors if they have been interacted with */}
+          {/* show other stepper names with errors if they have been interacted with */}
           {otherSectionsWithErrors.length > 0 && (
             <Box mt={2}>
               <Typography variant="subtitle1" sx={{fontWeight: 'bold'}}>
