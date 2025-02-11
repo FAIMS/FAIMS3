@@ -145,17 +145,6 @@ export const FormSettingsPanel = ({viewSetId}: FormSettingsPanelProps) => {
       type: 'ui-specification/viewSetSummaryFieldsUpdated',
       payload: {viewSetId, fields: newValue.map(v => v.value)},
     });
-
-    // If we're removing all summary fields, also remove vertical stack settings
-    if (newValue.length === 0 && viewSet.verticalStackSummary) {
-      dispatch({
-        type: 'ui-specification/viewSetVerticalStackUpdated',
-        payload: {
-          viewSetId,
-          verticalStackSummary: undefined,
-        },
-      });
-    }
   };
 
   /**
@@ -242,70 +231,6 @@ export const FormSettingsPanel = ({viewSetId}: FormSettingsPanelProps) => {
                 />
               )}
             />
-
-            {/* Add this new section that only appears when summary fields are selected */}
-            {selectedFields.length > 0 && (
-              <div style={{marginTop: '1rem'}}>
-                <Typography variant="body2" color="text.secondary" sx={{mb: 1}}>
-                  Display Options
-                </Typography>
-                <div
-                  style={{display: 'flex', alignItems: 'center', gap: '1rem'}}
-                >
-                  <Select
-                    size="small"
-                    value={
-                      viewSet.verticalStackSummary ? 'vertical' : 'horizontal'
-                    }
-                    onChange={event => {
-                      if (event.target.value === 'vertical') {
-                        dispatch({
-                          type: 'ui-specification/viewSetVerticalStackUpdated',
-                          payload: {
-                            viewSetId,
-                            verticalStackSummary: {
-                              columnLabel:
-                                viewSet.verticalStackSummary?.columnLabel ||
-                                'Details',
-                            },
-                          },
-                        });
-                      } else {
-                        dispatch({
-                          type: 'ui-specification/viewSetVerticalStackUpdated',
-                          payload: {
-                            viewSetId,
-                            verticalStackSummary: undefined,
-                          },
-                        });
-                      }
-                    }}
-                  >
-                    <MenuItem value="horizontal">Column(s) Layout</MenuItem>
-                    <MenuItem value="vertical">Vertical Stack</MenuItem>
-                  </Select>
-
-                  {viewSet.verticalStackSummary && (
-                    <TextField
-                      size="small"
-                      label="Column Label"
-                      value={viewSet.verticalStackSummary.columnLabel}
-                      onChange={event => {
-                        dispatch({
-                          type: 'ui-specification/viewSetVerticalStackUpdated',
-                          payload: {
-                            viewSetId,
-                            verticalStackSummary: {
-                              columnLabel: event.target.value,
-                            },
-                          },
-                        });
-                      }}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
           </SettingSection>
 
           <SettingSection

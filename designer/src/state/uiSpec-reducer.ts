@@ -444,23 +444,6 @@ export const uiSpecificationReducer = createSlice({
         state.viewsets[viewSetId].hridField = hridField;
       }
     },
-    viewSetVerticalStackUpdated: (
-      state,
-      action: PayloadAction<{
-        viewSetId: string;
-        verticalStackSummary?: {columnLabel: string};
-      }>
-    ) => {
-      const {viewSetId, verticalStackSummary} = action.payload;
-      if (viewSetId in state.viewsets) {
-        // If verticalStackSummary is undefined, it removes the setting
-        if (verticalStackSummary === undefined) {
-          delete state.viewsets[viewSetId].verticalStackSummary;
-        } else {
-          state.viewsets[viewSetId].verticalStackSummary = verticalStackSummary;
-        }
-      }
-    },
     formVisibilityUpdated: (
       state,
       action: PayloadAction<{
@@ -505,7 +488,6 @@ export const {
   formVisibilityUpdated,
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
-  viewSetVerticalStackUpdated,
 } = uiSpecificationReducer.actions;
 
 export default uiSpecificationReducer.reducer;

@@ -113,10 +113,6 @@ export type NotebookUISpec = {
       label: string;
       // New optional settings
       summary_fields?: string[];
-      // Show the summary fields as a vertical stack? If so, provide label
-      verticalStackSummary?: {
-        columnLabel: string;
-      };
       layout?: 'inline' | 'tabs';
       hridField?: string;
     };
