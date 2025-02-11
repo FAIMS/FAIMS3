@@ -17,32 +17,43 @@ import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
   Grid,
   IconButton,
+  Radio,
+  RadioGroup,
   Stack,
   Tooltip,
   Typography,
 } from '@mui/material';
-import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
-import {BaseFieldEditor} from './Fields/BaseFieldEditor';
-import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
-import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
+import { useAppDispatch, useAppSelector } from '../state/hooks';
+import { AdvancedSelectEditor } from './Fields/AdvancedSelectEditor';
+import { BaseFieldEditor } from './Fields/BaseFieldEditor';
+import { BasicAutoIncrementerEditor } from './Fields/BasicAutoIncrementer';
+import { DateTimeNowEditor } from './Fields/DateTimeNowEditor';
 import HiddenFieldEditor from './Fields/HiddenToggle';
-import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
-import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
-import {OptionsEditor} from './Fields/OptionsEditor';
-import {RandomStyleEditor} from './Fields/RandomStyleEditor';
-import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
-import {RichTextEditor} from './Fields/RichTextEditor';
-import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
-import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
-import {TextFieldEditor} from './Fields/TextFieldEditor';
+import { MapFormFieldEditor } from './Fields/MapFormFieldEditor';
+import { MultipleTextFieldEditor } from './Fields/MultipleTextField';
+import { OptionsEditor } from './Fields/OptionsEditor';
+import { RandomStyleEditor } from './Fields/RandomStyleEditor';
+import { RelatedRecordEditor } from './Fields/RelatedRecordEditor';
+import { RichTextEditor } from './Fields/RichTextEditor';
+import { TakePhotoFieldEditor } from './Fields/TakePhotoField';
+import { TemplatedStringFieldEditor } from './Fields/TemplatedStringFieldEditor';
+import { TextFieldEditor } from './Fields/TextFieldEditor';
+import { useState } from 'react';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -64,7 +75,16 @@ export const FieldEditor = ({
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
+  const viewsets = useAppSelector(
+    state => state.notebook['ui-specification'].viewsets
+  );
+  const views = useAppSelector(
+    state => state.notebook['ui-specification'].fviews
+  );
   const dispatch = useAppDispatch();
+
+  const [openMoveDialog, setOpenMoveDialog] = useState(false);
+  const [targetViewId, setTargetViewId] = useState('');
 
   const fieldComponent = field['component-name'];
 
@@ -82,7 +102,7 @@ export const FieldEditor = ({
     event.stopPropagation();
     dispatch({
       type: 'ui-specification/fieldMoved',
-      payload: {fieldName, viewId, direction: 'down'},
+      payload: { fieldName, viewId, direction: 'down' },
     });
   };
 
@@ -90,7 +110,7 @@ export const FieldEditor = ({
     event.stopPropagation();
     dispatch({
       type: 'ui-specification/fieldMoved',
-      payload: {fieldName, viewId, direction: 'up'},
+      payload: { fieldName, viewId, direction: 'up' },
     });
   };
 
@@ -98,13 +118,31 @@ export const FieldEditor = ({
     event.stopPropagation();
     dispatch({
       type: 'ui-specification/fieldDeleted',
-      payload: {fieldName, viewId},
+      payload: { fieldName, viewId },
     });
   };
 
   const addFieldBelow = (event: React.SyntheticEvent) => {
     event.stopPropagation();
     addFieldCallback(fieldName);
+  };
+
+  const handleCloseMoveDialog = () => {
+    setOpenMoveDialog(false);
+  };
+
+  const moveFieldToSection = () => {
+    if (targetViewId) {
+      dispatch({
+        type: 'ui-specification/fieldMovedToSection',
+        payload: {
+          fieldName,
+          sourceViewId: viewId,
+          targetViewId: targetViewId,
+        },
+      });
+      handleCloseMoveDialog();
+    }
   };
 
   return (
@@ -127,7 +165,7 @@ export const FieldEditor = ({
       }}
     >
       <AccordionSummary
-        expandIcon={<ArrowForwardIosRoundedIcon sx={{fontSize: '1rem'}} />}
+        expandIcon={<ArrowForwardIosRoundedIcon sx={{ fontSize: '1rem' }} />}
         sx={{
           backgroundColor: '#EEF1F0',
           flexDirection: 'row-reverse',
@@ -141,7 +179,7 @@ export const FieldEditor = ({
       >
         <Grid container rowGap={1} alignItems={'center'}>
           <Grid item xs={12} sm={8}>
-            <Stack direction="column" spacing={1} pr={{xs: 0, sm: 2}}>
+            <Stack direction="column" spacing={1} pr={{ xs: 0, sm: 2 }}>
               {/* Field Title */}
               <Typography
                 variant="subtitle2"
@@ -202,7 +240,7 @@ export const FieldEditor = ({
           </Grid>
 
           <Grid item xs={12} sm={4}>
-            <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
+            <Stack direction="row" justifyContent={{ sm: 'right', xs: 'left' }}>
               <Tooltip title="Delete Field">
                 <IconButton
                   onClick={deleteField}
@@ -210,6 +248,15 @@ export const FieldEditor = ({
                   size="small"
                 >
                   <DeleteRoundedIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Move Field">
+                <IconButton
+                  onClick={() => setOpenMoveDialog(true)}
+                  aria-label="move"
+                  size="small"
+                >
+                  <MoveRoundedIcon />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Add Field Below">
@@ -240,7 +287,51 @@ export const FieldEditor = ({
         </Grid>
       </AccordionSummary>
 
-      <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
+      <Dialog
+        open={openMoveDialog}
+        onClose={handleCloseMoveDialog}
+        aria-labelledby="move-dialog-title"
+      >
+        <DialogTitle id="move-dialog-title">
+          Move field to another section
+        </DialogTitle>
+        <DialogContent>
+          <FormControl component="fieldset">
+            <RadioGroup
+              aria-label="target-section"
+              name="targetSection"
+              value={targetViewId}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                setTargetViewId(event.target.value);
+              }}
+            >
+              {Object.entries(viewsets).map(([formId, form]) => (
+                <div key={formId}>
+                  <Typography variant="subtitle1" sx={{mt: 2, mb: 1}}>
+                    {form.label}
+                  </Typography>
+                  {form.views
+                    .filter(sectionId => sectionId !== viewId) // exclude current section
+                    .map(sectionId => (
+                      <FormControlLabel
+                        key={sectionId}
+                        value={sectionId}
+                        control={<Radio />}
+                        label={views[sectionId].label}
+                      />
+                    ))}
+                </div>
+              ))}
+            </RadioGroup>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={moveFieldToSection}>Move</Button>
+          <Button onClick={handleCloseMoveDialog}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      <AccordionDetails sx={{ padding: 3, backgroundColor: '#00804004' }}>
         {(fieldComponent === 'MultipleTextField' && (
           <MultipleTextFieldEditor fieldName={fieldName} />
         )) ||
