@@ -32,6 +32,7 @@ import {ProjectUIModel} from '@faims3/data-model';
 import {createUseStyles} from 'react-jss';
 import {useCallback, useEffect, useState} from 'react';
 import {getStepperColors} from '../../../utils/stepperUtils';
+import {getStepColor} from '../../../utils/generateStepperColors';
 
 type RecordStepperProps = {
   view_index: number;
@@ -61,50 +62,6 @@ const useStyles = createUseStyles({
     },
   },
 });
-
-/**
- * @function getStepColor
- * @description
- *   Determines the color of each step in the stepper based on its validation status,
- *   current selection, and whether it has been visited. Highlights steps with errors
- *   in red, valid steps with dynamic colors, and pending steps in gray.
- *
- * @param {number} index - The current step index being evaluated.
- * @param {number} totalSteps - The total number of steps in the stepper.
- * @param {object} errors - The form errors object from Formik.
- * @param {number} currentStep - The index of the currently active step.
- * @param {string[]} stepperColors - Array of colors assigned to each step.
- * @param {number[]} visitedSteps - List of steps that have been visited.
- * @param {number[]} validSteps - List of steps marked as valid (no errors).
- *
- * @returns {string}
- *   The color code for the step based on its state (error, valid, or default).
- */
-const getStepColor = (
-  index: number,
-  totalSteps: number,
-  errors: any,
-  currentStep: number,
-  stepperColors: string[],
-  visitedSteps: number[],
-  validSteps: number[]
-) => {
-  const isVisited = visitedSteps.includes(index);
-  const isValid = validSteps.includes(index);
-  const hasErrors =
-    errors &&
-    Object.keys(errors).some(field => field.startsWith(`step_${index}`));
-
-  if (index === currentStep && hasErrors) return '#B10000';
-
-  if (hasErrors) return '#BDBDBD';
-
-  if (isVisited && isValid) return stepperColors[index];
-
-  if (isVisited && !isValid) return '#FFD700';
-
-  return '#BDBDBD';
-};
 
 /**
  * @function RecordStepper
@@ -194,12 +151,10 @@ export default function RecordStepper(props: RecordStepperProps) {
                       '& .MuiStepLabel-label': {
                         color: getStepColor(
                           index,
-                          views.length,
-                          formErrors,
                           view_index,
-                          stepperColors,
+                          hasErrors(index),
                           visitedSteps,
-                          validSteps
+                          themeType
                         ),
                         fontWeight: index === view_index ? 'bold' : 'normal',
                         transition: 'color 0.3s ease-in-out',
@@ -209,12 +164,10 @@ export default function RecordStepper(props: RecordStepperProps) {
                       '& .MuiStepIcon-root': {
                         color: getStepColor(
                           index,
-                          views.length,
-                          formErrors,
                           view_index,
-                          stepperColors,
+                          hasErrors(index),
                           visitedSteps,
-                          validSteps
+                          themeType
                         ),
                         borderRadius: '50%',
                         fontSize: '1rem',

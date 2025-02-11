@@ -1,59 +1,45 @@
 type ThemeType = 'bss' | 'default';
 
-// color gradients for each theme
-const colorPalettes = {
-  bss: [
-    '#6B5959FF',
-    '#B22222',
-    '#FF4500',
-    '#FF8C00',
-    '#FFD700',
-    '#A0522D',
-    '#6B8E23',
-    '#228B22',
-    '#2F4F4F',
-  ],
-  default: [
-    '#A7E938',
-    '#77C727',
-    '#4DAF0A',
-    '#3B8E0D',
-    '#50790D',
-    '#DA9449',
-    '#E18200',
-    '#828789',
-    '#4B4B4B',
-  ],
+// Designated colors based on step status
+const stepColors = {
+  bss: {
+    current: '#000000', // Black
+    visited: '#228B22', // Forest Green
+    error: '#B22222', // Firebrick Red
+    notVisited: '#BDBDBD', // Light Gray
+  },
+  default: {
+    current: '#1A1A1A', // Dark Black
+    visited: '#4CAF50', // Green
+    error: '#FF0000', // Bright Red
+    notVisited: '#CCCCCC', // Light Gray
+  },
 };
 
 /**
- * Generates a gradient color array for the stepper component based on the number of steps
- * and the selected theme type.
- *
- * @function generateStepperColors
- * @param {number} steps - The total number of steps in the stepper.
- * @param {ThemeType} [themeType='default'] - The theme type used to determine the color palette.
- *                                            Defaults to 'default' and 'bss' for bss theme.
- * @returns {string[]} An array of color codes representing the gradient for each step.
- *                     The final step always uses a specific color based on the theme type.
+ * Generates an array of default stepper colors (all steps default to 'notVisited').
  */
 export const generateStepperColors = (
   steps: number,
   themeType: ThemeType = 'default'
 ): string[] => {
-  const gradientColors = colorPalettes[themeType];
-  const finalStepColor = themeType === 'bss' ? '#339436FF' : '#324C08';
+  return new Array(steps).fill(stepColors[themeType].notVisited);
+};
 
-  if (steps <= 1) return [finalStepColor];
+/**
+ * Determines the color of a step based on its status.
+ */
+export const getStepColor = (
+  index: number,
+  currentStep: number,
+  hasError: boolean,
+  visitedSteps: number[],
+  themeType: ThemeType
+): string => {
+  const colors = stepColors[themeType];
 
-  const gradient = [];
-  for (let i = 0; i < steps - 1; i++) {
-    const colorIndex = Math.floor(
-      (i / (steps - 2)) * (gradientColors.length - 1)
-    );
-    gradient.push(gradientColors[colorIndex]);
-  }
-
-  gradient.push(finalStepColor);
-  return gradient;
+  if (index === currentStep) return colors.current;
+  if (hasError) return colors.error;
+  if (visitedSteps.includes(index)) return colors.visited;
+  return colors.notVisited;
 };
