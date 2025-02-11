@@ -45,18 +45,33 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
   const [value, setValue] = React.useState('');
   const prevValue = usePrevious(value);
 
+  /**
+   * Handles the input change event in the search field.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} event - The event for the search input field.
+   */
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(event.target.value);
   };
 
+  /**
+   * Handles search submission by invoking the query function with the current value.
+   */
   const handleSubmit = () => {
     props.handleQueryFunction(value);
   };
 
+  /**
+   * Clears the current search value and resets the search.
+   */
   const handleClear = () => {
     setValue('');
   };
 
+  /**
+   * Detects changes to the search input value and triggers the query if the
+   * input is cleared.
+   */
   useEffect(() => {
     if (prevValue !== value && value === '') {
       handleSubmit();
@@ -215,7 +230,11 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
 }
 
 /**
- * Main toolbar component with fixed layout
+ * Main toolbar component for the DataGrid.
+ * This replaces the default toolbar to include custom search and filter functionalities.
+ *
+ * @param props - Properties to handle search functionality.
+ * @returns Custom toolbar for the DataGrid.
  */
 export function NotebookDataGridToolbar(props: ToolbarProps) {
   return (
@@ -239,7 +258,7 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
 /**
  * Alternate toolbar for managing draft DataGrid, with basic functionality like filters.
  *
- * @returns {JSX.Element} A simple toolbar for drafts with filter options.
+ * @returns A simple toolbar for drafts with filter options.
  */
 export function NotebookDraftDataGridToolbar() {
   return (
