@@ -119,7 +119,7 @@ const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
   'LAST_UPDATED_BY',
 ]);
 
-/** Default values for text display */
+/** Default values for text display and other constants */
 const CONSTANTS = {
   MISSING_DATA_PLACEHOLDER: '-',
   HRID_COLUMN_LABEL: 'Field ID',
@@ -131,11 +131,14 @@ const CONSTANTS = {
 // ============================================================================
 
 /**
- * Extracts and formats data from a record metadata object based on the specified column type.
+ * Extracts and formats data from a record metadata object based on the
+ * specified column type.
  *
- * @param {RecordMetadata} params.record - The record metadata object to extract data from
- * @param {ColumnType} params.column - The type of column to get data for
- * @returns {string | undefined} The formatted string value for the column, or undefined if data is missing or invalid
+ * @param record The record to get data from
+ * @param column The column type
+ * @param uiSpecification ui Spec
+ * @returns {string | undefined} The formatted string value for the column, or
+ * undefined if data is missing or invalid
  */
 function getDataForColumn({
   record,
@@ -182,10 +185,11 @@ function getDataForColumn({
 }
 
 /**
- * Builds a list of column definitions from summary fields specified in the UI specification.
+ * Builds a list of column definitions from summary fields specified in the UI
+ * specification.
  *
- * @param {ProjectUIModel} params.uiSpecification - The UI specification for the project
- * @param {string[]} params.summaryFields - Array of field names to create columns for
+ * @param summaryFields The list of fields to use as summary fields
+ * @param uiSpecification The UI spec
  *
  * @returns {GridColumnType[]} Array of column definitions for the DataGrid
  */
@@ -221,8 +225,8 @@ function buildColumnsFromSummaryFields({
 /**
  * Builds a column definition for a system-level column type.
  *
- * @param {ColumnType} params.columnType - The type of column to build
- * @returns {GridColumnType} Column definition for the DataGrid
+ * @param columnType Type of column
+ * @param uiSpecification The ui spec
  */
 function buildColumnFromSystemField({
   columnType,
@@ -258,7 +262,25 @@ function buildColumnFromSystemField({
           );
         },
       };
-
+    case 'KIND':
+    case 'LAST_UPDATED_BY':
+    case 'CREATED_BY':
+      return {
+        ...baseColumn,
+        type: 'string',
+        renderCell: (params: GridCellParams) => {
+          const value = getDataForColumn({
+            record: params.row,
+            column: columnType,
+            uiSpecification,
+          });
+          return (
+            <Typography>
+              {value || CONSTANTS.MISSING_DATA_PLACEHOLDER}
+            </Typography>
+          );
+        },
+      };
     case 'CONFLICTS':
       return {
         ...baseColumn,
@@ -274,41 +296,6 @@ function buildColumnFromSystemField({
         ),
       };
 
-    case 'LAST_UPDATED_BY':
-    case 'CREATED_BY':
-      return {
-        ...baseColumn,
-        renderCell: (params: GridCellParams) => {
-          const value = getDataForColumn({
-            record: params.row,
-            column: columnType,
-            uiSpecification,
-          });
-          return (
-            <Typography>
-              {value || CONSTANTS.MISSING_DATA_PLACEHOLDER}
-            </Typography>
-          );
-        },
-      };
-
-    case 'KIND':
-      return {
-        ...baseColumn,
-        renderCell: (params: GridCellParams) => {
-          const value = getDataForColumn({
-            record: params.row,
-            column: columnType,
-            uiSpecification,
-          });
-          return (
-            <Typography>
-              {value || CONSTANTS.MISSING_DATA_PLACEHOLDER}
-            </Typography>
-          );
-        },
-      };
-
     default:
       return baseColumn;
   }
@@ -317,22 +304,12 @@ function buildColumnFromSystemField({
 /**
  * Converts record metadata field values to displayable strings.
  *
- * @param {string} params.field - The field name to extract from the data
- * @param {Object} params.data - The data object containing the field
+ * @param field - The field name to extract from the data
+ * @param data - The data object containing the field
  * @returns {string | undefined} A string representation of the field value, or undefined if:
  *   - The data object is undefined/null
  *   - The field doesn't exist in the data
  *   - The value cannot be converted to a meaningful string
- *
- * @example
- * // Returns "true"
- * getDisplayDataFromRecordMetadata({ field: "active", data: { active: true }})
- *
- * // Returns "1,2,3"
- * getDisplayDataFromRecordMetadata({ field: "numbers", data: { numbers: [1,2,3] }})
- *
- * // Returns undefined
- * getDisplayDataFromRecordMetadata({ field: "missing", data: { other: "value" }})
  */
 function getDisplayDataFromRecordMetadata({
   field,
@@ -405,8 +382,12 @@ function buildHridColumn(): GridColumnType {
  * Given the summary fields and the column label to use, will build a column
  * definition for the small vertical stack record layout
  *
- * @param summaryFields The field names to use (we append mandatory to these)
- * @param columnLabel The column header label
+ * @param summaryFields - the summary fields to use if any
+ * @param columnLabel - The label for the column
+ * @param uiSpecification - UI spec
+ * @param includeKind - should we include the record type/kind?
+ * @param hasConflict - does any record have a conflict? (Triggers a check - in
+ * column layout this always adds it, here it only adds if === Yes)
  *
  * @returns A single column definition which renders a vertical stack of key
  * value pairs nicely
@@ -796,8 +777,7 @@ const useTableRows = (
 };
 
 /**
- * Provides comprehensive styling for the DataGrid component
- * Including enhanced header styling and consistent padding
+ * Data grid styling
  */
 const useDataGridStyles = (theme: Theme) => ({
   root: {
@@ -906,11 +886,9 @@ const useDataGridStyles = (theme: Theme) => ({
 // ============================================================================
 
 /**
- * RecordsTable Component
+ * MUI Data Grid based RecordsTable Component
  *
- * Renders a data grid displaying record metadata with responsive layout
- * and filtering capabilities. Supports different views based on screen size
- * and handles record type visibility.
+ * Supports different views based on screen size.
  */
 export function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading, viewsets} = props;

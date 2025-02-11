@@ -175,7 +175,6 @@ export function getVisibleTypes(ui_specification: ProjectUIModel) {
  * @returns An object containing:
  *          - enabled: boolean indicating if summary fields are configured
  *          - fieldNames: array of field names configured for summary display
- *          - verticalStack?: optional configuration for
  *          vertical stack display
  */
 export function getSummaryFieldInformation(
@@ -184,7 +183,6 @@ export function getSummaryFieldInformation(
 ): {
   enabled: boolean;
   fieldNames: string[];
-  verticalStack?: {columnLabel: string};
 } {
   // Check if viewset exists
   if (!uiSpecification.viewsets || !(viewsetId in uiSpecification.viewsets)) {
@@ -201,9 +199,6 @@ export function getSummaryFieldInformation(
   return {
     enabled,
     fieldNames: enabled ? summaryFields : [],
-    ...(enabled && viewset.verticalStackSummary
-      ? {verticalStack: viewset.verticalStackSummary}
-      : {}),
   };
 }
 
