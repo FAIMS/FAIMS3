@@ -471,8 +471,28 @@ function MapWrapper(props: MapProps) {
           Are you sure you want to save an empty location selection?
         </Alert>
         <DialogActions>
-          <Button onClick={() => setShowConfirmSave(false)}>Cancel</Button>
           <Button
+            onClick={() => setShowConfirmSave(false)}
+            sx={{
+              backgroundColor: theme.palette.dialogButton.cancel,
+              color: theme.palette.background.default,
+              '&:hover': {
+                backgroundColor: theme.palette.text.primary,
+                transform: 'scale(1.05)',
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            sx={{
+              backgroundColor: theme.palette.alert.successBackground,
+              color: theme.palette.dialogButton.dialogText,
+              '&:hover': {
+                backgroundColor: theme.palette.text.primary,
+                transform: 'scale(1.05)',
+              },
+            }}
             onClick={() => {
               setShowConfirmSave(false);
               props.callbackFn({}, 'save');
