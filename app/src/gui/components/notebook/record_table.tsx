@@ -59,6 +59,419 @@ import {prettifyFieldName} from '../../../utils/formUtilities';
 import getLocalDate from '../../fields/LocalDate';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 
+type ColumnType =
+  | 'LAST_UPDATED'
+  | 'LAST_UPDATED_BY'
+  | 'CONFLICTS'
+  | 'CREATED'
+  | 'CREATED_BY';
+
+const COLUMN_TO_LABEL_MAP: Map<ColumnType, string> = new Map([
+  ['LAST_UPDATED', 'Last Updated'],
+  ['LAST_UPDATED_BY', 'Last Updated By'],
+  ['CONFLICTS', 'Conflicts'],
+  ['CREATED', 'Created'],
+  ['CREATED_BY', 'Created By'],
+]);
+
+const MANDATORY_COLUMNS: ColumnType[] = ['CREATED', 'CREATED_BY'];
+const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
+  'LAST_UPDATED',
+  'LAST_UPDATED_BY',
+]);
+
+const MISSING_DATA_PLACEHOLDER = '-';
+const HRID_COLUMN_LABEL = 'Field ID';
+
+/**
+ * Extracts and formats data from a record metadata object based on the specified column type.
+ *
+ * @param {Object} params - The parameters object
+ * @param {RecordMetadata} params.record - The record metadata object to extract data from
+ * @param {ColumnType} params.column - The type of column to get data for
+ * @returns {string | undefined} The formatted string value for the column, or undefined if data is missing or invalid
+ */
+function getDataForColumn({
+  record,
+  column,
+}: {
+  record: RecordMetadata;
+  column: ColumnType;
+}): string | undefined {
+  if (!record) return undefined;
+
+  try {
+    switch (column) {
+      case 'LAST_UPDATED':
+        return record.updated
+          ? getLocalDate(record.updated).replace('T', ' ')
+          : undefined;
+
+      case 'LAST_UPDATED_BY':
+        return record.updated_by || undefined;
+
+      case 'CONFLICTS':
+        return record.conflicts ? 'Yes' : 'No';
+
+      case 'CREATED':
+        return record.created
+          ? getLocalDate(record.created).replace('T', ' ')
+          : undefined;
+
+      case 'CREATED_BY':
+        return record.created_by || undefined;
+
+      default:
+        return undefined;
+    }
+  } catch (error) {
+    console.warn(`Error getting data for column ${column}:`, error);
+    return undefined;
+  }
+}
+
+/**
+ * Builds a list of column definitions from summary fields specified in the UI specification.
+ *
+ * @param {ProjectUIModel} params.uiSpecification - The UI specification for the project
+ * @param {string[]} params.summaryFields - Array of field names to create columns for
+ *
+ * @returns {GridColDef<RecordMetadata>[]} Array of column definitions for the DataGrid
+ */
+function buildColumnsFromSummaryFields({
+  summaryFields,
+  uiSpecification,
+}: {
+  uiSpecification: ProjectUIModel;
+  summaryFields: string[];
+}): GridColDef<RecordMetadata>[] {
+  if (!summaryFields || !uiSpecification) return [];
+
+  return summaryFields.map(field => ({
+    field: field,
+    headerName: prettifyFieldName(field),
+    type: 'string',
+    filterable: true,
+    flex: 1,
+    renderCell: (params: GridCellParams) => {
+      const displayValue = getDisplayDataFromRecordMetadata({
+        field,
+        data: params.row.data || {},
+      });
+      return (
+        <Typography>{displayValue || MISSING_DATA_PLACEHOLDER}</Typography>
+      );
+    },
+  }));
+}
+
+/**
+ * Builds a column definition for a system-level column type.
+ *
+ * @param {ColumnType} params.columnType - The type of column to build
+ * @returns {GridColDef<RecordMetadata>} Column definition for the DataGrid
+ */
+function buildColumnFromTypicalField({
+  columnType,
+}: {
+  columnType: ColumnType;
+}): GridColDef<RecordMetadata> {
+  const baseColumn = {
+    field: columnType.toLowerCase(),
+    headerName: COLUMN_TO_LABEL_MAP.get(columnType) || columnType,
+    type: 'string',
+    flex: 1,
+    filterable: true,
+  };
+
+  switch (columnType) {
+    case 'LAST_UPDATED':
+    case 'CREATED':
+      return {
+        ...baseColumn,
+        type: 'dateTime',
+        renderCell: (params: GridCellParams) => {
+          const value = getDataForColumn({
+            record: params.row,
+            column: columnType,
+          });
+          return <Typography>{value || MISSING_DATA_PLACEHOLDER}</Typography>;
+        },
+      };
+
+    case 'CONFLICTS':
+      return {
+        ...baseColumn,
+        type: 'boolean',
+        flex: 0,
+        minWidth: 70,
+        renderCell: (params: GridCellParams) => (
+          <Box sx={{display: 'flex', alignItems: 'center'}}>
+            {params.row.conflicts && (
+              <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
+            )}
+          </Box>
+        ),
+      };
+
+    case 'LAST_UPDATED_BY':
+    case 'CREATED_BY':
+      return {
+        ...baseColumn,
+        renderCell: (params: GridCellParams) => {
+          const value = getDataForColumn({
+            record: params.row,
+            column: columnType,
+          });
+          return <Typography>{value || MISSING_DATA_PLACEHOLDER}</Typography>;
+        },
+      };
+
+    default:
+      return baseColumn;
+  }
+}
+
+/**
+ * Converts record metadata field values to displayable strings.
+ *
+ * @param {Object} params - The parameters object
+ * @param {string} params.field - The field name to extract from the data
+ * @param {Object} params.data - The data object containing the field
+ * @returns {string | undefined} A string representation of the field value, or undefined if:
+ *   - The data object is undefined/null
+ *   - The field doesn't exist in the data
+ *   - The value cannot be converted to a meaningful string
+ *
+ * @example
+ * // Returns "true"
+ * getDisplayDataFromRecordMetadata({ field: "active", data: { active: true }})
+ *
+ * // Returns "1,2,3"
+ * getDisplayDataFromRecordMetadata({ field: "numbers", data: { numbers: [1,2,3] }})
+ *
+ * // Returns undefined
+ * getDisplayDataFromRecordMetadata({ field: "missing", data: { other: "value" }})
+ */
+function getDisplayDataFromRecordMetadata({
+  field,
+  data,
+}: {
+  field: string;
+  data: {[key: string]: any};
+}): string | undefined {
+  try {
+    // Handle undefined/null data object
+    if (!data) return undefined;
+
+    const value = data[field];
+
+    // Handle undefined/null value
+    if (value === undefined || value === null) return undefined;
+
+    // Handle different types
+    switch (typeof value) {
+      case 'string':
+        return value.trim() || undefined; // Return undefined if empty string
+      case 'number':
+        return Number.isFinite(value) ? value.toString() : undefined;
+      case 'boolean':
+        return value.toString();
+      case 'object':
+        if (Array.isArray(value)) {
+          // Filter out null/undefined and join array elements
+          return value.filter(item => item != null).join(', ') || undefined;
+        }
+        // For dates
+        if (value instanceof Date) {
+          return value.toISOString();
+        }
+        // For other objects, try JSON stringify if they're not too complex
+        try {
+          const str = JSON.stringify(value);
+          return str === '{}' ? undefined : str;
+        } catch {
+          return undefined;
+        }
+      default:
+        return undefined;
+    }
+  } catch (error) {
+    console.warn(`Error formatting field ${field}:`, error);
+    return undefined;
+  }
+}
+
+/**
+ * Builds a basic column definition for the HRID (Human Readable ID) field.
+ *
+ * @returns {GridColDef<RecordMetadata>} Column definition for the HRID field
+ */
+function buildHridColumn(): GridColDef<RecordMetadata> {
+  return {
+    field: 'hrid',
+    headerName: 'Field ID',
+    description: 'Human Readable Record ID',
+    type: 'string',
+    flex: 1,
+    renderCell: (params: GridCellParams) => {
+      return <Typography>{params.row.hrid}</Typography>;
+    },
+  };
+}
+
+/**
+ * Given the summary fields and the column label to use, will build a column
+ * definition for the small vertical stack record layout
+ *
+ * @param summaryFields The field names to use (we append mandatory to these)
+ * @param columnLabel The column header label
+ *
+ * @returns A single column definition which renders a vertical stack of key
+ * value pairs nicely
+ */
+function buildVerticalStackColumn({
+  summaryFields,
+  columnLabel,
+}: {
+  summaryFields: string[];
+  columnLabel: string;
+}): GridColDef<RecordMetadata> {
+  return {
+    field: 'summaryVerticalStack',
+    headerName: columnLabel,
+    type: 'string',
+    filterable: true,
+    flex: 1,
+    renderCell: (params: GridCellParams) => {
+      try {
+        // Build a set of k,v fields to render vertically
+        const kvp: {[fieldName: string]: string} = {};
+
+        // Use the summary fields if present
+        if (summaryFields.length > 0) {
+          for (const summaryField of summaryFields) {
+            // Get the value for this entry
+            const val = getDisplayDataFromRecordMetadata({
+              field: summaryField,
+              data: params.row.data ?? {},
+            });
+            // And a pretty key
+            const key = prettifyFieldName(summaryField);
+            kvp[key] = val ?? MISSING_DATA_PLACEHOLDER;
+          }
+        } else {
+          // Add the HRID if available
+          kvp[HRID_COLUMN_LABEL] = params.row.hrid ?? MISSING_DATA_PLACEHOLDER;
+        }
+
+        for (const mandatoryField of MANDATORY_COLUMNS) {
+          const key = COLUMN_TO_LABEL_MAP.get(mandatoryField) ?? 'Details';
+          kvp[key] =
+            getDataForColumn({
+              record: params.row,
+              column: mandatoryField,
+            }) ?? MISSING_DATA_PLACEHOLDER;
+        }
+        return <KeyValueTable data={kvp} />;
+      } catch (e) {
+        console.warn(
+          'Failed to render the vertical stack summary field, error: ',
+          e
+        );
+        return 'Error';
+      }
+    },
+  };
+}
+
+/**
+ * Builds column definitions for the data grid based on UI specifications and screen width.
+ *
+ * @param {Object} params - The parameters object
+ * @param {ProjectUIModel} params.uiSpecification - The UI specification for the project
+ * @param {string} params.viewsetId - The ID of the current viewset
+ * @param {('small' | 'medium' | 'large')} params.width - The screen width category
+ * @returns {GridColDef<RecordMetadata>[]} Array of column definitions for the DataGrid
+ *
+ * @description
+ * Generates columns based on screen width:
+ * - Small: Shows a vertical stack of fields with basic information
+ * - Medium: Shows summary fields (or HRID) plus mandatory columns
+ * - Large: Shows all available columns including additional metadata
+ */
+function buildColumnDefinitions({
+  uiSpecification,
+  viewsetId,
+  width,
+}: {
+  uiSpecification: ProjectUIModel;
+  viewsetId: string;
+  width: 'small' | 'medium' | 'large';
+}): GridColDef<RecordMetadata>[] {
+  // Get the UI spec information
+  const summaryFieldInfo = getSummaryFieldInformation(
+    uiSpecification,
+    viewsetId
+  );
+  let columnList: GridColDef<RecordMetadata>[] = [];
+
+  // Column generation based on width
+  if (width === 'small') {
+    // For small width, use vertical stack layout
+    columnList.push(
+      buildVerticalStackColumn({
+        columnLabel: summaryFieldInfo.verticalStack?.columnLabel ?? 'Details',
+        summaryFields: summaryFieldInfo.fieldNames,
+      })
+    );
+  } else if (width === 'medium') {
+    // For medium width, show summary fields or HRID, plus mandatory columns
+    if (summaryFieldInfo.fieldNames.length > 0) {
+      columnList = columnList.concat(
+        buildColumnsFromSummaryFields({
+          summaryFields: summaryFieldInfo.fieldNames,
+          uiSpecification,
+        })
+      );
+    } else {
+      columnList.push(buildHridColumn());
+    }
+
+    // Add mandatory columns
+    MANDATORY_COLUMNS.forEach(columnType => {
+      columnList.push(
+        buildColumnFromTypicalField({
+          columnType,
+        })
+      );
+    });
+  } else if (width === 'large') {
+    // For large width, include all columns
+    if (summaryFieldInfo.fieldNames.length > 0) {
+      columnList = columnList.concat(
+        buildColumnsFromSummaryFields({
+          summaryFields: summaryFieldInfo.fieldNames,
+          uiSpecification,
+        })
+      );
+    } else {
+      columnList.push(buildHridColumn());
+    }
+
+    // Add all columns defined in LARGE_COLUMNS
+    LARGE_COLUMNS.forEach(columnType => {
+      columnList.push(
+        buildColumnFromTypicalField({
+          columnType,
+        })
+      );
+    });
+  }
+
+  return columnList;
+}
+
 /**
  * A simple display for key value pair data - used in vertical summary stack
  * layout
