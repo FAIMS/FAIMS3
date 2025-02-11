@@ -332,26 +332,18 @@ export function getHridFromValuesAndSpec({
  * Converts field names to a more readable format by:
  * 1. Splitting CamelCase into separate words
  * 2. Replacing hyphens with spaces
- * 3. Removing all numeric characters
- * 4. Trimming any resulting extra whitespace
+ * 3. Trimming any resulting extra whitespace
  *
  * @param fieldName - The input field name to prettify
  * @returns A cleaned and formatted string
- *
- * @example
- * prettifyFieldName("user-id-123") // returns "user id"
- * prettifyFieldName("order-number-456-status") // returns "order status"
- * prettifyFieldName("item-98-count") // returns "item count"
- * prettifyFieldName("userAccountID") // returns "user account id"
- * prettifyFieldName("LastLoginTime") // returns "last login time"
- * prettifyFieldName("APIResponse123") // returns "api response"
  */
 export function prettifyFieldName(fieldName: string): string {
   return fieldName
     .replace(/([a-z])([A-Z])/g, '$1 $2') // Split CamelCase by adding space between lower and upper case letters
     .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2') // Handle consecutive capitals (e.g., APIResponse -> API Response)
+    .replace(/([a-zA-Z])(\d+)/g, '$1 $2') // Split between letters and numbers
+    .replace(/(\d+)([a-zA-Z])/g, '$1 $2') // Split between numbers and letters
     .replace(/-/g, ' ') // Replace all hyphens with spaces
-    .replace(/[0-9]/g, '') // Remove all numbers
     .replace(/\s+/g, ' ') // Replace multiple spaces with single space
     .trim(); // Remove leading/trailing whitespace
 }

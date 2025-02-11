@@ -519,9 +519,9 @@ describe('prettifyFieldName', () => {
     );
   });
 
-  it('removes numeric characters', () => {
-    expect(prettifyFieldName('order123')).toBe('order');
-    expect(prettifyFieldName('item-456-status')).toBe('item status');
+  it('preserves numeric characters with spacing', () => {
+    expect(prettifyFieldName('order123')).toBe('order 123');
+    expect(prettifyFieldName('item456status')).toBe('item 456 status');
   });
 
   it('handles multiple consecutive hyphens', () => {
@@ -530,25 +530,25 @@ describe('prettifyFieldName', () => {
   });
 
   it('handles numeric characters with hyphens', () => {
-    expect(prettifyFieldName('user-123-type')).toBe('user type');
-    expect(prettifyFieldName('order-98-status-45')).toBe('order status');
+    expect(prettifyFieldName('user-123-type')).toBe('user 123 type');
+    expect(prettifyFieldName('order-98-status-45')).toBe('order 98 status 45');
   });
 
   it('trims leading and trailing whitespace', () => {
-    expect(prettifyFieldName('user-123-')).toBe('user');
-    expect(prettifyFieldName('-456-status')).toBe('status');
+    expect(prettifyFieldName('user-123-')).toBe('user 123');
+    expect(prettifyFieldName('-456-status')).toBe('456 status');
   });
 
   it('handles empty string input', () => {
     expect(prettifyFieldName('')).toBe('');
   });
 
-  it('returns original string if no changes needed', () => {
-    expect(prettifyFieldName('username')).toBe('username');
-    expect(prettifyFieldName('status')).toBe('status');
+  it('returns original string with proper spacing', () => {
+    expect(prettifyFieldName('username123')).toBe('username 123');
+    expect(prettifyFieldName('123status')).toBe('123 status');
   });
 
-  // New tests for CamelCase handling
+  // CamelCase handling tests
   it('splits basic CamelCase', () => {
     expect(prettifyFieldName('userName')).toBe('user Name');
     expect(prettifyFieldName('firstName')).toBe('first Name');
@@ -568,26 +568,38 @@ describe('prettifyFieldName', () => {
   });
 
   it('handles mixed CamelCase and hyphens', () => {
-    expect(prettifyFieldName('user-firstName-123')).toBe('user first Name');
-    expect(prettifyFieldName('API-userAccess-444')).toBe('API user Access');
+    expect(prettifyFieldName('user-firstName123')).toBe('user first Name 123');
+    expect(prettifyFieldName('API-userAccess444')).toBe('API user Access 444');
     expect(prettifyFieldName('MyUser-lastName')).toBe('My User last Name');
   });
 
   it('handles edge cases with multiple formats', () => {
     expect(prettifyFieldName('UserAPI-123-lastLoginID')).toBe(
-      'User API last Login ID'
+      'User API 123 last Login ID'
     );
     expect(prettifyFieldName('first-userName-ID444')).toBe(
-      'first user Name ID'
+      'first user Name ID 444'
     );
     expect(prettifyFieldName('API--userAccessID-999')).toBe(
-      'API user Access ID'
+      'API user Access ID 999'
     );
   });
 
   it('preserves case in acronyms while splitting', () => {
-    expect(prettifyFieldName('MainAPIEndpoint')).toBe('Main API Endpoint');
-    expect(prettifyFieldName('UserIDSettings')).toBe('User ID Settings');
+    expect(prettifyFieldName('MainAPIEndpoint2')).toBe('Main API Endpoint 2');
+    expect(prettifyFieldName('UserID123Settings')).toBe('User ID 123 Settings');
     expect(prettifyFieldName('SimpleXMLParser')).toBe('Simple XML Parser');
+  });
+
+  it('handles numbers between words', () => {
+    expect(prettifyFieldName('user123name')).toBe('user 123 name');
+    expect(prettifyFieldName('data42analysis')).toBe('data 42 analysis');
+    expect(prettifyFieldName('test789DEBUG123log')).toBe('test 789 DEBUG 123 log');
+  });
+
+  it('handles multiple number sequences', () => {
+    expect(prettifyFieldName('user123test456')).toBe('user 123 test 456');
+    expect(prettifyFieldName('API123Response456')).toBe('API 123 Response 456');
+    expect(prettifyFieldName('log42Data99Test')).toBe('log 42 Data 99 Test');
   });
 });
