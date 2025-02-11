@@ -68,7 +68,7 @@ const theme = createTheme({
     icon: {
       main: '#E18200',
       light: '#edeeeb',
-      required: '#5E0000',
+      required: '#890808FF',
     },
     table: {
       divider: '#828789FF',

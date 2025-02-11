@@ -3,16 +3,16 @@ export type ThemeType = 'bss' | 'default';
 // Designated colors based on step status
 const stepColors = {
   bss: {
-    current: '#000000', // Black
-    visited: '#228B22', // Forest Green
-    error: '#B22222', // Firebrick Red
-    notVisited: '#BDBDBD', // Light Gray
+    current: '#000000',
+    visited: '#0CD80CFF',
+    error: '#E81414FF',
+    notVisited: '#BDBDBD',
   },
   default: {
-    current: '#1A1A1A', // Dark Black
-    visited: '#4CAF50', // Green
-    error: '#FF0000', // Bright Red
-    notVisited: '#CCCCCC', // Light Gray
+    current: '#E18200',
+    visited: '#669911',
+    error: '#D50C0CFF',
+    notVisited: '#CFF292A0',
   },
 };
 
