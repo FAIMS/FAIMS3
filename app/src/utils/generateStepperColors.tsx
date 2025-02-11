@@ -4,8 +4,8 @@ export type ThemeType = 'bss' | 'default';
 const stepColors = {
   bss: {
     current: '#000000',
-    visited: '#0CD80CFF',
-    error: '#E81414FF',
+    visited: '#07a907',
+    error: '#EE1616FF',
     notVisited: '#BDBDBD',
   },
   default: {
@@ -28,18 +28,24 @@ export const generateStepperColors = (
 
 /**
  * Determines the color of a step based on its status.
+ * @param {string} sectionId - The unique section identifier.
+ * @param {string} currentStepId - The currently active step's section ID.
+ * @param {boolean} hasError - If the step has errors.
+ * @param {string[]} visitedSteps - Array of visited step section IDs.
+ * @param {ThemeType} themeType - Theme type ('bss' or 'default').
+ * @returns {string} The color for the step.
  */
 export const getStepColor = (
-  index: number,
-  currentStep: number,
+  sectionId: string,
+  currentStepId: string,
   hasError: boolean,
-  visitedSteps: number[],
+  visitedSteps: string[],
   themeType: ThemeType
 ): string => {
   const colors = stepColors[themeType];
 
-  if (index === currentStep) return colors.current;
+  if (sectionId === currentStepId) return colors.current;
   if (hasError) return colors.error;
-  if (visitedSteps.includes(index)) return colors.visited;
+  if (visitedSteps.includes(sectionId)) return colors.visited;
   return colors.notVisited;
 };
