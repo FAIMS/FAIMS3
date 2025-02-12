@@ -40,14 +40,17 @@ export const getStepColor = (
   currentStepId: string,
   hasError: boolean,
   visitedSteps: Set<string>,
-  themeType: ThemeType
+  themeType: ThemeType,
+  isRecordSubmitted: boolean
 ): string => {
   const colors = stepColors[themeType];
 
-  if (sectionId === currentStepId) return colors.current;
-  if (hasError && visitedSteps.has(sectionId) && sectionId !== currentStepId) {
+  if (sectionId === currentStepId) return colors.current; // if its current stepper, assing current color.
+
+  if (hasError && visitedSteps.has(sectionId) && !isRecordSubmitted) {
+    // mark as error
     return colors.error;
   }
-  if (visitedSteps.has(sectionId)) return colors.visited;
+  if (visitedSteps.has(sectionId) || isRecordSubmitted) return colors.visited;
   return colors.notVisited;
 };
