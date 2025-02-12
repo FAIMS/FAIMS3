@@ -18,20 +18,19 @@
  *   Implement MapFormField for entry of data via maps in FAIMS
  */
 
+import {Geolocation} from '@capacitor/geolocation';
+import CancelIcon from '@mui/icons-material/Cancel';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import {Box, Typography, Zoom} from '@mui/material';
+import {FieldProps} from 'formik';
+import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {useEffect, useRef, useState} from 'react';
+import {useNotification} from '../../../context/popup';
+import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
+import {theme} from '../../themes';
+import FieldWrapper from '../fieldWrapper';
 import './MapFormField.css';
 import MapWrapper, {MapAction} from './MapWrapper';
-import {Geolocation} from '@capacitor/geolocation';
-import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
-import {FieldProps} from 'formik';
-import {Alert, Box, Typography, Zoom} from '@mui/material';
-import {Capacitor} from '@capacitor/core';
-import {APP_NAME} from '../../../buildconfig';
-import {useNotification} from '../../../context/popup';
-import FieldWrapper from '../fieldWrapper';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import {theme} from '../../themes';
 
 // If no center is available - pass this through
 // Sydney CBD
@@ -65,10 +64,8 @@ export function MapFormField({
   // flag set if we find we don't have location permission
   const [noPermission, setNoPermission] = useState(false);
 
-  // Use form value as default field features - otherwise empty {}
-  const [drawnFeatures, setDrawnFeatures] = useState<GeoJSONFeatureCollection>(
-    form.values[field.name] ?? {}
-  );
+  // Derive the features from the field value (this forces re-render anyway)
+  const drawnFeatures = form.values[field.name] ?? {};
 
   // Default zoom level
   const zoom = props.zoom ?? 14;
@@ -80,15 +77,10 @@ export function MapFormField({
   const label = props.label ?? `Get ${props.featureType}`;
 
   // innitialize state  based on saved location to avoid flickering
-  const isInitialLocationSelected =
+  const isLocationSelected =
     drawnFeatures.features && drawnFeatures.features.length > 0;
 
   // state for visual indicators
-  const [isLocationSelected, setIsLocationSelected] = useState(
-    isInitialLocationSelected
-  );
-  const [showCheckmark, setShowCheckmark] = useState(isInitialLocationSelected);
-  const [showCross, setShowCross] = useState(!isInitialLocationSelected);
   const [animateCheck, setAnimateCheck] = useState(false);
 
   // notification manager
@@ -100,18 +92,10 @@ export function MapFormField({
     action: MapAction
   ) => {
     if (action === 'save') {
-      setDrawnFeatures(theFeatures);
       form.setFieldValue(field.name, theFeatures, true);
-      setIsLocationSelected(true);
-      setShowCross(false);
-      setShowCheckmark(true);
       setAnimateCheck(true);
       setTimeout(() => setAnimateCheck(false), 1000);
     } else if (action === 'close') {
-      if (!isLocationSelected) {
-        setShowCross(true);
-      }
-      setShowCheckmark(false);
       setAnimateCheck(true);
       setTimeout(() => setAnimateCheck(false), 1000);
     }
@@ -144,18 +128,6 @@ export function MapFormField({
     };
     getCoords();
   }, []);
-
-  useEffect(() => {
-    if (drawnFeatures.features && drawnFeatures.features.length > 0) {
-      setIsLocationSelected(true);
-      setShowCheckmark(true);
-      setShowCross(false);
-    } else {
-      setIsLocationSelected(false);
-      setShowCheckmark(false);
-      setShowCross(true);
-    }
-  }, [drawnFeatures]);
 
   // dynamically determine feature label based on featureType
   const featureLabel =
@@ -238,13 +210,13 @@ export function MapFormField({
             {valueText}
           </Typography>
 
-          <Zoom in={showCheckmark}>
+          <Zoom in={isLocationSelected}>
             <CheckCircleIcon
               sx={{
                 color: 'green',
                 fontSize: 30,
                 transition: 'transform 0.5s ease-in-out',
-                transform: showCheckmark
+                transform: isLocationSelected
                   ? animateCheck
                     ? 'scale(1.3)'
                     : 'scale(1)'
@@ -253,13 +225,13 @@ export function MapFormField({
             />
           </Zoom>
 
-          <Zoom in={showCross}>
+          <Zoom in={!isLocationSelected}>
             <CancelIcon
               sx={{
                 color: 'red',
                 fontSize: 30,
                 transition: 'transform 0.5s ease-in-out',
-                transform: showCross
+                transform: !isLocationSelected
                   ? animateCheck
                     ? 'scale(1.3)'
                     : 'scale(1)'
@@ -271,33 +243,7 @@ export function MapFormField({
       </Box>
 
       {/*  Show error if no permission */}
-      {noPermission && (
-        <Alert severity="error" sx={{width: '100%', marginTop: 1}}>
-          {Capacitor.getPlatform() === 'web' && (
-            <>
-              Please enable location permissions for this page. In your browser,
-              look to the left of the web address bar for a button that gives
-              access to browser settings for this page.
-            </>
-          )}
-          {Capacitor.getPlatform() === 'android' && (
-            <>
-              Please enable location permissions for {APP_NAME}. Go to your
-              device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
-              Location and select "Allow all the time" or "Allow only while
-              using the app".
-            </>
-          )}
-          {Capacitor.getPlatform() === 'ios' && (
-            <>
-              Please enable location permissions for {APP_NAME}. Go to your
-              device Settings &gt; Privacy & Security &gt; Location Services
-              &gt;
-              {APP_NAME} and select "While Using the App".
-            </>
-          )}
-        </Alert>
-      )}
+      {noPermission && <LocationPermissionIssue />}
     </FieldWrapper>
   );
 }
