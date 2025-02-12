@@ -154,8 +154,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const [isDraftSaving, setIsDraftSaving] = useState(false);
   const [draftLastSaved, setDraftLastSaved] = useState<Date | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
-
-  const [value, setValue] = React.useState('1');
   const theme = useTheme();
   const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
@@ -198,23 +196,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
       }
     })();
   }, [project_id, record_id, uiSpec]);
-
-  const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
-    setValue(newValue);
-  };
-
-  const handleRefresh = () => {
-    /**
-     * Handler for Refreshing project (go back to notebook)
-     */
-    return new Promise(resolve => {
-      resolve(() => {
-        navigate({
-          pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-        });
-      });
-    });
-  };
 
   if (error !== null) {
     dispatch(
@@ -302,6 +283,7 @@ export default function RecordCreate() {
       getProjectInfo(project_id).then(info => setProjectInfo(info));
   }, [project_id]);
 
+  let showBreadcrumbs = false;
   let breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
@@ -314,6 +296,7 @@ export default function RecordCreate() {
 
   // add parent link back for the parent or linked record
   if (location.state && location.state.parent_record_id !== record_id) {
+    showBreadcrumbs = true;
     const type =
       location.state.type === 'Child'
         ? 'Parent'
@@ -330,7 +313,10 @@ export default function RecordCreate() {
   return (
     <React.Fragment>
       <Box>
-        <Breadcrumbs data={breadcrumbs} />
+        {
+          // only show breadcrumbs if we have parent record
+        }
+        {showBreadcrumbs && <Breadcrumbs data={breadcrumbs} />}
         {draft_id === undefined || record_id === undefined ? (
           <DraftCreateAction
             project_id={project_id!}

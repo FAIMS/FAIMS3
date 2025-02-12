@@ -1,4 +1,43 @@
 import {ProjectUIModel} from '@faims3/data-model/build/src/types';
+import {
+  getFieldsMatchingCondition,
+  getViewsMatchingCondition,
+} from '../gui/components/record/branchingLogic';
+import {ValuesObject} from '../utils/formUtilities';
+import {current} from '@reduxjs/toolkit';
+
+/**
+ * For the given ui spec, viewset and current form values, considers conditional
+ * rendering, visibility etc to provide a set of visible fields.
+ * @returns  List of visible fields
+ */
+export const currentlyVisibleFields = ({
+  values,
+  uiSpec,
+  viewsetId,
+}: {
+  uiSpec: ProjectUIModel;
+  values: ValuesObject;
+  viewsetId: string;
+}) => {
+  // Build a set of visible fields within visible views
+  const views = getViewsMatchingCondition(uiSpec, values, [], viewsetId, {});
+  const visibleFields: string[] = [];
+  for (const v of views) {
+    const fieldsMatching = getFieldsMatchingCondition(
+      uiSpec,
+      values,
+      [],
+      v,
+      {}
+    );
+    // Add all fields to visible fields set
+    for (const f of fieldsMatching) {
+      visibleFields.push(f);
+    }
+  }
+  return visibleFields;
+};
 
 /**
  * Retrieves the keys of fields that are marked as required from the given project UI model.
@@ -8,21 +47,18 @@ import {ProjectUIModel} from '@faims3/data-model/build/src/types';
  */
 export const requiredFields = (
   viewset: string,
-  uiSpec: ProjectUIModel
+  uiSpec: ProjectUIModel,
+  values: ValuesObject
 ): string[] => {
-  const required: string[] = [];
-  if (viewset in uiSpec.viewsets) {
-    const views = uiSpec.viewsets[viewset].views;
-
-    views.forEach((view: string) => {
-      const fields = uiSpec.views[view].fields;
-      fields.forEach((fieldname: string) => {
-        if (uiSpec.fields[fieldname]['component-parameters'].required)
-          required.push(fieldname);
-      });
-    });
-  }
-  return required;
+  const visibleFields = currentlyVisibleFields({
+    uiSpec,
+    viewsetId: viewset,
+    values,
+  });
+  return visibleFields.filter(
+    (fieldname: string) =>
+      uiSpec.fields[fieldname]['component-parameters'].required
+  );
 };
 
 /**

@@ -232,8 +232,7 @@ export default function NoteBooks() {
         },
       ];
 
-  const showCreateNewNotebookButton =
-    activeUserToken && userCanCreateNotebooks(activeUserToken);
+  const showCreateNewNotebookButton = false; // activeUserToken && userCanCreateNotebooks(activeUserToken);
 
   // What type of layout are we using?
   const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';

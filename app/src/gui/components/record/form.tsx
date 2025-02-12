@@ -44,7 +44,11 @@ import {
 } from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {store} from '../../../context/store';
-import {percentComplete, requiredFields} from '../../../lib/form-utils';
+import {
+  currentlyVisibleFields,
+  percentComplete,
+  requiredFields,
+} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
 import {logError} from '../../../logging';
 import RecordDraftState from '../../../sync/draft-state';
@@ -1173,34 +1177,17 @@ class RecordForm extends React.Component<any, RecordFormState> {
     values: object;
   }): {[key: string]: string} {
     if (!errors) return {};
-    // Build a set of visible fields within visible views
-    const views = getViewsMatchingCondition(
-      this.props.ui_specification,
-      values,
-      [],
-      viewsetName,
-      {}
-    );
-    const visibleFields = new Set();
-    for (const v of views) {
-      const fieldsMatching = getFieldsMatchingCondition(
-        this.props.ui_specification,
-        values,
-        [],
-        v,
-        {}
-      );
-      // Add all fields to visible fields set
-      for (const f of fieldsMatching) {
-        visibleFields.add(f);
-      }
-    }
+    const visibleFields = currentlyVisibleFields({
+      uiSpec: this.props.ui_specification,
+      values: values,
+      viewsetId: viewsetName,
+    });
 
     // Work through the errors and
     return Object.entries(errors).reduce(
       (filtered: {[key: string]: string}, [fieldName, error]) => {
         // Check if field is visible in any view
-        const isVisible = visibleFields.has(fieldName);
+        const isVisible = visibleFields.includes(fieldName);
         if (isVisible) {
           filtered[fieldName] = error;
         }
@@ -1324,7 +1311,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   percentComplete(
                     requiredFields(
                       this.getViewsetName(),
-                      this.props.ui_specification
+                      this.props.ui_specification,
+                      formProps.values
                     ),
                     formProps.values
                   )
