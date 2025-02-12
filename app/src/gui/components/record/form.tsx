@@ -137,7 +137,7 @@ type RecordFormState = {
   fieldNames: string[];
   views: string[];
   visitedSteps: Set<string>;
-  // currentStepId: string;
+  isRevisiting: boolean;
 };
 
 /*
@@ -228,8 +228,8 @@ class RecordForm extends React.Component<
       relationship: {},
       fieldNames: [],
       views: [],
-      visitedSteps: new Set<string>(), // new rg
-      // currentStepId: string;
+      visitedSteps: new Set<string>(),
+      isRevisiting: false,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -724,11 +724,33 @@ class RecordForm extends React.Component<
   }
 
   onChangeStepper(view_name: string, activeStepIndex: number) {
-    this.setState(prevState => ({
-      view_cached: view_name,
-      activeStep: activeStepIndex,
-      visitedSteps: new Set(prevState.visitedSteps).add(view_name),
-    }));
+    console.log('ONSTEPPER CHANGED', view_name, activeStepIndex);
+
+    this.setState(
+      prevState => {
+        const wasVisitedBefore = prevState.visitedSteps.has(view_name);
+
+        // add to `visitedSteps` if it has NOT been visited before
+        const updatedVisitedSteps = new Set(prevState.visitedSteps);
+        updatedVisitedSteps.add(view_name);
+
+        return {
+          ...prevState,
+          view_cached: view_name,
+          activeStep: activeStepIndex,
+          visitedSteps: updatedVisitedSteps,
+          isRevisiting: wasVisitedBefore,
+        };
+      },
+      () => {
+        console.log('RG-------UPDATE:', {
+          view_cached: this.state.view_cached,
+          activeStep: this.state.activeStep,
+          visitedSteps: Array.from(this.state.visitedSteps),
+          isRevisiting: this.state.isRevisiting,
+        });
+      }
+    );
   }
 
   onChangeTab(event: React.ChangeEvent<{}>, newValue: string) {
@@ -1217,6 +1239,7 @@ class RecordForm extends React.Component<
                 } catch (err) {
                   try {
                     const errors = err as ValidationError;
+                    console.log('VALIDATING ERRORS', errors);
 
                     const processedErrors = errors.inner.reduce(
                       (acc: {[key: string]: string}, error) => {
@@ -1319,9 +1342,7 @@ class RecordForm extends React.Component<
                                 formErrors={formProps.errors}
                                 visitedSteps={this.state.visitedSteps}
                                 currentStepId={this.state.view_cached ?? ''}
-                                // currentStepId={this.state.view_cached ?? ''}
-                                // views={this.state.views}
-                                // onChangeStepper={this.onChangeStepper} // ✅ Pass function to ViewComponent
+                                isRevisiting={this.state.isRevisiting}
                               />
                             </Form>
                           </div>
@@ -1452,6 +1473,7 @@ class RecordForm extends React.Component<
                       disabled={this.props.disabled}
                       visitedSteps={this.state.visitedSteps}
                       currentStepId={this.state.view_cached ?? ''}
+                      isRevisiting={this.state.isRevisiting}
 
                       // currentStepId={this.state.view_cached ?? ''}
                       // views={this.state.views}
