@@ -44,10 +44,10 @@ export const getStepColor = (
 ): string => {
   const colors = stepColors[themeType];
 
-  if (sectionId === currentStepId) return colors.current; // Current step, keep original color
+  if (sectionId === currentStepId) return colors.current;
   if (hasError && visitedSteps.has(sectionId) && sectionId !== currentStepId) {
-    return colors.error; // Show error only for visited and left steps
+    return colors.error;
   }
-  if (visitedSteps.has(sectionId)) return colors.visited; // Show visited step color
+  if (visitedSteps.has(sectionId)) return colors.visited;
   return colors.notVisited;
 };
