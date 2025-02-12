@@ -21,10 +21,12 @@
  *  - Publish and Close Record(TBD)
  */
 
-import {Box, Button, Tooltip} from '@mui/material';
+import {Box, Button, Tooltip, IconButton, Grid} from '@mui/material';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CircularProgress from '@mui/material/CircularProgress';
 import {CustomMobileStepper} from './recordStepper';
 import {ProjectUIModel} from '@faims3/data-model';
+import {useState} from 'react';
 
 interface FormProps {
   isSubmitting: boolean;
@@ -80,14 +82,14 @@ const tooltipContent = (
     <Box sx={{fontWeight: 'bold', marginBottom: 1}}>
       What does publishing mean?
     </Box>
-    Your response is being saved automatically as a draft. When you
-    click publish, your response will be uploaded once your device
-    has an internet connection.
+    Your response is being saved automatically as a draft. When you click
+    publish, your response will be uploaded once your device has an internet
+    connection.
   </div>
 );
 
 /**
- * Button component for form submission with loading state and tooltip
+ * Button component for form submission with loading state
  */
 function FormSubmitButton({
   is_final_view,
@@ -101,10 +103,10 @@ function FormSubmitButton({
 }: FormSubmitButtonProps) {
   if (disabled) return null;
 
-  const button = (
+  return (
     <Button
       type="button"
-      sx={{width: '100%'}}
+      fullWidth
       data-testid={dataTestId}
       color={formProps.isSubmitting ? undefined : color}
       variant={is_final_view && is_close === 'close' ? 'contained' : 'outlined'}
@@ -127,17 +129,11 @@ function FormSubmitButton({
       )}
     </Button>
   );
-
-  return (
-    <Tooltip title={tooltipContent} arrow placement="right">
-      {button}
-    </Tooltip>
-  );
 }
 
 /**
  * Button group for form actions including stepper navigation and submission
- * Includes tooltips on the publish buttons explaining the publish action
+ * Displays two buttons stacked vertically with a help icon centered on the right
  */
 export default function FormButtonGroup({
   record_type,
@@ -151,6 +147,8 @@ export default function FormButtonGroup({
   ui_specification,
   layout,
 }: FormButtonGroupProps) {
+  const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
+
   return (
     <Box sx={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
       {views.length > 1 && layout !== 'inline' && (
@@ -161,27 +159,71 @@ export default function FormButtonGroup({
           ui_specification={ui_specification}
         />
       )}
-      <Box sx={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-        <FormSubmitButton
-          color="primary"
-          data-testid="publish-close-record"
-          disabled={disabled}
-          formProps={formProps}
-          text={`Publish and close ${record_type}`}
-          is_close="close"
-          handleFormSubmit={handleFormSubmit}
-          is_final_view={is_final_view}
-        />
-        <FormSubmitButton
-          color="secondary"
-          disabled={disabled}
-          formProps={formProps}
-          text={`Publish and new ${record_type}`}
-          is_close="new"
-          handleFormSubmit={handleFormSubmit}
-          is_final_view={is_final_view}
-        />
-      </Box>
+      <Grid container spacing={2}>
+        <Grid item xs={10.5}>
+          <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+            <FormSubmitButton
+              color="primary"
+              data-testid="publish-close-record"
+              disabled={disabled}
+              formProps={formProps}
+              text={`Publish and close ${record_type}`}
+              is_close="close"
+              handleFormSubmit={handleFormSubmit}
+              is_final_view={is_final_view}
+            />
+            <FormSubmitButton
+              color="secondary"
+              disabled={disabled}
+              formProps={formProps}
+              text={`Publish and new ${record_type}`}
+              is_close="new"
+              handleFormSubmit={handleFormSubmit}
+              is_final_view={is_final_view}
+            />
+          </Box>
+        </Grid>
+        <Grid
+          item
+          xs={1.5}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Tooltip
+            open={tooltipOpen}
+            onClose={() => setTooltipOpen(false)}
+            enterTouchDelay={0}
+            leaveTouchDelay={5000}
+            title={tooltipContent}
+            arrow
+            PopperProps={{
+              sx: {
+                '& .MuiTooltip-tooltip': {
+                  maxWidth: 300,
+                  padding: 2,
+                  fontSize: '0.875rem',
+                },
+              },
+            }}
+          >
+            <IconButton
+              size="medium"
+              onClick={e => {
+                e.stopPropagation();
+                setTooltipOpen(!tooltipOpen);
+              }}
+              sx={{
+                touchAction: 'none',
+              }}
+            >
+              <HelpOutlineIcon />
+            </IconButton>
+          </Tooltip>
+        </Grid>
+      </Grid>
     </Box>
   );
 }

@@ -464,8 +464,10 @@ export default function Record() {
           <BackButton
             label="Back to records"
             onClick={() => {
-              // Go back
-              history(-1);
+              // Go back to the records list
+              history({
+                pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
+              });
             }}
           />
         </Grid>
