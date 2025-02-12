@@ -54,6 +54,8 @@ proj4.defs(
 );
 register(proj4);
 
+export type MapAction = 'save' | 'close';
+
 interface MapProps extends ButtonProps {
   label: string;
   features: any;
@@ -63,7 +65,7 @@ interface MapProps extends ButtonProps {
   zoom: number;
   center: Array<number>;
   fallbackCenter: boolean;
-  callbackFn: (features: object, action?: 'save' | 'clear' | 'close') => void;
+  callbackFn: (features: object, action: MapAction) => void;
   setNoPermission: (flag: boolean) => void;
   isLocationSelected: boolean;
   openMap?: () => void;
@@ -240,16 +242,16 @@ function MapWrapper(props: MapProps) {
             dataProjection: 'EPSG:4326',
             rightHanded: true,
           });
-          if (action === 'save') {
+          if (action === 'clear') {
+            // if clearing - just remove locally don't callback so we don't save this change
+            source.clear();
+          } else if (action === 'save') {
             if (!features.length) {
               setShowConfirmSave(true); // show confirmation dialog if no location is selected while saving.
               return;
             }
             props.callbackFn(geoJsonFeatures, 'save');
             setMapOpen(false);
-          } else if (action === 'clear') {
-            source.clear();
-            props.callbackFn({}, 'clear');
           } else if (action === 'close') {
             setMapOpen(false);
           }

@@ -20,7 +20,7 @@
 
 import {useEffect, useRef, useState} from 'react';
 import './MapFormField.css';
-import MapWrapper from './MapWrapper';
+import MapWrapper, {MapAction} from './MapWrapper';
 import {Geolocation} from '@capacitor/geolocation';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {FieldProps} from 'formik';
@@ -90,7 +90,6 @@ export function MapFormField({
   const [showCheckmark, setShowCheckmark] = useState(isInitialLocationSelected);
   const [showCross, setShowCross] = useState(!isInitialLocationSelected);
   const [animateCheck, setAnimateCheck] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // notification manager
   const notify = useNotification();
@@ -98,26 +97,14 @@ export function MapFormField({
   // Callback function when a location is selected
   const mapCallback = (
     theFeatures: GeoJSONFeatureCollection,
-    action?: 'save' | 'clear' | 'close'
+    action: MapAction
   ) => {
     if (action === 'save') {
-      if (!theFeatures.features || theFeatures.features.length === 0) {
-        setShowConfirmDialog(true);
-        return;
-      }
       setDrawnFeatures(theFeatures);
       form.setFieldValue(field.name, theFeatures, true);
       setIsLocationSelected(true);
       setShowCross(false);
       setShowCheckmark(true);
-      setAnimateCheck(true);
-      setTimeout(() => setAnimateCheck(false), 1000);
-    } else if (action === 'clear') {
-      setDrawnFeatures({});
-      form.setFieldValue(field.name, {}, true);
-      setIsLocationSelected(false);
-      setShowCheckmark(false);
-      setShowCross(true);
       setAnimateCheck(true);
       setTimeout(() => setAnimateCheck(false), 1000);
     } else if (action === 'close') {
