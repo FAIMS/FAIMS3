@@ -116,7 +116,6 @@ export default function RecordStepper(props: RecordStepperProps) {
   useEffect(() => {
     const currentSectionId = views[view_index];
 
-    // Track visited steps ONLY when the user LEAVES a step
     if (!visitedSteps.has(currentSectionId)) {
       setVisitedSteps(prev => {
         const newVisitedSteps = new Set(prev);
@@ -125,7 +124,7 @@ export default function RecordStepper(props: RecordStepperProps) {
       });
     }
 
-    // Show errors only if user has visited AND left this step unaddressed
+    // show errors only if user has visited and left unaddressed
     const currentHasErrors = hasErrors(currentSectionId);
 
     setValidSteps(prev => {
