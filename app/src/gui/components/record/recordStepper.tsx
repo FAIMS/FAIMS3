@@ -27,6 +27,10 @@ import {
   Stepper,
   StepButton,
   MobileStepper,
+  keyframes,
+  styled,
+  useMediaQuery,
+  Badge,
 } from '@mui/material';
 import {ProjectUIModel} from '@faims3/data-model';
 import {createUseStyles} from 'react-jss';
@@ -41,6 +45,7 @@ type RecordStepperProps = {
   views: string[];
   formErrors?: {[fieldName: string]: unknown};
   visitedSteps: Set<string>;
+  isRecordSubmitted: boolean;
 };
 
 const useStyles = createUseStyles({
@@ -63,6 +68,18 @@ const useStyles = createUseStyles({
     },
   },
 });
+
+/* 🔥 shake Animation - mobile/tablet UX */
+const shakeAnimation = keyframes`
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+`;
+
+/** Wrapper for mobile  Stepper*/
+const MobileStepperWrapper = styled(Box)(({shake}: {shake: boolean}) => ({
+  animation: shake ? `${shakeAnimation} 0.5s ease-in-out` : 'none',
+}));
 
 /**
  * @function RecordStepper
@@ -99,23 +116,22 @@ export default function RecordStepper(props: RecordStepperProps) {
     onChangeStepper,
     views,
     formErrors,
+    isRecordSubmitted,
   } = props;
+  const [shakeStepper, setShakeStepper] = useState(false);
 
-  // track visited steps by their unique section ID instead of index
-  // const [visitedSteps, setVisitedSteps] = useState<Set<string>>(new Set());
-  const [validSteps, setValidSteps] = useState<string[]>([]);
+  // function to check if stepper has erros
+  const hasErrors = (sectionId: string | undefined) => {
+    if (!sectionId || !visitedSteps || !ui_specification.views[sectionId])
+      return false;
 
-  const hasErrors = useCallback(
-    (sectionId: string) => {
-      return (
-        visitedSteps.has(sectionId) &&
-        ui_specification.views[sectionId]?.fields.some(
-          field => formErrors && formErrors[field]
-        )
-      );
-    },
-    [formErrors, visitedSteps]
-  );
+    return (
+      visitedSteps.has(sectionId) &&
+      ui_specification.views[sectionId]?.fields.some(
+        field => formErrors && formErrors[field]
+      )
+    );
+  };
 
   const themeType =
     theme.palette.primary.main === '#000000' ? 'bss' : 'default';
@@ -154,7 +170,8 @@ export default function RecordStepper(props: RecordStepperProps) {
                           views[view_index],
                           hasErrors(sectionId),
                           visitedSteps,
-                          themeType
+                          themeType,
+                          isRecordSubmitted
                         ),
                         borderRadius: '50%',
                         fontSize: '1rem',
@@ -188,22 +205,67 @@ export default function RecordStepper(props: RecordStepperProps) {
           </Stepper>
         </div>
       </Box>
-      <Box display={{xs: 'block', sm: 'none'}}>
-        <CustomMobileStepper
-          views={views}
-          view_index={view_index}
-          onChangeStepper={onChangeStepper}
-          ui_specification={ui_specification}
-          formErrors={formErrors}
-          visitedSteps={visitedSteps}
-        />
-        <Typography variant="h5" align="center">
-          {ui_specification.views[views[view_index]]?.label}
-        </Typography>
-      </Box>
+
+      <MobileStepperWrapper
+        shake={shakeStepper}
+        display={{xs: 'block', md: 'none'}}
+      >
+        <Box display={{xs: 'block', sm: 'none'}}>
+          <CustomMobileStepper
+            views={views}
+            view_index={view_index}
+            onChangeStepper={onChangeStepper}
+            ui_specification={ui_specification}
+            formErrors={formErrors}
+            visitedSteps={visitedSteps}
+            isRecordSubmitted={isRecordSubmitted}
+          />
+          <Typography variant="h5" align="center">
+            {ui_specification.views[views[view_index]]?.label}
+          </Typography>
+        </Box>
+      </MobileStepperWrapper>
     </>
   );
 }
+
+/**
+ * Renders a reusable stepper button for navigation.
+ * @param {string} label - Button text (e.g., "Next", "Back")
+ * @param {number} stepIndex - Index of the step to navigate to
+ * @param {boolean} isDisabled - If the button should be disabled
+ * @param {Function} onChangeStepper - Callback to handle step change
+ * @param {string[]} views - Array of all views
+ * @param {Function} hasErrors - Function to check if step has errors
+ */
+const renderStepperButton = (
+  label: 'Next' | 'Back',
+  stepIndex: number,
+  isDisabled: boolean,
+  onChangeStepper: (view: string, index: number) => void,
+  views: string[],
+  hasErrors: (sectionId: string | undefined) => boolean
+) => (
+  <Button
+    size="small"
+    sx={{
+      px: 2,
+      py: 1,
+      fontWeight: 'bold',
+      color: hasErrors(views[stepIndex]) ? 'red' : 'inherit',
+    }}
+    onClick={() => onChangeStepper(views[stepIndex], stepIndex)}
+    disabled={isDisabled}
+  >
+    <Badge
+      badgeContent={hasErrors(views[stepIndex]) ? '!' : 0}
+      color="error"
+      invisible={!hasErrors(views[stepIndex])}
+    >
+      {label}
+    </Badge>
+  </Button>
+);
 
 /**
  * @function CustomMobileStepper
@@ -229,8 +291,30 @@ export default function RecordStepper(props: RecordStepperProps) {
  *   - Responsive design optimized for small screens using Material-UI's `MobileStepper`.
  */
 
+/**
+ * Custom mobile stepper for navigation on smaller screens.
+ */
 export function CustomMobileStepper(props: RecordStepperProps) {
-  const {views, view_index, onChangeStepper} = props;
+  const {
+    views,
+    view_index,
+    onChangeStepper,
+    visitedSteps,
+    formErrors,
+    ui_specification,
+  } = props;
+
+  const hasErrors = (sectionId: string | undefined) => {
+    if (!sectionId || !visitedSteps || !ui_specification.views[sectionId])
+      return false;
+
+    return (
+      visitedSteps.has(sectionId) &&
+      ui_specification.views[sectionId]?.fields.some(
+        field => formErrors && formErrors[field]
+      )
+    );
+  };
 
   return (
     <Box
@@ -253,30 +337,22 @@ export function CustomMobileStepper(props: RecordStepperProps) {
           justifyContent: 'space-between',
           alignItems: 'center',
         }}
-        nextButton={
-          <Button
-            size="small"
-            sx={{px: 2, py: 1, fontWeight: 'bold'}}
-            onClick={() =>
-              onChangeStepper(views[view_index + 1], view_index + 1)
-            }
-            disabled={view_index === views.length - 1}
-          >
-            Next
-          </Button>
-        }
-        backButton={
-          <Button
-            size="small"
-            sx={{px: 2, py: 1, fontWeight: 'bold'}}
-            onClick={() =>
-              onChangeStepper(views[view_index - 1], view_index - 1)
-            }
-            disabled={view_index === 0}
-          >
-            Back
-          </Button>
-        }
+        nextButton={renderStepperButton(
+          'Next',
+          view_index + 1,
+          view_index === views.length - 1,
+          onChangeStepper,
+          views,
+          hasErrors
+        )}
+        backButton={renderStepperButton(
+          'Back',
+          view_index - 1,
+          view_index === 0,
+          onChangeStepper,
+          views,
+          hasErrors
+        )}
       />
     </Box>
   );
