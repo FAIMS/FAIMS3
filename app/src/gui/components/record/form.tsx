@@ -1420,12 +1420,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         disabled={this.props.disabled}
                         record_type={this.state.type_cached}
                         onChangeStepper={this.onChangeStepper}
-                        viewName={viewName}
                         view_index={0}
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
-                        mq_above_md={this.props.mq_above_md}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
@@ -1436,7 +1434,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             );
                           }, 500);
                         }}
-                        hideNavigation={true}
                         layout={layout}
                       />
                       {/* {UGCReport ONLY for the saved record} */}
@@ -1502,18 +1499,14 @@ class RecordForm extends React.Component<any, RecordFormState> {
                       disabled={this.props.disabled}
                     />
                     <FormButtonGroup
-                      project_id={this.props.project_id}
                       record_type={this.state.type_cached}
                       is_final_view={is_final_view}
                       disabled={this.props.disabled}
                       onChangeStepper={this.onChangeStepper}
-                      viewName={viewName}
                       view_index={view_index}
                       formProps={formProps}
                       ui_specification={ui_specification}
                       views={views}
-                      mq_above_md={this.props.mq_above_md}
-                      relationship={this.state.relationship}
                       handleFormSubmit={(is_close: string) => {
                         formProps.setSubmitting(true);
                         this.setTimeout(() => {
@@ -1524,7 +1517,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
                           );
                         }, 500);
                       }}
-                      buttonRef={this.props.buttonRef}
                       layout={layout}
                     />
                     {this.state.revision_cached !== undefined && (
