@@ -43,6 +43,8 @@ import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
 import {useAppSelector} from '../../../context/store';
 import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useMutation} from '@tanstack/react-query';
+import {useIsOnline} from '../../../utils/customHooks';
 
 // Survey status naming conventions
 
@@ -65,10 +67,11 @@ export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 export const DE_ACTIVATE_VERB = 'De-activate';
 
 export default function NoteBooks() {
-  const [refresh, setRefreshing] = useState(false);
-
   // get the active user - this will allow us to check roles against it
   // TODO what do we do if this is not defined
+
+  // Are we online
+  const isOnline = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
   const activeServerId = activeUser?.serverId;
   const activeUserToken = activeUser?.parsedToken;
@@ -77,6 +80,19 @@ export default function NoteBooks() {
   const projects = allProjects.filter(p => {
     return p.listing === activeServerId;
   });
+
+  // Refresh mutation
+  const doRefresh = useMutation({
+    mutationFn: syncProjects,
+    onSuccess: () => {
+      notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
+    },
+    onError: err => {
+      console.log(err);
+      notify.showError(`Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`);
+    },
+  });
+  const showRefreshButton = isOnline.isOnline;
 
   const activeUserActivatedProjects = projects.filter(nb => nb.activated);
 
@@ -279,6 +295,7 @@ export default function NoteBooks() {
         >
           {showCreateNewNotebookButton ? (
             <Button
+              disabled={!isOnline.isOnline}
               variant="contained"
               onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
               sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
@@ -291,22 +308,11 @@ export default function NoteBooks() {
           )}
           <Button
             variant="contained"
-            disabled={refresh}
+            disabled={!showRefreshButton || doRefresh.isPending}
             sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
             startIcon={<RefreshOutlined />}
-            onClick={async () => {
-              setRefreshing(true);
-              await syncProjects()
-                .then(() => {
-                  notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
-                })
-                .catch(e => {
-                  console.log(e);
-                  notify.showError(
-                    `Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`
-                  );
-                });
-              setRefreshing(false);
+            onClick={() => {
+              doRefresh.mutate();
             }}
           >
             Refresh {NOTEBOOK_NAME}s
