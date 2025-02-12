@@ -31,10 +31,15 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     token: search.token,
     refreshToken: search.refreshToken,
   }),
-  beforeLoad: async ({context, search: {token, refreshToken}}) => {
-    if (context.auth.isAuthenticated) return;
+  beforeLoad: async ({
+    context: {
+      auth: {isAuthenticated, getUserDetails},
+    },
+    search: {token, refreshToken},
+  }) => {
+    if (isAuthenticated) return;
 
-    const {status} = await context.auth.loginWithToken(token, refreshToken);
+    const {status} = await getUserDetails(token, refreshToken);
 
     if (status === 'success') return;
 

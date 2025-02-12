@@ -33,7 +33,7 @@ interface NavUserProps {
  */
 export function NavUser({
   user: {
-    user: {name, email},
+    user: {name, id},
   },
 }: NavUserProps) {
   const {isMobile} = useSidebar();
@@ -55,7 +55,7 @@ export function NavUser({
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{name}</span>
-                <span className="truncate text-xs">{email}</span>
+                <span className="truncate text-xs">{id}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -75,18 +75,16 @@ export function NavUser({
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{name}</span>
-                  <span className="truncate text-xs">{email}</span>
+                  <span className="truncate text-xs">{id}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link to="/account" className="flex items-center gap-2">
-                  <BadgeCheck />
-                  Account
-                </Link>
-              </DropdownMenuItem>
+              <DropdownMenuItem
+                asChild
+                className="cursor-pointer"
+              ></DropdownMenuItem>
               <DropdownMenuItem asChild className="cursor-pointer">
                 <Link to="/profile" className="flex items-center gap-2">
                   <UserCircle />
