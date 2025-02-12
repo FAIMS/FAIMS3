@@ -98,8 +98,8 @@ export default function AddRecordButtons({
               variant="contained"
               color="primary"
               sx={{
-                mb: 3,
-                mt: 3,
+                mb: 1,
+                mt: 1,
                 fontWeight: 'bold',
                 backgroundColor: theme.palette.icon.main,
                 color: theme.palette.primary.light,

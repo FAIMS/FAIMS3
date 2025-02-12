@@ -27,6 +27,7 @@ import {FAIMSPosition} from '@faims3/data-model';
 import {Alert} from '@mui/material';
 import {APP_NAME} from '../../buildconfig';
 import {Capacitor} from '@capacitor/core';
+import {LocationPermissionIssue} from '../components/ui/PermissionAlerts';
 
 function capacitor_coordindates_to_faims_pos(
   coordinates: Position
@@ -128,33 +129,7 @@ export const TakePoint = (
       </Button>
       {positionText}
       {error_text}
-      {noPermission && (
-        <Alert severity="error" sx={{width: '100%'}}>
-          {Capacitor.getPlatform() === 'web' && (
-            <>
-              Please enable location permissions for this page. In your browser,
-              look to the left of the web address bar for a button that gives
-              access to browser settings for this page.
-            </>
-          )}
-          {Capacitor.getPlatform() === 'android' && (
-            <>
-              Please enable location permissions for {APP_NAME}. Go to your
-              device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
-              Location and select "Allow all the time" or "Allow only while
-              using the app".
-            </>
-          )}
-          {Capacitor.getPlatform() === 'ios' && (
-            <>
-              Please enable location permissions for {APP_NAME}. Go to your
-              device Settings &gt; Privacy & Security &gt; Location Services
-              &gt;
-              {APP_NAME} and select "While Using the App".
-            </>
-          )}
-        </Alert>
-      )}
+      {noPermission && <LocationPermissionIssue />}
     </div>
   );
 };

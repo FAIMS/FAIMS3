@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import {getProjectDB} from './sync/index';
+import {getMetadataDbForProject} from './sync/index';
 import {ProjectID} from '@faims3/data-model';
 import {
   PROJECT_METADATA_PREFIX,
@@ -30,9 +30,9 @@ export async function getProjectMetadata(
   project_id: ProjectID,
   metadata_key: string
 ): Promise<any> {
-  const projdb = await getProjectDB(project_id);
+  const metadataDb = await getMetadataDbForProject(project_id);
   try {
-    const doc: EncodedProjectMetadata = await projdb.get(
+    const doc: EncodedProjectMetadata = await metadataDb.get(
       PROJECT_METADATA_PREFIX + '-' + metadata_key,
       {
         attachments: true,
@@ -66,7 +66,7 @@ export async function setProjectMetadata(
   metadata_key: string,
   metadata: any
 ) {
-  const projdb = await getProjectDB(project_id);
+  const metadataDb = await getMetadataDbForProject(project_id);
   try {
     const doc: EncodedProjectMetadata = {
       _id: PROJECT_METADATA_PREFIX + '-' + metadata_key,
@@ -75,7 +75,7 @@ export async function setProjectMetadata(
     };
 
     try {
-      const existing_metaDoc = await projdb.get(
+      const existing_metaDoc = await metadataDb.get(
         PROJECT_METADATA_PREFIX + '-' + metadata_key
       );
       doc._rev = existing_metaDoc._rev;
@@ -83,7 +83,7 @@ export async function setProjectMetadata(
       // Probably no existing UI info, safe to ignore
     }
 
-    await projdb.put(doc);
+    await metadataDb.put(doc);
   } catch (err) {
     throw Error(
       `failed to set metadata for project ${project_id}, '${metadata_key}': '${metadata}'`
@@ -96,7 +96,7 @@ export async function setProjectMetadataFiles(
   metadata_key: string,
   files: File[]
 ) {
-  const projdb = await getProjectDB(project_id);
+  const projdb = await getMetadataDbForProject(project_id);
   try {
     const doc: EncodedProjectMetadata = {
       _id: PROJECT_METADATA_PREFIX + '-' + metadata_key,

@@ -327,3 +327,23 @@ export function getHridFromValuesAndSpec({
   // function fall back to their preferred backup option
   return undefined;
 }
+
+/**
+ * Converts field names to a more readable format by:
+ * 1. Splitting CamelCase into separate words
+ * 2. Replacing hyphens with spaces
+ * 3. Trimming any resulting extra whitespace
+ *
+ * @param fieldName - The input field name to prettify
+ * @returns A cleaned and formatted string
+ */
+export function prettifyFieldName(fieldName: string): string {
+  return fieldName
+    .replace(/([a-z])([A-Z])/g, '$1 $2') // Split CamelCase by adding space between lower and upper case letters
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2') // Handle consecutive capitals (e.g., APIResponse -> API Response)
+    .replace(/([a-zA-Z])(\d+)/g, '$1 $2') // Split between letters and numbers
+    .replace(/(\d+)([a-zA-Z])/g, '$1 $2') // Split between numbers and letters
+    .replace(/-/g, ' ') // Replace all hyphens with spaces
+    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+    .trim(); // Remove leading/trailing whitespace
+}
