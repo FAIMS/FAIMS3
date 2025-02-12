@@ -64,7 +64,7 @@ type Props = {
     viewID: string
   ) => boolean;
   handleSectionMoveCallback: (targetViewSetId: string) => void;
-  handleFieldMoveCallback: (targetViewId: string) => void;
+  moveFieldCallback: (fieldName: string, sourceViewId: string, targetViewId: string) => void;
 };
 
 export const SectionEditor = ({
@@ -76,7 +76,7 @@ export const SectionEditor = ({
   addCallback,
   moveCallback,
   handleSectionMoveCallback,
-  handleFieldMoveCallback,
+  moveFieldCallback,
 }: Props) => {
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
@@ -400,7 +400,7 @@ export const SectionEditor = ({
       <FieldList
         viewId={viewId}
         viewSetId={viewSetId}
-        moveFieldCallback={handleFieldMoveCallback}
+        moveFieldCallback={moveFieldCallback}
       />
     </>
   );

@@ -313,6 +313,18 @@ export const FormEditor = ({
     moveCallback(viewSetID, moveDirection);
   };
 
+  const moveFieldToSection = (fieldName: string, sourceViewId: string, targetViewId: string) => {
+    dispatch({
+      type: 'ui-specification/fieldMovedToSection',
+      payload: {
+        fieldName,
+        sourceViewId,
+        targetViewId,
+      },
+    });
+    handleFieldMoveCallback(targetViewId);
+  };
+
   // Scroll the active step into view.
   const scrollActiveStepIntoView = useCallback(() => {
     const container = scrollContainerRef.current;
@@ -623,7 +635,7 @@ export const FormEditor = ({
                   addCallback={addNewSection}
                   moveCallback={moveSection}
                   handleSectionMoveCallback={handleSectionMoveCallback}
-                  handleFieldMoveCallback={handleFieldMoveCallback}
+                  moveFieldCallback={moveFieldToSection}
                 />
               </Grid>
             )}

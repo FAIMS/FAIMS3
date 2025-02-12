@@ -135,16 +135,8 @@ export const FieldEditor = ({
 
   const moveFieldToSection = () => {
     if (targetViewId) {
-      dispatch({
-        type: 'ui-specification/fieldMovedToSection',
-        payload: {
-          fieldName,
-          sourceViewId: viewId,
-          targetViewId: targetViewId,
-        },
-      });
-      handleCloseMoveDialog();
       moveFieldCallback(targetViewId);
+      handleCloseMoveDialog();
     }
   };
 
