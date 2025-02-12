@@ -53,6 +53,7 @@ const theme = createTheme({
       warningText: '#BC0505',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
+      successBackground: '#669911',
     },
     dialogButton: {
       cancel: '#606060',
@@ -67,6 +68,7 @@ const theme = createTheme({
     icon: {
       main: '#197A01',
       light: '#EAEAEA',
+      highlight: '#B10000',
     },
     table: {
       divider: '#828789FF',

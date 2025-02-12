@@ -41,6 +41,7 @@ import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 import FieldWrapper from './fieldWrapper';
+import {LocationPermissionIssue} from '../components/ui/PermissionAlerts';
 
 /**
  * Converts a base64 encoded image to a Blob object using Buffer
@@ -466,31 +467,7 @@ export const TakePhoto: React.FC<
           />
         )}
 
-        {noPermission && (
-          <Alert severity="error" sx={{width: '100%', mt: 2}}>
-            {Capacitor.getPlatform() === 'web' && (
-              <>
-                Please enable camera permissions for this page. Look for the
-                camera permissions button in your browser's address bar.
-              </>
-            )}
-            {Capacitor.getPlatform() === 'android' && (
-              <>
-                Please enable camera permissions for {APP_NAME}. Go to your
-                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
-                Camera and select "Ask every time" or "Allow only while using
-                the app".
-              </>
-            )}
-            {Capacitor.getPlatform() === 'ios' && (
-              <>
-                Please enable camera permissions for {APP_NAME}. Go to your
-                device Settings &gt; Privacy & Security &gt; Camera &gt; and
-                ensure that {APP_NAME} is enabled.
-              </>
-            )}
-          </Alert>
-        )}
+        {noPermission && <LocationPermissionIssue />}
 
         <FaimsAttachmentManagerDialog
           project_id={projectId}

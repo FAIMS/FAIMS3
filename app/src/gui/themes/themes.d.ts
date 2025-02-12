@@ -21,6 +21,7 @@ declare module '@mui/material/styles' {
       warningText: string;
       infoBackground: string;
       infoText: string;
+      successBackground: string;
     };
     dialogButton: {
       cancel: string;
@@ -35,6 +36,7 @@ declare module '@mui/material/styles' {
     icon: {
       main: string;
       light: string;
+      highlight: string;
     };
     table?: {
       divider: string;
@@ -59,6 +61,7 @@ declare module '@mui/material/styles' {
     icon?: {
       main: string;
       light: string;
+      highlight: string;
     };
 
     progressBar?: {
@@ -71,6 +74,7 @@ declare module '@mui/material/styles' {
       warningText: string;
       infoBackground: string;
       infoText: string;
+      successBackground: string;
     };
 
     dialogButton?: {
