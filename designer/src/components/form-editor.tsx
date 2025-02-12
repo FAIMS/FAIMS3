@@ -47,6 +47,7 @@ import {shallowEqual} from 'react-redux';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import FormSettingsPanel from './form-settings';
 import {SectionEditor} from './section-editor';
+import {useLocation} from 'react-router-dom';
 
 type Props = {
   viewSetId: string;
@@ -67,6 +68,10 @@ export const FormEditor = ({
   handleSectionMoveCallback,
   handleFieldMoveCallback,
 }: Props) => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const sectionParam = searchParams.get('section');
+
   const visibleTypes = useAppSelector(
     state => state.notebook['ui-specification'].visible_types
   );
@@ -107,11 +112,6 @@ export const FormEditor = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [showRightGradient, setShowRightGradient] = useState(true);
-
-  useEffect(() => {
-    // Reset activeStep when viewSetId changes.
-    setActiveStep(0);
-  }, [viewSetId]);
 
   // Update overflow gradient overlay on scroll, hidng it when scrolled to the end.
   const handleScroll = () => {
@@ -349,6 +349,16 @@ export const FormEditor = ({
     window.addEventListener('resize', scrollActiveStepIntoView);
     return () => window.removeEventListener('resize', scrollActiveStepIntoView);
   }, [scrollActiveStepIntoView]);
+
+  useEffect(() => {
+    // Set active step from URL parameter if available
+    if (sectionParam !== null) {
+      const sectionIndex = parseInt(sectionParam);
+      if (!isNaN(sectionIndex) && sectionIndex >= 0 && sectionIndex < sections.length) {
+        setActiveStep(sectionIndex);
+      }
+    }
+  }, [sectionParam, sections.length]);
 
   return (
     <Grid container spacing={2} pt={3}>

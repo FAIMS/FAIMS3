@@ -148,7 +148,13 @@ export const DesignPanel = () => {
     const targetIndex = combinedArray.indexOf(targetViewSetId);
 
     if (targetIndex >= 0) {
-      setIndexAndNavigate(targetIndex.toString());
+      // find the target section's index in the target form
+      const targetForm = viewSets[targetViewSetId];
+      const targetSectionIndex = targetForm.views.length - 1; // new section is added at the end
+
+      // update the form index and navigate
+      setTabIndex(targetIndex.toString());
+      navigate(`${targetIndex}?section=${targetSectionIndex}`);
     }
   };
 
@@ -161,7 +167,12 @@ export const DesignPanel = () => {
         const targetIndex = combinedArray.indexOf(formId);
 
         if (targetIndex >= 0) {
-          setIndexAndNavigate(targetIndex.toString());
+          // find the target section's index in the target form
+          const targetSectionIndex = form.views.indexOf(targetViewId);
+
+          // Update the form index and navigate
+          setTabIndex(targetIndex.toString());
+          navigate(`${targetIndex}?section=${targetSectionIndex}`);
         }
         break;
       }
