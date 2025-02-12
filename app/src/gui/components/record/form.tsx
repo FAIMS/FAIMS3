@@ -42,7 +42,10 @@ import {
   NotificationContext,
   NotificationContextType,
 } from '../../../context/popup';
-import {selectActiveUser} from '../../../context/slices/authSlice';
+import {
+  listAllConnections,
+  selectActiveUser,
+} from '../../../context/slices/authSlice';
 import {store} from '../../../context/store';
 import {percentComplete, requiredFields} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
@@ -138,6 +141,7 @@ type RecordFormState = {
   views: string[];
   visitedSteps: Set<string>;
   isRevisiting: boolean;
+  isRecordSubmitted: boolean;
 };
 
 /*
@@ -230,6 +234,7 @@ class RecordForm extends React.Component<
       views: [],
       visitedSteps: new Set<string>(),
       isRevisiting: false,
+      isRecordSubmitted: false,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -238,11 +243,32 @@ class RecordForm extends React.Component<
     this.onChangeTab = this.onChangeTab.bind(this);
   }
 
-  // Function to update visited steps when needed
+  // function to update visited steps when needed
   updateVisitedSteps = (stepId: string) => {
     this.setState(prevState => ({
       visitedSteps: new Set(prevState.visitedSteps).add(stepId),
     }));
+  };
+
+  // navigation for the section for better UX , ensure section exist in views list.
+  handleSectionClick = (section: string) => {
+    const index = this.state.views.indexOf(section);
+
+    if (index !== -1) {
+      this.onChangeStepper(section, index);
+    } else {
+      // if section is not found in view list check all aval. sections
+      const availableSections = Object.keys(this.props.ui_specification.views);
+
+      if (availableSections.includes(section)) {
+        this.onChangeStepper(section, availableSections.indexOf(section));
+      } else {
+        // log a warning in case its completely invalid.
+        console.warn(
+          `handleSectionClick: Attempted to navigate to an invalid section: ${section}`
+        );
+      }
+    }
   };
 
   async componentDidMount() {
@@ -724,33 +750,28 @@ class RecordForm extends React.Component<
   }
 
   onChangeStepper(view_name: string, activeStepIndex: number) {
-    console.log('ONSTEPPER CHANGED', view_name, activeStepIndex);
+    this.setState(prevState => {
+      const {visitedSteps, activeStep} = prevState;
 
-    this.setState(
-      prevState => {
-        const wasVisitedBefore = prevState.visitedSteps.has(view_name);
+      const wasVisitedBefore = prevState.visitedSteps.has(view_name);
 
-        // add to `visitedSteps` if it has NOT been visited before
-        const updatedVisitedSteps = new Set(prevState.visitedSteps);
-        updatedVisitedSteps.add(view_name);
+      // add to visitedSteps if it has not been visited before
+      const updatedVisitedSteps = new Set(prevState.visitedSteps);
+      updatedVisitedSteps.add(view_name);
 
-        return {
-          ...prevState,
-          view_cached: view_name,
-          activeStep: activeStepIndex,
-          visitedSteps: updatedVisitedSteps,
-          isRevisiting: wasVisitedBefore,
-        };
-      },
-      () => {
-        console.log('RG-------UPDATE:', {
-          view_cached: this.state.view_cached,
-          activeStep: this.state.activeStep,
-          visitedSteps: Array.from(this.state.visitedSteps),
-          isRevisiting: this.state.isRevisiting,
-        });
-      }
-    );
+      const isFirstStep = activeStepIndex === 0;
+
+      const isRevisiting =
+        wasVisitedBefore || (isFirstStep && activeStep !== activeStepIndex);
+
+      return {
+        ...prevState,
+        view_cached: view_name,
+        activeStep: activeStepIndex,
+        visitedSteps: updatedVisitedSteps,
+        isRevisiting,
+      };
+    });
   }
 
   onChangeTab(event: React.ChangeEvent<{}>, newValue: string) {
@@ -1204,6 +1225,8 @@ class RecordForm extends React.Component<
       const viewName = this.requireView();
       const viewsetName = this.requireViewsetName();
       const initialValues = this.requireInitialValues();
+      const isRecordSubmitted = !!this.state.revision_cached;
+
       const ui_specification = this.props.ui_specification;
       const validationSchema = getValidationSchemaForViewset(
         ui_specification,
@@ -1221,7 +1244,7 @@ class RecordForm extends React.Component<
               // over the manual validate function
               // validationSchema={validationSchema}
               validateOnMount={true}
-              validateOnChange={true}
+              validateOnChange={false}
               validateOnBlur={true}
               // This manually runs the validate function which formik triggers
               // validation due to the above conditions, we use the yup
@@ -1239,7 +1262,6 @@ class RecordForm extends React.Component<
                 } catch (err) {
                   try {
                     const errors = err as ValidationError;
-                    console.log('VALIDATING ERRORS', errors);
 
                     const processedErrors = errors.inner.reduce(
                       (acc: {[key: string]: string}, error) => {
@@ -1343,6 +1365,7 @@ class RecordForm extends React.Component<
                                 visitedSteps={this.state.visitedSteps}
                                 currentStepId={this.state.view_cached ?? ''}
                                 isRevisiting={this.state.isRevisiting}
+                                handleSectionClick={this.handleSectionClick}
                               />
                             </Form>
                           </div>
@@ -1447,6 +1470,7 @@ class RecordForm extends React.Component<
                         views={views}
                         formErrors={formProps.errors}
                         visitedSteps={this.state.visitedSteps}
+                        isRecordSubmitted={isRecordSubmitted}
                       />
                     )}
 
@@ -1474,10 +1498,7 @@ class RecordForm extends React.Component<
                       visitedSteps={this.state.visitedSteps}
                       currentStepId={this.state.view_cached ?? ''}
                       isRevisiting={this.state.isRevisiting}
-
-                      // currentStepId={this.state.view_cached ?? ''}
-                      // views={this.state.views}
-                      // onChangeStepper={this.onChangeStepper}
+                      handleSectionClick={this.handleSectionClick}
                     />
                     <FormButtonGroup
                       project_id={this.props.project_id}
