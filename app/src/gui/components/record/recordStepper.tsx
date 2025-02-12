@@ -92,50 +92,30 @@ const useStyles = createUseStyles({
 
 export default function RecordStepper(props: RecordStepperProps) {
   const classes = useStyles();
-  const {view_index, ui_specification, onChangeStepper, views, formErrors} =
-    props;
+  const {
+    visitedSteps,
+    view_index,
+    ui_specification,
+    onChangeStepper,
+    views,
+    formErrors,
+  } = props;
 
   // track visited steps by their unique section ID instead of index
-  const [visitedSteps, setVisitedSteps] = useState<Set<string>>(new Set());
+  // const [visitedSteps, setVisitedSteps] = useState<Set<string>>(new Set());
   const [validSteps, setValidSteps] = useState<string[]>([]);
 
-  // Check for errors in the current view
   const hasErrors = useCallback(
     (sectionId: string) => {
-      if (!visitedSteps.has(sectionId)) return false; // ✅ Only show if visited
-
-      const currentViewFields = ui_specification.views[sectionId]?.fields || [];
-      return currentViewFields.some(
-        (field: string) => formErrors && formErrors[field]
+      return (
+        visitedSteps.has(sectionId) &&
+        ui_specification.views[sectionId]?.fields.some(
+          field => formErrors && formErrors[field]
+        )
       );
     },
-    [formErrors, ui_specification, visitedSteps]
+    [formErrors, visitedSteps]
   );
-
-  // Track Visited and Valid Steps
-  useEffect(() => {
-    const currentSectionId = views[view_index];
-
-    if (!visitedSteps.has(currentSectionId)) {
-      setVisitedSteps(prev => {
-        const newVisitedSteps = new Set(prev);
-        newVisitedSteps.add(currentSectionId);
-        return newVisitedSteps;
-      });
-    }
-
-    // show errors only if user has visited and left unaddressed
-    const currentHasErrors = hasErrors(currentSectionId);
-
-    setValidSteps(prev => {
-      if (!currentHasErrors && !prev.includes(currentSectionId)) {
-        return [...prev, currentSectionId];
-      } else if (currentHasErrors && prev.includes(currentSectionId)) {
-        return prev.filter(step => step !== currentSectionId);
-      }
-      return prev;
-    });
-  }, [view_index, formErrors, hasErrors]);
 
   const themeType =
     theme.palette.primary.main === '#000000' ? 'bss' : 'default';
