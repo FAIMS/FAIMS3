@@ -76,7 +76,7 @@ export function MapFormField({
   // default label
   const label = props.label ?? `Get ${props.featureType}`;
 
-  // innitialize state  based on saved location to avoid flickering
+  // A location is selected if there are features provided
   const isLocationSelected =
     drawnFeatures.features && drawnFeatures.features.length > 0;
 
