@@ -12,7 +12,7 @@ const stepColors = {
     current: '#E18200',
     visited: '#669911',
     error: '#D50C0CFF',
-    notVisited: '#CFF292A0',
+    notVisited: '#B7C1A6F1',
   },
 };
 
