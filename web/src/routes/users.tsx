@@ -15,14 +15,13 @@ export const Route = createFileRoute('/users')({
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
 function RouteComponent() {
-  const {user} = useAuth();
-
-  const {data, isPending} = useGetUsers(user);
+  const {user: authUser} = useAuth();
+  const {data, isPending} = useGetUsers(authUser);
 
   return (
     <DataTable
       columns={columns}
-      data={data?.map((user: any) => ({...user, email: user.emails[0]}))}
+      data={data?.map((user: any) => ({...user, email: user.emails[0]})) || []}
       loading={isPending}
     />
   );

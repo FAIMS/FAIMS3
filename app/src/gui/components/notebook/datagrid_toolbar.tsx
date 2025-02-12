@@ -39,10 +39,7 @@ interface ToolbarProps {
 }
 
 /**
- * Custom search button to search record data with filtering capability.
- *
- * @param {ToolbarProps} props - Properties passed to handle search query functionality.
- * @returns {JSX.Element} The search input field with a clear and search button.
+ * Custom search button with improved layout handling
  */
 export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
   const [value, setValue] = React.useState('');
@@ -72,7 +69,8 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
   };
 
   /**
-   * Detects changes to the search input value and triggers the query if the input is cleared.
+   * Detects changes to the search input value and triggers the query if the
+   * input is cleared.
    */
   useEffect(() => {
     if (prevValue !== value && value === '') {
@@ -80,23 +78,32 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
     }
   }, [value]);
 
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      handleSubmit();
+    }
+  };
+
   return (
     <Box
       component={Paper}
       elevation={0}
       sx={{
-        mt: 1,
-        mr: 1,
-        borderRadius: '8px',
         backgroundColor: 'transparent',
       }}
     >
-      <Grid container spacing={1} alignItems="center">
-        <Grid item xs={9} sm={10} md={11}>
+      <Grid
+        container
+        spacing={1}
+        alignItems="center"
+        wrap="nowrap" // Prevent wrapping
+      >
+        <Grid item xs>
           <TextField
             placeholder="Search record data (case sensitive)"
             value={value}
             onChange={handleChange}
+            onKeyDown={handleKeyPress}
             variant="outlined"
             size="small"
             fullWidth
@@ -110,11 +117,6 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
                 '&:hover': {
                   borderColor: '#bdbdbd',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-                },
-                '& .MuiOutlinedInput-root': {
-                  '&.Mui-focused': {
-                    boxShadow: '0 0 15px rgba(0, 0, 0, 0.4)',
-                  },
                 },
                 '&.Mui-focused': {
                   borderColor: '#e0e0e0',
@@ -143,11 +145,6 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
                       '&:hover': {
                         backgroundColor: 'rgba(25, 118, 210, 0.08)',
                         transform: 'scale(1.05)',
-                        boxShadow: '0 0 8px rgba(0, 0, 0, 0.3)',
-                      },
-                      '&:active': {
-                        transform: 'scale(0.95)',
-                        boxShadow: '0 0 12px rgba(0, 0, 0, 0.4)',
                       },
                     }}
                   >
@@ -157,7 +154,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
                         fontSize: '1.75rem',
                         fontWeight: 'bold',
                       }}
-                    />{' '}
+                    />
                   </IconButton>
                 </InputAdornment>
               ),
@@ -173,9 +170,6 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
                         backgroundColor: 'rgba(0, 0, 0, 0.04)',
                         color: '#424242',
                       },
-                      '&:active': {
-                        transform: 'scale(0.95)',
-                      },
                     }}
                   >
                     <ClearIcon
@@ -184,7 +178,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
                         fontWeight: 'bold',
                         fontSize: '1.60rem',
                       }}
-                    />{' '}
+                    />
                   </IconButton>
                 </InputAdornment>
               ),
@@ -192,7 +186,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
           />
         </Grid>
 
-        <Grid item xs={3} sm={2} md={1}>
+        <Grid item sx={{flexShrink: 0, ml: 1}}>
           <GridToolbarFilterButton
             componentsProps={{
               button: {
@@ -202,6 +196,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
                       color: theme.palette.primary.main,
                       fontSize: '1.85rem',
                       fontWeight: 'bold',
+                      marginRight: theme.spacing(1),
                     }}
                   />
                 ),
@@ -209,28 +204,22 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
             }}
             sx={{
               borderRadius: '8px',
-              padding: {xs: '6px 8px', sm: '8px 16px'},
-              fontSize: {xs: '0.8rem', sm: '1.2rem'},
-              fontWeight: 'bold',
+              padding: '8px',
+              minWidth: 'auto',
               backgroundColor: theme.palette.background.default,
               border: '2px solid #e0e0e0',
               transition: 'all 0.2s ease-in-out',
               textTransform: 'none',
               boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
-
               '&:hover': {
                 backgroundColor: 'rgba(25, 118, 210, 0.08)',
                 borderColor: theme => theme.palette.primary.main,
               },
-              '&:active': {
-                boxShadow: '0 0 12px rgba(0, 0, 0, 0.4)',
-              },
-              '&.MuiButton-root': {
-                minWidth: 'auto',
-                whiteSpace: 'nowrap',
-              },
               '& .MuiButton-startIcon': {
-                marginRight: '4px',
+                margin: 0,
+              },
+              '& .MuiButton-endIcon': {
+                display: 'none',
               },
             }}
           />
@@ -244,8 +233,8 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
  * Main toolbar component for the DataGrid.
  * This replaces the default toolbar to include custom search and filter functionalities.
  *
- * @param {ToolbarProps} props - Properties to handle search functionality.
- * @returns {JSX.Element} Custom toolbar for the DataGrid.
+ * @param props - Properties to handle search functionality.
+ * @returns Custom toolbar for the DataGrid.
  */
 export function NotebookDataGridToolbar(props: ToolbarProps) {
   return (
@@ -254,20 +243,14 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
         padding: '8px 16px',
         borderBottom: '1px solid #e0e0e0',
         backgroundColor: '#fafafa',
+        width: '100%',
       }}
     >
-      <Grid
-        container
-        spacing={1}
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <Grid item xs={12}>
-          <GridToolbarSearchRecordDataButton
-            handleQueryFunction={props.handleQueryFunction}
-          />
-        </Grid>
-      </Grid>
+      <Box width="100%">
+        <GridToolbarSearchRecordDataButton
+          handleQueryFunction={props.handleQueryFunction}
+        />
+      </Box>
     </GridToolbarContainer>
   );
 }
@@ -275,7 +258,7 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
 /**
  * Alternate toolbar for managing draft DataGrid, with basic functionality like filters.
  *
- * @returns {JSX.Element} A simple toolbar for drafts with filter options.
+ * @returns A simple toolbar for drafts with filter options.
  */
 export function NotebookDraftDataGridToolbar() {
   return (

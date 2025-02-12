@@ -1,7 +1,5 @@
 import {EditTemplateDialog} from '@/components/dialogs/edit-template';
 import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-template';
-import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
-import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
@@ -34,24 +32,6 @@ const TemplateActions = () => {
             <ListDescription>Edit the current template.</ListDescription>
           </ListItem>
           <EditTemplateDialog />
-        </List>
-      </Card>
-      <Card className="flex flex-col gap-4 flex-1">
-        <List className="flex flex-col justify-between h-full">
-          <ListItem>
-            <ListLabel>Archive Template</ListLabel>
-            <ListDescription>Archive the current template.</ListDescription>
-          </ListItem>
-          <ListItem>
-            <Alert variant="destructive">
-              <AlertTitle>Warning</AlertTitle>
-              <AlertDescription>
-                Archiving the template will prevent {NOTEBOOK_NAME}s from being
-                created from it.
-              </AlertDescription>
-            </Alert>
-          </ListItem>
-          <Button variant="destructive">Archive Template</Button>
         </List>
       </Card>
     </div>

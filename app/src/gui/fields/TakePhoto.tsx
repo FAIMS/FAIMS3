@@ -25,6 +25,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
 import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
 import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
@@ -37,6 +41,7 @@ import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 import FieldWrapper from './fieldWrapper';
+import {LocationPermissionIssue} from '../components/ui/PermissionAlerts';
 
 /**
  * Converts a base64 encoded image to a Blob object using Buffer
@@ -147,16 +152,14 @@ const ImageGallery = ({
   onAddPhoto,
 }: ImageListProps) => {
   const theme = useTheme();
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [photoToDelete, setPhotoToDelete] = React.useState<number | null>(null);
+
   // Handler for deleting images from the gallery
   const handleDelete = (index: number) => {
-    if (images.length > index) {
-      // need to reverse the index here to account for reverse display
-      const originalIndex = images.length - 1 - index;
-      const newImages = images.filter(
-        (_: any, i: number) => i !== originalIndex
-      );
-      setImages(newImages);
-    }
+    setPhotoToDelete(index);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -301,6 +304,54 @@ const ImageGallery = ({
           }
         })}
       </Box>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: theme.spacing(2),
+          },
+        }}
+      >
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this photo?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{px: 3, pb: 3}}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            sx={{
+              borderRadius: theme.spacing(1),
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              if (photoToDelete !== null && images.length > photoToDelete) {
+                // need to reverse the index here to account for reverse display
+                const originalIndex = images.length - 1 - photoToDelete;
+                const newImages = images.filter(
+                  (_: any, i: number) => i !== originalIndex
+                );
+                setImages(newImages);
+              }
+              setPhotoToDelete(null);
+              setDeleteDialogOpen(false);
+            }}
+            variant="contained"
+            color="error"
+            sx={{
+              borderRadius: theme.spacing(1),
+              ml: 2,
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
@@ -416,31 +467,7 @@ export const TakePhoto: React.FC<
           />
         )}
 
-        {noPermission && (
-          <Alert severity="error" sx={{width: '100%', mt: 2}}>
-            {Capacitor.getPlatform() === 'web' && (
-              <>
-                Please enable camera permissions for this page. Look for the
-                camera permissions button in your browser's address bar.
-              </>
-            )}
-            {Capacitor.getPlatform() === 'android' && (
-              <>
-                Please enable camera permissions for {APP_NAME}. Go to your
-                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
-                Camera and select "Ask every time" or "Allow only while using
-                the app".
-              </>
-            )}
-            {Capacitor.getPlatform() === 'ios' && (
-              <>
-                Please enable camera permissions for {APP_NAME}. Go to your
-                device Settings &gt; Privacy & Security &gt; Camera &gt; and
-                ensure that {APP_NAME} is enabled.
-              </>
-            )}
-          </Alert>
-        )}
+        {noPermission && <LocationPermissionIssue />}
 
         <FaimsAttachmentManagerDialog
           project_id={projectId}

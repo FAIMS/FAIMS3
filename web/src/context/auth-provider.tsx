@@ -12,7 +12,7 @@ export interface User {
 
 export interface AuthContext {
   isAuthenticated: boolean;
-  loginWithToken: (
+  getUserDetails: (
     token?: string,
     refreshToken?: string
   ) => Promise<{
@@ -60,12 +60,12 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   };
 
   /**
-   * Logs in the user with a token and refresh token.
+   * Fetches the user details from the API and stores them in the user object.
    * @param {string} token - The token to use for authentication.
    * @param {string} refreshToken - The refresh token to use for authentication.
    * @returns {Promise<{status: string, message: string}>} A promise that resolves to an object containing the status and message.
    */
-  const loginWithToken = async (token?: string, refreshToken = '') => {
+  const getUserDetails = async (token?: string, refreshToken = '') => {
     if (!token) return {status: 'error', message: 'No token provided'};
 
     const response = await fetch(
@@ -134,7 +134,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
   return (
     <AuthContext.Provider
-      value={{isAuthenticated, user, loginWithToken, logout}}
+      value={{isAuthenticated, user, getUserDetails, logout}}
     >
       {children}
     </AuthContext.Provider>

@@ -256,6 +256,8 @@ export async function listDraftsEncoded(
   ).docs;
 }
 
+export type DraftFilters = 'updates' | 'created' | 'all';
+
 /**
  * Returns a list of not deleted records
  * @param project_id Project ID to get list of draft for
@@ -263,23 +265,28 @@ export async function listDraftsEncoded(
  */
 export async function listDraftMetadata(
   project_id: ProjectID,
-  filter: 'updates' | 'created' | 'all'
+  filter: DraftFilters
 ): Promise<DraftMetadataList> {
   try {
     const records = await listDraftsEncoded(project_id, filter);
     const out: DraftMetadataList = {};
-    records.forEach(async record => {
-      out[record._id] = {
-        project_id: project_id,
-        _id: record._id,
-        created: new Date(record.created),
-        existing: record.existing,
-        updated: new Date(record.updated),
-        type: record.type,
-        hrid: (await getDraftHRID(record)) ?? record._id,
-        record_id: record.record_id,
-      };
-    });
+
+    // Use Promise.all to wait for all async operations
+    await Promise.all(
+      records.map(async record => {
+        out[record._id] = {
+          project_id: project_id,
+          _id: record._id,
+          created: new Date(record.created),
+          existing: record.existing,
+          updated: new Date(record.updated),
+          type: record.type,
+          hrid: (await getDraftHRID(record)) ?? record._id,
+          record_id: record.record_id,
+        };
+      })
+    );
+
     return out;
   } catch (err) {
     console.warn('Failed to get metadata', err);

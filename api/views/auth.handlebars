@@ -1,42 +1,42 @@
+{{#if messages.message}}
+<div class="alert alert-warning">{{messages.message}}</div>
+{{/if}}
 
-<div class="form-signin w-100 m-auto">
-    {{#if messages.message}}
-    <div class="alert alert-success">{{messages.message}}</div>
-    {{/if}}
-
-    <div class="form-signin w-100 m-auto text-center">
-     <h3 class="h3 mb-3 fw-normal" style="margin-top:50px">Sign In</h3>
-    <p class="">Please select an authentication provider</p>
-    </div>
-  
-    <form>
-
-    {{#each providers}}
-    <a href="/auth/{{ this.label }}/?redirect={{../redirect}}" class="w-100 btn btn-lg btn-primary"
-            style="background-color:#669911;">{{ this.name }}</a>
-    {{/each}}
- 
-    <div class=" w-100 m-auto text-center">
-    <p>If the provider you chose fails to work, try a different browser, and see
-    any provider-specific advice in the user documentation.
-    </p>
-    </div>
-</form>
+<div class="auth-header">
+    <h2>Welcome</h2>
+    <p>Sign in to continue</p>
+</div>
 
 {{#if localAuth}}
-<h2>Local Login</h2>
 <form method="post" action="/auth/local?redirect={{redirect}}">
-  <div class="mb-3">
-    <label for="InputIdentifier" class="form-label">Email Address</label>
-    <input type="text" name="username" class="form-control" id="InputIdentifier" autocomplete="email">
-  </div>
-  <div class="mb-3">
-    <label for="InputPassword" class="form-label">Password</label>
-    <input type="password" name="password" class="form-control" id="InputPassword" autocomplete="current-password">
-  </div>
-  <button type="submit" class="btn btn-primary">Submit</button>
+    <div class="mb-3">
+        <label for="InputIdentifier" class="form-label">Email Address</label>
+        <input type="text" name="username" class="form-control" 
+               id="InputIdentifier" autocomplete="email" required>
+    </div>
+    <div class="mb-3">
+        <label for="InputPassword" class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" 
+               id="InputPassword" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="auth-button">Sign in</button>
 </form>
 {{/if}}
 
+{{#if (and localAuth providers)}}
+<div class="divider">
+    <span>or</span>
 </div>
+{{/if}}
 
+{{#if providers}}
+<div class="sso-options">
+    {{#each providers}}
+    <a href="/auth/{{ this.label }}/?redirect={{../redirect}}" 
+       class="auth-button-outline">
+        <i class="bi bi-{{this.name}}" style="margin-right: 8px;"></i>
+        Continue with {{ this.name }}
+    </a>
+    {{/each}}
+</div>
+{{/if}}

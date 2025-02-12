@@ -64,7 +64,7 @@ describe('Auth', () => {
       .get('/auth')
       .expect(200)
       .then(response => {
-        expect(response.text).to.include('Local Login');
+        expect(response.text).to.include('Welcome');
         done();
       });
   });

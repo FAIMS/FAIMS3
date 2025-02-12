@@ -10,7 +10,7 @@ export const fields = [
     name: 'name',
     label: `${NOTEBOOK_NAME_CAPITALIZED} Name`,
     schema: z.string().min(5, {
-      message: `${NOTEBOOK_NAME_CAPITALIZED} name must be at least 3 characters.`,
+      message: `${NOTEBOOK_NAME_CAPITALIZED} name must be at least 5 characters.`,
     }),
   },
 ];
