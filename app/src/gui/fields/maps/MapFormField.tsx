@@ -95,7 +95,7 @@ export function MapFormField({
   const notify = useNotification();
 
   // Callback function when a location is selected
-  const mapCallback = (
+  const setFeaturesCallback = (
     theFeatures: GeoJSONFeatureCollection,
     action: MapAction
   ) => {
@@ -209,7 +209,7 @@ export function MapFormField({
           zoom={zoom}
           center={center ?? FALLBACK_CENTER}
           fallbackCenter={center === undefined}
-          callbackFn={mapCallback}
+          setFeatures={setFeaturesCallback}
           geoTiff={props.geoTiff}
           projection={props.projection}
           setNoPermission={setNoPermission}

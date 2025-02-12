@@ -65,7 +65,7 @@ interface MapProps extends ButtonProps {
   zoom: number;
   center: Array<number>;
   fallbackCenter: boolean;
-  callbackFn: (features: object, action: MapAction) => void;
+  setFeatures: (features: object, action: MapAction) => void;
   setNoPermission: (flag: boolean) => void;
   isLocationSelected: boolean;
   openMap?: () => void;
@@ -250,7 +250,7 @@ function MapWrapper(props: MapProps) {
               setShowConfirmSave(true); // show confirmation dialog if no location is selected while saving.
               return;
             }
-            props.callbackFn(geoJsonFeatures, 'save');
+            props.setFeatures(geoJsonFeatures, 'save');
             setMapOpen(false);
           } else if (action === 'close') {
             setMapOpen(false);
@@ -494,7 +494,7 @@ function MapWrapper(props: MapProps) {
             }}
             onClick={() => {
               setShowConfirmSave(false);
-              props.callbackFn({}, 'save');
+              props.setFeatures({}, 'save');
               setMapOpen(false);
             }}
           >
