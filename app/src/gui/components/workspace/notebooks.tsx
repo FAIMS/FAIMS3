@@ -277,18 +277,21 @@ export default function NoteBooks() {
         <div
           style={{display: 'flex', justifyContent: 'space-between', gap: '8px'}}
         >
-          {showCreateNewNotebookButton ? (
+          {/*  Hiding the "create new survey" button
+         {showCreateNewNotebookButton ? (
             <Button
               variant="contained"
               onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
               sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
               startIcon={<AddCircleSharpIcon />}
             >
-              Create New {NOTEBOOK_NAME}
+              Create New rani {NOTEBOOK_NAME}
             </Button>
           ) : (
             <div />
-          )}
+          )} 
+           */}
+
           <Button
             variant="contained"
             disabled={refresh}
