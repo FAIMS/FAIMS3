@@ -475,10 +475,11 @@ function displayErrors(
           key={field}
           style={{
             marginBottom: '6px',
-            display: 'flex',
+            display: window.innerWidth <= 768 ? 'table-cell' : 'flex',
             alignItems: 'center',
             flexWrap: 'wrap',
             width: '100%',
+            lineHeight: '40px',
           }}
         >
           <Link
