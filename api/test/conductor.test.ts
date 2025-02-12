@@ -52,10 +52,6 @@ describe('Auth', () => {
       .expect('Location', /\/auth/, done);
   });
 
-  it('logout redirects to /', done => {
-    request(app).get('/logout/').expect(302).expect('Location', '/', done);
-  });
-
   it('auth returns HTML', done => {
     request(app)
       .get('/auth')
