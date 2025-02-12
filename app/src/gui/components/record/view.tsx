@@ -278,39 +278,71 @@ export function ViewComponent(props: ViewProps) {
 
   // Track which steppers have been interacted with
   const [interactedSteppers, setInteractedSteppers] = useState<Set<string>>(
-    new Set()
+    new Set<string>()
   );
 
   // Get the stepper ID
   const stepperId = props.viewName;
 
-  // Check if any field in this stepper is touched
-  const isCurrentStepperTouched = fieldNames.some(
-    field => !!props.formProps.touched[field]
+  // Check if any field in this stepper has been interacted with (typed, selected, clicked)
+  const isCurrentStepperInteracted = fieldNames.some(
+    field =>
+      !!props.formProps.touched[field] || // Field was touched
+      !!props.formProps.values[field] // Field has a value
   );
+
+  // Track if this stepper has only one field (like a radio group)
+  // const isSingleFieldStep = fieldNames.length === 1;
 
   // Check if this stepper has errors
   const hasErrors = fieldNames.some(field => !!props.formProps.errors[field]);
 
-  // Ensure form errors are displayed as soon as a stepper turns red
-  useEffect(() => {
-    if (hasErrors) {
-      setInteractedSteppers(prev => new Set(prev).add(stepperId));
-    }
-  }, [hasErrors]);
+  // Ensure errors appear if:
+  // 1. User interacted with the stepper
+  // 2. User has visited this stepper before
 
-  // Ensure errors appear only after user interacts
+  // useEffect(() => {
+  //   if (isCurrentStepperInteracted) {
+  //     setInteractedSteppers(prev => new Set(prev).add(stepperId));
+  //   }
+  // }, [isCurrentStepperInteracted, hasErrors]);
+
+  // Track if this stepper has been visited before
   useEffect(() => {
-    if (isCurrentStepperTouched) {
+    if (isCurrentStepperInteracted) {
       setInteractedSteppers(prev => new Set(prev).add(stepperId));
     }
-  }, [isCurrentStepperTouched]);
-  // Show errors if the stepper has been interacted with OR if it has turned red
-  const shouldShowErrors = interactedSteppers.has(stepperId) && hasErrors;
+  }, [isCurrentStepperInteracted]);
+
+  // Ensure clicks in this stepper mark it as interacted
+  const handleStepperInteraction = () => {
+    setInteractedSteppers(prev => new Set(prev).add(stepperId));
+  };
+
+  // Depend on stepperId to correctly track changes
+  // Ensure errors appear only after a stepper was visited & interacted with
+  // useEffect(() => {
+  //   if (
+  //     hasErrors &&
+  //     props.visitedSteps.has(stepperId) &&
+  //     isCurrentStepperInteracted
+  //   ) {
+  //     setInteractedSteppers(prev => new Set(prev).add(stepperId));
+  //   }
+  // }, [hasErrors, props.visitedSteps, isCurrentStepperInteracted]);
+
+  // Should show errors only if:
+  // - Stepper has been visited before
+  // - Stepper has errors
+  // - If it's a single-field stepper, user must have **visited at least once**
+  const shouldShowErrors =
+    interactedSteppers.has(stepperId) &&
+    hasErrors && // Stepper has been interacted with before
+    (isCurrentStepperInteracted || interactedSteppers.has(stepperId)); // User has interacted OR revisited the stepper
 
   // Identify other sections with errors that have been interacted with
   const otherSectionsWithErrors = Array.from(interactedSteppers)
-    .filter(section => section !== stepperId) // Exclude the current stepper
+    .filter(section => section !== stepperId)
     .filter(section =>
       Object.keys(props.formProps.errors).some(field =>
         props.ui_specification.views[section]?.fields.includes(field)
@@ -361,7 +393,7 @@ export function ViewComponent(props: ViewProps) {
             fieldNames
           )}
 
-          {/* show other stepper names with errors if they have been interacted with */}
+          {/* Show other stepper names with errors if they have been interacted with */}
           {otherSectionsWithErrors.length > 0 && (
             <Box mt={2}>
               <Typography variant="subtitle1" sx={{fontWeight: 'bold'}}>
