@@ -637,7 +637,6 @@ const KeyValueTable = ({data}: {data: {[key: string]: string | ReactNode}}) => {
                   width: '40%',
                   borderBottom: 'none',
                   padding: '4px 8px',
-                  fontWeight: 'bold',
                 }}
               >
                 {key}
@@ -647,6 +646,7 @@ const KeyValueTable = ({data}: {data: {[key: string]: string | ReactNode}}) => {
                   width: '60%',
                   borderBottom: 'none',
                   padding: '4px 8px',
+                  fontWeight: 'bold',
                 }}
               >
                 {val}
