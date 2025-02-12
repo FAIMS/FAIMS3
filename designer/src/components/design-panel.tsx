@@ -150,7 +150,7 @@ export const DesignPanel = () => {
     if (targetIndex >= 0) {
       // find the target section's index in the target form
       const targetForm = viewSets[targetViewSetId];
-      const targetSectionIndex = targetForm.views.length - 1; // new section is added at the end
+      const targetSectionIndex = targetForm.views.length; // new section is added at the end
 
       // update the form index and navigate
       setTabIndex(targetIndex.toString());

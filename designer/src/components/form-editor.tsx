@@ -183,9 +183,9 @@ export const FormEditor = ({
         payload: {sourceViewSetId, targetViewSetId, viewId},
       });
 
-      setActiveStep(0);
       setAddAlertMessage('');
       // let sectionEditor component know a section was moved successfully
+      handleSectionMoveCallback(targetViewSetId);
       return true;
     } catch (error: unknown) {
       error instanceof Error && setAddAlertMessage(error.message);
