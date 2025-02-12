@@ -112,13 +112,10 @@ const handlebarsConfig = {
       htmlText = htmlText.replace(/<table>/g, '<table class="table">');
       return new handlebars.SafeString(htmlText);
     },
-<<<<<<< HEAD
-=======
     and: (...args: any[]) => {
       // Remove the last argument (Handlebars options object)
       return args.slice(0, -1).every(Boolean);
     },
->>>>>>> 220c62ce (Fix linting)
   },
 };
 
