@@ -35,7 +35,6 @@ import {Alert, Box, Divider, Typography} from '@mui/material';
 import {Form, Formik} from 'formik';
 import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
-import {ValidationError} from 'yup';
 import * as ROUTES from '../../../constants/routes';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
 import {
@@ -1249,7 +1248,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   return {};
                 } catch (err) {
                   try {
-                    const errors = err as ValidationError;
+                    const errors = err as {inner: any[]};
 
                     const processedErrors = errors.inner.reduce(
                       (acc: {[key: string]: string}, error) => {

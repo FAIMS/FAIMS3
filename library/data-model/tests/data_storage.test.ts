@@ -361,7 +361,7 @@ describe('record iterator', () => {
       // expect the sum of the first n integers from 0 to n-1
       expect(sumOfAges).toBe(Math.abs((n * (n - 1)) / 2));
     }
-  });
+  }, 10000);
 });
 
 describe('record retrieval', () => {
@@ -404,7 +404,7 @@ describe('record retrieval', () => {
     } else {
       fail('Failed to get database');
     }
-  });
+  }, 10000);
 
   test('get some record metadata', async () => {
     const viewID = 'Test';

@@ -50,7 +50,7 @@ import {RecordReference} from '@faims3/data-model';
 import {gridParamsDataType} from '../record_links';
 import {
   getFieldLabel,
-  getSummaryFields,
+  getSummaryFieldInformation,
   getUiSpecForProject,
 } from '../../../../../uiSpecification';
 import {getRecordRoute} from '../../../../../constants/routes';
@@ -217,7 +217,10 @@ export function DataGridFieldLinksComponent(
     useEffect(() => {
       const fn = async () => {
         if (uiSpec)
-          setDisplayFields(getSummaryFields(uiSpec, props.child_record.type));
+          setDisplayFields(
+            getSummaryFieldInformation(uiSpec, props.child_record.type)
+              .fieldNames
+          );
       };
       fn();
     }, [props.child_record]);
