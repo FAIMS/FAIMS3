@@ -19,7 +19,7 @@
  *   20220620 BBS Adjusted sm to 11 from 8 to get rid of the awful margin reported in FAIMS3-328
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {FormikProps} from 'formik';
 import {ProjectUIModel} from '@faims3/data-model';
 import RecordDraftState from '../../../sync/draft-state';
@@ -34,13 +34,14 @@ import {
   Collapse,
   Link,
   Typography,
+  Divider,
+  useMediaQuery,
 } from '@mui/material';
 import {EditConflictDialog} from './conflict/conflictDialog';
 import NoteIcon from '@mui/icons-material/Note';
 import {grey} from '@mui/material/colors';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {theme} from '../../themes';
-import FlagIcon from '@mui/icons-material/Flag';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 
 type ViewProps = {
   viewName: string;
@@ -51,13 +52,15 @@ type ViewProps = {
   handleAnnotation: any;
   isSyncing?: string;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
-  handleChangeTab?: any;
+  handleChangeTab: any;
   fieldNames: string[]; //add for branching logic
   disabled?: boolean; // add for view tab or edit tab
   hideErrors?: boolean;
   formErrors?: {[fieldName: string]: unknown};
   visitedSteps: Set<string>;
   currentStepId: string;
+  isRevisiting: boolean;
+  handleSectionClick: (section: string) => void;
 };
 type SingleComponentProps = {
   fieldName: string;
@@ -254,7 +257,6 @@ function SingleComponent(props: SingleComponentProps) {
  *   - `handleAnnotation`: Handler function for updating annotations.
  *   - `isSyncing`: Indicates syncing status of the form data.
  *   - `conflictfields`: List of fields with conflicts needing resolution.
- *   - `handleChangeTab`: Function to switch between form tabs.
  *   - `fieldNames`: Array of field names to be rendered in this view.
  *   - `disabled`: Disables form fields if set to true (read-only mode).
  *   - `hideErrors`: Determines if error messages should be hidden.
@@ -272,56 +274,33 @@ function SingleComponent(props: SingleComponentProps) {
  */
 
 export function ViewComponent(props: ViewProps) {
-  const ui_specification = props.ui_specification;
+  const {
+    visitedSteps,
+    viewName,
+    formProps,
+    ui_specification,
+    isRevisiting,
+    handleSectionClick,
+  } = props;
   const fieldNames: string[] = props.fieldNames;
   const fields = ui_specification.fields;
 
-  // Track which steppers have been interacted with
-  const [interactedSteppers, setInteractedSteppers] = useState<Set<string>>(
-    new Set<string>()
-  );
+  // check if this stepper has errors
+  const hasErrors = fieldNames.some(field => !!formProps.errors[field]);
 
-  // Get the stepper ID
-  const stepperId = props.viewName;
+  // show errors only if the step was revisited and has errors
+  const shouldShowErrors = isRevisiting && hasErrors;
 
-  // Check if any field in this stepper has been interacted with (typed, selected, clicked)
-  const isCurrentStepperInteracted = fieldNames.some(
-    field =>
-      !!props.formProps.touched[field] || // Field was touched
-      !!props.formProps.values[field] // Field has a value
-  );
-
-  // Check if this stepper has errors
-  const hasErrors = fieldNames.some(field => !!props.formProps.errors[field]);
-
-  // Track if this stepper has been visited before
-  useEffect(() => {
-    if (isCurrentStepperInteracted) {
-      setInteractedSteppers(prev => new Set(prev).add(stepperId));
-    }
-  }, [isCurrentStepperInteracted]);
-
-  // Ensure clicks in this stepper mark it as interacted
-  const handleStepperInteraction = () => {
-    setInteractedSteppers(prev => new Set(prev).add(stepperId));
-  };
-
-  // Should show errors only if:
-  // - Stepper has been visited before
-  // - Stepper has errors
-  const shouldShowErrors =
-    interactedSteppers.has(stepperId) &&
-    hasErrors &&
-    (isCurrentStepperInteracted || interactedSteppers.has(stepperId));
-
-  // Identify other sections with errors that have been interacted with
-  const otherSectionsWithErrors = Array.from(interactedSteppers)
-    .filter(section => section !== stepperId)
+  // other sections that has been visited and has errors.
+  const otherSectionsWithErrors = Array.from(visitedSteps)
+    .filter(section => section !== viewName)
     .filter(section =>
-      Object.keys(props.formProps.errors).some(field =>
-        props.ui_specification.views[section]?.fields.includes(field)
+      // Ccheck if any field in the form errors belongs to this section
+      Object.keys(formProps.errors).some(field =>
+        ui_specification.views[section]?.fields.includes(field)
       )
     );
+
   return (
     <React.Fragment>
       {fieldNames?.map((fieldName, index) => (
@@ -341,51 +320,82 @@ export function ViewComponent(props: ViewProps) {
         />
       ))}
 
-      {shouldShowErrors && (
-        <Alert
-          severity="error"
-          sx={{
-            mt: 2,
-            p: 2,
-            borderRadius: '8px',
-            boxShadow: '0px 4px 12px rgba(255, 0, 0, 0.5)',
-            maxWidth: '100%',
-            overflowX: 'hidden',
-            wordWrap: 'break-word',
-            marginBottom: 2,
-          }}
-        >
-          <Typography variant="h6" sx={{fontWeight: 'bold'}}>
-            Form has errors. Click to fix:
-          </Typography>
-
-          {displayErrors(
-            props.formProps.errors,
-            props.viewName,
-            ui_specification,
-            fieldNames
+      {/*  all errors (current section + other sections) inside the same bbox */}
+      {(shouldShowErrors || otherSectionsWithErrors.length > 0) && (
+        <Alert severity="error" sx={{mt: 2, p: 2, borderRadius: '8px'}}>
+          {shouldShowErrors && (
+            <Typography
+              variant="h5"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                fontWeight: 'bold',
+                fontSize: {xs: '0.9rem', sm: '1.1rem'},
+              }}
+            >
+              Form has errors. Click to fix:
+            </Typography>
           )}
 
-          {/* Show other stepper names with errors if they have been interacted with */}
+          {shouldShowErrors &&
+            displayErrors(
+              formProps.errors,
+              viewName,
+              ui_specification,
+              fieldNames
+            )}
+
+          {shouldShowErrors && (
+            <Divider
+              sx={{
+                my: 2,
+                backgroundColor: theme.palette.error.main,
+                height: '0.02em',
+              }}
+            />
+          )}
+
+          {/* Display other sections with errors */}
           {otherSectionsWithErrors.length > 0 && (
-            <Box mt={2}>
-              <Typography variant="subtitle1" sx={{fontWeight: 'bold'}}>
-                Other sections with errors:
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                mt: 1,
+              }}
+            >
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 'bold',
+                  alignItems: 'center',
+                  fontSize: {xs: '0.9rem', sm: '1.1rem'},
+                }}
+              >
+                Other sections have errors. Click to navigate:
               </Typography>
-              {otherSectionsWithErrors.map(section => (
+
+              {otherSectionsWithErrors.map((section, index) => (
                 <Link
                   key={section}
                   component="button"
                   variant="body2"
-                  onClick={() => props.handleChangeTab(section)}
+                  onClick={() => props.handleSectionClick(section)}
                   sx={{
-                    display: 'block',
-                    color: theme.palette.primary.main,
-                    textDecoration: 'underline',
-                    '&:hover': {color: theme.palette.secondary.main},
+                    display: 'inline-flex',
+                    color: theme.palette.highlightColor.main,
+                    fontSize: {xs: '0.85rem', sm: '1rem'},
+                    fontWeight: 'bold',
+                    textDecoration: 'none',
+                    '&:hover': {
+                      color: theme.palette.secondary.main,
+                      transform: 'scale(1.02)',
+                    },
                     mt: 1,
                   }}
                 >
+                  {index + 1}.{' '}
                   {ui_specification.views[section]?.label || section}
                 </Link>
               ))}
@@ -397,11 +407,25 @@ export function ViewComponent(props: ViewProps) {
   );
 }
 
+/**
+ * @function displayErrors
+ * @description
+ *   Displays validation errors for the form fields within a given view.
+ *   Enables smooth scrolling to fields with errors and highlights them temporarily.
+ *
+ * @param {object} errors - The form errors object from Formik.
+ * @param {string} thisView - The current view name.
+ * @param {ProjectUIModel} ui_specification - The UI model containing field definitions.
+ * @param {string[]} currentFields - The fields belonging to the current view.
+ * @param {string[]} [otherSections] - (Optional) Other sections with errors. *
+ * @returns {JSX.Element} - A list of error messages with interactive navigation.
+ */
 function displayErrors(
   errors: any | undefined,
   thisView: string,
   ui_specification: ProjectUIModel,
-  currentFields: string[]
+  currentFields: string[],
+  otherSections?: string[]
 ) {
   if (!errors) return <p>No errors to display</p>;
 
@@ -449,7 +473,13 @@ function displayErrors(
       {filteredErrors.map(field => (
         <li
           key={field}
-          style={{marginBottom: '6px', display: 'flex', alignItems: 'center'}}
+          style={{
+            marginBottom: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            width: '100%',
+          }}
         >
           <Link
             component="button"
@@ -463,6 +493,7 @@ function displayErrors(
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
+              fontSize: {xs: '0.85rem', sm: '1rem'},
               '&:hover': {
                 transform: 'scale(1.02)',
                 color: theme.palette.secondary.main,
@@ -475,7 +506,11 @@ function displayErrors(
           </Link>
           <Typography
             variant="body2"
-            sx={{color: theme.palette.icon?.required, marginLeft: '20px'}}
+            sx={{
+              color: theme.palette.icon?.required,
+              marginLeft: '20px',
+              fontSize: {xs: '0.75rem', sm: '0.9rem'},
+            }}
           >
             {errors[field]}
           </Typography>
@@ -503,14 +538,25 @@ export function getUsefulFieldNameFromUiSpec(
 
     return (
       <span style={{display: 'flex', alignItems: 'center'}}>
-        <FlagIcon
+        <ReportProblemIcon
           fontSize="small"
           sx={{
             color: theme.palette.highlightColor.contrastText,
             marginRight: '5px',
           }}
         />
-        {fieldName}
+        <Typography
+          sx={{
+            fontSize: {xs: '0.85rem', sm: '1rem'},
+            fontWeight: 'bold',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: {xs: '80vw', sm: 'none'},
+          }}
+        >
+          {fieldName}
+        </Typography>
       </span>
     );
   } else {
