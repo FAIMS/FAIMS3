@@ -437,7 +437,7 @@ export const useDraftsList = ({
  * @param delay The delay in milliseconds for the debounce
  * @returns The debounced value
  */
-export function useDebounce<T>(value: T, delay: number = 500): T {
+export function useDebounce<T>(value: T, delay = 500): T {
   // State to store the debounced value
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 

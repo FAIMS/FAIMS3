@@ -284,7 +284,7 @@ export default function RecordCreate() {
   }, [project_id]);
 
   let showBreadcrumbs = false;
-  let breadcrumbs = [
+  const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {

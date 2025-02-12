@@ -1,9 +1,9 @@
 import CheckIcon from '@mui/icons-material/Check';
 import SaveIcon from '@mui/icons-material/Save';
-import { Alert, Box } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import {Alert, Box} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
 import 'animate.css';
-import { useLoadingDebounce } from '../../../utils/customHooks';
+import {useLoadingDebounce} from '../../../utils/customHooks';
 
 interface DraftSyncStatusProps {
   last_saved: Date | null;
