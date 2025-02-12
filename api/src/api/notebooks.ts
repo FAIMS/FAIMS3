@@ -67,7 +67,8 @@ import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 
 import patch from '../utils/patchExpressAsync';
-import {slugify} from '../utils';
+import {generateTokenContentsForUser, slugify} from '../utils';
+import {generateUserToken} from '../authkeys/create';
 
 // This must occur before express api is used
 patch();
@@ -245,14 +246,13 @@ api.get(
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.UnauthorizedException();
     }
-    const token = {
-      roles: req.user.roles,
-      server: slugify(CONDUCTOR_INSTANCE_NAME),
-      username: req.user.user_id,
-      // Five minutes from now
-      exp: Date.now() + 1000 * 60 * 5,
-    };
-    const records = await getRecordsWithRegex(token, req.params.id, '.*', true);
+    const tokenContent = generateTokenContentsForUser(req.user);
+    const records = await getRecordsWithRegex(
+      tokenContent,
+      req.params.id,
+      '.*',
+      true
+    );
     if (records) {
       const filenames: string[] = [];
       // Process any file fields to give the file name in the zip download

@@ -1,3 +1,6 @@
+import {TokenContents} from '@faims3/data-model';
+import {CONDUCTOR_INSTANCE_NAME} from './buildconfig';
+
 /**
  * Slugify a string, replacing special characters with less special ones
  * @param str input string
@@ -21,4 +24,22 @@ export const slugify = (str: string) => {
     .replace(/-+/g, '-'); // collapse dashes
 
   return str;
+};
+
+/**
+ * Generate a TokenContents object for use in API code
+ *
+ * @param user A user object
+ * @returns a token that can be used where authentication is required
+ */
+export const generateTokenContentsForUser = (
+  user: Express.User
+): TokenContents => {
+  return {
+    roles: user.roles,
+    server: slugify(CONDUCTOR_INSTANCE_NAME),
+    username: user.user_id,
+    // Five minutes from now
+    exp: Date.now() + 1000 * 60 * 5,
+  };
 };
