@@ -66,132 +66,51 @@ interface RecordDataTypes {
 }
 
 export default function RecordData(props: RecordDataTypes) {
-  const [dataTab, setDataTab] = React.useState('1');
   const navigate = useNavigate();
   // const [revision_id, setRevision_id] = React.useState(props.revision_id);
   const [ViewName, setViewName] = React.useState(null);
-  const handleDataTabChange = (
-    event: React.SyntheticEvent,
-    newValue: string
-  ) => {
-    setDataTab(newValue);
-  };
-  const theme = useTheme();
 
   return (
     <Box bgcolor={grey[100]}>
-      <TabContext value={dataTab}>
-        <TabList
-          onChange={handleDataTabChange}
-          TabIndicatorProps={{
-            style: {
-              backgroundColor: theme.palette.secondary.contrastText,
-            },
-          }}
-          sx={{backgroundColor: theme.palette.background.tabsBackground}}
-        >
-          <Tab label={'Data'} value={'1'} />
-          <Tab label={'Review'} value={'2'} />
-        </TabList>
-        <TabPanel value={'1'} sx={{p: 0}}>
-          {/* Show UnpublishWarning for unsaved revision ONLY  TODO: need to update when user click publish and continue*/}
-
-          <DraftSyncStatus
-            last_saved={props.draftLastSaved}
-            is_saving={props.isDraftSaving}
-            error={props.draftError}
-          />
-          {props.is_link_ready ? (
-            <RelationshipsViewComponent
-              record_to_field_links={props.record_to_field_links}
-              record_id={props.record_id}
-              record_hrid={props.hrid ?? props.record_id}
-              record_type={props.record_type}
-              handleSetSection={setViewName}
-              handleUnlink={props.handleUnlink}
-            />
-          ) : (
-            <CircularProgress size={24} />
-          )}
-          <Accordion defaultExpanded={true}>
-            <AccordionSummary
-              aria-controls="form-accordion-content"
-              id="form-accordion"
-            >
-              <ListAltIcon sx={{mr: 1}} />
-              <Typography>Form</Typography>
-            </AccordionSummary>
-            <AccordionDetails
-              sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
-            >
-              {props.is_link_ready ? (
-                <RecordForm
-                  project_id={props.project_id}
-                  record_id={props.record_id}
-                  revision_id={props.revision_id}
-                  ui_specification={props.ui_specification}
-                  draft_id={props.draft_id}
-                  handleChangeTab={props.handleChangeTab}
-                  conflictfields={props.conflictfields}
-                  isSyncing={props.isSyncing}
-                  handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-                  handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-                  handleSetDraftError={props.handleSetDraftError}
-                  setRevision_id={props.setRevision_id}
-                  ViewName={ViewName}
-                  draftLastSaved={props.draftLastSaved}
-                  mq_above_md={props.mq_above_md}
-                  navigate={navigate}
-                  setProgress={props.setProgress}
-                  buttonRef={props.buttonRef}
-                />
-              ) : (
-                <CircularProgress size={24} />
-              )}
-            </AccordionDetails>
-          </Accordion>
-        </TabPanel>
-        <TabPanel value={'2'} sx={{p: 0}}>
-          <InheritedDataComponent
-            parentRecords={props.parentRecords}
-            ui_specification={props.ui_specification}
-          />
+      <DraftSyncStatus
+        last_saved={props.draftLastSaved}
+        is_saving={props.isDraftSaving}
+        error={props.draftError}
+      />
+      {props.is_link_ready ? (
+        props.record_to_field_links.length > 0 && (
           <RelationshipsViewComponent
             record_to_field_links={props.record_to_field_links}
             record_id={props.record_id}
             record_hrid={props.hrid ?? props.record_id}
             record_type={props.record_type}
             handleSetSection={setViewName}
+            handleUnlink={props.handleUnlink}
           />
-          <Accordion defaultExpanded={true}>
-            <AccordionSummary
-              aria-controls="form-accordion-content"
-              id="form-accordion"
-            >
-              <ListAltIcon sx={{mr: 1}} />
-              <Typography>Form</Typography>
-            </AccordionSummary>
-            <AccordionDetails
-              sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
-            >
-              <RecordForm
-                project_id={props.project_id}
-                record_id={props.record_id}
-                revision_id={props.revision_id}
-                ui_specification={props.ui_specification}
-                draft_id={props.draft_id}
-                disabled={true} // for view of the forms
-                handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-                handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-                handleSetDraftError={props.handleSetDraftError}
-                navigate={navigate}
-                setProgress={props.setProgress}
-                buttonRef={props.buttonRef}
-              />
-            </AccordionDetails>
-          </Accordion>
-        </TabPanel>
-      </TabContext>
+        )
+      ) : (
+        <CircularProgress size={24} />
+      )}
+      <RecordForm
+        project_id={props.project_id}
+        record_id={props.record_id}
+        revision_id={props.revision_id}
+        ui_specification={props.ui_specification}
+        draft_id={props.draft_id}
+        handleChangeTab={props.handleChangeTab}
+        conflictfields={props.conflictfields}
+        isSyncing={props.isSyncing}
+        handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+        handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+        handleSetDraftError={props.handleSetDraftError}
+        setRevision_id={props.setRevision_id}
+        ViewName={ViewName}
+        draftLastSaved={props.draftLastSaved}
+        mq_above_md={props.mq_above_md}
+        navigate={navigate}
+        setProgress={props.setProgress}
+        buttonRef={props.buttonRef}
+      />
     </Box>
   );
 }
