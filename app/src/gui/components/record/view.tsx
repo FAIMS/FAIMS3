@@ -291,21 +291,8 @@ export function ViewComponent(props: ViewProps) {
       !!props.formProps.values[field] // Field has a value
   );
 
-  // Track if this stepper has only one field (like a radio group)
-  // const isSingleFieldStep = fieldNames.length === 1;
-
   // Check if this stepper has errors
   const hasErrors = fieldNames.some(field => !!props.formProps.errors[field]);
-
-  // Ensure errors appear if:
-  // 1. User interacted with the stepper
-  // 2. User has visited this stepper before
-
-  // useEffect(() => {
-  //   if (isCurrentStepperInteracted) {
-  //     setInteractedSteppers(prev => new Set(prev).add(stepperId));
-  //   }
-  // }, [isCurrentStepperInteracted, hasErrors]);
 
   // Track if this stepper has been visited before
   useEffect(() => {
@@ -319,26 +306,13 @@ export function ViewComponent(props: ViewProps) {
     setInteractedSteppers(prev => new Set(prev).add(stepperId));
   };
 
-  // Depend on stepperId to correctly track changes
-  // Ensure errors appear only after a stepper was visited & interacted with
-  // useEffect(() => {
-  //   if (
-  //     hasErrors &&
-  //     props.visitedSteps.has(stepperId) &&
-  //     isCurrentStepperInteracted
-  //   ) {
-  //     setInteractedSteppers(prev => new Set(prev).add(stepperId));
-  //   }
-  // }, [hasErrors, props.visitedSteps, isCurrentStepperInteracted]);
-
   // Should show errors only if:
   // - Stepper has been visited before
   // - Stepper has errors
-  // - If it's a single-field stepper, user must have **visited at least once**
   const shouldShowErrors =
     interactedSteppers.has(stepperId) &&
-    hasErrors && // Stepper has been interacted with before
-    (isCurrentStepperInteracted || interactedSteppers.has(stepperId)); // User has interacted OR revisited the stepper
+    hasErrors &&
+    (isCurrentStepperInteracted || interactedSteppers.has(stepperId));
 
   // Identify other sections with errors that have been interacted with
   const otherSectionsWithErrors = Array.from(interactedSteppers)
@@ -367,7 +341,6 @@ export function ViewComponent(props: ViewProps) {
         />
       ))}
 
-      {/* Only show errors if this stepper has been interacted with */}
       {shouldShowErrors && (
         <Alert
           severity="error"
