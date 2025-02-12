@@ -136,7 +136,7 @@ type RecordFormState = {
   relationship: Relationship | null;
   fieldNames: string[];
   views: string[];
-  visitedSteps: Set<string>; // Change to Set to ensure uniqueness
+  visitedSteps: Set<string>;
   // currentStepId: string;
 };
 
@@ -1416,7 +1416,6 @@ class RecordForm extends React.Component<
                 const view_index = views.indexOf(viewName);
                 const is_final_view = view_index + 1 === views.length;
 
-                // new rg below
                 return (
                   <Form>
                     {views.length > 1 && (
@@ -1426,7 +1425,7 @@ class RecordForm extends React.Component<
                         onChangeStepper={this.onChangeStepper}
                         views={views}
                         formErrors={formProps.errors}
-                        visitedSteps={this.state.visitedSteps} // Pass visited steps
+                        visitedSteps={this.state.visitedSteps}
                       />
                     )}
 
@@ -1456,7 +1455,7 @@ class RecordForm extends React.Component<
 
                       // currentStepId={this.state.view_cached ?? ''}
                       // views={this.state.views}
-                      // onChangeStepper={this.onChangeStepper} // ✅ Pass function to ViewComponent
+                      // onChangeStepper={this.onChangeStepper}
                     />
                     <FormButtonGroup
                       project_id={this.props.project_id}
