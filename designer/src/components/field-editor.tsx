@@ -32,8 +32,10 @@ import {
   FormControlLabel,
   Grid,
   IconButton,
+  MenuItem,
   Radio,
   RadioGroup,
+  Select,
   Stack,
   Tooltip,
   Typography,
@@ -54,6 +56,7 @@ import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
 import {useState} from 'react';
+import {SelectChangeEvent} from '@mui/material/Select';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -87,6 +90,7 @@ export const FieldEditor = ({
 
   const [openMoveDialog, setOpenMoveDialog] = useState(false);
   const [targetViewId, setTargetViewId] = useState('');
+  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
 
   const fieldComponent = field['component-name'];
 
@@ -131,6 +135,7 @@ export const FieldEditor = ({
 
   const handleCloseMoveDialog = () => {
     setOpenMoveDialog(false);
+    setSelectedFormId(null); // reset selectedFormId when dialog is closed
   };
 
   const moveFieldToSection = () => {
@@ -291,37 +296,61 @@ export const FieldEditor = ({
           Move field to another section
         </DialogTitle>
         <DialogContent>
-          <FormControl component="fieldset">
-            <RadioGroup
-              aria-label="target-section"
-              name="targetSection"
-              value={targetViewId}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                setTargetViewId(event.target.value);
-              }}
-            >
-              {Object.entries(viewsets).map(([formId, form]) => (
-                <div key={formId}>
-                  <Typography variant="subtitle1" sx={{mt: 2, mb: 1}}>
-                    {form.label}
-                  </Typography>
-                  {form.views
-                    .filter(sectionId => sectionId !== viewId) // exclude current section
-                    .map(sectionId => (
-                      <FormControlLabel
-                        key={sectionId}
-                        value={sectionId}
-                        control={<Radio />}
-                        label={views[sectionId].label}
-                      />
-                    ))}
-                </div>
-              ))}
-            </RadioGroup>
-          </FormControl>
+          {!selectedFormId ? (
+            <FormControl component="fieldset" fullWidth>
+              <Typography variant="body1" sx={{mb: 1}}>
+                Select a Form:
+              </Typography>
+              <RadioGroup
+                aria-label="select-form"
+                name="selectForm"
+                value={selectedFormId}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  setSelectedFormId(event.target.value);
+                }}
+              >
+                {Object.entries(viewsets).map(([formId, form]) => (
+                  <FormControlLabel
+                    key={formId}
+                    value={formId}
+                    control={<Radio />}
+                    label={form.label}
+                  />
+                ))}
+              </RadioGroup>
+            </FormControl>
+          ) : (
+            <FormControl component="fieldset" fullWidth>
+              <Typography variant="body1" sx={{mb: 1}}>
+                Select a Section:
+              </Typography>
+              <Select
+                aria-label="target-section"
+                name="targetSection"
+                value={targetViewId}
+                onChange={(event: SelectChangeEvent<string>) => {
+                  setTargetViewId(event.target.value);
+                }}
+                displayEmpty
+              >
+                {viewsets[selectedFormId].views
+                  .filter(sectionId => sectionId !== viewId) // exclude current section
+                  .map(sectionId => (
+                    <MenuItem key={sectionId} value={sectionId}>
+                      {views[sectionId].label}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={moveFieldToSection}>Move</Button>
+          {selectedFormId && (
+            <Button onClick={() => setSelectedFormId(null)}>Back</Button>
+          )}
+          <Button onClick={moveFieldToSection} disabled={!targetViewId}>
+            Move
+          </Button>
           <Button onClick={handleCloseMoveDialog}>Cancel</Button>
         </DialogActions>
       </Dialog>
