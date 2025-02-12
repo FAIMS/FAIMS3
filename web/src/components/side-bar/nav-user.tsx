@@ -1,4 +1,4 @@
-import {BadgeCheck, ChevronsUpDown, LogOut, UserCircle} from 'lucide-react';
+import {ChevronsUpDown, LogOut, UserCircle} from 'lucide-react';
 import {Avatar, AvatarFallback} from '@/components/ui/avatar';
 import {
   DropdownMenu,
