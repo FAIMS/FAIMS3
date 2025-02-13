@@ -30,7 +30,9 @@ import {
   Stepper,
   Typography,
   keyframes,
+  styled,
 } from '@mui/material';
+import {useState} from 'react';
 import {createUseStyles} from 'react-jss';
 import {getStepColor} from '../../../utils/generateStepperColors';
 import {theme} from '../../themes';
