@@ -1288,7 +1288,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
               // over the manual validate function
               // validationSchema={validationSchema}
               validateOnMount={true}
-              validateOnChange={false}
+              validateOnChange={true}
               validateOnBlur={true}
               // This manually runs the validate function which formik triggers
               // validation due to the above conditions, we use the yup

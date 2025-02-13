@@ -1,6 +1,7 @@
-export type ThemeType = 'bss' | 'default';
+import {theme} from '../gui/themes';
 
-// Designated colors based on step status
+export type ThemeType = keyof typeof stepColors; // Ensures ThemeType is only 'bss' | 'default'
+
 const stepColors = {
   bss: {
     current: '#000000',
@@ -14,15 +15,13 @@ const stepColors = {
     error: '#D50C0CFF',
     notVisited: '#B7C1A6F1',
   },
-};
+} as const;
 
 /**
  * Generates an array of default stepper colors (all steps default to 'notVisited').
  */
-export const generateStepperColors = (
-  steps: number,
-  themeType: ThemeType = 'default'
-): string[] => {
+export const generateStepperColors = (steps: number): string[] => {
+  const themeType: ThemeType = theme.themeType as ThemeType; // Get from theme
   return new Array(steps).fill(stepColors[themeType].notVisited);
 };
 
@@ -31,8 +30,7 @@ export const generateStepperColors = (
  * @param {string} sectionId - The unique section identifier.
  * @param {string} currentStepId - The currently active step's section ID.
  * @param {boolean} hasError - If the step has errors.
- * @param {string[]} visitedSteps - Array of visited step section IDs.
- * @param {ThemeType} themeType - Theme type ('bss' or 'default').
+ * @param {Set<string>} visitedSteps - Set of visited step section IDs.
  * @returns {string} The color for the step.
  */
 export const getStepColor = (
@@ -40,17 +38,18 @@ export const getStepColor = (
   currentStepId: string,
   hasError: boolean,
   visitedSteps: Set<string>,
-  themeType: ThemeType,
   isRecordSubmitted: boolean
 ): string => {
+  const themeType: ThemeType = theme.themeType as ThemeType; // Get from theme
   const colors = stepColors[themeType];
 
-  if (sectionId === currentStepId) return colors.current; // if its current stepper, assing current color.
+  if (sectionId === currentStepId) return colors.current; // Current step color
 
   if (hasError && visitedSteps.has(sectionId) && !isRecordSubmitted) {
-    // mark as error
-    return colors.error;
+    return colors.error; // Mark as error
   }
+
   if (visitedSteps.has(sectionId) || isRecordSubmitted) return colors.visited;
+
   return colors.notVisited;
 };

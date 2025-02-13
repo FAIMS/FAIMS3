@@ -457,6 +457,8 @@ function displayErrors(
     currentFields.includes(field)
   );
 
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
     <ul
       style={{
@@ -474,7 +476,7 @@ function displayErrors(
           key={field}
           style={{
             marginBottom: '6px',
-            display: window.innerWidth <= 768 ? 'table-cell' : 'flex',
+            display: isMobile ? 'inline-flex' : 'flex',
             alignItems: 'center',
             flexWrap: 'wrap',
             width: '100%',
@@ -541,7 +543,7 @@ export function getUsefulFieldNameFromUiSpec(
         <ReportProblemIcon
           fontSize="small"
           sx={{
-            color: theme.palette.highlightColor.contrastText,
+            color: theme.palette.highlightColor.main,
             marginRight: '5px',
           }}
         />

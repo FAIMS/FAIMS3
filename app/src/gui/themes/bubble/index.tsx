@@ -23,6 +23,8 @@ import typography from './typography';
 const primaryMainColor = '#000000';
 
 const theme = createTheme({
+  themeType: 'bubble',
+
   palette: {
     background: {
       default: '#FAFAFB',
@@ -34,6 +36,12 @@ const theme = createTheme({
     primary: {
       main: primaryMainColor,
       light: '#FFFFFF',
+    },
+    stepper: {
+      current: '#E18200',
+      visited: '#669911',
+      error: '#D50C0CFF',
+      notVisited: '#B7C1A6F1',
     },
     highlightColor: {
       main: '#B10000',

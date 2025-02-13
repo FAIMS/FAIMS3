@@ -2,6 +2,13 @@
 import {PaletteOptions, TypeBackground} from '@mui/material/styles';
 
 declare module '@mui/material/styles' {
+  interface Theme {
+    themeType: 'bss' | 'default' | 'bubble';
+  }
+
+  interface ThemeOptions {
+    themeType?: 'bss' | 'default' | 'bubble';
+  }
   interface TypeText {
     helpText: string;
   }
@@ -12,6 +19,12 @@ declare module '@mui/material/styles' {
   }
 
   interface Palette {
+    stepper?: {
+      current: string;
+      visited: string;
+      error: string;
+      notVisited: string;
+    };
     progressBar: {
       background: string;
       complete: string;
@@ -48,6 +61,12 @@ declare module '@mui/material/styles' {
   }
 
   interface PaletteOptions {
+    stepper?: {
+      current: string;
+      visited: string;
+      error: string;
+      notVisited: string;
+    };
     primary?: {
       main: string;
       secondMain: string;

@@ -37,6 +37,7 @@ import {createUseStyles} from 'react-jss';
 import {useCallback, useEffect, useState} from 'react';
 import {getStepColor} from '../../../utils/generateStepperColors';
 import {theme} from '../../themes';
+import {ThemeType} from '../../../utils/generateStepperColors';
 
 type RecordStepperProps = {
   view_index: number;
@@ -133,8 +134,7 @@ export default function RecordStepper(props: RecordStepperProps) {
     );
   };
 
-  const themeType =
-    theme.palette.primary.main === '#000000' ? 'bss' : 'default';
+  const themeType: ThemeType = theme.themeType as ThemeType;
 
   return (
     <>
@@ -170,7 +170,6 @@ export default function RecordStepper(props: RecordStepperProps) {
                           views[view_index],
                           hasErrors(sectionId),
                           visitedSteps,
-                          themeType,
                           isRecordSubmitted
                         ),
                         borderRadius: '50%',

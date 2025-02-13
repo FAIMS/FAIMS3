@@ -23,6 +23,7 @@ import typography from './typography';
 import {generateStepperColors} from '../../../utils/generateStepperColors';
 
 const theme = createTheme({
+  themeType: 'default' as 'bss' | 'default',
   palette: {
     background: {
       default: '#FAFAFB',
@@ -35,6 +36,13 @@ const theme = createTheme({
       main: '#669911',
       light: '#a7e938',
       dark: '#141E03',
+    },
+
+    stepper: {
+      current: '#E18200',
+      visited: '#669911',
+      error: '#D50C0CFF',
+      notVisited: '#B7C1A6F1',
     },
     highlightColor: {
       main: '#E18200',
@@ -78,7 +86,7 @@ const theme = createTheme({
       rowBorder: '#D3D1D1FF',
       columnSeparator: '#828789FF',
     },
-    stepperGradient: generateStepperColors(10, 'default'),
+    // stepperGradient: generateStepperColors(10, 'default'),
   },
   typography,
   components: {
