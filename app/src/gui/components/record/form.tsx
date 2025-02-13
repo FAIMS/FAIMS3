@@ -1469,6 +1469,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         disabled={this.props.disabled}
                         record_type={this.state.type_cached}
                         onChangeStepper={this.onChangeStepper}
+                        visitedSteps={this.state.visitedSteps}
+                        isRecordSubmitted={isRecordSubmitted}
                         view_index={0}
                         formProps={formProps}
                         ui_specification={ui_specification}
@@ -1559,6 +1561,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                       is_final_view={is_final_view}
                       disabled={this.props.disabled}
                       onChangeStepper={this.onChangeStepper}
+                      visitedSteps={this.state.visitedSteps}
+                      isRecordSubmitted={isRecordSubmitted}
                       view_index={view_index}
                       formProps={formProps}
                       ui_specification={ui_specification}

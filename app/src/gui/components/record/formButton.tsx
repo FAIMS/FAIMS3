@@ -72,6 +72,9 @@ interface FormButtonGroupProps {
   ui_specification: ProjectUIModel;
   /** Layout type */
   layout?: string;
+
+  visitedSteps: Set<string>;
+  isRecordSubmitted: boolean;
 }
 
 /**
@@ -143,6 +146,8 @@ export default function FormButtonGroup({
   view_index,
   formProps,
   handleFormSubmit,
+  visitedSteps,
+  isRecordSubmitted,
   views,
   ui_specification,
   layout,
@@ -157,8 +162,8 @@ export default function FormButtonGroup({
           view_index={view_index}
           onChangeStepper={onChangeStepper}
           ui_specification={ui_specification}
-          visitedSteps={props.visitedSteps || new Set()}
-          isRecordSubmitted={props.isRecordSubmitted || false}
+          visitedSteps={visitedSteps || new Set()}
+          isRecordSubmitted={isRecordSubmitted || false}
         />
       )}
       <Grid container spacing={2}>
