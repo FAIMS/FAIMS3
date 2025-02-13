@@ -78,9 +78,9 @@ const shakeAnimation = keyframes`
 `;
 
 /** Wrapper for mobile  Stepper*/
-const MobileStepperWrapper = styled(Box)(({shake}: {shake: boolean}) => ({
-  animation: shake ? `${shakeAnimation} 0.5s ease-in-out` : 'none',
-}));
+//const MobileStepperWrapper = styled(Box)(({shake}: {shake: boolean}) => ({
+//  animation: shake ? `${shakeAnimation} 0.5s ease-in-out` : 'none',
+//}));
 
 /**
  * @function RecordStepper
@@ -119,8 +119,6 @@ export default function RecordStepper(props: RecordStepperProps) {
     formErrors,
     isRecordSubmitted,
   } = props;
-  const [shakeStepper, setShakeStepper] = useState(false);
-
   // function to check if stepper has erros
   const hasErrors = (sectionId: string | undefined) => {
     if (!sectionId || !visitedSteps || !ui_specification.views[sectionId])
@@ -205,25 +203,24 @@ export default function RecordStepper(props: RecordStepperProps) {
         </div>
       </Box>
 
-      <MobileStepperWrapper
-        shake={shakeStepper}
-        display={{xs: 'block', md: 'none'}}
-      >
-        <Box display={{xs: 'block', sm: 'none'}}>
-          <CustomMobileStepper
-            views={views}
-            view_index={view_index}
-            onChangeStepper={onChangeStepper}
-            ui_specification={ui_specification}
-            formErrors={formErrors}
-            visitedSteps={visitedSteps}
-            isRecordSubmitted={isRecordSubmitted}
-          />
-          <Typography variant="h5" align="center">
-            {ui_specification.views[views[view_index]]?.label}
-          </Typography>
-        </Box>
+      {/*
+      <MobileStepperWrapper display={{xs: 'block', md: 'none'}}>
       </MobileStepperWrapper>
+       */}
+      <Box display={{xs: 'block', sm: 'none'}}>
+        <CustomMobileStepper
+          views={views}
+          view_index={view_index}
+          onChangeStepper={onChangeStepper}
+          ui_specification={ui_specification}
+          formErrors={formErrors}
+          visitedSteps={visitedSteps}
+          isRecordSubmitted={isRecordSubmitted}
+        />
+        <Typography variant="h5" align="center">
+          {ui_specification.views[views[view_index]]?.label}
+        </Typography>
+      </Box>
     </>
   );
 }
