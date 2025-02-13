@@ -22,6 +22,12 @@ interface UpdateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+/**
+ * Form to create a new invite for a project
+ *
+ * @param {UpdateTemplateFormProps} props - The props for the form
+ * @returns {JSX.Element} The rendered form
+ */
 export function CreateProjectInviteForm({
   setDialogOpen,
 }: UpdateTemplateFormProps) {
@@ -29,6 +35,12 @@ export function CreateProjectInviteForm({
   const {projectId} = Route.useParams();
   const QueryClient = useQueryClient();
 
+  /**
+   * Handles the form submission
+   *
+   * @param {z.infer<typeof fields[0]['schema']>} role - The role to invite
+   * @returns {Promise<void>} A promise that resolves when the invite is created
+   */
   const onSubmit = async ({role}: {role: string}) => {
     if (!user) return {type: 'submit', message: 'Not logged in'};
 
