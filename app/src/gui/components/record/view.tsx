@@ -421,23 +421,30 @@ function displayErrors(
     const element = document.querySelector(`[data-field="${field}"]`);
     if (element) {
       element.scrollIntoView({behavior: 'smooth', block: 'center'});
+
       (element as HTMLElement).style.transition =
-        'background-color 0.5s ease-in-out, box-shadow 0.6s ease-in-out';
+        'background-color 1s ease-in-out, box-shadow 1s ease-in-out, opacity 1s ease-in-out';
       (element as HTMLElement).style.backgroundColor = '#FCCCCCD7';
       (element as HTMLElement).style.boxShadow =
-        '0px 0px 15px rgba(255, 0, 0, 0.4)';
+        '0px 0px 15px rgba(255, 0, 0, 0.3)';
 
-      // fade in-out before clearing
+      setTimeout(() => {
+        (element as HTMLElement).style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+        (element as HTMLElement).style.boxShadow =
+          '0px 0px 10px rgba(255, 0, 0, 0.3)';
+      }, 1000);
+
       setTimeout(() => {
         (element as HTMLElement).style.backgroundColor =
           'rgba(255, 0, 0, 0.05)';
         (element as HTMLElement).style.boxShadow =
-          '0px 0px 10px rgba(255, 0, 0, 0.4)';
-      }, 800);
+          '0px 0px 5px rgba(255, 0, 0, 0.2)';
+      }, 1500);
 
       setTimeout(() => {
-        (element as HTMLElement).style.backgroundColor = 'inherit';
+        (element as HTMLElement).style.backgroundColor = 'transparent';
         (element as HTMLElement).style.boxShadow = 'none';
+        (element as HTMLElement).style.opacity = '1';
       }, 2000);
     }
   }
