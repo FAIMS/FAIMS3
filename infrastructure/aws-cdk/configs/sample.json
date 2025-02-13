@@ -96,5 +96,8 @@
   "mobileApps": {
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
     "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
+  },
+  "web": {
+
   }
 }

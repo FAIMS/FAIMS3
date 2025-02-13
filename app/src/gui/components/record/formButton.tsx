@@ -157,6 +157,8 @@ export default function FormButtonGroup({
           view_index={view_index}
           onChangeStepper={onChangeStepper}
           ui_specification={ui_specification}
+          visitedSteps={props.visitedSteps || new Set()}
+          isRecordSubmitted={props.isRecordSubmitted || false}
         />
       )}
       <Grid container spacing={2}>

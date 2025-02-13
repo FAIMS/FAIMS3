@@ -25,6 +25,7 @@ import {
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
+  getRecordsWithRegex,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
@@ -42,8 +43,8 @@ import {createManyRandomRecords} from '../couchdb/devtools';
 import {
   createNotebook,
   deleteNotebook,
+  generateFilenameForAttachment as generateFilenameForAttachment,
   getNotebookMetadata,
-  getNotebookRecords,
   getNotebooks,
   getNotebookUISpec,
   getRolesForNotebook,
@@ -66,7 +67,8 @@ import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 
 import patch from '../utils/patchExpressAsync';
-import {slugify} from '../utils';
+import {generateTokenContentsForUser, slugify} from '../utils';
+import {generateUserToken} from '../authkeys/create';
 
 // This must occur before express api is used
 patch();
@@ -244,14 +246,41 @@ api.get(
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.UnauthorizedException();
     }
-    const records = await getNotebookRecords(req.params.id, {
-      roles: req.user.roles,
-      server: slugify(CONDUCTOR_INSTANCE_NAME),
-      username: req.user.user_id,
-      // Five minutes from now
-      exp: Date.now() + 1000 * 60 * 5,
-    });
+    const tokenContent = generateTokenContentsForUser(req.user);
+    const records = await getRecordsWithRegex(
+      tokenContent,
+      req.params.id,
+      '.*',
+      true
+    );
     if (records) {
+      const filenames: string[] = [];
+      // Process any file fields to give the file name in the zip download
+      records.forEach((record: any) => {
+        const hrid = record.hrid || record.record_id;
+        for (const fieldName in record.data) {
+          const values = record.data[fieldName];
+          if (values instanceof Array) {
+            const names = values.map((v: any) => {
+              if (v instanceof File) {
+                const filename = generateFilenameForAttachment(
+                  v,
+                  fieldName,
+                  hrid,
+                  filenames
+                );
+                filenames.push(filename);
+                return filename;
+              } else {
+                return v;
+              }
+            });
+            if (names.length > 0) {
+              record.data[fieldName] = names;
+            }
+          }
+        }
+      });
       res.json({records});
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found');

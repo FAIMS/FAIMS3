@@ -35,14 +35,16 @@ import {Alert, Box, Divider, Typography} from '@mui/material';
 import {Form, Formik} from 'formik';
 import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
-import {ValidationError} from 'yup';
 import * as ROUTES from '../../../constants/routes';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
 import {
   NotificationContext,
   NotificationContextType,
 } from '../../../context/popup';
-import {selectActiveUser} from '../../../context/slices/authSlice';
+import {
+  listAllConnections,
+  selectActiveUser,
+} from '../../../context/slices/authSlice';
 import {store} from '../../../context/store';
 import {
   currentlyVisibleFields,
@@ -152,6 +154,9 @@ type RecordFormState = {
   relationship: Relationship | null;
   fieldNames: string[];
   views: string[];
+  visitedSteps: Set<string>;
+  isRevisiting: boolean;
+  isRecordSubmitted: boolean;
   recordContext: RecordContext;
   lastProcessedValues: ValuesObject | null;
 };
@@ -239,6 +244,9 @@ class RecordForm extends React.Component<any, RecordFormState> {
       relationship: {},
       fieldNames: [],
       views: [],
+      visitedSteps: new Set<string>(),
+      isRevisiting: false,
+      isRecordSubmitted: false,
       recordContext: {},
       lastProcessedValues: null,
     };
@@ -248,6 +256,34 @@ class RecordForm extends React.Component<any, RecordFormState> {
     this.onChangeStepper = this.onChangeStepper.bind(this);
     this.onChangeTab = this.onChangeTab.bind(this);
   }
+
+  // function to update visited steps when needed
+  updateVisitedSteps = (stepId: string) => {
+    this.setState(prevState => ({
+      visitedSteps: new Set(prevState.visitedSteps).add(stepId),
+    }));
+  };
+
+  // navigation for the section for better UX , ensure section exist in views list.
+  handleSectionClick = (section: string) => {
+    const index = this.state.views.indexOf(section);
+
+    if (index !== -1) {
+      this.onChangeStepper(section, index);
+    } else {
+      // if section is not found in view list check all aval. sections
+      const availableSections = Object.keys(this.props.ui_specification.views);
+
+      if (availableSections.includes(section)) {
+        this.onChangeStepper(section, availableSections.indexOf(section));
+      } else {
+        // log a warning in case its completely invalid.
+        console.warn(
+          `handleSectionClick: Attempted to navigate to an invalid section: ${section}`
+        );
+      }
+    }
+  };
 
   async componentDidMount() {
     // moved from constructor since it has a side-effect of setting up a global timer
@@ -738,9 +774,27 @@ class RecordForm extends React.Component<any, RecordFormState> {
   }
 
   onChangeStepper(view_name: string, activeStepIndex: number) {
-    this.setState({
-      view_cached: view_name,
-      activeStep: activeStepIndex,
+    this.setState(prevState => {
+      const {visitedSteps, activeStep} = prevState;
+
+      const wasVisitedBefore = prevState.visitedSteps.has(view_name);
+
+      // add to visitedSteps if it has not been visited before
+      const updatedVisitedSteps = new Set(prevState.visitedSteps);
+      updatedVisitedSteps.add(view_name);
+
+      const isFirstStep = activeStepIndex === 0;
+
+      const isRevisiting =
+        wasVisitedBefore || (isFirstStep && activeStep !== activeStepIndex);
+
+      return {
+        ...prevState,
+        view_cached: view_name,
+        activeStep: activeStepIndex,
+        visitedSteps: updatedVisitedSteps,
+        isRevisiting,
+      };
     });
   }
 
@@ -1202,6 +1256,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
       const viewName = this.requireView();
       const viewsetName = this.requireViewsetName();
       const initialValues = this.requireInitialValues();
+      const isRecordSubmitted = !!this.state.revision_cached;
+
       const ui_specification = this.props.ui_specification;
       const validationSchema = getValidationSchemaForViewset(
         ui_specification,
@@ -1219,7 +1275,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
               // over the manual validate function
               // validationSchema={validationSchema}
               validateOnMount={true}
-              validateOnChange={false}
+              validateOnChange={true}
               validateOnBlur={true}
               // This manually runs the validate function which formik triggers
               // validation due to the above conditions, we use the yup
@@ -1236,7 +1292,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   return {};
                 } catch (err) {
                   try {
-                    const errors = err as ValidationError;
+                    const errors = err as {inner: any[]};
 
                     const processedErrors = errors.inner.reduce(
                       (acc: {[key: string]: string}, error) => {
@@ -1362,6 +1418,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
                                 fieldNames={fieldNames}
                                 disabled={this.props.disabled}
                                 hideErrors={true}
+                                formErrors={formProps.errors}
+                                visitedSteps={this.state.visitedSteps}
+                                currentStepId={this.state.view_cached ?? ''}
+                                isRevisiting={this.state.isRevisiting}
+                                handleSectionClick={this.handleSectionClick}
                               />
                             </Form>
                           </div>
@@ -1384,7 +1445,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                       )}
                       {!formProps.isValid &&
                         Object.keys(formProps.errors).length > 0 && (
-                          <Alert severity="error">
+                          <Alert severity="error" sx={{mt: 2}}>
                             Form has errors, please scroll up and make changes
                             before submitting.
                             <div>
@@ -1461,6 +1522,9 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         ui_specification={ui_specification}
                         onChangeStepper={this.onChangeStepper}
                         views={views}
+                        formErrors={formProps.errors}
+                        visitedSteps={this.state.visitedSteps}
+                        isRecordSubmitted={isRecordSubmitted}
                       />
                     )}
 
@@ -1485,6 +1549,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
                       handleChangeTab={this.props.handleChangeTab}
                       fieldNames={fieldNames}
                       disabled={this.props.disabled}
+                      visitedSteps={this.state.visitedSteps}
+                      currentStepId={this.state.view_cached ?? ''}
+                      isRevisiting={this.state.isRevisiting}
+                      handleSectionClick={this.handleSectionClick}
                     />
                     <FormButtonGroup
                       record_type={this.state.type_cached}
