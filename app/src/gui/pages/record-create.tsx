@@ -411,10 +411,17 @@ export default function RecordCreate() {
       {title: 'Draft'},
     ];
   }
+
+  // fethc survey link for the records
+  let surveyLink = ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id;
+  if (location.state && location.state.parent_record_id !== record_id) {
+    surveyLink = ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + location.state.parent_link;
+  }
+
   return (
     <React.Fragment>
       <Box>
-        <Breadcrumbs data={breadcrumbs} />
+        <Breadcrumbs data={breadcrumbs} backLink={surveyLink} />
         {draft_id === undefined || record_id === undefined ? (
           <DraftCreate
             project_id={project_id!}
