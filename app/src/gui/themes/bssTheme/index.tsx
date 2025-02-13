@@ -1,12 +1,15 @@
 import {createTheme} from '@mui/material';
 import typography from '../default/typography';
-import {generateStepperColors} from '../../../utils/generateStepperColors';
 
 const primaryMainColor = '#000000';
 
 const theme = createTheme({
-  themeType: 'bss',
-
+  stepperColors: {
+    current: '#000000',
+    visited: '#07a907',
+    error: '#EE1616FF',
+    notVisited: '#BDBDBD',
+  },
   palette: {
     background: {
       default: '#FAFAFB',

@@ -6,6 +6,13 @@ import defaultProjectListLayout from './default/noteBook';
 import bubbleProjectListLayout from './bubble/noteBook';
 import bssTheme from './bssTheme';
 
+export interface StepperColors {
+  current: string;
+  visited: string;
+  error: string;
+  notVisited: string;
+}
+
 /**
  * Exports the theme based on the environment variable VITE_THEME.
  *

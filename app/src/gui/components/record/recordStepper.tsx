@@ -19,25 +19,21 @@
  *   Steppers show sections of Form
  *   MobileStepper for small screen ONLY
  */
-import {
-  Button,
-  Box,
-  Typography,
-  Step,
-  Stepper,
-  StepButton,
-  MobileStepper,
-  keyframes,
-  styled,
-  useMediaQuery,
-  Badge,
-} from '@mui/material';
 import {ProjectUIModel} from '@faims3/data-model';
+import {
+  Badge,
+  Box,
+  Button,
+  MobileStepper,
+  Step,
+  StepButton,
+  Stepper,
+  Typography,
+  keyframes,
+} from '@mui/material';
 import {createUseStyles} from 'react-jss';
-import {useCallback, useEffect, useState} from 'react';
 import {getStepColor} from '../../../utils/generateStepperColors';
 import {theme} from '../../themes';
-import {ThemeType} from '../../../utils/generateStepperColors';
 
 type RecordStepperProps = {
   view_index: number;
@@ -131,8 +127,6 @@ export default function RecordStepper(props: RecordStepperProps) {
       )
     );
   };
-
-  const themeType: ThemeType = theme.themeType as ThemeType;
 
   return (
     <>
