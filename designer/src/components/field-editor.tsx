@@ -22,21 +22,17 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Autocomplete,
   Button,
   Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  FormControlLabel,
   Grid,
   IconButton,
-  MenuItem,
-  Radio,
-  RadioGroup,
-  Select,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -55,8 +51,7 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
-import {useState} from 'react';
-import {SelectChangeEvent} from '@mui/material/Select';
+import {useState, useMemo} from 'react';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -136,6 +131,7 @@ export const FieldEditor = ({
   const handleCloseMoveDialog = () => {
     setOpenMoveDialog(false);
     setSelectedFormId(null); // reset selectedFormId when dialog is closed
+    setTargetViewId(''); // reset section value when dialog is closed
   };
 
   const moveFieldToSection = () => {
@@ -144,6 +140,39 @@ export const FieldEditor = ({
       handleCloseMoveDialog();
     }
   };
+
+  // memoize the form value
+  const formValue = useMemo(() =>
+    selectedFormId ? { id: selectedFormId, label: viewsets[selectedFormId].label } : null,
+    [selectedFormId, viewsets]
+  );
+
+  // memoize the form options
+  const formOptions = useMemo(() =>
+    Object.entries(viewsets)
+      .map(([formId, form]) => ({
+        id: formId,
+        label: form.label
+      })),
+    [viewsets]
+  );
+
+  // memoize the section value
+  const sectionValue = useMemo(() =>
+    targetViewId ? { id: targetViewId, label: views[targetViewId].label } : null,
+    [targetViewId, views]
+  );
+
+  // memoize the section options
+  const sectionOptions = useMemo(() =>
+    selectedFormId ? viewsets[selectedFormId].views
+      .filter(sectionId => sectionId !== viewId)
+      .map(sectionId => ({
+        id: sectionId,
+        label: views[sectionId].label
+      })) : [],
+    [selectedFormId, viewsets, viewId, views]
+  );
 
   return (
     <Accordion
@@ -291,67 +320,69 @@ export const FieldEditor = ({
         open={openMoveDialog}
         onClose={handleCloseMoveDialog}
         aria-labelledby="move-dialog-title"
+        maxWidth="sm"
       >
-        <DialogTitle id="move-dialog-title">
-          Move field to another section
+        <DialogTitle id="move-dialog-title" textAlign="center">
+          Move Question
         </DialogTitle>
         <DialogContent>
-          {!selectedFormId ? (
-            <FormControl component="fieldset" fullWidth>
-              <Typography variant="body1" sx={{mb: 1}}>
-                Select a Form:
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
+                Destination Form
               </Typography>
-              <RadioGroup
-                aria-label="select-form"
-                name="selectForm"
-                value={selectedFormId}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setSelectedFormId(event.target.value);
+              <Typography variant="body2" sx={{mb: 0.5}}>
+                Choose the form you want to move the question to.
+              </Typography>
+              <Autocomplete fullWidth
+                value={formValue}
+                onChange={(_event, newValue) => {
+                  setSelectedFormId(newValue ? newValue.id : null);
+                  setTargetViewId(''); // reset section when form changes
                 }}
-              >
-                {Object.entries(viewsets).map(([formId, form]) => (
-                  <FormControlLabel
-                    key={formId}
-                    value={formId}
-                    control={<Radio />}
-                    label={form.label}
+                options={formOptions}
+                getOptionLabel={option => option.label}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
                   />
-                ))}
-              </RadioGroup>
-            </FormControl>
-          ) : (
-            <FormControl component="fieldset" fullWidth>
-              <Typography variant="body1" sx={{mb: 1}}>
-                Select a Section:
+                )}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
+                Destination Section
               </Typography>
-              <Select
-                aria-label="target-section"
-                name="targetSection"
-                value={targetViewId}
-                onChange={(event: SelectChangeEvent<string>) => {
-                  setTargetViewId(event.target.value);
+              <Typography variant="body2" sx={{mb: 0.5}}>
+                Choose the section you want to move the question to.
+              </Typography>
+              <Autocomplete fullWidth
+                value={targetViewId ? sectionValue : null}
+                onChange={(_event, newValue) => {
+                  setTargetViewId(newValue ? newValue.id : '');
                 }}
-                displayEmpty
-              >
-                {viewsets[selectedFormId].views
-                  .filter(sectionId => sectionId !== viewId) // exclude current section
-                  .map(sectionId => (
-                    <MenuItem key={sectionId} value={sectionId}>
-                      {views[sectionId].label}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-          )}
+                options={sectionOptions}
+                getOptionLabel={option => option.label}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                disabled={!selectedFormId}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                  />
+                )}
+              />
+            </Grid>
+          </Grid>
         </DialogContent>
         <DialogActions>
-          {selectedFormId && (
-            <Button onClick={() => setSelectedFormId(null)}>Back</Button>
-          )}
-          <Button onClick={moveFieldToSection} disabled={!targetViewId}>
+          <Button onClick={handleCloseMoveDialog}>Cancel</Button>
+          <Button
+            onClick={moveFieldToSection}
+            disabled={!selectedFormId || !targetViewId}
+          >
             Move
           </Button>
-          <Button onClick={handleCloseMoveDialog}>Cancel</Button>
         </DialogActions>
       </Dialog>
 
