@@ -78,6 +78,27 @@ const getFieldLabel = (f: FieldType) => {
   );
 };
 
+function isFieldUsedInCondition(
+  condition: ConditionType | null,
+  fieldName: string
+): boolean {
+  if (!condition) return false;
+
+  const {operator, field, conditions} = condition;
+
+  if (field === fieldName) {
+    return true;
+  }
+
+  if ((operator === 'and' || operator === 'or') && conditions) {
+    return conditions.some(subCondition =>
+      isFieldUsedInCondition(subCondition, fieldName)
+    );
+  }
+
+  return false;
+}
+
 export const ConditionModal = (props: ConditionProps & {label: string}) => {
   const [open, setOpen] = useState(false);
 
