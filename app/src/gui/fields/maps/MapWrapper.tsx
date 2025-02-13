@@ -21,6 +21,8 @@ import {useCallback, useMemo, useRef, useState} from 'react';
 
 // openlayers
 import CloseIcon from '@mui/icons-material/Close';
+import EditIcon from '@mui/icons-material/Edit';
+import MapIcon from '@mui/icons-material/LocationOn';
 import Button, {ButtonProps} from '@mui/material/Button';
 import Map from 'ol/Map';
 import View from 'ol/View';
@@ -35,14 +37,6 @@ import GeoTIFF from 'ol/source/GeoTIFF';
 import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
-import {register} from 'ol/proj/proj4';
-import Button, {ButtonProps} from '@mui/material/Button';
-import CloseIcon from '@mui/icons-material/Close';
-import GeoJSON from 'ol/format/GeoJSON';
-import Zoom from 'ol/control/Zoom';
-import MapIcon from '@mui/icons-material/LocationOn';
-import EditIcon from '@mui/icons-material/Edit';
-import CheckCircleIcon from '@mui/icons-material/Check';
 
 // define some EPSG codes - these are for two sample images
 // TODO: we need to have a better way to include a useful set or allow
@@ -88,8 +82,8 @@ import {
 } from '@mui/material';
 import {useNotification} from '../../../context/popup';
 import {createCenterControl} from '../../components/map/center-control';
-import {useNotification} from '../../../context/popup';
 import {theme} from '../../themes';
+import {ImageTileStore} from '../../components/map/tile-source';
 
 const styles = {
   mapContainer: {
