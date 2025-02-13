@@ -270,7 +270,7 @@ export function createUpdateAndSavePouchSync<Content extends {}>({
   // PouchDB object
   const newDb = createPouchDbFromConnectionInfo<Content>(connectionInfo);
   const {sync: newSync, options} = createPouchDbSync({
-    attachmentDownload: localDb.is_sync,
+    attachmentDownload: localDb.is_sync_attachments,
     localDb: localDb.local,
     remoteDb: newDb,
   });
@@ -332,6 +332,7 @@ export function createPouchDbSync<Content extends {}>({
   localDb: PouchDB.Database<Content>;
   remoteDb: PouchDB.Database<Content>;
 }) {
+  console.log('createPouchDbSync', localDb.name, attachmentDownload);
   // Configure attachment filtering if needed
   const pullFilter = attachmentDownload
     ? {}
