@@ -208,6 +208,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
       });
       // Re-initialize basically everything.
       // if (this.props.revision_id !== undefined)
+
+      // We just reset the type (since the revision ID changed) - so go fetch
+      // this again
+      await this.identifyRecordType(this.props.revision_id);
+      // Then let the form know that things have changed
       this.formChanged(true, this.props.revision_id);
     }
     // if viewName is specified it is the result of the user clicking
