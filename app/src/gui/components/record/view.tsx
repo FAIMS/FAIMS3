@@ -165,17 +165,6 @@ function SingleComponent(props: SingleComponentProps) {
       mt={isHiddenField ? 0 : 2}
       mb={isHiddenField ? 0 : 2}
       data-field={fieldName}
-      sx={{
-        borderRadius: '8px',
-        transition:
-          'background-color 0.4s ease-in-out, box-shadow 0.4s ease-in-out',
-        background: hasError
-          ? 'rgba(206, 0, 0, 0.01)'
-          : 'rgba(200, 200, 200, 0.1)',
-        boxShadow: hasError
-          ? '0px 0px 5px rgba(250, 0, 0, 0.3)'
-          : '0px 0px 5px rgba(0, 0, 0, 0.1)',
-      }}
     >
       <Grid container spacing={isHiddenField ? 0 : 1}>
         <Grid item xs={12} sm>
