@@ -13,12 +13,20 @@ import {
 import {Input} from '@/components/ui/input';
 import {useState} from 'react';
 import {Alert, AlertTitle, AlertDescription} from './ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 
 interface Field {
   name: string;
   label?: string;
   schema: z.ZodSchema;
   type?: string;
+  options?: {label: string; value: string}[];
 }
 
 /**
@@ -77,7 +85,7 @@ export function Form<
         className="flex flex-col gap-6"
       >
         <div className="flex flex-col gap-2">
-          {fields.map(({name, label, type}) => (
+          {fields.map(({name, label, type, options}) => (
             <FormField
               key={name}
               control={form.control}
@@ -87,17 +95,32 @@ export function Form<
                 <FormItem>
                   {label && <FormLabel>{label}</FormLabel>}
                   <FormControl>
-                    <Input
-                      {...field}
-                      type={type}
-                      className={type === 'file' ? 'cursor-pointer' : ''}
-                      onChange={event =>
-                        type === 'file'
-                          ? event.target.files &&
-                            onChange(event.target.files[0])
-                          : onChange(event)
-                      }
-                    />
+                    {options ? (
+                      <Select onValueChange={onChange} defaultValue={value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={`Select ${name}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {options.map(({label, value}) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        {...field}
+                        type={type}
+                        className={type === 'file' ? 'cursor-pointer' : ''}
+                        onChange={event =>
+                          type === 'file'
+                            ? event.target.files &&
+                              onChange(event.target.files[0])
+                            : onChange(event)
+                        }
+                      />
+                    )}
                   </FormControl>
                   <FormMessage />
                 </FormItem>

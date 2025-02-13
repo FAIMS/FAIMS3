@@ -4,6 +4,7 @@ import {DataTable} from '@/components/data-table/data-table';
 import {useNavigate} from '@tanstack/react-router';
 import {useGetProjects} from '@/hooks/get-hooks';
 import {NOTEBOOK_NAME} from '@/constants';
+import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-template';
 
 /**
  * TemplateProjects component renders a table of projects for a template.
@@ -23,6 +24,7 @@ const TemplateProjects = ({templateId}: {templateId: string}) => {
     <DataTable
       columns={columns}
       data={data.filter((notebook: any) => notebook.template_id === templateId)}
+      button={<ProjectFromTemplateDialog />}
       loading={isPending}
       onRowClick={({non_unique_project_id}) =>
         navigate({to: `/${NOTEBOOK_NAME}s/${non_unique_project_id}`})
