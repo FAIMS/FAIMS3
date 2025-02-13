@@ -387,7 +387,7 @@ export function ViewComponent(props: ViewProps) {
                     color: theme.palette.highlightColor.main,
                     fontSize: {xs: '0.85rem', sm: '1rem'},
                     fontWeight: 'bold',
-                    textDecoration: 'none',
+                    textDecoration: 'underline',
                     '&:hover': {
                       color: theme.palette.secondary.main,
                       transform: 'scale(1.02)',
@@ -395,7 +395,6 @@ export function ViewComponent(props: ViewProps) {
                     mt: 1,
                   }}
                 >
-                  {index + 1}.{' '}
                   {ui_specification.views[section]?.label || section}
                 </Link>
               ))}
