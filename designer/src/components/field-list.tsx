@@ -37,7 +37,7 @@ import {getFieldNames} from '../fields';
 type Props = {
   viewSetId: string;
   viewId: string;
-  moveFieldCallback: (fieldName: string, sourceViewId: string, targetViewId: string) => void;
+  moveFieldCallback: (targetViewId: string) => void;
 };
 
 export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
@@ -181,7 +181,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             expanded={isExpanded[fieldName] ?? false}
             addFieldCallback={addFieldAfterCallback}
             handleExpandChange={handleExpandChange(fieldName)}
-            moveFieldCallback={(targetViewId: string) => moveFieldCallback(fieldName, viewId, targetViewId)}
+            moveFieldCallback={(targetViewId: string) => moveFieldCallback(targetViewId)}
           />
         );
       })}

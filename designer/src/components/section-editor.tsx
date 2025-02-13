@@ -62,7 +62,7 @@ type Props = {
     viewID: string
   ) => boolean;
   handleSectionMoveCallback: (targetViewSetId: string) => void;
-  moveFieldCallback: (fieldName: string, sourceViewId: string, targetViewId: string) => void;
+  moveFieldCallback: (targetViewId: string) => void;
 };
 
 export const SectionEditor = ({

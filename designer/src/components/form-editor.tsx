@@ -313,15 +313,7 @@ export const FormEditor = ({
     moveCallback(viewSetID, moveDirection);
   };
 
-  const moveFieldToSection = (fieldName: string, sourceViewId: string, targetViewId: string) => {
-    dispatch({
-      type: 'ui-specification/fieldMovedToSection',
-      payload: {
-        fieldName,
-        sourceViewId,
-        targetViewId,
-      },
-    });
+  const moveFieldToSection = (targetViewId: string) => {
     handleFieldMoveCallback(targetViewId);
   };
 
