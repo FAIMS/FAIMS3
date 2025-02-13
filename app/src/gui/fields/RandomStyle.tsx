@@ -20,6 +20,7 @@
 
 import React from 'react';
 import {Box, Typography} from '@mui/material';
+import { contentToSanitizedHtml } from '../../utils/DomPurifier';
 
 interface Props {
   helperText?: string;
@@ -36,7 +37,7 @@ export class RandomStyle extends React.Component<Props> {
           {this.props.label}
         </Typography>
         <Typography variant="caption">{this.props.helperText}</Typography>
-        <div dangerouslySetInnerHTML={{__html: this.props.html_tag}} />
+        <div dangerouslySetInnerHTML={{__html: contentToSanitizedHtml(this.props.html_tag)}} />
         <Typography
           paragraph
           sx={{fontWeight: 'fontWeightLight', fontSize: 11}}
