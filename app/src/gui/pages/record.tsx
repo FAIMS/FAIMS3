@@ -32,9 +32,6 @@ import {
   getInitialMergeDetails,
   listFAIMSRecordRevisions,
 } from '@faims3/data-model';
-import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
-import ArticleIcon from '@mui/icons-material/Article';
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -59,12 +56,10 @@ import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {addAlert} from '../../context/slices/syncSlice';
 import {useAppDispatch} from '../../context/store';
-import {scrollToDiv} from '../../lib/navigation';
 import {logError} from '../../logging';
 import {getProjectInfo} from '../../sync/projects';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
 import {getUiSpecForProject} from '../../uiSpecification';
-import TransparentButton from '../components/buttons/transparent-button';
 import RecordDelete from '../components/notebook/delete';
 import ProgressBar from '../components/progress-bar';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
@@ -85,11 +80,10 @@ import {
   ParentLinkProps,
   RecordLinkProps,
 } from '../components/record/relationships/types';
+import BackButton from '../components/ui/BackButton';
 import BoxTab from '../components/ui/boxTab';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
-import BackButton from '../components/ui/BackButton';
 
 export default function Record() {
   /**
@@ -145,9 +139,8 @@ export default function Record() {
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-  const [breadcrumbs, setBreadcrumbs] = useState<
-    {link?: string; title: string}[]
-  >([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setBreadcrumbs] = useState<{link?: string; title: string}[]>([]);
   const [progress, setProgress] = useState<number>(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
 

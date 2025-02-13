@@ -198,6 +198,7 @@ export function useQueryParams<T extends Record<string, any>>(config: {
       let hasUpdates = false;
 
       // Check each configured parameter
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       Object.entries(config).forEach(([_, paramConfig]) => {
         const value = searchParams.get(paramConfig.key);
         // If param is missing from URL but has a default value, add it

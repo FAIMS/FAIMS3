@@ -19,24 +19,21 @@
  *   20220620 BBS Adjusted sm to 11 from 8 to get rid of the awful margin reported in FAIMS3-328
  */
 
-import React from 'react';
-import DraftSyncStatus from './sync_status';
-import RelationshipsViewComponent from './relationships';
-import {Accordion, AccordionSummary, AccordionDetails} from './accordion';
-import RecordForm from './form';
-import {ProjectID, RecordID, RevisionID} from '@faims3/data-model';
-import {ProjectUIModel} from '@faims3/data-model';
-import {useTheme} from '@mui/material/styles';
-import {Box, Typography, Tab} from '@mui/material';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
-import {grey} from '@mui/material/colors';
-import ListAltIcon from '@mui/icons-material/ListAlt';
-import InheritedDataComponent from './inherited_data';
-import {ParentLinkProps, RecordLinkProps} from './relationships/types';
+import {
+  ProjectID,
+  ProjectUIModel,
+  RecordID,
+  RevisionID,
+} from '@faims3/data-model';
+import {Box} from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
+import {grey} from '@mui/material/colors';
+import React from 'react';
 import {useNavigate} from 'react-router-dom';
+import RecordForm from './form';
+import RelationshipsViewComponent from './relationships';
+import {ParentLinkProps, RecordLinkProps} from './relationships/types';
+import DraftSyncStatus from './sync_status';
 interface RecordDataTypes {
   project_id: ProjectID;
   record_id: RecordID;

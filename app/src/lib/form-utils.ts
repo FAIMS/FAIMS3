@@ -4,7 +4,6 @@ import {
   getViewsMatchingCondition,
 } from '../gui/components/record/branchingLogic';
 import {ValuesObject} from '../utils/formUtilities';
-import {current} from '@reduxjs/toolkit';
 
 /**
  * For the given ui spec, viewset and current form values, considers conditional

@@ -26,6 +26,7 @@ import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
+import {useMutation} from '@tanstack/react-query';
 import {useContext, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {
@@ -36,15 +37,13 @@ import {
 import * as ROUTES from '../../../constants/routes';
 import {useNotification} from '../../../context/popup';
 import {ProjectsContext} from '../../../context/projects-context';
+import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useAppSelector} from '../../../context/store';
 import {ProjectExtended} from '../../../types/project';
-import {userCanCreateNotebooks} from '../../../users';
+import {useIsOnline} from '../../../utils/customHooks';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
-import {useAppSelector} from '../../../context/store';
-import {selectActiveUser} from '../../../context/slices/authSlice';
-import {useMutation} from '@tanstack/react-query';
-import {useIsOnline} from '../../../utils/customHooks';
 
 // Survey status naming conventions
 
@@ -74,7 +73,6 @@ export default function NoteBooks() {
   const isOnline = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
   const activeServerId = activeUser?.serverId;
-  const activeUserToken = activeUser?.parsedToken;
 
   const {projects: allProjects, syncProjects} = useContext(ProjectsContext);
   const projects = allProjects.filter(p => {
