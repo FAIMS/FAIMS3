@@ -1,4 +1,3 @@
-import {ProjectUIModel, ProjectUIViewsets} from '@faims3/data-model';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {
   Alert,
@@ -20,7 +19,7 @@ import {
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQuery} from '@tanstack/react-query';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {
   NOTEBOOK_NAME,
@@ -31,15 +30,19 @@ import * as ROUTES from '../../../constants/routes';
 import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import {useQueryParams} from '../../../utils/customHooks';
+import {
+  useDraftsList,
+  useQueryParams,
+  useRecordList,
+} from '../../../utils/customHooks';
 import MetadataRenderer from '../metadataRenderer';
 import CircularLoading from '../ui/circular_loading';
 import AddRecordButtons from './add_record_by_type';
 import DraftTabBadge from './draft_tab_badge';
-import DraftsTable from './draft_table';
+import {DraftsTable} from './draft_table';
 import {OverviewMap} from './overview_map';
 import RangeHeader from './range_header';
-import {RecordsBrowseTable} from './record_table';
+import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
 
 // Define how tabs appear in the query string arguments, providing a two way map
@@ -115,8 +118,8 @@ type NotebookComponentProps = {
  * NotebookComponent is a component that displays the main interface for the notebook.
  * It includes tabs for Records, Details, Access, Layers, and Settings.
  *
- * @param {NotebookComponentProps} props - The properties for the NotebookComponent.
- * @returns {JSX.Element} - The JSX element for the NotebookComponent.
+ * @param props - The properties for the NotebookComponent.
+ * @returns The JSX element for the NotebookComponent.
  */
 export default function NotebookComponent({project}: NotebookComponentProps) {
   // This manages the tab using a query string arg
@@ -131,20 +134,57 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     setParam('tab', INDEX_TO_TAB.get(val) ?? 'records');
   };
 
-  const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
-  const [totalRecords, setTotalRecords] = useState(0);
-  const [myRecords, setMyRecords] = useState(0);
+  const [tabIndex, setTabIndex] = React.useState<0 | 1 | 2>(0);
+
+  // Fetch records from the (local) DB with 10 second auto refetch
+  const [query, setQuery] = useState<string>('');
+  const records = useRecordList({
+    query: query,
+    projectId: project.project_id,
+    filterDeleted: true,
+    // refetch every 10 seconds (local only fetch - no network traffic here)
+    refreshIntervalMs: 10000,
+  });
+  const forceRecordRefresh = records.query.refetch;
+
+  // Fetch drafts
+  const drafts = useDraftsList({
+    projectId: project.project_id,
+    filter: 'all',
+  });
+  const forceDraftRefresh = drafts.refetch;
+
+  // Query to get the ui spec
+  const uiSpec = useQuery({
+    queryKey: ['uispecquery', project.project_id],
+    queryFn: async () => {
+      return getUiSpecForProject(project.project_id);
+    },
+  });
+  const viewsets = uiSpec.data?.viewsets;
+
+  // Get the metadata for the template ID
+  const {data: template_id} = useQuery({
+    queryKey: ['project-template-id', project.project_id],
+    queryFn: async (): Promise<string | null> => {
+      // don't return undefined from queryFn
+      const id = await getMetadataValue(project.project_id, 'template_id');
+      if (id !== undefined) return id as string;
+      else return null;
+    },
+  });
+
   /**
    * Handles the change event when the user switches between the Records and Drafts tabs.
    *
    * @param {React.SyntheticEvent} event - The event triggered by the tab change.
    * @param {number} newValue - The index of the selected tab.
    */
-  const handleRecordDraftTabChange = (
-    event: React.SyntheticEvent,
-    newValue: number
+  const handleTabChange = (
+    _event: React.SyntheticEvent,
+    newValue: 0 | 1 | 2
   ) => {
-    setRecordDraftTabValue(newValue);
+    setTabIndex(newValue);
   };
 
   /**
@@ -160,80 +200,20 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     setNotebookTabValue(newValue);
   };
 
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState('');
-  const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
-  const [uiSpec, setUiSpec] = useState<null | ProjectUIModel>(null);
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const history = useNavigate();
 
   // recordLabel based on viewsets
   const recordLabel =
-    uiSpec?.visible_types?.length === 1
-      ? uiSpec.viewsets[uiSpec.visible_types[0]]?.label ||
-        uiSpec.visible_types[0]
+    uiSpec.data?.visible_types?.length === 1
+      ? uiSpec.data?.viewsets[uiSpec.data.visible_types[0]]?.label ||
+        uiSpec.data.visible_types[0]
       : 'Record';
-
-  const {data: template_id} = useQuery({
-    queryKey: ['project-template-id', project.project_id],
-    queryFn: async (): Promise<string | null> => {
-      // don't return undefined from queryFn
-      const id = await getMetadataValue(project.project_id, 'template_id');
-      if (id !== undefined) return id as string;
-      else return null;
-    },
-  });
-
-  /**
-   * Fetches the UI specification and viewsets for the project
-   */
-  const pageLoader = () => {
-    // Starting state reset
-    setViewsets(null);
-    setUiSpec(null);
-    setErr('');
-    setLoading(true);
-
-    if (project.listing && project._id) {
-      getUiSpecForProject(project.project_id)
-        .then(spec => {
-          setUiSpec(spec);
-          setViewsets(spec.viewsets);
-          setLoading(false);
-          setErr('');
-        })
-
-        .catch(err => {
-          setLoading(false);
-          setErr(err.message);
-        });
-    }
-  };
-
-  /**
-   * Fetches the UI specification and viewsets for the project when the
-   * component mounts or the project changes.
-   */
-  useEffect(() => {
-    pageLoader();
-  }, [project]);
-
-  // trigger a refresh of the content because something changed down below (a
-  // record or draft was deleted)
-  const handleRefresh = () => {
-    pageLoader();
-  };
-
-  // Callback to handle counts from RecordsTable
-  const handleCountChange = (counts: {total: number; myRecords: number}) => {
-    setTotalRecords(counts.total);
-    setMyRecords(counts.myRecords);
-  };
 
   return (
     <Box>
-      {err ? (
+      {uiSpec.isError ? (
         <Alert severity="error">
           <AlertTitle>
             {' '}
@@ -241,7 +221,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           </AlertTitle>
           Your device may be offline.
           <br />
-          <Typography variant={'caption'}>{err}</Typography>
+          <Typography variant={'caption'}>{uiSpec.error.message}</Typography>
           <br />
           <br />
           Go to
@@ -254,7 +234,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             Workspace
           </Button>
         </Alert>
-      ) : loading ? (
+      ) : uiSpec.isLoading || !uiSpec.data ? (
         <CircularLoading label={`${NOTEBOOK_NAME_CAPITALIZED} is loading`} />
       ) : (
         <Box>
@@ -321,11 +301,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               }}
             >
               <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
-                <strong>My {recordLabel}s:</strong> {myRecords}
+                <strong>My {recordLabel}s:</strong> {records.myRecords.length}
               </Typography>
 
               <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
-                <strong>Total {recordLabel}s:</strong> {totalRecords}
+                <strong>Other {recordLabel}s:</strong>{' '}
+                {records.otherRecords.length}
               </Typography>
             </Box>
           )}
@@ -338,48 +319,64 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             <Box mt={2}>
               <Box mb={1}>
                 <Tabs
-                  value={recordDraftTabValue}
-                  onChange={handleRecordDraftTabChange}
+                  value={tabIndex}
+                  onChange={handleTabChange}
                   aria-label={`${NOTEBOOK_NAME}-records`}
                   sx={{
                     backgroundColor: theme.palette.background.tabsBackground,
                   }}
                 >
                   <Tab
-                    label={`My ${recordLabel}s`}
-                    {...a11yProps(0, `${NOTEBOOK_NAME}-records`)}
+                    label={`My ${recordLabel}s (${records.myRecords.length})`}
+                    {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
                   />
                   <Tab
-                    label={<DraftTabBadge project_id={project.project_id} />}
-                    {...a11yProps(1, `${NOTEBOOK_NAME}-records`)}
+                    label={`Other ${recordLabel}s (${records.otherRecords.length})`}
+                    {...a11yProps(1, `${NOTEBOOK_NAME}-otherrecords`)}
+                  />
+                  <Tab
+                    label={
+                      <DraftTabBadge
+                        loading={drafts.isLoading}
+                        count={drafts.data?.length ?? 0}
+                      />
+                    }
+                    {...a11yProps(2, `${NOTEBOOK_NAME}-drafts`)}
                   />
                 </Tabs>
               </Box>
-              <TabPanel
-                value={recordDraftTabValue}
-                index={0}
-                id={'records-drafts-'}
-              >
-                <RecordsBrowseTable
+              <TabPanel value={tabIndex} index={0} id={'records-mine'}>
+                <RecordsTable
                   project_id={project.project_id}
                   maxRows={25}
+                  rows={records.myRecords}
+                  loading={records.query.isLoading}
                   viewsets={viewsets}
-                  filter_deleted={true}
-                  handleRefresh={handleRefresh}
-                  onRecordsCountChange={handleCountChange}
+                  handleQueryFunction={setQuery}
+                  handleRefresh={forceRecordRefresh}
                   recordLabel={recordLabel}
                 />
               </TabPanel>
-              <TabPanel
-                value={recordDraftTabValue}
-                index={1}
-                id={'records-drafts-'}
-              >
+              <TabPanel value={tabIndex} index={1} id={'records-all'}>
+                <RecordsTable
+                  project_id={project.project_id}
+                  maxRows={25}
+                  rows={records.otherRecords}
+                  loading={records.query.isLoading}
+                  viewsets={viewsets}
+                  handleQueryFunction={setQuery}
+                  handleRefresh={forceRecordRefresh}
+                  recordLabel={recordLabel}
+                />
+              </TabPanel>
+              <TabPanel value={tabIndex} index={2} id={'record-drafts'}>
                 <DraftsTable
                   project_id={project.project_id}
                   maxRows={25}
+                  rows={drafts.data ?? []}
+                  loading={drafts.isLoading}
                   viewsets={viewsets}
-                  handleRefresh={handleRefresh}
+                  handleRefresh={forceDraftRefresh}
                 />
               </TabPanel>
             </Box>
@@ -594,12 +591,15 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           </TabPanel>
 
           <TabPanel value={notebookTabValue} index={2} id={'notebook'}>
-            {uiSpec !== null && <NotebookSettings uiSpec={uiSpec} />}
+            {uiSpec !== null && <NotebookSettings uiSpec={uiSpec.data} />}
           </TabPanel>
 
           <TabPanel value={notebookTabValue} index={3} id={'notebook'}>
             {uiSpec !== null && (
-              <OverviewMap project_id={project.project_id} uiSpec={uiSpec} />
+              <OverviewMap
+                project_id={project.project_id}
+                uiSpec={uiSpec.data}
+              />
             )}
           </TabPanel>
         </Box>

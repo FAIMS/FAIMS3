@@ -68,6 +68,7 @@ import {
 export * from './auth';
 
 export * from './data_storage/authDB';
+export * from './utils';
 
 export {
   HRID_STRING,

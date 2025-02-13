@@ -18,42 +18,49 @@
  */
 
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 import {Capacitor} from '@capacitor/core';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
-import Button from '@mui/material/Button';
 import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
+import {Buffer} from 'buffer';
 import {FieldProps} from 'formik';
 import React from 'react';
-import * as ROUTES from '../../constants/routes';
 import {useNavigate} from 'react-router';
 import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
 import FieldWrapper from './fieldWrapper';
+import {LocationPermissionIssue} from '../components/ui/PermissionAlerts';
 
 /**
- * Converts a base64 encoded image to a Blob object using fetch API instead of
- * deprecated atob
+ * Converts a base64 encoded image to a Blob object using Buffer
  * @param image - Photo object containing base64 string and format information
  * @returns Promise resolving to a Blob object representing the image
  * @throws Error if base64String is undefined
  */
 async function base64ImageToBlob(image: Photo): Promise<Blob> {
-  if (image.base64String === undefined) {
-    throw Error('No photo data found');
+  if (!image.base64String) {
+    throw new Error('No photo data found');
   }
 
-  // Convert base64 to binary using fetch API
-  const response = await fetch(
-    `data:image/${image.format};base64,${image.base64String}`
-  );
-  return await response.blob();
+  // Convert base64 to buffer
+  const buffer = Buffer.from(image.base64String, 'base64');
+
+  // Create blob from buffer
+  return new Blob([buffer], {
+    type: `image/${image.format}`,
+  });
 }
 
 // Helper function to check if any images are undownloaded
@@ -145,16 +152,14 @@ const ImageGallery = ({
   onAddPhoto,
 }: ImageListProps) => {
   const theme = useTheme();
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [photoToDelete, setPhotoToDelete] = React.useState<number | null>(null);
+
   // Handler for deleting images from the gallery
   const handleDelete = (index: number) => {
-    if (images.length > index) {
-      // need to reverse the index here to account for reverse display
-      const originalIndex = images.length - 1 - index;
-      const newImages = images.filter(
-        (_: any, i: number) => i !== originalIndex
-      );
-      setImages(newImages);
-    }
+    setPhotoToDelete(index);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -207,83 +212,146 @@ const ImageGallery = ({
           </ImageListItem>
         )}
         {/* Image Gallery - Reversed order for newest first */}
-        {[...images].reverse().map((image: any, index: number) =>
-          image['attachment_id'] === undefined ? (
-            <ImageListItem
-              key={`${fieldName}-image-${index}`}
-              sx={{
-                borderRadius: theme.spacing(1),
-                overflow: 'hidden',
-                boxShadow: theme.shadows[2],
-                aspectRatio: '4/3',
-                '&:hover': {
-                  boxShadow: theme.shadows[4],
-                },
-              }}
-            >
-              <Box
+        {[...images].reverse().map((image: any, index: number) => {
+          if (image['attachment_id'] === undefined) {
+            try {
+              const url = URL.createObjectURL(image);
+              return (
+                <ImageListItem
+                  key={`${fieldName}-image-${index}`}
+                  sx={{
+                    borderRadius: theme.spacing(1),
+                    overflow: 'hidden',
+                    boxShadow: theme.shadows[2],
+                    aspectRatio: '4/3',
+                    '&:hover': {
+                      boxShadow: theme.shadows[4],
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={url}
+                      onClick={() => setopen(url)}
+                      alt={`Photo ${index + 1}`}
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        bgcolor: theme.palette.background.lightBackground,
+                      }}
+                    />
+                    {!disabled && (
+                      <ImageListItemBar
+                        sx={{
+                          background: theme.palette.primary.dark[70],
+                        }}
+                        position="top"
+                        actionIcon={
+                          <IconButton
+                            sx={{color: 'white'}}
+                            onClick={() => handleDelete(index)}
+                            size="large"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        }
+                        actionPosition="right"
+                      />
+                    )}
+                  </Box>
+                </ImageListItem>
+              );
+            } catch (e) {
+              console.error(
+                'URL was not valid for image ',
+                image,
+                '. Ignoring in gallery. Error: ',
+                e
+              );
+              throw e;
+            }
+          } else {
+            return (
+              <ImageListItem
+                key={`${fieldName}-image-icon-${index}`}
+                // Set to null to show download popup
+                onClick={() => setopen(null)}
                 sx={{
-                  width: '100%',
-                  height: '100%',
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  borderRadius: theme.spacing(1),
+                  overflow: 'hidden',
+                  boxShadow: theme.shadows[2],
+                  aspectRatio: '4/3',
+                  '&:hover': {
+                    boxShadow: theme.shadows[4],
+                  },
                 }}
               >
-                <Box
-                  component="img"
-                  src={URL.createObjectURL(image)}
-                  onClick={() => setopen(URL.createObjectURL(image))}
-                  alt={`Photo ${index + 1}`}
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    bgcolor: theme.palette.background.lightBackground,
-                  }}
-                />
-                {!disabled && (
-                  <ImageListItemBar
-                    sx={{
-                      background: theme.palette.primary.dark[70],
-                    }}
-                    position="top"
-                    actionIcon={
-                      <IconButton
-                        sx={{color: 'white'}}
-                        onClick={() => handleDelete(index)}
-                        size="large"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    }
-                    actionPosition="right"
-                  />
-                )}
-              </Box>
-            </ImageListItem>
-          ) : (
-            <ImageListItem
-              key={`${fieldName}-image-icon-${index}`}
-              // Set to null to show download popup
-              onClick={() => setopen(null)}
-              sx={{
-                cursor: 'pointer',
-                borderRadius: theme.spacing(1),
-                overflow: 'hidden',
-                boxShadow: theme.shadows[2],
-                aspectRatio: '4/3',
-                '&:hover': {
-                  boxShadow: theme.shadows[4],
-                },
-              }}
-            >
-              <UnavailableImage />
-            </ImageListItem>
-          )
-        )}
+                <UnavailableImage />
+              </ImageListItem>
+            );
+          }
+        })}
       </Box>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: theme.spacing(2),
+          },
+        }}
+      >
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this photo?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{px: 3, pb: 3}}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            sx={{
+              borderRadius: theme.spacing(1),
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              if (photoToDelete !== null && images.length > photoToDelete) {
+                // need to reverse the index here to account for reverse display
+                const originalIndex = images.length - 1 - photoToDelete;
+                const newImages = images.filter(
+                  (_: any, i: number) => i !== originalIndex
+                );
+                setImages(newImages);
+              }
+              setPhotoToDelete(null);
+              setDeleteDialogOpen(false);
+            }}
+            variant="contained"
+            color="error"
+            sx={{
+              borderRadius: theme.spacing(1),
+              ml: 2,
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
@@ -399,31 +467,7 @@ export const TakePhoto: React.FC<
           />
         )}
 
-        {noPermission && (
-          <Alert severity="error" sx={{width: '100%', mt: 2}}>
-            {Capacitor.getPlatform() === 'web' && (
-              <>
-                Please enable camera permissions for this page. Look for the
-                camera permissions button in your browser's address bar.
-              </>
-            )}
-            {Capacitor.getPlatform() === 'android' && (
-              <>
-                Please enable camera permissions for {APP_NAME}. Go to your
-                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
-                Camera and select "Ask every time" or "Allow only while using
-                the app".
-              </>
-            )}
-            {Capacitor.getPlatform() === 'ios' && (
-              <>
-                Please enable camera permissions for {APP_NAME}. Go to your
-                device Settings &gt; Privacy & Security &gt; Camera &gt; and
-                ensure that {APP_NAME} is enabled.
-              </>
-            )}
-          </Alert>
-        )}
+        {noPermission && <LocationPermissionIssue />}
 
         <FaimsAttachmentManagerDialog
           project_id={projectId}

@@ -44,14 +44,6 @@ export const DesignPanel = () => {
     Object.keys(viewSets).filter(form => !visibleTypes.includes(form))
   );
 
-  console.log('DesignPanel');
-  console.log(
-    'visible forms ',
-    visibleTypes,
-    '& unticked forms ',
-    untickedForms
-  );
-
   const maxKeys = Object.keys(viewSets).length;
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -148,6 +140,16 @@ export const DesignPanel = () => {
   const setIndexAndNavigate = (index: string) => {
     setTabIndex(index);
     navigate(index);
+  };
+
+  const handleSectionMove = (targetViewSetId: string) => {
+    // get the combined array of forms in order
+    const combinedArray = [...visibleTypes, ...untickedForms];
+    const targetIndex = combinedArray.indexOf(targetViewSetId);
+
+    if (targetIndex >= 0) {
+      setIndexAndNavigate(targetIndex.toString());
+    }
   };
 
   return (
@@ -276,6 +278,7 @@ export const DesignPanel = () => {
                   moveButtonsDisabled={false}
                   handleChangeCallback={handleCheckboxTabChange}
                   handleDeleteCallback={handleDeleteFormTabChange}
+                  handleSectionMoveCallback={handleSectionMove}
                 />
               }
             />
@@ -295,6 +298,7 @@ export const DesignPanel = () => {
                   moveButtonsDisabled={true}
                   handleChangeCallback={handleCheckboxTabChange}
                   handleDeleteCallback={handleDeleteFormTabChange}
+                  handleSectionMoveCallback={handleSectionMove}
                 />
               }
             />

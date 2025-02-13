@@ -20,7 +20,7 @@ const theme = createTheme({
     },
     highlightColor: {
       main: '#B10000',
-      contrastText: 'F4F4F4',
+      contrastText: '#F4F4F4',
     },
     secondary: {
       main: '#12B0FB',
@@ -36,6 +36,7 @@ const theme = createTheme({
       warningText: '#EA0E0EFF',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
+      successBackground: '#197A01',
     },
     dialogButton: {
       cancel: '#606060',
@@ -51,6 +52,7 @@ const theme = createTheme({
       main: '#197A01',
       light: '#EAEAEA',
       required: '#5E0000',
+      highlight: '#B10000',
     },
     table: {
       divider: '#828789FF',

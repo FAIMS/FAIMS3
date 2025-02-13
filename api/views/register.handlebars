@@ -1,5 +1,5 @@
 <div class="auth-header">
-    <h2>Create Account</h2>
+    <h2>Create account</h2>
     <p>Already have an account? <a href="{{loginURL}}" class="auth-link">Sign in</a></p>
 </div>
 
@@ -62,9 +62,11 @@
         {{/if}}
     </div>
 
-    <button type="submit" class="auth-button">Create Account</button>
+    <button type="submit" class="auth-button">Create account</button>
 </form>
+{{/if}}
 
+{{#if (and localAuth providers)}}
 <div class="divider">
     <span>or</span>
 </div>

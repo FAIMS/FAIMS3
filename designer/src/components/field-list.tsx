@@ -40,8 +40,6 @@ type Props = {
 };
 
 export const FieldList = ({viewSetId, viewId}: Props) => {
-  console.log('FieldList', viewSetId, viewId);
-
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
   );
@@ -65,7 +63,6 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
   };
 
   const addFieldAfterCallback = (fieldName: string) => {
-    console.log('adding a field after', fieldName);
     setAddAfterField(fieldName);
     setDialogOpen(true);
   };

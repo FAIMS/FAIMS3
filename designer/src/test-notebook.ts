@@ -98,7 +98,6 @@ export const sampleNotebook: unknown = {
           InputLabelProps: {
             label: 'Identifier',
           },
-          hrid: true,
         },
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: '',

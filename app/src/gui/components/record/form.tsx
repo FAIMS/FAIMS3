@@ -35,7 +35,6 @@ import {Alert, Box, Divider, Typography} from '@mui/material';
 import {Form, Formik} from 'formik';
 import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
-import {ValidationError} from 'yup';
 import * as ROUTES from '../../../constants/routes';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
 import {
@@ -56,6 +55,11 @@ import {
   getFieldsForViewSet,
   getReturnedTypesForViewSet,
 } from '../../../uiSpecification';
+import {
+  getRecordContextFromRecord,
+  recomputeDerivedFields,
+  ValuesObject,
+} from '../../../utils/formUtilities';
 import CircularLoading from '../ui/circular_loading';
 import {getValidationSchemaForViewset} from '../validation';
 import {
@@ -120,13 +124,20 @@ type RecordFormProps = {
     }
 );
 
+export interface RecordContext {
+  // timestamp ms created
+  createdTime?: number;
+  // First Last name of creator - if any
+  createdBy?: string;
+}
+
 type RecordFormState = {
   // This is set by formChanged() function,
   type_cached: string | null;
   view_cached: string | null;
   activeStep: number;
   revision_cached: string | undefined;
-  initialValues: {[fieldName: string]: unknown} | null;
+  initialValues: ValuesObject | null;
   annotation: {[field_name: string]: Annotations};
   /**
    * Set only by newDraftListener, but this is only non-null
@@ -142,6 +153,8 @@ type RecordFormState = {
   visitedSteps: Set<string>;
   isRevisiting: boolean;
   isRecordSubmitted: boolean;
+  recordContext: RecordContext;
+  lastProcessedValues: ValuesObject | null;
 };
 
 /*
@@ -155,12 +168,7 @@ type RecordFormState = {
     - this one works ok
 */
 
-class RecordForm extends React.Component<
-  // RecordFormProps & RouteComponentProps,
-  // RecordFormState
-  any,
-  RecordFormState
-> {
+class RecordForm extends React.Component<any, RecordFormState> {
   draftState: RecordDraftState | null = null;
 
   // List of timeouts that unmount must cancel
@@ -235,6 +243,8 @@ class RecordForm extends React.Component<
       visitedSteps: new Set<string>(),
       isRevisiting: false,
       isRecordSubmitted: false,
+      recordContext: {},
+      lastProcessedValues: null,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -407,6 +417,7 @@ class RecordForm extends React.Component<
     ) {
       viewName = this.state.view_cached;
     }
+
     this.setState({
       type_cached: viewSetName,
       view_cached: viewName,
@@ -528,16 +539,17 @@ class RecordForm extends React.Component<
        * Formik requires a single object for initialValues, collect these from the
        * (in order high priority to last resort): draft storage, database, ui schema
        */
-      const fromdb: any =
-        revision_id === undefined
-          ? {}
-          : (await getFullRecordData(
-              this.props.project_id,
-              this.props.record_id,
-              revision_id
-            )) || {};
-      const database_data = fromdb.data ?? {};
-      const database_annotations = fromdb.annotations ?? {};
+      const fromdb = revision_id
+        ? ((await getFullRecordData(
+            this.props.project_id,
+            this.props.record_id,
+            revision_id
+          )) ?? undefined)
+        : undefined;
+
+      // data and annotations or nothing
+      const database_data = fromdb ? fromdb.data : {};
+      const database_annotations = fromdb ? fromdb.annotations : {};
 
       const [staged_data, staged_annotations] =
         await this.draftState.getInitialValues();
@@ -636,7 +648,7 @@ class RecordForm extends React.Component<
         this.draftState.data.state !== 'uninitialized' &&
         this.draftState.data.relationship !== undefined
       )
-        parent = fromdb.relationship?.parent;
+        parent = fromdb?.relationship?.parent;
 
       if (
         parent !== null &&
@@ -651,7 +663,7 @@ class RecordForm extends React.Component<
         this.draftState.data.state !== 'uninitialized' &&
         this.draftState.data.relationship !== undefined
       )
-        linked = fromdb.relationship?.linked;
+        linked = fromdb?.relationship?.linked;
       if (linked !== null && linked !== undefined && linked.length > 0)
         related['linked'] = linked;
 
@@ -662,10 +674,18 @@ class RecordForm extends React.Component<
       );
       initialValues['fieldNames'] = [];
       initialValues['views'] = [];
+
+      // work out the record context
+      const context = fromdb
+        ? getRecordContextFromRecord({record: fromdb})
+        : {};
+
       this.setState({
         initialValues: initialValues,
         annotation: annotations,
-        relationship: fromdb.relationship ?? relationship,
+        relationship: fromdb?.relationship ?? relationship,
+        // pass in context - this helps compute derived fields
+        recordContext: context,
       });
     }
   }
@@ -832,19 +852,43 @@ class RecordForm extends React.Component<
         return;
       });
     }
+
     const now = new Date();
+    const contextInfo = {
+      updated_by: currentUser,
+      updated: now,
+    };
+
+    // merge parent form context into new context - makes the assumption that if
+    // the record context doesn't have created person information then we should
+    // use the current user as above
+    const mergedRecordContext: RecordContext = {
+      createdBy: this.state.recordContext.createdBy ?? contextInfo.updated_by,
+      createdTime:
+        this.state.recordContext.createdTime ??
+        // ms timestamp
+        contextInfo.updated.getTime(),
+    };
+
+    // Now do an in-place update of object values to ensure that we have the
+    // latest templated fields which may require on current runtime values
+    recomputeDerivedFields({
+      values: values,
+      context: mergedRecordContext,
+      uiSpecification: ui_specification,
+    });
+
     const doc = {
       record_id: this.props.record_id,
       revision_id: this.state.revision_cached ?? null,
       type: this.state.type_cached!,
       data: this.filterValues(values),
-      updated_by: currentUser,
-      updated: now,
       annotations: this.state.annotation ?? {},
       field_types: getReturnedTypesForViewSet(ui_specification, viewsetName),
       ugc_comment: this.state.ugc_comment || '',
       relationship: this.state.relationship ?? {},
       deleted: false,
+      ...contextInfo,
     };
     return (
       upsertFAIMSData(this.props.project_id, doc)
@@ -1261,7 +1305,7 @@ class RecordForm extends React.Component<
                   return {};
                 } catch (err) {
                   try {
-                    const errors = err as ValidationError;
+                    const errors = err as {inner: any[]};
 
                     const processedErrors = errors.inner.reduce(
                       (acc: {[key: string]: string}, error) => {
@@ -1296,6 +1340,31 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
+                // Recompute derived values if something has changed
+                const {values, setValues} = formProps;
+                // Compare current values with last processed values
+                const valuesChanged =
+                  JSON.stringify(values) !==
+                  JSON.stringify(this.state.lastProcessedValues);
+
+                if (valuesChanged) {
+                  // Process the derive fields updates
+                  const changed = recomputeDerivedFields({
+                    context: this.state.recordContext,
+                    values: values,
+                    uiSpecification: this.props.ui_specification,
+                  });
+
+                  // Only update if processing actually changed something
+                  if (changed) {
+                    // Update form values
+                    setValues(values);
+                  }
+
+                  // Store the processed values
+                  this.setState({lastProcessedValues: values});
+                }
+
                 const layout =
                   this.props.ui_specification.viewsets[viewsetName]?.layout;
                 const views = getViewsMatchingCondition(
@@ -1401,7 +1470,7 @@ class RecordForm extends React.Component<
                                       ui_specification
                                     )}
                                   </dt>
-                                  <dd>{formProps.errors[field]}</dd>
+                                  <dd>{formProps.errors[field] as string}</dd>
                                 </React.Fragment>
                               ))}
                             </div>
