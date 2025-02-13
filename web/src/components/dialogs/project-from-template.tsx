@@ -21,7 +21,7 @@ export const ProjectFromTemplateDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button>Create {NOTEBOOK_NAME_CAPITALIZED}</Button>
+        <Button variant="outline">Create {NOTEBOOK_NAME_CAPITALIZED}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

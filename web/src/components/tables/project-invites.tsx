@@ -1,6 +1,7 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import RoleCard from '../ui/role-card';
+import {CopyButton} from '../ui/copy-button';
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -15,9 +16,32 @@ export const columns: ColumnDef<any>[] = [
     }: any) => <RoleCard>{role}</RoleCard>,
   },
   {
-    accessorKey: '_id',
+    accessorKey: 'invite_code',
     header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Access Code" />
+      <DataTableColumnHeader column={column} title="Code" />
     ),
+    cell: ({
+      row: {
+        original: {_id},
+      },
+    }: any) => (
+      <div>
+        <CopyButton value={_id}>{_id}</CopyButton>
+      </div>
+    ),
+  },
+  {
+    accessorKey: 'url',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Link" />
+    ),
+    cell: ({
+      row: {
+        original: {_id},
+      },
+    }: any) => {
+      const url = `${import.meta.env.VITE_API_URL}/register/${_id}`;
+      return <CopyButton value={url}>{url}</CopyButton>;
+    },
   },
 ];

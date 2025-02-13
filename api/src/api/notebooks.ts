@@ -442,7 +442,7 @@ api.get(
 api.post(
   '/:notebook_id/invites',
   processRequest({
-    body: PostAddNotebookUserInputSchema,
+    body: z.object({role: z.string()}),
     params: z.object({notebook_id: z.string()}),
   }),
   requireAuthenticationAPI,

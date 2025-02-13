@@ -19,7 +19,7 @@ const ProjectInvites = ({projectId}: {projectId: string}) => {
   return (
     <DataTable
       columns={columns}
-      data={data}
+      data={data || []}
       loading={isLoading}
       button={<CreateProjectInvite />}
     />
