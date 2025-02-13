@@ -96,6 +96,30 @@ export const uiSpecificationReducer = createSlice({
       }
       state.fviews[viewId].fields = fieldList;
     },
+    fieldMovedToSection: (
+      state,
+      action: PayloadAction<{
+        fieldName: string;
+        sourceViewId: string;
+        targetViewId: string;
+      }>
+    ) => {
+      const {fieldName, sourceViewId, targetViewId} = action.payload;
+      
+      // verify the field exists in source section
+      if (!(fieldName in state.fields)) {
+        throw new Error(`Cannot move unknown field ${fieldName}`);
+      }
+
+      // remove field from source section
+      const sourceFields = state.fviews[sourceViewId].fields;
+      state.fviews[sourceViewId].fields = sourceFields.filter(
+        field => field !== fieldName
+      );
+
+      // add field to target section
+      state.fviews[targetViewId].fields.push(fieldName);
+    },
     fieldRenamed: (
       state,
       action: PayloadAction<{
@@ -472,6 +496,7 @@ export const {
   loaded,
   fieldUpdated,
   fieldMoved,
+  fieldMovedToSection,
   fieldRenamed,
   fieldAdded,
   fieldDeleted,
