@@ -157,7 +157,8 @@ const createSanitizer = () => {
       // Handle regular URLs
       try {
         const url = new URL(src);
-        const trustedDomains = ['yourdomain.com', 'cdn.yourdomain.com'];
+        // TODO consider if we want to trust any external domains?!
+        const trustedDomains: string[] = [];
         if (!trustedDomains.some(domain => url.hostname.endsWith(domain))) {
           node.removeAttribute('src');
         }
