@@ -31,6 +31,7 @@ import {createUseStyles} from 'react-jss';
 import {Alert, Box} from '@mui/material';
 import {Camera} from '@capacitor/camera';
 import {APP_NAME} from '../../../buildconfig';
+import {CameraPermissionIssue} from '../../components/ui/PermissionAlerts';
 
 const useStyles = createUseStyles({
   container: {
@@ -282,23 +283,7 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
           <Button variant="outlined" disabled={true}>
             {props.label}
           </Button>
-          <Alert severity="error" sx={{width: '100%'}}>
-            {Capacitor.getPlatform() === 'android' && (
-              <>
-                Please enable camera permissions for {APP_NAME}. Go to your
-                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
-                Camera and select "Ask every time" or "Allow only while using
-                the app".
-              </>
-            )}
-            {Capacitor.getPlatform() === 'ios' && (
-              <>
-                Please enable camera permissions for {APP_NAME}. Go to your
-                device Settings &gt; Privacy & Security &gt; Camera &gt; and
-                ensure that {APP_NAME} is enabled.
-              </>
-            )}
-          </Alert>
+          <CameraPermissionIssue />
         </div>
       );
     } else {

@@ -119,7 +119,10 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       });
     }
     res.render('auth', {
-      providers: available_provider_info,
+      providers:
+        available_provider_info.length > 0
+          ? available_provider_info
+          : undefined,
       localAuth: true, // maybe make this configurable?
       messages: req.flash(),
       redirect: redirect,
@@ -134,8 +137,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
   app.get<{}, {}, {}, RequestQueryRedirect>(
     '/logout/',
     (req, res, next: any) => {
-      const redirect = validateRedirect(req.query?.redirect || '/');
-
       if (req.user) {
         req.logout((err: any) => {
           if (err) {
@@ -143,7 +144,10 @@ export function add_auth_routes(app: Router, handlers: string[]) {
           }
         });
       }
-      res.redirect(redirect);
+
+      const redirect = req.query?.redirect;
+
+      res.redirect(redirect ? `auth?redirect=${redirect}` : '/auth/');
     }
   );
 
@@ -268,7 +272,10 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         res.render('register', {
           invite: invite_id,
           loginURL: `/auth?redirect=${encodedRedirect}`,
-          providers: available_provider_info,
+          providers:
+            available_provider_info.length > 0
+              ? available_provider_info
+              : undefined,
           redirect: redirect,
           localAuth: true, // maybe make this configurable?
           messages: req.flash(),

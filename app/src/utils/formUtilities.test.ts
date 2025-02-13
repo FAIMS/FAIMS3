@@ -8,6 +8,7 @@ import {
 } from './formUtilities';
 import {ProjectUIModel, Record} from '@faims3/data-model';
 import {RecordContext} from '../gui/components/record/form';
+import {prettifyFieldName} from './formUtilities';
 
 /**
  * Test suite for form utility functions including time stamp and templating logic
@@ -507,5 +508,100 @@ describe('getHridFromValuesAndSpec', () => {
     expect(result).to.equal('new');
     // unset hrid field for A
     baseUISpec.viewsets['A'].hridField = undefined;
+  });
+});
+
+describe('prettifyFieldName', () => {
+  it('replaces hyphens with spaces', () => {
+    expect(prettifyFieldName('user-name')).toBe('user name');
+    expect(prettifyFieldName('shipping-address-details')).toBe(
+      'shipping address details'
+    );
+  });
+
+  it('preserves numeric characters with spacing', () => {
+    expect(prettifyFieldName('order123')).toBe('order 123');
+    expect(prettifyFieldName('item456status')).toBe('item 456 status');
+  });
+
+  it('handles multiple consecutive hyphens', () => {
+    expect(prettifyFieldName('user--name')).toBe('user name');
+    expect(prettifyFieldName('field---value')).toBe('field value');
+  });
+
+  it('handles numeric characters with hyphens', () => {
+    expect(prettifyFieldName('user-123-type')).toBe('user 123 type');
+    expect(prettifyFieldName('order-98-status-45')).toBe('order 98 status 45');
+  });
+
+  it('trims leading and trailing whitespace', () => {
+    expect(prettifyFieldName('user-123-')).toBe('user 123');
+    expect(prettifyFieldName('-456-status')).toBe('456 status');
+  });
+
+  it('handles empty string input', () => {
+    expect(prettifyFieldName('')).toBe('');
+  });
+
+  it('returns original string with proper spacing', () => {
+    expect(prettifyFieldName('username123')).toBe('username 123');
+    expect(prettifyFieldName('123status')).toBe('123 status');
+  });
+
+  // CamelCase handling tests
+  it('splits basic CamelCase', () => {
+    expect(prettifyFieldName('userName')).toBe('user Name');
+    expect(prettifyFieldName('firstName')).toBe('first Name');
+    expect(prettifyFieldName('userPostalCode')).toBe('user Postal Code');
+  });
+
+  it('handles consecutive capitals', () => {
+    expect(prettifyFieldName('APIResponse')).toBe('API Response');
+    expect(prettifyFieldName('JSONData')).toBe('JSON Data');
+    expect(prettifyFieldName('userID')).toBe('user ID');
+  });
+
+  it('preserves case in split words', () => {
+    expect(prettifyFieldName('MyUserName')).toBe('My User Name');
+    expect(prettifyFieldName('LastLoginTime')).toBe('Last Login Time');
+    expect(prettifyFieldName('UserAPIAccess')).toBe('User API Access');
+  });
+
+  it('handles mixed CamelCase and hyphens', () => {
+    expect(prettifyFieldName('user-firstName123')).toBe('user first Name 123');
+    expect(prettifyFieldName('API-userAccess444')).toBe('API user Access 444');
+    expect(prettifyFieldName('MyUser-lastName')).toBe('My User last Name');
+  });
+
+  it('handles edge cases with multiple formats', () => {
+    expect(prettifyFieldName('UserAPI-123-lastLoginID')).toBe(
+      'User API 123 last Login ID'
+    );
+    expect(prettifyFieldName('first-userName-ID444')).toBe(
+      'first user Name ID 444'
+    );
+    expect(prettifyFieldName('API--userAccessID-999')).toBe(
+      'API user Access ID 999'
+    );
+  });
+
+  it('preserves case in acronyms while splitting', () => {
+    expect(prettifyFieldName('MainAPIEndpoint2')).toBe('Main API Endpoint 2');
+    expect(prettifyFieldName('UserID123Settings')).toBe('User ID 123 Settings');
+    expect(prettifyFieldName('SimpleXMLParser')).toBe('Simple XML Parser');
+  });
+
+  it('handles numbers between words', () => {
+    expect(prettifyFieldName('user123name')).toBe('user 123 name');
+    expect(prettifyFieldName('data42analysis')).toBe('data 42 analysis');
+    expect(prettifyFieldName('test789DEBUG123log')).toBe(
+      'test 789 DEBUG 123 log'
+    );
+  });
+
+  it('handles multiple number sequences', () => {
+    expect(prettifyFieldName('user123test456')).toBe('user 123 test 456');
+    expect(prettifyFieldName('API123Response456')).toBe('API 123 Response 456');
+    expect(prettifyFieldName('log42Data99Test')).toBe('log 42 Data 99 Test');
   });
 });

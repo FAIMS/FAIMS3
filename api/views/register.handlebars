@@ -64,7 +64,9 @@
 
     <button type="submit" class="auth-button">Create account</button>
 </form>
+{{/if}}
 
+{{#if (and localAuth providers)}}
 <div class="divider">
     <span>or</span>
 </div>

@@ -24,7 +24,7 @@ import {fetchProjectMetadata, getMetadataValue, PropertyMap} from './metadata';
 import {afterAll, afterEach, beforeAll} from 'vitest';
 import {setupServer} from 'msw/node';
 import {HttpResponse, http} from 'msw';
-import {getProjectDB} from '.';
+import {getMetadataDbForProject} from '.';
 
 const project_id = 'sample-notebook';
 const conductor_url = 'http://conductor';
@@ -72,7 +72,7 @@ test('fetch project metadata', async () => {
 
   await fetchProjectMetadata(lst, project_id);
 
-  const db = await getProjectDB(full_project_id);
+  const db = await getMetadataDbForProject(full_project_id);
   try {
     const metaDoc = (await db.get('metadata')) as PropertyMap;
     expect(metaDoc.name).toBe(notebook.metadata.name);

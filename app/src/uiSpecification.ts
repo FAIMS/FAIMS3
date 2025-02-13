@@ -18,32 +18,36 @@
  *   TODO
  */
 
-import {getProjectDB} from './sync';
-import {ProjectID, FAIMSTypeName} from '@faims3/data-model';
-import {UI_SPECIFICATION_NAME, EncodedProjectUIModel} from '@faims3/data-model';
-import {ProjectUIModel} from '@faims3/data-model';
+import {
+  EncodedProjectUIModel,
+  FAIMSTypeName,
+  ProjectID,
+  ProjectUIModel,
+  UI_SPECIFICATION_NAME,
+} from '@faims3/data-model';
 import {
   compileExpression,
   compileIsLogic,
   getDependantFields,
 } from './conditionals';
+import {getMetadataDbForProject} from './sync';
 
 export async function getUiSpecForProject(
   project_id: ProjectID,
   compile = true
 ): Promise<ProjectUIModel> {
   try {
-    const projdb = await getProjectDB(project_id);
-    const encUIInfo: EncodedProjectUIModel = await projdb.get(
+    const metadataDb = await getMetadataDbForProject(project_id);
+    const encodedUiInfo: EncodedProjectUIModel = await metadataDb.get(
       UI_SPECIFICATION_NAME
     );
     const uiSpec = {
-      _id: encUIInfo._id,
-      _rev: encUIInfo._rev,
-      fields: encUIInfo.fields,
-      views: encUIInfo.fviews,
-      viewsets: encUIInfo.viewsets,
-      visible_types: encUIInfo.visible_types,
+      _id: encodedUiInfo._id,
+      _rev: encodedUiInfo._rev,
+      fields: encodedUiInfo.fields,
+      views: encodedUiInfo.fviews,
+      viewsets: encodedUiInfo.viewsets,
+      visible_types: encodedUiInfo.visible_types,
     };
     if (compile) {
       compileUiSpecConditionals(uiSpec);
@@ -59,7 +63,7 @@ export async function setUiSpecForProject(
   project_id: ProjectID,
   uiInfo: ProjectUIModel
 ) {
-  const projdb = await getProjectDB(project_id);
+  const metadataDb = await getMetadataDbForProject(project_id);
   const encUIInfo: EncodedProjectUIModel = {
     _id: UI_SPECIFICATION_NAME,
     fields: uiInfo.fields,
@@ -68,7 +72,7 @@ export async function setUiSpecForProject(
     visible_types: uiInfo.visible_types,
   };
   try {
-    const existing_encUIInfo = await projdb.get(encUIInfo._id);
+    const existing_encUIInfo = await metadataDb.get(encUIInfo._id);
     encUIInfo._rev = existing_encUIInfo._rev;
   } catch (err: any) {
     // Probably no existing UI info
@@ -78,7 +82,7 @@ export async function setUiSpecForProject(
   }
 
   try {
-    return await projdb.put(encUIInfo);
+    return await metadataDb.put(encUIInfo);
   } catch (err) {
     console.warn('failed to set ui specification', err);
     throw Error('failed to set ui specification');
@@ -91,7 +95,7 @@ export async function setUiSpecForProject(
 // so that we can react to changes in these fields and update the visible
 // fields/views
 //
-export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
+export function compileUiSpecConditionals(uiSpecification: ProjectUIModel) {
   // conditionals can appear on views or fields
   // compile each one and add compiled fn as a property on the field/view
   // any field/view with no condition will get a conditionFn returning true
@@ -99,37 +103,37 @@ export function compileUiSpecConditionals(ui_specification: ProjectUIModel) {
 
   let depFields: string[] = [];
 
-  for (const field in ui_specification.fields) {
-    if (ui_specification.fields[field].is_logic)
-      ui_specification.fields[field].conditionFn = compileIsLogic(
-        ui_specification.fields[field].is_logic
+  for (const field in uiSpecification.fields) {
+    if (uiSpecification.fields[field].is_logic)
+      uiSpecification.fields[field].conditionFn = compileIsLogic(
+        uiSpecification.fields[field].is_logic
       );
     else
-      ui_specification.fields[field].conditionFn = compileExpression(
-        ui_specification.fields[field].condition
+      uiSpecification.fields[field].conditionFn = compileExpression(
+        uiSpecification.fields[field].condition
       );
     depFields = [
       ...depFields,
-      ...getDependantFields(ui_specification.fields[field].condition),
+      ...getDependantFields(uiSpecification.fields[field].condition),
     ];
   }
 
-  for (const view in ui_specification.views) {
-    if (ui_specification.views[view].is_logic)
-      ui_specification.views[view].conditionFn = compileIsLogic(
-        ui_specification.views[view].is_logic
+  for (const view in uiSpecification.views) {
+    if (uiSpecification.views[view].is_logic)
+      uiSpecification.views[view].conditionFn = compileIsLogic(
+        uiSpecification.views[view].is_logic
       );
     else
-      ui_specification.views[view].conditionFn = compileExpression(
-        ui_specification.views[view].condition
+      uiSpecification.views[view].conditionFn = compileExpression(
+        uiSpecification.views[view].condition
       );
     depFields = [
       ...depFields,
-      ...getDependantFields(ui_specification.views[view].condition),
+      ...getDependantFields(uiSpecification.views[view].condition),
     ];
   }
   // add dependant fields as a property on the uiSpec
-  ui_specification.conditional_sources = new Set(depFields);
+  uiSpecification.conditional_sources = new Set(depFields);
 }
 
 export function getFieldsForViewSet(
@@ -167,26 +171,47 @@ export function getVisibleTypes(ui_specification: ProjectUIModel) {
   else return [];
 }
 
-export function getSummaryFields(
-  ui_specification: ProjectUIModel,
-  viewset_name: string
-) {
-  if (
-    ui_specification &&
-    ui_specification.viewsets &&
-    viewset_name &&
-    viewset_name in ui_specification.viewsets
-  )
-    return ui_specification.viewsets[viewset_name].summary_fields || [];
-  else return [];
+/**
+ * Retrieves and processes summary field information for a specific viewset
+ *
+ * @param uiSpecification - The UI specification model containing viewset configurations
+ * @param viewsetId - The identifier of the viewset to analyze
+ * @returns An object containing:
+ *          - enabled: boolean indicating if summary fields are configured
+ *          - fieldNames: array of field names configured for summary display
+ *          vertical stack display
+ */
+export function getSummaryFieldInformation(
+  uiSpecification: ProjectUIModel,
+  viewsetId: string
+): {
+  enabled: boolean;
+  fieldNames: string[];
+} {
+  // Check if viewset exists
+  if (!uiSpecification.viewsets || !(viewsetId in uiSpecification.viewsets)) {
+    return {
+      enabled: false,
+      fieldNames: [],
+    };
+  }
+
+  const viewset = uiSpecification.viewsets[viewsetId];
+  const summaryFields = viewset.summary_fields || [];
+  const enabled = summaryFields.length > 0;
+
+  return {
+    enabled,
+    fieldNames: enabled ? summaryFields : [],
+  };
 }
 
 export function getFieldsForView(
-  ui_specification: ProjectUIModel,
-  view_name: string
+  uiSpecification: ProjectUIModel,
+  viewId: string
 ) {
-  if (view_name in ui_specification.views) {
-    return ui_specification.views[view_name].fields;
+  if (viewId in uiSpecification.views) {
+    return uiSpecification.views[viewId].fields;
   } else {
     return [];
   }
@@ -199,22 +224,22 @@ export function getFieldNamesFromFields(fields: {
 }
 
 export function getViewsForViewSet(
-  ui_specification: ProjectUIModel,
-  viewset_name: string
+  uiSpecification: ProjectUIModel,
+  viewsetId: string
 ) {
-  return ui_specification.viewsets[viewset_name].views;
+  return uiSpecification.viewsets[viewsetId].views;
 }
 
 export function getViewsetForField(
-  ui_specification: ProjectUIModel,
-  field_name: string
+  uiSpecification: ProjectUIModel,
+  fieldName: string
 ) {
   // find which section (view) it is in
-  for (const section in ui_specification.views) {
-    if (ui_specification.views[section].fields.indexOf(field_name) >= 0) {
+  for (const section in uiSpecification.views) {
+    if (uiSpecification.views[section].fields.indexOf(fieldName) >= 0) {
       // now which form (viewset) is that part of
-      for (const form in ui_specification.viewsets) {
-        if (ui_specification.viewsets[form].views.indexOf(section) >= 0) {
+      for (const form in uiSpecification.viewsets) {
+        if (uiSpecification.viewsets[form].views.indexOf(section) >= 0) {
           return form;
         }
       }
@@ -223,10 +248,10 @@ export function getViewsetForField(
 }
 
 export function getReturnedTypesForViewSet(
-  ui_specification: ProjectUIModel,
-  viewset_name: string
+  uiSpecification: ProjectUIModel,
+  viewsetId: string
 ): {[field_name: string]: FAIMSTypeName} {
-  const fields = getFieldsForViewSet(ui_specification, viewset_name);
+  const fields = getFieldsForViewSet(uiSpecification, viewsetId);
   const types: {[field_name: string]: FAIMSTypeName} = {};
   for (const field_name in fields) {
     types[field_name] = fields[field_name]['type-returned'];
@@ -235,21 +260,21 @@ export function getReturnedTypesForViewSet(
 }
 
 export async function dumpMetadataDBContents(
-  project_id: ProjectID
+  projectId: ProjectID
 ): Promise<object[]> {
-  const projdb = await getProjectDB(project_id);
+  const metadataDb = await getMetadataDbForProject(projectId);
   try {
-    const db_contents = await projdb.allDocs({
+    const dbContents = await metadataDb.allDocs({
       include_docs: true,
       attachments: true,
     });
     const docs = [];
-    for (const o of db_contents.rows) {
+    for (const o of dbContents.rows) {
       docs.push(o.doc as object);
     }
     return docs;
   } catch (err) {
-    console.warn('failed to dump meta db for', project_id, err);
-    throw Error(`failed to dump meta db for ${project_id}`);
+    console.warn('failed to dump meta db for', projectId, err);
+    throw Error(`failed to dump meta db for ${projectId}`);
   }
 }
