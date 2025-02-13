@@ -46,7 +46,11 @@ import {
   selectActiveUser,
 } from '../../../context/slices/authSlice';
 import {store} from '../../../context/store';
-import {percentComplete, requiredFields} from '../../../lib/form-utils';
+import {
+  currentlyVisibleFields,
+  percentComplete,
+  requiredFields,
+} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
 import {logError} from '../../../logging';
 import RecordDraftState from '../../../sync/draft-state';
@@ -204,6 +208,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
       });
       // Re-initialize basically everything.
       // if (this.props.revision_id !== undefined)
+
+      // We just reset the type (since the revision ID changed) - so go fetch
+      // this again
+      await this.identifyRecordType(this.props.revision_id);
+      // Then let the form know that things have changed
       this.formChanged(true, this.props.revision_id);
     }
     // if viewName is specified it is the result of the user clicking
@@ -1227,34 +1236,17 @@ class RecordForm extends React.Component<any, RecordFormState> {
     values: object;
   }): {[key: string]: string} {
     if (!errors) return {};
-    // Build a set of visible fields within visible views
-    const views = getViewsMatchingCondition(
-      this.props.ui_specification,
-      values,
-      [],
-      viewsetName,
-      {}
-    );
-    const visibleFields = new Set();
-    for (const v of views) {
-      const fieldsMatching = getFieldsMatchingCondition(
-        this.props.ui_specification,
-        values,
-        [],
-        v,
-        {}
-      );
-      // Add all fields to visible fields set
-      for (const f of fieldsMatching) {
-        visibleFields.add(f);
-      }
-    }
+    const visibleFields = currentlyVisibleFields({
+      uiSpec: this.props.ui_specification,
+      values: values,
+      viewsetId: viewsetName,
+    });
 
     // Work through the errors and
     return Object.entries(errors).reduce(
       (filtered: {[key: string]: string}, [fieldName, error]) => {
         // Check if field is visible in any view
-        const isVisible = visibleFields.has(fieldName);
+        const isVisible = visibleFields.includes(fieldName);
         if (isVisible) {
           filtered[fieldName] = error;
         }
@@ -1380,7 +1372,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   percentComplete(
                     requiredFields(
                       this.getViewsetName(),
-                      this.props.ui_specification
+                      this.props.ui_specification,
+                      formProps.values
                     ),
                     formProps.values
                   )
@@ -1481,12 +1474,12 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         disabled={this.props.disabled}
                         record_type={this.state.type_cached}
                         onChangeStepper={this.onChangeStepper}
-                        viewName={viewName}
+                        visitedSteps={this.state.visitedSteps}
+                        isRecordSubmitted={isRecordSubmitted}
                         view_index={0}
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
-                        mq_above_md={this.props.mq_above_md}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
@@ -1497,7 +1490,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             );
                           }, 500);
                         }}
-                        hideNavigation={true}
                         layout={layout}
                       />
                       {/* {UGCReport ONLY for the saved record} */}
@@ -1570,18 +1562,16 @@ class RecordForm extends React.Component<any, RecordFormState> {
                       handleSectionClick={this.handleSectionClick}
                     />
                     <FormButtonGroup
-                      project_id={this.props.project_id}
                       record_type={this.state.type_cached}
                       is_final_view={is_final_view}
                       disabled={this.props.disabled}
                       onChangeStepper={this.onChangeStepper}
-                      viewName={viewName}
+                      visitedSteps={this.state.visitedSteps}
+                      isRecordSubmitted={isRecordSubmitted}
                       view_index={view_index}
                       formProps={formProps}
                       ui_specification={ui_specification}
                       views={views}
-                      mq_above_md={this.props.mq_above_md}
-                      relationship={this.state.relationship}
                       handleFormSubmit={(is_close: string) => {
                         formProps.setSubmitting(true);
                         this.setTimeout(() => {
@@ -1592,7 +1582,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
                           );
                         }, 500);
                       }}
-                      buttonRef={this.props.buttonRef}
                       layout={layout}
                     />
                     {this.state.revision_cached !== undefined && (

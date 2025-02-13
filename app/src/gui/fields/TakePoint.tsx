@@ -18,15 +18,12 @@
  *   Implement TakePoint for entry of GPS current location
  */
 
-import React from 'react';
-import {FieldProps} from 'formik';
-import Button, {ButtonProps} from '@mui/material/Button';
 import {Geolocation, Position} from '@capacitor/geolocation';
-import {logError} from '../../logging';
 import {FAIMSPosition} from '@faims3/data-model';
-import {Alert} from '@mui/material';
-import {APP_NAME} from '../../buildconfig';
-import {Capacitor} from '@capacitor/core';
+import Button, {ButtonProps} from '@mui/material/Button';
+import {FieldProps} from 'formik';
+import React from 'react';
+import {logError} from '../../logging';
 import {LocationPermissionIssue} from '../components/ui/PermissionAlerts';
 
 function capacitor_coordindates_to_faims_pos(
