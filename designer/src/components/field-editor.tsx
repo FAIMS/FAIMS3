@@ -358,7 +358,7 @@ export const FieldEditor = ({
                 Choose the section you want to move the question to.
               </Typography>
               <Autocomplete fullWidth
-                value={targetViewId ? sectionValue : null}
+                value={selectedFormId ? sectionValue : null}
                 onChange={(_event, newValue) => {
                   setTargetViewId(newValue ? newValue.id : '');
                 }}
