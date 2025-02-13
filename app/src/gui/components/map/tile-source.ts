@@ -27,6 +27,7 @@ import ImageTileSource from 'ol/source/ImageTile';
 import OSM, {ATTRIBUTION} from 'ol/source/OSM';
 import VectorTileSource from 'ol/source/VectorTile';
 import {MAP_SOURCE, MAP_SOURCE_KEY} from '../../../buildconfig';
+import {TileCoord} from 'ol/tilecoord';
 
 const TILE_URL_MAP: {[key: string]: string} = {
   'lima-labs': 'https://cdn.lima-labs.com/{z}/{x}/{y}.png?api={key}',
@@ -268,6 +269,13 @@ class TileStoreBase {
     });
   }
 
+  // get the tile grid, will be overridden by subclasses but 
+  // here git the generic OSM grid
+  getTileGrid() {
+    const osm = new OSM();
+    return osm.getTileGrid();
+  }
+
   /* estimateSizeForRegion
    * Estimates the size of a region in MB.
    * @param {Extent} extent The extent of the region to estimate the size of.
@@ -361,9 +369,13 @@ class TileStoreBase {
     const tileGrid = this.getTileGrid();
     const tileCoords: number[][] = [];
     for (let zoom = tileSet.minZoom; zoom <= tileSet.maxZoom; zoom += 1) {
-      tileGrid?.forEachTileCoord(tileSet.extent, Math.ceil(zoom), tileCoord => {
-        tileCoords.push(tileCoord);
-      });
+      tileGrid?.forEachTileCoord(
+        tileSet.extent,
+        Math.ceil(zoom),
+        (tileCoord: TileCoord) => {
+          tileCoords.push(tileCoord);
+        }
+      );
     }
 
     // update the record with the tile count
