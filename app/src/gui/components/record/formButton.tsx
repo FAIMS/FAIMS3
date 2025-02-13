@@ -95,6 +95,8 @@ export default function FormButtonGroup(props: any) {
           view_index={view_index}
           onChangeStepper={onChangeStepper}
           ui_specification={ui_specification}
+          visitedSteps={props.visitedSteps || new Set()}
+          isRecordSubmitted={props.isRecordSubmitted || false}
         />
       )}
       <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>

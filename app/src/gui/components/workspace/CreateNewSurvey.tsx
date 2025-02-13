@@ -60,7 +60,7 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
               sx={{
                 fontSize: isMobile ? '2.1875rem' : '2.1975rem', // Increase size for both mobile and desktop
                 marginBottom: '2px', //  Space between icon and title
-                color: theme.palette.icon.main,
+                color: theme.palette.icon?.main,
               }}
             />
           </Grid>
