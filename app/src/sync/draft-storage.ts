@@ -163,7 +163,7 @@ function encodeStagedData(
   const encoded_annotations = new_annotations;
   // TODO: integrate this into the rest of the attachment handling system
   const encoded_data: {[key: string]: unknown} = {};
-  const attachment_metadata: {[key: string]: string[]} = {};
+  const attachment_metadata: {[key: string]: (string | Object)[]} = {};
   const encoded_attachments: any = {};
 
   for (const field_name in field_types) {
@@ -173,15 +173,21 @@ function encodeStagedData(
         field_types[field_name] === 'faims-attachment::Files' &&
         field_data !== null
       ) {
+        // Attachment might be a File or might be an object for a
+        // non-downloaded file
         attachment_metadata[field_name] = [];
-        for (const tmp_file of field_data as File[]) {
-          const file = tmp_file;
-          const file_name = file.name ?? generate_file_name();
-          encoded_attachments[file_name] = {
-            content_type: file.type,
-            data: file,
-          };
-          attachment_metadata[field_name].push(file_name);
+        for (const tmp_file of field_data as (File | Object)[]) {
+          if (tmp_file instanceof File) {
+            const file = tmp_file as File;
+            const file_name = file.name ?? generate_file_name();
+            encoded_attachments[file_name] = {
+              content_type: file.type,
+              data: file,
+            };
+            attachment_metadata[field_name].push(file_name);
+          } else {
+            attachment_metadata[field_name].push(tmp_file);
+          }
         }
       } else {
         encoded_data[field_name] = field_data;

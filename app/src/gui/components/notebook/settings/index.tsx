@@ -42,7 +42,6 @@ import {logError} from '../../../../logging';
 import {getProjectInfo} from '../../../../sync/projects';
 import {
   isSyncingProjectAttachments,
-  listenSyncingProjectAttachments,
   setSyncingProjectAttachments,
 } from '../../../../sync/sync-toggle';
 import {theme} from '../../../themes';
@@ -68,8 +67,6 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
     } catch (error: any) {
       logError(error);
     }
-
-    return listenSyncingProjectAttachments(project_id!, setIsSyncing);
   }, [project_id]);
 
   const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
@@ -126,6 +123,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                           project_id!,
                           checked
                         );
+                        setIsSyncing(checked);
                         if (checked)
                           dispatch(
                             addAlert({

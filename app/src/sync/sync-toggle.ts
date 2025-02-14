@@ -22,36 +22,7 @@
 
 import {ProjectID} from '@faims3/data-model';
 import {logError} from '../logging';
-import {
-  active_db,
-  createUpdateAndSavePouchSync,
-  data_dbs,
-  ExistingActiveDoc,
-} from './databases';
-import {events} from './events';
-import {getProject} from './projects';
-
-export function listenSyncingProjectAttachments(
-  active_id: ProjectID,
-  callback: (syncing: boolean) => unknown
-): () => void {
-  const project_update_cb = (
-    _type: unknown,
-    _mc: unknown,
-    _dc: unknown,
-    active: ExistingActiveDoc
-  ) => {
-    if (active._id === active_id) {
-      callback(active.is_sync_attachments);
-    }
-  };
-  events.on('project_update', project_update_cb);
-  return events.removeListener.bind(
-    events,
-    'project_update',
-    project_update_cb
-  );
-}
+import {active_db, createUpdateAndSavePouchSync, data_dbs} from './databases';
 
 export function isSyncingProjectAttachments(active_id: ProjectID): boolean {
   return data_dbs[active_id]?.is_sync_attachments;
@@ -61,50 +32,29 @@ export async function setSyncingProjectAttachments(
   active_id: ProjectID,
   syncing: boolean
 ) {
-  if (syncing === isSyncingProjectAttachments(active_id)) {
-    logError(`Did not change attachment sync for project ${active_id}`);
-    return; //Nothing to do, already same value
+  console.log('sync toggle', active_id, syncing);
+  if (syncing !== isSyncingProjectAttachments(active_id)) {
+    // Get the current database
+    const data_db = data_dbs[active_id];
+
+    // update the sync property
+    data_db.is_sync_attachments = syncing;
+
+    // This creates and updates the sync connection so that it streams the
+    // attachments appropriately
+    createUpdateAndSavePouchSync({
+      connectionInfo: data_db.remote?.info ?? null,
+      globalDbs: data_dbs,
+      localDbId: active_id,
+    });
+
+    try {
+      const active_doc = await active_db.get(active_id);
+      active_doc.is_sync_attachments = syncing;
+      await active_db.put(active_doc);
+    } catch (err) {
+      logError(err);
+    }
   }
-
-  // Get the current database
-  const data_db = data_dbs[active_id];
-
-  // update the sync property
-  data_db.is_sync_attachments = syncing;
-
-  // This creates and updates the sync connection so that it streams the
-  // attachments appropriately
-  createUpdateAndSavePouchSync({
-    // If local only - this method will handle it
-    connectionInfo: data_db.remote?.info ?? null,
-    globalDbs: data_dbs,
-    localDbId: active_id,
-  });
-
-  try {
-    const active_doc = await active_db.get(active_id);
-    active_doc.is_sync_attachments = syncing;
-    await active_db.put(active_doc);
-  } catch (err) {
-    logError(err);
-  }
-
-  const created = await getProject(active_id);
-  events.emit(
-    'project_update',
-    [
-      'update',
-      {
-        ...created,
-        active: {
-          ...created.active,
-          is_sync_attachments: !syncing,
-        },
-      },
-    ],
-    false,
-    false,
-    created.active,
-    created.project
-  );
+  return syncing;
 }
