@@ -1404,7 +1404,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
 
                         return (
                           <div key={`form-${view}`}>
-                            <h2>{ui_specification.views[view].label}</h2>
+                            <h1>{ui_specification.views[view].label}</h1>
                             <Form>
                               {description !== '' && (
                                 <Typography>{description}</Typography>
