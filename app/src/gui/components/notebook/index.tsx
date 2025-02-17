@@ -1,3 +1,4 @@
+import styled from '@emotion/styled';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {
   Alert,
@@ -5,15 +6,10 @@ import {
   AppBar,
   Box,
   Button,
-  Grid,
   Paper,
   Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
   Tabs,
+  TabScrollButton,
   Typography,
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
@@ -21,11 +17,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQuery} from '@tanstack/react-query';
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
-  SHOW_RECORD_SUMMARY_COUNTS,
-} from '../../../buildconfig';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {getMetadataValue} from '../../../sync/metadata';
 import {ProjectExtended} from '../../../types/project';
@@ -35,16 +27,14 @@ import {
   useQueryParams,
   useRecordList,
 } from '../../../utils/customHooks';
-import MetadataRenderer from '../metadataRenderer';
 import CircularLoading from '../ui/circular_loading';
 import AddRecordButtons from './add_record_by_type';
-import DraftTabBadge from './draft_tab_badge';
 import {DraftsTable} from './draft_table';
+import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
-import RangeHeader from './range_header';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
-import {MetadataDisplayComponent} from './MetadataDisplay';
+import {recomputeDerivedFields} from '../../../utils/formUtilities';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -117,6 +107,16 @@ function a11yProps(index: number, id: string) {
   };
 }
 
+const MyTabScrollButton = styled(TabScrollButton)({
+  '&.Mui-disabled': {
+    width: 0,
+  },
+  overflow: 'hidden',
+  transition: 'width 0.3s',
+  width: 25,
+  marginLeft: 0,
+});
+
 /**
  * NotebookComponentProps defines the properties for the NotebookComponent component.
  */
@@ -132,6 +132,10 @@ type NotebookComponentProps = {
  * @returns The JSX element for the NotebookComponent.
  */
 export default function NotebookComponent({project}: NotebookComponentProps) {
+  const theme = useTheme();
+  const isMedium = useMediaQuery(theme.breakpoints.up('md'));
+  const history = useNavigate();
+
   // This manages the tab using a query string arg
   const {params, setParam} = useQueryParams<{tab: TabIndexLabel}>({
     tab: {
@@ -140,12 +144,19 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     },
   });
 
-  const [tabIndex, setTabIndex] = React.useState<TabIndex>(0);
+  // This is the actual tab index state
+  const [tabIndex, setTabIndex] = React.useState<TabIndex>(
+    TAB_TO_INDEX.get(params.tab ?? 'my_records') ??
+      TAB_TO_INDEX.get('my_records') ??
+      0
+  );
+
+  // This is a function which updates the param based on the tab index
   const setTabValue = (val: TabIndex) => {
     setParam('tab', INDEX_TO_TAB.get(val) ?? 'my_records');
   };
 
-  // Fetch records from the (local) DB with 10 second auto refetch
+  // Fetch records from the (local) DB with configurable auto refetch
   const [query, setQuery] = useState<string>('');
   const records = useRecordList({
     query: query,
@@ -184,21 +195,21 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   });
 
   /**
-   * Handles the change event when the user switches between the Records and Drafts tabs.
+   * Handles the change event when the user switches between the tabs.
    *
-   * @param {React.SyntheticEvent} event - The event triggered by the tab change.
+   * @param {React.SyntheticEvent} event - The event triggered by the tab
+   * change.
    * @param {number} newValue - The index of the selected tab.
    */
   const handleTabChange = (
     _event: React.SyntheticEvent,
     newValue: TabIndex
   ) => {
+    // Set the actual index on tab change
     setTabIndex(newValue);
+    // Update the param
+    setTabValue(newValue);
   };
-
-  const theme = useTheme();
-  const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
-  const history = useNavigate();
 
   // recordLabel based on viewsets
   const recordLabel =
@@ -234,6 +245,9 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         <CircularLoading label={`${NOTEBOOK_NAME_CAPITALIZED} is loading`} />
       ) : (
         <Box>
+          <Box sx={{mb: 1.5}}>
+            <AddRecordButtons project={project} recordLabel={recordLabel} />
+          </Box>
           <Box
             mb={2}
             sx={{
@@ -242,7 +256,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             }}
             component={Paper}
             elevation={0}
-            variant={mq_above_md ? 'outlined' : 'elevation'}
+            variant={isMedium ? 'outlined' : 'elevation'}
           >
             <AppBar
               position="static"
@@ -262,66 +276,49 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   },
                 }}
                 sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
                   backgroundColor: theme.palette.background.tabsBackground,
-                  width: '100%',
-                  padding: '0 16px',
+                  justifyItems: 'space-between',
+
+                  // Make more compact if needed
+
+                  '& .MuiTab-root': !isMedium
+                    ? {
+                        // Target all tabs
+                        padding: '3px 6px', // Reduce default padding (normally 12px 16px)
+                        minWidth: 'auto', // Override default min-width
+                        fontSize: '0.8rem',
+                        marginRight: '2px',
+                        marginLeft: '2px',
+                      }
+                    : {},
                 }}
+                ScrollButtonComponent={MyTabScrollButton}
                 textColor="inherit"
                 variant="scrollable"
-                scrollButtons="auto"
+                scrollButtons={true}
+                allowScrollButtonsMobile={true}
               >
                 <Tab
                   label={`My ${recordLabel}s (${records.myRecords.length})`}
                   {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
                 />
-                <Tab
-                  label={`Other ${recordLabel}s (${records.otherRecords.length})`}
-                  {...a11yProps(1, `${NOTEBOOK_NAME}-otherrecords`)}
-                />
-                <Tab
-                  label={
-                    <DraftTabBadge
-                      loading={drafts.isLoading}
-                      count={drafts.data?.length ?? 0}
-                    />
-                  }
-                  {...a11yProps(2, `${NOTEBOOK_NAME}-drafts`)}
-                />
+                {(tabIndex == 1 || records.otherRecords.length > 0) && (
+                  <Tab
+                    label={`Other ${recordLabel}s (${records.otherRecords.length})`}
+                    {...a11yProps(1, `${NOTEBOOK_NAME}-otherrecords`)}
+                  />
+                )}
+                {(tabIndex == 2 || (drafts.data?.length ?? 0) > 0) && (
+                  <Tab
+                    label={`Drafts (${drafts.data?.length ?? 0})`}
+                    {...a11yProps(2, `${NOTEBOOK_NAME}-drafts`)}
+                  />
+                )}
                 <Tab label="Details" {...a11yProps(3, NOTEBOOK_NAME)} />
                 <Tab label="Settings" {...a11yProps(4, NOTEBOOK_NAME)} />
                 <Tab label="Map" {...a11yProps(5, NOTEBOOK_NAME)} />
               </Tabs>
             </AppBar>
-          </Box>
-
-          {/* Records count summary - only if configured with VITE_SHOW_RECORD_SUMMARY_COUNTS */}
-          {SHOW_RECORD_SUMMARY_COUNTS && (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                backgroundColor: '#EDEEEB',
-                padding: '12px 16px',
-                borderRadius: '4px',
-                marginBottom: '16px',
-              }}
-            >
-              <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
-                <strong>My {recordLabel}s:</strong> {records.myRecords.length}
-              </Typography>
-
-              <Typography variant="body2" sx={{fontSize: '1.1rem'}}>
-                <strong>Other {recordLabel}s:</strong>{' '}
-                {records.otherRecords.length}
-              </Typography>
-            </Box>
-          )}
-
-          <Box>
-            <AddRecordButtons project={project} recordLabel={recordLabel} />
           </Box>
 
           {
@@ -342,6 +339,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           {
             // Other records
           }
+
           <TabPanel value={tabIndex} index={1} id={'records-all'}>
             <RecordsTable
               project_id={project.project_id}
