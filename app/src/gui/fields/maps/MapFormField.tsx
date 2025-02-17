@@ -21,8 +21,8 @@
 import {Geolocation} from '@capacitor/geolocation';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import {Box, Typography, Zoom} from '@mui/material';
-import {FieldProps} from 'formik';
+import {Box, Button, Typography, Zoom} from '@mui/material';
+import {FieldProps, FormikProps} from 'formik';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {useEffect, useRef, useState} from 'react';
 import {useNotification} from '../../../context/popup';
@@ -31,6 +31,7 @@ import {theme} from '../../themes';
 import FieldWrapper from '../fieldWrapper';
 import './MapFormField.css';
 import MapWrapper, {MapAction} from './MapWrapper';
+import {useIsOnline} from '../../../utils/customHooks';
 
 // If no center is available - pass this through
 // Sydney CBD
@@ -54,6 +55,8 @@ export function MapFormField({
   ...props
 }: MapFieldProps): JSX.Element {
   // State
+
+  const online = false; // useIsOnline();
 
   // center location of map - use provided center if any
   const [center, setCenter] = useState<number[] | undefined>(props.center);
@@ -129,6 +132,20 @@ export function MapFormField({
     getCoords();
   }, []);
 
+  const handleCurrentLocation = () => {
+    if (center) {
+      const pointFeature = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: center,
+        },
+      };
+      console.log('setting location', pointFeature);
+      form.setFieldValue(field.name, pointFeature, true);
+    }
+  };
+
   // dynamically determine feature label based on featureType
   const featureLabel =
     props.featureType === 'Polygon'
@@ -166,82 +183,85 @@ export function MapFormField({
       subheading={props.helperText}
       required={props.required}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 1,
-          width: '100%',
-        }}
-      >
-        <MapWrapper
-          label={label}
-          featureType={featureType}
-          features={drawnFeatures}
-          zoom={zoom}
-          center={center ?? FALLBACK_CENTER}
-          fallbackCenter={center === undefined}
-          setFeatures={setFeaturesCallback}
-          geoTiff={props.geoTiff}
-          projection={props.projection}
-          setNoPermission={setNoPermission}
-          isLocationSelected={isLocationSelected}
-        />
-
+      {online ? (
         <Box
           sx={{
-            alignItems: 'center',
-            marginTop: 1,
-            display: 'inline-flex',
-            gap: '6px',
-            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1,
+            width: '100%',
           }}
         >
-          <Typography
-            variant="body1"
+          <MapWrapper
+            label={label}
+            featureType={featureType}
+            features={drawnFeatures}
+            zoom={zoom}
+            center={center ?? FALLBACK_CENTER}
+            fallbackCenter={center === undefined}
+            setFeatures={setFeaturesCallback}
+            geoTiff={props.geoTiff}
+            projection={props.projection}
+            setNoPermission={setNoPermission}
+            isLocationSelected={isLocationSelected}
+          />
+
+          <Box
             sx={{
-              fontWeight: 'bold',
-              color: isLocationSelected
-                ? theme.palette.success.main
-                : theme.palette.error.main,
-              transition: 'color 0.4s ease-in-out',
+              alignItems: 'center',
+              marginTop: 1,
+              display: 'inline-flex',
+              gap: '6px',
+              position: 'relative',
             }}
           >
-            {valueText}
-          </Typography>
-
-          <Zoom in={isLocationSelected}>
-            <CheckCircleIcon
+            <Typography
+              variant="body1"
               sx={{
-                color: 'green',
-                fontSize: 30,
-                transition: 'transform 0.5s ease-in-out',
-                transform: isLocationSelected
-                  ? animateCheck
-                    ? 'scale(1.3)'
-                    : 'scale(1)'
-                  : 'scale(0.5)',
+                fontWeight: 'bold',
+                color: isLocationSelected
+                  ? theme.palette.success.main
+                  : theme.palette.error.main,
+                transition: 'color 0.4s ease-in-out',
               }}
-            />
-          </Zoom>
+            >
+              {valueText}
+            </Typography>
 
-          <Zoom in={!isLocationSelected}>
-            <CancelIcon
-              sx={{
-                color: 'red',
-                fontSize: 30,
-                transition: 'transform 0.5s ease-in-out',
-                transform: !isLocationSelected
-                  ? animateCheck
-                    ? 'scale(1.3)'
-                    : 'scale(1)'
-                  : 'scale(0.5)',
-              }}
-            />
-          </Zoom>
+            <Zoom in={isLocationSelected}>
+              <CheckCircleIcon
+                sx={{
+                  color: 'green',
+                  fontSize: 30,
+                  transition: 'transform 0.5s ease-in-out',
+                  transform: isLocationSelected
+                    ? animateCheck
+                      ? 'scale(1.3)'
+                      : 'scale(1)'
+                    : 'scale(0.5)',
+                }}
+              />
+            </Zoom>
+
+            <Zoom in={!isLocationSelected}>
+              <CancelIcon
+                sx={{
+                  color: 'red',
+                  fontSize: 30,
+                  transition: 'transform 0.5s ease-in-out',
+                  transform: !isLocationSelected
+                    ? animateCheck
+                      ? 'scale(1.3)'
+                      : 'scale(1)'
+                    : 'scale(0.5)',
+                }}
+              />
+            </Zoom>
+          </Box>
         </Box>
-      </Box>
-
+      ) : (
+        <Button onClick={handleCurrentLocation}>Use Current Location</Button>
+      )}
       {/*  Show error if no permission */}
       {noPermission && <LocationPermissionIssue />}
     </FieldWrapper>
