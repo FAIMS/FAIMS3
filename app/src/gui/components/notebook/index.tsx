@@ -300,23 +300,34 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               >
                 <Tab
                   label={`My ${recordLabel}s (${records.myRecords.length})`}
+                  value={0}
                   {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
                 />
                 {(tabIndex == 1 || records.otherRecords.length > 0) && (
                   <Tab
+                    value={1}
                     label={`Other ${recordLabel}s (${records.otherRecords.length})`}
                     {...a11yProps(1, `${NOTEBOOK_NAME}-otherrecords`)}
                   />
                 )}
                 {(tabIndex == 2 || (drafts.data?.length ?? 0) > 0) && (
                   <Tab
+                    value={2}
                     label={`Drafts (${drafts.data?.length ?? 0})`}
                     {...a11yProps(2, `${NOTEBOOK_NAME}-drafts`)}
                   />
                 )}
-                <Tab label="Details" {...a11yProps(3, NOTEBOOK_NAME)} />
-                <Tab label="Settings" {...a11yProps(4, NOTEBOOK_NAME)} />
-                <Tab label="Map" {...a11yProps(5, NOTEBOOK_NAME)} />
+                <Tab
+                  value={3}
+                  label="Details"
+                  {...a11yProps(3, NOTEBOOK_NAME)}
+                />
+                <Tab
+                  value={4}
+                  label="Settings"
+                  {...a11yProps(4, NOTEBOOK_NAME)}
+                />
+                <Tab value={5} label="Map" {...a11yProps(5, NOTEBOOK_NAME)} />
               </Tabs>
             </AppBar>
           </Box>
