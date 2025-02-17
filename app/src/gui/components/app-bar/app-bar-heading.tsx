@@ -24,9 +24,9 @@ export const AppBarHeading = ({link}: AppBarHeadingProps) => (
       color: 'black',
     }}
   >
-    <Box sx={{paddingRight: 1}}>
+    <Box sx={{}}>
       <img src="/assets/icons/icon-48.webp" />
     </Box>
-    <h1>{HEADING_APP_NAME}</h1>
+    <h2>{HEADING_APP_NAME}</h2>
   </NavLink>
 );
