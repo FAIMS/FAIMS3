@@ -58,8 +58,7 @@ export type FAIMSAttachmentID = string;
 
 export type FAIMSTypeName = string;
 
-// This should be locked down more
-export type Annotations = any;
+export type Annotations = {annotation: string; uncertainty: boolean};
 
 export interface TokenContents {
   username: string;
@@ -352,7 +351,7 @@ export interface EncodedDraft {
   // Fields (may itself contain an _id)
   fields: {[key: string]: unknown};
   annotations: {
-    [key: string]: {annotation: string; uncertainty: boolean};
+    [key: string]: Annotations;
   };
   attachments: {
     [key: string]: (

@@ -41,10 +41,7 @@ import {
   NotificationContext,
   NotificationContextType,
 } from '../../../context/popup';
-import {
-  listAllConnections,
-  selectActiveUser,
-} from '../../../context/slices/authSlice';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {store} from '../../../context/store';
 import {
   currentlyVisibleFields,
@@ -780,7 +777,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
 
   onChangeStepper(view_name: string, activeStepIndex: number) {
     this.setState(prevState => {
-      const {visitedSteps, activeStep} = prevState;
+      const {activeStep} = prevState;
 
       const wasVisitedBefore = prevState.visitedSteps.has(view_name);
 
@@ -1205,12 +1202,15 @@ class RecordForm extends React.Component<any, RecordFormState> {
   }
 
   updateannotation(name: string, value: any, type: string) {
-    const annotation = this.state.annotation ?? {};
+    const annotation = this.state.annotation ?? {
+      annotation: '',
+      uncertainty: false,
+    };
     if (annotation !== undefined) {
-      if (annotation[name] !== undefined) annotation[name][type] = value;
-      else {
-        annotation[name] = {annotation: '', uncertainty: false};
-        annotation[name][type] = value;
+      if (type === 'uncertainty') {
+        annotation[name].uncertainty = value;
+      } else if (type === 'annotation') {
+        annotation[name].annotation = value;
       }
     }
     this.setState({...this.state, annotation: annotation});
