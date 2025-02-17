@@ -63,8 +63,8 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
   });
 }
 
-// Helper function to check if any images are undownloaded
-const hasUndownloadedImages = (images: Array<any>): boolean => {
+// Helper function to check if any images are not downloaded
+const hasNonDownloadedImages = (images: Array<any>): boolean => {
   return images.some(image => image['attachment_id'] !== undefined);
 };
 
@@ -417,7 +417,7 @@ export const TakePhoto: React.FC<
 
   const images = props.form.values[props.field.name] ?? [];
   const disabled = props.disabled ?? false;
-  const hasUndownloaded = hasUndownloadedImages(images);
+  const hasUndownloaded = hasNonDownloadedImages(images);
   const projectId = props.form.values['_project_id'];
 
   return (
