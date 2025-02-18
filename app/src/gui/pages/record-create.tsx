@@ -69,6 +69,7 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import UnpublishedWarning from '../components/record/unpublished_warning';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {getRecordLabel} from '../../utils/getRecordLabel';
 
 interface DraftCreateProps {
   project_id: ProjectID;
@@ -180,10 +181,6 @@ function DraftEdit(props: DraftEditProps) {
   const [progress, setProgress] = useState(0);
 
   const buttonRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    getUiSpecForProject(project_id).then(setUISpec, setError);
-  }, [project_id]);
 
   useEffect(() => {
     (async () => {
@@ -363,6 +360,15 @@ export default function RecordCreate() {
     record_id?: string;
   }>();
   const location: any = useLocation();
+
+  const [recordLabel, setRecordLabel] = useState<string>('Record');
+
+  useEffect(() => {
+    if (project_id) {
+      getRecordLabel(project_id).then(setRecordLabel);
+    }
+  }, [project_id]);
+
   let draft_record_id = generateFAIMSDataID();
   if (record_id !== undefined) draft_record_id = record_id;
   if (location.state && location.state.child_record_id !== undefined)
@@ -370,6 +376,7 @@ export default function RecordCreate() {
   const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
     null
   );
+
   useEffect(() => {
     if (project_id)
       getProjectInfo(project_id).then(info => setProjectInfo(info));
@@ -384,6 +391,8 @@ export default function RecordCreate() {
     },
     {title: 'Draft'},
   ];
+
+  let backLink = ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id;
 
   // add parent link back for the parent or linked record
   if (location.state && location.state.parent_record_id !== record_id) {
@@ -410,18 +419,17 @@ export default function RecordCreate() {
       },
       {title: 'Draft'},
     ];
-  }
-
-  // fethc survey link for the records
-  let surveyLink = ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id;
-  if (location.state && location.state.parent_record_id !== record_id) {
-    surveyLink = ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + location.state.parent_link;
+    backLink = ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + location.state.parent_link;
   }
 
   return (
     <React.Fragment>
       <Box>
-        <Breadcrumbs data={breadcrumbs} backLink={surveyLink} />
+        <Breadcrumbs
+          data={breadcrumbs}
+          backLink={backLink}
+          backLabel={recordLabel}
+        />
         {draft_id === undefined || record_id === undefined ? (
           <DraftCreate
             project_id={project_id!}

@@ -15,10 +15,11 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 type BreadcrumbProps = {
   data: Array<{title: string; link?: string}>;
   backLink?: string;
+  backLabel?: string;
 };
 
 export default function Breadcrumbs(props: BreadcrumbProps) {
-  const {data, backLink} = props;
+  const {data, backLink, backLabel} = props;
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const navigate = useNavigate();
@@ -34,8 +35,7 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
 
   return (
     <Box display="flex" flexDirection="row-reverse" sx={{p: 1, m: 1}}>
-      {/* Show "Back to Responses" button only on mobile */}
-      {isMobile && backLink && (
+      {isMobile && backLink && backLabel && (
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate(backLink)}
@@ -46,7 +46,7 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
             color: theme.palette.primary.main,
           }}
         >
-          Back to Responses
+          Back to {backLabel}
         </Button>
       )}
 

@@ -19,7 +19,7 @@ import {
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQuery} from '@tanstack/react-query';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {
   NOTEBOOK_NAME,
@@ -44,6 +44,7 @@ import {OverviewMap} from './overview_map';
 import RangeHeader from './range_header';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
+import {getRecordLabel} from '../../../utils/getRecordLabel';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndex = 'records' | 'details' | 'settings' | 'map';
@@ -122,6 +123,14 @@ type NotebookComponentProps = {
  * @returns The JSX element for the NotebookComponent.
  */
 export default function NotebookComponent({project}: NotebookComponentProps) {
+  const [recordLabel, setRecordLabel] = useState<string>('Record');
+
+  useEffect(() => {
+    if (project.project_id) {
+      getRecordLabel(project.project_id).then(setRecordLabel);
+    }
+  }, [project.project_id]);
+
   // This manages the tab using a query string arg
   const {params, setParam} = useQueryParams<{tab: TabIndex}>({
     tab: {
@@ -205,11 +214,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const history = useNavigate();
 
   // recordLabel based on viewsets
-  const recordLabel =
-    uiSpec.data?.visible_types?.length === 1
-      ? uiSpec.data?.viewsets[uiSpec.data.visible_types[0]]?.label ||
-        uiSpec.data.visible_types[0]
-      : 'Record';
+  // const recordLabel =
+  //   uiSpec.data?.visible_types?.length === 1
+  //     ? uiSpec.data?.viewsets[uiSpec.data.visible_types[0]]?.label ||
+  //       uiSpec.data.visible_types[0]
+  //     : 'Record';
 
   return (
     <Box>
