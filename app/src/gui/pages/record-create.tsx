@@ -351,7 +351,7 @@ export default function RecordCreate() {
 
   // detect when user click's android back buttn
   useEffect(() => {
-    const handleAndroidBackPress = (event: Event) => {
+    const handleBackEvent = (event: Event) => {
       event.preventDefault();
       setAndroidBackPressed(true);
       setOpenDialog(true);
@@ -361,11 +361,11 @@ export default function RecordCreate() {
       setOpenDialog(true);
     };
     window.addEventListener('popstate', handlePopState);
-    window.addEventListener('beforeunload', handleAndroidBackPress);
+    window.addEventListener('beforeunload', handleBackEvent);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('beforeunload', handleAndroidBackPress);
+      window.removeEventListener('beforeunload', handleBackEvent);
     };
   }, []);
 
