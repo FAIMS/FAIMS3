@@ -29,8 +29,6 @@ import {
   StepButton,
   Stepper,
   Typography,
-  keyframes,
-  styled,
   useTheme,
 } from '@mui/material';
 import {createUseStyles} from 'react-jss';
