@@ -150,35 +150,44 @@ export const FieldEditor = ({
   };
 
   // memoize the form value
-  const formValue = useMemo(() =>
-    selectedFormId ? { id: selectedFormId, label: viewsets[selectedFormId].label } : null,
+  const formValue = useMemo(
+    () =>
+      selectedFormId
+        ? {id: selectedFormId, label: viewsets[selectedFormId].label}
+        : null,
     [selectedFormId, viewsets]
   );
 
   // memoize the form options
-  const formOptions = useMemo(() =>
-    Object.entries(viewsets)
-      .map(([formId, form]) => ({
+  const formOptions = useMemo(
+    () =>
+      Object.entries(viewsets).map(([formId, form]) => ({
         id: formId,
-        label: form.label
+        label: form.label,
       })),
     [viewsets]
   );
 
   // memoize the section value
-  const sectionValue = useMemo(() =>
-    targetViewId ? { id: targetViewId, label: views[targetViewId].label } : null,
+  const sectionValue = useMemo(
+    () =>
+      targetViewId
+        ? {id: targetViewId, label: views[targetViewId].label}
+        : null,
     [targetViewId, views]
   );
 
   // memoize the section options
-  const sectionOptions = useMemo(() =>
-    selectedFormId ? viewsets[selectedFormId].views
-      .filter(sectionId => sectionId !== viewId)
-      .map(sectionId => ({
-        id: sectionId,
-        label: views[sectionId].label
-      })) : [],
+  const sectionOptions = useMemo(
+    () =>
+      selectedFormId
+        ? viewsets[selectedFormId].views
+            .filter(sectionId => sectionId !== viewId)
+            .map(sectionId => ({
+              id: sectionId,
+              label: views[sectionId].label,
+            }))
+        : [],
     [selectedFormId, viewsets, viewId, views]
   );
 
@@ -342,7 +351,8 @@ export const FieldEditor = ({
               <Typography variant="body2" sx={{mb: 0.5}}>
                 Choose the form you want to move the question to.
               </Typography>
-              <Autocomplete fullWidth
+              <Autocomplete
+                fullWidth
                 value={formValue}
                 onChange={(_event, newValue) => {
                   setSelectedFormId(newValue ? newValue.id : null);
@@ -351,11 +361,7 @@ export const FieldEditor = ({
                 options={formOptions}
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                  />
-                )}
+                renderInput={params => <TextField {...params} />}
               />
             </Grid>
             <Grid item xs={12}>
@@ -365,7 +371,8 @@ export const FieldEditor = ({
               <Typography variant="body2" sx={{mb: 0.5}}>
                 Choose the section you want to move the question to.
               </Typography>
-              <Autocomplete fullWidth
+              <Autocomplete
+                fullWidth
                 value={selectedFormId ? sectionValue : null}
                 onChange={(_event, newValue) => {
                   setTargetViewId(newValue ? newValue.id : '');
@@ -374,11 +381,7 @@ export const FieldEditor = ({
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 disabled={!selectedFormId}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                  />
-                )}
+                renderInput={params => <TextField {...params} />}
               />
             </Grid>
           </Grid>
