@@ -27,7 +27,7 @@ import {
   notebookRecordIterator,
   ProjectID,
   ProjectObject,
-  resolve_project_id
+  resolve_project_id,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import PouchDB from 'pouchdb';
@@ -582,7 +582,12 @@ const csvFormatValue = (
       }
       const valueList = value.map((v: any) => {
         if (v instanceof File) {
-          const filename = generateFilenameForAttachment(v, fieldName, hrid, filenames);
+          const filename = generateFilenameForAttachment(
+            v,
+            fieldName,
+            hrid,
+            filenames
+          );
           filenames.push(filename);
           return filename;
         } else {
@@ -882,7 +887,12 @@ export const streamNotebookFilesAsZip = async (
                 chunks.push(value);
               }
               const stream = Stream.Readable.from(chunks);
-              const filename = generateFilenameForAttachment(file, key, hrid, fileNames);
+              const filename = generateFilenameForAttachment(
+                file,
+                key,
+                hrid,
+                fileNames
+              );
               fileNames.push(filename);
               await archive.append(stream, {
                 name: filename,

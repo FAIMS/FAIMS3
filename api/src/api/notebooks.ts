@@ -38,12 +38,12 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {CONDUCTOR_INSTANCE_NAME, DEVELOPER_MODE} from '../buildconfig';
+import {DEVELOPER_MODE} from '../buildconfig';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
   createNotebook,
   deleteNotebook,
-  generateFilenameForAttachment as generateFilenameForAttachment,
+  generateFilenameForAttachment,
   getNotebookMetadata,
   getNotebooks,
   getNotebookUISpec,
@@ -66,9 +66,8 @@ import {
 import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 
+import {generateTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
-import {generateTokenContentsForUser, slugify} from '../utils';
-import {generateUserToken} from '../authkeys/create';
 
 // This must occur before express api is used
 patch();

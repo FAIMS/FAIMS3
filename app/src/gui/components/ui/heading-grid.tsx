@@ -1,6 +1,7 @@
 import {Stack} from '@mui/material';
 import {
   DataGrid,
+  GridColDef,
   GridEventListener,
   GridPaginationModel,
 } from '@mui/x-data-grid';
@@ -22,10 +23,12 @@ import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
  */
 export default function HeadingProjectGrid({
   projects,
-  columns,
+  activatedColumns,
+  notActivatedColumns,
 }: {
   projects: ProjectExtended[];
-  columns: any;
+  activatedColumns: GridColDef<ProjectExtended>[];
+  notActivatedColumns: GridColDef<ProjectExtended>[];
 }) {
   // pull out active/inactive surveys
   const activatedProjects = projects.filter(({activated}) => activated);
@@ -60,7 +63,7 @@ export default function HeadingProjectGrid({
       <DataGrid
         key={'notebook_list_datagrid_activated'}
         rows={activatedProjects}
-        columns={columns}
+        columns={activatedColumns}
         onRowClick={handleRowClick}
         autoHeight
         sx={{
@@ -102,7 +105,7 @@ export default function HeadingProjectGrid({
       <DataGrid
         key={'notebook_list_datagrid_not_activated'}
         rows={availableProjects}
-        columns={columns}
+        columns={notActivatedColumns}
         autoHeight
         sx={{
           cursor: 'pointer',

@@ -170,8 +170,8 @@ const ImageGallery = ({
           gap: theme.spacing(1),
           padding: theme.spacing(1),
           gridTemplateColumns: {
-            // Show 3 images per row on mobile
-            xs: 'repeat(3, 1fr)',
+            // Show 2 images per row on mobile
+            xs: 'repeat(2, 1fr)',
             // Show 4 images per row on tablet
             sm: 'repeat(4, 1fr)',
             // Show 6 images per row on small desktop
