@@ -181,9 +181,9 @@ export default function MainAppBar() {
         <CssBaseline />
         <MuiAppBar
           position="relative"
-          sx={theme => ({
+          sx={{
             boxShadow: 'none',
-          })}
+          }}
         >
           <Toolbar>
             <IconButton
@@ -193,7 +193,7 @@ export default function MainAppBar() {
               edge="start"
               sx={{
                 mr: 0,
-                paddingLeft:1,
+                paddingLeft: 1,
                 paddingRight: 0,
                 display: isOpen ? 'hidden' : 'flex',
               }}

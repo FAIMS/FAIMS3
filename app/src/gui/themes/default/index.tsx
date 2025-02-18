@@ -18,9 +18,8 @@
  *   TODO
  */
 
-import {createTheme, colors} from '@mui/material';
+import {colors, createTheme} from '@mui/material';
 import typography from './typography';
-import {generateStepperColors} from '../../../utils/generateStepperColors';
 
 const theme = createTheme({
   stepperColors: {

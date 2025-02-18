@@ -24,11 +24,11 @@ import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
 export default function HeadingProjectGrid({
   projects,
   activatedColumns,
-  notActivatedColumns
+  notActivatedColumns,
 }: {
   projects: ProjectExtended[];
-  activatedColumns : GridColDef<ProjectExtended>[];
-  notActivatedColumns : GridColDef<ProjectExtended>[];
+  activatedColumns: GridColDef<ProjectExtended>[];
+  notActivatedColumns: GridColDef<ProjectExtended>[];
 }) {
   // pull out active/inactive surveys
   const activatedProjects = projects.filter(({activated}) => activated);

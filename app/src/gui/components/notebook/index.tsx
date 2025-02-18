@@ -34,7 +34,6 @@ import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
-import {recomputeDerivedFields} from '../../../utils/formUtilities';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -303,14 +302,14 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                   value={0}
                   {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
                 />
-                {(tabIndex == 1 || records.otherRecords.length > 0) && (
+                {(tabIndex === 1 || records.otherRecords.length > 0) && (
                   <Tab
                     value={1}
                     label={`Other ${recordLabel}s (${records.otherRecords.length})`}
                     {...a11yProps(1, `${NOTEBOOK_NAME}-otherrecords`)}
                   />
                 )}
-                {(tabIndex == 2 || (drafts.data?.length ?? 0) > 0) && (
+                {(tabIndex === 2 || (drafts.data?.length ?? 0) > 0) && (
                   <Tab
                     value={2}
                     label={`Drafts (${drafts.data?.length ?? 0})`}

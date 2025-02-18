@@ -16,7 +16,7 @@
 
 /**
  * RichTextField Component
- * 
+ *
  * Safely injects markdown content directly into HTML - see DomPurifier.ts
  */
 

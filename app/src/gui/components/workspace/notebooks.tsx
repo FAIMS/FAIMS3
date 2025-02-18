@@ -20,7 +20,6 @@
 
 import {RefreshOutlined} from '@mui/icons-material';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
-import FolderIcon from '@mui/icons-material/Folder';
 import {Alert, AlertTitle, Box, Button, Paper, Typography} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';

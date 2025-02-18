@@ -18,10 +18,12 @@ interface MetadataDisplayComponentProps {
   templateId?: string | null | undefined;
   handleTabChange: (index: number) => void;
 }
-export const MetadataDisplayComponent = (props: MetadataDisplayComponentProps) => {
+export const MetadataDisplayComponent = (
+  props: MetadataDisplayComponentProps
+) => {
   /**
     Component: MetadataDisplayComponent
-    
+
     */
   // TODO Destub
   return (

@@ -31,7 +31,7 @@ import {
   Typography,
   keyframes,
   styled,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import {useState} from 'react';
 import {createUseStyles} from 'react-jss';
@@ -117,7 +117,7 @@ export default function RecordStepper(props: RecordStepperProps) {
     formErrors,
     isRecordSubmitted,
   } = props;
-  const [shakeStepper, setShakeStepper] = useState(false);
+  const [shakeStepper, _setShakeStepper] = useState(false);
   const theme = useTheme();
 
   // function to check if stepper has erros
@@ -215,7 +215,11 @@ export default function RecordStepper(props: RecordStepperProps) {
             visitedSteps={visitedSteps}
             isRecordSubmitted={isRecordSubmitted}
           />
-          <Typography variant="h4" align="center" style={{marginTop: theme.spacing(2)}}>
+          <Typography
+            variant="h4"
+            align="center"
+            style={{marginTop: theme.spacing(2)}}
+          >
             {ui_specification.views[views[view_index]]?.label}
           </Typography>
         </Box>

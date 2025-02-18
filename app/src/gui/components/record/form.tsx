@@ -41,10 +41,7 @@ import {
   NotificationContext,
   NotificationContextType,
 } from '../../../context/popup';
-import {
-  listAllConnections,
-  selectActiveUser,
-} from '../../../context/slices/authSlice';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {store} from '../../../context/store';
 import {
   currentlyVisibleFields,
@@ -780,7 +777,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
 
   onChangeStepper(view_name: string, activeStepIndex: number) {
     this.setState(prevState => {
-      const {visitedSteps, activeStep} = prevState;
+      const {activeStep} = prevState;
 
       const wasVisitedBefore = prevState.visitedSteps.has(view_name);
 
