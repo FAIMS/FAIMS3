@@ -2,6 +2,7 @@ import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {Trash} from 'lucide-react';
 import {Button} from '../ui/button';
+import Role from '../ui/role-card';
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -25,12 +26,7 @@ export const columns: ColumnDef<any>[] = [
           .getValue('roles')
           .filter((role: string) => !role.includes('||'))
           .map((role: any) => (
-            <div
-              key={role}
-              className="bg-muted text-muted-foreground px-2 py-1 rounded-md"
-            >
-              {role}
-            </div>
+            <Role key={role} role={role} />
           ))}
       </div>
     ),

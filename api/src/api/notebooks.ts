@@ -40,6 +40,7 @@ import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
 import {createManyRandomRecords} from '../couchdb/devtools';
+import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {
   createNotebook,
   deleteNotebook,
@@ -65,7 +66,6 @@ import {
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
-
 import {generateTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
@@ -444,6 +444,45 @@ api.post(
 
     // 200 OK indicating successful deletion
     res.status(200).end();
+  }
+);
+
+/** Gets a list of invites for a given notebook */
+api.get(
+  '/:notebook_id/invites',
+  processRequest({params: z.object({notebook_id: z.string()})}),
+  requireAuthenticationAPI,
+  async ({params: {notebook_id}, user}, res) => {
+    if (!userHasPermission(user, notebook_id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to view invites for this notebook.'
+      );
+    }
+
+    const invites = await getInvitesForNotebook(notebook_id);
+
+    res.json(invites);
+  }
+);
+
+/** Creates a new invite for a given notebook */
+api.post(
+  '/:notebook_id/invites',
+  processRequest({
+    body: z.object({role: z.string()}),
+    params: z.object({notebook_id: z.string()}),
+  }),
+  requireAuthenticationAPI,
+  async ({body: {role}, params: {notebook_id}, user}, res) => {
+    if (!userHasPermission(user, notebook_id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to add invites to this notebook.'
+      );
+    }
+
+    const invite = await createInvite(notebook_id, role);
+
+    res.json(invite);
   }
 );
 
