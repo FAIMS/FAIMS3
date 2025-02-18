@@ -681,8 +681,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
         related,
         this.props.record_id
       );
-      initialValues['fieldNames'] = [];
-      initialValues['views'] = [];
 
       // work out the record context
       const context = fromdb
