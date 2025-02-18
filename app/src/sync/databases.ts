@@ -332,7 +332,6 @@ export function createPouchDbSync<Content extends {}>({
   localDb: PouchDB.Database<Content>;
   remoteDb: PouchDB.Database<Content>;
 }) {
-  console.log('createPouchDbSync', localDb.name, attachmentDownload);
   // Configure attachment filtering if needed
   const pullFilter = attachmentDownload
     ? {}

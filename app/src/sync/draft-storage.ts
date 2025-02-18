@@ -67,14 +67,19 @@ export async function getStagedData(
     binary: true,
   })) as EncodedDraft & PouchDB.Core.GetMeta;
 
-  // Re-encode any attachments
+  // List out the attachments, if any - these could be downloaded or references
+  // Note this is a map from field name -> list of attachment(s)/photos
   for (const [field_name, attachment_list] of Object.entries(
     draft.attachments
   )) {
     const files = [];
+    // for each attachment entry
     for (const entry of attachment_list) {
+      // Check if the entry has the draft attachment property which indicates it
+      // should be attached and present in the _attachments field
       if (Object.hasOwnProperty.call(entry, 'draft_attachment')) {
         if (draft._attachments !== undefined) {
+          // add the file
           files.push(
             attachment_to_file(
               entry.filename,
@@ -91,6 +96,7 @@ export async function getStagedData(
         files.push(entry);
       }
     }
+    // Update the draft fields with the actual files
     draft.fields[field_name] = files;
   }
   return draft;
