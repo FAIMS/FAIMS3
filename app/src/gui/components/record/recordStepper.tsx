@@ -32,7 +32,6 @@ import {
   keyframes,
   styled,
 } from '@mui/material';
-import {useState} from 'react';
 import {createUseStyles} from 'react-jss';
 import {getStepColor} from '../../../utils/generateStepperColors';
 import {theme} from '../../themes';
@@ -67,18 +66,6 @@ const useStyles = createUseStyles({
     },
   },
 });
-
-/* 🔥 shake Animation - mobile/tablet UX */
-const shakeAnimation = keyframes`
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
-`;
-
-/** Wrapper for mobile  Stepper*/
-const MobileStepperWrapper = styled(Box)(({shake}: {shake: boolean}) => ({
-  animation: shake ? `${shakeAnimation} 0.5s ease-in-out` : 'none',
-}));
 
 /**
  * @function RecordStepper
@@ -117,7 +104,6 @@ export default function RecordStepper(props: RecordStepperProps) {
     formErrors,
     isRecordSubmitted,
   } = props;
-  const [shakeStepper, setShakeStepper] = useState(false);
 
   // function to check if stepper has erros
   const hasErrors = (sectionId: string | undefined) => {
@@ -201,25 +187,20 @@ export default function RecordStepper(props: RecordStepperProps) {
         </div>
       </Box>
 
-      <MobileStepperWrapper
-        shake={shakeStepper}
-        display={{xs: 'block', md: 'none'}}
-      >
-        <Box display={{xs: 'block', sm: 'none'}}>
-          <CustomMobileStepper
-            views={views}
-            view_index={view_index}
-            onChangeStepper={onChangeStepper}
-            ui_specification={ui_specification}
-            formErrors={formErrors}
-            visitedSteps={visitedSteps}
-            isRecordSubmitted={isRecordSubmitted}
-          />
-          <Typography variant="h5" align="center">
-            {ui_specification.views[views[view_index]]?.label}
-          </Typography>
-        </Box>
-      </MobileStepperWrapper>
+      <Box display={{xs: 'block', sm: 'none'}}>
+        <CustomMobileStepper
+          views={views}
+          view_index={view_index}
+          onChangeStepper={onChangeStepper}
+          ui_specification={ui_specification}
+          formErrors={formErrors}
+          visitedSteps={visitedSteps}
+          isRecordSubmitted={isRecordSubmitted}
+        />
+        <Typography variant="h5" align="center">
+          {ui_specification.views[views[view_index]]?.label}
+        </Typography>
+      </Box>
     </>
   );
 }
