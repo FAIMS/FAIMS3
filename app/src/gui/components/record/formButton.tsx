@@ -21,27 +21,96 @@
  *  - Publish and Close Record(TBD)
  */
 
-import {Alert, AlertTitle, Button} from '@mui/material';
+import {Box, Button, Tooltip, IconButton, Grid} from '@mui/material';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CircularProgress from '@mui/material/CircularProgress';
 import {CustomMobileStepper} from './recordStepper';
+import {ProjectUIModel} from '@faims3/data-model';
+import {useState} from 'react';
 
-function FormSubmitButton(props: any) {
-  const {
-    is_final_view,
-    disabled,
-    formProps,
-    handleFormSubmit,
-    is_close,
-    text,
-    color,
-  } = props;
-  return disabled !== true ? (
+interface FormProps {
+  isSubmitting: boolean;
+}
+
+interface FormSubmitButtonProps {
+  /** Whether this is the final view in a multi-step form */
+  is_final_view?: boolean;
+  /** Disables the button when true */
+  disabled?: boolean;
+  /** Form state containing submission status */
+  formProps: FormProps;
+  /** Callback for form submission */
+  handleFormSubmit: (closeType: 'close' | 'new') => void;
+  /** Determines if form should close or create new after submission */
+  is_close: 'close' | 'new';
+  /** Button text */
+  text: string;
+  /** Button color variant */
+  color?: 'primary' | 'secondary';
+  /** Test ID for the button */
+  'data-testid'?: string;
+}
+
+interface FormButtonGroupProps {
+  /** Type of record being created/edited */
+  record_type: string | null;
+  /** Whether this is the final view in multi-step form */
+  is_final_view: boolean;
+  /** Disables all buttons when true */
+  disabled: boolean;
+  /** Callback for stepper navigation */
+  onChangeStepper: (viewName: string, activeStepIndex: number) => void;
+  /** Current view index in multi-step form */
+  view_index: number;
+  /** Form state containing submission status */
+  formProps: FormProps;
+  /** Callback for form submission */
+  handleFormSubmit: (closeType: 'close' | 'new') => void;
+  /** Array of form views for stepper */
+  views: Array<any>;
+  /** UI configuration object */
+  ui_specification: ProjectUIModel;
+  /** Layout type */
+  layout?: string;
+
+  visitedSteps: Set<string>;
+  isRecordSubmitted: boolean;
+}
+
+/**
+ * Tooltip content explaining the publish action
+ */
+const tooltipContent = (
+  <div>
+    <Box sx={{fontWeight: 'bold', marginBottom: 1}}>
+      What does publishing mean?
+    </Box>
+    Your response is being saved automatically as a draft. When you click
+    publish, your response will be uploaded once your device has an internet
+    connection.
+  </div>
+);
+
+/**
+ * Button component for form submission with loading state
+ */
+function FormSubmitButton({
+  is_final_view,
+  disabled,
+  formProps,
+  handleFormSubmit,
+  is_close,
+  text,
+  color,
+  'data-testid': dataTestId,
+}: FormSubmitButtonProps) {
+  if (disabled) return null;
+
+  return (
     <Button
       type="button"
-      style={{
-        width: '100%',
-      }}
-      data-testid={props['data-testid']}
+      fullWidth
+      data-testid={dataTestId}
       color={formProps.isSubmitting ? undefined : color}
       variant={is_final_view && is_close === 'close' ? 'contained' : 'outlined'}
       disableElevation
@@ -52,7 +121,7 @@ function FormSubmitButton(props: any) {
       {formProps.isSubmitting && (
         <CircularProgress
           size={24}
-          style={{
+          sx={{
             position: 'absolute',
             top: '50%',
             left: '50%',
@@ -62,70 +131,106 @@ function FormSubmitButton(props: any) {
         />
       )}
     </Button>
-  ) : (
-    <></>
   );
 }
 
-export default function FormButtonGroup(props: any) {
-  const {
-    record_type,
-    is_final_view,
-    disabled,
-    onChangeStepper,
-    view_index,
-    formProps,
-    handleFormSubmit,
-    views,
-    ui_specification,
-    layout,
-  } = props;
+/**
+ * Button group for form actions including stepper navigation and submission
+ * Displays two buttons stacked vertically with a help icon centered on the right
+ */
+export default function FormButtonGroup({
+  record_type,
+  is_final_view,
+  disabled,
+  onChangeStepper,
+  view_index,
+  formProps,
+  handleFormSubmit,
+  visitedSteps,
+  isRecordSubmitted,
+  views,
+  ui_specification,
+  layout,
+}: FormButtonGroupProps) {
+  const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-      }}
-    >
+    <Box sx={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
       {views.length > 1 && layout !== 'inline' && (
         <CustomMobileStepper
           views={views}
           view_index={view_index}
           onChangeStepper={onChangeStepper}
           ui_specification={ui_specification}
+          visitedSteps={visitedSteps || new Set()}
+          isRecordSubmitted={isRecordSubmitted || false}
         />
       )}
-      <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
-        <FormSubmitButton
-          color="primary"
-          data-testid="publish-close-record"
-          disabled={disabled}
-          formProps={formProps}
-          text={`Publish and close ${record_type}`}
-          is_close={'close'}
-          handleFormSubmit={handleFormSubmit}
-          is_final_view={is_final_view}
-        />
-        <FormSubmitButton
-          color="secondary"
-          disabled={disabled}
-          formProps={formProps}
-          text={`Publish and new ${record_type}`}
-          is_close={'new'}
-          handleFormSubmit={handleFormSubmit}
-          is_final_view={is_final_view}
-        />
-      </div>
-      {disabled !== true && (
-        <Alert severity={'info'} variant="outlined">
-          <AlertTitle>What does publishing mean?</AlertTitle>
-          Your response is being saved automatically as a draft. When you click
-          publish, your response will be uploaded once your device has an
-          internet connection.
-        </Alert>
-      )}
-    </div>
+      <Grid container spacing={2}>
+        <Grid item xs={10.5}>
+          <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+            <FormSubmitButton
+              color="primary"
+              data-testid="publish-close-record"
+              disabled={disabled}
+              formProps={formProps}
+              text={`Publish and close ${record_type}`}
+              is_close="close"
+              handleFormSubmit={handleFormSubmit}
+              is_final_view={is_final_view}
+            />
+            <FormSubmitButton
+              color="secondary"
+              disabled={disabled}
+              formProps={formProps}
+              text={`Publish and new ${record_type}`}
+              is_close="new"
+              handleFormSubmit={handleFormSubmit}
+              is_final_view={is_final_view}
+            />
+          </Box>
+        </Grid>
+        <Grid
+          item
+          xs={1.5}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Tooltip
+            open={tooltipOpen}
+            onClose={() => setTooltipOpen(false)}
+            enterTouchDelay={0}
+            leaveTouchDelay={5000}
+            title={tooltipContent}
+            arrow
+            PopperProps={{
+              sx: {
+                '& .MuiTooltip-tooltip': {
+                  maxWidth: 300,
+                  padding: 2,
+                  fontSize: '0.875rem',
+                },
+              },
+            }}
+          >
+            <IconButton
+              size="medium"
+              onClick={e => {
+                e.stopPropagation();
+                setTooltipOpen(!tooltipOpen);
+              }}
+              sx={{
+                touchAction: 'none',
+              }}
+            >
+              <HelpOutlineIcon />
+            </IconButton>
+          </Tooltip>
+        </Grid>
+      </Grid>
+    </Box>
   );
 }

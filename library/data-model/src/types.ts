@@ -58,8 +58,7 @@ export type FAIMSAttachmentID = string;
 
 export type FAIMSTypeName = string;
 
-// This should be locked down more
-export type Annotations = any;
+export type Annotations = {annotation: string; uncertainty: boolean};
 
 export interface TokenContents {
   username: string;
@@ -347,13 +346,22 @@ export type ProjectDataObject =
 // end of types from datamodel/database.ts --------------------------------
 
 // types from datamodel/drafts.ts --------------------------------
-
 export interface EncodedDraft {
   _id: string;
   // Fields (may itself contain an _id)
   fields: {[key: string]: unknown};
-  annotations: {[key: string]: unknown};
-  attachments: {[key: string]: string[]};
+  annotations: {
+    [key: string]: Annotations;
+  };
+  attachments: {
+    [key: string]: (
+      | FAIMSAttachmentReference
+      | {
+          filename: string;
+          draft_attachment: boolean;
+        }
+    )[];
+  };
   _attachments?: PouchDB.Core.Attachments;
   project_id: ProjectID;
   // If this draft is for the user updating an existing record, the following

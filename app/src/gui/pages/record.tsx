@@ -32,9 +32,6 @@ import {
   getInitialMergeDetails,
   listFAIMSRecordRevisions,
 } from '@faims3/data-model';
-import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
-import ArticleIcon from '@mui/icons-material/Article';
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -59,12 +56,10 @@ import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {addAlert} from '../../context/slices/syncSlice';
 import {useAppDispatch} from '../../context/store';
-import {scrollToDiv} from '../../lib/navigation';
 import {logError} from '../../logging';
 import {getProjectInfo} from '../../sync/projects';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
 import {getUiSpecForProject} from '../../uiSpecification';
-import TransparentButton from '../components/buttons/transparent-button';
 import RecordDelete from '../components/notebook/delete';
 import ProgressBar from '../components/progress-bar';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
@@ -85,8 +80,8 @@ import {
   ParentLinkProps,
   RecordLinkProps,
 } from '../components/record/relationships/types';
+import BackButton from '../components/ui/BackButton';
 import BoxTab from '../components/ui/boxTab';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
 
@@ -144,9 +139,8 @@ export default function Record() {
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-  const [breadcrumbs, setBreadcrumbs] = useState<
-    {link?: string; title: string}[]
-  >([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setBreadcrumbs] = useState<{link?: string; title: string}[]>([]);
   const [progress, setProgress] = useState<number>(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
 
@@ -432,42 +426,50 @@ export default function Record() {
     });
   };
 
+  const titleLabel = (
+    <React.Fragment>
+      {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
+        ? '[' + uiSpec.viewsets[type]['label'] + '] ' + hrid
+        : ''}{' '}
+      {draft_id !== undefined && (
+        <span
+          style={{
+            textDecorationLine: 'underline',
+            textDecorationStyle: 'double',
+          }}
+        >
+          [Draft]
+        </span>
+      )}
+    </React.Fragment>
+  );
+
   return (
     <Box>
-      <Grid container wrap="nowrap" spacing={2}>
+      <Grid
+        container
+        wrap="nowrap"
+        spacing={2}
+        padding={theme.spacing(0.5)}
+        alignItems="center"
+      >
         <Grid item>
-          {draft_id ? (
-            <ArticleOutlinedIcon
-              fontSize={mq_above_md ? 'large' : 'medium'}
-              style={{verticalAlign: 'top'}}
-            />
-          ) : (
-            <ArticleIcon
-              fontSize={mq_above_md ? 'large' : 'medium'}
-              style={{verticalAlign: 'top'}}
-            />
-          )}
+          <BackButton
+            label="Back to records"
+            onClick={() => {
+              // Go back to the records list
+              history({
+                pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
+              });
+            }}
+          />
         </Grid>
-        <Grid item xs zeroMinWidth>
+        <Grid item xs>
           <Typography
             variant={mq_above_md ? 'h3' : 'h4'}
             style={{overflowWrap: 'break-word'}}
           >
-            {uiSpec !== null &&
-            type !== null &&
-            uiSpec['visible_types'][0] !== ''
-              ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
-              : ''}{' '}
-            {draft_id !== undefined && (
-              <span
-                style={{
-                  textDecorationLine: 'underline',
-                  textDecorationStyle: 'double',
-                }}
-              >
-                [Draft]
-              </span>
-            )}
+            {titleLabel}
           </Typography>
           {recordInfo !== null && (
             <Typography variant={'caption'} gutterBottom>
@@ -479,24 +481,18 @@ export default function Record() {
       <div style={{padding: '10px'}}>
         <ProgressBar percentage={progress} />
       </div>
+      {/**
       <Grid item xs>
         {is_link_ready && <Breadcrumbs data={breadcrumbs} />}
       </Grid>
+         */}
       {draft_id !== undefined && (
         <Alert severity={'warning'}>
           This record is currently a draft. The data is stored locally on your
           device only.
         </Alert>
       )}
-      <Typography
-        variant={'subtitle1'}
-        color={'textSecondary'}
-        gutterBottom
-        sx={{mt: 1}}
-      >
-        Edit data for this record. If you need to, you can also revisit previous
-        revisions and resolve conflicts.
-      </Typography>
+      {/**
       <div
         style={{
           display: 'flex',
@@ -508,6 +504,7 @@ export default function Record() {
           Jump to end
         </TransparentButton>
       </div>
+       */}
       <Box mb={2} pr={1}>
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
@@ -556,29 +553,29 @@ export default function Record() {
               variant="scrollable"
               scrollButtons="auto"
             >
-              <Tab label="Edit" value="1" />
-              <Tab label="Revisions" value="2" />
-              <Tab label="Meta" value="3" />
+              <Tab label="Data" value="1" />
+              {
+                //<Tab label="Revisions" value="2" />
+              }
+              <Tab label="Info" value="3" />
               {conflicts !== null &&
-              conflicts['available_heads'] !== undefined &&
-              Object.keys(conflicts['available_heads']).length > 1 ? (
-                <Tab
-                  label={
-                    <Badge
-                      badgeContent={
-                        Object.keys(conflicts['available_heads']).length
-                      }
-                      color="error"
-                    >
-                      {'Conflicts  '}
-                      {'\xa0\xa0'}
-                    </Badge>
-                  }
-                  value="4"
-                />
-              ) : (
-                <Tab label="Conflicts" value="4" />
-              )}
+                conflicts['available_heads'] !== undefined &&
+                Object.keys(conflicts['available_heads']).length > 1 && (
+                  <Tab
+                    label={
+                      <Badge
+                        badgeContent={
+                          Object.keys(conflicts['available_heads']).length
+                        }
+                        color="error"
+                      >
+                        {'Conflicts  '}
+                        {'\xa0\xa0'}
+                      </Badge>
+                    }
+                    value="4"
+                  />
+                )}
             </TabList>
           </AppBar>
 

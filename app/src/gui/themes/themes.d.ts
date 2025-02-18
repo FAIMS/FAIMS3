@@ -1,7 +1,14 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import {PaletteOptions, TypeBackground} from '@mui/material/styles';
+import {StepperColors} from '.';
 
 declare module '@mui/material/styles' {
+  interface Theme {
+    stepperColors: StepperColors;
+  }
+  interface ThemeOptions {
+    stepperColors: StepperColors;
+  }
   interface TypeText {
     helpText: string;
   }
@@ -12,6 +19,12 @@ declare module '@mui/material/styles' {
   }
 
   interface Palette {
+    stepper?: {
+      current: string;
+      visited: string;
+      error: string;
+      notVisited: string;
+    };
     progressBar: {
       background: string;
       complete: string;
@@ -36,6 +49,7 @@ declare module '@mui/material/styles' {
     icon: {
       main: string;
       light: string;
+      required: string;
       highlight: string;
     };
     table?: {
@@ -43,9 +57,16 @@ declare module '@mui/material/styles' {
       rowBorder: string;
       columnSeparator: string;
     };
+    stepperGradient: string[];
   }
 
   interface PaletteOptions {
+    stepper?: {
+      current: string;
+      visited: string;
+      error: string;
+      notVisited: string;
+    };
     primary?: {
       main: string;
       secondMain: string;
@@ -58,9 +79,10 @@ declare module '@mui/material/styles' {
       contrastText: string;
     };
 
-    icon?: {
+    icon: {
       main: string;
       light: string;
+      required: string;
       highlight: string;
     };
 
@@ -89,5 +111,6 @@ declare module '@mui/material/styles' {
       rowBorder: string;
       columnSeparator: string;
     };
+    stepperGradient?: string[];
   }
 }

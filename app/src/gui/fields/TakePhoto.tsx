@@ -36,12 +36,12 @@ import {Buffer} from 'buffer';
 import {FieldProps} from 'formik';
 import React from 'react';
 import {useNavigate} from 'react-router';
-import {APP_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {logError} from '../../logging';
 import FaimsAttachmentManagerDialog from '../components/ui/Faims_Attachment_Manager_Dialog';
-import FieldWrapper from './fieldWrapper';
 import {LocationPermissionIssue} from '../components/ui/PermissionAlerts';
+import FieldWrapper from './fieldWrapper';
 
 /**
  * Converts a base64 encoded image to a Blob object using Buffer
@@ -63,8 +63,8 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
   });
 }
 
-// Helper function to check if any images are undownloaded
-const hasUndownloadedImages = (images: Array<any>): boolean => {
+// Helper function to check if any images are not downloaded
+const hasNonDownloadedImages = (images: Array<any>): boolean => {
   return images.some(image => image['attachment_id'] !== undefined);
 };
 
@@ -417,7 +417,7 @@ export const TakePhoto: React.FC<
 
   const images = props.form.values[props.field.name] ?? [];
   const disabled = props.disabled ?? false;
-  const hasUndownloaded = hasUndownloadedImages(images);
+  const hasUndownloaded = hasNonDownloadedImages(images);
   const projectId = props.form.values['_project_id'];
 
   return (
