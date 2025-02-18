@@ -51,6 +51,9 @@ export interface FaimsFrontEndProps {
 
   // web config
   webDomainName: string;
+
+  // Enable debugging settings @default false
+  debugMode?: boolean;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -69,11 +72,16 @@ export class FaimsFrontEnd extends Construct {
   designerBucketArnCfnOutput: CfnOutput;
   designerBucketNameCfnOutput: CfnOutput;
 
+  private debugMode: boolean;
+
   // derived property
   designerUrl: string;
 
   constructor(scope: Construct, id: string, props: FaimsFrontEndProps) {
     super(scope, id);
+
+    // Debug mode
+    this.debugMode = props.debugMode ?? false;
 
     // use the first domain name to form canonical URL
     this.designerUrl = `https://${props.designerDomainNames[0]}`;
@@ -161,19 +169,20 @@ export class FaimsFrontEnd extends Construct {
       serverprefix: 'fieldmark',
       VITE_CLUSTER_ADMIN_GROUP_NAME: 'cluster-admin',
       VITE_COMMIT_VERSION: 'unknown TBD',
-      VITE_DEBUG_APP: 'true',
-      VITE_DEBUG_POUCHDB: 'true',
+
+      // Debugging has performance implications
+      VITE_DEBUG_APP: this.debugMode ? 'true' : 'false',
+      VITE_DEBUG_POUCHDB: this.debugMode ? 'true' : 'false',
+
       VITE_SHOW_WIPE: 'true',
       VITE_SHOW_NEW_NOTEBOOK: 'true',
       VITE_SHOW_MINIFAUXTON: 'true',
       VITE_APP_NAME: props.appName,
-      // TODO add app ID
       VITE_APP_ID: props.appId,
       VITE_HEADING_APP_NAME: props.headingAppName ?? props.appName,
 
       // Theme: default or bubble
       VITE_THEME: props.uiTheme,
-
       // tabs or headings
       VITE_NOTEBOOK_LIST_TYPE: props.notebookListType,
       // e.g. survey, notebook
