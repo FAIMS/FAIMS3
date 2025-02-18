@@ -196,9 +196,16 @@ Further build/install instructions can be found at
 
 ## Live reload Android studio workflow (WSL)
 
-On WSL, the following setup and procedure allows live reloading of the app on an Android emulator (or physical device through adb [though I haven't gotten this working due to adb config issues])
+On WSL, the following setup and procedure allows live reloading of the app on an Android emulator (or physical device through adb [though I haven't gotten this working due to adb config issues]).
 
-- install Android studio on your WSL instance
+### Prereqs
+
+- install Android studio on your WSL instance with suitable JDK (this usually comes bundled)
+
+### Setup
+
+First run `npm i` to install all dependencies, and move into `/app`. Then `npm i` to be certain local deps are installed, then
+
 - open android studio in one tab i.e. `./<studio path>/studio.sh`
 - in the open studio window, configure/start the emulator you want to run it on
 - in another tab, build the app i.e. `npm run build && npx cap sync android`
