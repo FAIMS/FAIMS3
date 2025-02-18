@@ -2,10 +2,10 @@ import {IconButton, Typography, Box} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const BackButton = ({
-  label = 'Back',
+  label,
   onClick,
 }: {
-  label: string;
+  label?: string;
   onClick: () => void;
 }) => {
   return (
@@ -24,9 +24,11 @@ const BackButton = ({
       <IconButton color="primary" aria-label={label}>
         <ArrowBackIcon />
       </IconButton>
-      <Typography variant="caption" sx={{mt: 0.5}}>
-        {label}
-      </Typography>
+      {label && (
+        <Typography variant="caption" sx={{mt: 0.5}}>
+          {label}
+        </Typography>
+      )}
     </Box>
   );
 };

@@ -31,11 +31,11 @@ import {
   Typography,
   keyframes,
   styled,
+  useTheme,
 } from '@mui/material';
 import {useState} from 'react';
 import {createUseStyles} from 'react-jss';
 import {getStepColor} from '../../../utils/generateStepperColors';
-import {theme} from '../../themes';
 
 type RecordStepperProps = {
   view_index: number;
@@ -117,7 +117,8 @@ export default function RecordStepper(props: RecordStepperProps) {
     formErrors,
     isRecordSubmitted,
   } = props;
-  const [shakeStepper, setShakeStepper] = useState(false);
+  const [shakeStepper, _setShakeStepper] = useState(false);
+  const theme = useTheme();
 
   // function to check if stepper has erros
   const hasErrors = (sectionId: string | undefined) => {
@@ -136,7 +137,6 @@ export default function RecordStepper(props: RecordStepperProps) {
     <>
       <Box display={{xs: 'none', sm: 'block'}} py={1}>
         <div style={{overflowX: 'visible', position: 'relative', zIndex: 1}}>
-          {' '}
           <Stepper
             nonLinear
             activeStep={view_index}
@@ -215,7 +215,11 @@ export default function RecordStepper(props: RecordStepperProps) {
             visitedSteps={visitedSteps}
             isRecordSubmitted={isRecordSubmitted}
           />
-          <Typography variant="h5" align="center">
+          <Typography
+            variant="h4"
+            align="center"
+            style={{marginTop: theme.spacing(2)}}
+          >
             {ui_specification.views[views[view_index]]?.label}
           </Typography>
         </Box>
