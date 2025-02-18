@@ -168,6 +168,55 @@ function delete_listing_by_id(listing_id: ListingID) {
 }
 
 /**
+ * This updates/creates records in the projects_dbs database for the given
+ * listing - used during initialisation and refresh
+ */
+export async function syncProjectDb({
+  projects,
+  listingId,
+  conductorUrl,
+}: {
+  projects: ProjectObject[];
+  listingId: string;
+  conductorUrl: string;
+}) {
+  // get the project DB
+  const projectDb = projects_dbs[listingId]?.local;
+
+  for (const project_doc of projects) {
+    // is this project already in projects_local?
+    projectDb
+      .get(project_doc._id)
+      .then((existing_project: ProjectObject) => {
+        // do we have to update it?
+        if (
+          existing_project.name !== project_doc.name ||
+          existing_project.status !== project_doc.status
+        ) {
+          projectDb.post({
+            ...existing_project,
+            name: project_doc.name,
+            status: project_doc.status,
+          });
+        }
+      })
+      .catch(err => {
+        if (err.name === 'not_found') {
+          // we don't have this project, so store it
+          // add in the conductor url we got it from
+          // TODO: this should already be there in the API
+          // also that default to CONDUCTOR_URLS[0] is because listings
+          // conductor_url is optional, it shouldn't be...
+          return projectDb.put({
+            ...project_doc,
+            conductor_url: conductorUrl ?? CONDUCTOR_URLS[0],
+          });
+        }
+      });
+  }
+}
+
+/**
  * get_projects_from_conductor - retrieve projects list from the server
  *    and update the local projects database
  * @param listing - containing information about the server
@@ -214,39 +263,12 @@ async function get_projects_from_conductor(listing: ListingsObject) {
   })
     .then(response => response.json())
     .then(directory => {
-      // make sure every project in the directory is stored in projects_local
-      for (let i = 0; i < directory.length; i++) {
-        const project_doc: ProjectObject = directory[i];
-        // is this project already in projects_local?
-        projects_local.local
-          .get(project_doc._id)
-          .then((existing_project: ProjectObject) => {
-            // do we have to update it?
-            if (
-              existing_project.name !== project_doc.name ||
-              existing_project.status !== project_doc.status
-            ) {
-              projects_local.local.post({
-                ...existing_project,
-                name: project_doc.name,
-                status: project_doc.status,
-              });
-            }
-          })
-          .catch(err => {
-            if (err.name === 'not_found') {
-              // we don't have this project, so store it
-              // add in the conductor url we got it from
-              // TODO: this should already be there in the API
-              // also that default to CONDUCTOR_URLS[0] is because listings
-              // conductor_url is optional, it shouldn't be...
-              return projects_local.local.put({
-                ...project_doc,
-                conductor_url: listing.conductor_url || CONDUCTOR_URLS[0],
-              });
-            }
-          });
-      }
+      // Sync details into existing project DB
+      syncProjectDb({
+        projects: directory as ProjectObject[],
+        conductorUrl: listing.conductor_url,
+        listingId: listing.id,
+      });
     });
 
   // TODO: how should we deal with projects that are removed from
@@ -344,6 +366,7 @@ async function get_project_from_directory(
 
   if (listing_id in projects_dbs) {
     const project_db = projects_dbs[listing_id];
+    console.log(await project_db.local.allDocs());
     try {
       const result = await project_db.local.get(project_id);
       return result as ProjectObject;
