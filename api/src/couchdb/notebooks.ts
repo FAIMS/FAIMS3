@@ -28,7 +28,6 @@ import {
   ProjectID,
   ProjectObject,
   resolve_project_id,
-  TokenContents,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import PouchDB from 'pouchdb';
@@ -46,9 +45,6 @@ import {
   file_attachments_to_data,
   file_data_to_attachments,
   getDataDB,
-  getFullRecordData,
-  getRecordsWithRegex,
-  HRID_STRING,
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
 } from '@faims3/data-model';
@@ -567,39 +563,6 @@ export const validateNotebookID = async (
 };
 
 /**
- * getNotebookRecords - retrieve all data records for this notebook
- * including record metadata, data fields and annotations
- * @param project_id project identifier
- * @returns an array of records
- */
-export const getNotebookRecords = async (
-  project_id: string,
-  token: TokenContents
-): Promise<any | null> => {
-  const records = await getRecordsWithRegex(token, project_id, '.*', true);
-  const fullRecords: any[] = [];
-  for (let i = 0; i < records.length; i++) {
-    const data = await getFullRecordData(
-      project_id,
-      records[i].record_id,
-      records[i].revision_id,
-      true
-    );
-    fullRecords.push(data);
-  }
-  return fullRecords;
-};
-
-const getRecordHRID = (record: any) => {
-  for (const possible_name of Object.keys(record.data)) {
-    if (possible_name.startsWith(HRID_STRING)) {
-      return record.data[possible_name];
-    }
-  }
-  return record.record_id;
-};
-
-/**
  * generate a suitable value for the CSV export from a field
  * value.  Serialise filenames, gps coordinates, etc.
  */
@@ -619,7 +582,12 @@ const csvFormatValue = (
       }
       const valueList = value.map((v: any) => {
         if (v instanceof File) {
-          const filename = generateFilename(v, fieldName, hrid, filenames);
+          const filename = generateFilenameForAttachment(
+            v,
+            fieldName,
+            hrid,
+            filenames
+          );
           filenames.push(filename);
           return filename;
         } else {
@@ -668,6 +636,10 @@ const csvFormatValue = (
       result[fieldName + '_longitude'] =
         value.features[0].geometry.coordinates[0];
       return result;
+    } else {
+      result[fieldName] = value;
+      result[fieldName + '_latitude'] = '';
+      result[fieldName + '_longitude'] = '';
     }
   }
 
@@ -774,7 +746,7 @@ export const streamNotebookRecordsAsCSV = async (
   while (!done) {
     // record might be null if there was an invalid db entry
     if (record) {
-      const hrid = getRecordHRID(record);
+      const hrid = record.hrid || record.record_id;
       const row = [
         hrid,
         record.record_id,
@@ -892,7 +864,7 @@ export const streamNotebookFilesAsZip = async (
     // iterate over the fields, if it's a file, then
     // append it to the archive
     if (record !== null) {
-      const hrid = getRecordHRID(record);
+      const hrid = record.hrid || record.record_id;
       Object.keys(record.data).forEach(async (key: string) => {
         if (record && record.data[key] instanceof Array) {
           if (record.data[key].length === 0) {
@@ -915,7 +887,12 @@ export const streamNotebookFilesAsZip = async (
                 chunks.push(value);
               }
               const stream = Stream.Readable.from(chunks);
-              const filename = generateFilename(file, key, hrid, fileNames);
+              const filename = generateFilenameForAttachment(
+                file,
+                key,
+                hrid,
+                fileNames
+              );
               fileNames.push(filename);
               await archive.append(stream, {
                 name: filename,
@@ -941,7 +918,7 @@ export const streamNotebookFilesAsZip = async (
   archive.emit('progress', {entries: {processed: 0, total: 0}});
 };
 
-const generateFilename = (
+export const generateFilenameForAttachment = (
   file: File,
   key: string,
   hrid: string,

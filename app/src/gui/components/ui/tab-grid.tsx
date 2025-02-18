@@ -4,6 +4,7 @@ import TabPanel from '@mui/lab/TabPanel';
 import {Box, Tab} from '@mui/material';
 import {
   DataGrid,
+  GridColDef,
   GridEventListener,
   GridPaginationModel,
 } from '@mui/x-data-grid';
@@ -27,12 +28,14 @@ export default function TabProjectGrid({
   projects,
   tabID,
   handleChange,
-  columns,
+  activatedColumns,
+  notActivatedColumns,
 }: {
   projects: ProjectExtended[];
   tabID: string;
   handleChange: React.Dispatch<React.SetStateAction<string>>;
-  columns: any;
+  activatedColumns: GridColDef<ProjectExtended>[];
+  notActivatedColumns: GridColDef<ProjectExtended>[];
 }) {
   const activatedProjects = projects.filter(({activated}) => activated);
   const availableProjects = projects.filter(({activated}) => !activated);
@@ -90,7 +93,7 @@ export default function TabProjectGrid({
             <DataGrid
               key={`notebook_list_datagrid_${tab}`}
               rows={tab === '1' ? activatedProjects : availableProjects}
-              columns={columns}
+              columns={tab === '1' ? activatedColumns : notActivatedColumns}
               sx={{cursor: tab === '1' ? 'pointer' : 'default'}}
               onRowClick={handleRowClick}
               getRowId={({_id}) => _id}

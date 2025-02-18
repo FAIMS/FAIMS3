@@ -151,7 +151,11 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const {data: map_center, isLoading: loadingLocation} = useQuery({
     queryKey: ['current_location'],
     queryFn: async (): Promise<[number, number]> => {
-      const position = await Geolocation.getCurrentPosition();
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      });
       return [position.coords.longitude, position.coords.latitude];
     },
   });
