@@ -155,6 +155,7 @@ interface DraftRecordEditProps {
   record_id: RecordID;
   state?: any;
   location?: Location;
+  onBack: () => void;
 }
 
 function DraftRecordEdit(props: DraftRecordEditProps) {
@@ -226,6 +227,9 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   return (
     <React.Fragment>
       <Grid container justifyContent={'space-between'} spacing={2}>
+        <Grid item>
+          <BackButton label="Back" onClick={props.onBack} />
+        </Grid>
         <Grid item xs>
           <ProgressBar percentage={progress} />
         </Grid>
@@ -368,21 +372,6 @@ export default function RecordCreate() {
   return (
     <React.Fragment>
       <Box>
-        <Grid
-          container
-          wrap="nowrap"
-          spacing={2}
-          padding={1}
-          alignItems="center"
-        >
-          <Grid item>
-            <BackButton
-              label="Back to records"
-              onClick={() => setOpenDialog(true)}
-              singleLine
-            />
-          </Grid>
-        </Grid>
         {
           // only show breadcrumbs if we have parent record
         }
@@ -397,6 +386,7 @@ export default function RecordCreate() {
           />
         ) : (
           <DraftRecordEdit
+            onBack={() => setOpenDialog(true)}
             project_info={projectInfo}
             project_id={project_id!}
             type_name={type_name!}

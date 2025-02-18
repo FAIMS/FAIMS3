@@ -52,9 +52,9 @@ export default function Notebook() {
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" alignItems={'center'}>
+      <Stack direction="row" alignItems={'center'} spacing={2}>
         <BackButton
-          //label={`Back to ${NOTEBOOK_NAME_CAPITALIZED}s`}
+        label="Back"
           onClick={() => history(ROUTES.INDEX)}
         ></BackButton>
 
