@@ -17,29 +17,26 @@
  * Description:
  *   Internals of map generation for MapFormField
  */
-import React, {useState, useRef, useCallback} from 'react';
-
-// openlayers
+import CloseIcon from '@mui/icons-material/Close';
+import EditIcon from '@mui/icons-material/Edit';
+import MapIcon from '@mui/icons-material/LocationOn';
+import Button, {ButtonProps} from '@mui/material/Button';
 import Map from 'ol/Map';
 import View from 'ol/View';
+import Zoom from 'ol/control/Zoom';
+import GeoJSON from 'ol/format/GeoJSON';
+import {Draw, Modify} from 'ol/interaction';
 import TileLayer from 'ol/layer/Tile';
-import WebGLTileLayer from 'ol/layer/WebGLTile';
-import GeoTIFF from 'ol/source/GeoTIFF';
 import VectorLayer from 'ol/layer/Vector';
+import WebGLTileLayer from 'ol/layer/WebGLTile';
+import {transform} from 'ol/proj';
+import {register} from 'ol/proj/proj4';
+import GeoTIFF from 'ol/source/GeoTIFF';
+import OSM from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
-import {Draw, Modify} from 'ol/interaction';
-import OSM from 'ol/source/OSM';
-import {transform} from 'ol/proj';
 import proj4 from 'proj4';
-import {register} from 'ol/proj/proj4';
-import Button, {ButtonProps} from '@mui/material/Button';
-import CloseIcon from '@mui/icons-material/Close';
-import GeoJSON from 'ol/format/GeoJSON';
-import Zoom from 'ol/control/Zoom';
-import MapIcon from '@mui/icons-material/LocationOn';
-import EditIcon from '@mui/icons-material/Edit';
-import CheckCircleIcon from '@mui/icons-material/Check';
+import {useCallback, useRef, useState} from 'react';
 
 // define some EPSG codes - these are for two sample images
 // TODO: we need to have a better way to include a useful set or allow
@@ -85,8 +82,8 @@ import {
 } from '@mui/material';
 import Feature from 'ol/Feature';
 import {Geometry} from 'ol/geom';
-import {createCenterControl} from '../../components/map/center-control';
 import {useNotification} from '../../../context/popup';
+import {createCenterControl} from '../../components/map/center-control';
 import {theme} from '../../themes';
 
 const styles = {

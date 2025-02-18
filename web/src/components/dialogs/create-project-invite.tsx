@@ -7,30 +7,30 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import {CreateProjectFromTemplateForm} from '../forms/create-project-from-template';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME} from '@/constants';
+import {CreateProjectInviteForm} from '../forms/create-project-invite';
 import {useState} from 'react';
 
 /**
  * Component for rendering a dialog to create a new project from a template.
  * @returns {JSX.Element} The rendered dialog component.
  */
-export const ProjectFromTemplateDialog = () => {
+export const CreateProjectInvite = () => {
   const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">Create {NOTEBOOK_NAME_CAPITALIZED}</Button>
+        <Button variant="outline">Create Invite</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create {NOTEBOOK_NAME_CAPITALIZED}</DialogTitle>
+          <DialogTitle>Create Invite</DialogTitle>
           <DialogDescription>
-            Create a new {NOTEBOOK_NAME} based on this template.
+            Create a new invitation for this {NOTEBOOK_NAME}.
           </DialogDescription>
         </DialogHeader>
-        <CreateProjectFromTemplateForm setDialogOpen={setOpen} />
+        <CreateProjectInviteForm setDialogOpen={setOpen} />
       </DialogContent>
     </Dialog>
   );

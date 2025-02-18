@@ -1,5 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import {User} from '@/context/auth-provider';
+import QRCode from 'qrcode';
 
 /**
  * get function is a utility function for making GET requests to the API.
@@ -64,6 +65,28 @@ export const useGetUsers = (user: User | null) =>
   useQuery({
     queryKey: ['users'],
     queryFn: () => get('/api/users', user),
+  });
+
+/**
+ * useGetInvites hook returns a query for fetching invites.
+ *
+ * @param {User} user - The user object.
+ * @param {string} notebookId - The ID of the notebook.
+ * @returns {Query} A query for fetching invites.
+ */
+export const useGetInvites = (user: User | null, notebookId: string) =>
+  useQuery({
+    queryKey: ['invites', notebookId],
+    queryFn: async () => {
+      const invites = await get(`/api/notebooks/${notebookId}/invites`, user);
+
+      for (const invite of invites) {
+        invite.url = `${import.meta.env.VITE_API_URL}/register/${invite._id}`;
+        invite.qrCode = await QRCode.toDataURL(invite.url);
+      }
+
+      return invites;
+    },
   });
 
 /**
