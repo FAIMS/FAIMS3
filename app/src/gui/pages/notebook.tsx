@@ -54,7 +54,7 @@ export default function Notebook() {
     <Stack spacing={2}>
       <Stack direction="row" alignItems={'center'} spacing={2}>
         <BackButton
-        label="Back"
+          label="Back"
           onClick={() => history(ROUTES.INDEX)}
         ></BackButton>
 
