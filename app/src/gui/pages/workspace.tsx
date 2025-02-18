@@ -38,7 +38,7 @@ export default function Workspace() {
       <Grid container spacing={3}>
         <Grid item xs={12} md={12} lg={8}>
           <Typography
-            variant="h1"
+            variant="h2"
             color="textSecondary"
             style={{marginBottom: theme.spacing(2)}}
           >

@@ -2,11 +2,11 @@ import {IconButton, Typography, Box} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const BackButton = ({
-  label = 'Back',
+  label,
   onClick,
   singleLine = false, // control layout for new record / draft record vieww
 }: {
-  label: string;
+  label?: string;
   onClick: () => void;
   singleLine?: boolean;
 }) => {
@@ -24,13 +24,18 @@ const BackButton = ({
       <IconButton color="primary" aria-label={label} sx={{p: 0}}>
         <ArrowBackIcon sx={{fontSize: 28}} />
       </IconButton>
-      <Typography
-        variant="h5"
-        fontWeight="bold"
-        sx={{color: 'primary.main', textAlign: singleLine ? 'left' : 'center'}}
-      >
-        {label}
-      </Typography>
+      {label && (
+        <Typography
+          variant="h5"
+          fontWeight="bold"
+          sx={{
+            color: 'primary.main',
+            textAlign: singleLine ? 'left' : 'center',
+          }}
+        >
+          {label}
+        </Typography>
+      )}
     </Box>
   );
 };

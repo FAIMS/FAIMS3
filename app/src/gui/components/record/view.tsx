@@ -19,29 +19,29 @@
  *   20220620 BBS Adjusted sm to 11 from 8 to get rid of the awful margin reported in FAIMS3-328
  */
 
-import React, {useState} from 'react';
-import {FormikProps} from 'formik';
 import {ProjectUIModel} from '@faims3/data-model';
-import RecordDraftState from '../../../sync/draft-state';
-import {getComponentFromFieldConfig} from './fields';
-import {AnnotationField} from './Annotation';
+import NoteIcon from '@mui/icons-material/Note';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import {
-  Box,
-  Grid,
-  Paper,
   Alert,
-  IconButton,
+  Box,
   Collapse,
-  Link,
-  Typography,
   Divider,
+  Grid,
+  IconButton,
+  Link,
+  Paper,
+  Typography,
   useMediaQuery,
 } from '@mui/material';
-import {EditConflictDialog} from './conflict/conflictDialog';
-import NoteIcon from '@mui/icons-material/Note';
 import {grey} from '@mui/material/colors';
+import {FormikProps} from 'formik';
+import React from 'react';
+import RecordDraftState from '../../../sync/draft-state';
 import {theme} from '../../themes';
-import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import {AnnotationField} from './Annotation';
+import {EditConflictDialog} from './conflict/conflictDialog';
+import {getComponentFromFieldConfig} from './fields';
 
 type ViewProps = {
   viewName: string;
@@ -112,9 +112,6 @@ function SingleComponent(props: SingleComponentProps) {
   const fieldConfig = fields[fieldName];
   const label = fieldConfig['component-parameters'].label;
   const [expanded, setExpanded] = React.useState(false);
-  const hasError = Boolean(
-    props.formProps.errors[fieldName] && props.formProps.touched[fieldName]
-  );
 
   const handleExpandClick = () => {
     setExpanded(!expanded);
@@ -263,14 +260,8 @@ function SingleComponent(props: SingleComponentProps) {
  */
 
 export function ViewComponent(props: ViewProps) {
-  const {
-    visitedSteps,
-    viewName,
-    formProps,
-    ui_specification,
-    isRevisiting,
-    handleSectionClick,
-  } = props;
+  const {visitedSteps, viewName, formProps, ui_specification, isRevisiting} =
+    props;
   const fieldNames: string[] = props.fieldNames;
   const fields = ui_specification.fields;
 
@@ -365,7 +356,7 @@ export function ViewComponent(props: ViewProps) {
                 Other sections have errors. Click to navigate:
               </Typography>
 
-              {otherSectionsWithErrors.map((section, index) => (
+              {otherSectionsWithErrors.map((section, _index) => (
                 <Link
                   key={section}
                   component="button"
@@ -413,7 +404,7 @@ function displayErrors(
   thisView: string,
   ui_specification: ProjectUIModel,
   currentFields: string[],
-  otherSections?: string[]
+  _otherSections?: string[]
 ) {
   if (!errors) return <p>No errors to display</p>;
 
