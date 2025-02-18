@@ -52,7 +52,7 @@ const ExportProjectForm = ({type}: ExportProjectFormProps) => {
     );
 
     if (!response.ok)
-      return {type: 'submit', message: `Error downloading File.`};
+      return {type: 'submit', message: 'Error downloading File.'};
 
     downloadFile(await response.blob(), `${projectId}_${view}.${type}`);
   };

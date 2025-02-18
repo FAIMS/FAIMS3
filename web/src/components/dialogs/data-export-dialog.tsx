@@ -9,6 +9,12 @@ import {
 import {Button} from '../ui/button';
 import ExportProjectForm from '../forms/export-project-form';
 
+/**
+ * DataExportDialog component renders a dialog for exporting a project's data.
+ * It provides a button to open the dialog and a form to export the project's data.
+ *
+ * @returns {JSX.Element} The rendered DataExportDialog component.
+ */
 export const DataExportDialog = () => (
   <Dialog>
     <DialogTrigger asChild className="w-fit">
