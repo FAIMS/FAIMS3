@@ -323,6 +323,62 @@ function refreshTokenExpiryMinutes(): number {
   }
 }
 
+const DEFAULT_RATE_LIMITER_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const DEFAULT_RATE_LIMITER_PER_WINDOW = 1000; // 1000 requests per window
+const DEFAULT_RATE_LIMITER_ENABLED = true;
+
+/**
+ * Gets the rate limiter window duration in milliseconds from environment variables
+ * @returns The window duration in milliseconds
+ */
+function rateLimiterWindowMs(): number {
+  const rateLimiterWindowMs = process.env.RATE_LIMITER_WINDOW_MS;
+  if (rateLimiterWindowMs === '' || rateLimiterWindowMs === undefined) {
+    return DEFAULT_RATE_LIMITER_WINDOW_MS;
+  }
+  try {
+    return parseInt(rateLimiterWindowMs);
+  } catch (err) {
+    console.error(
+      'RATE_LIMITER_WINDOW_MS unparseable, defaulting to ' +
+        DEFAULT_RATE_LIMITER_WINDOW_MS
+    );
+    return DEFAULT_RATE_LIMITER_WINDOW_MS;
+  }
+}
+
+/**
+ * Gets the number of requests allowed per window from environment variables
+ * @returns The number of requests allowed per window
+ */
+function rateLimiterPerWindow(): number {
+  const rateLimiterPerWindow = process.env.RATE_LIMITER_PER_WINDOW;
+  if (rateLimiterPerWindow === '' || rateLimiterPerWindow === undefined) {
+    return DEFAULT_RATE_LIMITER_PER_WINDOW;
+  }
+  try {
+    return parseInt(rateLimiterPerWindow);
+  } catch (err) {
+    console.error(
+      'RATE_LIMITER_PER_WINDOW unparseable, defaulting to ' +
+        DEFAULT_RATE_LIMITER_PER_WINDOW
+    );
+    return DEFAULT_RATE_LIMITER_PER_WINDOW;
+  }
+}
+
+/**
+ * Checks if rate limiting is enabled from environment variables
+ * @returns Boolean indicating if rate limiting is enabled
+ */
+function rateLimiterEnabled(): boolean {
+  const rateLimiterEnabled = process.env.RATE_LIMITER_ENABLED;
+  if (rateLimiterEnabled === undefined) {
+    return DEFAULT_RATE_LIMITER_ENABLED;
+  }
+  return rateLimiterEnabled.toLowerCase() === 'true';
+}
+
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -344,6 +400,9 @@ export const IOS_APP_URL = ios_url();
 export const ACCESS_TOKEN_EXPIRY_MINUTES = accessTokenExpiryMinutes();
 export const REFRESH_TOKEN_EXPIRY_MINUTES = refreshTokenExpiryMinutes();
 export const DESIGNER_URL = designer_url();
+export const RATE_LIMITER_WINDOW_MS = rateLimiterWindowMs();
+export const RATE_LIMITER_PER_WINDOW = rateLimiterPerWindow();
+export const RATE_LIMITER_ENABLED = rateLimiterEnabled();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
