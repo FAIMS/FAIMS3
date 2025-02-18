@@ -65,7 +65,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -108,7 +108,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -126,7 +126,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -144,7 +144,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -162,7 +162,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -205,7 +205,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -223,7 +223,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -241,7 +241,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -259,7 +259,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -307,7 +307,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -325,7 +325,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -343,7 +343,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -361,7 +361,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -403,7 +403,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -421,7 +421,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -439,7 +439,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -457,8 +457,7 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -503,8 +502,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -525,8 +524,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -547,8 +546,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -593,8 +592,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -615,8 +614,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -637,8 +636,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -659,8 +658,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -706,9 +705,9 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
-        avp3: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
+        avp3: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -730,9 +729,9 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
-        avp3: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
+        avp3: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -754,9 +753,9 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
-        avp3: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
+        avp3: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -778,9 +777,9 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
-        avp3: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
+        avp3: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -802,9 +801,9 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
-        avp3: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
+        avp3: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -971,8 +970,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -1012,8 +1011,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -1060,8 +1059,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -1082,8 +1081,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -1104,8 +1103,8 @@ describe('test basic automerge', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
-        avp2: 1,
+        avp1: {annotation: '', uncertainty: false},
+        avp2: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };

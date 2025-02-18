@@ -13,40 +13,22 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- /*
- * RichTextField Component
- *
- * This component renders a rich text field using Markdown.
- * - Markdown-formatted content displayed as HTML.
- *
- * Props:
- * - content (string): Markdown content to be rendered.
- */
-import React from 'react';
-import MarkdownIt from 'markdown-it';
 
 /**
- * Props for the RichTextField component.
+ * RichTextField Component
+ * 
+ * Safely injects markdown content directly into HTML - see DomPurifier.ts
  */
+
+import {contentToSanitizedHtml} from '../../utils/DomPurifier';
+import React from 'react';
 interface Props {
+  /** The markdown content to be rendered. May include safe HTML tags. */
   content: string;
 }
 
-/**
- * RichTextField Component - Reusable Markdown renderer witth Formik integration.
- */
 export const RichTextField: React.FC<Props> = ({content}) => {
-  const md = new MarkdownIt();
-  const renderedContent = md.render(content);
-
-  return <div dangerouslySetInnerHTML={{__html: renderedContent}} />;
+  return (
+    <div dangerouslySetInnerHTML={{__html: contentToSanitizedHtml(content)}} />
+  );
 };
-// const uiSpec = {
-//   'component-namespace': 'faims-custom',
-//   'component-name': 'RichText',
-//   'type-returned': 'faims-core::String',
-//   'component-parameters': {
-//     label: 'Unused',
-//     content: '',
-//   },
-// };

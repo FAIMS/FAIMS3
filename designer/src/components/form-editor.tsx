@@ -47,6 +47,7 @@ import {shallowEqual} from 'react-redux';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import FormSettingsPanel from './form-settings';
 import {SectionEditor} from './section-editor';
+import {useLocation} from 'react-router-dom';
 
 type Props = {
   viewSetId: string;
@@ -55,6 +56,7 @@ type Props = {
   handleChangeCallback: (viewSetID: string, ticked: boolean) => void;
   handleDeleteCallback: (viewSetID: string) => void;
   handleSectionMoveCallback: (targetViewSetId: string) => void;
+  handleFieldMoveCallback: (targetViewId: string) => void;
 };
 
 export const FormEditor = ({
@@ -64,7 +66,12 @@ export const FormEditor = ({
   handleChangeCallback,
   handleDeleteCallback,
   handleSectionMoveCallback,
+  handleFieldMoveCallback,
 }: Props) => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const sectionParam = searchParams.get('section');
+
   const visibleTypes = useAppSelector(
     state => state.notebook['ui-specification'].visible_types
   );
@@ -105,11 +112,6 @@ export const FormEditor = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [showRightGradient, setShowRightGradient] = useState(true);
-
-  useEffect(() => {
-    // Reset activeStep when viewSetId changes.
-    setActiveStep(0);
-  }, [viewSetId]);
 
   // Update overflow gradient overlay on scroll, hidng it when scrolled to the end.
   const handleScroll = () => {
@@ -181,9 +183,9 @@ export const FormEditor = ({
         payload: {sourceViewSetId, targetViewSetId, viewId},
       });
 
-      setActiveStep(0);
       setAddAlertMessage('');
       // let sectionEditor component know a section was moved successfully
+      handleSectionMoveCallback(targetViewSetId);
       return true;
     } catch (error: unknown) {
       error instanceof Error && setAddAlertMessage(error.message);
@@ -311,6 +313,10 @@ export const FormEditor = ({
     moveCallback(viewSetID, moveDirection);
   };
 
+  const moveFieldToSection = (targetViewId: string) => {
+    handleFieldMoveCallback(targetViewId);
+  };
+
   // Scroll the active step into view.
   const scrollActiveStepIntoView = useCallback(() => {
     const container = scrollContainerRef.current;
@@ -335,6 +341,16 @@ export const FormEditor = ({
     window.addEventListener('resize', scrollActiveStepIntoView);
     return () => window.removeEventListener('resize', scrollActiveStepIntoView);
   }, [scrollActiveStepIntoView]);
+
+  useEffect(() => {
+    // Set active step from URL parameter if available
+    if (sectionParam !== null) {
+      const sectionIndex = parseInt(sectionParam);
+      if (!isNaN(sectionIndex) && sectionIndex >= 0 && sectionIndex < sections.length) {
+        setActiveStep(sectionIndex);
+      }
+    }
+  }, [sectionParam, sections.length]);
 
   return (
     <Grid container spacing={2} pt={3}>
@@ -621,6 +637,7 @@ export const FormEditor = ({
                   addCallback={addNewSection}
                   moveCallback={moveSection}
                   handleSectionMoveCallback={handleSectionMoveCallback}
+                  moveFieldCallback={moveFieldToSection}
                 />
               </Grid>
             )}

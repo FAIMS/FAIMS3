@@ -94,7 +94,7 @@
     "dotenv": "^16.3.1",
     "env-cmd": "^10.1.0",
     "jest-fast-check": "1.0.2",
-    "mocha": "^10.2.0",
+    "mocha": "^10.8.2",
     "nano": "^10.1.2",
     "node-fetch": "^3.3.2",
     "nodemon": "^2.0.20",

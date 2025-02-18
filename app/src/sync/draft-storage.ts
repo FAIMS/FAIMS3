@@ -22,22 +22,22 @@ import PouchDB from 'pouchdb-browser';
 import {v4 as uuidv4} from 'uuid';
 
 import {
-  RecordID,
-  ProjectID,
-  RevisionID,
+  DraftMetadataList,
+  EncodedDraft,
+  FAIMSAttachmentReference,
   FAIMSTypeName,
   HRID_STRING,
+  ProjectID,
+  RecordID,
   Relationship,
-  EncodedDraft,
-  DraftMetadataList,
+  RevisionID,
   attachment_to_file,
-  getIdsByFieldName,
   getHridFieldNameForViewset,
+  getIdsByFieldName,
 } from '@faims3/data-model';
-import {DEBUG_APP} from '../buildconfig';
-import {local_pouch_options} from './connection';
 import {logError} from '../logging';
 import {getUiSpecForProject} from '../uiSpecification';
+import {local_pouch_options} from './connection';
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
 
@@ -51,32 +51,52 @@ export function generate_file_name(): string {
   return 'file-' + uuidv4();
 }
 
+/**
+ * get staged data from the draft database
+ * This is the inverse of setStagedData, it's main function is to re-generate
+ * any file attachments that were saved.
+ *
+ * @param draft_id - identifier for the draft
+ * @returns an EncodedDraft record
+ */
 export async function getStagedData(
   draft_id: string
 ): Promise<EncodedDraft & PouchDB.Core.GetMeta> {
-  const draft = await draft_db.get(draft_id, {
+  const draft = (await draft_db.get(draft_id, {
     attachments: true,
     binary: true,
-  });
+  })) as EncodedDraft & PouchDB.Core.GetMeta;
 
+  // List out the attachments, if any - these could be downloaded or references
+  // Note this is a map from field name -> list of attachment(s)/photos
   for (const [field_name, attachment_list] of Object.entries(
     draft.attachments
   )) {
     const files = [];
-    for (const file_name of attachment_list) {
-      if (draft._attachments !== undefined) {
-        if (DEBUG_APP) {
-          console.debug('Loading draft file:', file_name);
+    // for each attachment entry
+    for (const entry of attachment_list) {
+      // Check if the entry has the draft attachment property which indicates it
+      // should be attached and present in the _attachments field
+      if (Object.hasOwnProperty.call(entry, 'draft_attachment')) {
+        if (draft._attachments !== undefined) {
+          // add the file
+          files.push(
+            attachment_to_file(
+              entry.filename,
+              draft._attachments[entry.filename]
+            )
+          );
+        } else {
+          logError(
+            "Attachments weren't loaded from pouch, but there should be some"
+          );
         }
-        files.push(
-          attachment_to_file(file_name, draft._attachments[file_name])
-        );
       } else {
-        logError(
-          "Attachments weren't loaded from pouch, but there should be some"
-        );
+        // for a FAIMSAttachmentReference just store the reference
+        files.push(entry);
       }
     }
+    // Update the draft fields with the actual files
     draft.fields[field_name] = files;
   }
   return draft;
@@ -106,21 +126,20 @@ export async function newStagedData(
   const _id = 'drf-' + uuidv4();
   const date = new Date();
 
-  return (
-    await draft_db.put({
-      _id: _id,
-      created: date.toString(),
-      updated: date.toString(),
-      fields: {},
-      annotations: {},
-      attachments: {},
-      project_id: active_id,
-      existing: existing,
-      type: type,
-      field_types: field_types,
-      record_id: record_id,
-    })
-  ).id;
+  const encodedDraft: EncodedDraft = {
+    _id: _id,
+    created: date.toString(),
+    updated: date.toString(),
+    fields: {},
+    annotations: {},
+    attachments: {},
+    project_id: active_id,
+    existing: existing,
+    type: type,
+    field_types: field_types,
+    record_id: record_id,
+  };
+  return (await draft_db.put(encodedDraft)).id;
 }
 
 /**
@@ -133,39 +152,62 @@ export async function setStagedData(
   // Matches the PouchDB.Core.Response type, but with optional rev
   draft_id: PouchDB.Core.DocumentId,
   new_data: {[key: string]: unknown},
-  new_annotations: {[key: string]: unknown},
+  new_annotations: {[key: string]: {annotation: string; uncertainty: boolean}},
   field_types: {[field_name: string]: FAIMSTypeName},
   relationship: Relationship
 ): Promise<PouchDB.Core.Response> {
-  const existing = await draft_db.get(draft_id);
-  const encoded_info = encodeStagedData(
-    new_data,
-    new_annotations,
-    field_types,
-    relationship
-  );
+  const existing = (await draft_db.get(draft_id)) as EncodedDraft;
 
-  return await draft_db.put({
-    ...existing,
-    ...encoded_info,
-    updated: new Date().toString(),
-  });
+  // merge new annotations with existing
+  // each value is an object {annotation, uncertainty} so need
+  // to merge each one separately
+  for (const field_name in new_annotations) {
+    if (existing.annotations[field_name] === undefined) {
+      existing.annotations[field_name] = new_annotations[field_name];
+    } else {
+      // Merge the annotation and uncertainty values individually
+      existing.annotations[field_name] = {
+        ...existing.annotations[field_name],
+        ...new_annotations[field_name],
+      };
+    }
+  }
+
+  // update relationship if present, any value just replaces the existing
+  if (relationship.parent) {
+    existing.relationship = relationship;
+  }
+
+  // update the fields and attachments
+  updateDraftFields(existing, new_data, field_types);
+
+  return await draft_db.put(existing);
 }
 
-function encodeStagedData(
-  new_data: {[key: string]: unknown},
-  new_annotations: {[key: string]: unknown},
-  field_types: {[field_name: string]: FAIMSTypeName},
-  relationship: Relationship
-) {
-  // TODO: work out what we need to do specially for annotations, probably
-  // nothing
-  const encoded_annotations = new_annotations;
-  // TODO: integrate this into the rest of the attachment handling system
-  const encoded_data: {[key: string]: unknown} = {};
-  const attachment_metadata: {[key: string]: string[]} = {};
-  const encoded_attachments: any = {};
+type FileOrRef = File | FAIMSAttachmentReference;
 
+/**
+ * Update field values and attachments in a draft record
+ *
+ * Stores any file attachments for a field in the
+ * attachments property.
+ * Note that attachments can either be a File or a
+ * FAIMSAttachmentReference which is a ref to an existing
+ * attachment (possibly not downloaded).
+ * Here we make a list of attachments that are either
+ * the reference or a new reference to a local attached filename.
+ * In getStagedData above we reverse this operation to rebuild
+ * the EncodedDraft object.
+ *
+ * @param existing Existing encoded draft from the database (updated)
+ * @param new_data New data that has been updated in the record
+ * @param field_types Types of fields
+ */
+function updateDraftFields(
+  existing: EncodedDraft,
+  new_data: {[key: string]: unknown},
+  field_types: {[field_name: string]: FAIMSTypeName}
+) {
   for (const field_name in field_types) {
     const field_data = new_data[field_name];
     if (field_data !== undefined) {
@@ -173,29 +215,37 @@ function encodeStagedData(
         field_types[field_name] === 'faims-attachment::Files' &&
         field_data !== null
       ) {
-        attachment_metadata[field_name] = [];
-        for (const tmp_file of field_data as File[]) {
-          const file = tmp_file;
-          const file_name = file.name ?? generate_file_name();
-          encoded_attachments[file_name] = {
-            content_type: file.type,
-            data: file,
-          };
-          attachment_metadata[field_name].push(file_name);
+        // Attachment might be a File or might be an object for a
+        // non-downloaded file
+        const attachment_metadata = [];
+        for (const field_value of field_data as FileOrRef[]) {
+          if (field_value instanceof File) {
+            const file = field_value as File;
+            const file_name = file.name ?? generate_file_name();
+            if (existing._attachments === undefined) {
+              existing._attachments = {};
+            }
+            // store this attachment in _attachments
+            existing._attachments[file_name] = {
+              content_type: file.type,
+              data: file,
+            };
+            attachment_metadata.push({
+              draft_attachment: true,
+              filename: file_name,
+            });
+          } else {
+            // we have a FAIMSAttachmentReference
+            attachment_metadata.push(field_value);
+          }
+          existing.attachments[field_name] = attachment_metadata;
         }
       } else {
-        encoded_data[field_name] = field_data;
+        // replace any existing data with the new data
+        existing.fields[field_name] = field_data;
       }
     }
   }
-
-  return {
-    fields: encoded_data,
-    annotations: encoded_annotations,
-    attachments: attachment_metadata,
-    _attachments: encoded_attachments,
-    relationship: relationship,
-  };
 }
 
 /**
