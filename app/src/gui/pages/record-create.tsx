@@ -25,7 +25,19 @@ import {
   ProjectUIModel,
   RecordID,
 } from '@faims3/data-model';
-import {Box, CircularProgress, Grid, Paper} from '@mui/material';
+import {
+  Alert,
+  AlertTitle,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  Paper,
+} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -54,6 +66,7 @@ import {getParentPersistenceData} from '../components/record/relationships/Relat
 import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import BackButton from '../components/ui/BackButton';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -270,7 +283,27 @@ export default function RecordCreate() {
     draft_id?: string;
     record_id?: string;
   }>();
-  const location: any = useLocation();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const projectId = location.pathname.split('/')[2];
+
+  const [openDialog, setOpenDialog] = useState(false);
+  //for android back button
+  const [androidBackPressed, setAndroidBackPressed] = useState(false);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  const handleConfirmNavigation = () => {
+    setOpenDialog(false);
+    navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId, {replace: true});
+  };
+
   let draft_record_id = generateFAIMSDataID();
   if (record_id !== undefined) draft_record_id = record_id;
   if (location.state && location.state.child_record_id !== undefined)
@@ -284,6 +317,8 @@ export default function RecordCreate() {
   }, [project_id]);
 
   let showBreadcrumbs = false;
+  const history = useNavigate();
+
   const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
@@ -310,9 +345,44 @@ export default function RecordCreate() {
     });
   }
 
+  // detect when user click's android back buttn
+  useEffect(() => {
+    const handleAndroidBackPress = (event: Event) => {
+      event.preventDefault();
+      setAndroidBackPressed(true);
+      setOpenDialog(true);
+    };
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      setOpenDialog(true);
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleAndroidBackPress);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleAndroidBackPress);
+    };
+  }, []);
+
   return (
     <React.Fragment>
       <Box>
+        <Grid
+          container
+          wrap="nowrap"
+          spacing={2}
+          padding={1}
+          alignItems="center"
+        >
+          <Grid item>
+            <BackButton
+              label="Back to records"
+              onClick={() => setOpenDialog(true)}
+              singleLine
+            />
+          </Grid>
+        </Grid>
         {
           // only show breadcrumbs if we have parent record
         }
@@ -337,6 +407,62 @@ export default function RecordCreate() {
           />
         )}
       </Box>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        PaperProps={{
+          sx: {padding: 2},
+        }}
+        disableScrollLock={true}
+      >
+        <Alert severity="info">
+          <AlertTitle>
+            {' '}
+            Are you sure you want to return to the record list?
+          </AlertTitle>
+          Your response is saved on your device as a draft. You can return to it
+          later to complete this record.{' '}
+        </Alert>
+
+        <DialogActions
+          sx={{
+            justifyContent: 'space-between',
+            padding: theme.spacing(2),
+          }}
+        >
+          <Button
+            onClick={handleCloseDialog}
+            sx={{
+              backgroundColor: theme.palette.dialogButton.cancel,
+              color: theme.palette.dialogButton.dialogText,
+              fontSize: isMobile ? '0.875rem' : '1rem',
+              padding: isMobile ? '6px 12px' : '10px 20px',
+              '&:hover': {
+                backgroundColor: theme.palette.text.primary,
+              },
+            }}
+          >
+            Continue working
+          </Button>
+          <Button
+            onClick={handleConfirmNavigation}
+            // variant={'contained'}
+            sx={{
+              backgroundColor: theme.palette.dialogButton.confirm,
+              color: theme.palette.dialogButton.dialogText,
+              fontSize: isMobile ? '0.875rem' : '1rem',
+              padding: isMobile ? '6px 12px' : '10px 20px',
+              '&:hover': {
+                backgroundColor: theme.palette.text.primary,
+              },
+            }}
+          >
+            Return to record list
+          </Button>
+        </DialogActions>
+      </Dialog>
     </React.Fragment>
   );
 }
