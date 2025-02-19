@@ -1,10 +1,13 @@
 /** Provides types for the Auth database */
-export type AuthRecordTypes = 'refresh';
+export type AuthRecordTypes = 'refresh' | 'emailcode';
 
 // These indicate the available indexes to fetch things
 export type GetRefreshTokenIndex = 'id' | 'token';
 
-// Document type
+// You can fetch email codes by index or code
+export type GetEmailCodeIndex = 'id' | 'code';
+
+// Refresh token fields
 export interface RefreshRecordFields {
   // Mandatory field for auth records
   documentType: 'refresh';
@@ -22,10 +25,29 @@ export interface RefreshRecordFields {
   enabled: boolean;
 }
 
+// Refresh token fields
+export interface EmailCodeFields {
+  // Mandatory field for auth records
+  documentType: 'emailcode';
+
+  // Which user ID generated this code?
+  userId: string;
+
+  // What is the code
+  code: string;
+
+  // When does it expire? unix timestamp in ms
+  expiryTimestampMs: number;
+
+  // Is this reset token valid
+  enabled: boolean;
+}
+
 // ID prefix map
 export const AuthRecordIdPrefixMap = new Map<AuthRecordTypes, string>([
   // Refresh records start with prefix
   ['refresh', 'refresh_'],
+  ['emailcode', 'emailcode_'],
 ]);
 
 // NOTE: if we have multiple record types, we could update below to use a union
