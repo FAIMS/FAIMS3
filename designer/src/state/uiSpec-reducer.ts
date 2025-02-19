@@ -105,7 +105,7 @@ export const uiSpecificationReducer = createSlice({
       }>
     ) => {
       const {fieldName, sourceViewId, targetViewId} = action.payload;
-      
+
       // verify the field exists in source section
       if (!(fieldName in state.fields)) {
         throw new Error(`Cannot move unknown field ${fieldName}`);

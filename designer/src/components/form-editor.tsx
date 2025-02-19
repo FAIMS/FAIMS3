@@ -346,7 +346,11 @@ export const FormEditor = ({
     // Set active step from URL parameter if available
     if (sectionParam !== null) {
       const sectionIndex = parseInt(sectionParam);
-      if (!isNaN(sectionIndex) && sectionIndex >= 0 && sectionIndex < sections.length) {
+      if (
+        !isNaN(sectionIndex) &&
+        sectionIndex >= 0 &&
+        sectionIndex < sections.length
+      ) {
         setActiveStep(sectionIndex);
       }
     }

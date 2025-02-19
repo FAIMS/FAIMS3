@@ -106,22 +106,26 @@ export const SectionEditor = ({
     handleCloseDeleteDialog();
   };
 
-    // memoize the form value
-    const formValue = useMemo(() =>
-      targetViewSetId ? { id: targetViewSetId, label: viewSets[targetViewSetId].label } : null,
-      [targetViewSetId, viewSets]
-    );
-  
-    // memoize the form options
-    const formOptions = useMemo(() =>
+  // memoize the form value
+  const formValue = useMemo(
+    () =>
+      targetViewSetId
+        ? {id: targetViewSetId, label: viewSets[targetViewSetId].label}
+        : null,
+    [targetViewSetId, viewSets]
+  );
+
+  // memoize the form options
+  const formOptions = useMemo(
+    () =>
       Object.entries(viewSets)
         .filter(([formId]) => formId !== viewSetId) // exclude the source form
         .map(([formId, form]) => ({
           id: formId,
-          label: form.label
+          label: form.label,
         })),
-      [viewSets, viewSetId]
-    );
+    [viewSets, viewSetId]
+  );
 
   const moveSectionToForm = () => {
     // run the function to move the section to a different form AND save the returned success status to a variable
@@ -225,13 +229,17 @@ export const SectionEditor = ({
               Move Section
             </DialogTitle>
             <DialogContent>
-              <Typography variant="body1" sx={{ mt:0.5, mb: 1, fontWeight: 450 }}>
+              <Typography
+                variant="body1"
+                sx={{mt: 0.5, mb: 1, fontWeight: 450}}
+              >
                 Destination Form
               </Typography>
-              <Typography variant="body2" sx={{ mb: 1 }}>
+              <Typography variant="body2" sx={{mb: 1}}>
                 Choose the form you want to move the section to.
               </Typography>
-              <Autocomplete fullWidth
+              <Autocomplete
+                fullWidth
                 value={formValue}
                 onChange={(_event, newValue) => {
                   setTargetViewSetId(newValue ? newValue.id : '');
@@ -239,11 +247,7 @@ export const SectionEditor = ({
                 options={formOptions}
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                  />
-                )}
+                renderInput={params => <TextField {...params} />}
               />
             </DialogContent>
             <DialogActions>
