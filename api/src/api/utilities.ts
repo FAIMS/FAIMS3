@@ -39,6 +39,7 @@ import * as Exceptions from '../exceptions';
 import {
   optionalAuthenticationJWT,
   requireAuthenticationAPI,
+  requireClusterAdmin,
 } from '../middleware';
 import {slugify} from '../utils';
 
@@ -66,9 +67,21 @@ api.get('/hello/', requireAuthenticationAPI, (_req: any, res: any) => {
  *   if databases exist, this is a no-op
  */
 api.post('/initialise/', async (req, res) => {
-  initialiseDatabases();
+  initialiseDatabases({force: false});
   res.json({success: true});
 });
+
+/**
+ */
+api.post(
+  '/forceInitialise/',
+  requireAuthenticationAPI,
+  requireClusterAdmin,
+  async (req, res) => {
+    initialiseDatabases({force: true});
+    res.json({success: true});
+  }
+);
 
 /**
  * Handle info requests, basic identifying information for this server
