@@ -23,8 +23,8 @@ const ExportProjectForm = ({type}: ExportProjectFormProps) => {
 
   const fields = [
     {
-      name: 'view',
-      label: 'View',
+      name: 'form',
+      label: 'Form',
       schema: z.string().nonempty(),
       options: Object.keys(data['ui-specification'].viewsets).map(name => ({
         label: name,
@@ -36,12 +36,12 @@ const ExportProjectForm = ({type}: ExportProjectFormProps) => {
   /**
    * Handles the form submission
    *
-   * @param {{view: string}} params - The submitted form values.
+   * @param {{form: string}} params - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
-  const onSubmit = async ({view}: {view: string}) => {
+  const onSubmit = async ({form}: {form: string}) => {
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${view}.${type}`,
+      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}.${type}`,
       {
         method: 'GET',
         headers: {
@@ -54,7 +54,7 @@ const ExportProjectForm = ({type}: ExportProjectFormProps) => {
     if (!response.ok)
       return {type: 'submit', message: 'Error downloading File.'};
 
-    downloadFile(await response.blob(), `${projectId}_${view}.${type}`);
+    downloadFile(await response.blob(), `${projectId}_${form}.${type}`);
   };
 
   return <Form fields={fields} onSubmit={onSubmit} />;
