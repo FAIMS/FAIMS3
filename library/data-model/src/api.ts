@@ -233,3 +233,41 @@ export const GetTemplateByIdResponseSchema = TemplateDocumentSchema;
 export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
 >;
+
+// EMAIL RESET
+
+// POST /reset request schema
+export const PostRequestPasswordResetRequestSchema = z.object({
+  email: z.string().email(),
+});
+export type PostRequestPasswordResetRequest = z.infer<
+  typeof PostRequestPasswordResetRequestSchema
+>;
+
+// POST /reset response schema
+export const PostRequestPasswordResetResponseSchema = z.object({
+  // The reset code
+  code: z.string(),
+  // The URL which embeds this code in the proper format
+  url: z.string(),
+});
+export type PostRequestPasswordResetResponse = z.infer<
+  typeof PostRequestPasswordResetResponseSchema
+>;
+
+// PUT /reset request schema
+export const PutRequestPasswordResetRequestSchema = z.object({
+  code: z.string(),
+  newPassword: z.string().min(10),
+});
+export type PutRequestPasswordResetRequest = z.infer<
+  typeof PutRequestPasswordResetRequestSchema
+>;
+
+// PUT /reset response schema
+export const PutRequestPasswordResetResponseSchema = z.object({
+  message: z.string(),
+});
+export type PutRequestPasswordResetResponse = z.infer<
+  typeof PutRequestPasswordResetResponseSchema
+>;

@@ -248,9 +248,9 @@ export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
     initialised = false;
   }
 
-  if (initialised) {
-    return;
-  }
+  //if (initialised) {
+  //  return;
+  //}
 
   // can't save security on an in-memory database so skip if testing
   if (process.env.NODE_ENV !== 'test') {

@@ -33,14 +33,14 @@ export interface EmailCodeFields {
   // Which user ID generated this code?
   userId: string;
 
-  // What is the code
+  // Hashed code
   code: string;
+
+  // Has it been used?
+  used: boolean;
 
   // When does it expire? unix timestamp in ms
   expiryTimestampMs: number;
-
-  // Is this reset token valid
-  enabled: boolean;
 }
 
 // ID prefix map
@@ -52,7 +52,12 @@ export const AuthRecordIdPrefixMap = new Map<AuthRecordTypes, string>([
 
 // NOTE: if we have multiple record types, we could update below to use a union
 // of different fields and update the prefix map
-export type AuthRecordFields = RefreshRecordFields;
+export type AuthRecordFields = RefreshRecordFields | EmailCodeFields;
+
+export type EmailCodeRecord = PouchDB.Core.Document<EmailCodeFields> &
+  PouchDB.Core.RevisionIdMeta;
+export type RefreshRecord = PouchDB.Core.Document<RefreshRecordFields> &
+  PouchDB.Core.RevisionIdMeta;
 
 // Type of instantiated auth record in the database
 export type AuthRecord = PouchDB.Core.Document<AuthRecordFields> &

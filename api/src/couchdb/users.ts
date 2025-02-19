@@ -19,26 +19,25 @@
  * for handling users.
  */
 
+import {
+  CLUSTER_ADMIN_GROUP_NAME,
+  NonUniqueProjectID,
+  NOTEBOOK_CREATOR_GROUP_NAME,
+  NotebookAuthSummary,
+  ProjectID,
+} from '@faims3/data-model';
 import {ProjectRole} from '@faims3/data-model/build/src/types';
 import {getUsersDB} from '.';
 import {
-  CLUSTER_ADMIN_GROUP_NAME,
-  NOTEBOOK_CREATOR_GROUP_NAME,
-} from '@faims3/data-model';
-import {
-  NonUniqueProjectID,
-  ProjectID,
-  NotebookAuthSummary,
-} from '@faims3/data-model';
-import {
   AllProjectRoles,
   ConductorRole,
-  OtherRoles,
   CouchDBUsername,
   CouchDBUserRoles,
+  OtherRoles,
 } from '../datamodel/users';
-import {getRolesForNotebook} from './notebooks';
 import * as Exceptions from '../exceptions';
+import {getRolesForNotebook} from './notebooks';
+import {addLocalPasswordForUser} from '../auth_providers/local';
 
 /**
  * createUser - create a new user record ensuring that the username or password
@@ -86,6 +85,34 @@ export async function createUser(
     console.log('Failed to connect to user db');
     throw Error('Failed to connect to user database');
   }
+}
+
+/**
+ * Gets the user by ID, then updates the password by writing the local auth
+ * strategy for the given username with the updated password.
+ * @param userId User id (email/username)
+ * @param newPassword new password (not hashed)
+ * @returns void
+ */
+export async function updateUserPassword(
+  userId: string,
+  newPassword: string
+): Promise<void> {
+  const userDb = getUsersDB();
+  if (!userDb) {
+    console.log('Failed to connect to user db');
+    throw Error('Failed to connect to user database');
+  }
+
+  const possibleUser = await getUserFromEmailOrUsername(userId);
+
+  if (!possibleUser) {
+    throw new Exceptions.ItemNotFoundException(
+      'Could not find specified user.'
+    );
+  }
+
+  addLocalPasswordForUser(possibleUser, newPassword);
 }
 
 /**
