@@ -4,14 +4,59 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {useAuth} from '@/context/auth-provider';
 import {useMutation} from '@tanstack/react-query';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {Button} from '../ui/button';
 import {Spinner} from '../ui/spinner';
+import {CopyButton} from '../ui/copy-button';
+import QRCode from 'qrcode';
 
 /**
+ * Displays a QR code in a clickable format that opens a larger view in a dialog.
+ * @param props.qrData - Base64 encoded QR code image data
+ */
+const QRCodeViewDialog = ({qrData}: {qrData: string}) => {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="ghost" className="p-0 h-48 w-48 hover:bg-transparent">
+          <img
+            src={qrData}
+            alt="Reset link QR code"
+            className="h-full w-full cursor-pointer hover:opacity-80 transition-opacity"
+          />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Password Reset QR Code</DialogTitle>
+          <DialogDescription>
+            Scan this QR code to access the password reset link
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-center p-4">
+          <img src={qrData} alt="Reset link QR code" className="h-96 w-96" />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+/**
+ * A dialog component that generates and displays password reset links with QR codes.
+ * Features:
+ * - Generates a secure reset link for a specified user
+ * - Displays the link with a copy button
+ * - Creates a scannable QR code that can be enlarged
+ * - Handles loading states and error cases
+ *
+ * @param userId - The ID of the user requesting password reset
+ * @param open - Controls the visibility of the dialog
+ * @param setOpen - Function to update dialog visibility
+ * @returns Returns null if user is not authenticated or userId is missing
  */
 export const GeneratePasswordReset = ({
   userId,
@@ -22,16 +67,11 @@ export const GeneratePasswordReset = ({
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
-  // User auth
   const {user} = useAuth();
   if (!user) return null;
-
-  // Expect user ID
   if (!userId) return null;
 
-  /**
-   * Handles submission of request for reset code
-   */
+  const [qrCodeData, setQrCodeData] = useState<string>('');
   const resetCode = useMutation({
     mutationKey: ['resetpassword', userId],
     mutationFn: async ({id}: {id: string}) => {
@@ -50,36 +90,69 @@ export const GeneratePasswordReset = ({
     },
   });
 
+  // Generate QR code when URL is available
+  useEffect(() => {
+    if (resetCode.data?.url) {
+      QRCode.toDataURL(resetCode.data.url)
+        .then(url => setQrCodeData(url))
+        .catch(err => console.error('Error generating QR code:', err));
+    }
+  }, [resetCode.data?.url]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Reset User Password</DialogTitle>
           <DialogDescription>
-            Generate a password reset link for user: <b>{userId}</b>.
+            Generate a password reset link for user: <b>{userId}</b>
           </DialogDescription>
         </DialogHeader>
+
         {resetCode.isPending ? (
-          <Spinner />
+          <div className="flex justify-center p-4">
+            <Spinner />
+          </div>
         ) : resetCode.data ? (
-          <>
-            <p> RESULT : {resetCode.data.url}</p>
+          <div className="space-y-6">
+            <div className="flex items-center space-x-2">
+              <div className="flex-1 rounded-md border p-2">
+                <code className="text-sm">{resetCode.data.url}</code>
+              </div>
+              <CopyButton value={resetCode.data.url} />
+            </div>
+
+            {qrCodeData && (
+              <div className="flex flex-col items-center space-y-2">
+                <div className="text-sm text-muted-foreground">
+                  Click QR code to enlarge
+                </div>
+                <QRCodeViewDialog qrData={qrCodeData} />
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button
+                onClick={() => {
+                  resetCode.reset();
+                  setQrCodeData('');
+                }}
+                variant="outline"
+              >
+                Generate New Link
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-end py-4">
             <Button
               onClick={() => {
-                resetCode.reset();
+                resetCode.mutate({id: userId});
               }}
             >
-              Clear
+              Generate Reset Link
             </Button>
-          </>
-        ) : (
-          <Button
-            onClick={() => {
-              resetCode.mutate({id: userId});
-            }}
-          >
-            Submit
-          </Button>
+          </div>
         )}
       </DialogContent>
     </Dialog>
