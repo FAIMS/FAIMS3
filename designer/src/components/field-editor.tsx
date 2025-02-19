@@ -440,7 +440,7 @@ export const FieldEditor = ({
         onClose={handleCloseDuplicateDialog}
         aria-labelledby="duplicate-dialog-title"
         maxWidth="sm"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <DialogTitle id="duplicate-dialog-title" textAlign="center">
           Duplicate Field
@@ -453,15 +453,15 @@ export const FieldEditor = ({
             autoFocus
             fullWidth
             value={duplicateTitle}
-            onChange={(e) => setDuplicateTitle(e.target.value)}
+            onChange={e => setDuplicateTitle(e.target.value)}
             label="Field Title"
             variant="outlined"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDuplicateDialog}>Cancel</Button>
-          <Button 
+          <Button
             onClick={duplicateField}
             disabled={!duplicateTitle.trim()}
           >

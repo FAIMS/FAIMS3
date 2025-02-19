@@ -258,7 +258,7 @@ export const uiSpecificationReducer = createSlice({
       // check if original field exists
       if (!(originalFieldName in state.fields)) {
         throw new Error(
-          `Cannot duplicate unknown field ${originalFieldName}`
+          `Cannot duplicate unknown field ${originalFieldName} via fieldDuplicated action`
         );
       }
 
