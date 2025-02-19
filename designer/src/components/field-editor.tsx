@@ -18,6 +18,7 @@ import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRound
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
+import DuplicateIcon from '@mui/icons-material/ContentCopy';
 import {
   Accordion,
   AccordionDetails,
@@ -86,6 +87,8 @@ export const FieldEditor = ({
   const [openMoveDialog, setOpenMoveDialog] = useState(false);
   const [targetViewId, setTargetViewId] = useState('');
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
+  const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
+  const [duplicateTitle, setDuplicateTitle] = useState('');
 
   const fieldComponent = field['component-name'];
 
@@ -126,6 +129,32 @@ export const FieldEditor = ({
   const addFieldBelow = (event: React.SyntheticEvent) => {
     event.stopPropagation();
     addFieldCallback(fieldName);
+  };
+
+  const handleOpenDuplicateDialog = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+    const currentLabel = getFieldLabel();
+    setDuplicateTitle(currentLabel + ' Copy');
+    setOpenDuplicateDialog(true);
+  };
+
+  const handleCloseDuplicateDialog = () => {
+    setOpenDuplicateDialog(false);
+    setDuplicateTitle('');
+  };
+
+  const duplicateField = () => {
+    if (duplicateTitle.trim()) {
+      dispatch({
+        type: 'ui-specification/fieldDuplicated',
+        payload: {
+          originalFieldName: fieldName,
+          newFieldName: duplicateTitle.trim(),
+          viewId,
+        },
+      });
+      handleCloseDuplicateDialog();
+    }
   };
 
   const handleCloseMoveDialog = () => {
@@ -314,6 +343,15 @@ export const FieldEditor = ({
                   <PlaylistAddIcon />
                 </IconButton>
               </Tooltip>
+              <Tooltip title="Duplicate Field">
+                <IconButton
+                  onClick={handleOpenDuplicateDialog}
+                  aria-label="duplicate"
+                  size="small"
+                >
+                  <DuplicateIcon />
+                </IconButton>
+              </Tooltip>
               <Tooltip title="Move up">
                 <IconButton onClick={moveFieldUp} aria-label="up" size="small">
                   <ArrowDropUpRoundedIcon />
@@ -393,6 +431,41 @@ export const FieldEditor = ({
             disabled={!selectedFormId || !targetViewId}
           >
             Move
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openDuplicateDialog}
+        onClose={handleCloseDuplicateDialog}
+        aria-labelledby="duplicate-dialog-title"
+        maxWidth="sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DialogTitle id="duplicate-dialog-title" textAlign="center">
+          Duplicate Field
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{mb: 2}}>
+            Enter a title for the duplicated field.
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            value={duplicateTitle}
+            onChange={(e) => setDuplicateTitle(e.target.value)}
+            label="Field Title"
+            variant="outlined"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDuplicateDialog}>Cancel</Button>
+          <Button 
+            onClick={duplicateField}
+            disabled={!duplicateTitle.trim()}
+          >
+            Duplicate
           </Button>
         </DialogActions>
       </Dialog>
