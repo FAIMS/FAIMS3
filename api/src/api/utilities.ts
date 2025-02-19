@@ -74,7 +74,7 @@ api.post('/initialise/', async (req, res) => {
 /**
  */
 api.post(
-  '/forceInitialise/',
+  '/forceInitialise',
   requireAuthenticationAPI,
   requireClusterAdmin,
   async (req, res) => {
