@@ -17,14 +17,14 @@ import FieldWrapper from './fieldWrapper';
 const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
   const {label, helperText, required, min, max, defaultValue} = props;
 
+  const error = form.touched[field.name] && Boolean(form.errors[field.name]);
+
   const isInvalid =
     field.value !== '' && (isNaN(field.value) || field.value === null);
 
-  const error = form.touched[field.name] && Boolean(form.errors[field.name]);
-
   const errorMessage = isInvalid
     ? 'Error with numeric input, please enter a valid number.'
-    : form.errors[field.name] || '';
+    : form.errors[field.name] || helperText;
 
   return (
     <FieldWrapper heading={label} subheading={helperText} required={required}>
@@ -33,7 +33,7 @@ const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
         fullWidth
         type="number"
         error={error}
-        helperText={errorMessage}
+        helperText={error || isInvalid ? errorMessage : helperText}
         inputProps={{
           min,
           max,
@@ -41,12 +41,7 @@ const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
         value={typeof field.value === 'number' ? field.value : ''}
         defaultValue={defaultValue}
         onChange={e => {
-          const value =
-            e.target.value.trim() === ''
-              ? required
-                ? null
-                : ''
-              : Number(e.target.value);
+          const value = e.target.value === '' ? null : Number(e.target.value);
           form.setFieldValue(field.name, value);
         }}
         onBlur={() => form.setFieldTouched(field.name, true)}
