@@ -3,6 +3,7 @@ import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/templates';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTemplates} from '@/hooks/get-hooks';
+import {CreateFromJSONDialog} from '@/components/dialogs/create-from-json-dialog';
 
 export const Route = createFileRoute('/templates/')({
   component: RouteComponent,
@@ -27,6 +28,7 @@ function RouteComponent() {
       data={data}
       loading={isPending}
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
+      button={<CreateFromJSONDialog type="template" />}
     />
   );
 }
