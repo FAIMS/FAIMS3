@@ -1,8 +1,10 @@
 import {useAuth} from '@/context/auth-provider';
-import {columns} from '@/components/tables/users';
+import {getColumns} from '@/components/tables/users';
 import {DataTable} from '@/components/data-table/data-table';
 import {createFileRoute} from '@tanstack/react-router';
 import {useGetUsers} from '@/hooks/get-hooks';
+import {useState} from 'react';
+import {GeneratePasswordReset} from '@/components/dialogs/generate-password-reset';
 
 export const Route = createFileRoute('/users')({
   component: RouteComponent,
@@ -18,11 +20,28 @@ function RouteComponent() {
   const {user: authUser} = useAuth();
   const {data, isPending} = useGetUsers(authUser);
 
+  const [resetDialog, setResetDialog] = useState<boolean>(false);
+  const [resetUserId, setResetUserId] = useState<string | undefined>(undefined);
+
+  const onReset = (id: string) => {
+    setResetUserId(id);
+    setResetDialog(true);
+  };
+
   return (
-    <DataTable
-      columns={columns}
-      data={data?.map((user: any) => ({...user, email: user.emails[0]})) || []}
-      loading={isPending}
-    />
+    <>
+      <DataTable
+        columns={getColumns({onReset})}
+        data={
+          data?.map((user: any) => ({...user, email: user.emails[0]})) || []
+        }
+        loading={isPending}
+      />
+      <GeneratePasswordReset
+        open={resetDialog}
+        setOpen={setResetDialog}
+        userId={resetUserId}
+      />
+    </>
   );
 }
