@@ -21,7 +21,8 @@
 
 // how to import fetch in a node script...
 // needed to add this file to .eslintignore because it complains about 'import'
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) =>
+  import('node-fetch').then(({default: fetch}) => fetch(...args));
 const CONDUCTOR_URL = process.env.CONDUCTOR_PUBLIC_URL;
 
 const main = async () => {
@@ -37,37 +38,35 @@ const main = async () => {
       );
       process.exit();
     }
-    
-    const token = JSON.parse(
-      Buffer.from(process.env.USER_TOKEN, 'base64').toString()
-    );
+
+    const token = process.env.USER_TOKEN;
 
     fetch(CONDUCTOR_URL + endpoint, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token.jwt_token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-      }
+      },
     })
-    .then(response => response.json())
-    .then(data => {
-      console.log('data:', data);
-    })
-    .catch(error => {
-      console.log(error);
-    });
+      .then(response => response.json())
+      .then(data => {
+        console.log('data:', data);
+      })
+      .catch(error => {
+        console.log(error);
+      });
   } else {
     // Regular initialization without authentication
     fetch(CONDUCTOR_URL + endpoint, {
-      method: 'POST'
+      method: 'POST',
     })
-    .then(response => response.json())
-    .then(data => {
-      console.log('data:', data);
-    })
-    .catch(error => {
-      console.log(error);
-    });
+      .then(response => response.json())
+      .then(data => {
+        console.log('data:', data);
+      })
+      .catch(error => {
+        console.log(error);
+      });
   }
 };
 
