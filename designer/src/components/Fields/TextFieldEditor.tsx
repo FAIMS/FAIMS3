@@ -35,7 +35,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
     hasMinMax = true;
   }
 
-  const updateDefault = (value: string | number) => {
+  const updateDefault = (value: string | number | null) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     newField['initialValue'] = value;
     dispatch({
@@ -110,10 +110,14 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
                 variant="outlined"
                 label="Default Number"
                 type="number"
-                value={initVal}
-                helperText="Choose this field's default number."
+                value={typeof initVal === 'number' ? initVal : ''}
+                helperText="Set a default value for this number field."
                 onChange={e => {
-                  updateDefault(parseFloat(e.target.value));
+                  const value =
+                    e.target.value.trim() === ''
+                      ? null
+                      : Number(e.target.value);
+                  updateDefault(value);
                 }}
               />
             </Grid>
