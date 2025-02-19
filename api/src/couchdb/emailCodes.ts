@@ -34,7 +34,7 @@ const VERIFICATION_CODE_CHARSET =
  * @returns The URL to present to the user
  */
 export function buildCodeIntoUrl(code: string): string {
-  return `${NEW_CONDUCTOR_URL}/passwordReset?code=${code}`;
+  return `${NEW_CONDUCTOR_URL}/auth/resetPassword?code=${code}`;
 }
 
 /**

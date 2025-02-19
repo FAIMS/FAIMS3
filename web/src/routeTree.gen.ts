@@ -18,6 +18,7 @@ import { Route as TemplatesIndexImport } from './routes/templates/index'
 import { Route as ProjectsIndexImport } from './routes/projects/index'
 import { Route as TemplatesTemplateIdImport } from './routes/templates/$templateId'
 import { Route as ProjectsProjectIdImport } from './routes/projects/$projectId'
+import { Route as AuthResetPasswordIndexImport } from './routes/auth/resetPassword/index'
 
 // Create/Update Routes
 
@@ -60,6 +61,12 @@ const TemplatesTemplateIdRoute = TemplatesTemplateIdImport.update({
 const ProjectsProjectIdRoute = ProjectsProjectIdImport.update({
   id: '/projects/$projectId',
   path: '/projects/$projectId',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthResetPasswordIndexRoute = AuthResetPasswordIndexImport.update({
+  id: '/auth/resetPassword/',
+  path: '/auth/resetPassword/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -116,6 +123,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TemplatesIndexImport
       parentRoute: typeof rootRoute
     }
+    '/auth/resetPassword/': {
+      id: '/auth/resetPassword/'
+      path: '/auth/resetPassword'
+      fullPath: '/auth/resetPassword'
+      preLoaderRoute: typeof AuthResetPasswordIndexImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -129,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/projects': typeof ProjectsIndexRoute
   '/templates': typeof TemplatesIndexRoute
+  '/auth/resetPassword': typeof AuthResetPasswordIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -139,6 +154,7 @@ export interface FileRoutesByTo {
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/projects': typeof ProjectsIndexRoute
   '/templates': typeof TemplatesIndexRoute
+  '/auth/resetPassword': typeof AuthResetPasswordIndexRoute
 }
 
 export interface FileRoutesById {
@@ -150,6 +166,7 @@ export interface FileRoutesById {
   '/templates/$templateId': typeof TemplatesTemplateIdRoute
   '/projects/': typeof ProjectsIndexRoute
   '/templates/': typeof TemplatesIndexRoute
+  '/auth/resetPassword/': typeof AuthResetPasswordIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -162,6 +179,7 @@ export interface FileRouteTypes {
     | '/templates/$templateId'
     | '/projects'
     | '/templates'
+    | '/auth/resetPassword'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -171,6 +189,7 @@ export interface FileRouteTypes {
     | '/templates/$templateId'
     | '/projects'
     | '/templates'
+    | '/auth/resetPassword'
   id:
     | '__root__'
     | '/'
@@ -180,6 +199,7 @@ export interface FileRouteTypes {
     | '/templates/$templateId'
     | '/projects/'
     | '/templates/'
+    | '/auth/resetPassword/'
   fileRoutesById: FileRoutesById
 }
 
@@ -191,6 +211,7 @@ export interface RootRouteChildren {
   TemplatesTemplateIdRoute: typeof TemplatesTemplateIdRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   TemplatesIndexRoute: typeof TemplatesIndexRoute
+  AuthResetPasswordIndexRoute: typeof AuthResetPasswordIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -201,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   TemplatesTemplateIdRoute: TemplatesTemplateIdRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   TemplatesIndexRoute: TemplatesIndexRoute,
+  AuthResetPasswordIndexRoute: AuthResetPasswordIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -219,7 +241,8 @@ export const routeTree = rootRoute
         "/projects/$projectId",
         "/templates/$templateId",
         "/projects/",
-        "/templates/"
+        "/templates/",
+        "/auth/resetPassword/"
       ]
     },
     "/": {
@@ -242,6 +265,9 @@ export const routeTree = rootRoute
     },
     "/templates/": {
       "filePath": "templates/index.tsx"
+    },
+    "/auth/resetPassword/": {
+      "filePath": "auth/resetPassword/index.tsx"
     }
   }
 }
