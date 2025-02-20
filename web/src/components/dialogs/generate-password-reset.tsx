@@ -134,8 +134,7 @@ export const GeneratePasswordReset = ({
             <div className="flex justify-end">
               <Button
                 onClick={() => {
-                  resetCode.reset();
-                  setQrCodeData('');
+                  resetCode.mutate({id: userId});
                 }}
                 variant="outline"
               >

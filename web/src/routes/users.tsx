@@ -36,6 +36,7 @@ function RouteComponent() {
           data?.map((user: any) => ({...user, email: user.emails[0]})) || []
         }
         loading={isPending}
+        defaultRowsPerPage={15}
       />
       <GeneratePasswordReset
         open={resetDialog}
