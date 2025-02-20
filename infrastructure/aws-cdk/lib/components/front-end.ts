@@ -418,11 +418,12 @@ export class FaimsFrontEnd extends Construct {
       domainNames: props.designerDomainNames,
       removalPolicy: RemovalPolicy.DESTROY,
       // Add custom header response overriding CSP to allow unsafe script
-      // execution due to parsing
+      // execution due to parsing - also allow images/blobs for rich text
+      // editing
       securityHeadersBehavior: {
         contentSecurityPolicy: {
           contentSecurityPolicy:
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';",
+            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:;",
           override: true,
         },
       },

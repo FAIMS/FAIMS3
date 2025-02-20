@@ -28,6 +28,7 @@ interface DataTableProps<TData, TValue> {
   loading?: boolean;
   button?: ReactNode;
   onRowClick?: (row: TData) => void;
+  defaultRowsPerPage?: number;
 }
 
 /**
@@ -42,12 +43,13 @@ export function DataTable<TData, TValue>({
   loading,
   button,
   onRowClick,
+  defaultRowsPerPage = 10
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
-    pageSize: 5,
+    pageSize: defaultRowsPerPage,
   });
 
   const table = useReactTable({

@@ -356,28 +356,31 @@ export function ViewComponent(props: ViewProps) {
                 Other sections have errors. Click to navigate:
               </Typography>
 
-              {otherSectionsWithErrors.map((section, _index) => (
-                <Link
-                  key={section}
-                  component="button"
-                  variant="body2"
-                  onClick={() => props.handleSectionClick(section)}
-                  sx={{
-                    display: 'inline-flex',
-                    color: theme.palette.highlightColor.main,
-                    fontSize: {xs: '0.85rem', sm: '1rem'},
-                    fontWeight: 'bold',
-                    textDecoration: 'underline',
-                    '&:hover': {
-                      color: theme.palette.secondary.main,
-                      transform: 'scale(1.02)',
-                    },
-                    mt: 1,
-                  }}
-                >
-                  {ui_specification.views[section]?.label || section}
-                </Link>
-              ))}
+              {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                otherSectionsWithErrors.map((section, _index) => (
+                  <Link
+                    key={section}
+                    component="button"
+                    variant="body2"
+                    onClick={() => props.handleSectionClick(section)}
+                    sx={{
+                      display: 'inline-flex',
+                      color: theme.palette.highlightColor.main,
+                      fontSize: {xs: '0.85rem', sm: '1rem'},
+                      fontWeight: 'bold',
+                      textDecoration: 'underline',
+                      '&:hover': {
+                        color: theme.palette.secondary.main,
+                        transform: 'scale(1.02)',
+                      },
+                      mt: 1,
+                    }}
+                  >
+                    {ui_specification.views[section]?.label || section}
+                  </Link>
+                ))
+              }
             </Box>
           )}
         </Alert>
@@ -404,6 +407,7 @@ function displayErrors(
   thisView: string,
   ui_specification: ProjectUIModel,
   currentFields: string[],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _otherSections?: string[]
 ) {
   if (!errors) return <p>No errors to display</p>;

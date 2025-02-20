@@ -9,7 +9,7 @@ import QRCode from 'qrcode';
  * @param {User | null} user - The user object.
  * @returns {Promise<any>} A promise that resolves to the response data.
  */
-const get = async (path: string, user: User | null) => {
+export const get = async (path: string, user: User | null) => {
   if (!user) return {error: 'Not authenticated'};
 
   const response = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
@@ -87,4 +87,16 @@ export const useGetInvites = (user: User | null, notebookId: string) =>
 
       return invites;
     },
+  });
+
+/**
+ * useGetRecords hook returns a query for fetching records.
+ * @param {User} user - The user object.
+ * @param {string} projectId - The ID of the project.
+ * @returns {Query} A query for fetching records.
+ */
+export const useGetRecords = (user: User | null, projectId: string) =>
+  useQuery({
+    queryKey: ['records', projectId],
+    queryFn: () => get(`/api/notebooks/${projectId}/records/`, user),
   });

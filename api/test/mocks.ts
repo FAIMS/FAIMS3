@@ -70,7 +70,7 @@ export const resetDatabases = async () => {
   if (templatesDB) {
     await clearDB(templatesDB);
   }
-  await initialiseDatabases();
+  await initialiseDatabases({});
 };
 
 export const cleanDataDBS = async () => {
