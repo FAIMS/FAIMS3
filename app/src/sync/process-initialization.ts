@@ -366,7 +366,6 @@ async function get_project_from_directory(
 
   if (listing_id in projects_dbs) {
     const project_db = projects_dbs[listing_id];
-    console.log(await project_db.local.allDocs());
     try {
       const result = await project_db.local.get(project_id);
       return result as ProjectObject;
