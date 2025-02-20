@@ -1,10 +1,13 @@
 /** Provides types for the Auth database */
-export type AuthRecordTypes = 'refresh';
+export type AuthRecordTypes = 'refresh' | 'emailcode';
 
 // These indicate the available indexes to fetch things
 export type GetRefreshTokenIndex = 'id' | 'token';
 
-// Document type
+// You can fetch email codes by index or code
+export type GetEmailCodeIndex = 'id' | 'code';
+
+// Refresh token fields
 export interface RefreshRecordFields {
   // Mandatory field for auth records
   documentType: 'refresh';
@@ -22,15 +25,39 @@ export interface RefreshRecordFields {
   enabled: boolean;
 }
 
+// Refresh token fields
+export interface EmailCodeFields {
+  // Mandatory field for auth records
+  documentType: 'emailcode';
+
+  // Which user ID generated this code?
+  userId: string;
+
+  // Hashed code
+  code: string;
+
+  // Has it been used?
+  used: boolean;
+
+  // When does it expire? unix timestamp in ms
+  expiryTimestampMs: number;
+}
+
 // ID prefix map
 export const AuthRecordIdPrefixMap = new Map<AuthRecordTypes, string>([
   // Refresh records start with prefix
   ['refresh', 'refresh_'],
+  ['emailcode', 'emailcode_'],
 ]);
 
 // NOTE: if we have multiple record types, we could update below to use a union
 // of different fields and update the prefix map
-export type AuthRecordFields = RefreshRecordFields;
+export type AuthRecordFields = RefreshRecordFields | EmailCodeFields;
+
+export type EmailCodeRecord = PouchDB.Core.Document<EmailCodeFields> &
+  PouchDB.Core.RevisionIdMeta;
+export type RefreshRecord = PouchDB.Core.Document<RefreshRecordFields> &
+  PouchDB.Core.RevisionIdMeta;
 
 // Type of instantiated auth record in the database
 export type AuthRecord = PouchDB.Core.Document<AuthRecordFields> &

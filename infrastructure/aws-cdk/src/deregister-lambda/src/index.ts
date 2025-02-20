@@ -1,5 +1,5 @@
+import {EventBridgeEvent} from 'aws-lambda';
 import {AutoScaling, ServiceDiscovery} from 'aws-sdk';
-import {EventBridgeEvent, Context} from 'aws-lambda';
 
 const servicediscovery = new ServiceDiscovery();
 const autoscaling = new AutoScaling();
@@ -15,9 +15,7 @@ export const handler = async (
   event: EventBridgeEvent<
     'EC2 Instance-terminate Lifecycle Action',
     ASGLifecycleEvent
-  >,
-  // eslint-disable-next-line no-unused-vars
-  context: Context
+  >
 ): Promise<{statusCode: number; body: string}> => {
   console.log('Received event:', JSON.stringify(event, null, 2));
 
