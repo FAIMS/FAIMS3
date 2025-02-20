@@ -19,9 +19,7 @@ const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
 
   useEffect(() => {
     console.log('---- defaultValue:', defaultValue);
-    console.log('---- field.value before:', field.value);
 
-    // If field has no value and a defaultValue is provided, set it explicitly
     if (
       field.value === undefined ||
       field.value === null ||
