@@ -30,8 +30,8 @@ export const getColumns = ({
           {row
             .getValue('roles')
             .filter((role: string) => !role.includes('||'))
-            .map((role: any) => (
-              <Role key={role} role={role} />
+            .map((role: string) => (
+              <Role key={role}>{role}</Role>
             ))}
         </div>
       ),
