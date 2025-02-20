@@ -97,6 +97,7 @@ export default function TabProjectGrid({
               sx={{cursor: tab === '1' ? 'pointer' : 'default'}}
               onRowClick={handleRowClick}
               getRowId={({_id}) => _id}
+              rowHeight={75}
               hideFooter
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}
