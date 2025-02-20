@@ -57,7 +57,7 @@ function generateExpiryTimestamp(expiryMs: number): number {
  * @param code The verification code to hash
  * @returns An object containing the hash and salt
  */
-function hashVerificationCode(code: string): string {
+export function hashVerificationCode(code: string): string {
   return crypto.createHash('sha256').update(code).digest('hex');
 }
 

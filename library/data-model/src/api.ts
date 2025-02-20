@@ -238,7 +238,7 @@ export type GetTemplateByIdResponse = z.infer<
 
 // POST /reset request schema
 export const PostRequestPasswordResetRequestSchema = z.object({
-  email: z.string().email(),
+  email: z.string(),
 });
 export type PostRequestPasswordResetRequest = z.infer<
   typeof PostRequestPasswordResetRequestSchema
