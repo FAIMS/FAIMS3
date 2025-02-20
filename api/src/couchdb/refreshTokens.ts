@@ -7,16 +7,16 @@
  */
 
 import {
-  AuthRecord,
   AuthRecordIdPrefixMap,
   GetRefreshTokenIndex,
+  RefreshRecord,
   RefreshRecordFields,
 } from '@faims3/data-model';
-import {getAuthDB} from '.';
 import {v4 as uuidv4} from 'uuid';
+import {getAuthDB} from '.';
+import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {getUserFromEmailOrUsername} from './users';
-import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 
 // Expiry time in hours
 const TOKEN_EXPIRY_MS = REFRESH_TOKEN_EXPIRY_MINUTES * 60 * 1000;
@@ -44,7 +44,7 @@ function generateExpiryTimestamp(expiryMs: number): number {
 export const createNewRefreshToken = async (
   userId: string,
   expiryMs: number = TOKEN_EXPIRY_MS
-): Promise<AuthRecord> => {
+): Promise<RefreshRecord> => {
   const authDB = getAuthDB();
 
   // Generate a new UUID for the token
@@ -66,7 +66,7 @@ export const createNewRefreshToken = async (
   const response = await authDB.put({_id: dbId, ...newRefreshToken});
 
   // Fetch the created document to return the full AuthRecord
-  return await authDB.get(response.id);
+  return await authDB.get<RefreshRecord>(response.id);
 };
 
 /**
@@ -139,10 +139,10 @@ export const validateRefreshToken = async (
  */
 export const getTokensByUserId = async (
   userId: string
-): Promise<AuthRecord[]> => {
+): Promise<RefreshRecord[]> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>(
+  const result = await authDB.query<RefreshRecord>(
     'viewsDocument/refreshTokensByUserId',
     {
       key: userId,
@@ -150,7 +150,9 @@ export const getTokensByUserId = async (
     }
   );
 
-  return result.rows.filter(r => !!r.doc).map(row => row.doc!);
+  return result.rows
+    .filter(r => !!r.doc)
+    .map(row => row.doc!) as RefreshRecord[];
 };
 
 /**
@@ -160,10 +162,10 @@ export const getTokensByUserId = async (
  */
 export const invalidateToken = async (
   token: string
-): Promise<AuthRecord | null> => {
+): Promise<RefreshRecord | null> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>(
+  const result = await authDB.query<RefreshRecord>(
     'viewsDocument/refreshTokensByToken',
     {
       key: token,
@@ -208,10 +210,10 @@ export const invalidateToken = async (
  */
 export const getTokenByToken = async (
   token: string
-): Promise<AuthRecord | null> => {
+): Promise<RefreshRecord | null> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>(
+  const result = await authDB.query<RefreshRecord>(
     'viewsDocument/refreshTokensByToken',
     {
       key: token,
@@ -237,29 +239,32 @@ export const getTokenByToken = async (
 /**
  * Retrieves a refresh token document by its document ID.
  * @param tokenId The document ID of the token.
- * @returns A Promise that resolves to the AuthRecord associated with the token ID.
+ * @returns A Promise that resolves to the RefreshRecord associated with the token ID.
  */
 export const getTokenByTokenId = async (
   tokenId: string
-): Promise<AuthRecord> => {
+): Promise<RefreshRecord> => {
   const authDB = getAuthDB();
 
   // Directly fetch the document by its ID
-  return await authDB.get(tokenId);
+  return await authDB.get<RefreshRecord>(tokenId);
 };
 
 /**
  * Retrieves all refresh tokens in the database.
- * @returns A Promise that resolves to an array of all AuthRecords.
+ * @returns A Promise that resolves to an array of all RefreshRecord.
  */
-export const getAllTokens = async (): Promise<AuthRecord[]> => {
+export const getAllTokens = async (): Promise<RefreshRecord[]> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>('viewsDocument/refreshTokens', {
-    include_docs: true,
-  });
+  const result = await authDB.query<RefreshRecord>(
+    'viewsDocument/refreshTokens',
+    {
+      include_docs: true,
+    }
+  );
 
-  return result.rows.map(row => row.doc as AuthRecord);
+  return result.rows.map(row => row.doc as RefreshRecord);
 };
 
 /**
@@ -275,7 +280,7 @@ export const deleteRefreshToken = async (
   identifier: string
 ): Promise<void> => {
   const authDB = getAuthDB();
-  let tokenDoc: AuthRecord | null = null;
+  let tokenDoc: RefreshRecord | null = null;
 
   // Find the token document based on the specified index
   if (index === 'id') {
