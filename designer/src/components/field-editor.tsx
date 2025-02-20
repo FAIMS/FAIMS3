@@ -22,6 +22,9 @@ import {
   AccordionDetails,
   AccordionSummary,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
   Grid,
   IconButton,
   Stack,
@@ -43,6 +46,10 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
+import React, {useState} from 'react';
+import {findFieldUsage} from './condition';
+import {DialogTitle} from '@mui/material';
+import {Button} from '@mui/material';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -68,6 +75,42 @@ export const FieldEditor = ({
 
   const fieldComponent = field['component-name'];
 
+  const allFields = useAppSelector(
+    state => state.notebook['ui-specification'].fields
+  );
+  const allFviews = useAppSelector(
+    state => state.notebook['ui-specification'].fviews
+  );
+
+  const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
+  const [conditionsAffected, setConditionsAffected] = useState<string[]>([]);
+
+  // Called by a button onClick
+  const deleteField = (evt: React.SyntheticEvent) => {
+    evt.stopPropagation();
+
+    // ❌ NO HOOK calls here, but we can do normal function calls:
+    const usage = findFieldUsage(fieldName, allFields, allFviews);
+
+    if (usage.length > 0) {
+      setConditionsAffected(usage);
+      setDeleteWarningOpen(true);
+    } else {
+      dispatch({
+        type: 'ui-specification/fieldDeleted',
+        payload: {fieldName, viewId},
+      });
+    }
+  };
+
+  const confirmDelete = () => {
+    dispatch({
+      type: 'ui-specification/fieldDeleted',
+      payload: {fieldName, viewId},
+    });
+    setDeleteWarningOpen(false);
+  };
+
   const getFieldLabel = () => {
     return (
       (field['component-parameters'] && field['component-parameters'].label) ||
@@ -76,6 +119,7 @@ export const FieldEditor = ({
       field['component-parameters'].name
     );
   };
+
   const label = getFieldLabel();
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
@@ -91,14 +135,6 @@ export const FieldEditor = ({
     dispatch({
       type: 'ui-specification/fieldMoved',
       payload: {fieldName, viewId, direction: 'up'},
-    });
-  };
-
-  const deleteField = (event: React.SyntheticEvent) => {
-    event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/fieldDeleted',
-      payload: {fieldName, viewId},
     });
   };
 
@@ -238,6 +274,30 @@ export const FieldEditor = ({
             </Stack>
           </Grid>
         </Grid>
+        <Dialog
+          open={deleteWarningOpen}
+          onClose={() => setDeleteWarningOpen(false)}
+        >
+          <DialogTitle>Field Deletion Warning</DialogTitle>
+          <DialogContent>
+            <p>
+              This field is referenced in the following conditions. Deleting it
+              will invalidate them:
+            </p>
+            <ul>
+              {conditionsAffected.map((condition, index) => (
+                <li key={index}>{condition}</li>
+              ))}
+            </ul>
+            <p>Are you sure you want to proceed?</p>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteWarningOpen(false)}>Cancel</Button>
+            <Button onClick={confirmDelete} color="error">
+              Delete Anyway
+            </Button>
+          </DialogActions>
+        </Dialog>
       </AccordionSummary>
 
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>

@@ -78,25 +78,57 @@ const getFieldLabel = (f: FieldType) => {
   );
 };
 
-function isFieldUsedInCondition(
-  condition: ConditionType | null,
+// Recursively checks if a field is used in a single condition
+export function isFieldUsedInCondition(
+  condition: ConditionType | null | undefined,
   fieldName: string
 ): boolean {
   if (!condition) return false;
 
   const {operator, field, conditions} = condition;
 
+  // Base case
   if (field === fieldName) {
     return true;
   }
 
+  // If it's an AND/OR group, check subconditions
   if ((operator === 'and' || operator === 'or') && conditions) {
-    return conditions.some(subCondition =>
-      isFieldUsedInCondition(subCondition, fieldName)
-    );
+    return conditions.some(sub => isFieldUsedInCondition(sub, fieldName));
   }
 
   return false;
+}
+
+/**
+ * Given the entire fields/fviews object, returns all places
+ * (sections or fields) that reference `fieldName` in a condition.
+ */
+export function findFieldUsage(
+  fieldName: string,
+  allFields: Record<string, any>,
+  allFviews: Record<string, any>
+): string[] {
+  const affected: string[] = [];
+
+  // Check section-level conditions
+  for (const sectionId in allFviews) {
+    const condition = allFviews[sectionId].condition;
+    if (isFieldUsedInCondition(condition, fieldName)) {
+      affected.push(`Section: ${allFviews[sectionId].label}`);
+    }
+  }
+
+  // Check field-level conditions
+  for (const fId in allFields) {
+    const condition = allFields[fId].condition;
+    if (isFieldUsedInCondition(condition, fieldName)) {
+      const label = allFields[fId]['component-parameters']?.label ?? fId;
+      affected.push(`Field: ${label}`);
+    }
+  }
+
+  return affected;
 }
 
 export const ConditionModal = (props: ConditionProps & {label: string}) => {
