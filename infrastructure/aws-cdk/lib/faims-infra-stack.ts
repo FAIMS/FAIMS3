@@ -393,6 +393,7 @@ export class FaimsInfraStack extends cdk.Stack {
       sharedBalancer: networking.sharedBalancer,
       config: config.conductor,
       cookieSecret: cookieSecret,
+      webUrl: domains.web,
     });
 
     // FRONT-END
