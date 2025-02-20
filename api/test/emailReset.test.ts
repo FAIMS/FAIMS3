@@ -79,9 +79,9 @@ describe('password reset tests', () => {
     // First get a user and create a reset code
     const localUser = await getUserFromEmailOrUsername(localUserName);
     expect(localUser).to.not.be.undefined;
-    
+
     const {code} = await createNewEmailCode(localUser!.user_id!);
-    
+
     // Now try to reset the password
     const newPassword = 'NewSecurePassword123!';
     await request(app)

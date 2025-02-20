@@ -220,9 +220,7 @@ export const initialiseDirectoryDB = async (
   }
 };
 
-export const initialiseUserDB = async (
-  db: PouchDB.Database | undefined
-) => {
+export const initialiseUserDB = async (db: PouchDB.Database | undefined) => {
   // register a local admin user with the same password as couchdb
   // if there isn't already one there
   if (db && LOCAL_COUCHDB_AUTH) {

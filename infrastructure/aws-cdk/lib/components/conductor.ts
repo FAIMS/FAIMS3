@@ -146,7 +146,7 @@ export class FaimsConductor extends Construct {
           IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
           KEY_SOURCE: 'AWS_SM',
           AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
-          VITE_NEW_CONDUCTOR_URL: props.webUrl
+          VITE_NEW_CONDUCTOR_URL: props.webUrl,
         },
         secrets: {
           COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(

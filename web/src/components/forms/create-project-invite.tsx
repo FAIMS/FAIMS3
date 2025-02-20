@@ -7,7 +7,7 @@ import {useQueryClient} from '@tanstack/react-query';
 export const fields = [
   {
     name: 'role',
-    label: `Role`,
+    label: 'Role',
     options: [
       {label: 'User', value: 'user'},
       {label: 'Team', value: 'team'},
@@ -57,7 +57,7 @@ export function CreateProjectInviteForm({
     );
 
     if (!response.ok)
-      return {type: 'submit', message: `Error creating invite.`};
+      return {type: 'submit', message: 'Error creating invite.'};
 
     QueryClient.invalidateQueries({queryKey: ['invites', projectId]});
 
@@ -68,7 +68,7 @@ export function CreateProjectInviteForm({
     <Form
       fields={fields}
       onSubmit={onSubmit}
-      submitButtonText={`Create Invite`}
+      submitButtonText={'Create Invite'}
     />
   );
 }

@@ -72,6 +72,8 @@ api.post('/initialise/', async (req, res) => {
 });
 
 /**
+ * Forcefully re-initialise the DB i.e. disable checks for existing design
+ * documents.
  */
 api.post(
   '/forceInitialise',
