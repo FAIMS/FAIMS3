@@ -9,13 +9,28 @@
  * - Pass Min/Max values dynamically via propss
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import {FieldProps} from 'formik';
 import TextField from '@mui/material/TextField';
 import FieldWrapper from './fieldWrapper';
 
 const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
   const {label, helperText, required, min, max, defaultValue} = props;
+
+  useEffect(() => {
+    console.log('---- defaultValue:', defaultValue);
+    console.log('---- field.value before:', field.value);
+
+    // If field has no value and a defaultValue is provided, set it explicitly
+    if (
+      field.value === undefined ||
+      field.value === null ||
+      field.value === ''
+    ) {
+      console.log('Setting default value:', defaultValue);
+      form.setFieldValue(field.name, defaultValue);
+    }
+  }, [defaultValue, field.name, form]);
 
   const error = form.touched[field.name] && Boolean(form.errors[field.name]);
 
@@ -25,7 +40,6 @@ const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
   const errorMessage = isInvalid
     ? 'Error with numeric input, please enter a valid number.'
     : form.errors[field.name] || helperText;
-
   return (
     <FieldWrapper heading={label} subheading={helperText} required={required}>
       <TextField
@@ -38,8 +52,7 @@ const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
           min,
           max,
         }}
-        value={typeof field.value === 'number' ? field.value : ''}
-        defaultValue={defaultValue}
+        value={field.value !== null ? field.value : ''}
         onChange={e => {
           const value = e.target.value === '' ? null : Number(e.target.value);
           form.setFieldValue(field.name, value);
