@@ -23,8 +23,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   );
   const dispatch = useAppDispatch();
 
-  const initVal =
-    field['initialValue'] ?? field['component-parameters'].defaultValue ?? null;
+  const initVal = field['initialValue'] as string | number;
   const subType = field['component-parameters'].InputProps?.type || '';
   const schema = field['validationSchema'] || [];
 

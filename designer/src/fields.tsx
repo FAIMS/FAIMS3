@@ -465,7 +465,6 @@ const fields: {[key: string]: FieldType} = {
       InputProps: {
         type: 'number',
       },
-      defaultValue: null,
     },
     validationSchema: [['yup.number'], ['yup.nullable']],
     initialValue: null,

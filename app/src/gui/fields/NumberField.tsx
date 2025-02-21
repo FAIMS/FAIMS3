@@ -15,7 +15,7 @@ import TextField from '@mui/material/TextField';
 import FieldWrapper from './fieldWrapper';
 
 const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
-  const {label, helperText, required, min, max, defaultValue} = props;
+  const {label, helperText, required, min, max} = props;
 
   const error = form.touched[field.name] && Boolean(form.errors[field.name]);
 
@@ -38,8 +38,21 @@ const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
           min,
           max,
         }}
+        sx={{
+          '& input::-webkit-inner-spin-button, & input::-webkit-outer-spin-button':
+            {
+              opacity: 1,
+              appearance: 'auto',
+              width: '10px',
+              height: '20px',
+              backgroundColor: '#9F9F9FFF',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              border: '2px solid #000',
+              padding: '8px',
+            },
+        }}
         value={typeof field.value === 'number' ? field.value : ''}
-        defaultValue={defaultValue}
         onChange={e => {
           const value = e.target.value === '' ? null : Number(e.target.value);
           form.setFieldValue(field.name, value);

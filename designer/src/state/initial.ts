@@ -69,7 +69,6 @@ export type ComponentParameters = {
   geoTiff?: string;
   type?: string;
   valuetype?: string;
-  defaultValue?: number | null;
 };
 
 export type ValidationSchemaElement = (string | number | unknown[])[];
