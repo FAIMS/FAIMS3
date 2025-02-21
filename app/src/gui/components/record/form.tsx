@@ -580,21 +580,31 @@ class RecordForm extends React.Component<any, RecordFormState> {
         _current_revision_id: revision_id,
       };
       const annotations: {[key: string]: any} = {};
-
       fieldNames.forEach(fieldName => {
         let initial_value = fields[fieldName]['initialValue'];
+
         // set value from persistence
         if (
           persistentvalue.data !== undefined &&
           persistentvalue.data[fieldName] !== undefined
-        )
+        ) {
           initial_value = persistentvalue.data[fieldName];
+        }
+
+        // check if record is exisitng.
+        const isExistingRecord = !!this.state.revision_cached;
+
+        // Only apply initialValue if it's a new record.
+        if (isExistingRecord) {
+          initial_value = undefined;
+        }
 
         initialValues[fieldName] = firstDefinedFromList([
           staged_data[fieldName],
           database_data[fieldName],
           initial_value,
         ]);
+
         // set annotation from persistence
         let annotation_value = {annotation: '', uncertainty: false};
 
