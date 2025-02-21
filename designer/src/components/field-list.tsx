@@ -238,6 +238,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
                 viewId={viewId}
                 expanded={isExpanded[fieldName] ?? false}
                 addFieldCallback={addFieldAfterCallback}
+                moveFieldCallback={moveFieldCallback}
                 handleExpandChange={handleExpandChange(fieldName)}
               />
             ))}
