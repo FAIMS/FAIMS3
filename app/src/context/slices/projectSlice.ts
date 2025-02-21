@@ -1,21 +1,20 @@
 import {
-  ProjectDataObject,
-  ProjectObject,
-  ProjectUIModel,
+    ProjectDataObject,
+    ProjectObject,
+    ProjectUIModel,
 } from '@faims3/data-model';
-import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {CONDUCTOR_URLS} from '../../buildconfig';
-import {AppDispatch, RootState} from '../store';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { CONDUCTOR_URLS } from '../../buildconfig';
+import { AppDispatch, RootState } from '../store';
+import { isTokenValid } from './authSlice';
 import {
-  buildPouchIdentifier,
-  createLocalPouchDatabase,
-  createPouchDbSync,
-  createRemotePouchDbFromConnectionInfo,
-  fetchProjectMetadataAndSpec,
-  fetchUiSpecFromMetadataDb,
-  getRemoteDatabaseNameFromId,
+    buildPouchIdentifier,
+    createLocalPouchDatabase,
+    createPouchDbSync,
+    createRemotePouchDbFromConnectionInfo,
+    fetchProjectMetadataAndSpec,
+    getRemoteDatabaseNameFromId
 } from './databaseHelpers/helpers';
-import {isTokenValid} from './authSlice';
 
 // TODO move this into a store
 

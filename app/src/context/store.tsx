@@ -25,7 +25,11 @@ import authReducer, {
   refreshIsAuthenticated,
   selectIsAuthenticated,
 } from './slices/authSlice';
-import projectsReducer from './slices/projectSlice';
+import projectsReducer, {
+  Project,
+  ProjectsState,
+  Server,
+} from './slices/projectSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
 import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 
@@ -34,7 +38,52 @@ const authPersistConfig = {key: 'auth', storage};
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 
 // Configure persistence for the projects slice
-const projectsPersistConfig = {key: 'projects', storage};
+const projectsPersistConfig = {
+  key: 'projects',
+  storage,
+  transforms: [
+    {
+      // Transform for handling project state before persistence
+      in: (state: ProjectsState) => {
+        // Create a deep copy to avoid mutating the original state
+        const newState: ProjectsState = JSON.parse(JSON.stringify(state));
+
+        // Remove all database connections from projects before persisting
+        Object.values(newState.servers).forEach((server: Server) => {
+          Object.values(server.projects).forEach((project: Project) => {
+            if (project.isActivated) {
+              // Keep isActivated flag but remove database object (this is re-produceable)
+              project.database = project.database
+                ? {
+                    isSyncing: project.database.isSyncing,
+                    isSyncingAttachments: project.database.isSyncingAttachments,
+                    // intentionally do not persist this reference - we will initialise it properly
+                    localDb: undefined as any,
+                    remote: project.database.remote
+                      ? {
+                          connectionConfiguration:
+                            project.database.remote.connectionConfiguration,
+                          // restore this
+                          sync: undefined as any,
+                          // restore this
+                          remoteDb: undefined as any,
+                        }
+                      : undefined,
+                  }
+                : undefined;
+            }
+          });
+        });
+        return newState;
+      },
+      // Transform for handling project state after rehydration
+      out: (state: ProjectsState) => {
+        return state;
+      },
+    },
+  ],
+};
+
 const persistedProjectsReducer = persistReducer(
   projectsPersistConfig,
   projectsReducer
@@ -55,6 +104,12 @@ export const store = configureStore({
       // TODO fix this
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        // Ignore these paths in the state when checking for serializability
+        ignoredPaths: [
+          'projects.servers.*.projects.*.database.localDb',
+          'projects.servers.*.projects.*.database.remote.remoteDb',
+          'projects.servers.*.projects.*.database.remote.sync',
+        ],
       },
     }),
   devTools: process.env.NODE_ENV !== 'production',
