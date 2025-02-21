@@ -147,6 +147,8 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   });
   const forceRecordRefresh = records.query.refetch;
 
+  console.log('notebook component', records);
+
   // Fetch drafts
   const drafts = useDraftsList({
     projectId: project.project_id,
@@ -599,6 +601,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               <OverviewMap
                 project_id={project.project_id}
                 uiSpec={uiSpec.data}
+                records={records}
               />
             )}
           </TabPanel>

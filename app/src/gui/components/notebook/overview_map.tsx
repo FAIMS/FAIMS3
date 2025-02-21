@@ -18,11 +18,8 @@
  *   Display an overview map of the records in the notebook.
  */
 
-import {
-  getMetadataForAllRecords,
-  ProjectID,
-  ProjectUIModel,
-} from '@faims3/data-model';
+import {Geolocation} from '@capacitor/geolocation';
+import {ProjectID, ProjectUIModel, RecordMetadata} from '@faims3/data-model';
 import {Box, Popover} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {View} from 'ol';
@@ -40,13 +37,11 @@ import {memo, useCallback, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
-import {Geolocation} from '@capacitor/geolocation';
-import {useAppSelector} from '../../../context/store';
-import {selectActiveUser} from '../../../context/slices/authSlice';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
   project_id: ProjectID;
+  records: {allRecords: RecordMetadata[]};
 }
 
 interface FeatureProps {
@@ -68,7 +63,6 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
-  const activeUser = useAppSelector(selectActiveUser);
   /**
    * Get the names of all GIS fields in this UI Specification
    * @param uiSpec UI specification for the project
@@ -93,12 +87,7 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
   const getFeatures = async () => {
     const f: FeatureProps[] = [];
     if (gisFields.length > 0) {
-      const records = await getMetadataForAllRecords(
-        // TODO what do we do if no active user?
-        activeUser!.parsedToken,
-        props.project_id,
-        true
-      );
+      const records = props.records.allRecords;
       if (records) {
         records.forEach(record => {
           if (record.data) {
