@@ -36,7 +36,7 @@ import {OSM} from 'ol/source';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import {useCallback, useMemo, useRef, useState} from 'react';
+import {memo, useCallback, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {createCenterControl} from '../map/center-control';
@@ -59,16 +59,16 @@ const defaultMapProjection = 'EPSG:3857';
 
 /**
  * Create an overview map of the records in the notebook.
+ * Wrapped in memo to prevent re-rendering when nothing has changed.
  *
  * @param props {uiSpec, project_id}
  */
-export const OverviewMap = (props: OverviewMapProps) => {
+export const OverviewMap = memo((props: OverviewMapProps) => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
   const activeUser = useAppSelector(selectActiveUser);
-
   /**
    * Get the names of all GIS fields in this UI Specification
    * @param uiSpec UI specification for the project
@@ -186,6 +186,17 @@ export const OverviewMap = (props: OverviewMapProps) => {
       setSelectedFeature(feature as FeatureProps);
     });
 
+    // theMap.getView().on('change:resolution', () => {
+    //   const z = theMap.getView().getZoom();
+    //   console.log('change zoom: ', z);
+    //  // if (z) props.setZoomLevel(z);
+    // });
+
+    // theMap.on('moveend', () => {
+    //   const extent = theMap.getView().getViewStateAndExtent().extent;
+    //   console.log('changed extent');
+    //   //if (extent) props.setExtent(extent);
+    // });
     return theMap;
   }, []);
 
@@ -266,6 +277,9 @@ export const OverviewMap = (props: OverviewMapProps) => {
       // set the view so that we can see the features
       // but don't zoom too much
       const extent = source.getExtent();
+      // if (!extent.includes(Infinity)) sourceExtent = extent;
+      // console.log('source extent: ', sourceExtent);
+
       // don't fit if the extent is infinite because it crashes
       if (!extent.includes(Infinity)) {
         map.getView().fit(extent, {padding: [100, 100, 100, 100], maxZoom: 12});
@@ -349,4 +363,4 @@ export const OverviewMap = (props: OverviewMapProps) => {
         </Popover>
       </>
     );
-};
+});
