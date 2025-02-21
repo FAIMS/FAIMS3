@@ -44,12 +44,8 @@ export interface ProjectMetadata {
 // Maps a project ID -> project
 export type ProjectIdToProjectMap = {[projectId: string]: Project};
 
-// A project is a 'notebook'/'survey' - it is relevant to a server, can be
-// inactive or active, and was activated by someone
-export interface Project {
-  // the unique project ID (unique within the server)
-  projectId: string;
-
+/** This is the subset of project information which is modifiable/trivial */
+export interface ProjectInformation {
   // last updated (datetime string)
   lastUpdated?: string;
 
@@ -61,6 +57,15 @@ export interface Project {
 
   // What is the ui specification for this notebook
   uiSpecification: ProjectUIModel;
+}
+
+// A project is a 'notebook'/'survey' - it is relevant to a server, can be
+// inactive or active, and was activated by someone. This extends with
+// non-trivial or side-effecting elements like database connections and
+// activated status
+export interface Project extends ProjectInformation {
+  // the unique project ID (unique within the server)
+  projectId: string;
 
   // Is the project activated?
   isActivated: boolean;
@@ -97,16 +102,100 @@ export interface ProjectsState {
 // =====
 
 const initialState: ProjectsState = {
-  // TODO initial state
+  // initial state is empty
+  servers: {},
 };
 
 const projectsSlice = createSlice({
   name: 'projects',
   initialState,
   reducers: {
-    exampleAction: (state, action: PayloadAction<{}>) => {
-      // Modify state
+    // Add and remove servers
+    addServer: (
+      state,
+      action: PayloadAction<{
+        serverId: string;
+        serverTitle: string;
+        serverUrl: string;
+      }>
+    ) => {
+      const {serverId, serverTitle, serverUrl} = action.payload;
+      // Create a new server with no projects
+      state.servers[serverId] = {
+        projects: {},
+        serverId,
+        serverTitle,
+        serverUrl,
+      };
     },
+
+    removeServer: (state, action: PayloadAction<{serverId: string}>) => {
+      // TODO - will we ever do this? What should happen - this will require
+      // deactivating things/deleting databases.
+    },
+
+    updateServerDetails: (
+      state,
+      action: PayloadAction<{
+        serverId: string;
+        serverTitle: string;
+        serverUrl: string;
+      }>
+    ) => {
+      const {serverId, serverTitle, serverUrl} = action.payload;
+      if (!state.servers[serverId]) {
+        throw Error(`Could not find server with ID: ${serverId}`);
+      }
+
+      // Create a new server with no projects
+      state.servers[serverId] = {
+        // don't update projects
+        projects: state.servers[serverId].projects,
+
+        // Other details we overwrite
+        serverId,
+        serverTitle,
+        serverUrl,
+      };
+    },
+
+    // Add and remove projects
+    addProject: (
+      state,
+      action: PayloadAction<
+        ProjectInformation & {
+          projectId: string;
+        }
+      >
+    ) => {
+      const {} = action.payload;
+    },
+    removeProject: (state, action: PayloadAction<{}>) => {
+      // TODO define what this does - implications?
+    },
+
+    // Update a project (metadata / details)
+    updateProjectDetails: (state, action: PayloadAction<{}>) => {},
+
+    // Last updated/created
+    setProjectLastUpdated: (state, action: PayloadAction<{}>) => {},
+    setProjectCreatedAt: (state, action: PayloadAction<{}>) => {},
+
+    // Activate a project
+    activateProject: (state, action: PayloadAction<{}>) => {},
+    // De-activate a project
+    deactivateProject: (state, action: PayloadAction<{}>) => {
+      // TODO
+      // Define what de-activating would do
+    },
+
+    // Set project syncing
+    stopSyncingProject: (state, action: PayloadAction<{}>) => {},
+    startSyncingProject: (state, action: PayloadAction<{}>) => {},
+
+    // Set attachment syncing
+    stopSyncingAttachments: (state, action: PayloadAction<{}>) => {},
+    startSyncingAttachments: (state, action: PayloadAction<{}>) => {},
   },
 });
 
