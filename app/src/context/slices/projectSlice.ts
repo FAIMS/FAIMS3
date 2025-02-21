@@ -1,20 +1,47 @@
-import { ProjectUIModel } from '@faims3/data-model';
-import {
-    createAsyncThunk,
-    createSlice,
-    PayloadAction
-} from '@reduxjs/toolkit';
-import { AppDispatch, RootState } from '../store';
+import {ProjectDataObject, ProjectUIModel} from '@faims3/data-model';
+import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {AppDispatch, RootState} from '../store';
+import {ConnectionInfo} from '../../sync/connection';
 
 // TYPES
 // =====
+
+// Database types
+
+/**
+ * This manages a remote couch connection
+ */
+export interface RemoteCouchConnection<Content extends {}> {
+  // Actual reference to the pouch database
+  remoteDatabase: PouchDB.Database<Content>;
+  // The sync object (this is created which initiates sync)
+  sync: PouchDB.Replication.Sync<Content>;
+  // The configuration for the remote connection e.g. auth, endpoint etc
+  connectionConfiguration: ConnectionInfo;
+}
+export interface DatabaseConnection<Content extends {}> {
+  // A reference to the local data database
+  localDatabase: PouchDB.Database<Content>;
+
+  // This defines whether the database synchronisation is active
+  isSyncing: boolean;
+
+  // Is pouch configured to download attachments?
+  isSyncingAttachments: boolean;
+
+  // Remote database connection (if the database is not syncing - this is
+  // undefined and guarantees no leaking of old connections)
+  remote?: RemoteCouchConnection<Content>;
+}
 
 // This is metadata which is defined as part of the design file
 export interface ProjectMetadata {
   name: string;
   description?: string;
+  // TODO other metadata fields here? Let's type them!
 }
 
+// Maps a project ID -> project
 export type ProjectIdToProjectMap = {[projectId: string]: Project};
 
 // A project is a 'notebook'/'survey' - it is relevant to a server, can be
@@ -35,7 +62,11 @@ export interface Project {
   // What is the ui specification for this notebook
   uiSpecification: ProjectUIModel;
 
-  // 
+  // Is the project activated?
+  isActivated: boolean;
+
+  // Data database (if activated is false -> this is undefined)
+  database?: DatabaseConnection<ProjectDataObject>;
 }
 
 export interface Server {
