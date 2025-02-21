@@ -395,6 +395,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               <OverviewMap
                 project_id={project.project_id}
                 uiSpec={uiSpec.data}
+                records={records}
               />
             )}
           </TabPanel>
