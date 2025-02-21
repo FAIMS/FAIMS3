@@ -3,7 +3,6 @@ import {
   getRecordsWithRegex,
   RecordMetadata,
 } from '@faims3/data-model';
-import {ListingsObject} from '@faims3/data-model/src/types';
 import {useQuery} from '@tanstack/react-query';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
@@ -12,7 +11,6 @@ import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
-import {directory_db} from '../sync/databases';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
@@ -93,36 +91,6 @@ export function useIsOnline(): UseIsOnlineResponse {
     ),
   };
 }
-
-/**
- * Fetches a specific listing from the directory database.
- * @returns Promise<ListingsObject | undefined>
- */
-const fetchListing = async (
-  serverId: string
-): Promise<ListingsObject | undefined> => {
-  try {
-    return await directory_db.local.get(serverId);
-  } catch {
-    return undefined;
-  }
-};
-
-/**
- * Custom hook to fetch and manage listings from a directory database using
- * React Query.
- */
-export const useGetListing = (input: {serverId?: string}) => {
-  return useQuery({
-    queryKey: ['listings', input.serverId],
-    queryFn: async () => {
-      if (!input.serverId) {
-        return null;
-      }
-      return (await fetchListing(input.serverId)) || null;
-    },
-  });
-};
 
 /*
 QUERY PARAMS MANAGER
