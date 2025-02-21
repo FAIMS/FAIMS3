@@ -24,7 +24,6 @@
 // (It is this way because the list of projects is decentralised and so we
 // cannot enforce system-wide unique project IDs without a 'namespace' listing id)
 
-import {getLocalStateDB} from '../sync/databases';
 import {
   ProjectID,
   LocalAutoIncrementRange,
@@ -33,7 +32,9 @@ import {
   ProjectUIFields,
 } from '@faims3/data-model';
 import {logError} from '../logging';
-import {getUiSpecForProject} from '../uiSpecification';
+import {getLocalStateDB} from '../context/slices/databaseHelpers/helpers';
+import {store, useAppSelector} from '../context/store';
+import {selectProjectById} from '../context/slices/projectSlice';
 
 const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 
@@ -218,11 +219,14 @@ export async function setLocalAutoincrementRangesForField(
 export async function getAutoincrementReferencesForProject(
   project_id: ProjectID
 ) {
-  const uiSpec = await getUiSpecForProject(project_id);
+  const uiSpec = selectProjectById(
+    store.getState(),
+    project_id
+  )?.uiSpecification;
 
   const references: AutoIncrementReference[] = [];
 
-  const fields = uiSpec.fields as ProjectUIFields;
+  const fields = (uiSpec?.fields ?? []) as ProjectUIFields;
   for (const field in fields) {
     // TODO are there other names?
     if (fields[field]['component-name'] === 'BasicAutoIncrementer') {

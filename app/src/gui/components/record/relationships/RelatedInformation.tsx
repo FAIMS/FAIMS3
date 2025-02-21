@@ -34,10 +34,11 @@ import {
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {logError} from '../../../../logging';
-import {getUiSpecForProject} from '../../../../uiSpecification';
 import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
 import {ParentLinkProps, RecordLinkProps} from './types';
+import {useAppSelector} from '../../../../context/store';
+import {selectProjectById} from '../../../../context/slices/projectSlice';
 
 /**
  * Generate an object containing information to be stored in
@@ -891,8 +892,9 @@ export async function addRecordLink({
   parent: LinkedRelation;
   relationType: string;
 }): Promise<RecordMetadata | null> {
-  // get uncompiled ui spec - useful for hrid generation
-  const uiSpecification = await getUiSpecForProject(projectId, false);
+  const uiSpec = useAppSelector(state =>
+    selectProjectById(state, projectId)
+  )?.uiSpecification;
 
   let child_record_meta = null;
   try {
@@ -900,12 +902,13 @@ export async function addRecordLink({
     const {latest_record} = await getRecordInformation(childRecord);
 
     // Use the data and spec to get the HRID
-    const childRecordHrid = latest_record?.data
-      ? (getHridFromValuesAndSpec({
-          values: latest_record?.data,
-          uiSpecification: uiSpecification,
-        }) ?? latest_record.record_id)
-      : (latest_record?.record_id ?? '');
+    const childRecordHrid =
+      latest_record?.data && uiSpec
+        ? (getHridFromValuesAndSpec({
+            values: latest_record?.data,
+            uiSpecification: uiSpec,
+          }) ?? latest_record.record_id)
+        : (latest_record?.record_id ?? '');
 
     // Find the relation object (if any) and then either add or
     // remove the parent/link as appropriate

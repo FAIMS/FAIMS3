@@ -55,11 +55,8 @@ import {useNavigate, useParams} from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {addAlert} from '../../context/slices/syncSlice';
-import {useAppDispatch} from '../../context/store';
+import {useAppDispatch, useAppSelector} from '../../context/store';
 import {logError} from '../../logging';
-import {getProjectInfo} from '../../sync/projects';
-import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
-import {getUiSpecForProject} from '../../uiSpecification';
 import RecordDelete from '../components/notebook/delete';
 import ProgressBar from '../components/progress-bar';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
@@ -84,6 +81,7 @@ import BackButton from '../components/ui/BackButton';
 import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
+import {selectProjectById} from '../../context/slices/projectSlice';
 
 export default function Record() {
   /**
@@ -106,23 +104,19 @@ export default function Record() {
   const history = useNavigate();
 
   const [value, setValue] = React.useState('1');
-  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
-    null
-  );
-  useEffect(() => {
-    if (project_id)
-      getProjectInfo(project_id).then(info => setProjectInfo(info));
-  }, [project_id]);
+  if (!project_id) return <></>;
+  const project = useAppSelector(state => selectProjectById(state, project_id));
+  if (!project) return <></>;
 
-  const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
+  const {uiSpecification: uiSpec} = project;
+  const isSyncing = project.database?.isSyncing ?? false;
+
   const [revisions, setRevisions] = React.useState([] as string[]);
-  const [error, setError] = useState(null as null | {});
   const [isDraftSaving, setIsDraftSaving] = useState(false);
   const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
   const [draftError, setDraftError] = useState(null as string | null);
   const [type, setType] = useState(null as null | string);
   const [hrid, setHrid] = useState(null as null | string);
-  const [isSyncing, setIsSyncing] = useState<null | boolean>(null); // this is to check if the project attachment sync
   const [conflicts, setConflicts] = useState(
     null as InitialMergeDetails | null
   );
@@ -145,17 +139,6 @@ export default function Record() {
   const buttonRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    getUiSpecForProject(project_id!).then(setUISpec, setError);
-    if (project_id !== null) {
-      try {
-        setIsSyncing(isSyncingProjectAttachments(project_id!));
-      } catch (error) {
-        logError(error);
-      }
-    }
-  }, [project_id]);
-
-  useEffect(() => {
     const getIni = async () => {
       setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
@@ -174,7 +157,7 @@ export default function Record() {
           },
           {
             link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-            title: projectInfo !== null ? projectInfo.name! : project_id!,
+            title: project.metadata.name,
           },
           {title: hrid ?? record_id},
         ]);
@@ -293,7 +276,7 @@ export default function Record() {
               },
               {
                 link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-                title: projectInfo !== null ? projectInfo.name! : project_id!,
+                title: project.metadata.name,
               },
               {title: hrid! ?? record_id!},
             ];
@@ -310,7 +293,7 @@ export default function Record() {
                 },
                 {
                   link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-                  title: projectInfo !== null ? projectInfo.name! : project_id!,
+                  title: project.metadata.name,
                 },
                 {
                   link: newParent[0]['route'],
@@ -580,16 +563,7 @@ export default function Record() {
           </AppBar>
 
           {(() => {
-            if (error !== null) {
-              dispatch(
-                addAlert({
-                  message: 'Could not load form: ' + error.toString(),
-                  severity: 'warning',
-                })
-              );
-              history(-1);
-              return <React.Fragment />;
-            } else if (uiSpec === null || type === null || isSyncing === null) {
+            if (uiSpec === null || type === null || isSyncing === null) {
               return (
                 <Box sx={{p: 1}}>
                   <CircularLoading label={'Loading...'} />

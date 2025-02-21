@@ -18,10 +18,7 @@
  *   TODO
  */
 import PouchDB from 'pouchdb-browser';
-import {DEBUG_POUCHDB} from '../buildconfig';
-import {events} from './events';
-import {update_directory} from './process-initialization';
-import {register_basic_automerge_resolver, register_sync_state} from './state';
+import { DEBUG_POUCHDB } from '../buildconfig';
 
 /**
  *
@@ -31,7 +28,6 @@ import {register_basic_automerge_resolver, register_sync_state} from './state';
 export async function initialize() {
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
 
-  register_sync_state(events);
-  register_basic_automerge_resolver(events);
-  await update_directory().catch(err => events.emit('directory_error', err));
+  // TODO bring this back?
+  // register_basic_automerge_resolver(events);
 }

@@ -113,8 +113,11 @@ export * from './types';
 export * from './api';
 
 export type DBCallbackObject = {
+  // (projectId) : PouchDB
   getDataDB: CallableFunction;
-  getProjectDB: CallableFunction;
+  // (projectId) : ProjectUIModel
+  getUiSpec: CallableFunction;
+  // (recordMetadata) : boolean
   shouldDisplayRecord: CallableFunction;
 };
 
@@ -133,11 +136,11 @@ export const getDataDB = (project_id: ProjectID) => {
   }
 };
 
-export const getProjectDB = (project_id: ProjectID) => {
+export const getUiSpec = (projectId: ProjectID) => {
   if (moduleCallback) {
-    return moduleCallback.getProjectDB(project_id);
+    return moduleCallback.getUiSpec(projectId);
   } else {
-    logError('No callback registered to get project database');
+    logError('No callback registered to get ui spec');
     return undefined;
   }
 };

@@ -13,7 +13,6 @@ import {Navigate, Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
-import {getUiSpecForProject} from '../../../uiSpecification';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 
@@ -23,7 +22,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {projectId},
+  project: {projectId, uiSpecification, metadata},
   recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
@@ -31,26 +30,17 @@ export default function AddRecordButtons({
   const activeUser = useAppSelector(selectActiveUser)!;
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
-  const [uiSpec, setUiSpec] = useState<ProjectUIModel | undefined>(undefined);
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
   >(undefined);
-  const metadata = useAppSelector(
-    state => selectProjectById(state, projectId)?.metadata
-  );
-  const showQRButton = metadata?.['showQRCodeButton'] === true;
-
-  useEffect(() => {
-    getUiSpecForProject(projectId).then(u => setUiSpec(u));
-  }, [projectId]);
-
+  const showQRButton = metadata['showQRCodeButton'] === true;
   const buttonLabel = `Add new ${recordLabel}`;
 
-  if (uiSpec === undefined) {
+  if (uiSpecification === undefined) {
     return <CircularProgress thickness={2} size={12} />;
   }
-  const viewsets = uiSpec.viewsets;
-  const visible_types = uiSpec.visible_types;
+  const viewsets = uiSpecification.viewsets;
+  const visible_types = uiSpecification.visible_types;
 
   const handleScanResult = (value: string) => {
     // find a record with this field value
@@ -92,7 +82,7 @@ export default function AddRecordButtons({
           {/*If the list of views hasn't loaded yet*/}
           {/*we can still show this button, except it will*/}
           {/*redirect to the Record creation without known type*/}
-          {uiSpec?.visible_types.length === 1 ? (
+          {uiSpecification?.visible_types.length === 1 ? (
             <Button
               variant="contained"
               color="primary"

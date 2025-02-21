@@ -282,3 +282,13 @@ export const fetchProjectMetadataAndSpec = async ({
   }
   return {metadata, uiSpec};
 };
+
+/**
+ * This contains any local app state we want to keep across sessions
+ * TODO why use pouch?? Redux store with persistence.
+ */
+const local_state_db = new PouchDB('local_state', LOCAL_POUCH_OPTIONS);
+
+export const getLocalStateDB = () => {
+  return local_state_db;
+};

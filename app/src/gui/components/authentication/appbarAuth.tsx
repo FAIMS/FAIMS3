@@ -52,7 +52,6 @@ import {
 } from '../../../context/slices/authSlice';
 import {addAlert} from '../../../context/slices/syncSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
-import {getListing} from '../../../sync/state';
 import {isWeb} from '../../../utils/helpers';
 import {theme} from '../../themes';
 import {initialiseAllProjects} from '../../../context/slices/projectSlice';
@@ -99,19 +98,23 @@ const AuthenticatedDisplayComponent = () => {
 
   const userInitial =
     activeUser?.parsedToken.username.charAt(0).toUpperCase() || '';
+
+  const servers = useAppSelector(state => state.projects.servers);
   const activeServerInfo = activeUser
-    ? getListing(activeUser.serverId)
+    ? servers[activeUser.serverId]
     : undefined;
 
   // Generate available connections list and map into full info
-  const availableConnections = listAllConnections({state: authState}).map(c => {
-    const info = getListing(c.serverId);
-    return {
-      ...c,
-      serverName: info.listing.name,
-      conductorUrl: info.listing.conductor_url,
-    };
-  });
+  const availableConnections = listAllConnections({state: authState}).map(
+    connection => {
+      const info = servers[connection.serverId];
+      return {
+        ...connection,
+        serverName: info.serverTitle,
+        conductorUrl: info.serverUrl,
+      };
+    }
+  );
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -311,7 +314,7 @@ const AuthenticatedDisplayComponent = () => {
                 display: 'block',
               }}
             >
-              {activeServerInfo?.listing.name}
+              {activeServerInfo?.serverTitle}
             </Typography>
           </Box>
         </Box>
@@ -380,7 +383,7 @@ const AuthenticatedDisplayComponent = () => {
               await handleLogout({
                 serverId: activeUser.serverId,
                 username: activeUser.username,
-                conductorUrl: activeServerInfo?.listing.conductor_url ?? '',
+                conductorUrl: activeServerInfo?.serverUrl ?? '',
               });
             }}
           >

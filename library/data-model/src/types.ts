@@ -514,7 +514,7 @@ export interface ListingInformation {
   conductor_url: string;
 }
 
-export interface ListingsObject extends ListingInformation {
+export interface Server extends ListingInformation {
   prefix: string;
 }
 

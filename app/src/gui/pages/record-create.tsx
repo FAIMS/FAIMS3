@@ -50,13 +50,9 @@ import {
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {addAlert} from '../../context/slices/syncSlice';
-import {useAppDispatch} from '../../context/store';
+import {useAppDispatch, useAppSelector} from '../../context/store';
 import {newStagedData} from '../../sync/draft-storage';
-import {getProjectInfo} from '../../sync/projects';
-import {
-  getReturnedTypesForViewSet,
-  getUiSpecForProject,
-} from '../../uiSpecification';
+import {getReturnedTypesForViewSet} from '../../uiSpecification';
 import ProgressBar from '../components/progress-bar';
 import RecordForm from '../components/record/form';
 import InheritedDataComponent from '../components/record/inherited_data';
@@ -65,6 +61,7 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {Project, selectProjectById} from '../../context/slices/projectSlice';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -93,14 +90,13 @@ function DraftCreateAction(props: DraftCreateActionProps) {
 
   const [error, setError] = useState(null as null | {});
   const [draft_id, setDraft_id] = useState(null as null | string);
-  const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
+
+  const uiSpec = useAppSelector(state =>
+    selectProjectById(state, project_id)
+  )?.uiSpecification;
 
   useEffect(() => {
-    getUiSpecForProject(project_id).then(setUISpec, setError);
-  }, [project_id]);
-
-  useEffect(() => {
-    if (uiSpec !== null) {
+    if (!!uiSpec) {
       // don't make a new draft if we already have one
       if (draft_id === null) {
         const field_types = getReturnedTypesForViewSet(uiSpec, type_name);
@@ -146,10 +142,9 @@ function DraftCreateAction(props: DraftCreateActionProps) {
 }
 
 interface DraftRecordEditProps {
-  project_id: ProjectID;
   type_name: string;
   draft_id: string;
-  project_info: ProjectInformation | null;
+  project: Project;
   record_id: RecordID;
   state?: any;
   location?: Location;
@@ -157,12 +152,10 @@ interface DraftRecordEditProps {
 }
 
 function DraftRecordEdit(props: DraftRecordEditProps) {
-  const {project_id, type_name, draft_id, record_id} = props;
+  const {type_name, project, draft_id, record_id} = props;
+  const project_id = project.projectId;
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [uiSpec, setUISpec] = useState<ProjectUIModel | null>(null);
-  const [error, setError] = useState<Record<string, unknown> | null>(null);
-
   const [isDraftSaving, setIsDraftSaving] = useState(false);
   const [draftLastSaved, setDraftLastSaved] = useState<Date | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
@@ -173,15 +166,14 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const [is_link_ready, setIs_link_ready] = useState(false);
   const [progress, setProgress] = useState(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    getUiSpecForProject(project_id).then(setUISpec, setError);
-  }, [project_id]);
+  const uiSpec = useAppSelector(state =>
+    selectProjectById(state, project_id)
+  )?.uiSpecification;
 
   useEffect(() => {
     (async () => {
       if (
-        uiSpec !== null &&
+        !!uiSpec &&
         props.state &&
         props.state.parent_record_id &&
         props.state.parent_record_id !== record_id &&
@@ -209,18 +201,8 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
     })();
   }, [project_id, record_id, uiSpec]);
 
-  if (error !== null) {
-    dispatch(
-      addAlert({
-        message: 'Could not edit draft: ' + error.toString(),
-        severity: 'warning',
-      })
-    );
-    navigate(-1);
-    return null;
-  }
 
-  if (uiSpec === null) return <CircularProgress size={12} thickness={4} />;
+  if (!uiSpec) return <CircularProgress size={12} thickness={4} />;
 
   return (
     <React.Fragment>
@@ -290,6 +272,9 @@ export default function RecordCreate() {
 
   const projectId = location.pathname.split('/')[2];
 
+  const project = useAppSelector(state => selectProjectById(state, projectId));
+  if (!project) return <></>;
+
   const [openDialog, setOpenDialog] = useState(false);
 
   const theme = useTheme();
@@ -308,13 +293,6 @@ export default function RecordCreate() {
   if (record_id !== undefined) draft_record_id = record_id;
   if (location.state && location.state.child_record_id !== undefined)
     draft_record_id = location.state.child_record_id; //pass record_id from parent
-  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
-    null
-  );
-  useEffect(() => {
-    if (project_id)
-      getProjectInfo(project_id).then(info => setProjectInfo(info));
-  }, [project_id]);
 
   let showBreadcrumbs = false;
 
@@ -323,7 +301,7 @@ export default function RecordCreate() {
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
       link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-      title: projectInfo !== null ? projectInfo.name! : project_id!,
+      title: project !== null ? project.metadata.name : project_id!,
     },
     {title: 'Draft'},
   ];
@@ -381,8 +359,7 @@ export default function RecordCreate() {
         ) : (
           <DraftRecordEdit
             onBack={() => setOpenDialog(true)}
-            project_info={projectInfo}
-            project_id={project_id!}
+            project={project}
             type_name={type_name!}
             draft_id={draft_id}
             record_id={record_id}

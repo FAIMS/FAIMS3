@@ -17,25 +17,39 @@
  * Description:
  *   TODO
  */
-import ReactDOM from 'react-dom/client';
-import {defineCustomElements} from '@ionic/pwa-elements/loader';
-
-import './index.css';
-import App from './App';
-import * as serviceWorkerRegistration from './serviceWorkerRegistration';
-import {addNativeHooks} from './native_hooks';
-// import {EFooter} from './footer';
-//import reportWebVitals from './reportWebVitals';
-import React from 'react';
 import {registerClient} from '@faims3/data-model';
-import {getDataDB, getMetadataDbForProject} from './sync';
-import {shouldDisplayRecord} from './users';
+import {defineCustomElements} from '@ionic/pwa-elements/loader';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
 import {APP_NAME} from './buildconfig';
+import './index.css';
+import {addNativeHooks} from './native_hooks';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import {shouldDisplayRecord} from './users';
+import {store} from './context/store';
+import {selectAllProjects} from './context/slices/projectSlice';
+
+const getDataDB = (projectId: string) => {
+  const projectState = store.getState();
+  return selectAllProjects(projectState).find(p => p.projectId === projectId)
+    ?.database?.localDb;
+};
+
+const getUiSpecForProject = (projectId: string) => {
+  const projectState = store.getState();
+  return selectAllProjects(projectState).find(p => p.projectId === projectId)
+    ?.uiSpecification;
+};
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
+  // This will consult with the store to get the current data DB for the
+  // project
   getDataDB: getDataDB,
-  getProjectDB: getMetadataDbForProject,
+  // This will get the current ui spec for a project
+  getUiSpec: getUiSpecForProject,
+  // This will determine if a record should be displayed
   shouldDisplayRecord: shouldDisplayRecord,
 });
 

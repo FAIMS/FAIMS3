@@ -50,12 +50,12 @@ import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {
   getSummaryFieldInformation,
-  getUiSpecForProject,
   getVisibleTypes,
 } from '../../../uiSpecification';
 import {prettifyFieldName} from '../../../utils/formUtilities';
 import getLocalDate from '../../fields/LocalDate';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
+import {Project} from '../../../context/slices/projectSlice';
 
 // ============================================================================
 // Types & Interfaces
@@ -75,8 +75,8 @@ type ColumnType =
 
 /** Props for the RecordsTable component */
 interface RecordsTableProps {
-  /** The ID of the project */
-  project_id: ProjectID;
+  /** The project */
+  project: Project;
   /** Max rows to display, or null for unlimited */
   maxRows: number | null;
   /** Array of record metadata objects */
@@ -664,23 +664,6 @@ const KeyValueTable = ({data}: {data: {[key: string]: string | ReactNode}}) => {
 // ============================================================================
 
 /**
- * Custom hook for handling UI specification data
- * @param projectId - The ID of the project to fetch specifications for
- */
-const useUISpecification = (projectId: ProjectID) => {
-  return useQuery({
-    queryKey: ['uiSpec', projectId],
-    queryFn: async () => {
-      const ui = await getUiSpecForProject(projectId);
-      return {
-        uiSpec: ui,
-        visibleTypes: getVisibleTypes(ui),
-      };
-    },
-  });
-};
-
-/**
  * Custom hook for responsive screen size management
  * Provides screen size category and pagination settings based on viewport size
  */
@@ -891,14 +874,20 @@ const useDataGridStyles = (theme: Theme) => ({
  * Supports different views based on screen size.
  */
 export function RecordsTable(props: RecordsTableProps) {
-  const {project_id, maxRows, rows, loading, viewsets} = props;
+  const {
+    maxRows,
+    rows,
+    loading,
+    viewsets,
+    project: {uiSpecification: uiSpec, projectId: project_id},
+  } = props;
   const theme = useTheme();
   const history = useNavigate();
   const styles = useDataGridStyles(theme);
 
-  // Fetch and manage UI specifications
-  const {data: uiSpecData} = useUISpecification(project_id);
-  const {uiSpec, visibleTypes} = uiSpecData ?? {uiSpec: null, visibleTypes: []};
+  const visibleTypes = useMemo(() => {
+    return getVisibleTypes(uiSpec);
+  }, [uiSpec]);
 
   // Screen size and responsive management
   const {currentSize, pageSize} = useScreenSize();

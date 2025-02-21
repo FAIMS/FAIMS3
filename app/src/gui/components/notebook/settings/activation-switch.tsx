@@ -8,7 +8,6 @@ import {
 import {selectActiveUser} from '../../../../context/slices/authSlice';
 import {activateProject, Project} from '../../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
-import {ProjectExtended} from '../../../../types/project';
 import FaimsDialog from '../../ui/Faims_Dialog';
 import {
   ACTIVATE_ACTIVE_VERB_LABEL,

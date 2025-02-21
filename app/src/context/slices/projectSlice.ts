@@ -17,6 +17,8 @@ import {
 } from './databaseHelpers/helpers';
 import {isTokenValid} from './authSlice';
 
+// TODO move this into a store
+
 // TYPES
 // =====
 
@@ -106,6 +108,9 @@ export interface Project extends ProjectInformation {
   // the unique project ID (unique within the server)
   projectId: string;
 
+  // Which server is this in?
+  serverId: string;
+
   // Is the project activated?
   isActivated: boolean;
 
@@ -128,6 +133,9 @@ export interface Server {
 
   // Short code prefix
   shortCodePrefix: string;
+
+  // server description
+  description: string;
 
   // Map from project ID -> Project details
   projects: ProjectIdToProjectMap;
@@ -169,16 +177,24 @@ const projectsSlice = createSlice({
         serverTitle: string;
         serverUrl: string;
         couchDbUrl?: string;
+        description: string;
         shortCodePrefix: string;
       }>
     ) => {
-      const {serverId, shortCodePrefix, serverTitle, serverUrl, couchDbUrl} =
-        action.payload;
+      const {
+        serverId,
+        description,
+        shortCodePrefix,
+        serverTitle,
+        serverUrl,
+        couchDbUrl,
+      } = action.payload;
       // Create a new server with no projects
       state.servers[serverId] = {
         projects: {},
         couchDbUrl,
         serverId,
+        description,
         serverTitle,
         serverUrl,
         shortCodePrefix,
@@ -197,9 +213,10 @@ const projectsSlice = createSlice({
         serverTitle: string;
         serverUrl: string;
         shortCodePrefix: string;
+        description: string;
       }>
     ) => {
-      const {serverId, serverTitle, shortCodePrefix, serverUrl} =
+      const {serverId, description, serverTitle, shortCodePrefix, serverUrl} =
         action.payload;
       if (!state.servers[serverId]) {
         throw Error(`Could not find server with ID: ${serverId}`);
@@ -219,6 +236,7 @@ const projectsSlice = createSlice({
         serverTitle,
         serverUrl,
         shortCodePrefix,
+        description,
       };
     },
 
@@ -247,8 +265,9 @@ const projectsSlice = createSlice({
 
       // Now we can add one
       server.projects[payload.projectId] = {
-        // Project ID
+        // Project ID and server ID
         projectId: payload.projectId,
+        serverId: payload.serverId,
 
         // Superficial details
         metadata: payload.metadata,
@@ -380,6 +399,7 @@ const projectsSlice = createSlice({
         uiSpecification: project.uiSpecification,
         createdAt: project.createdAt,
         lastUpdated: project.lastUpdated,
+        serverId: project.serverId,
 
         // These are updated
         isActivated: true,
@@ -497,6 +517,7 @@ const projectsSlice = createSlice({
         uiSpecification: project.uiSpecification,
         createdAt: project.createdAt,
         lastUpdated: project.lastUpdated,
+        serverId: project.serverId,
 
         // These are updated
         isActivated: true,
@@ -592,6 +613,7 @@ const projectsSlice = createSlice({
         uiSpecification: project.uiSpecification,
         createdAt: project.createdAt,
         lastUpdated: project.lastUpdated,
+        serverId: project.serverId,
 
         // These are updated
         isActivated: true,
@@ -680,6 +702,7 @@ const projectsSlice = createSlice({
         uiSpecification: project.uiSpecification,
         createdAt: project.createdAt,
         lastUpdated: project.lastUpdated,
+        serverId: project.serverId,
 
         // These are updated
         isActivated: true,
@@ -731,6 +754,25 @@ export const projectByIdentity = (
 ): Project | undefined =>
   state.servers[identity.serverId]?.projects[identity.projectId] ?? undefined;
 
+/**
+ * Gets all active data DBs
+ */
+export function getAllDataDbs(
+  state: RootState
+): PouchDB.Database<ProjectDataObject>[] {
+  const databases: PouchDB.Database<ProjectDataObject>[] = [];
+
+  for (const server of Object.values(state.projects.servers)) {
+    for (const project of Object.values(server.projects)) {
+      if (project.isActivated && project.database?.localDb) {
+        databases.push(project.database.localDb);
+      }
+    }
+  }
+
+  return databases;
+}
+
 // SELECTORS
 // =========
 
@@ -742,9 +784,13 @@ export const selectAllProjects = (state: RootState) => {
   return allProjects;
 };
 
+export const selectServers = (state: RootState) => {
+  return Object.values(state.projects.servers);
+};
+
 /**
  * Selector that finds a project by its ID across all servers
- * 
+ *
  * @param state - The Redux root state
  * @param projectId - The ID of the project to find
  * @returns The project if found, undefined otherwise
@@ -761,11 +807,10 @@ export const selectProjectById = (
       return project;
     }
   }
-  
+
   // Project not found in any server
   return undefined;
 };
-
 
 // THUNKS
 // ======
@@ -847,6 +892,7 @@ export const initialiseServers = createAsyncThunk<void, {}>(
             serverTitle: apiServerInfo.name,
             serverUrl: apiServerInfo.conductor_url,
             shortCodePrefix: apiServerInfo.prefix,
+            description: apiServerInfo.description,
           })
         );
       } else {
@@ -859,6 +905,7 @@ export const initialiseServers = createAsyncThunk<void, {}>(
             shortCodePrefix: apiServerInfo.prefix,
             // We don't know this yet - it's considered sensitive so we need authentication.
             couchDbUrl: undefined,
+            description: apiServerInfo.description,
           })
         );
       }

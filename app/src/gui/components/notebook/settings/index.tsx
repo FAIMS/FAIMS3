@@ -32,50 +32,33 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
-import {useContext, useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
+import {
+  selectProjectById,
+  startSyncingAttachments,
+  stopSyncingAttachments,
+} from '../../../../context/slices/projectSlice';
 import {addAlert} from '../../../../context/slices/syncSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
 import {logError} from '../../../../logging';
-import {getProjectInfo} from '../../../../sync/projects';
-import {
-  isSyncingProjectAttachments,
-  setSyncingProjectAttachments,
-} from '../../../../sync/sync-toggle';
 import {theme} from '../../../themes';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
-import {selectAllProjects, selectProjectById} from '../../../../context/slices/projectSlice';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
   if (!project_id) return <></>;
-
-  const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
-
   const dispatch = useAppDispatch();
   const project = useAppSelector(state => selectProjectById(state, project_id));
   if (!project) return <></>;
 
-  useEffect(() => {
-    try {
-      if (project_id !== null)
-        setIsSyncing(isSyncingProjectAttachments(project_id!));
-    } catch (error: any) {
-      logError(error);
-    }
-  }, [project_id]);
+  // TODO this is currently not real
+  const isSyncing = project.database?.isSyncing ?? false;
+  const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
 
-  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
-    null
-  );
-  useEffect(() => {
-    if (project_id)
-      getProjectInfo(project_id).then(info => setProjectInfo(info));
-  }, [project_id]);
-
-  return projectInfo ? (
+  return (
     <Box>
       <Grid
         container
@@ -117,18 +100,29 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                           },
                       }}
                       onChange={async (event, checked) => {
-                        await setSyncingProjectAttachments(
-                          project_id!,
-                          checked
-                        );
-                        setIsSyncing(checked);
-                        if (checked)
+                        if (checked) {
+                          dispatch(
+                            startSyncingAttachments({
+                              projectId: project_id!,
+                              serverId: project.serverId,
+                            })
+                          );
+                        } else {
+                          dispatch(
+                            stopSyncingAttachments({
+                              projectId: project_id!,
+                              serverId: project.serverId,
+                            })
+                          );
+                        }
+                        if (checked) {
                           dispatch(
                             addAlert({
                               message: 'Downloading attachments to device...',
                               severity: 'success',
                             })
                           );
+                        }
                       }}
                     />
                   }
@@ -152,13 +146,11 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
         </Grid>
         <Grid item xs={12} sm={12} md={6} lg={8}>
           <AutoIncrementerSettingsList
-            project_info={projectInfo}
+            project={project}
             uiSpec={props.uiSpec}
           />
         </Grid>
       </Grid>
     </Box>
-  ) : (
-    <CircularProgress />
   );
 }

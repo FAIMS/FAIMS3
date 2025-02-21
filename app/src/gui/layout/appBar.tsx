@@ -51,7 +51,6 @@ import {
   selectIsAuthenticated,
 } from '../../context/slices/authSlice';
 import {useAppSelector} from '../../context/store';
-import {ProjectExtended} from '../../types/project';
 import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';

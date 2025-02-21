@@ -36,14 +36,15 @@ import {
   getIdsByFieldName,
 } from '@faims3/data-model';
 import {logError} from '../logging';
-import {getUiSpecForProject} from '../uiSpecification';
-import {local_pouch_options} from './connection';
+import {LOCAL_POUCH_OPTIONS} from '../context/slices/databaseHelpers/helpers';
+import {selectProjectById} from '../context/slices/projectSlice';
+import {store} from '../context/store';
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
 
 export const draft_db: DraftDB = new PouchDB(
   'draft-storage',
-  local_pouch_options
+  LOCAL_POUCH_OPTIONS
 );
 
 // Note: duplicated from @faims3/data-model as it doesn't do anything important
@@ -347,7 +348,16 @@ export async function listDraftMetadata(
 async function getDraftHRID(record: EncodedDraft): Promise<string | null> {
   // Need to find a way here to determine the correct field name to use - we
   // need the uispec at this point
-  const uiSpecification = await getUiSpecForProject(record.project_id, false);
+
+  const uiSpecification = selectProjectById(
+    store.getState(),
+    record.project_id
+  )?.uiSpecification;
+
+  if (!uiSpecification) {
+    return record.record_id;
+  }
+
   const fieldNames = Array.from(Object.keys(record.fields));
   const sampleFieldName = fieldNames.length > 0 ? fieldNames[0] : undefined;
   let hridFieldName = undefined;
