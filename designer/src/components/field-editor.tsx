@@ -28,10 +28,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
-<<<<<<< HEAD
-=======
   DialogTitle,
->>>>>>> origin
   Grid,
   IconButton,
   Stack,
@@ -54,14 +51,8 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
-<<<<<<< HEAD
-import React, {useState} from 'react';
-import {findFieldUsage} from './condition';
-import {DialogTitle} from '@mui/material';
-import {Button} from '@mui/material';
-=======
 import {useState, useMemo} from 'react';
->>>>>>> origin
+import {findFieldUsage} from './condition';
 
 type FieldEditorProps = {
   fieldName: string;
