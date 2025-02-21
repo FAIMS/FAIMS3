@@ -6,11 +6,12 @@ import {
   updateProjectsDB,
 } from '../dbs/projects-db';
 import {activate_project, syncProjectDb} from '../sync/process-initialization';
+import {ProjectObject, refreshMetadataDb} from '../sync/projects';
+import {getListing} from '../sync/state';
 import {ProjectExtended} from '../types/project';
 import {getLocalActiveMap, getProjectMap, getRemoteProjects} from './functions';
-import {refreshMetadataDb} from '../sync/projects';
-import {ProjectObject} from '../sync/projects';
-import {getListing} from '../sync/state';
+import {refreshActiveUser} from './slices/authSlice';
+import {store} from './store';
 
 export const ProjectsContext = createContext<{
   projects: ProjectExtended[];
@@ -190,6 +191,7 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
   const syncProjects = async () => {
     // sync projects can just re-init projects - it's the same operation
     await initProjects();
+    await store.dispatch(refreshActiveUser());
   };
 
   /**
