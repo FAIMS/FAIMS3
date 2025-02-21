@@ -27,18 +27,28 @@ import authReducer, {
   refreshIsAuthenticated,
   selectIsAuthenticated,
 } from './slices/authSlice';
+import projectsReducer from './slices/projectSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
 import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 
 // Configure persistence for the auth slice
-const persistConfig = {key: 'auth', storage};
-const persistedAuthReducer = persistReducer(persistConfig, authReducer);
+const authPersistConfig = {key: 'auth', storage};
+const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
+
+// Configure persistence for the projects slice
+const projectsPersistConfig = {key: 'projects', storage};
+const persistedProjectsReducer = persistReducer(
+  projectsPersistConfig,
+  projectsReducer
+);
 
 // Configure the store
 export const store = configureStore({
   reducer: {
     // auth slice (persisted)
     auth: persistedAuthReducer,
+    // projects slice (persisted)
+    projects: persistedProjectsReducer,
     // sync slice
     sync: syncReducer,
   },
