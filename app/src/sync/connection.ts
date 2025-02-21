@@ -30,10 +30,6 @@ export interface ConnectionInfo {
   base_url?: string;
   lan?: boolean;
   db_name: string;
-  auth?: {
-    username: string;
-    password: string;
-  };
   jwt_token?: string;
 }
 
