@@ -6,10 +6,10 @@ import {
   PayloadAction,
 } from '@reduxjs/toolkit';
 import {TOKEN_REFRESH_WINDOW_MS} from '../../buildconfig';
-import {refreshDataDbTokens} from '../../sync/databases';
 import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
 import {AppDispatch, RootState} from '../store';
+import {updateDatabaseCredentials} from './projectSlice';
 import {addAlert} from './syncSlice';
 
 // Types
@@ -20,13 +20,13 @@ export interface TokenInfo {
   expiresAt: number;
 }
 
-export interface ServerUser {
+export interface ServerUserMap {
   [username: string]: TokenInfo;
 }
 
 export interface ServerMap {
   [serverId: string]: {
-    users: ServerUser;
+    users: ServerUserMap;
   };
 }
 
@@ -346,7 +346,7 @@ export const setServerConnection = createAsyncThunk<
   if (tokenIsChanged) {
     // Here we should update the all remote synced DBs for listing/server with
     // id `serverId` to the new token `token`
-    await refreshDataDbTokens({serverId, newToken: token});
+    await appDispatch(updateDatabaseCredentials({serverId, token}));
   }
 });
 

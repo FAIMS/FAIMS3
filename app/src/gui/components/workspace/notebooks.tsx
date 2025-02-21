@@ -35,7 +35,6 @@ import {
 } from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {useNotification} from '../../../context/popup';
-import {ProjectsContext} from '../../../context/projects-context';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
 import {ProjectExtended} from '../../../types/project';
@@ -71,7 +70,13 @@ export default function NoteBooks() {
   // Are we online
   const isOnline = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
-  const activeServerId = activeUser?.serverId;
+  if (!activeUser) {
+    // You shouldn't be here!
+    return <></>;
+  }
+
+  const activeServerId = activeUser.serverId;
+  const projects = useAppSelector();
 
   const {projects: allProjects, syncProjects} = useContext(ProjectsContext);
   const projects = allProjects.filter(p => {

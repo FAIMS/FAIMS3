@@ -35,9 +35,8 @@ import {
 import {useContext, useEffect, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
-import {ProjectsContext} from '../../../../context/projects-context';
 import {addAlert} from '../../../../context/slices/syncSlice';
-import {useAppDispatch} from '../../../../context/store';
+import {useAppDispatch, useAppSelector} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {getProjectInfo} from '../../../../sync/projects';
 import {
@@ -47,15 +46,15 @@ import {
 import {theme} from '../../../themes';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
+import {selectAllProjects} from '../../../../context/slices/projectSlice';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
 
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
   const dispatch = useAppDispatch();
-
-  const project = useContext(ProjectsContext).projects.find(
-    project => project_id === project.project_id
+  const project = useAppSelector(selectAllProjects).find(
+    p => p.projectId === project_id
   );
 
   if (!project) return <></>;

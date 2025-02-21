@@ -41,7 +41,6 @@ import Workspace from './gui/pages/workspace';
 // will be resolved in material-ui v5
 
 import {NotificationProvider} from './context/popup';
-import {ProjectsProvider} from './context/projects-context';
 import {AuthReturn} from './gui/components/authentication/auth_return';
 import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
@@ -83,7 +82,6 @@ export default function App() {
     <StateProvider>
       <InitialiseGate>
         <NotificationProvider>
-          <ProjectsProvider>
             <QueryClientProvider client={queryClient}>
               <StyledEngineProvider injectFirst>
                 <ThemeProvider theme={theme}>
@@ -208,7 +206,6 @@ export default function App() {
                 </ThemeProvider>
               </StyledEngineProvider>
             </QueryClientProvider>
-          </ProjectsProvider>
         </NotificationProvider>
       </InitialiseGate>
     </StateProvider>

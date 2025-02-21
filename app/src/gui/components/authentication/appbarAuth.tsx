@@ -52,10 +52,10 @@ import {
 } from '../../../context/slices/authSlice';
 import {addAlert} from '../../../context/slices/syncSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
-import {update_directory} from '../../../sync/process-initialization';
 import {getListing} from '../../../sync/state';
 import {isWeb} from '../../../utils/helpers';
 import {theme} from '../../themes';
+import {initialiseAllProjects} from '../../../context/slices/projectSlice';
 
 const SignInButtonComponent = () => {
   return (
@@ -161,7 +161,10 @@ const AuthenticatedDisplayComponent = () => {
 
     // remove the server connection on logout
     dispatch(removeServerConnection({serverId, username}));
-    update_directory();
+
+    // TODO is this really necessary?
+    // initialise everything again
+    dispatch(initialiseAllProjects({}));
 
     if (conductorUrl) {
       if (isWeb()) {

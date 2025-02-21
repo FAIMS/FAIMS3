@@ -1,16 +1,33 @@
-import {ProjectDataObject, ProjectUIModel} from '@faims3/data-model';
+import {
+  ProjectDataObject,
+  ProjectObject,
+  ProjectUIModel,
+} from '@faims3/data-model';
 import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {CONDUCTOR_URLS} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {
   buildPouchIdentifier,
   createLocalPouchDatabase,
   createPouchDbSync,
   createRemotePouchDbFromConnectionInfo,
+  fetchProjectMetadataAndSpec,
+  fetchUiSpecFromMetadataDb,
   getRemoteDatabaseNameFromId,
 } from './databaseHelpers/helpers';
+import {isTokenValid} from './authSlice';
 
 // TYPES
 // =====
+
+// Server info
+export interface ApiServerInfo {
+  id: string;
+  name: string;
+  conductor_url: string;
+  description: string;
+  prefix: string;
+}
 
 // Database types
 
@@ -57,11 +74,11 @@ export interface DatabaseConnection<Content extends {}> {
 }
 
 // This is metadata which is defined as part of the design file
-export interface ProjectMetadata {
+export interface KnownProjectMetadata {
   name: string;
   description?: string;
-  // TODO other metadata fields here? Let's type them!
 }
+export type ProjectMetadata = KnownProjectMetadata & {[key: string]: any};
 
 // Maps a project ID -> project
 export type ProjectIdToProjectMap = {[projectId: string]: Project};
@@ -107,7 +124,10 @@ export interface Server {
   serverTitle: string;
 
   // What is the URL of the couch database for this server?
-  couchDbUrl: string;
+  couchDbUrl?: string;
+
+  // Short code prefix
+  shortCodePrefix: string;
 
   // Map from project ID -> Project details
   projects: ProjectIdToProjectMap;
@@ -148,10 +168,12 @@ const projectsSlice = createSlice({
         serverId: string;
         serverTitle: string;
         serverUrl: string;
-        couchDbUrl: string;
+        couchDbUrl?: string;
+        shortCodePrefix: string;
       }>
     ) => {
-      const {serverId, serverTitle, serverUrl, couchDbUrl} = action.payload;
+      const {serverId, shortCodePrefix, serverTitle, serverUrl, couchDbUrl} =
+        action.payload;
       // Create a new server with no projects
       state.servers[serverId] = {
         projects: {},
@@ -159,6 +181,7 @@ const projectsSlice = createSlice({
         serverId,
         serverTitle,
         serverUrl,
+        shortCodePrefix,
       };
     },
 
@@ -173,9 +196,11 @@ const projectsSlice = createSlice({
         serverId: string;
         serverTitle: string;
         serverUrl: string;
+        shortCodePrefix: string;
       }>
     ) => {
-      const {serverId, serverTitle, serverUrl} = action.payload;
+      const {serverId, serverTitle, shortCodePrefix, serverUrl} =
+        action.payload;
       if (!state.servers[serverId]) {
         throw Error(`Could not find server with ID: ${serverId}`);
       }
@@ -193,6 +218,7 @@ const projectsSlice = createSlice({
         serverId,
         serverTitle,
         serverUrl,
+        shortCodePrefix,
       };
     },
 
@@ -291,6 +317,14 @@ const projectsSlice = createSlice({
         );
       }
 
+      // Check the couch DB url has been populated
+      if (!server.couchDbUrl) {
+        // abort
+        throw new Error(
+          `Cannot activate when we don't know the couchDBUrl. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
       // check the project exists
       let project = projectByIdentity(state, payload);
       if (!project) {
@@ -382,6 +416,14 @@ const projectsSlice = createSlice({
         // abort
         throw new Error(
           `You cannot update connection for a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // Check the couch DB url has been populated
+      if (!server.couchDbUrl) {
+        // abort
+        throw new Error(
+          `Cannot update connection when we don't know the couchDBUrl. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
         );
       }
 
@@ -692,7 +734,13 @@ export const projectByIdentity = (
 // SELECTORS
 // =========
 
-export const exampleSelector = (state: RootState) => state.projects.servers;
+export const selectAllProjects = (state: RootState) => {
+  const allProjects: Project[] = [];
+  for (const server of Object.values(state.projects.servers)) {
+    allProjects.concat(Object.values(server.projects));
+  }
+  return allProjects;
+};
 
 // THUNKS
 // ======
@@ -700,16 +748,267 @@ export const exampleSelector = (state: RootState) => state.projects.servers;
 // These are actions which can be dispatched which can dispatch other store
 // actions safely and run asynchronous operations.
 
-export const exampleThunk = createAsyncThunk<
-  // return
+/**
+ * Dispatches a set of actions which update the connection of all projects
+ * within the given server with the specified token
+ */
+export const updateDatabaseCredentials = createAsyncThunk<
   void,
-  // input
-  {}
->('projects/exampleThunk', async (args, {dispatch, getState}) => {
+  {token: string; serverId: string}
+>('projects/updateDatabaseCredentials', (args, {dispatch, getState}) => {
   // cast and get state
   const state = (getState() as RootState).projects;
   const appDispatch = dispatch as AppDispatch;
+  const {token, serverId} = args;
+
+  // Check the server exists
+  let server = serverById(state, serverId);
+  if (!server) {
+    // abort
+    throw new Error(
+      `You cannot refresh credentials for a server which does not exist. Server ID: ${serverId}.`
+    );
+  }
+
+  // For each project in this server, if it is active, update it's token
+  for (const project of Object.values(server.projects)) {
+    if (project.isActivated) {
+      // Dispatch a connection update
+      appDispatch(
+        updateConnection({
+          jwtToken: token,
+          projectId: project.projectId,
+          serverId,
+        })
+      );
+    }
+  }
 });
+
+/**
+ * Initialises servers from the specified conductor URLs.
+ * Creates the server if it doesn't exist, otherwise updates details.
+ */
+export const initialiseServers = createAsyncThunk<void, {}>(
+  'projects/initialiseServers',
+  ({}, {dispatch, getState}) => {
+    // cast and get state
+    const state = getState() as RootState;
+    const projectState = state.projects;
+    const appDispatch = dispatch as AppDispatch;
+
+    // for each URL in the conductor URLs - fetch directory
+    let discoveredServers: ApiServerInfo[] = [];
+    for (const conductorUrl of CONDUCTOR_URLS) {
+      // firstly - try and call the info endpoint
+      fetch(`${conductorUrl}/api/info`, {})
+        .then(response => response.json())
+        .then(info => {
+          discoveredServers.push(info as ApiServerInfo);
+        });
+    }
+
+    for (const apiServerInfo of discoveredServers) {
+      // pull out the server ID
+      const serverId = apiServerInfo.id;
+
+      // see if we already have that server
+      const existingServer = serverById(projectState, serverId);
+      if (existingServer) {
+        // Update
+        appDispatch(
+          updateServerDetails({
+            serverId,
+            serverTitle: apiServerInfo.name,
+            serverUrl: apiServerInfo.conductor_url,
+            shortCodePrefix: apiServerInfo.prefix,
+          })
+        );
+      } else {
+        // Create
+        appDispatch(
+          addServer({
+            serverId,
+            serverTitle: apiServerInfo.name,
+            serverUrl: apiServerInfo.conductor_url,
+            shortCodePrefix: apiServerInfo.prefix,
+            // We don't know this yet - it's considered sensitive so we need authentication.
+            couchDbUrl: undefined,
+          })
+        );
+      }
+    }
+  }
+);
+
+/**
+ * Initialises projects for the specified server. Merges superficial details for
+ * existing projects, creates new ones for new.
+ *
+ * Expects there to be a logged in active user for the given server.
+ *
+ * Expects that the state knows about this server.
+ *
+ * Also updates the couchDBUrl - warning if there is a difference between
+ * discovered project couchDB urls.
+ *
+ * TODO consider deletion!
+ */
+export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
+  'projects/initialiseProjects',
+  async (args, {dispatch, getState}) => {
+    // cast and get state
+    const state = getState() as RootState;
+    const projectState = state.projects;
+    const authState = state.auth;
+    const appDispatch = dispatch as AppDispatch;
+    const {serverId} = args;
+
+    // Get server and check we know about it
+    const server = serverById(projectState, serverId);
+    if (!server) {
+      throw new Error(
+        `Cannot initialise projects for missing server: ${serverId}.`
+      );
+    }
+
+    // Try and find the best possible user to fetch with
+    const activeUser = authState.activeUser;
+    let token: string | undefined = undefined;
+
+    // Try the active user - this is the best bet
+    if (activeUser && activeUser.serverId === server.serverId) {
+      if (!authState.isAuthenticated) {
+        // This means we have an active user matching the server but they
+        // are logged out! Abort.
+        throw new Error(
+          `You cannot refresh the project list for a logged out active user. Server ID ${serverId}.`
+        );
+      } else {
+        token = activeUser.token;
+      }
+    }
+
+    if (!token) {
+      const serverUsers = authState.servers[serverId]?.users ?? {};
+      for (const user of Object.values(serverUsers)) {
+        // Found a nice valid token - lucky!
+        if (isTokenValid(user)) {
+          token = user.token;
+          break;
+        } else {
+          // Didn't find one
+          continue;
+        }
+      }
+    }
+
+    if (!token) {
+      // Failed to find any token to use for this server - the user needs to
+      // login
+      throw new Error(
+        `Could not find a suitable active token for the server ${serverId}.`
+      );
+    }
+
+    // Now we have a token that is active - so let's fetch the directory (which
+    // lists projects)
+    let directoryResults: ProjectObject[] = [];
+    fetch(`${server.serverUrl}/api/directory`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(response => response.json())
+      .then(rawDirectory => {
+        directoryResults = rawDirectory as ProjectObject[];
+      })
+      .catch(e => {
+        console.warn(
+          `Directory request failed despite valid token. Server ID ${serverId}. URL: ${server.serverUrl}.`
+        );
+      });
+
+    // Now for each result, merge details
+    for (const details of directoryResults) {
+      const projectId = details.project_id;
+      let meta = undefined;
+      try {
+        meta = await fetchProjectMetadataAndSpec({
+          compile: true,
+          projectId: projectId,
+          serverUrl: server.serverUrl,
+          token,
+        });
+      } catch {
+        console.warn(
+          `Failed to get metadata from API for project ${projectId}`
+        );
+      }
+
+      // See if we have an existing matching project
+      const project = projectByIdentity(projectState, {
+        projectId,
+        serverId,
+      });
+
+      if (!project) {
+        if (!meta) {
+          // noop here since we don't have mandatory metadata!
+          console.warn(
+            `Failed to get metadata from API for project ${projectId} which doesn't exist yet - minimum sufficient information not known so we won't show this record.`
+          );
+          continue;
+        }
+
+        // create
+        appDispatch(
+          addProject({
+            metadata: meta.metadata,
+            projectId,
+            serverId,
+            uiSpecification: meta.uiSpec,
+            // TODO Where are these populated from
+            createdAt: undefined,
+            lastUpdated: undefined,
+          })
+        );
+      } else {
+        // update existing record
+
+        // TODO created at? Last updated?
+        appDispatch(
+          updateProjectDetails({
+            metadata: meta?.metadata ?? project.metadata,
+            projectId: projectId,
+            serverId,
+            uiSpecification: meta?.uiSpec ?? project.uiSpecification,
+            createdAt: project.createdAt,
+            lastUpdated: project.lastUpdated,
+          })
+        );
+      }
+    }
+  }
+);
+
+/**
+ * Combines initialisation of all servers' projects.
+ */
+export const initialiseAllProjects = createAsyncThunk<void, {}>(
+  'projects/initialiseAllProjects',
+  async ({}, {dispatch, getState}) => {
+    // cast and get state
+    const state = getState() as RootState;
+    const projectState = state.projects;
+    const appDispatch = dispatch as AppDispatch;
+
+    // dispatch update to all projects
+    for (const server of Object.values(projectState.servers)) {
+      appDispatch(initialiseProjects({serverId: server.serverId}));
+    }
+  }
+);
 
 export const {
   activateProject,

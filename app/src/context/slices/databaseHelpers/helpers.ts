@@ -1,9 +1,20 @@
 import {
+  EncodedProjectUIModel,
+  ProjectUIModel,
+  UI_SPECIFICATION_NAME,
+} from '@faims3/data-model';
+import nano from 'nano';
+import {
   POUCH_BATCH_SIZE,
   POUCH_BATCHES_LIMIT,
   RUNNING_UNDER_TEST,
 } from '../../../buildconfig';
-import {DatabaseConnectionConfig, ProjectIdentity} from '../projectSlice';
+import {compileUiSpecConditionals} from '../../../uiSpecification';
+import {
+  DatabaseConnectionConfig,
+  ProjectIdentity,
+  ProjectMetadata,
+} from '../projectSlice';
 
 type DBReplicateOptions =
   | PouchDB.Replication.ReplicateOptions
@@ -175,3 +186,99 @@ export function createPouchDbSync<Content extends {}>({
       });
     });
 }
+
+/**
+ * Fetches and optionally compiles the UI specification.
+ *
+ * This is done by doing a one time fetch from the metadata couch DB.
+ *
+ * Needs a token for auth.
+ *
+ * @param dbName the name of the metadata db
+ * @param dbUrl the base url of the metadata db
+ * @param token the jwt token to use
+ * @param compile compile?
+ *
+ * @returns The UI spec
+ */
+export async function fetchUiSpecFromMetadataDb({
+  dbName,
+  dbUrl,
+  token,
+  compile = true,
+}: {
+  dbUrl: string;
+  dbName: string;
+  token: string;
+  compile: boolean;
+}): Promise<ProjectUIModel> {
+  const couchClient = nano({
+    url: dbUrl,
+    requestDefaults: {
+      headers: {Authorization: `Bearer ${token}`},
+    },
+  });
+
+  try {
+    const db = couchClient.use<EncodedProjectUIModel>(dbName);
+    const encodedUiInfo = await db.get(UI_SPECIFICATION_NAME);
+    const uiSpec = {
+      _id: encodedUiInfo._id,
+      _rev: encodedUiInfo._rev,
+      fields: encodedUiInfo.fields,
+      views: encodedUiInfo.fviews,
+      viewsets: encodedUiInfo.viewsets,
+      visible_types: encodedUiInfo.visible_types,
+    };
+    if (compile) {
+      compileUiSpecConditionals(uiSpec);
+    }
+    return uiSpec;
+  } catch (error) {
+    console.error('Error querying CouchDB:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch project metadata from the server and store it locally for
+ * later access.
+ */
+export const fetchProjectMetadataAndSpec = async ({
+  token,
+  serverUrl,
+  projectId,
+  compile = true,
+}: {
+  token: string;
+  serverUrl: string;
+  projectId: string;
+  compile: boolean;
+}): Promise<{uiSpec: ProjectUIModel; metadata: ProjectMetadata}> => {
+  const url = `${serverUrl}/api/notebooks/${projectId}`;
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const notebook = await response.json();
+
+  // TODO runtime validation. This is a dangerous assumption!
+  const metadata = notebook.metadata as ProjectMetadata;
+  const rawUiSpec = notebook['ui-specification'] as EncodedProjectUIModel;
+  const uiSpec = {
+    _id: rawUiSpec._id,
+    _rev: rawUiSpec._rev,
+    fields: rawUiSpec.fields,
+    views: rawUiSpec.fviews,
+    viewsets: rawUiSpec.viewsets,
+    visible_types: rawUiSpec.visible_types,
+  };
+  if (compile) {
+    compileUiSpecConditionals(uiSpec);
+  }
+  if (compile) {
+    compileUiSpecConditionals(uiSpec);
+  }
+  return {metadata, uiSpec};
+};

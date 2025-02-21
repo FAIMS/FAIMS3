@@ -19,9 +19,7 @@ import {
 import {PersistGate} from 'redux-persist/integration/react';
 import storage from 'redux-persist/lib/storage';
 import LoadingApp from '../gui/components/loadingApp';
-import {set_sync_status_callbacks} from '../sync/connection';
 import {initialize} from '../sync/initialize';
-import {getSyncStatusCallbacks} from '../utils/status';
 import authReducer, {
   refreshAllUsers,
   refreshIsAuthenticated,
@@ -207,9 +205,6 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
 
     // Run initialisation logic
     init();
-
-    // And setup callbacks for sync operations (only done once)
-    set_sync_status_callbacks(getSyncStatusCallbacks(dispatch));
 
     return () => {
       mounted.current = false;
