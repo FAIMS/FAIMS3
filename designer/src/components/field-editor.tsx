@@ -257,7 +257,6 @@ export const FieldEditor = ({
         <Grid container rowGap={1} alignItems={'center'}>
           <Grid item xs={12} sm={8}>
             <Stack direction="column" spacing={1} pr={{xs: 0, sm: 2}}>
-              {/* Field Title */}
               <Typography
                 variant="subtitle2"
                 sx={{
@@ -274,7 +273,6 @@ export const FieldEditor = ({
                 {label}
               </Typography>
 
-              {/* Chips Below Title (Tighter Spacing) */}
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Chip
                   label={fieldComponent}
@@ -294,7 +292,6 @@ export const FieldEditor = ({
                 )}
               </Stack>
 
-              {/* Helper Text (More Spacing from Chips) */}
               {field['component-parameters'].helperText && (
                 <Typography
                   variant="body2"
@@ -302,7 +299,7 @@ export const FieldEditor = ({
                   fontWeight={400}
                   fontStyle="italic"
                   sx={{
-                    mt: 1.5, // Added extra spacing here
+                    mt: 1.5,
                     display: '-webkit-box',
                     WebkitLineClamp: 3,
                     WebkitBoxOrient: 'vertical',
