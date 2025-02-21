@@ -54,9 +54,15 @@ const indexContent = readFileSync(
 import markdownit from 'markdown-it';
 import {api as notebookApi} from './api/notebooks';
 import {api as templatesApi} from './api/templates';
+import {api as resetPasswordApi} from './api/emailReset';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
-import {COOKIE_SECRET} from './buildconfig';
+import {
+  COOKIE_SECRET,
+  RATE_LIMITER_ENABLED,
+  RATE_LIMITER_PER_WINDOW,
+  RATE_LIMITER_WINDOW_MS,
+} from './buildconfig';
 import patch from './utils/patchExpressAsync';
 
 // This must occur before express app is used
@@ -65,15 +71,30 @@ patch();
 export const app = express();
 app.use(morgan('combined'));
 
-if (process.env.NODE_ENV !== 'test') {
-  // set up rate limiter: maximum of 60 requests per minute
-  const limiter = RateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 60,
-    validate: true,
-  });
-  app.use(limiter);
-  console.log('Rate limiter enabled');
+const IS_TEST = process.env.NODE_ENV === 'test';
+
+// Setup rate limiter
+export const RATE_LIMITER = RateLimit({
+  windowMs: RATE_LIMITER_WINDOW_MS,
+  max: RATE_LIMITER_PER_WINDOW,
+  message: 'Too many requests from this IP, please try again after 10 minutes',
+  // Return rate limit info in the `RateLimit-*` headers
+  standardHeaders: true,
+  // Disable the `X-RateLimit-*` headers
+  legacyHeaders: true,
+});
+
+if (!IS_TEST && RATE_LIMITER_ENABLED) {
+  console.log('Activating rate limiter');
+  app.use(RATE_LIMITER);
+} else {
+  if (IS_TEST) {
+    console.log('Not enabling rate limiting due to being in test mode.');
+  } else {
+    console.log(
+      'Not enabling rate limiting due to it being explicitly disabled.'
+    );
+  }
 }
 
 // Only parse query parameters into strings, not objects
@@ -112,6 +133,10 @@ const handlebarsConfig = {
       htmlText = htmlText.replace(/<table>/g, '<table class="table">');
       return new handlebars.SafeString(htmlText);
     },
+    and: (...args: any[]) => {
+      // Remove the last argument (Handlebars options object)
+      return args.slice(0, -1).every(Boolean);
+    },
   },
 };
 
@@ -131,6 +156,7 @@ app.use('/api/notebooks', notebookApi);
 app.use('/api/templates', templatesApi);
 app.use('/api', utilityApi);
 app.use('/api/users', usersApi);
+app.use('/api/reset', resetPasswordApi);
 
 // Custom error handler which returns a JSON description of error
 // TODO specify this interface in data models

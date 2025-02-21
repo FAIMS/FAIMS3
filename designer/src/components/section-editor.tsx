@@ -23,23 +23,21 @@ import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import {
   Alert,
+  Autocomplete,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  FormControlLabel,
   Grid,
   IconButton,
   InputAdornment,
-  Radio,
-  RadioGroup,
   TextField,
   Tooltip,
+  Typography,
 } from '@mui/material';
 
-import {useState} from 'react';
+import {useState, useMemo} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {ConditionModal, ConditionTranslation, ConditionType} from './condition';
 import {FieldList} from './field-list';
@@ -64,6 +62,7 @@ type Props = {
     viewID: string
   ) => boolean;
   handleSectionMoveCallback: (targetViewSetId: string) => void;
+  moveFieldCallback: (targetViewId: string) => void;
 };
 
 export const SectionEditor = ({
@@ -75,6 +74,7 @@ export const SectionEditor = ({
   addCallback,
   moveCallback,
   handleSectionMoveCallback,
+  moveFieldCallback,
 }: Props) => {
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
@@ -100,12 +100,34 @@ export const SectionEditor = ({
 
   const handleCloseMoveDialog = () => {
     setOpenMoveDialog(false);
+    setTargetViewSetId('');
   };
 
   const deleteSection = () => {
     deleteCallback(viewSetId, viewId);
     handleCloseDeleteDialog();
   };
+
+  // memoize the form value
+  const formValue = useMemo(
+    () =>
+      targetViewSetId
+        ? {id: targetViewSetId, label: viewSets[targetViewSetId].label}
+        : null,
+    [targetViewSetId, viewSets]
+  );
+
+  // memoize the form options
+  const formOptions = useMemo(
+    () =>
+      Object.entries(viewSets)
+        .filter(([formId]) => formId !== viewSetId) // exclude the source form
+        .map(([formId, form]) => ({
+          id: formId,
+          label: form.label,
+        })),
+    [viewSets, viewSetId]
+  );
 
   const moveSectionToForm = () => {
     // run the function to move the section to a different form AND save the returned success status to a variable
@@ -206,35 +228,36 @@ export const SectionEditor = ({
             aria-labelledby="alert-move-dialog-title"
             aria-describedby="alert-dialog-description"
           >
-            <DialogTitle id="alert-move-dialog-title">
-              Please select the form you want to move this section to.
+            <DialogTitle id="alert-move-dialog-title" textAlign="center">
+              Move Section
             </DialogTitle>
             <DialogContent>
-              <FormControl component="fieldset">
-                <RadioGroup
-                  aria-labelledby="target-form"
-                  name="targetForm"
-                  value={targetViewSetId}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setTargetViewSetId(event.target.value);
-                  }}
-                >
-                  {Object.keys(viewSets)
-                    .filter(formId => formId !== viewSetId) // exclude the source form
-                    .map(formId => (
-                      <FormControlLabel
-                        key={formId}
-                        value={formId}
-                        control={<Radio />}
-                        label={viewSets[formId].label}
-                      />
-                    ))}
-                </RadioGroup>
-              </FormControl>
+              <Typography
+                variant="body1"
+                sx={{mt: 0.5, mb: 1, fontWeight: 450}}
+              >
+                Destination Form
+              </Typography>
+              <Typography variant="body2" sx={{mb: 1}}>
+                Choose the form you want to move the section to.
+              </Typography>
+              <Autocomplete
+                fullWidth
+                value={formValue}
+                onChange={(_event, newValue) => {
+                  setTargetViewSetId(newValue ? newValue.id : '');
+                }}
+                options={formOptions}
+                getOptionLabel={option => option.label}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                renderInput={params => <TextField {...params} />}
+              />
             </DialogContent>
             <DialogActions>
-              <Button onClick={moveSectionToForm}>Move</Button>
               <Button onClick={handleCloseMoveDialog}>Cancel</Button>
+              <Button onClick={moveSectionToForm} disabled={!targetViewSetId}>
+                Move
+              </Button>
             </DialogActions>
           </Dialog>
         </Grid>
@@ -398,7 +421,11 @@ export const SectionEditor = ({
           <></>
         )}
       </Grid>
-      <FieldList viewId={viewId} viewSetId={viewSetId} />
+      <FieldList
+        viewId={viewId}
+        viewSetId={viewSetId}
+        moveFieldCallback={moveFieldCallback}
+      />
     </>
   );
 };

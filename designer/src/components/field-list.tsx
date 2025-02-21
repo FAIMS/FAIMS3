@@ -38,9 +38,10 @@ import Typography from '@mui/material/Typography';
 type Props = {
   viewSetId: string;
   viewId: string;
+  moveFieldCallback: (targetViewId: string) => void;
 };
 
-export const FieldList = ({viewSetId, viewId}: Props) => {
+export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   console.log('FieldList', viewSetId, viewId);
 
   const fView = useAppSelector(
@@ -199,6 +200,9 @@ export const FieldList = ({viewSetId, viewId}: Props) => {
           expanded={isExpanded[fieldName] ?? false}
           addFieldCallback={addFieldAfterCallback}
           handleExpandChange={handleExpandChange(fieldName)}
+            moveFieldCallback={(targetViewId: string) =>
+              moveFieldCallback(targetViewId)
+            }
         />
       ))}
 

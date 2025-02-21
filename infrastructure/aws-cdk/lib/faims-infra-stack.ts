@@ -113,6 +113,8 @@ const DomainsConfigSchema = z.object({
   couch: z.string().default('couchdb'),
   /** The subdomain prefix for the main FAIMS application */
   faims: z.string().default('faims'),
+  /** New conductor/web deployment subdomain */
+  web: z.string().default('web'),
 });
 
 const ConductorConfigSchema = z.object({
@@ -146,6 +148,8 @@ const ConductorConfigSchema = z.object({
     scaleOutCooldown: z.number().int().nonnegative(),
   }),
 });
+
+const WebConfigSchema = z.object({});
 
 // Define the schema for the backup configuration
 const BackupConfigSchema = z
@@ -235,6 +239,8 @@ export const ConfigSchema = z.object({
     /** The public URL for the iOS application */
     iosAppPublicUrl: z.string(),
   }),
+  /** The new-conductor / web config */
+  web: WebConfigSchema,
 });
 
 // Infer the types from the schemas
@@ -299,6 +305,7 @@ export class FaimsInfraStack extends cdk.Stack {
       conductor: `${config.domains.conductor}.${config.domains.baseDomain}`,
       faims: `${config.domains.faims}.${config.domains.baseDomain}`,
       designer: `${config.domains.designer}.${config.domains.baseDomain}`,
+      web: `${config.domains.web}.${config.domains.baseDomain}`,
     };
 
     // BACKUPS SETUP
@@ -386,6 +393,7 @@ export class FaimsInfraStack extends cdk.Stack {
       sharedBalancer: networking.sharedBalancer,
       config: config.conductor,
       cookieSecret: cookieSecret,
+      webUrl: `https://${domains.web}`,
     });
 
     // FRONT-END
@@ -409,6 +417,7 @@ export class FaimsInfraStack extends cdk.Stack {
       appName: config.uiConfiguration.appName,
       appId: config.uiConfiguration.appId,
       headingAppName: config.uiConfiguration.headingAppName,
+      webDomainName: domains.web,
     });
 
     // Backup setup

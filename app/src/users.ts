@@ -173,22 +173,30 @@ export async function shouldDisplayRecord(
   // TODO - consider the context in which this is being run - should only be
   // active user notebooks!
   // TODO understand why this is coming through as a full project instead of just project id
+
+  // TODO this should not be on a per row basis - it's the same for all of them
+  // (facepalm)
   const split_id = split_full_project_id(full_proj_id);
   const user_id = contents.username;
+
+  // Always display your own records
   if (record_metadata.created_by === user_id) {
     return true;
   }
-  const is_admin = await isClusterAdmin(contents);
-  if (is_admin) {
+
+  // If you are admin (of cluster) then you can see all responses
+  const isAdmin = isClusterAdmin(contents);
+
+  if (isAdmin) {
     return true;
   }
+
+  // Get roles
   const roles = getUserProjectRolesForCluster(contents);
-  // TODO this doesn't really work
   for (const projectId of Object.keys(roles)) {
     if (
       projectId === split_id.project_id &&
       // TODO BSS-453 consider how we handle this
-
       // This currently hard-codes admin as a special role which allows visibility of all records but
       // a) why is this necessary on client side?
       // b) isn't this configurable in the notebook designer?

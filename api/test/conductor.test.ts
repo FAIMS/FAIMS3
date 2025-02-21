@@ -52,10 +52,6 @@ describe('Auth', () => {
       .expect('Location', /\/auth/, done);
   });
 
-  it('logout redirects to /', done => {
-    request(app).get('/logout/').expect(302).expect('Location', '/', done);
-  });
-
   it('auth returns HTML', done => {
     request(app)
       .get('/auth')
@@ -68,7 +64,7 @@ describe('Auth', () => {
       .get('/auth')
       .expect(200)
       .then(response => {
-        expect(response.text).to.include('Local Login');
+        expect(response.text).to.include('Welcome');
         done();
       });
   });

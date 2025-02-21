@@ -18,19 +18,16 @@
  *   Implement QRCodeFormField for scanning QR codes into a field in FAIMS3
  */
 
-import React, {useState} from 'react';
-import Button from '@mui/material/Button';
-
 import {BarcodeScanner} from '@capacitor-mlkit/barcode-scanning';
-// TODO: check whether mocks are still needed for testing
-
-import {FieldProps} from 'formik';
-import ReactDOM from 'react-dom';
-import {Capacitor} from '@capacitor/core';
-import {createUseStyles} from 'react-jss';
-import {Alert, Box} from '@mui/material';
 import {Camera} from '@capacitor/camera';
-import {APP_NAME} from '../../../buildconfig';
+import {Capacitor} from '@capacitor/core';
+import {Box} from '@mui/material';
+import Button from '@mui/material/Button';
+import {FieldProps} from 'formik';
+import {useState} from 'react';
+import ReactDOM from 'react-dom';
+import {createUseStyles} from 'react-jss';
+import {CameraPermissionIssue} from '../../components/ui/PermissionAlerts';
 
 const useStyles = createUseStyles({
   container: {
@@ -282,23 +279,7 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
           <Button variant="outlined" disabled={true}>
             {props.label}
           </Button>
-          <Alert severity="error" sx={{width: '100%'}}>
-            {Capacitor.getPlatform() === 'android' && (
-              <>
-                Please enable camera permissions for {APP_NAME}. Go to your
-                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
-                Camera and select "Ask every time" or "Allow only while using
-                the app".
-              </>
-            )}
-            {Capacitor.getPlatform() === 'ios' && (
-              <>
-                Please enable camera permissions for {APP_NAME}. Go to your
-                device Settings &gt; Privacy & Security &gt; Camera &gt; and
-                ensure that {APP_NAME} is enabled.
-              </>
-            )}
-          </Alert>
+          <CameraPermissionIssue />
         </div>
       );
     } else {

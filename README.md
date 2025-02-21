@@ -55,7 +55,7 @@ This spins up three services
 
 - conductor API (/api) live reloading on http://localhost:8080
 - FAIMS3 app (/app) live reloading on http://localhost:3000
-- couchDB on http://localhost:5984/_utils
+- couchDB on http://localhost:5984/\_utils
 
 ## Initial step-by step setup
 
@@ -193,6 +193,26 @@ Further build/install instructions can be found at
 1. [Optional] Resolve `xcode-select` error
    - `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
 1. Build the apk from the build/build bundle/build apk section
+
+## Live reload Android studio workflow (WSL)
+
+On WSL, the following setup and procedure allows live reloading of the app on an Android emulator (or physical device through adb [though I haven't gotten this working due to adb config issues]).
+
+### Prereqs
+
+- install Android studio on your WSL instance with suitable JDK (this usually comes bundled)
+
+### Setup
+
+First run `npm i` to install all dependencies, and move into `/app`. Then `npm i` to be certain local deps are installed, then
+
+- open android studio in one tab i.e. `./<studio path>/studio.sh`
+- in the open studio window, configure/start the emulator you want to run it on
+- in another tab, build the app i.e. `npm run build && npx cap sync android`
+- run the server `npx vite --force`
+- in another tab, start live reload `npx cap run android -l --external` and select the desired running emulator (it's important you use the existing running emulator rather than starting another which is unstable with WSL)
+
+This then live reloads on the emulator device from the running server.
 
 ## API Development
 

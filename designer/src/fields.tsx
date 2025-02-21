@@ -462,10 +462,12 @@ const fields: {[key: string]: FieldType} = {
       fullWidth: true,
       helperText: 'Enter a valid number',
       required: false,
-      // min and max can be dynamically added when needed
+      InputProps: {
+        type: 'number',
+      },
     },
-    validationSchema: [['yup.number']],
-    initialValue: '',
+    validationSchema: [['yup.number'], ['yup.nullable']],
+    initialValue: null,
   },
 };
 

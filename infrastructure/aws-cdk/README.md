@@ -55,6 +55,10 @@ The `FaimsFrontEnd` construct manages the web applications:
 - Similar setup to the main frontend, but with a separate S3 bucket and CloudFront distribution.
 - Uses a different build process tailored for the designer application.
 
+#### Web (New-conductor) Frontend
+
+- Similar setup to the main frontend, but with a separate S3 bucket and CloudFront distribution.
+
 ### Auxiliary Components
 
 - **Lambda Function**: A Node.js function to deregister EC2 instances from CloudMap during termination.
@@ -352,9 +356,11 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `conductor`: The subdomain prefix for the conductor service
   - `couch`: The subdomain prefix for the CouchDB service
   - `faims`: The subdomain prefix for the main FAIMS web application
+  - `web`: The subdomain prefix for the new-conductor web application
 - `mobileApps`: Configuration for mobile app URLs.
   - `androidAppPublicUrl`: The public URL for the Android application in the Google Play Store
   - `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
+- `web`: Placeholder configuration for further web/new-conductor config - currently use {}
 
 ## Using Your Configuration
 

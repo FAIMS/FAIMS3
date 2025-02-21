@@ -25,17 +25,16 @@ import {
   ProjectUIModel,
   RecordID,
 } from '@faims3/data-model';
-import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
 import {
-  AppBar,
+  Alert,
+  AlertTitle,
   Box,
+  Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  Grid,
   Paper,
-  Tab,
-  Typography,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
@@ -52,25 +51,22 @@ import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {addAlert} from '../../context/slices/syncSlice';
 import {useAppDispatch} from '../../context/store';
-import {scrollToDiv} from '../../lib/navigation';
 import {newStagedData} from '../../sync/draft-storage';
 import {getProjectInfo} from '../../sync/projects';
 import {
   getReturnedTypesForViewSet,
   getUiSpecForProject,
 } from '../../uiSpecification';
-import TransparentButton from '../components/buttons/transparent-button';
-import RecordDelete from '../components/notebook/delete';
 import ProgressBar from '../components/progress-bar';
 import RecordForm from '../components/record/form';
 import InheritedDataComponent from '../components/record/inherited_data';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
-import UnpublishedWarning from '../components/record/unpublished_warning';
+import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 
-interface DraftCreateProps {
+interface DraftCreateActionProps {
   project_id: ProjectID;
   type_name: string;
   state?: any;
@@ -89,7 +85,7 @@ interface DraftCreateProps {
 // a UI component lifecycle.   The draft should be made by some action and
 // then the UI created for that (DraftEdit).
 
-function DraftCreate(props: DraftCreateProps) {
+function DraftCreateAction(props: DraftCreateActionProps) {
   const {project_id, type_name, record_id} = props;
 
   const dispatch = useAppDispatch();
@@ -149,7 +145,7 @@ function DraftCreate(props: DraftCreateProps) {
   }
 }
 
-interface DraftEditProps {
+interface DraftRecordEditProps {
   project_id: ProjectID;
   type_name: string;
   draft_id: string;
@@ -157,28 +153,25 @@ interface DraftEditProps {
   record_id: RecordID;
   state?: any;
   location?: Location;
+  onBack: () => void;
 }
 
-function DraftEdit(props: DraftEditProps) {
-  const {project_id, type_name, draft_id, project_info, record_id} = props;
+function DraftRecordEdit(props: DraftRecordEditProps) {
+  const {project_id, type_name, draft_id, record_id} = props;
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
-  const [error, setError] = useState(null as null | {});
+  const [uiSpec, setUISpec] = useState<ProjectUIModel | null>(null);
+  const [error, setError] = useState<Record<string, unknown> | null>(null);
 
   const [isDraftSaving, setIsDraftSaving] = useState(false);
-  const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
-  const [draftError, setDraftError] = useState(null as string | null);
-
-  const [value, setValue] = React.useState('1');
+  const [draftLastSaved, setDraftLastSaved] = useState<Date | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
   const theme = useTheme();
   const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
-  const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
+  const [parentLinks, setParentLinks] = useState<ParentLinkProps[]>([]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-
   const [progress, setProgress] = useState(0);
-
   const buttonRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -216,23 +209,6 @@ function DraftEdit(props: DraftEditProps) {
     })();
   }, [project_id, record_id, uiSpec]);
 
-  const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
-    setValue(newValue);
-  };
-
-  const handleRefresh = () => {
-    /**
-     * Handler for Refreshing project (go back to notebook)
-     */
-    return new Promise(resolve => {
-      resolve(() => {
-        navigate({
-          pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-        });
-      });
-    });
-  };
-
   if (error !== null) {
     dispatch(
       addAlert({
@@ -241,116 +217,63 @@ function DraftEdit(props: DraftEditProps) {
       })
     );
     navigate(-1);
-    return <React.Fragment />;
+    return null;
   }
 
   if (uiSpec === null) return <CircularProgress size={12} thickness={4} />;
 
   return (
     <React.Fragment>
-      <Box mb={2}>
-        <Typography variant={'h2'} component={'h1'}>
-          {uiSpec['viewsets'][type_name]['label'] ?? type_name} Record
-        </Typography>
-        <Typography variant={'subtitle1'} gutterBottom>
-          Add a record for the{' '}
-          {project_info !== null ? project_info.name : project_id} project.
-        </Typography>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
-            <ArrowDropDown />
-            Jump to end
-          </TransparentButton>
-        </div>
+      <Grid container justifyContent={'space-between'} spacing={2}>
+        <Grid item>
+          <BackButton label="Back" onClick={props.onBack} />
+        </Grid>
+        <Grid item xs>
+          <ProgressBar percentage={progress} />
+        </Grid>
+        <Grid item>
+          <DraftSyncStatus
+            last_saved={draftLastSaved}
+            is_saving={isDraftSaving}
+            error={draftError}
+          />
+        </Grid>
+      </Grid>
+      <Box>
+        <Box sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}>
+          <Box
+            component={Paper}
+            elevation={0}
+            p={{xs: 1, sm: 1, md: 2, lg: 2}}
+            variant={is_mobile ? undefined : 'outlined'}
+          >
+            {is_link_ready ? (
+              <InheritedDataComponent
+                parentRecords={parentLinks}
+                ui_specification={uiSpec}
+              />
+            ) : (
+              <CircularProgress size={24} />
+            )}
+            <RecordForm
+              project_id={project_id}
+              record_id={record_id}
+              type={type_name}
+              ui_specification={uiSpec}
+              draft_id={draft_id}
+              handleSetIsDraftSaving={setIsDraftSaving}
+              handleSetDraftLastSaved={setDraftLastSaved}
+              handleSetDraftError={setDraftError}
+              draftLastSaved={draftLastSaved}
+              mq_above_md={mq_above_md}
+              navigate={navigate}
+              location={props.location}
+              setProgress={setProgress}
+              buttonRef={buttonRef}
+            />
+          </Box>
+        </Box>
       </Box>
-      <div style={{padding: '10px'}}>
-        <ProgressBar percentage={progress} />
-      </div>
-      <div />
-      <Paper square>
-        <TabContext value={value}>
-          <AppBar position="static" color="primary">
-            <TabList
-              onChange={handleChange}
-              aria-label="simple tabs example"
-              indicatorColor={'secondary'}
-              TabIndicatorProps={{
-                style: {
-                  backgroundColor: theme.palette.secondary.contrastText,
-                },
-              }}
-              sx={{backgroundColor: theme.palette.background.tabsBackground}}
-              textColor="secondary"
-            >
-              <Tab label="Create" value="1" />
-              <Tab label="Meta" value="2" />
-            </TabList>
-          </AppBar>
-          <TabPanel value="1" sx={{p: 0}}>
-            <Box>
-              <UnpublishedWarning />
-              <DraftSyncStatus
-                last_saved={draftLastSaved}
-                is_saving={isDraftSaving}
-                error={draftError}
-              />
-              <Box sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}>
-                <Box
-                  component={Paper}
-                  elevation={0}
-                  p={{xs: 1, sm: 1, md: 2, lg: 2}}
-                  variant={is_mobile ? undefined : 'outlined'}
-                >
-                  {is_link_ready ? (
-                    <InheritedDataComponent
-                      parentRecords={parentLinks}
-                      ui_specification={uiSpec}
-                    />
-                  ) : (
-                    <CircularProgress size={24} />
-                  )}
-                  <RecordForm
-                    project_id={project_id}
-                    record_id={record_id}
-                    type={type_name}
-                    ui_specification={uiSpec}
-                    draft_id={draft_id}
-                    handleSetIsDraftSaving={setIsDraftSaving}
-                    handleSetDraftLastSaved={setDraftLastSaved}
-                    handleSetDraftError={setDraftError}
-                    draftLastSaved={draftLastSaved}
-                    mq_above_md={mq_above_md}
-                    navigate={navigate}
-                    location={props.location}
-                    setProgress={setProgress}
-                    buttonRef={buttonRef}
-                  />
-                </Box>
-              </Box>
-            </Box>
-          </TabPanel>
-          <TabPanel value="2">
-            <Box mt={2}>
-              <Typography variant={'h5'} gutterBottom>
-                Discard Draft
-              </Typography>
-              <RecordDelete
-                project_id={project_id}
-                record_id={record_id}
-                revision_id={null}
-                draft_id={draft_id}
-                show_label={true}
-                handleRefresh={handleRefresh}
-              />
-            </Box>
-          </TabPanel>
-        </TabContext>
-      </Paper>
     </React.Fragment>
   );
 }
@@ -362,7 +285,25 @@ export default function RecordCreate() {
     draft_id?: string;
     record_id?: string;
   }>();
-  const location: any = useLocation();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const projectId = location.pathname.split('/')[2];
+
+  const [openDialog, setOpenDialog] = useState(false);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  const handleConfirmNavigation = () => {
+    setOpenDialog(false);
+    navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId, {replace: true});
+  };
+
   let draft_record_id = generateFAIMSDataID();
   if (record_id !== undefined) draft_record_id = record_id;
   if (location.state && location.state.child_record_id !== undefined)
@@ -375,7 +316,9 @@ export default function RecordCreate() {
       getProjectInfo(project_id).then(info => setProjectInfo(info));
   }, [project_id]);
 
-  let breadcrumbs = [
+  let showBreadcrumbs = false;
+
+  const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
@@ -387,36 +330,48 @@ export default function RecordCreate() {
 
   // add parent link back for the parent or linked record
   if (location.state && location.state.parent_record_id !== record_id) {
+    showBreadcrumbs = true;
     const type =
       location.state.type === 'Child'
         ? 'Parent'
         : location.state.relation_type_vocabPair[0];
-    breadcrumbs = [
-      // {link: ROUTES.INDEX, title: 'Home'},
-      {
-        link: ROUTES.NOTEBOOK_LIST_ROUTE,
-        title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-      },
-      {
-        link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-        title: projectInfo !== null ? projectInfo.name! : project_id!,
-      },
-      {
-        link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + location.state.parent_link,
-        title:
-          type! +
-          ':' +
-          (location.state.parent_hrid! ?? location.state.parent_record_id!),
-      },
-      {title: 'Draft'},
-    ];
+    breadcrumbs.splice(-1, 0, {
+      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + location.state.parent_link,
+      title:
+        type! +
+        ':' +
+        (location.state.parent_hrid! ?? location.state.parent_record_id!),
+    });
   }
+
+  // detect when user click's android back buttn
+  useEffect(() => {
+    const handleBackEvent = (event: Event) => {
+      event.preventDefault();
+      setOpenDialog(true);
+    };
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      setOpenDialog(true);
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBackEvent);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBackEvent);
+    };
+  }, []);
+
   return (
     <React.Fragment>
       <Box>
-        <Breadcrumbs data={breadcrumbs} />
+        {
+          // only show breadcrumbs if we have parent record
+        }
+        {showBreadcrumbs && <Breadcrumbs data={breadcrumbs} />}
         {draft_id === undefined || record_id === undefined ? (
-          <DraftCreate
+          <DraftCreateAction
             project_id={project_id!}
             type_name={type_name!}
             state={location.state}
@@ -424,7 +379,8 @@ export default function RecordCreate() {
             location={location}
           />
         ) : (
-          <DraftEdit
+          <DraftRecordEdit
+            onBack={() => setOpenDialog(true)}
             project_info={projectInfo}
             project_id={project_id!}
             type_name={type_name!}
@@ -435,6 +391,62 @@ export default function RecordCreate() {
           />
         )}
       </Box>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        PaperProps={{
+          sx: {padding: 2},
+        }}
+        disableScrollLock={true}
+      >
+        <Alert severity="info">
+          <AlertTitle>
+            {' '}
+            Are you sure you want to return to the record list?
+          </AlertTitle>
+          Your response is saved on your device as a draft. You can return to it
+          later to complete this record.{' '}
+        </Alert>
+
+        <DialogActions
+          sx={{
+            justifyContent: 'space-between',
+            padding: theme.spacing(2),
+          }}
+        >
+          <Button
+            onClick={handleCloseDialog}
+            sx={{
+              backgroundColor: theme.palette.dialogButton.cancel,
+              color: theme.palette.dialogButton.dialogText,
+              fontSize: isMobile ? '0.875rem' : '1rem',
+              padding: isMobile ? '6px 12px' : '10px 20px',
+              '&:hover': {
+                backgroundColor: theme.palette.text.primary,
+              },
+            }}
+          >
+            Continue working
+          </Button>
+          <Button
+            onClick={handleConfirmNavigation}
+            // variant={'contained'}
+            sx={{
+              backgroundColor: theme.palette.dialogButton.confirm,
+              color: theme.palette.dialogButton.dialogText,
+              fontSize: isMobile ? '0.875rem' : '1rem',
+              padding: isMobile ? '6px 12px' : '10px 20px',
+              '&:hover': {
+                backgroundColor: theme.palette.text.primary,
+              },
+            }}
+          >
+            Return to record list
+          </Button>
+        </DialogActions>
+      </Dialog>
     </React.Fragment>
   );
 }

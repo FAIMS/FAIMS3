@@ -17,10 +17,10 @@
  *   Setup helper functions for the api tests
  */
 
-import request from 'supertest';
 import {NOTEBOOK_CREATOR_GROUP_NAME} from '@faims3/data-model';
 import {expect} from 'chai';
 import PouchDB from 'pouchdb';
+import request from 'supertest';
 import {addLocalPasswordForUser} from '../src/auth_providers/local';
 import {createAuthKey} from '../src/authkeys/create';
 import {KEY_SERVICE} from '../src/buildconfig';

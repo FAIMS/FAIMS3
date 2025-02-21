@@ -17,6 +17,7 @@ import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import LockRounded from '@mui/icons-material/LockRounded';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -26,10 +27,17 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Autocomplete,
+  Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
   IconButton,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -48,6 +56,7 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
+import {useState, useMemo} from 'react';
 import {FieldProtectionMenu} from './field-protection-menu';
 
 type FieldEditorProps = {
@@ -57,6 +66,7 @@ type FieldEditorProps = {
   expanded: boolean;
   addFieldCallback: (fieldName: string) => void;
   handleExpandChange: (event: React.SyntheticEvent, newState: boolean) => void;
+  moveFieldCallback: (targetViewId: string) => void;
 };
 
 export const FieldEditor = ({
@@ -66,11 +76,22 @@ export const FieldEditor = ({
   expanded,
   addFieldCallback,
   handleExpandChange,
+  moveFieldCallback,
 }: FieldEditorProps) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
+  const viewsets = useAppSelector(
+    state => state.notebook['ui-specification'].viewsets
+  );
+  const views = useAppSelector(
+    state => state.notebook['ui-specification'].fviews
+  );
   const dispatch = useAppDispatch();
+
+  const [openMoveDialog, setOpenMoveDialog] = useState(false);
+  const [targetViewId, setTargetViewId] = useState('');
+  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
 
   const fieldComponent = field['component-name'];
   const protection = field['component-parameters'].protection || 'none';
@@ -162,6 +183,69 @@ export const FieldEditor = ({
       : `This field is protected. You may not modify or delete it. ${
           !isHidden ? 'However, you can hide it.' : ''
         }`;
+
+  const handleCloseMoveDialog = () => {
+    setOpenMoveDialog(false);
+    setSelectedFormId(null); // reset selectedFormId when dialog is closed
+    setTargetViewId(''); // reset section value when dialog is closed
+  };
+
+  const moveFieldToSection = () => {
+    if (targetViewId) {
+      dispatch({
+        type: 'ui-specification/fieldMovedToSection',
+        payload: {
+          fieldName,
+          sourceViewId: viewId,
+          targetViewId,
+        },
+      });
+      moveFieldCallback(targetViewId);
+      handleCloseMoveDialog();
+    }
+  };
+
+  // memoize the form value
+  const formValue = useMemo(
+    () =>
+      selectedFormId
+        ? {id: selectedFormId, label: viewsets[selectedFormId].label}
+        : null,
+    [selectedFormId, viewsets]
+  );
+
+  // memoize the form options
+  const formOptions = useMemo(
+    () =>
+      Object.entries(viewsets).map(([formId, form]) => ({
+        id: formId,
+        label: form.label,
+      })),
+    [viewsets]
+  );
+
+  // memoize the section value
+  const sectionValue = useMemo(
+    () =>
+      targetViewId
+        ? {id: targetViewId, label: views[targetViewId].label}
+        : null,
+    [targetViewId, views]
+  );
+
+  // memoize the section options
+  const sectionOptions = useMemo(
+    () =>
+      selectedFormId
+        ? viewsets[selectedFormId].views
+            .filter(sectionId => sectionId !== viewId)
+            .map(sectionId => ({
+              id: sectionId,
+              label: views[sectionId].label,
+            }))
+        : [],
+    [selectedFormId, viewsets, viewId, views]
+  );
 
   return (
     <Accordion
@@ -322,6 +406,15 @@ export const FieldEditor = ({
                       </IconButton>
                     </span>
                   </Tooltip>
+                  <Tooltip title="Move Field">
+                    <IconButton
+                      onClick={() => setOpenMoveDialog(true)}
+                      aria-label="move"
+                      size="small"
+                    >
+                      <MoveRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Add Field Below">
                     <IconButton
                       onClick={addFieldBelow}
@@ -374,6 +467,71 @@ export const FieldEditor = ({
           </Grid>
         </Grid>
       </AccordionSummary>
+
+      <Dialog
+        open={openMoveDialog}
+        onClose={handleCloseMoveDialog}
+        aria-labelledby="move-dialog-title"
+        maxWidth="sm"
+      >
+        <DialogTitle id="move-dialog-title" textAlign="center">
+          Move Question
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
+                Destination Form
+              </Typography>
+              <Typography variant="body2" sx={{mb: 0.5}}>
+                Choose the form you want to move the question to.
+              </Typography>
+              <Autocomplete
+                fullWidth
+                value={formValue}
+                onChange={(_event, newValue) => {
+                  setSelectedFormId(newValue ? newValue.id : null);
+                  setTargetViewId(''); // reset section when form changes
+                }}
+                options={formOptions}
+                getOptionLabel={option => option.label}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                renderInput={params => <TextField {...params} />}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
+                Destination Section
+              </Typography>
+              <Typography variant="body2" sx={{mb: 0.5}}>
+                Choose the section you want to move the question to.
+              </Typography>
+              <Autocomplete
+                fullWidth
+                value={selectedFormId ? sectionValue : null}
+                onChange={(_event, newValue) => {
+                  setTargetViewId(newValue ? newValue.id : '');
+                }}
+                options={sectionOptions}
+                getOptionLabel={option => option.label}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                disabled={!selectedFormId}
+                renderInput={params => <TextField {...params} />}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMoveDialog}>Cancel</Button>
+          <Button
+            onClick={moveFieldToSection}
+            disabled={!selectedFormId || !targetViewId}
+          >
+            Move
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
         {(protection === 'protected' || protection === 'allow-hiding') && (
           <Stack

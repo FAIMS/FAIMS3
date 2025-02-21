@@ -1,11 +1,21 @@
+import {
+  getMetadataForAllRecords,
+  getRecordsWithRegex,
+  RecordMetadata,
+} from '@faims3/data-model';
 import {ListingsObject} from '@faims3/data-model/src/types';
 import {useQuery} from '@tanstack/react-query';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {useSearchParams} from 'react-router-dom';
 import * as ROUTES from '../constants/routes';
+import {selectActiveUser} from '../context/slices/authSlice';
+import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {directory_db} from '../sync/databases';
+import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
+import _ from 'lodash';
+
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -190,6 +200,7 @@ export function useQueryParams<T extends Record<string, any>>(config: {
       let hasUpdates = false;
 
       // Check each configured parameter
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       Object.entries(config).forEach(([_, paramConfig]) => {
         const value = searchParams.get(paramConfig.key);
         // If param is missing from URL but has a default value, add it
@@ -292,4 +303,224 @@ export function useQueryParams<T extends Record<string, any>>(config: {
     removeParam,
     removeAllParams,
   };
+}
+
+/**
+ * Filters out draft records from the dataset.
+ *
+ * Draft records are identified by the prefix `drf-` in their `record_id`.
+ */
+const filterOutDrafts = (rows: RecordMetadata[]) => {
+  return rows.filter(record => !record.record_id.startsWith('drf-'));
+};
+
+/**
+ * Filters records to include only thosse created by the active user.
+ *
+ * @param rows - The dataset of records.
+ * @param username - The active user's username.
+ */
+const filterByActiveUser = (rows: RecordMetadata[], username: string) => {
+  return rows.filter(record => record.created_by === username);
+};
+
+/**
+ * Returns a list of all records, and active user records. This applies the
+ * built in getMetadataForAllRecords filtering (which does client side
+ * permission filtering) and also provides my records vs all records list(s).
+ *
+ * @param query The search string, if any - regex match
+ * @param projectId Project ID to get records for
+ * @param filterDeleted Whether to filter out deleted records
+ * @param refreshIntervalMs Supply a refresh interval if desired
+ */
+export const useRecordList = ({
+  query,
+  projectId,
+  filterDeleted,
+  refreshIntervalMs,
+}: {
+  query: string;
+  projectId: string;
+  filterDeleted: boolean;
+  refreshIntervalMs?: number | undefined | false;
+}) => {
+  const activeUser = useAppSelector(selectActiveUser);
+  const token = activeUser?.parsedToken;
+
+  const records = useQuery({
+    queryKey: [
+      'allrecords',
+      query,
+      projectId,
+      filterDeleted,
+      activeUser?.username,
+      token?.roles,
+    ],
+    networkMode: 'always',
+    gcTime: 0,
+    refetchInterval: refreshIntervalMs,
+    // implement a custom structural sharing function to avoid re-renders when
+    // the list of records is the same
+    structuralSharing: (oldData, newData) => {
+      return _.isEqual(oldData, newData) ? oldData : newData;
+    },
+    queryFn: async () => {
+      if (!token) {
+        // Trying to run without token!
+        console.warn('Trying to fetch record list without user token.');
+        return [];
+      }
+      let rows;
+      if (query.length === 0) {
+        rows = await getMetadataForAllRecords(token, projectId, filterDeleted);
+      } else {
+        rows = await getRecordsWithRegex(
+          token,
+          projectId,
+          query,
+          filterDeleted
+        );
+      }
+
+      return rows;
+    },
+  });
+
+  // Get all rows - defaulting to an empty list
+  const allRows = records.data ?? [];
+
+  // Memoize the calculation of the current user rows
+  const {myRecords, otherRecords} = useMemo(() => {
+    const noDrafts = filterOutDrafts(allRows);
+    let justMyRecords: RecordMetadata[] = [];
+
+    // Get just my records
+    if (activeUser) {
+      justMyRecords = filterByActiveUser(noDrafts, activeUser.username);
+    }
+
+    // Get all other records
+    const otherRecords = noDrafts.filter(r => {
+      // other records are all drafts are not in the my records list
+      return !justMyRecords.map(r => r.record_id).includes(r.record_id);
+    });
+
+    return {myRecords: justMyRecords, otherRecords: otherRecords};
+  }, [records, activeUser]);
+
+  // return both curated record lists and the underlying query where necessary
+  return {allRecords: allRows, myRecords, otherRecords, query: records};
+};
+
+/**
+ * Does a potentially auto-refetching fetch of the drafts list for use in
+ * the draft list.
+ */
+export const useDraftsList = ({
+  projectId,
+  refreshIntervalMs,
+  filter,
+}: {
+  projectId: string;
+  refreshIntervalMs?: number | undefined | false;
+  filter: DraftFilters;
+}) => {
+  const records = useQuery({
+    queryKey: ['drafts', projectId, filter],
+    networkMode: 'always',
+    gcTime: 0,
+    refetchInterval: refreshIntervalMs,
+    queryFn: async () => {
+      return Object.values(await listDraftMetadata(projectId, filter));
+    },
+  });
+
+  return records;
+};
+
+/**
+ * A custom hook that creates a debounced version of any value
+ * @param value The value to be debounced
+ * @param delay The delay in milliseconds for the debounce
+ * @returns The debounced value
+ */
+export function useDebounce<T>(value: T, delay = 500): T {
+  // State to store the debounced value
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    // Create a timeout to update the debounced value
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    // Clean up the timeout if the value changes or the component unmounts
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]); // Only re-run if value or delay changes
+
+  return debouncedValue;
+}
+
+interface LoadingDebounce {
+  minDuration?: number; // Minimum duration for loading state in ms
+  delayExitBy?: number; // Additional delay before exiting loading state
+}
+
+/**
+ * A custom hook that ensures loading states have a minimum duration,
+ * particularly useful for preventing flash of loading states
+ * @param isLoading Current loading state
+ * @param options Configuration options
+ * @returns Controlled loading state
+ */
+export function useLoadingDebounce(
+  isLoading: boolean,
+  {minDuration = 1000, delayExitBy = 0}: LoadingDebounce = {}
+): boolean {
+  const [stabilizedLoading, setStabilizedLoading] = useState(isLoading);
+  const loadingStartTime = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // If transitioning to loading state
+    if (isLoading) {
+      loadingStartTime.current = Date.now();
+      setStabilizedLoading(true);
+      return;
+    }
+
+    // If transitioning from loading to not loading
+    if (!isLoading && loadingStartTime.current !== null) {
+      const elapsedTime = Date.now() - loadingStartTime.current;
+      const remainingTime = Math.max(0, minDuration - elapsedTime);
+      const totalDelay = remainingTime + delayExitBy;
+
+      if (totalDelay > 0) {
+        timeoutRef.current = setTimeout(() => {
+          setStabilizedLoading(false);
+          loadingStartTime.current = null;
+        }, totalDelay);
+      } else {
+        setStabilizedLoading(false);
+        loadingStartTime.current = null;
+      }
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [isLoading, minDuration, delayExitBy]);
+
+  return stabilizedLoading;
 }
