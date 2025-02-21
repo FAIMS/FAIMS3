@@ -323,6 +323,28 @@ function refreshTokenExpiryMinutes(): number {
   }
 }
 
+// 30 minute default expiry for email verification codes
+const DEFAULT_EMAIL_CODE_EXPIRY_MINUTES = 30;
+
+/**
+ * @returns The expiry time in minutes for email verification codes
+ */
+function emailCodeExpiryMinutes(): number {
+  const emailCodeExpiryMinutes = process.env.EMAIL_CODE_EXPIRY_MINUTES;
+  if (emailCodeExpiryMinutes === '' || emailCodeExpiryMinutes === undefined) {
+    return DEFAULT_EMAIL_CODE_EXPIRY_MINUTES;
+  }
+  try {
+    return parseInt(emailCodeExpiryMinutes);
+  } catch (err) {
+    console.error(
+      'EMAIL_CODE_EXPIRY_MINUTES unparseable, defaulting to ' +
+        DEFAULT_EMAIL_CODE_EXPIRY_MINUTES
+    );
+    return DEFAULT_EMAIL_CODE_EXPIRY_MINUTES;
+  }
+}
+
 const DEFAULT_RATE_LIMITER_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const DEFAULT_RATE_LIMITER_PER_WINDOW = 1000; // 1000 requests per window
 const DEFAULT_RATE_LIMITER_ENABLED = true;
@@ -379,6 +401,24 @@ function rateLimiterEnabled(): boolean {
   return rateLimiterEnabled.toLowerCase() === 'true';
 }
 
+/**
+ * What is the URL of the new conductor? Required.
+ *
+ * @returns The new conductor URL, no trailing /
+ */
+function newConductorUrl(): string {
+  let conductorUrl = process.env.NEW_CONDUCTOR_URL;
+  if (conductorUrl === '' || conductorUrl === undefined) {
+    throw Error('You must provide a NEW_CONDUCTOR_URL in your environment.');
+  } else {
+    if (conductorUrl.endsWith('/')) {
+      console.log('NEW_CONDUCTOR_URL should not end with / - removing it');
+      conductorUrl = conductorUrl.substring(0, conductorUrl.length - 1);
+    }
+    return conductorUrl;
+  }
+}
+
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -403,6 +443,8 @@ export const DESIGNER_URL = designer_url();
 export const RATE_LIMITER_WINDOW_MS = rateLimiterWindowMs();
 export const RATE_LIMITER_PER_WINDOW = rateLimiterPerWindow();
 export const RATE_LIMITER_ENABLED = rateLimiterEnabled();
+export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
+export const NEW_CONDUCTOR_URL = newConductorUrl();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to

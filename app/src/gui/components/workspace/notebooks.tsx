@@ -113,12 +113,14 @@ export default function NoteBooks() {
             fontWeight={activated ? 'bold' : 'normal'}
             color={activated ? 'black' : grey[800]}
             sx={{
-              padding: '4px 0',
+              padding: '8px 0px',
             }}
           >
             {name} {description}
           </Typography>
-          <Typography variant="caption">{description}</Typography>
+          <Typography variant="caption" sx={{display: 'block', mt: 1}}>
+            {description}
+          </Typography>
         </Box>
       ),
     },

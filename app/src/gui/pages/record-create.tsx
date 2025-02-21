@@ -33,8 +33,6 @@ import {
   CircularProgress,
   Dialog,
   DialogActions,
-  DialogContent,
-  DialogTitle,
   Grid,
   Paper,
 } from '@mui/material';
@@ -65,8 +63,8 @@ import InheritedDataComponent from '../components/record/inherited_data';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import BackButton from '../components/ui/BackButton';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -293,8 +291,6 @@ export default function RecordCreate() {
   const projectId = location.pathname.split('/')[2];
 
   const [openDialog, setOpenDialog] = useState(false);
-  //for android back button
-  const [androidBackPressed, setAndroidBackPressed] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -321,7 +317,6 @@ export default function RecordCreate() {
   }, [project_id]);
 
   let showBreadcrumbs = false;
-  const history = useNavigate();
 
   const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
@@ -353,7 +348,6 @@ export default function RecordCreate() {
   useEffect(() => {
     const handleBackEvent = (event: Event) => {
       event.preventDefault();
-      setAndroidBackPressed(true);
       setOpenDialog(true);
     };
     window.history.pushState(null, '', window.location.href);

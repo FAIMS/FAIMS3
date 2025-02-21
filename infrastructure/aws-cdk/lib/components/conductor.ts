@@ -50,6 +50,8 @@ export interface FaimsConductorProps {
   couchDBPort: number;
   /** CouchDB endpoint (format: https://domain:port) */
   couchDBEndpoint: string;
+  /** Public URL for the /web (new conductor) */
+  webUrl: string;
   /** Public URL for web app */
   webAppPublicUrl: string;
   /** Public URL for Android app */
@@ -144,6 +146,7 @@ export class FaimsConductor extends Construct {
           IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
           KEY_SOURCE: 'AWS_SM',
           AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
+          NEW_CONDUCTOR_URL: props.webUrl,
         },
         secrets: {
           COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(

@@ -356,28 +356,31 @@ export function ViewComponent(props: ViewProps) {
                 Other sections have errors. Click to navigate:
               </Typography>
 
-              {otherSectionsWithErrors.map((section, _index) => (
-                <Link
-                  key={section}
-                  component="button"
-                  variant="body2"
-                  onClick={() => props.handleSectionClick(section)}
-                  sx={{
-                    display: 'inline-flex',
-                    color: theme.palette.highlightColor.main,
-                    fontSize: {xs: '0.85rem', sm: '1rem'},
-                    fontWeight: 'bold',
-                    textDecoration: 'underline',
-                    '&:hover': {
-                      color: theme.palette.secondary.main,
-                      transform: 'scale(1.02)',
-                    },
-                    mt: 1,
-                  }}
-                >
-                  {ui_specification.views[section]?.label || section}
-                </Link>
-              ))}
+              {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                otherSectionsWithErrors.map((section, _index) => (
+                  <Link
+                    key={section}
+                    component="button"
+                    variant="body2"
+                    onClick={() => props.handleSectionClick(section)}
+                    sx={{
+                      display: 'inline-flex',
+                      color: theme.palette.highlightColor.main,
+                      fontSize: {xs: '0.85rem', sm: '1rem'},
+                      fontWeight: 'bold',
+                      textDecoration: 'underline',
+                      '&:hover': {
+                        color: theme.palette.secondary.main,
+                        transform: 'scale(1.02)',
+                      },
+                      mt: 1,
+                    }}
+                  >
+                    {ui_specification.views[section]?.label || section}
+                  </Link>
+                ))
+              }
             </Box>
           )}
         </Alert>
@@ -404,6 +407,7 @@ function displayErrors(
   thisView: string,
   ui_specification: ProjectUIModel,
   currentFields: string[],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _otherSections?: string[]
 ) {
   if (!errors) return <p>No errors to display</p>;
@@ -458,53 +462,64 @@ function displayErrors(
       }}
     >
       {' '}
-      {filteredErrors.map(field => (
-        <li
-          key={field}
-          style={{
-            marginBottom: '6px',
-            display: isMobile ? 'inline-flex' : 'flex',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            width: '100%',
-            lineHeight: '40px',
-          }}
-        >
-          <Link
-            component="button"
-            variant="body2"
-            onClick={() => scrollToField(field)}
-            sx={{
-              color: theme.palette.highlightColor.main,
-              textDecoration: 'underline',
-              fontWeight: 'bold',
-              maxWidth: '100%',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              fontSize: {xs: '0.85rem', sm: '1rem'},
-              '&:hover': {
-                transform: 'scale(1.02)',
-                color: theme.palette.secondary.main,
+      {filteredErrors.map(field => {
+        let errorMessage = errors[field];
+        const fieldConfig = ui_specification.fields[field];
+        const isNumberField =
+          fieldConfig?.['type-returned'] === 'faims-core::Number';
+
+        if (isNumberField && errorMessage?.includes('NaN')) {
+          errorMessage = 'This field requires a valid number.';
+        }
+
+        return (
+          <li
+            key={field}
+            style={{
+              marginBottom: '6px',
+              display: isMobile ? 'inline-flex' : 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              width: '100%',
+              lineHeight: '40px',
+            }}
+          >
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => scrollToField(field)}
+              sx={{
+                color: theme.palette.highlightColor.main,
                 textDecoration: 'underline',
+                fontWeight: 'bold',
+                maxWidth: '100%',
+                whiteSpace: 'nowrap',
                 overflow: 'hidden',
-              },
-            }}
-          >
-            {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
-          </Link>
-          <Typography
-            variant="body2"
-            sx={{
-              color: theme.palette.icon?.required,
-              marginLeft: '20px',
-              fontSize: {xs: '0.75rem', sm: '0.9rem'},
-            }}
-          >
-            {errors[field]}
-          </Typography>
-        </li>
-      ))}
+                textOverflow: 'ellipsis',
+                fontSize: {xs: '0.85rem', sm: '1rem'},
+                '&:hover': {
+                  transform: 'scale(1.02)',
+                  color: theme.palette.secondary.main,
+                  textDecoration: 'underline',
+                  overflow: 'hidden',
+                },
+              }}
+            >
+              {getUsefulFieldNameFromUiSpec(field, thisView, ui_specification)}
+            </Link>
+            <Typography
+              variant="body2"
+              sx={{
+                color: theme.palette.icon?.required,
+                marginLeft: '20px',
+                fontSize: {xs: '0.75rem', sm: '0.9rem'},
+              }}
+            >
+              {errorMessage}
+            </Typography>
+          </li>
+        );
+      })}
     </ul>
   );
 }
