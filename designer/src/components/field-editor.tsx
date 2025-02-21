@@ -123,6 +123,7 @@ export const FieldEditor = ({
       type: 'ui-specification/fieldDeleted',
       payload: {fieldName, viewId},
     });
+
     setDeleteWarningOpen(false);
   };
 
@@ -379,7 +380,14 @@ export const FieldEditor = ({
             <p>Are you sure you want to proceed?</p>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDeleteWarningOpen(false)}>Cancel</Button>
+            <Button
+              onClick={e => {
+                e.stopPropagation();
+                setDeleteWarningOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
             <Button onClick={confirmDelete} color="error">
               Delete Anyway
             </Button>
