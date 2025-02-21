@@ -46,7 +46,6 @@ import React, {useContext, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {ProjectsContext} from '../../context/projects-context';
 import {
   selectActiveServerId,
   selectIsAuthenticated,
@@ -57,6 +56,7 @@ import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import SyncStatus from '../components/sync';
+import { Project } from '../../context/slices/projectSlice';
 
 const drawerWidth = 240;
 
@@ -90,13 +90,13 @@ type MenuItemProps = {
 /**
  * Retrieves a list of nested menu items to be displayed in the navigation menu.
  */
-function getNestedProjects(pouchProjectList: ProjectExtended[]) {
+function getNestedProjects(pouchProjectList: Project[]) {
   const projectListItems: ProjectListItemProps[] = [];
   pouchProjectList.map(project_info => {
     projectListItems.push({
-      title: project_info.name,
+      title: project_info.metadata.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_info.project_id,
+      to: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_info.projectId,
       disabled: false,
     });
   });
@@ -117,9 +117,10 @@ function getNestedProjects(pouchProjectList: ProjectExtended[]) {
 export default function MainAppBar() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const activeServerId = useAppSelector(selectActiveServerId);
-
-  const projectList = useContext(ProjectsContext).projects.filter(
-    p => p.activated && p.listing === activeServerId
+  const projectList = useAppSelector(state =>
+    activeServerId
+      ? Object.values(state.projects.servers[activeServerId].projects ?? {})
+      : []
   );
 
   const [isOpen, setIsOpen] = useState<boolean>(false);

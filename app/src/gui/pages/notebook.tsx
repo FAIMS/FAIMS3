@@ -33,9 +33,10 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useContext} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
-import {ProjectsContext} from '../../context/projects-context';
 import NotebookComponent from '../components/notebook';
 import BackButton from '../components/ui/BackButton';
+import {useAppSelector} from '../../context/store';
+import {selectAllProjects} from '../../context/slices/projectSlice';
 
 export default function Notebook() {
   const theme = useTheme();
@@ -43,8 +44,8 @@ export default function Notebook() {
     project_id: string;
   }>();
   const history = useNavigate();
-  const project = useContext(ProjectsContext).projects.find(
-    project => project_id === project.project_id
+  const project = useAppSelector(selectAllProjects).find(
+    p => p.projectId === project_id
   );
   const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));
 
@@ -67,7 +68,7 @@ export default function Notebook() {
             textOverflow: 'ellipsis',
           }}
         >
-          {project.name}
+          {project.metadata.name}
         </Typography>
       </Stack>
 

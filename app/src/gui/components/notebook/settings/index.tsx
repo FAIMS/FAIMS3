@@ -46,17 +46,16 @@ import {
 import {theme} from '../../../themes';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
-import {selectAllProjects} from '../../../../context/slices/projectSlice';
+import {selectAllProjects, selectProjectById} from '../../../../context/slices/projectSlice';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
+  if (!project_id) return <></>;
 
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
-  const dispatch = useAppDispatch();
-  const project = useAppSelector(selectAllProjects).find(
-    p => p.projectId === project_id
-  );
 
+  const dispatch = useAppDispatch();
+  const project = useAppSelector(state => selectProjectById(state, project_id));
   if (!project) return <></>;
 
   useEffect(() => {

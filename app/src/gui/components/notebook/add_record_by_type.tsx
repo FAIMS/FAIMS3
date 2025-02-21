@@ -13,18 +13,17 @@ import {Navigate, Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
-import {getMetadataValue} from '../../../sync/metadata';
-import {ProjectExtended} from '../../../types/project';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 
 type AddRecordButtonsProps = {
-  project: ProjectExtended;
+  project: Project;
   recordLabel: string;
 };
 
 export default function AddRecordButtons({
-  project: {_id, project_id},
+  project: {projectId},
   recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
@@ -33,18 +32,17 @@ export default function AddRecordButtons({
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
   const [uiSpec, setUiSpec] = useState<ProjectUIModel | undefined>(undefined);
-  const [showQRButton, setShowQRButton] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
   >(undefined);
-
-  getMetadataValue(project_id, 'showQRCodeButton').then(value => {
-    setShowQRButton(value === true || value === 'true');
-  });
+  const metadata = useAppSelector(
+    state => selectProjectById(state, projectId)?.metadata
+  );
+  const showQRButton = metadata?.['showQRCodeButton'] === true;
 
   useEffect(() => {
-    getUiSpecForProject(project_id).then(u => setUiSpec(u));
-  }, [project_id]);
+    getUiSpecForProject(projectId).then(u => setUiSpec(u));
+  }, [projectId]);
 
   const buttonLabel = `Add new ${recordLabel}`;
 
@@ -58,7 +56,8 @@ export default function AddRecordButtons({
     // find a record with this field value
 
     // TODO validate that this is always defined!
-    getRecordsWithRegex(activeUser.parsedToken, _id, value, true).then(
+    // TODO WHY IS THERE TWO IDs - this is most likely broken
+    getRecordsWithRegex(activeUser.parsedToken, projectId, value, true).then(
       records => {
         // navigate to it
         // what should happen if there are more than one?
@@ -73,7 +72,7 @@ export default function AddRecordButtons({
     return (
       <Navigate
         to={ROUTES.getRecordRoute(
-          project_id || 'dummy',
+          projectId || 'dummy',
           (selectedRecord.record_id || '').toString(),
           (selectedRecord.revision_id || '').toString()
         )}
@@ -112,7 +111,7 @@ export default function AddRecordButtons({
               key="newRecord"
               to={
                 ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                project_id +
+                projectId +
                 ROUTES.RECORD_CREATE +
                 visible_types
               }
@@ -127,7 +126,7 @@ export default function AddRecordButtons({
                     component={RouterLink}
                     to={
                       ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      project_id +
+                      projectId +
                       ROUTES.RECORD_CREATE +
                       viewset_name
                     }

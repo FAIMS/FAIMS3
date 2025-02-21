@@ -17,20 +17,20 @@
  * Description:
  *   File is the field about Tree view for prototype for hierarchical-vocabularies, not finalized yet
  */
-import React, {useEffect} from 'react';
-import {TextFieldProps} from 'formik-mui';
-import Box from '@mui/material/Box';
-import TreeView from '@mui/lab/TreeView';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TreeItem, {TreeItemProps, useTreeItem} from '@mui/lab/TreeItem';
-import clsx from 'clsx';
-import Typography from '@mui/material/Typography';
+import TreeView from '@mui/lab/TreeView';
+import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import {createTheme, styled} from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import clsx from 'clsx';
+import {TextFieldProps} from 'formik-mui';
+import React, {useEffect} from 'react';
 import {logError} from '../../logging';
-import {getMetadataValue} from '../../sync/metadata';
+
 interface RenderTree {
   // id: string;
   name: string;

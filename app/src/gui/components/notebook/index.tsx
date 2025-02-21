@@ -19,8 +19,6 @@ import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import {getMetadataValue} from '../../../sync/metadata';
-import {ProjectExtended} from '../../../types/project';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {
   useDraftsList,
@@ -34,6 +32,8 @@ import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
+import {Project, selectProjectById} from '../../../context/slices/projectSlice';
+import { useAppSelector } from '../../../context/store';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -120,7 +120,7 @@ const MyTabScrollButton = styled(TabScrollButton)({
  * NotebookComponentProps defines the properties for the NotebookComponent component.
  */
 type NotebookComponentProps = {
-  project: ProjectExtended;
+  project: Project;
 };
 
 /**
@@ -159,7 +159,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const [query, setQuery] = useState<string>('');
   const records = useRecordList({
     query: query,
-    projectId: project.project_id,
+    projectId: project.projectId,
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
     refreshIntervalMs: 10000,
@@ -168,30 +168,23 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
   // Fetch drafts
   const drafts = useDraftsList({
-    projectId: project.project_id,
+    projectId: project.projectId,
     filter: 'all',
   });
   const forceDraftRefresh = drafts.refetch;
 
   // Query to get the ui spec
   const uiSpec = useQuery({
-    queryKey: ['uispecquery', project.project_id],
+    queryKey: ['uispecquery', project.projectId],
     queryFn: async () => {
-      return getUiSpecForProject(project.project_id);
+      return getUiSpecForProject(project.projectId);
     },
   });
   const viewsets = uiSpec.data?.viewsets;
 
-  // Get the metadata for the template ID
-  const {data: template_id} = useQuery({
-    queryKey: ['project-template-id', project.project_id],
-    queryFn: async (): Promise<string | null> => {
-      // don't return undefined from queryFn
-      const id = await getMetadataValue(project.project_id, 'template_id');
-      if (id !== undefined) return id as string;
-      else return null;
-    },
-  });
+  const templateId = useAppSelector(
+    state => selectProjectById(state, project.projectId)?.metadata?.['template_id'] as string | undefined
+  );
 
   /**
    * Handles the change event when the user switches between the tabs.
@@ -223,7 +216,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         <Alert severity="error">
           <AlertTitle>
             {' '}
-            {project.name} {NOTEBOOK_NAME} cannot sync right now.
+            {project.metadata.name} {NOTEBOOK_NAME} cannot sync right now.
           </AlertTitle>
           Your device may be offline.
           <br />
@@ -336,7 +329,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           }
           <TabPanel value={tabIndex} index={0} id={'records-mine'}>
             <RecordsTable
-              project_id={project.project_id}
+              project_id={project.projectId}
               maxRows={25}
               rows={records.myRecords}
               loading={records.query.isLoading}
@@ -352,7 +345,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
           <TabPanel value={tabIndex} index={1} id={'records-all'}>
             <RecordsTable
-              project_id={project.project_id}
+              project_id={project.projectId}
               maxRows={25}
               rows={records.otherRecords}
               loading={records.query.isLoading}
@@ -367,7 +360,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           }
           <TabPanel value={tabIndex} index={2} id={'record-drafts'}>
             <DraftsTable
-              project_id={project.project_id}
+              project_id={project.projectId}
               maxRows={25}
               rows={drafts.data ?? []}
               loading={drafts.isLoading}
@@ -382,7 +375,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 setTabIndex(index as TabIndex)
               }
               project={project}
-              templateId={template_id}
+              templateId={templateId}
             />
           </TabPanel>
 
@@ -393,7 +386,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           <TabPanel value={tabIndex} index={5} id={'map'}>
             {uiSpec !== null && (
               <OverviewMap
-                project_id={project.project_id}
+                project_id={project.projectId}
                 uiSpec={uiSpec.data}
               />
             )}

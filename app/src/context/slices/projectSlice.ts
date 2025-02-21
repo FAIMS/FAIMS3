@@ -742,6 +742,31 @@ export const selectAllProjects = (state: RootState) => {
   return allProjects;
 };
 
+/**
+ * Selector that finds a project by its ID across all servers
+ * 
+ * @param state - The Redux root state
+ * @param projectId - The ID of the project to find
+ * @returns The project if found, undefined otherwise
+ */
+export const selectProjectById = (
+  state: RootState,
+  projectId: string
+): Project | undefined => {
+  // Loop through all servers
+  for (const server of Object.values(state.projects.servers)) {
+    // Check if this server has the project
+    const project = server.projects[projectId];
+    if (project) {
+      return project;
+    }
+  }
+  
+  // Project not found in any server
+  return undefined;
+};
+
+
 // THUNKS
 // ======
 
