@@ -63,8 +63,8 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
   });
 }
 
-// Helper function to check if any images are undownloaded
-const hasUndownloadedImages = (images: Array<any>): boolean => {
+// Helper function to check if any images are not downloaded
+const hasNonDownloadedImages = (images: Array<any>): boolean => {
   return images.some(image => image['attachment_id'] !== undefined);
 };
 
@@ -170,8 +170,8 @@ const ImageGallery = ({
           gap: theme.spacing(1),
           padding: theme.spacing(1),
           gridTemplateColumns: {
-            // Show 3 images per row on mobile
-            xs: 'repeat(3, 1fr)',
+            // Show 2 images per row on mobile
+            xs: 'repeat(2, 1fr)',
             // Show 4 images per row on tablet
             sm: 'repeat(4, 1fr)',
             // Show 6 images per row on small desktop
@@ -417,7 +417,7 @@ export const TakePhoto: React.FC<
 
   const images = props.form.values[props.field.name] ?? [];
   const disabled = props.disabled ?? false;
-  const hasUndownloaded = hasUndownloadedImages(images);
+  const hasUndownloaded = hasNonDownloadedImages(images);
   const projectId = props.form.values['_project_id'];
 
   return (

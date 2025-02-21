@@ -19,25 +19,20 @@
  *   Steppers show sections of Form
  *   MobileStepper for small screen ONLY
  */
-import {
-  Button,
-  Box,
-  Typography,
-  Step,
-  Stepper,
-  StepButton,
-  MobileStepper,
-  keyframes,
-  styled,
-  useMediaQuery,
-  Badge,
-} from '@mui/material';
 import {ProjectUIModel} from '@faims3/data-model';
+import {
+  Badge,
+  Box,
+  Button,
+  MobileStepper,
+  Step,
+  StepButton,
+  Stepper,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import {createUseStyles} from 'react-jss';
-import {useCallback, useEffect, useState} from 'react';
 import {getStepColor} from '../../../utils/generateStepperColors';
-import {theme} from '../../themes';
-import {ThemeType} from '../../../utils/generateStepperColors';
 
 type RecordStepperProps = {
   view_index: number;
@@ -69,18 +64,6 @@ const useStyles = createUseStyles({
     },
   },
 });
-
-/* 🔥 shake Animation - mobile/tablet UX */
-const shakeAnimation = keyframes`
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-5px); }
-  40%, 80% { transform: translateX(5px); }
-`;
-
-/** Wrapper for mobile  Stepper*/
-const MobileStepperWrapper = styled(Box)(({shake}: {shake: boolean}) => ({
-  animation: shake ? `${shakeAnimation} 0.5s ease-in-out` : 'none',
-}));
 
 /**
  * @function RecordStepper
@@ -119,7 +102,7 @@ export default function RecordStepper(props: RecordStepperProps) {
     formErrors,
     isRecordSubmitted,
   } = props;
-  const [shakeStepper, setShakeStepper] = useState(false);
+  const theme = useTheme();
 
   // function to check if stepper has erros
   const hasErrors = (sectionId: string | undefined) => {
@@ -134,13 +117,10 @@ export default function RecordStepper(props: RecordStepperProps) {
     );
   };
 
-  const themeType: ThemeType = theme.themeType as ThemeType;
-
   return (
     <>
       <Box display={{xs: 'none', sm: 'block'}} py={1}>
         <div style={{overflowX: 'visible', position: 'relative', zIndex: 1}}>
-          {' '}
           <Stepper
             nonLinear
             activeStep={view_index}
@@ -205,25 +185,24 @@ export default function RecordStepper(props: RecordStepperProps) {
         </div>
       </Box>
 
-      <MobileStepperWrapper
-        shake={shakeStepper}
-        display={{xs: 'block', md: 'none'}}
-      >
-        <Box display={{xs: 'block', sm: 'none'}}>
-          <CustomMobileStepper
-            views={views}
-            view_index={view_index}
-            onChangeStepper={onChangeStepper}
-            ui_specification={ui_specification}
-            formErrors={formErrors}
-            visitedSteps={visitedSteps}
-            isRecordSubmitted={isRecordSubmitted}
-          />
-          <Typography variant="h5" align="center">
-            {ui_specification.views[views[view_index]]?.label}
-          </Typography>
-        </Box>
-      </MobileStepperWrapper>
+      <Box display={{xs: 'block', sm: 'none'}}>
+        <CustomMobileStepper
+          views={views}
+          view_index={view_index}
+          onChangeStepper={onChangeStepper}
+          ui_specification={ui_specification}
+          formErrors={formErrors}
+          visitedSteps={visitedSteps}
+          isRecordSubmitted={isRecordSubmitted}
+        />
+        <Typography
+          variant="h4"
+          align="center"
+          style={{marginTop: theme.spacing(2)}}
+        >
+          {ui_specification.views[views[view_index]]?.label}
+        </Typography>
+      </Box>
     </>
   );
 }

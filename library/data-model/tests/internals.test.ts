@@ -60,7 +60,7 @@ describe('test internals', () => {
       created: time,
       updated: time,
       annotations: {
-        avp1: 1,
+        avp1: {annotation: '', uncertainty: false},
       },
       field_types: {field_name: fulltype},
     };
@@ -68,7 +68,10 @@ describe('test internals', () => {
     const hridField = HRID_STRING + 'FieldName';
     const hridValue = 'test HRID value';
     doc.data[hridField] = hridValue;
-    doc.annotations[hridField] = 'annotation for HRID';
+    doc.annotations[hridField] = {
+      annotation: 'annotation for HRID field',
+      uncertainty: false,
+    };
 
     return upsertFAIMSData(project_id, doc).then(revisionId => {
       return getRevision(project_id, revisionId)

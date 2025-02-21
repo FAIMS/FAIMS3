@@ -1,13 +1,13 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import {PaletteOptions, TypeBackground} from '@mui/material/styles';
+import {StepperColors} from '.';
 
 declare module '@mui/material/styles' {
   interface Theme {
-    themeType: 'bss' | 'default' | 'bubble';
+    stepperColors: StepperColors;
   }
-
   interface ThemeOptions {
-    themeType?: 'bss' | 'default' | 'bubble';
+    stepperColors: StepperColors;
   }
   interface TypeText {
     helpText: string;

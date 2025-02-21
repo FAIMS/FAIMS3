@@ -455,7 +455,7 @@ export default function Record() {
       >
         <Grid item>
           <BackButton
-            label="Back to records"
+            label="Back"
             onClick={() => {
               // Go back to the records list
               history({

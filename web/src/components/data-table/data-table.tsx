@@ -9,7 +9,6 @@ import {
   SortingState,
   useReactTable,
 } from '@tanstack/react-table';
-
 import {
   Table,
   TableBody,
@@ -18,23 +17,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import React, {useState} from 'react';
-
+import {useState, ReactNode} from 'react';
 import {DataTablePagination} from './pagination';
-
 import {Input} from '@/components/ui/input';
 import {Skeleton} from '@/components/ui/skeleton';
-import {Button} from '../ui/button';
-import {Plus} from 'lucide-react';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data?: TData[];
   loading?: boolean;
+  button?: ReactNode;
   onRowClick?: (row: TData) => void;
-  onAddClick?: () => void;
-  addClickLabel?: string;
-  OnAddComponent?: React.ReactNode;
 }
 
 /**
@@ -47,10 +40,8 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   loading,
+  button,
   onRowClick,
-  onAddClick,
-  addClickLabel,
-  OnAddComponent,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -87,13 +78,7 @@ export function DataTable<TData, TValue>({
           }
           className="max-w-sm"
         />
-        {OnAddComponent ??
-          (onAddClick && (
-            <Button variant="outline" onClick={onAddClick}>
-              {addClickLabel ?? ''}
-              <Plus className="h-4 w-4" />
-            </Button>
-          ))}
+        {button}
       </div>
 
       <div className="rounded-md border bg-card">

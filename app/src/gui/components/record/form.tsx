@@ -41,10 +41,7 @@ import {
   NotificationContext,
   NotificationContextType,
 } from '../../../context/popup';
-import {
-  listAllConnections,
-  selectActiveUser,
-} from '../../../context/slices/authSlice';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {store} from '../../../context/store';
 import {
   currentlyVisibleFields,
@@ -681,8 +678,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
         related,
         this.props.record_id
       );
-      initialValues['fieldNames'] = [];
-      initialValues['views'] = [];
 
       // work out the record context
       const context = fromdb
@@ -780,7 +775,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
 
   onChangeStepper(view_name: string, activeStepIndex: number) {
     this.setState(prevState => {
-      const {visitedSteps, activeStep} = prevState;
+      const {activeStep} = prevState;
 
       const wasVisitedBefore = prevState.visitedSteps.has(view_name);
 
@@ -1205,12 +1200,15 @@ class RecordForm extends React.Component<any, RecordFormState> {
   }
 
   updateannotation(name: string, value: any, type: string) {
-    const annotation = this.state.annotation ?? {};
+    const annotation = this.state.annotation ?? {
+      annotation: '',
+      uncertainty: false,
+    };
     if (annotation !== undefined) {
-      if (annotation[name] !== undefined) annotation[name][type] = value;
-      else {
-        annotation[name] = {annotation: '', uncertainty: false};
-        annotation[name][type] = value;
+      if (type === 'uncertainty') {
+        annotation[name].uncertainty = value;
+      } else if (type === 'annotation') {
+        annotation[name].annotation = value;
       }
     }
     this.setState({...this.state, annotation: annotation});
@@ -1404,7 +1402,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
 
                         return (
                           <div key={`form-${view}`}>
-                            <h2>{ui_specification.views[view].label}</h2>
+                            <h1>{ui_specification.views[view].label}</h1>
                             <Form>
                               {description !== '' && (
                                 <Typography>{description}</Typography>
@@ -1523,82 +1521,88 @@ class RecordForm extends React.Component<any, RecordFormState> {
 
                 return (
                   <Form>
-                    {views.length > 1 && (
-                      <RecordStepper
-                        view_index={view_index}
+                    <div
+                      style={{
+                        padding: this.props.mq_above_md ? '1rem' : '0.2rem',
+                      }}
+                    >
+                      {views.length > 1 && (
+                        <RecordStepper
+                          view_index={view_index}
+                          ui_specification={ui_specification}
+                          onChangeStepper={this.onChangeStepper}
+                          views={views}
+                          formErrors={formProps.errors}
+                          visitedSteps={this.state.visitedSteps}
+                          isRecordSubmitted={isRecordSubmitted}
+                        />
+                      )}
+
+                      {description !== '' && (
+                        <Box
+                          bgcolor={'#fafafa'}
+                          p={3}
+                          style={{border: '1px #eeeeee dashed'}}
+                        >
+                          <Typography>{description}</Typography>
+                        </Box>
+                      )}
+                      <ViewComponent
+                        viewName={viewName}
                         ui_specification={ui_specification}
+                        formProps={formProps}
+                        draftState={this.draftState}
+                        annotation={this.state.annotation}
+                        handleAnnotation={this.updateannotation}
+                        isSyncing={this.props.isSyncing}
+                        conflictfields={this.props.conflictfields}
+                        handleChangeTab={this.props.handleChangeTab}
+                        fieldNames={fieldNames}
+                        disabled={this.props.disabled}
+                        visitedSteps={this.state.visitedSteps}
+                        currentStepId={this.state.view_cached ?? ''}
+                        isRevisiting={this.state.isRevisiting}
+                        handleSectionClick={this.handleSectionClick}
+                      />
+                      <FormButtonGroup
+                        record_type={this.state.type_cached}
+                        is_final_view={is_final_view}
+                        disabled={this.props.disabled}
                         onChangeStepper={this.onChangeStepper}
-                        views={views}
-                        formErrors={formProps.errors}
                         visitedSteps={this.state.visitedSteps}
                         isRecordSubmitted={isRecordSubmitted}
-                      />
-                    )}
-
-                    {description !== '' && (
-                      <Box
-                        bgcolor={'#fafafa'}
-                        p={3}
-                        style={{border: '1px #eeeeee dashed'}}
-                      >
-                        <Typography>{description}</Typography>
-                      </Box>
-                    )}
-                    <ViewComponent
-                      viewName={viewName}
-                      ui_specification={ui_specification}
-                      formProps={formProps}
-                      draftState={this.draftState}
-                      annotation={this.state.annotation}
-                      handleAnnotation={this.updateannotation}
-                      isSyncing={this.props.isSyncing}
-                      conflictfields={this.props.conflictfields}
-                      handleChangeTab={this.props.handleChangeTab}
-                      fieldNames={fieldNames}
-                      disabled={this.props.disabled}
-                      visitedSteps={this.state.visitedSteps}
-                      currentStepId={this.state.view_cached ?? ''}
-                      isRevisiting={this.state.isRevisiting}
-                      handleSectionClick={this.handleSectionClick}
-                    />
-                    <FormButtonGroup
-                      record_type={this.state.type_cached}
-                      is_final_view={is_final_view}
-                      disabled={this.props.disabled}
-                      onChangeStepper={this.onChangeStepper}
-                      visitedSteps={this.state.visitedSteps}
-                      isRecordSubmitted={isRecordSubmitted}
-                      view_index={view_index}
-                      formProps={formProps}
-                      ui_specification={ui_specification}
-                      views={views}
-                      handleFormSubmit={(is_close: string) => {
-                        formProps.setSubmitting(true);
-                        this.setTimeout(() => {
-                          this.save(
-                            formProps.values,
-                            is_close,
-                            formProps.setSubmitting
-                          );
-                        }, 500);
-                      }}
-                      layout={layout}
-                    />
-                    {this.state.revision_cached !== undefined && (
-                      <Box mt={3}>
-                        <Divider />
-                        <UGCReport
-                          handleUGCReport={(value: string) => {
-                            this.setState({ugc_comment: value});
+                        view_index={view_index}
+                        formProps={formProps}
+                        ui_specification={ui_specification}
+                        views={views}
+                        handleFormSubmit={(is_close: string) => {
+                          formProps.setSubmitting(true);
+                          this.setTimeout(() => {
                             this.save(
                               formProps.values,
-                              'continue',
+                              is_close,
                               formProps.setSubmitting
                             );
-                          }}
-                        />
-                      </Box>
-                    )}
+                          }, 500);
+                        }}
+                        layout={layout}
+                      />
+                      {this.state.revision_cached !== undefined && (
+                        <Box mt={3}>
+                          <Divider />
+                          <UGCReport
+                            handleUGCReport={(value: string) => {
+                              this.setState({ugc_comment: value});
+                              this.save(
+                                formProps.values,
+                                'continue',
+                                formProps.setSubmitting
+                              );
+                            }}
+                          />
+                        </Box>
+                      )}
+                    </div>
                   </Form>
                 );
               }}

@@ -113,14 +113,18 @@ const getProjects = async (url: string, token: string) => {
 /**
  * Retrieves a list of Remote projects.
  *
- * @returns {Promise<ProjectExtended[]>} A promise that resolves to an array of Project objects.
+ * @returns A promise that resolves to an array of Project objects and a map of listing -> success
  */
 export const getRemoteProjects = async () => {
   const listings = await getListings();
 
+  // This tracks whether the fetch was successful for each listing
+  const listingToSuccessful: Map<string, boolean> = new Map([]);
+
   const projects: ProjectExtended[] = [];
 
   for (const {_id, conductor_url} of listings) {
+    listingToSuccessful.set(_id, false);
     if (!_id || !conductor_url) continue;
 
     const token = await getToken(_id);
@@ -132,8 +136,11 @@ export const getRemoteProjects = async () => {
       );
       continue;
     }
+
+    // This is the actual API call
     const response = await getProjects(conductor_url, token.token);
 
+    listingToSuccessful.set(_id, true);
     projects.push(
       ...response.map(project => ({
         ...project,
@@ -146,7 +153,7 @@ export const getRemoteProjects = async () => {
     );
   }
 
-  return projects;
+  return {projects, listingToSuccessful};
 };
 
 /**

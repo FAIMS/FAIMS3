@@ -18,12 +18,16 @@
  *   TODO
  */
 
-import {createTheme, colors} from '@mui/material';
+import {colors, createTheme} from '@mui/material';
 import typography from './typography';
-import {generateStepperColors} from '../../../utils/generateStepperColors';
 
 const theme = createTheme({
-  themeType: 'default' as 'bss' | 'default',
+  stepperColors: {
+    current: '#000000',
+    visited: '#07a907',
+    error: '#EE1616FF',
+    notVisited: '#BDBDBD',
+  },
   palette: {
     background: {
       default: '#FAFAFB',
