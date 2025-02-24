@@ -20,12 +20,12 @@
 
 import {RefreshOutlined} from '@mui/icons-material';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
-import FolderIcon from '@mui/icons-material/Folder';
 import {Alert, AlertTitle, Box, Button, Paper, Typography} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
+import {useMutation} from '@tanstack/react-query';
 import {useContext, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {
@@ -36,15 +36,13 @@ import {
 import * as ROUTES from '../../../constants/routes';
 import {useNotification} from '../../../context/popup';
 import {ProjectsContext} from '../../../context/projects-context';
+import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useAppSelector} from '../../../context/store';
 import {ProjectExtended} from '../../../types/project';
-import {userCanCreateNotebooks} from '../../../users';
+import {useIsOnline} from '../../../utils/customHooks';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
-import {useAppSelector} from '../../../context/store';
-import {selectActiveUser} from '../../../context/slices/authSlice';
-import {useMutation} from '@tanstack/react-query';
-import {useIsOnline} from '../../../utils/customHooks';
 
 // Survey status naming conventions
 
@@ -74,7 +72,6 @@ export default function NoteBooks() {
   const isOnline = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
   const activeServerId = activeUser?.serverId;
-  const activeUserToken = activeUser?.parsedToken;
 
   const {projects: allProjects, syncProjects} = useContext(ProjectsContext);
   const projects = allProjects.filter(p => {
@@ -101,139 +98,49 @@ export default function NoteBooks() {
   const history = useNavigate();
 
   const theme = useTheme();
-  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const is_xs = !useMediaQuery(theme.breakpoints.up('sm'));
 
-  const columns: GridColDef<ProjectExtended>[] = not_xs
-    ? [
-        {
-          field: 'name',
-          headerName: 'Name',
-          type: 'string',
-          flex: 0.4,
-          minWidth: 200,
-          renderCell: ({row: {activated, name, description}}) => (
-            <Box my={3}>
-              <span
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'nowrap',
-                  padding: '12px 0',
-                }}
-              >
-                <FolderIcon
-                  fontSize={'small'}
-                  color={activated ? 'primary' : 'disabled'}
-                  sx={{mr: '8px'}}
-                />
-                <Typography
-                  variant={'body1'}
-                  fontWeight={activated ? 'bold' : 'normal'}
-                  color={activated ? 'black' : grey[800]}
-                  sx={{
-                    padding: '4px 0',
-                    lineHeight: 1,
-                  }}
-                >
-                  {name}
-                </Typography>
-              </span>
-              <Typography variant={'caption'}>{description}</Typography>
-            </Box>
-          ),
-        },
-        // commenting this untill the functionality is fixed for this column.
-        // {
-        //   field: 'last_updated',
-        //   headerName: 'Last Updated',
-        //   type: 'dateTime',
-        //   minWidth: 160,
-        //   flex: 0.2,
-        //   valueGetter: ({value}) => value && new Date(value),
-        // },
-        {
-          field: 'actions',
-          type: 'actions',
-          flex: 0.2,
-          minWidth: 160,
-          headerName: 'Sync',
-          description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
-          renderCell: ({row}) => (
-            <NotebookSyncSwitch
-              project={row}
-              showHelperText={false}
-              setTabID={setTabID}
-            />
-          ),
-        },
-      ]
-    : [
-        {
-          field: 'name',
-          headerName: 'Name',
-          type: 'string',
-          flex: 0.4,
-          minWidth: 160,
-          renderCell: ({row: {activated, name, description}}) => (
-            <div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  padding: '12px 0',
-                }}
-              >
-                <FolderIcon
-                  fontSize={'small'}
-                  color={activated ? 'secondary' : 'disabled'}
-                  sx={{mr: '4px'}}
-                />
-                <Typography
-                  variant={'body2'}
-                  fontWeight={activated ? 'bold' : 'normal'}
-                  color={activated ? 'black' : grey[800]}
-                  sx={{
-                    padding: '4px 0',
-                  }}
-                >
-                  {name}
-                </Typography>
-              </div>
-              <Typography variant={'caption'} sx={{paddingTop: '4px'}}>
-                {description}
-              </Typography>
-            </div>
-          ),
-        },
-        // commenting this until the functionality is fixed for this column.
-
-        // {
-        //   field: 'last_updated',
-        //   headerName: 'Last Updated',
-        //   type: 'dateTime',
-        //   minWidth: 100,
-        //   flex: 0.3,
-        //   valueGetter: ({value}) => value && new Date(value),
-        // },
-        {
-          field: 'actions',
-          type: 'actions',
-          flex: 0.3,
-          minWidth: 80,
-          headerName: 'Sync',
-          description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
-          renderCell: ({row}) => (
-            <NotebookSyncSwitch
-              project={row}
-              showHelperText={false}
-              setTabID={setTabID}
-            />
-          ),
-        },
-      ];
-
-  const showCreateNewNotebookButton =
-    activeUserToken && userCanCreateNotebooks(activeUserToken);
+  const baseColumns: GridColDef<ProjectExtended>[] = [
+    {
+      field: 'name',
+      headerName: 'Name',
+      type: 'string',
+      flex: 0.4,
+      renderCell: ({row: {activated, name, description}}) => (
+        <Box>
+          <Typography
+            variant={is_xs ? 'body2' : 'body1'}
+            fontWeight={activated ? 'bold' : 'normal'}
+            color={activated ? 'black' : grey[800]}
+            sx={{
+              padding: '8px 0px',
+            }}
+          >
+            {name} {description}
+          </Typography>
+          <Typography variant="caption" sx={{display: 'block', mt: 1}}>
+            {description}
+          </Typography>
+        </Box>
+      ),
+    },
+  ];
+  const activatedColumns = baseColumns;
+  const notActivatedColumns = baseColumns.concat([
+    {
+      field: 'actions',
+      type: 'actions',
+      width: 100,
+      renderCell: ({row}) => (
+        <NotebookSyncSwitch
+          project={row}
+          showHelperText={false}
+          setTabID={setTabID}
+        />
+      ),
+    },
+  ]);
+  const showCreateNewNotebookButton = false; // activeUserToken && userCanCreateNotebooks(activeUserToken);
 
   // What type of layout are we using?
   const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
@@ -323,10 +230,15 @@ export default function NoteBooks() {
             projects={projects}
             tabID={tabID}
             handleChange={setTabID}
-            columns={columns}
+            activatedColumns={activatedColumns}
+            notActivatedColumns={notActivatedColumns}
           />
         ) : (
-          <HeadingProjectGrid projects={projects} columns={columns} />
+          <HeadingProjectGrid
+            projects={projects}
+            activatedColumns={activatedColumns}
+            notActivatedColumns={notActivatedColumns}
+          />
         )}
         <Alert severity="info">
           <AlertTitle>

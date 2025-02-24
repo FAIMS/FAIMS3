@@ -44,7 +44,9 @@ const uispec: EncodedProjectUIModel = {
 };
 
 describe('Invites', () => {
-  beforeEach(initialiseDatabases);
+  beforeEach(async () => {
+    await initialiseDatabases({});
+  });
 
   it('create invite', async () => {
     const project_id = await createNotebook('Test Notebook', uispec, {});

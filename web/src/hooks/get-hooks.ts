@@ -1,5 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import {User} from '@/context/auth-provider';
+import QRCode from 'qrcode';
 
 /**
  * get function is a utility function for making GET requests to the API.
@@ -8,7 +9,7 @@ import {User} from '@/context/auth-provider';
  * @param {User | null} user - The user object.
  * @returns {Promise<any>} A promise that resolves to the response data.
  */
-const get = async (path: string, user: User | null) => {
+export const get = async (path: string, user: User | null) => {
   if (!user) return {error: 'Not authenticated'};
 
   const response = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
@@ -64,4 +65,38 @@ export const useGetUsers = (user: User | null) =>
   useQuery({
     queryKey: ['users'],
     queryFn: () => get('/api/users', user),
+  });
+
+/**
+ * useGetInvites hook returns a query for fetching invites.
+ *
+ * @param {User} user - The user object.
+ * @param {string} notebookId - The ID of the notebook.
+ * @returns {Query} A query for fetching invites.
+ */
+export const useGetInvites = (user: User | null, notebookId: string) =>
+  useQuery({
+    queryKey: ['invites', notebookId],
+    queryFn: async () => {
+      const invites = await get(`/api/notebooks/${notebookId}/invites`, user);
+
+      for (const invite of invites) {
+        invite.url = `${import.meta.env.VITE_API_URL}/register/${invite._id}`;
+        invite.qrCode = await QRCode.toDataURL(invite.url);
+      }
+
+      return invites;
+    },
+  });
+
+/**
+ * useGetRecords hook returns a query for fetching records.
+ * @param {User} user - The user object.
+ * @param {string} projectId - The ID of the project.
+ * @returns {Query} A query for fetching records.
+ */
+export const useGetRecords = (user: User | null, projectId: string) =>
+  useQuery({
+    queryKey: ['records', projectId],
+    queryFn: () => get(`/api/notebooks/${projectId}/records/`, user),
   });

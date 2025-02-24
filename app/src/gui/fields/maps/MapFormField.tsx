@@ -21,11 +21,12 @@
 import {Geolocation} from '@capacitor/geolocation';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import {Box, Typography, Zoom} from '@mui/material';
+import {Alert, Box, Button, Typography} from '@mui/material';
 import {FieldProps} from 'formik';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {useEffect, useRef, useState} from 'react';
 import {useNotification} from '../../../context/popup';
+import {useIsOnline} from '../../../utils/customHooks';
 import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
 import {theme} from '../../themes';
 import FieldWrapper from '../fieldWrapper';
@@ -54,6 +55,8 @@ export function MapFormField({
   ...props
 }: MapFieldProps): JSX.Element {
   // State
+
+  const {isOnline} = useIsOnline();
 
   // center location of map - use provided center if any
   const [center, setCenter] = useState<number[] | undefined>(props.center);
@@ -134,6 +137,26 @@ export function MapFormField({
     getCoords();
   }, []);
 
+  const handleCurrentLocation = () => {
+    if (center) {
+      const pointFeature = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: center,
+            },
+            properties: null,
+          },
+        ],
+      };
+      console.log('setting location', pointFeature);
+      form.setFieldValue(field.name, pointFeature, true);
+    }
+  };
+
   // dynamically determine feature label based on featureType
   const featureLabel =
     props.featureType === 'Polygon'
@@ -171,6 +194,8 @@ export function MapFormField({
       subheading={props.helperText}
       required={props.required}
     >
+      {/* if offline, offer to use current location for point features only */}
+
       <Box
         sx={{
           display: 'flex',
@@ -179,47 +204,44 @@ export function MapFormField({
           width: '100%',
         }}
       >
-        <MapWrapper
-          label={label}
-          featureType={featureType}
-          features={drawnFeatures}
-          zoom={zoom}
-          center={center ?? FALLBACK_CENTER}
-          fallbackCenter={center === undefined}
-          setFeatures={setFeaturesCallback}
-          geoTiff={props.geoTiff}
-          projection={props.projection}
-          setNoPermission={setNoPermission}
-          isLocationSelected={isLocationSelected}
-        />
-
+        {!isOnline && featureType === 'Point' ? (
+          <>
+            <Alert variant="outlined" severity="warning">
+              The interactive map is not available while <b>offline</b>. Use the
+              button below to submit your current GPS location.
+            </Alert>
+            <Button variant="outlined" onClick={handleCurrentLocation}>
+              Use my current location
+            </Button>
+          </>
+        ) : (
+          <MapWrapper
+            label={label}
+            featureType={featureType}
+            features={drawnFeatures}
+            zoom={zoom}
+            center={center ?? FALLBACK_CENTER}
+            fallbackCenter={center === undefined}
+            setFeatures={setFeaturesCallback}
+            geoTiff={props.geoTiff}
+            projection={props.projection}
+            setNoPermission={setNoPermission}
+            isLocationSelected={isLocationSelected}
+          />
+        )}
         <Box
           sx={{
             alignItems: 'center',
-            marginTop: 1,
+            marginTop: 0.8,
             display: 'inline-flex',
-            gap: '6px',
-            position: 'relative',
+            gap: theme.spacing(1),
           }}
         >
-          <Typography
-            variant="body1"
-            sx={{
-              fontWeight: 'bold',
-              color: isLocationSelected
-                ? theme.palette.success.main
-                : theme.palette.error.main,
-              transition: 'color 0.4s ease-in-out',
-            }}
-          >
-            {valueText}
-          </Typography>
-
-          <Zoom in={isLocationSelected}>
+          {isLocationSelected ? (
             <CheckCircleIcon
               sx={{
                 color: 'green',
-                fontSize: 30,
+                fontSize: 20,
                 transition: 'transform 0.5s ease-in-out',
                 transform: isLocationSelected
                   ? animateCheck
@@ -228,13 +250,11 @@ export function MapFormField({
                   : 'scale(0.5)',
               }}
             />
-          </Zoom>
-
-          <Zoom in={!isLocationSelected}>
+          ) : (
             <CancelIcon
               sx={{
                 color: 'red',
-                fontSize: 30,
+                fontSize: 20,
                 transition: 'transform 0.5s ease-in-out',
                 transform: !isLocationSelected
                   ? animateCheck
@@ -243,7 +263,20 @@ export function MapFormField({
                   : 'scale(0.5)',
               }}
             />
-          </Zoom>
+          )}
+
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 'bold',
+              color: isLocationSelected
+                ? theme.palette.success.main
+                : theme.palette.error.light,
+              transition: 'color 0.4s ease-in-out',
+            }}
+          >
+            {valueText}
+          </Typography>
         </Box>
       </Box>
 

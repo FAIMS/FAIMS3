@@ -19,11 +19,7 @@
  */
 
 import {Geolocation} from '@capacitor/geolocation';
-import {
-  getMetadataForAllRecords,
-  ProjectID,
-  ProjectUIModel,
-} from '@faims3/data-model';
+import {ProjectID, ProjectUIModel, RecordMetadata} from '@faims3/data-model';
 import {Box, Popover} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {View} from 'ol';
@@ -35,17 +31,16 @@ import {transform} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {selectActiveUser} from '../../../context/slices/authSlice';
-import {useAppSelector} from '../../../context/store';
 import {createCenterControl} from '../map/center-control';
 import {ImageTileStore} from '../map/tile-source';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
   project_id: ProjectID;
+  records: {allRecords: RecordMetadata[]};
 }
 
 interface FeatureProps {
@@ -58,16 +53,15 @@ const defaultMapProjection = 'EPSG:3857';
 
 /**
  * Create an overview map of the records in the notebook.
+ * Wrapped in memo to prevent re-rendering when nothing has changed.
  *
  * @param props {uiSpec, project_id}
  */
-export const OverviewMap = (props: OverviewMapProps) => {
+export const OverviewMap = memo((props: OverviewMapProps) => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
-  const activeUser = useAppSelector(selectActiveUser);
-  const [zoomLevel, setZoomLevel] = useState(12); // Default zoom level
   const tileStore = useMemo(() => new ImageTileStore(), []);
 
   /**
@@ -94,12 +88,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const getFeatures = async () => {
     const f: FeatureProps[] = [];
     if (gisFields.length > 0) {
-      const records = await getMetadataForAllRecords(
-        // TODO what do we do if no active user?
-        activeUser!.parsedToken,
-        props.project_id,
-        true
-      );
+      const records = props.records.allRecords;
       if (records) {
         records.forEach(record => {
           if (record.data) {
@@ -168,7 +157,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const tileLayer = tileStore.getTileLayer();
     const view = new View({
       projection: defaultMapProjection,
-      zoom: zoomLevel,
+      zoom: 12,
     });
 
     const theMap = new Map({
@@ -186,13 +175,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
         return;
       }
       setSelectedFeature(feature as FeatureProps);
-    });
-
-    // Add this in the createMap function after creating theMap
-    theMap.getView().on('change:resolution', () => {
-      const z = theMap.getView().getZoom();
-      //console.log('Resolution changed', z);
-      if (z) setZoomLevel(z);
     });
 
     return theMap;
@@ -276,6 +258,9 @@ export const OverviewMap = (props: OverviewMapProps) => {
       // set the view so that we can see the features
       // but don't zoom too much
       const extent = source.getExtent();
+      // if (!extent.includes(Infinity)) sourceExtent = extent;
+      // console.log('source extent: ', sourceExtent);
+
       // don't fit if the extent is infinite because it crashes
       if (!extent.includes(Infinity)) {
         map.getView().fit(extent, {padding: [100, 100, 100, 100], maxZoom: 12});
@@ -367,4 +352,4 @@ export const OverviewMap = (props: OverviewMapProps) => {
         </Popover>
       </>
     );
-};
+});

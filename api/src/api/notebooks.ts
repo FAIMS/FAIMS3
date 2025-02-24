@@ -25,6 +25,7 @@ import {
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
+  getRecordsWithRegex,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
@@ -37,13 +38,14 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {CONDUCTOR_INSTANCE_NAME, DEVELOPER_MODE} from '../buildconfig';
+import {DEVELOPER_MODE} from '../buildconfig';
 import {createManyRandomRecords} from '../couchdb/devtools';
+import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {
   createNotebook,
   deleteNotebook,
+  generateFilenameForAttachment,
   getNotebookMetadata,
-  getNotebookRecords,
   getNotebooks,
   getNotebookUISpec,
   getRolesForNotebook,
@@ -64,9 +66,8 @@ import {
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
-
+import {generateTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
-import {slugify} from '../utils';
 
 // This must occur before express api is used
 patch();
@@ -244,14 +245,41 @@ api.get(
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.UnauthorizedException();
     }
-    const records = await getNotebookRecords(req.params.id, {
-      roles: req.user.roles,
-      server: slugify(CONDUCTOR_INSTANCE_NAME),
-      username: req.user.user_id,
-      // Five minutes from now
-      exp: Date.now() + 1000 * 60 * 5,
-    });
+    const tokenContent = generateTokenContentsForUser(req.user);
+    const records = await getRecordsWithRegex(
+      tokenContent,
+      req.params.id,
+      '.*',
+      true
+    );
     if (records) {
+      const filenames: string[] = [];
+      // Process any file fields to give the file name in the zip download
+      records.forEach((record: any) => {
+        const hrid = record.hrid || record.record_id;
+        for (const fieldName in record.data) {
+          const values = record.data[fieldName];
+          if (values instanceof Array) {
+            const names = values.map((v: any) => {
+              if (v instanceof File) {
+                const filename = generateFilenameForAttachment(
+                  v,
+                  fieldName,
+                  hrid,
+                  filenames
+                );
+                filenames.push(filename);
+                return filename;
+              } else {
+                return v;
+              }
+            });
+            if (names.length > 0) {
+              record.data[fieldName] = names;
+            }
+          }
+        }
+      });
       res.json({records});
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found');
@@ -416,6 +444,45 @@ api.post(
 
     // 200 OK indicating successful deletion
     res.status(200).end();
+  }
+);
+
+/** Gets a list of invites for a given notebook */
+api.get(
+  '/:notebook_id/invites',
+  processRequest({params: z.object({notebook_id: z.string()})}),
+  requireAuthenticationAPI,
+  async ({params: {notebook_id}, user}, res) => {
+    if (!userHasPermission(user, notebook_id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to view invites for this notebook.'
+      );
+    }
+
+    const invites = await getInvitesForNotebook(notebook_id);
+
+    res.json(invites);
+  }
+);
+
+/** Creates a new invite for a given notebook */
+api.post(
+  '/:notebook_id/invites',
+  processRequest({
+    body: z.object({role: z.string()}),
+    params: z.object({notebook_id: z.string()}),
+  }),
+  requireAuthenticationAPI,
+  async ({body: {role}, params: {notebook_id}, user}, res) => {
+    if (!userHasPermission(user, notebook_id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to add invites to this notebook.'
+      );
+    }
+
+    const invite = await createInvite(notebook_id, role);
+
+    res.json(invite);
   }
 );
 

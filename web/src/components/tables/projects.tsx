@@ -1,9 +1,7 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 
-export type Column = any;
-
-export const columns: ColumnDef<Column>[] = [
+export const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'name',
     header: ({column}) => (

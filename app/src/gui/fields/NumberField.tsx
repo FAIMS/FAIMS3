@@ -15,10 +15,16 @@ import TextField from '@mui/material/TextField';
 import FieldWrapper from './fieldWrapper';
 
 const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
-  const {label, helperText, required, min, max, defaultValue} = props;
+  const {label, helperText, required, min, max} = props;
 
   const error = form.touched[field.name] && Boolean(form.errors[field.name]);
-  const errorMessage = error ? String(form.errors[field.name]) : helperText;
+
+  const isInvalid =
+    field.value !== '' && (isNaN(field.value) || field.value === null);
+
+  const errorMessage = isInvalid
+    ? 'Error with numeric input, please enter a valid number.'
+    : form.errors[field.name] || helperText;
 
   return (
     <FieldWrapper heading={label} subheading={helperText} required={required}>
@@ -27,13 +33,30 @@ const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
         fullWidth
         type="number"
         error={error}
-        helperText={errorMessage}
+        helperText={error || isInvalid ? errorMessage : helperText}
         inputProps={{
           min,
           max,
         }}
-        defaultValue={defaultValue}
-        onChange={e => form.setFieldValue(field.name, Number(e.target.value))}
+        sx={{
+          '& input::-webkit-inner-spin-button, & input::-webkit-outer-spin-button':
+            {
+              opacity: 1,
+              appearance: 'auto',
+              width: '10px',
+              height: '20px',
+              backgroundColor: '#9F9F9FFF',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              border: '2px solid #000',
+              padding: '8px',
+            },
+        }}
+        value={typeof field.value === 'number' ? field.value : ''}
+        onChange={e => {
+          const value = e.target.value === '' ? null : Number(e.target.value);
+          form.setFieldValue(field.name, value);
+        }}
         onBlur={() => form.setFieldTouched(field.name, true)}
       />
     </FieldWrapper>

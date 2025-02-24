@@ -17,18 +17,21 @@
  * Description:
  *   Tests for the interface to couchDB
  */
+import {
+  getRecordsWithRegex,
+  notebookRecordIterator,
+  registerClient,
+} from '@faims3/data-model';
 import PouchDB from 'pouchdb';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
-import {getNotebookRecords, getNotebooks} from '../src/couchdb/notebooks';
-import {registerClient, notebookRecordIterator} from '@faims3/data-model';
+import {getNotebooks} from '../src/couchdb/notebooks';
 import {getUserFromEmailOrUsername} from '../src/couchdb/users';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
 
 import {expect} from 'chai';
 import {callbackObject, cleanDataDBS, resetDatabases} from './mocks';
-import {slugify} from '../src/utils';
-import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
+import {generateTokenContentsForUser} from '../src/utils';
 
 // register our mock database clients with the module
 registerClient(callbackObject);
@@ -61,16 +64,13 @@ describe('Backup and restore', () => {
       }
       expect(count).to.equal(17);
 
-      // throw in a test of getNotebookRecords while we're here
-      const records = await getNotebookRecords(
+      // throw in a test of getRecordsWithRegex while we're here
+      const tokenContents = generateTokenContentsForUser(user);
+      const records = await getRecordsWithRegex(
+        tokenContents,
         notebooks[0].non_unique_project_id,
-        {
-          roles: user.roles,
-          server: slugify(CONDUCTOR_INSTANCE_NAME),
-          username: user.user_id,
-          // Five minutes from now
-          exp: Date.now() + 1000 * 60 * 5,
-        }
+        '.*',
+        true
       );
       expect(records).to.have.lengthOf(28);
     }

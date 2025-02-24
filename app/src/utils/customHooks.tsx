@@ -14,6 +14,8 @@ import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {directory_db} from '../sync/databases';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
+import _ from 'lodash';
+
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -358,6 +360,11 @@ export const useRecordList = ({
     networkMode: 'always',
     gcTime: 0,
     refetchInterval: refreshIntervalMs,
+    // implement a custom structural sharing function to avoid re-renders when
+    // the list of records is the same
+    structuralSharing: (oldData, newData) => {
+      return _.isEqual(oldData, newData) ? oldData : newData;
+    },
     queryFn: async () => {
       if (!token) {
         // Trying to run without token!
@@ -431,3 +438,89 @@ export const useDraftsList = ({
 
   return records;
 };
+
+/**
+ * A custom hook that creates a debounced version of any value
+ * @param value The value to be debounced
+ * @param delay The delay in milliseconds for the debounce
+ * @returns The debounced value
+ */
+export function useDebounce<T>(value: T, delay = 500): T {
+  // State to store the debounced value
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    // Create a timeout to update the debounced value
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    // Clean up the timeout if the value changes or the component unmounts
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]); // Only re-run if value or delay changes
+
+  return debouncedValue;
+}
+
+interface LoadingDebounce {
+  minDuration?: number; // Minimum duration for loading state in ms
+  delayExitBy?: number; // Additional delay before exiting loading state
+}
+
+/**
+ * A custom hook that ensures loading states have a minimum duration,
+ * particularly useful for preventing flash of loading states
+ * @param isLoading Current loading state
+ * @param options Configuration options
+ * @returns Controlled loading state
+ */
+export function useLoadingDebounce(
+  isLoading: boolean,
+  {minDuration = 1000, delayExitBy = 0}: LoadingDebounce = {}
+): boolean {
+  const [stabilizedLoading, setStabilizedLoading] = useState(isLoading);
+  const loadingStartTime = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // If transitioning to loading state
+    if (isLoading) {
+      loadingStartTime.current = Date.now();
+      setStabilizedLoading(true);
+      return;
+    }
+
+    // If transitioning from loading to not loading
+    if (!isLoading && loadingStartTime.current !== null) {
+      const elapsedTime = Date.now() - loadingStartTime.current;
+      const remainingTime = Math.max(0, minDuration - elapsedTime);
+      const totalDelay = remainingTime + delayExitBy;
+
+      if (totalDelay > 0) {
+        timeoutRef.current = setTimeout(() => {
+          setStabilizedLoading(false);
+          loadingStartTime.current = null;
+        }, totalDelay);
+      } else {
+        setStabilizedLoading(false);
+        loadingStartTime.current = null;
+      }
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [isLoading, minDuration, delayExitBy]);
+
+  return stabilizedLoading;
+}

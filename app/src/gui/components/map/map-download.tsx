@@ -55,7 +55,7 @@ export const MapDownloadComponent = () => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [cacheSize, setCacheSize] = useState('');
   const [zoomLevel, setZoomLevel] = useState(MIN_ZOOM); // Default zoom level
-  const [attribution, setAttribution] = useState<Attribution | null>(null);
+  const [attribution, setAttribution] = useState<string | null>(null);
   const [downloadSetName, setDownloadSetName] = useState('Default');
   const [message, setMessage] = useState('');
   const [tileSets, setTileSets] = useState<StoredTileSet[]>([]);

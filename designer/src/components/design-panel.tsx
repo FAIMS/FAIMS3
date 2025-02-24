@@ -148,7 +148,34 @@ export const DesignPanel = () => {
     const targetIndex = combinedArray.indexOf(targetViewSetId);
 
     if (targetIndex >= 0) {
-      setIndexAndNavigate(targetIndex.toString());
+      // find the target section's index in the target form
+      const targetForm = viewSets[targetViewSetId];
+      const targetSectionIndex = targetForm.views.length; // new section is added at the end
+
+      // update the form index and navigate
+      setTabIndex(targetIndex.toString());
+      navigate(`${targetIndex}?section=${targetSectionIndex}`);
+    }
+  };
+
+  const handleFieldMove = (targetViewId: string) => {
+    // find which form contains the target section
+    for (const [formId, form] of Object.entries(viewSets)) {
+      if (form.views.includes(targetViewId)) {
+        // get the combined array of forms in order
+        const combinedArray = [...visibleTypes, ...untickedForms];
+        const targetIndex = combinedArray.indexOf(formId);
+
+        if (targetIndex >= 0) {
+          // find the target section's index in the target form
+          const targetSectionIndex = form.views.indexOf(targetViewId);
+
+          // Update the form index and navigate
+          setTabIndex(targetIndex.toString());
+          navigate(`${targetIndex}?section=${targetSectionIndex}`);
+        }
+        break;
+      }
     }
   };
 
@@ -279,6 +306,7 @@ export const DesignPanel = () => {
                   handleChangeCallback={handleCheckboxTabChange}
                   handleDeleteCallback={handleDeleteFormTabChange}
                   handleSectionMoveCallback={handleSectionMove}
+                  handleFieldMoveCallback={handleFieldMove}
                 />
               }
             />
@@ -299,6 +327,7 @@ export const DesignPanel = () => {
                   handleChangeCallback={handleCheckboxTabChange}
                   handleDeleteCallback={handleDeleteFormTabChange}
                   handleSectionMoveCallback={handleSectionMove}
+                  handleFieldMoveCallback={handleFieldMove}
                 />
               }
             />

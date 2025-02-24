@@ -20,6 +20,8 @@ interface TokenParams {
   refreshToken?: string;
 }
 
+const EXCLUDED_PUBLIC_ROUTES = ['/auth/resetPassword'];
+
 /**
  * Route component renders the main application layout with a sidebar.
  * It includes the main navigation and the main content.
@@ -37,6 +39,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     },
     search: {token, refreshToken},
   }) => {
+    // Exclusions
+    console.log(window.location.href);
+    if (EXCLUDED_PUBLIC_ROUTES.some(r => window.location.href.includes(r)))
+      return;
+
     if (isAuthenticated) return;
 
     const {status} = await getUserDetails(token, refreshToken);
@@ -59,12 +66,15 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function RootLayout() {
   const {isAuthenticated} = useAuth();
 
-  if (!isAuthenticated) {
-    window.location.href = `${
-      import.meta.env.VITE_API_URL
-    }/logout?redirect=${import.meta.env.VITE_WEB_URL}`;
+  // Exclusions
+  if (!EXCLUDED_PUBLIC_ROUTES.some(r => window.location.href.includes(r))) {
+    if (!isAuthenticated) {
+      window.location.href = `${
+        import.meta.env.VITE_API_URL
+      }/logout?redirect=${import.meta.env.VITE_WEB_URL}`;
 
-    return <></>;
+      return <></>;
+    }
   }
 
   return (

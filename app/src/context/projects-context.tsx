@@ -5,10 +5,15 @@ import {
   setSyncProjectDB,
   updateProjectsDB,
 } from '../dbs/projects-db';
-import {activate_project} from '../sync/process-initialization';
+import {
+  activate_project,
+  update_directory,
+} from '../sync/process-initialization';
+import {refreshMetadataDb} from '../sync/projects';
 import {ProjectExtended} from '../types/project';
 import {getLocalActiveMap, getProjectMap, getRemoteProjects} from './functions';
-import {refreshMetadataDb} from '../sync/projects';
+import {refreshActiveUser} from './slices/authSlice';
+import {store} from './store';
 
 export const ProjectsContext = createContext<{
   projects: ProjectExtended[];
@@ -38,22 +43,33 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
 
   /**
    * Initializes the application by synchronizing local and remote projects.
-   * First, it fetches projects from the local database and sets them in the project state,
-   * then it synchronizes with remote projects to update the local state and database as needed.
+   * First, it fetches projects from the local database and sets them in the
+   * project state, then it synchronizes with remote projects to update the
+   * local state and database as needed.
    *
-   * @async
-   * @function init
-   * @returns {Promise<void>} Resolves when initialization is complete.
+   * This can be, and is also used to update existing records from API - it is
+   * idempotent.
+   *
+   * @returns Resolves when initialization is complete.
    */
-  const initProjects = async () => {
+  const initProjectsLogic = async () => {
+    // Get the local projects (i.e. those in the local project database)
     const localProjects = await getProjectsDB();
-    const remoteProjects = await getRemoteProjects();
 
+    // Get the remote projects (i.e. those in the remote database/server)
+    const {projects: remoteProjects, listingToSuccessful} =
+      await getRemoteProjects();
+
+    // Get a map [projectId -> project]
     const localProjectsMap = getProjectMap(localProjects);
+
+    // Copy for modification
     const newProjectsMap = getProjectMap(localProjects);
 
+    // Get a map for the existing local projects
     const localActiveMap = await getLocalActiveMap();
 
+    // For each remote fetched project, synchronise details
     for (const remoteProject of remoteProjects) {
       const activated =
         localProjectsMap.get(remoteProject._id)?.activated ??
@@ -72,37 +88,46 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
       });
     }
 
-    const newProjects = [...newProjectsMap.values()];
+    // Now consider listing fetches which were successful which reveal now
+    // missing databases - these have been deleted!
 
-    updateProjectsDB(newProjects);
-    setProjects(newProjects);
-  };
+    // TODO we need a more considered hook for deletion here which properly cleans up the DBs
+    const toRemoveProjects: ProjectExtended[] = [];
+    for (const [listingId, successful] of listingToSuccessful.entries()) {
+      if (successful) {
+        // Get just the entries for this listing from remote (as a set)
+        const remoteSet = new Set(
+          remoteProjects
+            .filter(project => project.listing === listingId)
+            .map(project => project._id)
+        );
 
-  /**
-   * Synchronizes the list of projects with remote projects, updating the local project list
-   * to include any remote project updates while preserving the activation state.
-   *
-   * @async
-   * @function syncProjects
-   * @returns {Promise<void>} Resolves when the project synchronization is complete.
-   */
-  const syncProjects = async () => {
-    // Get the remote projects
-    const remoteProjects = await getRemoteProjects();
+        // Get the current set of projects for this listing
+        const currentSet = new Set(
+          newProjectsMap
+            .values()
+            .filter(project => project.listing === listingId)
+            .map(project => project._id)
+        );
 
-    // Create a copy of the original project map
-    const projectsMap = getProjectMap(projects);
-    const newProjectsMap = getProjectMap(projects);
+        // Find the difference in these sets - i.e. those that are in the current but no longer in the remote
+        const toRemoveProjectIds = currentSet.difference(remoteSet);
 
-    // update project list, preserve activated and sync states from existing list
-    for (const remoteProject of remoteProjects) {
-      newProjectsMap.set(remoteProject._id, {
-        ...remoteProject,
-        activated: projectsMap.get(remoteProject._id)?.activated ?? false,
-        sync: projectsMap.get(remoteProject._id)?.sync ?? false,
-      });
+        for (const projectId of toRemoveProjectIds) {
+          // Project information (retain here so we can use for removal)
+          toRemoveProjects.push(newProjectsMap.get(projectId)!);
+
+          // These must be removed from the new project map
+
+          // TODO define a protocol for this - given that we have multiple users
+          // per listing - to safely delete we would need to know who activated
+          // it - so that this is only relative to the person who fetched it
+          // newProjectsMap.delete(projectId);
+        }
+      }
     }
 
+    // Build project list (proposed update) from this merge
     const newProjects = [...newProjectsMap.values()];
 
     updateProjectsDB(newProjects);
@@ -112,7 +137,6 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
     for (const project of newProjects) {
       if (project.activated) {
         // NOTE: This does not work offline
-
         // This refreshes the UI spec and metadata for the existing metadata DB
         await refreshMetadataDb({
           // this _id is the listing specific ID
@@ -122,6 +146,30 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
         });
       }
     }
+
+    // TODO clean up the old projects in toRemoveProjects
+    // TODO how should we deal with projects that are removed from
+    // the remote directory - should we delete them here or offer another option
+    // what if there are unsynced records?
+  };
+
+  /**
+   * Runs the initialise logic (first load only)
+   */
+  const initProjects = async () => {
+    await initProjectsLogic();
+  };
+
+  /**
+   * Updates directory and then runs initialisation logic (on refresh)
+   */
+  const syncProjects = async () => {
+    // Prompts existing store logic to update from directory
+    await update_directory();
+    // TODO remove this - unify storage - this is a hack
+    await initProjectsLogic();
+    // Prompt a refresh of active user (new token with updated creds)
+    await store.dispatch(refreshActiveUser());
   };
 
   /**

@@ -17,9 +17,6 @@
  * Description:
  *   Internals of map generation for MapFormField
  */
-import {useCallback, useMemo, useRef, useState} from 'react';
-
-// openlayers
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import MapIcon from '@mui/icons-material/LocationOn';
@@ -29,14 +26,17 @@ import View from 'ol/View';
 import Zoom from 'ol/control/Zoom';
 import GeoJSON from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
+import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import WebGLTileLayer from 'ol/layer/WebGLTile';
 import {transform} from 'ol/proj';
 import {register} from 'ol/proj/proj4';
 import GeoTIFF from 'ol/source/GeoTIFF';
+import OSM from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
+import {useCallback, useMemo, useRef, useState} from 'react';
 
 // define some EPSG codes - these are for two sample images
 // TODO: we need to have a better way to include a useful set or allow
@@ -97,7 +97,7 @@ const styles = {
 function MapWrapper(props: MapProps) {
   const [mapOpen, setMapOpen] = useState<boolean>(false);
   const [map, setMap] = useState<Map | undefined>();
-  const [featuresLayer, setFeaturesLayer] = useState<VectorLayer>();
+  const [featuresLayer, setFeaturesLayer] = useState<VectorLayer<any>>();
   const defaultMapProjection = 'EPSG:3857';
   const geoJson = new GeoJSON();
   const tileStore = useMemo(() => new ImageTileStore(), []);
