@@ -130,7 +130,6 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
     // Build project list (proposed update) from this merge
     const newProjects = [...newProjectsMap.values()];
 
-    // TODO this is the problem
     updateProjectsDB(newProjects);
     setProjects(newProjects);
 
