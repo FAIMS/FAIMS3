@@ -17,6 +17,17 @@ import {
   fetchProjectMetadataAndSpec,
   getRemoteDatabaseNameFromId,
 } from './databaseHelpers/helpers';
+import {databaseService} from './databaseHelpers/databaseService';
+
+export const buildSyncId = ({
+  localId,
+  remoteId,
+}: {
+  localId: string;
+  remoteId: string;
+}): string => {
+  return `${localId}-${remoteId}`;
+};
 
 // TODO move this into a store
 
@@ -52,16 +63,16 @@ export interface DatabaseConnectionConfig {
  * This manages a remote couch connection
  */
 export interface RemoteCouchConnection<Content extends {}> {
-  // Actual reference to the pouch database
-  remoteDb: PouchDB.Database<Content>;
+  // Id of the remote DB - use service to fetch
+  remoteDb: string;
   // The sync object (this is created which initiates sync)
-  sync: PouchDB.Replication.Sync<Content>;
+  sync: string;
   // The configuration for the remote connection e.g. auth, endpoint etc
   connectionConfiguration: DatabaseConnectionConfig;
 }
 export interface DatabaseConnection<Content extends {}> {
   // A reference to the local data database
-  localDb: PouchDB.Database<Content>;
+  localDb: string;
 
   // This defines whether the database synchronisation is active
 
@@ -397,11 +408,14 @@ const projectsSlice = createSlice({
       const localDb = createLocalPouchDatabase<ProjectDataObject>({
         id: localDatabaseId,
       });
+      databaseService.registerLocalDatabase(localDatabaseId, localDb);
 
       // creates the remote database (pouch remote)
-      const remoteDb = createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
-        connectionConfiguration
-      );
+      const {db: remoteDb, id: remoteDbId} =
+        createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
+          connectionConfiguration
+        );
+      databaseService.registerRemoteDatabase(remoteDbId, localDb);
 
       // creates the sync object (PouchDB.Replication.Sync)
       const sync = createPouchDbSync({
@@ -409,6 +423,11 @@ const projectsSlice = createSlice({
         localDb,
         remoteDb,
       });
+      const syncId = buildSyncId({
+        localId: localDatabaseId,
+        remoteId: remoteDbId,
+      });
+      databaseService.registerSync(syncId, sync);
 
       // updates the state with all of this new information
       console.log('Made it through, setting');
@@ -426,11 +445,11 @@ const projectsSlice = createSlice({
         database: {
           isSyncing: true,
           isSyncingAttachments: false,
-          localDb: localDb,
+          localDb: localDatabaseId,
           remote: {
             connectionConfiguration,
-            remoteDb,
-            sync,
+            remoteDb: remoteDbId,
+            sync: syncId,
           },
         },
       };

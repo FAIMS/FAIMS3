@@ -99,7 +99,7 @@ export function createRemotePouchDbFromConnectionInfo<Content extends {}>({
   jwtToken,
   couchUrl,
   databaseName,
-}: DatabaseConnectionConfig): PouchDB.Database<Content> {
+}: DatabaseConnectionConfig): {id: string; db: PouchDB.Database<Content>} {
   // Ensure that there is no attempt to create this database remotely
   const pouchOptions: PouchDB.Configuration.RemoteDatabaseConfiguration = {
     skip_setup: true,
@@ -120,7 +120,10 @@ export function createRemotePouchDbFromConnectionInfo<Content extends {}>({
     ? couchUrl + databaseName
     : couchUrl + '/' + databaseName;
 
-  return new PouchDB(dbConnectionString, pouchOptions);
+  return {
+    db: new PouchDB(dbConnectionString, pouchOptions),
+    id: dbConnectionString,
+  };
 }
 
 /**
