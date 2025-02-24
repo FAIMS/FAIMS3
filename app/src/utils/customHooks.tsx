@@ -77,7 +77,8 @@ export function useIsOnline(): UseIsOnlineResponse {
   };
 
   return {
-    isOnline: online,
+    // TODO Revert this
+    isOnline: true,
     checkIsOnline: checkIsOnline,
     fallback: (
       <OfflineFallbackComponent

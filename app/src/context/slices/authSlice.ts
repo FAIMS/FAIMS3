@@ -186,9 +186,9 @@ const authSlice = createSlice({
       const {serverId, username} = action.payload;
 
       if (state.servers[serverId]?.users) {
-        delete state.servers[serverId].users[username];
+        delete state.servers[serverId]?.users[username];
 
-        if (Object.keys(state.servers[serverId].users).length === 0) {
+        if (Object.keys(state.servers[serverId]?.users ?? {}).length === 0) {
           delete state.servers[serverId];
         }
       }
@@ -334,7 +334,7 @@ export const setServerConnection = createAsyncThunk<
   let tokenIsChanged = true;
 
   // Check if we've changed the token
-  const existingState = state.servers[serverId].users[username];
+  const existingState = state.servers[serverId]?.users[username];
 
   if (existingState) {
     if (existingState.token === token) {

@@ -16,7 +16,7 @@ interface SyncState {
   hasUnsyncedChanges: boolean;
   isSyncError: boolean;
   alerts: Alert[];
-  isInitialized: boolean;
+  isInitialised: boolean;
 }
 
 // Initial state
@@ -26,7 +26,7 @@ const initialState: SyncState = {
   hasUnsyncedChanges: false,
   isSyncError: false,
   alerts: [],
-  isInitialized: false,
+  isInitialised: false,
 };
 
 // Create slice (combines actions and reducers)
@@ -58,7 +58,7 @@ const syncSlice = createSlice({
       );
     },
     setInitialized: (state, action: PayloadAction<boolean>) => {
-      state.isInitialized = action.payload;
+      state.isInitialised = action.payload;
     },
   },
 });

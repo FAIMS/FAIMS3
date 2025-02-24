@@ -118,7 +118,7 @@ export default function MainAppBar() {
   const activeServerId = useAppSelector(selectActiveServerId);
   const projectList = useAppSelector(state =>
     activeServerId
-      ? Object.values(state.projects.servers[activeServerId].projects ?? {})
+      ? Object.values(state.projects.servers[activeServerId]?.projects ?? {})
       : []
   );
 

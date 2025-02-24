@@ -30,7 +30,7 @@ const mockGetDataDB = async (project_id: ProjectID) => {
   return getDatabase(databaseName);
 };
 
-const mockGetProjectDB = async (project_id: ProjectID) => {
+export const mockGetProjectDB = async (project_id: ProjectID) => {
   return getDatabase('metadatadb-' + project_id);
 };
 
@@ -38,6 +38,12 @@ const mockGetProjectDB = async (project_id: ProjectID) => {
 const mockGetTemplateDB = async (project_id: ProjectID) => {
   // Right now the mock get template DB does not need the project ID as context
   return getDatabase('templatedb');
+};
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const mockGetUiSpec = async (project_id: ProjectID) => {
+  // TODO make this make sense. Get nothing - might need to fix this
+  return {};
 };
 
 const mockShouldDisplayRecord = () => {
@@ -91,6 +97,6 @@ export const cleanDataDBS = async () => {
 // register our mock database clients with the module
 export const callbackObject: DBCallbackObject = {
   getDataDB: mockGetDataDB,
-  getProjectDB: mockGetProjectDB,
+  getUiSpec: mockGetUiSpec,
   shouldDisplayRecord: mockShouldDisplayRecord,
 };

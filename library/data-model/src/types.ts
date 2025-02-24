@@ -506,15 +506,11 @@ export interface ElementOption {
 // end of types from datamodel/typeSystems.ts --------------------------------
 
 // types from datamodel/ui.ts --------------------------------
-
-export interface ListingInformation {
-  id: ListingID;
+export interface PublicServerInfo {
+  id: string;
   name: string;
-  description: string;
   conductor_url: string;
-}
-
-export interface Server extends ListingInformation {
+  description: string;
   prefix: string;
 }
 

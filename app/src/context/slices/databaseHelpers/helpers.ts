@@ -1,9 +1,9 @@
+import PouchDB from 'pouchdb-browser';
 import {
   EncodedProjectUIModel,
   ProjectUIModel,
   UI_SPECIFICATION_NAME,
 } from '@faims3/data-model';
-import nano from 'nano';
 import {
   POUCH_BATCH_SIZE,
   POUCH_BATCHES_LIMIT,
@@ -212,15 +212,14 @@ export async function fetchUiSpecFromMetadataDb({
   token: string;
   compile: boolean;
 }): Promise<ProjectUIModel> {
-  const couchClient = nano({
-    url: dbUrl,
-    requestDefaults: {
-      headers: {Authorization: `Bearer ${token}`},
-    },
+  // TODO optimise this
+  const db = createRemotePouchDbFromConnectionInfo<EncodedProjectUIModel>({
+    jwtToken: token,
+    couchUrl: dbUrl,
+    databaseName: dbName,
   });
 
   try {
-    const db = couchClient.use<EncodedProjectUIModel>(dbName);
     const encodedUiInfo = await db.get(UI_SPECIFICATION_NAME);
     const uiSpec = {
       _id: encodedUiInfo._id,

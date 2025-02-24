@@ -18,11 +18,10 @@
  *    Functions to backup and restore databases
  */
 import {open} from 'node:fs/promises';
-import {getProjectsDB} from '.';
+import {getMetadataDb, getProjectsDB} from '.';
 import {
   addDesignDocsForNotebook,
   getDataDB,
-  getProjectDB,
 } from '@faims3/data-model';
 
 /**
@@ -51,7 +50,7 @@ export const restoreFromBackup = async (filename: string) => {
           db = await getProjectsDB();
         } else if (dbName.startsWith('metadata')) {
           const projectName = dbName.split('||')[1];
-          db = await getProjectDB(projectName);
+          db = await getMetadataDb(projectName);
         } else if (dbName.startsWith('data')) {
           const projectName = dbName.split('||')[1];
           db = await getDataDB(projectName);

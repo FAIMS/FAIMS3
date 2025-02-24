@@ -54,7 +54,10 @@ import {addAlert} from '../../../context/slices/syncSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {isWeb} from '../../../utils/helpers';
 import {theme} from '../../themes';
-import {initialiseAllProjects} from '../../../context/slices/projectSlice';
+import {
+  initialiseAllProjects,
+  Server,
+} from '../../../context/slices/projectSlice';
 
 const SignInButtonComponent = () => {
   return (
@@ -107,11 +110,11 @@ const AuthenticatedDisplayComponent = () => {
   // Generate available connections list and map into full info
   const availableConnections = listAllConnections({state: authState}).map(
     connection => {
-      const info = servers[connection.serverId];
+      const info: Server | undefined = servers[connection.serverId];
       return {
         ...connection,
-        serverName: info.serverTitle,
-        conductorUrl: info.serverUrl,
+        serverName: info?.serverTitle ?? 'Loading...',
+        conductorUrl: info?.serverUrl ?? undefined,
       };
     }
   );

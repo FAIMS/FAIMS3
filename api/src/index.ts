@@ -31,13 +31,14 @@ import {
 import {app} from './routes';
 
 import {registerClient} from '@faims3/data-model';
-import {getDataDb, getMetadataDb} from './couchdb';
+import {getDataDb } from './couchdb';
 import {validateDatabases} from './couchdb/notebooks';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
   getDataDB: getDataDb,
-  getProjectDB: getMetadataDb,
+  // TODO do we need this?
+  getUiSpec: () => {},
   shouldDisplayRecord: () => true,
 });
 

@@ -23,7 +23,6 @@ import {
   APINotebookList,
   CLUSTER_ADMIN_GROUP_NAME,
   EncodedProjectUIModel,
-  getProjectDB,
   notebookRecordIterator,
   ProjectID,
   ProjectObject,
@@ -272,7 +271,7 @@ export const createNotebook = async (
     return undefined;
   }
 
-  const metaDB = await getProjectDB(project_id);
+  const metaDB = await getMetadataDb(project_id);
   if (!metaDB) {
     return undefined;
   }
@@ -341,7 +340,7 @@ export const updateNotebook = async (
   uispec: EncodedProjectUIModel,
   metadata: any
 ) => {
-  const metaDB = await getProjectDB(project_id);
+  const metaDB = await getMetadataDb(project_id);
   const dataDB = await getDataDB(project_id);
   if (!dataDB || !metaDB) {
     return undefined;
@@ -489,7 +488,7 @@ export const getNotebookMetadata = async (
   if (isValid) {
     try {
       // get the metadata from the db
-      const projectDB = await getProjectDB(project_id);
+      const projectDB = await getMetadataDb(project_id);
       if (projectDB) {
         const metaDocs = await projectDB.allDocs({include_docs: true});
         metaDocs.rows.forEach((doc: any) => {
@@ -525,7 +524,7 @@ export const getNotebookUISpec = async (
 ): Promise<ProjectMetadata | null> => {
   try {
     // get the metadata from the db
-    const projectDB = await getProjectDB(project_id);
+    const projectDB = await getMetadataDb(project_id);
     if (projectDB) {
       const uiSpec = (await projectDB.get('ui-specification')) as any;
       delete uiSpec._id;

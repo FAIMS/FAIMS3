@@ -1,19 +1,19 @@
 import {
-    ProjectDataObject,
-    ProjectObject,
-    ProjectUIModel,
+  ProjectDataObject,
+  ProjectObject,
+  ProjectUIModel,
 } from '@faims3/data-model';
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { CONDUCTOR_URLS } from '../../buildconfig';
-import { AppDispatch, RootState } from '../store';
-import { isTokenValid } from './authSlice';
+import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {CONDUCTOR_URLS} from '../../buildconfig';
+import {AppDispatch, RootState} from '../store';
+import {isTokenValid} from './authSlice';
 import {
-    buildPouchIdentifier,
-    createLocalPouchDatabase,
-    createPouchDbSync,
-    createRemotePouchDbFromConnectionInfo,
-    fetchProjectMetadataAndSpec,
-    getRemoteDatabaseNameFromId
+  buildPouchIdentifier,
+  createLocalPouchDatabase,
+  createPouchDbSync,
+  createRemotePouchDbFromConnectionInfo,
+  fetchProjectMetadataAndSpec,
+  getRemoteDatabaseNameFromId,
 } from './databaseHelpers/helpers';
 
 // TODO move this into a store
@@ -151,6 +151,7 @@ export type ServerIdToServerMap = {[serverId: string]: Server};
 
 export interface ProjectsState {
   servers: ServerIdToServerMap;
+  isInitialised: boolean;
 }
 
 // UTILITY FUNCTIONS
@@ -159,15 +160,19 @@ export interface ProjectsState {
 // SLICE
 // =====
 
-const initialState: ProjectsState = {
+export const initialProjectState: ProjectsState = {
   // initial state is empty
   servers: {},
+  isInitialised: false,
 };
 
 const projectsSlice = createSlice({
   name: 'projects',
-  initialState,
+  initialState: initialProjectState,
   reducers: {
+    markInitialised: (state) => {
+      state.isInitialised = true;
+    },
     // Add and remove servers
     addServer: (
       state,
@@ -1090,6 +1095,7 @@ export const {
   updateConnection,
   updateProjectDetails,
   updateServerDetails,
+  markInitialised
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;

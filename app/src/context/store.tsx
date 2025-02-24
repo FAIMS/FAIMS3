@@ -26,6 +26,7 @@ import authReducer, {
   selectIsAuthenticated,
 } from './slices/authSlice';
 import projectsReducer, {
+  initialProjectState,
   Project,
   ProjectsState,
   Server,
@@ -45,8 +46,16 @@ const projectsPersistConfig = {
     {
       // Transform for handling project state before persistence
       in: (state: ProjectsState) => {
-        // Create a deep copy to avoid mutating the original state
-        const newState: ProjectsState = JSON.parse(JSON.stringify(state));
+        console.log('IN STATE: ', state);
+        let newStateSource: Partial<ProjectsState> = initialProjectState;
+        if (state.servers !== undefined) {
+          newStateSource = state;
+        }
+
+        let newState: ProjectsState = JSON.parse(JSON.stringify(newStateSource));
+
+        // always force re-initialisation
+        newState.isInitialised = false;
 
         // Remove all database connections from projects before persisting
         Object.values(newState.servers).forEach((server: Server) => {
@@ -74,6 +83,8 @@ const projectsPersistConfig = {
             }
           });
         });
+
+        console.log('OUT STATE: ', newState);
         return newState;
       },
       // Transform for handling project state after rehydration
@@ -230,7 +241,12 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
   const mounted = useRef(false);
 
   // Initialised state
-  const isInitialized = useAppSelector(state => state.sync.isInitialized);
+  const syncStoreInitialised = useAppSelector(
+    state => state.sync.isInitialised
+  );
+  const projectStoreInitialised = useAppSelector(
+    state => state.projects.isInitialised
+  );
 
   useEffect(() => {
     // Don't initialise twice
@@ -266,7 +282,7 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
     };
   }, []);
 
-  if (!isInitialized) {
+  if (!syncStoreInitialised || !projectStoreInitialised) {
     return <LoadingComponent />;
   }
 
