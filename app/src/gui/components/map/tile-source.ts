@@ -465,14 +465,7 @@ export class ImageTileStore extends TileStoreBase {
   }
 
   getAttribution() {
-    const attrib = this.source.getAttributions();
-    if (!attrib) {
-      return '';
-    } else if (typeof  attrib === 'string') {
-      return attrib;
-    } else {
-      return (attrib as unknown as string[]).join(' ');
-    }
+    return '&copy; OSM contributors';
   }
 
   /**
