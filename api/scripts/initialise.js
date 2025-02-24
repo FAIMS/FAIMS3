@@ -21,24 +21,53 @@
 
 // how to import fetch in a node script...
 // needed to add this file to .eslintignore because it complains about 'import'
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args)); 
-
+const fetch = (...args) =>
+  import('node-fetch').then(({default: fetch}) => fetch(...args));
 const CONDUCTOR_URL = process.env.CONDUCTOR_PUBLIC_URL;
 
 const main = async () => {
+  // Check if --force flag is present in command line arguments
+  const forceFlag = process.argv.includes('--force');
+  const endpoint = forceFlag ? '/api/forceInitialise/' : '/api/initialise/';
 
-  fetch(CONDUCTOR_URL + '/api/initialise/', {
-    method: 'POST'
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log('data:', data);
-  })
-  .catch(error => {
-    console.log(error);
-  })
+  // If force flag is present, we need to authenticate
+  if (forceFlag) {
+    if (!process.env.USER_TOKEN) {
+      console.log(
+        'USER_TOKEN not set in .env - login to Conductor and copy your user token'
+      );
+      process.exit();
+    }
 
+    const token = process.env.USER_TOKEN;
+
+    fetch(CONDUCTOR_URL + endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log('data:', data);
+      })
+      .catch(error => {
+        console.log(error);
+      });
+  } else {
+    // Regular initialization without authentication
+    fetch(CONDUCTOR_URL + endpoint, {
+      method: 'POST',
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log('data:', data);
+      })
+      .catch(error => {
+        console.log(error);
+      });
+  }
 };
 
-
-main()
+main();

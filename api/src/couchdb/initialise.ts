@@ -63,7 +63,8 @@ const adminOnlySecurityHelper = async (
 };
 
 export const initialiseProjectsDB = async (
-  db: PouchDB.Database | undefined
+  db: PouchDB.Database | undefined,
+  {force = false}: {force?: boolean}
 ) => {
   // Permissions doc goes into _design/permissions in a project
   // javascript in here will run inside CouchDB
@@ -80,25 +81,37 @@ export const initialiseProjectsDB = async (
     }`,
   };
   if (db) {
-    try {
-      await db.get(projectPermissionsDoc._id);
-    } catch {
-      await db.put(projectPermissionsDoc);
+    let write = false;
+
+    if (force) {
+      write = true;
+    } else {
+      // do we already have a default document?
+      try {
+        await db.get(projectPermissionsDoc._id);
+        write = false;
+      } catch {
+        write = true;
+      }
     }
 
-    // can't save security on an in-memory database so skip if testing
-    if (process.env.NODE_ENV !== 'test') {
-      const security = db.security();
-      await adminOnlySecurityHelper(security, [
-        CLUSTER_ADMIN_GROUP_NAME,
-        '_admin',
-      ]);
+    if (write) {
+      await db.put(projectPermissionsDoc);
+      // can't save security on an in-memory database so skip if testing
+      if (process.env.NODE_ENV !== 'test') {
+        const security = db.security();
+        await adminOnlySecurityHelper(security, [
+          CLUSTER_ADMIN_GROUP_NAME,
+          '_admin',
+        ]);
+      }
     }
   }
 };
 
 export const initialiseTemplatesDb = async (
-  db: PouchDB.Database | undefined
+  db: PouchDB.Database | undefined,
+  {force = false}: {force?: boolean}
 ) => {
   // Permissions doc goes into _design/permissions in a project
   // javascript in here will run inside CouchDB
@@ -115,9 +128,21 @@ export const initialiseTemplatesDb = async (
     }`,
   };
   if (db) {
-    try {
-      await db.get(projectPermissionsDoc._id);
-    } catch {
+    let write = false;
+
+    if (force) {
+      write = true;
+    } else {
+      // do we already have a default document?
+      try {
+        await db.get(projectPermissionsDoc._id);
+        write = false;
+      } catch {
+        write = true;
+      }
+    }
+
+    if (write) {
       try {
         await db.put(projectPermissionsDoc);
       } catch (e) {
@@ -126,21 +151,22 @@ export const initialiseTemplatesDb = async (
         );
         throw e;
       }
-    }
 
-    // can't save security on an in-memory database so skip if testing
-    if (process.env.NODE_ENV !== 'test') {
-      const security = db.security();
-      await adminOnlySecurityHelper(security, [
-        CLUSTER_ADMIN_GROUP_NAME,
-        '_admin',
-      ]);
+      // can't save security on an in-memory database so skip if testing
+      if (process.env.NODE_ENV !== 'test') {
+        const security = db.security();
+        await adminOnlySecurityHelper(security, [
+          CLUSTER_ADMIN_GROUP_NAME,
+          '_admin',
+        ]);
+      }
     }
   }
 };
 
 export const initialiseDirectoryDB = async (
-  db: PouchDB.Database | undefined
+  db: PouchDB.Database | undefined,
+  {force = false}: {force?: boolean}
 ) => {
   const directoryDoc = {
     _id: 'default',
@@ -166,10 +192,21 @@ export const initialiseDirectoryDB = async (
   };
 
   if (db) {
-    // do we already have a default document?
-    try {
-      await db.get('default');
-    } catch {
+    let write = false;
+
+    if (force) {
+      write = true;
+    } else {
+      // do we already have a default document?
+      try {
+        await db.get('default');
+        write = false;
+      } catch {
+        write = true;
+      }
+    }
+
+    if (write) {
       await db.put(directoryDoc);
       await db.put(permissions);
 
@@ -229,7 +266,10 @@ export const initialiseUserDB = async (db: PouchDB.Database | undefined) => {
  * @param db The database to initialise, intentionally not typed so as to not
  * include type errors for interacting with permission and security documents.
  */
-export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
+export const initialiseAuthDb = async (
+  db: PouchDB.Database,
+  {force = true}: {force?: boolean}
+): Promise<void> => {
   // To check if we are initialised - we check for presence of expected
   // documents
   let initialised = true;
@@ -248,7 +288,7 @@ export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
     initialised = false;
   }
 
-  if (initialised) {
+  if (!force && initialised) {
     return;
   }
 

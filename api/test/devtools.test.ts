@@ -35,7 +35,7 @@ registerClient(callbackObject);
 
 if (DEVELOPER_MODE) {
   it('createRecords', async () => {
-    await initialiseDatabases();
+    await initialiseDatabases({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',

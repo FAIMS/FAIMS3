@@ -261,7 +261,7 @@ describe('user creation', () => {
   });
 
   it('listing users for notebooks', async () => {
-    await initialiseDatabases();
+    await initialiseDatabases({force: false});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',

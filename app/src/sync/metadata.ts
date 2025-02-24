@@ -77,23 +77,15 @@ export const fetchProjectMetadata = async (
   try {
     const existing = await metaDB.get('metadata');
     metadata._rev = existing._rev;
-  } catch (e) {
-    console.log(
-      'Failed to update _rev for existing metadata entry in metadata DB. Error: ',
-      e
-    );
-    // nop
+  } catch {
+    // no problem here, just means there is no existing metadata
   }
 
   try {
     const existing = await metaDB.get('ui-specification');
     uiSpec._rev = existing._rev;
-  } catch (e) {
-    console.log(
-      'Failed to update _rev for existing uiSpec entry in metadata DB. Error: ',
-      e
-    );
-    // nop
+  } catch {
+    // no problem here, just means there is no existing metadata
   }
 
   try {

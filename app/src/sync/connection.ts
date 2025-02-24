@@ -155,6 +155,11 @@ export function createPouchDbFromConnectionInfo<Content extends {}>(
       db_url = connectionInfo.base_url + connectionInfo.db_name;
     else db_url = connectionInfo.base_url + '/' + connectionInfo.db_name;
   } else {
+    // This should not happen!
+    console.error(
+      'Misconfigured CouchDB URL in connectionInfo! This is a serious issue. Falling back to default of http://localhost:5984... This is not likely to work in a production deployment. Connection info provided: ',
+      connectionInfo
+    );
     db_url =
       encodeURIComponent(connectionInfo.proto || 'http') +
       '://' +

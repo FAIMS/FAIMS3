@@ -65,6 +65,7 @@ export default function HeadingProjectGrid({
         rows={activatedProjects}
         columns={activatedColumns}
         onRowClick={handleRowClick}
+        rowHeight={75}
         autoHeight
         sx={{
           cursor: 'pointer',
