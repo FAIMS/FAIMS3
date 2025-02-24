@@ -81,8 +81,9 @@ export default function NoteBooks() {
 
   const activeServerId = activeUser.serverId;
   const projects = useAppSelector(state =>
-    Object.values(state.projects.servers[activeServerId] ?? {})
+    Object.values(state.projects.servers[activeServerId]?.projects ?? {})
   );
+  console.log('Projects: ', projects);
 
   // Refresh mutation
   const doRefresh = useMutation({
@@ -99,7 +100,7 @@ export default function NoteBooks() {
   });
   const showRefreshButton = isOnline.isOnline;
 
-  const activeUserActivatedProjects = projects.filter(nb => nb.activated);
+  const activeUserActivatedProjects = projects.filter(nb => nb.isActivated);
 
   const [tabID, setTabID] = useState('1');
 
@@ -115,7 +116,13 @@ export default function NoteBooks() {
       type: 'string',
       flex: 0.4,
       renderCell: ({row}) => (
-        <Box>
+        <Box
+          onClick={() => {
+            if (row.isActivated) {
+              history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + row.projectId);
+            }
+          }}
+        >
           <Typography
             variant={is_xs ? 'body2' : 'body1'}
             fontWeight={row.isActivated ? 'bold' : 'normal'}
@@ -148,7 +155,7 @@ export default function NoteBooks() {
       ),
     },
   ]);
-  const showCreateNewNotebookButton = false; 
+  const showCreateNewNotebookButton = false;
 
   // What type of layout are we using?
   const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';

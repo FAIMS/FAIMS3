@@ -6,7 +6,10 @@ import {
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../../../buildconfig';
 import {selectActiveUser} from '../../../../context/slices/authSlice';
-import {activateProject, Project} from '../../../../context/slices/projectSlice';
+import {
+  activateProject,
+  Project,
+} from '../../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
 import FaimsDialog from '../../ui/Faims_Dialog';
 import {
@@ -35,6 +38,7 @@ export default function NotebookActivationSwitch({
   const handleClose = () => setOpen(false);
   const handleActivationClick = () => {
     if (activeUser) {
+      console.log('Dispatching activate project task');
       dispatch(
         activateProject({
           jwtToken: activeUser.token,

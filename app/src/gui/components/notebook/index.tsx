@@ -132,7 +132,6 @@ type NotebookComponentProps = {
 export default function NotebookComponent({project}: NotebookComponentProps) {
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
-  const history = useNavigate();
 
   const {uiSpecification: uiSpecification} = project;
 

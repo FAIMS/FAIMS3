@@ -46,6 +46,7 @@ const projectsPersistConfig = {
     {
       // Transform for handling project state before persistence
       in: (state: ProjectsState) => {
+        return state
         console.log('IN STATE: ', state);
         let newStateSource: Partial<ProjectsState> = initialProjectState;
         if (state.servers !== undefined) {

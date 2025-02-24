@@ -39,13 +39,13 @@ export async function initialize() {
   // TODO confirm we can rely on ordering here
 
   // This initialises the servers by fetching their data from corresponding API
-  store.dispatch(initialiseServers({}));
+  await store.dispatch(initialiseServers({}));
 
   // Then we want to initialise all the projects too
-  store.dispatch(initialiseAllProjects({}));
+  await store.dispatch(initialiseAllProjects({}));
 
   // Once this is done - mark initialisation complete
-  store.dispatch(markInitialised());
+  await store.dispatch(markInitialised());
 
   // TODO bring this back?
   // register_basic_automerge_resolver(events);

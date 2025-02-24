@@ -1,4 +1,6 @@
 import {
+  NonUniqueProjectID,
+  PossibleConnectionInfo,
   ProjectDataObject,
   ProjectObject,
   ProjectUIModel,
@@ -170,7 +172,7 @@ const projectsSlice = createSlice({
   name: 'projects',
   initialState: initialProjectState,
   reducers: {
-    markInitialised: (state) => {
+    markInitialised: state => {
       state.isInitialised = true;
     },
     // Add and remove servers
@@ -247,7 +249,9 @@ const projectsSlice = createSlice({
     // Add and remove projects
     addProject: (
       state,
-      action: PayloadAction<ProjectInformation & ProjectIdentity>
+      action: PayloadAction<
+        ProjectInformation & ProjectIdentity & {couchDbUrl: string}
+      >
     ) => {
       const payload = action.payload;
 
@@ -266,6 +270,11 @@ const projectsSlice = createSlice({
           `Cannot add project since this server already has project with ID ${payload.projectId}.`
         );
       }
+
+      // Update the couch DB URL (since we presume this to be an
+      // update/accurate)
+      // TODO handle couch DB URLs on a per project basis
+      server.couchDbUrl = payload.couchDbUrl;
 
       // Now we can add one
       server.projects[payload.projectId] = {
@@ -291,7 +300,9 @@ const projectsSlice = createSlice({
     // Update a project (metadata / details)
     updateProjectDetails: (
       state,
-      action: PayloadAction<ProjectInformation & ProjectIdentity>
+      action: PayloadAction<
+        ProjectInformation & ProjectIdentity & {couchDbUrl: string}
+      >
     ) => {
       const payload = action.payload;
 
@@ -310,6 +321,8 @@ const projectsSlice = createSlice({
           `Cannot update project since it does not exist! Server ID ${payload.serverId}, project ID ${payload.projectId}.`
         );
       }
+
+      server.couchDbUrl = payload.couchDbUrl;
 
       // Now we can update it
       server.projects[payload.projectId] = {
@@ -330,6 +343,8 @@ const projectsSlice = createSlice({
       action: PayloadAction<ProjectIdentity & DatabaseAuth>
     ) => {
       const payload = action.payload;
+
+      console.log('Activating survey ', action);
 
       // Check the server exists
       let server = serverById(state, payload.serverId);
@@ -396,7 +411,8 @@ const projectsSlice = createSlice({
       });
 
       // updates the state with all of this new information
-      project = {
+      console.log('Made it through, setting');
+      state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
         metadata: project.metadata,
         projectId: project.projectId,
@@ -514,7 +530,7 @@ const projectsSlice = createSlice({
       });
 
       // updates the state with all of this new information
-      project = {
+      state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
         metadata: project.metadata,
         projectId: project.projectId,
@@ -610,7 +626,7 @@ const projectsSlice = createSlice({
       });
 
       // updates the state with all of this new information
-      project = {
+      state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
         metadata: project.metadata,
         projectId: project.projectId,
@@ -699,7 +715,7 @@ const projectsSlice = createSlice({
       });
 
       // updates the state with all of this new information
-      project = {
+      state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
         metadata: project.metadata,
         projectId: project.projectId,
@@ -865,7 +881,8 @@ export const updateDatabaseCredentials = createAsyncThunk<
  */
 export const initialiseServers = createAsyncThunk<void, {}>(
   'projects/initialiseServers',
-  ({}, {dispatch, getState}) => {
+  async ({}, {dispatch, getState}) => {
+    console.log('INITIALISING');
     // cast and get state
     const state = getState() as RootState;
     const projectState = state.projects;
@@ -875,7 +892,7 @@ export const initialiseServers = createAsyncThunk<void, {}>(
     let discoveredServers: ApiServerInfo[] = [];
     for (const conductorUrl of CONDUCTOR_URLS) {
       // firstly - try and call the info endpoint
-      fetch(`${conductorUrl}/api/info`, {})
+      await fetch(`${conductorUrl}/api/info`, {})
         .then(response => response.json())
         .then(info => {
           discoveredServers.push(info as ApiServerInfo);
@@ -883,6 +900,7 @@ export const initialiseServers = createAsyncThunk<void, {}>(
     }
 
     for (const apiServerInfo of discoveredServers) {
+      console.log('Discovered server: ', apiServerInfo);
       // pull out the server ID
       const serverId = apiServerInfo.id;
 
@@ -900,6 +918,7 @@ export const initialiseServers = createAsyncThunk<void, {}>(
           })
         );
       } else {
+        console.log('Pushing new server');
         // Create
         appDispatch(
           addServer({
@@ -916,6 +935,19 @@ export const initialiseServers = createAsyncThunk<void, {}>(
     }
   }
 );
+
+// TODO move this into data model
+export interface ApiProjectInfo {
+  _id: NonUniqueProjectID;
+  name: string;
+  description?: string;
+  template_id?: string;
+  data_db?: PossibleConnectionInfo;
+  metadata_db?: PossibleConnectionInfo;
+  last_updated?: string;
+  created?: string;
+  status?: string;
+}
 
 /**
  * Initialises projects for the specified server. Merges superficial details for
@@ -989,15 +1021,15 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
 
     // Now we have a token that is active - so let's fetch the directory (which
     // lists projects)
-    let directoryResults: ProjectObject[] = [];
-    fetch(`${server.serverUrl}/api/directory`, {
+    let directoryResults: ApiProjectInfo[] = [];
+    await fetch(`${server.serverUrl}/api/directory`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
       .then(response => response.json())
       .then(rawDirectory => {
-        directoryResults = rawDirectory as ProjectObject[];
+        directoryResults = rawDirectory as ApiProjectInfo[];
       })
       .catch(e => {
         console.warn(
@@ -1007,11 +1039,15 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
 
     // Now for each result, merge details
     for (const details of directoryResults) {
-      const projectId = details.project_id;
+      console.log('GOT DETAILS: ', details);
+      const projectId = details._id;
+      console.log('project_id: ', projectId);
       let meta = undefined;
       try {
+        // uncompiled ui spec
+        // TODO need to compile the spec somewhere for conditionals to work!
         meta = await fetchProjectMetadataAndSpec({
-          compile: true,
+          compile: false,
           projectId: projectId,
           serverUrl: server.serverUrl,
           token,
@@ -1044,6 +1080,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             projectId,
             serverId,
             uiSpecification: meta.uiSpec,
+            // TODO verify that this is defined
+            couchDbUrl: details.data_db?.base_url!,
             // TODO Where are these populated from
             createdAt: undefined,
             lastUpdated: undefined,
@@ -1059,6 +1097,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             projectId: projectId,
             serverId,
             uiSpecification: meta?.uiSpec ?? project.uiSpecification,
+            // TODO verify that this is defined
+            couchDbUrl: details.data_db?.base_url!,
             createdAt: project.createdAt,
             lastUpdated: project.lastUpdated,
           })
@@ -1095,7 +1135,7 @@ export const {
   updateConnection,
   updateProjectDetails,
   updateServerDetails,
-  markInitialised
+  markInitialised,
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;
