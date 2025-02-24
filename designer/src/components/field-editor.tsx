@@ -456,7 +456,6 @@ export const FieldEditor = ({
             onChange={e => setDuplicateTitle(e.target.value)}
             label="Field Title"
             variant="outlined"
-            onClick={e => e.stopPropagation()}
           />
         </DialogContent>
         <DialogActions>
