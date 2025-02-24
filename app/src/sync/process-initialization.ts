@@ -221,7 +221,7 @@ export async function syncProjectDb({
  *    and update the local projects database
  * @param listing - containing information about the server
  */
-async function get_projects_from_conductor(listing: ListingsObject) {
+export async function get_projects_from_conductor(listing: ListingsObject) {
   if (!listing.conductor_url) return;
 
   // make sure there is a local projects database
