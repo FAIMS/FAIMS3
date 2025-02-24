@@ -1,38 +1,23 @@
 import styled from '@emotion/styled';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import {
-  Alert,
-  AlertTitle,
-  AppBar,
-  Box,
-  Button,
-  Paper,
-  Tab,
-  Tabs,
-  TabScrollButton,
-  Typography,
-} from '@mui/material';
+import {AppBar, Box, Paper, Tab, Tabs, TabScrollButton} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useQuery} from '@tanstack/react-query';
 import React, {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {NOTEBOOK_NAME} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import {Project, selectProjectById} from '../../../context/slices/projectSlice';
+import {useAppSelector} from '../../../context/store';
 import {
   useDraftsList,
   useQueryParams,
   useRecordList,
 } from '../../../utils/customHooks';
-import CircularLoading from '../ui/circular_loading';
 import AddRecordButtons from './add_record_by_type';
 import {DraftsTable} from './draft_table';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
-import {Project, selectProjectById} from '../../../context/slices/projectSlice';
-import {useAppSelector} from '../../../context/store';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =

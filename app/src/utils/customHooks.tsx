@@ -334,6 +334,8 @@ export const useRecordList = ({
         return [];
       }
       let rows;
+
+      console.log("Fetching records")
       if (query.length === 0) {
         rows = await getMetadataForAllRecords(token, projectId, filterDeleted);
       } else {
@@ -345,6 +347,7 @@ export const useRecordList = ({
         );
       }
 
+      console.log("Done")
       return rows;
     },
   });
