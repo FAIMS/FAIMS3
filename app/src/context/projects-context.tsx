@@ -5,9 +5,11 @@ import {
   setSyncProjectDB,
   updateProjectsDB,
 } from '../dbs/projects-db';
-import {activate_project, syncProjectDb} from '../sync/process-initialization';
-import {ProjectObject, refreshMetadataDb} from '../sync/projects';
-import {getListing} from '../sync/state';
+import {
+  activate_project,
+  update_directory,
+} from '../sync/process-initialization';
+import {refreshMetadataDb} from '../sync/projects';
 import {ProjectExtended} from '../types/project';
 import {getLocalActiveMap, getProjectMap, getRemoteProjects} from './functions';
 import {refreshActiveUser} from './slices/authSlice';
@@ -50,7 +52,7 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
    *
    * @returns Resolves when initialization is complete.
    */
-  const initProjects = async () => {
+  const initProjectsLogic = async () => {
     // Get the local projects (i.e. those in the local project database)
     const localProjects = await getProjectsDB();
 
@@ -127,40 +129,9 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
 
     // Build project list (proposed update) from this merge
     const newProjects = [...newProjectsMap.values()];
+
     updateProjectsDB(newProjects);
     setProjects(newProjects);
-
-    // Now, update the parallel (silly!!) project database :(
-
-    // TODO this is ridiculous - just do this in a non insane way (i.e. a single
-    // store which contains listings, projects, activated status, reference to
-    // the DBs etc)
-    const listings = new Set(newProjects.map(p => p.listing));
-    for (const l of listings) {
-      const listingDetails = getListing(l);
-      // Build project objects for this listing
-      const projectObjects: ProjectObject[] = newProjects
-        .filter(p => p.listing === l)
-        .map(project => {
-          return {
-            _id: project._id,
-            project_id: project.project_id,
-            name: project.name,
-            created: project.created,
-            description: project.description,
-            last_updated: project.last_updated,
-            metadata_db: undefined,
-            data_db: undefined,
-            status: project.status,
-            conductor_url: project.conductor_url,
-          };
-        });
-      syncProjectDb({
-        projects: projectObjects,
-        listingId: l,
-        conductorUrl: listingDetails.listing.conductor_url,
-      });
-    }
 
     // Refresh activated project metadata DB
     for (const project of newProjects) {
@@ -183,14 +154,21 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
   };
 
   /**
-   * Synchronizes the list of projects with remote projects, updating the local project list
-   * to include any remote project updates while preserving the activation state.
-   *
-   * @returns Resolves when the project synchronization is complete.
+   * Runs the initialise logic (first load only)
+   */
+  const initProjects = async () => {
+    await initProjectsLogic();
+  };
+
+  /**
+   * Updates directory and then runs initialisation logic (on refresh)
    */
   const syncProjects = async () => {
-    // sync projects can just re-init projects - it's the same operation
-    await initProjects();
+    // Prompts existing store logic to update from directory
+    await update_directory();
+    // TODO remove this - unify storage - this is a hack
+    await initProjectsLogic();
+    // Prompt a refresh of active user (new token with updated creds)
     await store.dispatch(refreshActiveUser());
   };
 
