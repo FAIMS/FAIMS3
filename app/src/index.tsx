@@ -38,8 +38,15 @@ const getDataDB = (projectId: string) => {
 
 const getUiSpecForProject = (projectId: string) => {
   const projectState = store.getState();
-  return selectAllProjects(projectState).find(p => p.projectId === projectId)
-    ?.uiSpecification;
+  const uiSpec = selectAllProjects(projectState).find(
+    p => p.projectId === projectId
+  )?.uiSpecification;
+  if (!uiSpec) {
+    throw Error(
+      'Could not find UI Specification for given project: ' + projectId
+    );
+  }
+  return uiSpec;
 };
 
 // set up the database module @faims3/data-model with our callbacks to get databases

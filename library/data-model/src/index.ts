@@ -18,12 +18,7 @@
  *   Main entry point for the module.
  */
 
-import {
-  HRID_STRING,
-  DEFAULT_RELATION_LINK_VOCABULARY,
-  resolve_project_id,
-  split_full_project_id,
-} from './datamodel/core';
+import {HRID_STRING, DEFAULT_RELATION_LINK_VOCABULARY} from './datamodel/core';
 import {
   getEqualityFunctionForType,
   isEqualFAIMS,
@@ -31,7 +26,13 @@ import {
   setAttachmentLoaderForType,
   setEqualityFunctionForType,
 } from './datamodel/typesystem';
-import {ProjectID, RecordMetadata, TokenContents} from './types';
+import {
+  ProjectDataObject,
+  ProjectID,
+  ProjectUIModel,
+  RecordMetadata,
+  TokenContents,
+} from './types';
 import {
   generateFAIMSDataID,
   getFirstRecordHead,
@@ -65,8 +66,8 @@ import {
   file_data_to_attachments,
   files_to_attachments,
 } from './data_storage/attachments';
+import {record} from 'zod';
 export * from './auth';
-
 export * from './data_storage/authDB';
 export * from './utils';
 
@@ -95,10 +96,8 @@ export {
   listFAIMSRecordRevisions,
   mergeHeads,
   notebookRecordIterator,
-  resolve_project_id,
   saveUserMergeResult,
   setRecordAsDeleted,
-  split_full_project_id,
   upsertFAIMSData,
   setAttachmentLoaderForType,
   setAttachmentDumperForType,
@@ -113,12 +112,13 @@ export * from './types';
 export * from './api';
 
 export type DBCallbackObject = {
-  // (projectId) : PouchDB
-  getDataDB: CallableFunction;
-  // (projectId) : ProjectUIModel
-  getUiSpec: CallableFunction;
-  // (recordMetadata) : boolean
-  shouldDisplayRecord: CallableFunction;
+  getDataDB: (projectId: string) => any;
+  getUiSpec: (projectId: string) => ProjectUIModel;
+  shouldDisplayRecord: (params: {
+    contents: TokenContents;
+    projectId: string;
+    recordMetadata: RecordMetadata;
+  }) => Promise<boolean>;
 };
 
 let moduleCallback: DBCallbackObject;
@@ -151,11 +151,11 @@ export const shouldDisplayRecord = (
   record_metadata: RecordMetadata
 ) => {
   if (moduleCallback) {
-    return moduleCallback.shouldDisplayRecord(
+    return moduleCallback.shouldDisplayRecord({
+      projectId: project_id,
+      recordMetadata: record_metadata,
       contents,
-      project_id,
-      record_metadata
-    );
+    });
   } else {
     logError('No callback registered to check record permissions');
     return undefined;
