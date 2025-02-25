@@ -104,8 +104,7 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
 
         // Get the current set of projects for this listing
         const currentSet = new Set(
-          newProjectsMap
-            .values()
+          Array.from(newProjectsMap.values())
             .filter(project => project.listing === listingId)
             .map(project => project._id)
         );
