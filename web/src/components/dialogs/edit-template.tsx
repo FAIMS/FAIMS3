@@ -31,7 +31,7 @@ export const EditTemplateDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button>Edit Template</Button>
+        <Button variant="outline">Edit Template</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

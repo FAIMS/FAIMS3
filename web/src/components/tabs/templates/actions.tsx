@@ -1,8 +1,12 @@
 import {EditTemplateDialog} from '@/components/dialogs/edit-template';
 import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-template';
+import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {useAuth} from '@/context/auth-provider';
+import {useGetTemplates} from '@/hooks/get-hooks';
+import {Route} from '@/routes/templates/$templateId';
 
 /**
  * TemplateActions component renders action cards for creating a project from a template,
@@ -12,10 +16,36 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
  * @returns {JSX.Element} The rendered TemplateActions component.
  */
 const TemplateActions = () => {
+  const {user} = useAuth();
+  const {templateId} = Route.useParams();
+  const {data} = useGetTemplates(user, templateId);
+
   return (
     <div className="flex flex-col gap-2 justify-between">
-      <Card className="flex-1">
-        <List className="flex flex-col gap-4">
+      <Card>
+        <List>
+          <ListItem>
+            <ListLabel>Download JSON</ListLabel>
+            <ListDescription>
+              Download the JSON file for this template.
+            </ListDescription>
+          </ListItem>
+          <ListItem>
+            <Button variant="outline">
+              <a
+                href={`data:text/json;charset=utf-8,${encodeURIComponent(
+                  JSON.stringify(data)
+                )}`}
+                download={`${templateId}.json`}
+              >
+                Download JSON
+              </a>
+            </Button>
+          </ListItem>
+        </List>
+      </Card>
+      <Card>
+        <List>
           <ListItem>
             <ListLabel>Create {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
             <ListDescription>
@@ -25,8 +55,8 @@ const TemplateActions = () => {
           <ProjectFromTemplateDialog />
         </List>
       </Card>
-      <Card className="flex-1">
-        <List className="flex flex-col gap-4">
+      <Card>
+        <List>
           <ListItem>
             <ListLabel>Edit Template</ListLabel>
             <ListDescription>Edit the current template.</ListDescription>
