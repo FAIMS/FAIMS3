@@ -110,7 +110,9 @@ export function ProjectsProvider({children}: {children: ReactNode}) {
         );
 
         // Find the difference in these sets - i.e. those that are in the current but no longer in the remote
-        const toRemoveProjectIds = currentSet.difference(remoteSet);
+        const toRemoveProjectIds = new Set(
+          [...currentSet].filter(id => !remoteSet.has(id))
+        );
 
         for (const projectId of toRemoveProjectIds) {
           // Project information (retain here so we can use for removal)
