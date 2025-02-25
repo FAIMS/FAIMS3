@@ -20,13 +20,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
+import {Divider} from './ui/word-divider';
 
 interface Field {
   name: string;
   label?: string;
+  description?: string;
   schema: z.ZodSchema;
   type?: string;
   options?: {label: string; value: string}[];
+  excludes?: string;
+}
+
+interface Divider {
+  index: number;
+  component: React.ReactNode;
 }
 
 /**
@@ -46,12 +54,14 @@ export function Form<
   },
 >({
   fields,
+  dividers,
   onSubmit,
   submitButtonText = 'Submit',
   submitButtonVariant = 'default',
   warningMessage,
 }: {
   fields: TFields;
+  dividers?: Divider[];
   onSubmit: (data: TSchema) => Promise<ErrorOption | undefined>;
   submitButtonText?: string;
   submitButtonVariant?: ButtonProps['variant'];
@@ -85,47 +95,61 @@ export function Form<
         className="flex flex-col gap-6"
       >
         <div className="flex flex-col gap-2">
-          {fields.map(({name, label, type, options}) => (
-            <FormField
-              key={name}
-              control={form.control}
-              name={name as Path<TSchema>}
-              /* eslint-disable @typescript-eslint/no-unused-vars */
-              render={({field: {value, onChange, ...field}}) => (
-                <FormItem>
-                  {label && <FormLabel>{label}</FormLabel>}
-                  <FormControl>
-                    {options ? (
-                      <Select onValueChange={onChange} defaultValue={value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={`Select ${name}`} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {options.map(({label, value}) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        {...field}
-                        type={type}
-                        className={type === 'file' ? 'cursor-pointer' : ''}
-                        onChange={event =>
-                          type === 'file'
-                            ? event.target.files &&
-                              onChange(event.target.files[0])
-                            : onChange(event)
-                        }
-                      />
-                    )}
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          {fields.map(({name, label, type, options, excludes}, index) => (
+            <>
+              {dividers?.find(divider => divider.index === index)?.component}
+              <FormField
+                key={name}
+                control={form.control}
+                name={name as Path<TSchema>}
+                /* eslint-disable @typescript-eslint/no-unused-vars */
+                render={({field: {value, onChange, ...field}}) => (
+                  <FormItem>
+                    {label && <FormLabel>{label}</FormLabel>}
+                    <FormControl>
+                      {options ? (
+                        <Select
+                          onValueChange={onChange}
+                          defaultValue={value}
+                          disabled={
+                            excludes !== undefined &&
+                            form.watch(excludes as Path<TSchema>)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={`Select ${name}`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {options.map(({label, value}) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          {...field}
+                          type={type}
+                          disabled={
+                            excludes !== undefined &&
+                            form.watch(excludes as Path<TSchema>)
+                          }
+                          className={type === 'file' ? 'cursor-pointer' : ''}
+                          onChange={event =>
+                            type === 'file'
+                              ? event.target.files &&
+                                onChange(event.target.files[0])
+                              : onChange(event)
+                          }
+                        />
+                      )}
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
           ))}
         </div>
         {warningMessage && (

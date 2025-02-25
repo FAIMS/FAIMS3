@@ -4,6 +4,7 @@ import {columns} from '@/components/tables/projects';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/get-hooks';
 import {NOTEBOOK_NAME} from '@/constants';
+import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 
 export const Route = createFileRoute('/projects/')({
   component: RouteComponent,
@@ -30,6 +31,7 @@ function RouteComponent() {
       onRowClick={({non_unique_project_id}) =>
         navigate({to: `/${NOTEBOOK_NAME}s/${non_unique_project_id}`})
       }
+      button={<CreateProjectDialog />}
     />
   );
 }
