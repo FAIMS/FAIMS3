@@ -28,7 +28,7 @@ function RouteComponent() {
       data={data}
       loading={isPending}
       onRowClick={({non_unique_project_id}) =>
-        navigate({to: `/${NOTEBOOK_NAME}s/${non_unique_project_id}`})
+        navigate({to: `/projects/${non_unique_project_id}`})
       }
     />
   );
