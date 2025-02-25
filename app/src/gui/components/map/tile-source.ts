@@ -24,20 +24,13 @@ import TileLayer from 'ol/layer/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import {LoaderOptions} from 'ol/source/DataTile';
 import ImageTileSource from 'ol/source/ImageTile';
-import OSM, {ATTRIBUTION} from 'ol/source/OSM';
+import {ATTRIBUTION} from 'ol/source/OSM';
 import VectorTileSource from 'ol/source/VectorTile';
 import {MAP_SOURCE, MAP_SOURCE_KEY} from '../../../buildconfig';
 import {TileCoord} from 'ol/tilecoord';
-
-const TILE_URL_MAP: {[key: string]: string} = {
-  'lima-labs': 'https://cdn.lima-labs.com/{z}/{x}/{y}.png?api={key}',
-  osm: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  maptiler:
-    //'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key={key}',
-    'https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key={key}',
-  //'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.jpg?key={key}',
-};
-
+import VectorTile from 'ol/VectorTile';
+import {FeatureLike} from 'ol/Feature';
+import {applyStyle} from 'ol-mapbox-style';
 interface StoredTile {
   x: number;
   y: number;
@@ -230,6 +223,10 @@ class TileStoreBase {
     return {tileKey, size};
   }
 
+  getTileURL(): string | undefined {
+    return undefined;
+  }
+
   async getTileBlob(
     z: number,
     x: number,
@@ -239,14 +236,20 @@ class TileStoreBase {
     if (image) console.log('got tile from cache', z, x, y);
     if (image) return image.data;
     else if (navigator.onLine) {
-      console.log('fetching tile', z, x, y);
-      const url = TILE_URL_MAP[MAP_SOURCE].replace('{z}', z.toString())
-        .replace('{x}', x.toString())
-        .replace('{y}', y.toString())
-        .replace('{key}', MAP_SOURCE_KEY);
-      const response = await fetch(url);
-      return await response.blob();
-    } else return undefined;
+      const urlTemplate = this.getTileURL();
+      if (urlTemplate) {
+        console.log('fetching tile', z, x, y);
+        const url = urlTemplate
+          .replace('{z}', z.toString())
+          .replace('{x}', x.toString())
+          .replace('{y}', y.toString())
+          .replace('{key}', MAP_SOURCE_KEY);
+        const response = await fetch(url);
+        return await response.blob();
+      }
+    }
+    // fallback, we can't get the tile
+    return undefined;
   }
 
   async getTileAsDataURL(
@@ -443,6 +446,14 @@ class TileStoreBase {
   }
 }
 
+const TILE_URL_MAP: {[key: string]: string} = {
+  'lima-labs': 'https://cdn.lima-labs.com/{z}/{x}/{y}.png?api={key}',
+  osm: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  maptiler:
+    //'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key={key}',
+    'https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key={key}',
+  //'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.jpg?key={key}',
+};
 export class ImageTileStore extends TileStoreBase {
   declare source: ImageTileSource;
   declare tileLayer: TileLayer;
@@ -454,6 +465,10 @@ export class ImageTileStore extends TileStoreBase {
       loader: this.tileLoader.bind(this),
     });
     this.tileLayer = new TileLayer({source: this.source});
+  }
+
+  getTileURL(): string | undefined {
+    return TILE_URL_MAP[MAP_SOURCE];
   }
 
   getTileGrid() {
@@ -506,14 +521,22 @@ export class VectorTileStore extends TileStoreBase {
     super();
     this.source = new VectorTileSource({
       attributions: ATTRIBUTION,
-      url: 'https://api.maptiler.com/tiles/v3-openmaptiles/{z}/{x}/{y}.pbf?key={key}',
+      url: this.getTileURL(),
       format: new MVT(),
-      //tileLoadFunction: this.tileLoader.bind(this),
+      tileLoadFunction: this.tileLoader.bind(this),
     });
     this.tileLayer = new VectorTileLayer({
       source: this.source,
     });
+    const styleJson = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAP_SOURCE_KEY}`;
+    console.log('applying style', this.tileLayer, styleJson);
+
+    //applyStyle(this.tileLayer, styleJson);
     console.log('initialized vector tile source');
+  }
+
+  getTileURL(): string | undefined {
+    return 'https://api.maptiler.com/tiles/v3-openmaptiles/{z}/{x}/{y}.pbf?key={key}';
   }
 
   getTileGrid() {
@@ -529,8 +552,26 @@ export class VectorTileStore extends TileStoreBase {
   }
 
   /**
+   * @param {tile} a VectorTile
+   * @param {url} the URL of the target tile
+   * @return {}
    */
-  // async tileLoader(tile: Tile, url: string): Promise<Tile> {
-  //   this.getTile(tile.getZ(), tile.getX(), tile.getY());
-  // }
+  async tileLoader(tile: VectorTile<FeatureLike>, url: string) {
+    tile.setLoader((extent, resolution, projection) => {
+      console.log('loading tile', tile, url);
+      const fullURL = url.replace('{key}', MAP_SOURCE_KEY);
+
+      fetch(fullURL).then(response => {
+        response.arrayBuffer().then(data => {
+          console.log('got data', data.byteLength);
+          const format = tile.getFormat(); // ol/format/MVT configured as source format
+          const features = format.readFeatures(data, {
+            extent: extent,
+            featureProjection: projection,
+          });
+          tile.setFeatures(features);
+        });
+      });
+    });
+  }
 }

@@ -40,7 +40,7 @@ import VectorSource from 'ol/source/Vector';
 import {RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
-import {ImageTileStore, StoredTileSet} from './tile-source';
+import {ImageTileStore, StoredTileSet, VectorTileStore} from './tile-source';
 
 const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
@@ -66,7 +66,8 @@ export const MapDownloadComponent = () => {
   mapRef.current = map;
 
   // alternately use VectorTileStore for vector tiles (in progress)
-  const tileStore = useMemo(() => new ImageTileStore(), []);
+  //const tileStore = useMemo(() => new ImageTileStore(), []);
+  const tileStore = useMemo(() => new VectorTileStore(), []);
 
   const {data: map_center, isLoading: loadingLocation} = useQuery({
     queryKey: ['current_location'],
