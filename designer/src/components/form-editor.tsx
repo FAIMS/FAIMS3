@@ -86,6 +86,7 @@ export const FormEditor = ({
   );
   const sections = viewSet ? viewSet.views : [];
   console.log('FormEditor', {viewSetId, sections});
+
   const views = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
