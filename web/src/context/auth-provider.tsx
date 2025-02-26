@@ -5,6 +5,7 @@ export interface User {
     id: string;
     name: string;
     email: string;
+    cluster_admin: boolean;
   };
   token: string;
   refreshToken: string;
@@ -55,6 +56,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
    * Logs out the user by removing the stored user object and setting the user to null.
    */
   const logout = () => {
+    window.location.href = `${
+      import.meta.env.VITE_API_URL
+    }/logout?redirect=${import.meta.env.VITE_WEB_URL}`;
+
     setStoredUser(null);
     setUser(null);
   };

@@ -3,6 +3,7 @@ import {KeyRound, Trash} from 'lucide-react';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {Button} from '../ui/button';
 import Role from '../ui/role-card';
+import {RemoveUserDialog} from '../dialogs/remove-user';
 
 export const getColumns = ({
   onReset,
@@ -57,15 +58,13 @@ export const getColumns = ({
     },
     {
       id: 'remove',
-      cell: ({row}: any) => (
+      cell: ({
+        row: {
+          original: {_id},
+        },
+      }: any) => (
         <div className="flex justify-center items-center -my-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => console.log('remove', row.original._id)}
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
+          <RemoveUserDialog userId={_id} />
         </div>
       ),
       header: () => (

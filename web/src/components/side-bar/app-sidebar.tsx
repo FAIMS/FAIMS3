@@ -71,16 +71,18 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
             },
           ]}
         />
-        <NavMain
-          title="Management"
-          items={[
-            {
-              title: 'Users',
-              url: '/users',
-              icon: Users,
-            },
-          ]}
-        />
+        {user.user.cluster_admin && (
+          <NavMain
+            title="Management"
+            items={[
+              {
+                title: 'Users',
+                url: '/users',
+                icon: Users,
+              },
+            ]}
+          />
+        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

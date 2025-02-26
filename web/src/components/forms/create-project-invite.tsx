@@ -1,6 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
-import {Route} from '@/routes/projects/$projectId';
+import {Route} from '@/routes/_protected/projects/$projectId';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 

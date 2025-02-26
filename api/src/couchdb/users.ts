@@ -548,3 +548,17 @@ export function userIsClusterAdmin(user: Express.User | undefined | null) {
 
   return false;
 }
+
+/**
+ * Remove a user from the database
+ * @param user - the user to remove
+ */
+export function removeUser(user: Express.User) {
+  const users_db = getUsersDB();
+
+  if (!users_db) throw new Error('Failed to connect to user database');
+
+  if (!user._id || !user._rev) throw new Error('User not found');
+
+  users_db.remove({_id: user._id, _rev: user._rev});
+}
