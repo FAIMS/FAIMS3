@@ -100,6 +100,48 @@ export function isFieldUsedInCondition(
   return false;
 }
 
+/**
+ * Finds where a field is used in conditions or templated string fields
+ */
+export const findFieldUsageInConditionsAndTemplates = (
+  fieldName: string,
+  allFields: Record<string, any>,
+  allFviews: Record<string, any>
+): string[] => {
+  const affected: string[] = [];
+
+  // Check section-level conditions
+  for (const sectionId in allFviews) {
+    const condition = allFviews[sectionId].condition;
+    if (isFieldUsedInCondition(condition, fieldName)) {
+      affected.push(`Section: ${allFviews[sectionId].label}`);
+    }
+  }
+
+  // Check field-level conditions
+  for (const fId in allFields) {
+    const condition = allFields[fId].condition;
+    if (isFieldUsedInCondition(condition, fieldName)) {
+      const label = allFields[fId]['component-parameters']?.label ?? fId;
+      affected.push(`Field Condition: ${label}`);
+    }
+  }
+
+  // Check for Templated String Fields using the deleted field
+  for (const fId in allFields) {
+    if (allFields[fId]['component-name'] === 'TemplatedStringField') {
+      const template = allFields[fId]['component-parameters']?.template || '';
+
+      if (template.includes(`{{${fieldName}}}`)) {
+        const label = allFields[fId]['component-parameters']?.label ?? fId;
+        affected.push(`Templated String: ${label} (uses '{{${fieldName}}}')`);
+      }
+    }
+  }
+
+  return affected;
+};
+
 export const ConditionModal = (props: ConditionProps & {label: string}) => {
   const [open, setOpen] = useState(false);
 
