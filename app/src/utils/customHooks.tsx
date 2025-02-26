@@ -12,6 +12,8 @@ import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
+import _ from 'lodash';
+
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -327,6 +329,11 @@ export const useRecordList = ({
     networkMode: 'always',
     gcTime: 0,
     refetchInterval: refreshIntervalMs,
+    // implement a custom structural sharing function to avoid re-renders when
+    // the list of records is the same
+    structuralSharing: (oldData, newData) => {
+      return _.isEqual(oldData, newData) ? oldData : newData;
+    },
     queryFn: async () => {
       if (!token) {
         // Trying to run without token!
