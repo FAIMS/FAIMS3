@@ -79,16 +79,6 @@ export const FieldEditor = ({
   const viewsets = useAppSelector(
     state => state.notebook['ui-specification'].viewsets
   );
-  const views = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
-  );
-  const dispatch = useAppDispatch();
-
-  const [openMoveDialog, setOpenMoveDialog] = useState(false);
-  const [targetViewId, setTargetViewId] = useState('');
-  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
-
-  const fieldComponent = field['component-name'];
 
   const allFields = useAppSelector(
     state => state.notebook['ui-specification'].fields
@@ -96,6 +86,14 @@ export const FieldEditor = ({
   const allFviews = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
+
+  const dispatch = useAppDispatch();
+
+  const [openMoveDialog, setOpenMoveDialog] = useState(false);
+  const [targetViewId, setTargetViewId] = useState('');
+  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
+
+  const fieldComponent = field['component-name'];
 
   const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
   const [conditionsAffected, setConditionsAffected] = useState<string[]>([]);
@@ -188,7 +186,7 @@ export const FieldEditor = ({
   ): string[] => {
     const affected: string[] = [];
 
-    // ✅ Check section-level conditions
+    // Check section-level conditions
     for (const sectionId in allFviews) {
       const condition = allFviews[sectionId].condition;
       if (isFieldUsedInCondition(condition, fieldName)) {
@@ -196,7 +194,7 @@ export const FieldEditor = ({
       }
     }
 
-    // ✅ Check field-level conditions
+    // Check field-level conditions
     for (const fId in allFields) {
       const condition = allFields[fId].condition;
       if (isFieldUsedInCondition(condition, fieldName)) {
@@ -205,7 +203,7 @@ export const FieldEditor = ({
       }
     }
 
-    // ✅ Check for Templated String Fields using the deleted field
+    // Check for Templated String Fields using the deleted field
     for (const fId in allFields) {
       if (allFields[fId]['component-name'] === 'TemplatedStringField') {
         const template = allFields[fId]['component-parameters']?.template || '';
@@ -243,9 +241,9 @@ export const FieldEditor = ({
   const sectionValue = useMemo(
     () =>
       targetViewId
-        ? {id: targetViewId, label: views[targetViewId].label}
+        ? {id: targetViewId, label: allFviews[targetViewId].label}
         : null,
-    [targetViewId, views]
+    [targetViewId, allFviews]
   );
 
   // memoize the section options
@@ -256,10 +254,10 @@ export const FieldEditor = ({
             .filter(sectionId => sectionId !== viewId)
             .map(sectionId => ({
               id: sectionId,
-              label: views[sectionId].label,
+              label: allFviews[sectionId].label,
             }))
         : [],
-    [selectedFormId, viewsets, viewId, views]
+    [selectedFormId, viewsets, viewId, allFviews]
   );
 
   return (
