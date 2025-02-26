@@ -58,7 +58,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
             },
             {
               title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-              url: `/projects`,
+              url: '/projects',
               icon: LetterText,
               isActive: pathname.startsWith('/templates'),
               items:
