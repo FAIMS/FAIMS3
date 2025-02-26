@@ -1,10 +1,10 @@
-import {useAuth} from '@/context/auth-provider';
-import {Card} from '@/components/ui/card';
-import {createFileRoute} from '@tanstack/react-router';
+import { useAuth } from '@/context/auth-provider'
+import { Card } from '@/components/ui/card'
+import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/profile')({
+export const Route = createFileRoute('/_protected/profile')({
   component: RouteComponent,
-});
+})
 
 /**
  * RouteComponent component renders the profile page.
@@ -13,7 +13,7 @@ export const Route = createFileRoute('/profile')({
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
 function RouteComponent() {
-  const auth = useAuth();
+  const auth = useAuth()
 
   return (
     <Card>
@@ -21,5 +21,5 @@ function RouteComponent() {
         {JSON.stringify(auth.user, null, 2)}
       </pre>
     </Card>
-  );
+  )
 }
