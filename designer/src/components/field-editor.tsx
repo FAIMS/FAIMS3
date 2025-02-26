@@ -362,8 +362,10 @@ export const FieldEditor = ({
               ))}
             </ul>
             <p>
-              Please delete {conditionsAffected.length === 1 ? 'it' : 'them'}{' '}
-              first to proceed.
+              Please remove this field from{' '}
+              {conditionsAffected.length === 1 ? 'this' : 'these'} condition
+              condition{conditionsAffected.length === 1 ? '' : 's'} before
+              deleting this field.
             </p>
           </DialogContent>
           <DialogActions>
