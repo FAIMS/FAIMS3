@@ -13,6 +13,13 @@ import {useQueryClient} from '@tanstack/react-query';
 import {Alert, AlertDescription, AlertTitle} from '../ui/alert';
 import {useAuth} from '@/context/auth-provider';
 
+/**
+ * RemoveUserDialog component renders a dialog for removing a user.
+ * It provides a button to open the dialog and a form to remove the user.
+ *
+ * @param {string} userId - The ID of the user to remove.
+ * @returns {JSX.Element} The rendered RemoveUserDialog component.
+ */
 export const RemoveUserDialog = ({userId}: {userId: string}) => {
   const [open, setOpen] = useState(false);
   const {user} = useAuth();

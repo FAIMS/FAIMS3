@@ -16,6 +16,12 @@ interface TokenParams {
   refreshToken?: string;
 }
 
+/**
+ * Route component renders the protected route with a sidebar.
+ * It displays the sidebar with the user's profile and logout button.
+ *
+ * @returns {JSX.Element} The rendered Route component.
+ */
 export const Route = createFileRoute('/_protected')({
   validateSearch: (search: Record<string, string>): TokenParams => ({
     token: search.token,
