@@ -103,7 +103,7 @@ export function isFieldUsedInCondition(
 /**
  * Finds where a field is used in conditions or templated string fields
  */
-export const findFieldUsageInConditionsAndTemplates = (
+export const findFieldCondtionUsage = (
   fieldName: string,
   allFields: Record<string, any>,
   allFviews: Record<string, any>
