@@ -13,7 +13,6 @@ import {Button} from '../ui/button';
 import {Spinner} from '../ui/spinner';
 import {CopyButton} from '../ui/copy-button';
 import QRCode from 'qrcode';
-import {useLocation} from '@tanstack/react-router';
 
 /**
  * Displays a QR code in a clickable format that opens a larger view in a dialog.
@@ -71,10 +70,6 @@ export const GeneratePasswordReset = ({
   const {user} = useAuth();
   if (!user) return null;
   if (!userId) return null;
-
-  const location = useLocation();
-
-  console.log(location);
 
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const {data, isPending, mutate} = useMutation({
