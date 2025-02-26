@@ -19,7 +19,7 @@
 
 import express, {Response} from 'express';
 import * as Exceptions from '../exceptions';
-import {requireAuthenticationAPI, requireClusterAdmin} from '../middleware';
+import {requireAuthenticationAPI} from '../middleware';
 import {
   addOtherRoleToUser,
   getUserFromEmailOrUsername,
