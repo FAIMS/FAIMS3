@@ -16,7 +16,6 @@ import {directory_db} from '../sync/databases';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
 import _ from 'lodash';
 
-
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
    * Capture the previous value of a state variable (useful for functional components

@@ -7,8 +7,26 @@ import {
   BreadcrumbSeparator,
 } from './ui/breadcrumb';
 import {capitalize} from '@/lib/utils';
-import {useAuth} from '@/context/auth-provider';
 import {Fragment} from 'react';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+
+/**
+ * breadcrumbMap function maps a path to a breadcrumb name.
+ * It handles the special case of the projects page.
+ *
+ * @param {string} name - The name of the path.
+ * @param {number} index - The index of the path in the pathname array.
+ * @returns {string} The mapped breadcrumb name.
+ */
+const breadcrumbMap = (name: string, index: number) => {
+  if (index === 0) {
+    if (name === 'projects') return `${NOTEBOOK_NAME_CAPITALIZED}s`;
+
+    return capitalize(name);
+  }
+
+  return name;
+};
 
 /**
  * Breadcrumbs component renders a breadcrumb navigation for the current page.
@@ -17,29 +35,29 @@ import {Fragment} from 'react';
  * @returns {JSX.Element} The rendered Breadcrumbs component.
  */
 export default function Breadcrumbs() {
-  const {user} = useAuth();
-
-  if (!user) return <></>;
-
   const pathname = useLocation({
-    select: location => location.pathname,
-  }).split('/');
+    select: ({pathname}) => pathname,
+  })
+    .split('/')
+    .slice(1);
+
+  if (pathname.length === 0) return <></>;
 
   return (
     <Breadcrumb>
       <BreadcrumbList>
         {pathname.map((path, index) => (
           <Fragment key={path}>
-            {index > 1 && <BreadcrumbSeparator />}
+            {index > 0 && <BreadcrumbSeparator />}
             {index < pathname.length - 1 ? (
               <BreadcrumbItem className="hidden md:block">
                 <Link to={pathname.slice(0, index + 1).join('/')}>
-                  {capitalize(path)}
+                  {breadcrumbMap(path, index)}
                 </Link>
               </BreadcrumbItem>
             ) : (
               <BreadcrumbItem>
-                <BreadcrumbPage>{capitalize(path)}</BreadcrumbPage>
+                <BreadcrumbPage>{breadcrumbMap(path, index)}</BreadcrumbPage>
               </BreadcrumbItem>
             )}
           </Fragment>
