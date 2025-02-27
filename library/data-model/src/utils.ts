@@ -1,4 +1,4 @@
-import {getProjectDB, UI_SPECIFICATION_NAME} from '.';
+import {UI_SPECIFICATION_NAME} from '.';
 import {HRID_STRING} from './datamodel/core';
 import {
   EncodedProjectUIModel,
@@ -256,33 +256,3 @@ export const getFieldToIdsMap = (
 
   return fieldMap;
 };
-
-/**
- * Gets the raw ui spec (no compiled conditionals) for the given project ID
- * @param projectId The project ID to fetch the ui spec for
- * @returns The ui specification (without compiled conditionals) or undefined if unavailable
- */
-export async function getUiSpecForProject({
-  projectId,
-}: {
-  projectId: ProjectID;
-}): Promise<ProjectUIModel | undefined> {
-  try {
-    const projdb = await getProjectDB(projectId);
-    const encUIInfo: EncodedProjectUIModel = await projdb.get(
-      UI_SPECIFICATION_NAME
-    );
-    const uiSpec = {
-      _id: encUIInfo._id,
-      _rev: encUIInfo._rev,
-      fields: encUIInfo.fields,
-      views: encUIInfo.fviews,
-      viewsets: encUIInfo.viewsets,
-      visible_types: encUIInfo.visible_types,
-    };
-    return uiSpec;
-  } catch (err) {
-    //console.log('failed to find ui specification for', projectId);
-    return undefined;
-  }
-}

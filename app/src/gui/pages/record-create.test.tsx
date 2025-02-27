@@ -273,7 +273,7 @@ vi.mock('react-router-dom', async () => {
       type_name: 'SurveyAreaForm',
     }),
     useLocation: () => ({
-      pathname: `${INDIVIDUAL_NOTEBOOK_ROUTE}default%7C%7C1685527104147-campus-survey-demo/new/SurveyAreaForm`,
+      pathname: `${INDIVIDUAL_NOTEBOOK_ROUTE}default/1685527104147-campus-survey-demo/new/SurveyAreaForm`,
       search: '',
       hash: '',
       state: null,

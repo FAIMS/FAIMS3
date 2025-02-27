@@ -45,7 +45,6 @@ import {
   setActiveUser,
 } from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
-import {update_directory} from '../../../sync/process-initialization';
 import {isWeb} from '../../../utils/helpers';
 import MainCard from '../ui/main-card';
 import {LoginButton} from './login_form';
@@ -74,7 +73,7 @@ export default function ClusterCard(props: ClusterCardProps) {
   const handleLogout = async (username: string) => {
     // remove the server connection on logout
     dispatch(removeServerConnection({serverId: props.serverId, username}));
-    update_directory();
+    // TODO Update directory was here - why did we need it?
     if (isWeb()) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
       window.location.href =

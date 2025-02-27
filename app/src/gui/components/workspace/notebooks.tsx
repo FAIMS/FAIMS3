@@ -35,14 +35,16 @@ import {
 } from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {useNotification} from '../../../context/popup';
-import {ProjectsContext} from '../../../context/projects-context';
 import {selectActiveUser} from '../../../context/slices/authSlice';
-import {useAppSelector} from '../../../context/store';
-import {ProjectExtended} from '../../../types/project';
+import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {useIsOnline} from '../../../utils/customHooks';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
+import {
+  initialiseProjects,
+  Project,
+} from '../../../context/slices/projectSlice';
 
 // Survey status naming conventions
 
@@ -67,20 +69,26 @@ export const DE_ACTIVATE_VERB = 'De-activate';
 export default function NoteBooks() {
   // get the active user - this will allow us to check roles against it
   // TODO what do we do if this is not defined
+  const dispatch = useAppDispatch();
 
   // Are we online
   const isOnline = useIsOnline();
   const activeUser = useAppSelector(selectActiveUser);
-  const activeServerId = activeUser?.serverId;
+  if (!activeUser) {
+    // You shouldn't be here!
+    return <></>;
+  }
 
-  const {projects: allProjects, syncProjects} = useContext(ProjectsContext);
-  const projects = allProjects.filter(p => {
-    return p.listing === activeServerId;
-  });
+  const activeServerId = activeUser.serverId;
+  const projects = useAppSelector(state =>
+    Object.values(state.projects.servers[activeServerId]?.projects ?? {})
+  );
 
   // Refresh mutation
   const doRefresh = useMutation({
-    mutationFn: syncProjects,
+    mutationFn: async () => {
+      await dispatch(initialiseProjects({serverId: activeServerId}));
+    },
     onSuccess: () => {
       notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
     },
@@ -91,7 +99,7 @@ export default function NoteBooks() {
   });
   const showRefreshButton = isOnline.isOnline;
 
-  const activeUserActivatedProjects = projects.filter(nb => nb.activated);
+  const activeUserActivatedProjects = projects.filter(nb => nb.isActivated);
 
   const [tabID, setTabID] = useState('1');
 
@@ -100,26 +108,37 @@ export default function NoteBooks() {
   const theme = useTheme();
   const is_xs = !useMediaQuery(theme.breakpoints.up('sm'));
 
-  const baseColumns: GridColDef<ProjectExtended>[] = [
+  const baseColumns: GridColDef<Project>[] = [
     {
       field: 'name',
       headerName: 'Name',
       type: 'string',
       flex: 0.4,
-      renderCell: ({row: {activated, name, description}}) => (
-        <Box>
+      renderCell: ({row}) => (
+        <Box
+          onClick={() => {
+            if (row.isActivated) {
+              history(
+                ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                  row.serverId +
+                  '/' +
+                  row.projectId
+              );
+            }
+          }}
+        >
           <Typography
             variant={is_xs ? 'body2' : 'body1'}
-            fontWeight={activated ? 'bold' : 'normal'}
-            color={activated ? 'black' : grey[800]}
+            fontWeight={row.isActivated ? 'bold' : 'normal'}
+            color={row.isActivated ? 'black' : grey[800]}
             sx={{
               padding: '8px 0px',
             }}
           >
-            {name} {description}
+            {row.metadata.name}
           </Typography>
           <Typography variant="caption" sx={{display: 'block', mt: 1}}>
-            {description}
+            {row.metadata.description}
           </Typography>
         </Box>
       ),
@@ -140,7 +159,7 @@ export default function NoteBooks() {
       ),
     },
   ]);
-  const showCreateNewNotebookButton = false; // activeUserToken && userCanCreateNotebooks(activeUserToken);
+  const showCreateNewNotebookButton = false;
 
   // What type of layout are we using?
   const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
@@ -236,6 +255,7 @@ export default function NoteBooks() {
         ) : (
           <HeadingProjectGrid
             projects={projects}
+            serverId={activeServerId}
             activatedColumns={activatedColumns}
             notActivatedColumns={notActivatedColumns}
           />

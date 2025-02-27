@@ -24,7 +24,7 @@ import {
   getDataDB,
   getHridFieldNameForViewset,
   getIdsByFieldName,
-  getUiSpecForProject,
+  getUiSpec
 } from '../index';
 import {HRID_STRING} from '../datamodel/core';
 import {
@@ -208,18 +208,18 @@ export async function getLatestRevision(
  *
  * If null is returned, typically a parent would use the record_id as a backup.
  *
- * @param project_id The project ID for which to ascertain the HRID
+ * @param projectId The project ID for which to ascertain the HRID
  * @param revision The revision - this reflects a particular version of a
  * response
  * @returns The recommended HRID for this revision/record
  */
 export async function getHRID(
-  project_id: ProjectID,
+  projectId: ProjectID,
   revision: Revision
 ): Promise<string | null> {
   // Need to find a way here to determine the correct field name to use - we
   // need the uispec at this point
-  const uiSpecification = await getUiSpecForProject({projectId: project_id});
+  const uiSpecification = await getUiSpec(projectId);
 
   let hridFieldName = undefined;
 
@@ -270,10 +270,10 @@ export async function getHRID(
     return null;
   }
   try {
-    const hrid_avp = await getAttributeValuePair(project_id, hrid_avp_id);
+    const hrid_avp = await getAttributeValuePair(projectId, hrid_avp_id);
     return hrid_avp.data as string;
   } catch (err) {
-    console.warn('Failed to load HRID AVP:', project_id, hrid_avp_id);
+    console.warn('Failed to load HRID AVP:', projectId, hrid_avp_id);
     return null;
   }
 }

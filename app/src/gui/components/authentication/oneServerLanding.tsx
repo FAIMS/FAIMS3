@@ -3,7 +3,6 @@ This is a special login landing page for the most common use case i.e. one
 listing, user not logged in.
 */
 
-import {ListingsObject} from '@faims3/data-model/src/types';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {Box, Button, Paper, Typography, useTheme} from '@mui/material';
 import {useState} from 'react';
@@ -13,18 +12,19 @@ import {Browser} from '@capacitor/browser';
 import {APP_ID, APP_NAME} from '../../../buildconfig';
 import {useIsOnline} from '../../../utils/customHooks';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import {Server} from '../../../context/slices/projectSlice';
 
 const OnboardingComponent = ({
   scanQr,
-  listings,
+  servers,
 }: {
   scanQr: boolean;
-  listings: ListingsObject[];
+  servers: Server[];
 }) => {
   const {isOnline, fallback} = useIsOnline();
   const [showCodeInput, setShowCodeInput] = useState(false);
   const theme = useTheme();
-  const listing = listings[0]!;
+  const server = servers[0]!;
 
   if (!isOnline) {
     return <>{fallback}</>;
@@ -89,10 +89,10 @@ const OnboardingComponent = ({
               if (isWeb()) {
                 const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
                 window.location.href =
-                  listing.conductor_url + '/auth?redirect=' + redirect;
+                  server.serverUrl + '/auth?redirect=' + redirect;
               } else {
                 await Browser.open({
-                  url: `${listing.conductor_url}/auth?redirect=${APP_ID}://auth-return`,
+                  url: `${server.serverUrl}/auth?redirect=${APP_ID}://auth-return`,
                 });
               }
             }}
@@ -129,7 +129,7 @@ const OnboardingComponent = ({
         {/* Access Code Section */}
         {showCodeInput ? (
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-            <ShortCodeOnlyComponent listings={listings} />
+            <ShortCodeOnlyComponent servers={servers} />
           </Box>
         ) : (
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
@@ -171,7 +171,7 @@ const OnboardingComponent = ({
         )}
 
         {/* QR Code Scanner Button (if enabled) */}
-        {scanQr && <QRCodeButtonOnly listings={listings} />}
+        {scanQr && <QRCodeButtonOnly servers={servers} />}
       </Paper>
     </Box>
   );

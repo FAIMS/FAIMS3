@@ -24,9 +24,9 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 import {useCreateNotebookFromTemplate} from '../../../utils/apiHooks/notebooks';
 import {useGetTemplates} from '../../../utils/apiHooks/templates';
-import {useGetListing} from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
 import {refreshToken} from '../../../context/slices/authSlice';
+import {useAppSelector} from '../../../context/store';
 
 export interface NewNotebookForListingProps {
   serverId: string;
@@ -37,7 +37,9 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
   const popup = useNotification();
 
   // Get the listing information
-  const listing = useGetListing({serverId: props.serverId});
+  const server = useAppSelector(
+    state => state.projects.servers[props.serverId]
+  );
 
   // Auth store to force a refresh - note this is an synchronous function which
   // will a) read state b) run token refresh c) update the state
@@ -152,9 +154,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
           component="div"
           sx={{fontWeight: 'bold', fontSize: '18px', padding: theme.spacing(2)}}
         >
-          {listing.isLoading
-            ? 'Loading ...'
-            : (listing.data?.name ?? 'Error...')}
+          {server?.serverTitle ?? 'Error...'}
         </Typography>
       </Box>
       <FormControl

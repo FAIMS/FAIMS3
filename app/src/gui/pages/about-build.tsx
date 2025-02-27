@@ -49,7 +49,6 @@ import {
   CONDUCTOR_URLS,
 } from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
@@ -277,15 +276,12 @@ export default function AboutBuild() {
                             color={'error'}
                             onClick={async () => {
                               unregisterServiceWorker();
-                              wipe_all_pouch_databases()
-                                .then(() => {
-                                  // redux and local storage clear out
-                                  return clearReduxAndLocalStorage();
-                                })
-                                .then(() => {
-                                  console.log('User cleaned database');
-                                  window.location.reload();
-                                });
+                              // TODO restore this function 
+                              // wipe all couch db
+                              clearReduxAndLocalStorage().then(() => {
+                                console.log('User cleaned database');
+                                window.location.reload();
+                              });
                             }}
                             startIcon={<StorageIcon />}
                           >

@@ -189,7 +189,9 @@ export async function listFAIMSRecordRevisions(
 export async function listFAIMSProjectRevisions(
   project_id: ProjectID
 ): Promise<ProjectRevisionListing> {
-  const dataDB = await getDataDB(project_id);
+  const dataDB = getDataDB(project_id);
+  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
+
   try {
     const result = await dataDB.allDocs();
     const revisionMap: ProjectRevisionListing = {};
@@ -266,7 +268,9 @@ export async function setRecordAsDeleted(
   base_revision_id: RevisionID,
   user: string
 ): Promise<RevisionID> {
-  const dataDB = await getDataDB(project_id);
+  const dataDB = getDataDB(project_id);
+  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
+
   const date = new Date();
   const base_revision = await getRevision(project_id, base_revision_id);
   const new_rev_id = generateFAIMSRevisionID();
@@ -293,7 +297,9 @@ export async function setRecordAsUndeleted(
   base_revision_id: RevisionID,
   user: string
 ): Promise<RevisionID> {
-  const dataDB = await getDataDB(project_id);
+  const dataDB = getDataDB(project_id);
+  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
+
   const date = new Date();
   const base_revision = await getRevision(project_id, base_revision_id);
   const new_rev_id = generateFAIMSRevisionID();
@@ -475,7 +481,7 @@ async function filterRecordMetadata(
     record_list.map(async metadata => {
       const shouldKeep =
         !(metadata.deleted && filter_deleted) &&
-        (await shouldDisplayRecord(tokenContents, project_id, metadata));
+        shouldDisplayRecord(tokenContents, project_id, metadata);
       return shouldKeep;
     })
   ).then(results => record_list.filter((_, index) => results[index]));
@@ -602,7 +608,9 @@ export async function getSomeRecords(
   bookmark: string | null = null,
   filter_deleted = true
 ) {
-  const dataDB = await getDataDB(project_id);
+  const dataDB = getDataDB(project_id);
+  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
+
   const options: {[key: string]: any} = {
     limit: limit,
     include_docs: true,

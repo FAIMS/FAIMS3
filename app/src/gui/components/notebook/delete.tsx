@@ -39,12 +39,15 @@ import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {addAlert} from '../../../context/slices/syncSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
-import {deleteDraftsForRecord} from '../../../drafts';
-import {deleteStagedData} from '../../../sync/draft-storage';
+import {
+  deleteStagedData,
+  deleteDraftsForRecord,
+} from '../../../sync/draft-storage';
 import {theme} from '../../themes';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
+  serverId: string;
   record_id: RecordID;
   revision_id: RevisionID | null;
   draft_id: string | null;
@@ -60,7 +63,6 @@ async function deleteFromDB(
   userid: string,
   callback: () => void
 ) {
-  console.log('deleting data from the db', draft_id);
   if (draft_id !== null) {
     await deleteStagedData(draft_id, null);
   } else {
@@ -77,7 +79,7 @@ async function deleteFromDB(
 
 export default function RecordDelete(props: RecordDeleteProps) {
   //console.debug('Delete props', props);
-  const {project_id, record_id, revision_id, draft_id} = props;
+  const {project_id, serverId, record_id, revision_id, draft_id} = props;
   const [open, setOpen] = React.useState(false);
   const history = useNavigate();
   const dispatch = useAppDispatch();
@@ -111,10 +113,10 @@ export default function RecordDelete(props: RecordDeleteProps) {
           })
         );
         handleClose();
-        history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
+        history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + project_id);
       })
       .catch(err => {
-        console.log('Failed to delete', record_id, draft_id, err);
+        console.error('Failed to delete', record_id, draft_id, err);
         const message = is_draft
           ? `Draft ${draft_id} for record ${record_id} could not be discarded`
           : `Record ${record_id} could not be deleted`;

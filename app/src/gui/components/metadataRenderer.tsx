@@ -18,10 +18,10 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
-import {Chip} from '@mui/material';
 import {ProjectID} from '@faims3/data-model';
-import {getMetadataValue} from '../../sync/metadata';
+import {Chip} from '@mui/material';
+import {selectProjectById} from '../../context/slices/projectSlice';
+import {useAppSelector} from '../../context/store';
 import {RichTextField} from '../fields/RichText';
 
 type MetadataProps = {
@@ -33,13 +33,11 @@ type MetadataProps = {
 
 export default function MetadataRenderer(props: MetadataProps) {
   const {project_id, metadata_key, metadata_label, chips = true} = props;
-  const [value, setValue] = useState('');
-
-  useEffect(() => {
-    getMetadataValue(project_id, metadata_key).then(v => {
-      setValue(v as string);
-    });
-  }, [project_id, metadata_key]);
+  const metadata = useAppSelector(
+    state => selectProjectById(state, project_id)?.metadata
+  );
+  const possibleValue = metadata?.[metadata_key];
+  const value = possibleValue ? (possibleValue as string) : '';
 
   // Use RichTextField for 'pre_description' field
   if (metadata_key === 'pre_description' && value !== '') {

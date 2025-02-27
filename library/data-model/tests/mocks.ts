@@ -24,6 +24,10 @@ const mockGetDataDB = async (project_id: ProjectID) => {
   return db;
 };
 
+const mockGetUiSpec = async (project_id: ProjectID) => {
+  return {};
+};
+
 const mockGetProjectDB = async (project_id: ProjectID) => {
   return getDatabase('project-' + project_id);
 };
@@ -51,7 +55,7 @@ export const cleanDataDBS = async () => {
 // register our mock database clients with the module
 export const callbackObject: DBCallbackObject = {
   getDataDB: mockGetDataDB,
-  getProjectDB: mockGetProjectDB,
+  getUiSpec: mockGetUiSpec,
   shouldDisplayRecord: mockShouldDisplayRecord,
 };
 

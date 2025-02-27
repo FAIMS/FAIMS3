@@ -22,10 +22,10 @@
  *  persistent state will be updated when record been saved( to be discussed)
  */
 
-import {getLocalStateDB} from '../sync/databases';
 import {Annotations, FAIMSTypeName, ProjectID} from '@faims3/data-model';
 import stable_stringify from 'fast-json-stable-stringify';
 import {logError} from '../logging';
+import {getLocalStateDB} from '../context/slices/helpers/databaseHelpers';
 
 const LOCAL_FIELD_PERSISTENT_PREFIX = 'local-fieldpersistent-state';
 

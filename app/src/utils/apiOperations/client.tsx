@@ -1,6 +1,5 @@
-import {ListingsObject} from '@faims3/data-model/src/types';
+import {Server} from '../../context/slices/projectSlice';
 import {store} from '../../context/store';
-import {getAllListingIDs, getListing} from '../../sync/state';
 
 /** Supported HTTP methods */
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -37,15 +36,15 @@ class HttpError extends Error {
  * ListingObject to prepend the endpoint, add JSON headers, and auth from the auth store.
  */
 export class ListingFetch {
-  private listing: ListingsObject;
+  private server: Server;
   private username: string;
 
   /**
-   * @param listing - The ListingsObject containing API information
+   * @param server - The ListingsObject containing API information
    * @param username - The username to authenticate as for this listing
    */
-  constructor(listing: ListingsObject, username: string) {
-    this.listing = listing;
+  constructor(server: Server, username: string) {
+    this.server = server;
     this.username = username;
   }
 
@@ -58,7 +57,7 @@ export class ListingFetch {
     if (options.useToken ?? true) {
       const authState = store.getState().auth;
       const tokenInfo =
-        authState.servers[this.listing.id]?.users[this.username];
+        authState.servers[this.server.serverId]?.users[this.username];
 
       if (!tokenInfo) {
         throw new Error(
@@ -88,7 +87,7 @@ export class ListingFetch {
     endpoint: string,
     options: FetchOptions = {}
   ): Promise<T> {
-    const url = `${this.listing.conductor_url}${endpoint}`;
+    const url = `${this.server.serverUrl}${endpoint}`;
     const headers = this.getAuthHeaders(options);
 
     const fetchOptions: RequestInit = {
@@ -187,7 +186,7 @@ type CustomOptions = RequestInit & {useToken?: boolean};
  */
 export class ListingFetchManager {
   private clients: Map<string, Map<string, ListingFetch>> = new Map();
-  private serverMap: Map<string, ListingsObject> = new Map();
+  private serverMap: Map<string, Server> = new Map();
 
   /**
    * Retrieves or creates a client for a given listing ID and username
@@ -204,12 +203,13 @@ export class ListingFetchManager {
 
     let server = this.serverMap.get(serverId);
     if (!server) {
-      const ids = getAllListingIDs();
+      const servers = store.getState().projects.servers;
+      const ids = Object.keys(servers);
       ids.forEach(id => {
-        const listingObj = getListing(id);
-        this.serverMap.set(id, listingObj.listing);
+        const serverObj = servers[id];
+        this.serverMap.set(id, serverObj);
         if (id === serverId) {
-          server = listingObj.listing;
+          server = serverObj;
         }
       });
     }
@@ -338,14 +338,14 @@ export class ListingFetchManager {
 
   /**
    * Updates or adds a new listing
-   * @param listing - The ListingsObject to update or add
+   * @param server - The ListingsObject to update or add
    */
-  updateListing(listing: ListingsObject): void {
-    this.serverMap.set(listing.id, listing);
-    const listingClients = this.clients.get(listing.id);
+  updateListing(server: Server): void {
+    this.serverMap.set(server.serverId, server);
+    const listingClients = this.clients.get(server.serverId);
     if (listingClients) {
       listingClients.forEach((_, username) => {
-        listingClients.set(username, new ListingFetch(listing, username));
+        listingClients.set(username, new ListingFetch(server, username));
       });
     }
   }

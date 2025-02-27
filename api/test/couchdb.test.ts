@@ -41,9 +41,9 @@ import {
   userHasPermission,
 } from '../src/couchdb/users';
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
-import {EncodedProjectUIModel, getProjectDB} from '@faims3/data-model';
+import {EncodedProjectUIModel} from '@faims3/data-model';
 import {expect} from 'chai';
-import {resetDatabases} from './mocks';
+import {mockGetProjectDB, resetDatabases} from './mocks';
 import {fail} from 'assert';
 
 const uispec: EncodedProjectUIModel = {
@@ -153,7 +153,7 @@ describe('notebook api', () => {
 
       const notebooks = await getNotebooks(user);
       expect(notebooks.length).to.equal(1);
-      const db = await getProjectDB(projectID);
+      const db = await mockGetProjectDB(projectID);
       if (db) {
         try {
           const autoInc = (await db.get('local-autoincrementers')) as any;
@@ -319,7 +319,7 @@ describe('notebook api', () => {
 
       const notebooks = await getNotebooks(user);
       expect(notebooks.length).to.equal(1);
-      const db = await getProjectDB(projectID);
+      const db = await mockGetProjectDB(projectID);
       if (db) {
         const newUISpec = await getNotebookUISpec(projectID);
         if (newUISpec) {
@@ -332,7 +332,7 @@ describe('notebook api', () => {
           expect(newMetadata['name']).to.equal('Updated Test Notebook');
           expect(newMetadata['project_lead']).to.equal('Bob Bobalooba');
         }
-        const metaDB = await getProjectDB(projectID);
+        const metaDB = await mockGetProjectDB(projectID);
         if (metaDB) {
           const autoInc = (await metaDB.get('local-autoincrementers')) as any;
           expect(autoInc.references.length).to.equal(3);

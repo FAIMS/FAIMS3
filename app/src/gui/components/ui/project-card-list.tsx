@@ -17,8 +17,14 @@ export default function ProjectCardList({
 }) {
   const navigate = useNavigate();
 
-  const onClick = (project_id: string, activated: boolean) =>
-    activated && navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
+  const onClick = (project: ProjectInformation, activated: boolean) =>
+    activated &&
+    navigate(
+      ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+        project.listing_id +
+        '/' +
+        project.project_id
+    );
 
   return (
     <div

@@ -18,57 +18,40 @@
  *   Defines the SignIn component to present login and registration options
  */
 
-import {ListingsObject} from '@faims3/data-model/src/types';
-import {Box, Grid, Typography} from '@mui/material';
-import {useEffect, useState} from 'react';
-import {NOTEBOOK_NAME} from '../../buildconfig';
+import {Capacitor} from '@capacitor/core';
+import {Box, Grid} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
-import {getSyncableListingsInfo} from '../../databaseAccess';
-import {logError} from '../../logging';
+import {selectIsAuthenticated} from '../../context/slices/authSlice';
+import {selectServers} from '../../context/slices/projectSlice';
+import {useAppSelector} from '../../context/store';
 import {isWeb} from '../../utils/helpers';
 import ClusterCard from '../components/authentication/cluster_card';
+import OnboardingComponent from '../components/authentication/oneServerLanding';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
-import OnboardingComponent from '../components/authentication/oneServerLanding';
-import {Capacitor} from '@capacitor/core';
-import {useAppSelector} from '../../context/store';
-import {selectIsAuthenticated} from '../../context/slices/authSlice';
 
 export function SignIn() {
-  const [listings, setListings] = useState<ListingsObject[] | null>(null);
   const breadcrumbs = [{link: ROUTES.INDEX, title: 'Home'}, {title: 'Sign In'}];
   const platform = Capacitor.getPlatform();
   const allowQr = platform === 'ios' || platform === 'android';
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-
-  useEffect(() => {
-    getSyncableListingsInfo().then(setListings).catch(logError);
-  }, []);
+  const servers = useAppSelector(selectServers);
 
   // The conditions for this to show are to simplify onboarding in the most
   // common case i.e. one listing - check we are not already logged in and only
   // one loaded listing
   if (
     // One listing
-    listings?.length === 1 &&
+    servers.length === 1 &&
     // It's well defined
-    !!listings[0] &&
     // We shouldn't be authenticated
     !isAuthenticated
   ) {
     return (
       <OnboardingComponent
         scanQr={allowQr}
-        listings={listings}
+        servers={servers}
       ></OnboardingComponent>
-    );
-  }
-
-  if (listings === null) {
-    return (
-      <Box>
-        <Typography>{`Looking for ${NOTEBOOK_NAME}s...`}</Typography>
-      </Box>
     );
   }
 
@@ -76,25 +59,25 @@ export function SignIn() {
     <Box>
       <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={4}>
-        {listings.map((listing_info, index) => (
+        {servers.map((serverInfo, index) => (
           <Grid item lg={4} md={6} sm={12} xs={12} key={index}>
             <ClusterCard
-              key={listing_info.id}
-              serverId={listing_info.id}
-              listing_name={listing_info.name}
-              listing_description={listing_info.description}
-              conductor_url={listing_info.conductor_url}
+              key={serverInfo.serverId}
+              serverId={serverInfo.serverId}
+              listing_name={serverInfo.serverTitle}
+              listing_description={serverInfo.description}
+              conductor_url={serverInfo.serverUrl}
             />
           </Grid>
         ))}
         <Grid item lg={4} md={6} sm={8} xs={12} key="short-code">
-          <ShortCodeRegistration listings={listings} />
+          <ShortCodeRegistration servers={servers} />
         </Grid>
         {isWeb() ? (
           <></>
         ) : (
           <Grid item lg={4} md={6} sm={8} xs={12} key="qr-code">
-            <QRCodeRegistration listings={listings} />
+            <QRCodeRegistration servers={servers} />
           </Grid>
         )}
       </Grid>

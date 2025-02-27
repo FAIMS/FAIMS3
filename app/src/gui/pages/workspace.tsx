@@ -24,14 +24,15 @@ import React from 'react';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {useAppSelector} from '../../context/store';
-import {useGetListing} from '../../utils/customHooks';
 import Notebooks from '../components/workspace/notebooks';
 
 export default function Workspace() {
   const theme = useTheme();
   const activeUser = useAppSelector(selectActiveUser);
-  const listing = useGetListing({serverId: activeUser?.serverId});
-  const serverName = listing.data?.name;
+  const listing = useAppSelector(state =>
+    activeUser ? state.projects.servers[activeUser.serverId] : undefined
+  );
+  const serverName = listing?.serverTitle;
 
   return (
     <React.Fragment>
@@ -44,15 +45,13 @@ export default function Workspace() {
           >
             My {NOTEBOOK_NAME_CAPITALIZED}s
           </Typography>
-          {!listing.isError && (
-            <Typography
-              variant="h4"
-              color="textSecondary"
-              style={{marginBottom: theme.spacing(2)}}
-            >
-              {listing.isLoading ? 'Loading...' : serverName}
-            </Typography>
-          )}
+          <Typography
+            variant="h4"
+            color="textSecondary"
+            style={{marginBottom: theme.spacing(2)}}
+          >
+            {serverName}
+          </Typography>
           <Notebooks />
         </Grid>
       </Grid>

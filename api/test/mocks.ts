@@ -1,7 +1,7 @@
 import PouchDB from 'pouchdb';
 // eslint-disable-next-line n/no-unpublished-require
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-import {ProjectID, DBCallbackObject} from '@faims3/data-model';
+import {ProjectID, DBCallbackObject, ProjectUIModel} from '@faims3/data-model';
 import {
   getAuthDB,
   getProjectsDB,
@@ -30,7 +30,7 @@ const mockGetDataDB = async (project_id: ProjectID) => {
   return getDatabase(databaseName);
 };
 
-const mockGetProjectDB = async (project_id: ProjectID) => {
+export const mockGetProjectDB = async (project_id: ProjectID) => {
   return getDatabase('metadatadb-' + project_id);
 };
 
@@ -40,7 +40,13 @@ const mockGetTemplateDB = async (project_id: ProjectID) => {
   return getDatabase('templatedb');
 };
 
-const mockShouldDisplayRecord = () => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const mockGetUiSpec = (projectId: ProjectID) => {
+  // TODO make this make sense. Get nothing - might need to fix this
+  return {} as unknown as ProjectUIModel;
+};
+
+const mockShouldDisplayRecord = async (params: any) => {
   return true;
 };
 
@@ -91,6 +97,6 @@ export const cleanDataDBS = async () => {
 // register our mock database clients with the module
 export const callbackObject: DBCallbackObject = {
   getDataDB: mockGetDataDB,
-  getProjectDB: mockGetProjectDB,
+  getUiSpec: mockGetUiSpec,
   shouldDisplayRecord: mockShouldDisplayRecord,
 };

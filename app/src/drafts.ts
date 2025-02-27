@@ -17,34 +17,3 @@
  * Description:
  *   TODO
  */
-
-import {ProjectID, RecordID} from '@faims3/data-model';
-import {draft_db} from './sync/draft-storage';
-
-export async function deleteDraftsForRecord(
-  project_id: ProjectID,
-  record_id: RecordID
-) {
-  try {
-    const res = await draft_db.find({
-      selector: {
-        project_id: project_id,
-        record_id: record_id,
-      },
-    });
-    const ids_to_delete = res.docs.map(o => {
-      return {
-        _id: o._id,
-        _rev: o._rev,
-        _deleted: true,
-      };
-    });
-    console.debug('ids_to_delete', ids_to_delete);
-    if (ids_to_delete.length > 0) {
-      await (draft_db as PouchDB.Database<{}>).bulkDocs(ids_to_delete);
-    }
-  } catch (err) {
-    console.debug('Failed to remove drafts', err);
-    throw err;
-  }
-}

@@ -133,6 +133,7 @@ interface RelatedRecordSelectorProps extends FieldProps {
 export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const activeToken = useAppSelector(selectActiveToken)!.parsedToken;
   const project_id = props.form.values['_project_id'] as string;
+  const serverId = props.form.values['_server_id'] as string;
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;
 
@@ -462,9 +463,12 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
             is_enabled={is_enabled}
             project_id={project_id}
             relation_type={type}
+            serverId={serverId}
             add_related_child={add_related_child}
             pathname={
               ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+              serverId +
+              '/' +
               project_id +
               ROUTES.RECORD_CREATE +
               props.related_type
@@ -502,6 +506,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           {!!recordsInformation && recordsInformation.length > 0 ? (
             <DataGridFieldLinksComponent
               project_id={project_id}
+              serverId={serverId}
               links={recordsInformation}
               record_id={record_id}
               record_hrid={props.form.values['_id']}

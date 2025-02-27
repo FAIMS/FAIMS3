@@ -113,6 +113,7 @@
     "markdown-it": "^14.1.0",
     "moment": "2.29.4",
     "mustache": "4.2.0",
+    "nano": "^10.1.4",
     "ol": "^9.2.4",
     "pouchdb-adapter-memory": "^8.0.1",
     "pouchdb-browser": "^8.0.1",
