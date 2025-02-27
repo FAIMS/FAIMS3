@@ -2,10 +2,14 @@ import {
   NonUniqueProjectID,
   PossibleConnectionInfo,
   ProjectDataObject,
-  ProjectObject,
   ProjectUIModel,
 } from '@faims3/data-model';
-import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit';
+import {
+  createAsyncThunk,
+  createSelector,
+  createSlice,
+  PayloadAction,
+} from '@reduxjs/toolkit';
 import {CONDUCTOR_URLS} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {isTokenValid} from './authSlice';
@@ -16,8 +20,9 @@ import {
   createRemotePouchDbFromConnectionInfo,
   fetchProjectMetadataAndSpec,
   getRemoteDatabaseNameFromId,
-} from './databaseHelpers/helpers';
-import {databaseService} from './databaseHelpers/databaseService';
+} from './helpers/databaseHelpers';
+import {databaseService} from './helpers/databaseService';
+import {compiledSpecService} from './helpers/compiledSpecService';
 
 export const buildSyncId = ({
   localId,
@@ -27,6 +32,10 @@ export const buildSyncId = ({
   remoteId: string;
 }): string => {
   return `${localId}-${remoteId}`;
+};
+
+export const buildCompiledSpecId = (id: ProjectIdentity): string => {
+  return `${id.serverId}-${id.projectId}`;
 };
 
 // TODO move this into a store
@@ -108,8 +117,8 @@ export interface ProjectInformation {
   // This is metadata information about the project
   metadata: ProjectMetadata;
 
-  // What is the ui specification for this notebook
-  uiSpecification: ProjectUIModel;
+  // [Stored uncompiled]
+  rawUiSpecification: ProjectUIModel;
 }
 
 // A project is a 'notebook'/'survey' - it is relevant to a server, can be
@@ -128,6 +137,10 @@ export interface Project extends ProjectInformation {
 
   // Data database (if activated is false -> this is undefined)
   database?: DatabaseConnection<ProjectDataObject>;
+
+  // [Compiled] Key to get the compiled UI Spec from storage - this should not
+  // be persisted as it has live JS functions in it
+  uiSpecificationId: string;
 }
 
 export interface Server {
@@ -185,6 +198,81 @@ const projectsSlice = createSlice({
   reducers: {
     markInitialised: state => {
       state.isInitialised = true;
+    },
+
+    compileSpecs: state => {
+      // For all specs in the project - compile and store
+      for (const server of Object.values(state.servers)) {
+        for (const project of Object.values(server.projects)) {
+          compiledSpecService.compileAndRegisterSpec(
+            project.uiSpecificationId,
+            project.rawUiSpecification
+          );
+        }
+      }
+    },
+    rebuildDbs: state => {
+      // For all DBs in the project, create local, sync and remote as configured
+      for (const server of Object.values(state.servers)) {
+        for (const project of Object.values(server.projects)) {
+          // We have a server/project
+
+          // Now determine what we need to build
+          if (project.isActivated) {
+            if (project.database) {
+              // here we already have stuff ready to go (config etc)
+              const dbInfo = project.database;
+
+              // First - build the local DB
+              const localDb = createLocalPouchDatabase<ProjectDataObject>({
+                id: dbInfo.localDb,
+              });
+              databaseService.registerLocalDatabase(dbInfo.localDb, localDb, {
+                tolerant: true,
+              });
+
+              // Next - setup the remote if we need it
+              if (dbInfo.isSyncing) {
+                if (dbInfo.remote) {
+                  // creates the remote database (pouch remote)
+                  const {db: remoteDb, id: remoteDbId} =
+                    createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
+                      dbInfo.remote.connectionConfiguration
+                    );
+                  databaseService.registerRemoteDatabase(remoteDbId, remoteDb, {
+                    tolerant: true,
+                  });
+
+                  // and the sync
+
+                  // creates the sync object (PouchDB.Replication.Sync)
+                  const sync = createPouchDbSync({
+                    attachmentDownload: dbInfo.isSyncingAttachments,
+                    localDb,
+                    remoteDb,
+                  });
+                  const syncId = buildSyncId({
+                    localId: dbInfo.localDb,
+                    remoteId: remoteDbId,
+                  });
+                  databaseService.registerSync(syncId, sync, {tolerant: true});
+
+                  // Also worth noting we should update the remote db ID just in case the function changed (to avoid broken store)
+                  dbInfo.remote.remoteDb = remoteDbId;
+                } else {
+                  // Something weird here - why do we have syncing enabled but not remote DB?
+                  // TODO determine behaviour
+                }
+              }
+
+              // otherwise we are all good - just local db needed
+            } else {
+              // This is weird - we have an activated survey but the database object is missing
+              // TODO determine behaviour
+            }
+          }
+        }
+      }
     },
     // Add and remove servers
     addServer: (
@@ -282,6 +370,15 @@ const projectsSlice = createSlice({
         );
       }
 
+      const compiledSpecId = buildCompiledSpecId({
+        projectId: payload.projectId,
+        serverId: server.serverId,
+      });
+      compiledSpecService.compileAndRegisterSpec(
+        compiledSpecId,
+        payload.rawUiSpecification
+      );
+
       // Update the couch DB URL (since we presume this to be an
       // update/accurate)
       // TODO handle couch DB URLs on a per project basis
@@ -295,7 +392,9 @@ const projectsSlice = createSlice({
 
         // Superficial details
         metadata: payload.metadata,
-        uiSpecification: payload.uiSpecification,
+
+        uiSpecificationId: compiledSpecId,
+        rawUiSpecification: payload.rawUiSpecification,
         lastUpdated: payload.lastUpdated,
         createdAt: payload.createdAt,
 
@@ -333,6 +432,15 @@ const projectsSlice = createSlice({
         );
       }
 
+      const compiledSpecId = buildCompiledSpecId({
+        projectId: payload.projectId,
+        serverId: server.serverId,
+      });
+      compiledSpecService.compileAndRegisterSpec(
+        compiledSpecId,
+        payload.rawUiSpecification
+      );
+
       server.couchDbUrl = payload.couchDbUrl;
 
       // Now we can update it
@@ -342,7 +450,8 @@ const projectsSlice = createSlice({
         // Superficial details updated only! You cannot change activated/sync
         // status here - these are controlled actions
         metadata: payload.metadata,
-        uiSpecification: payload.uiSpecification,
+        uiSpecificationId: compiledSpecId,
+        rawUiSpecification: payload.rawUiSpecification,
         lastUpdated: payload.lastUpdated,
         createdAt: payload.createdAt,
       };
@@ -354,8 +463,6 @@ const projectsSlice = createSlice({
       action: PayloadAction<ProjectIdentity & DatabaseAuth>
     ) => {
       const payload = action.payload;
-
-      console.log('Activating survey ', action);
 
       // Check the server exists
       let server = serverById(state, payload.serverId);
@@ -430,12 +537,12 @@ const projectsSlice = createSlice({
       databaseService.registerSync(syncId, sync);
 
       // updates the state with all of this new information
-      console.log('Made it through, setting');
       state.servers[payload.serverId].projects[payload.projectId] = {
         // These are retained
         metadata: project.metadata,
         projectId: project.projectId,
-        uiSpecification: project.uiSpecification,
+        rawUiSpecification: project.rawUiSpecification,
+        uiSpecificationId: project.uiSpecificationId,
         createdAt: project.createdAt,
         lastUpdated: project.lastUpdated,
         serverId: project.serverId,
@@ -522,7 +629,6 @@ const projectsSlice = createSlice({
       // cleanup old sync
       const oldSyncId = project.database.remote.sync;
 
-      console.log('Closing existing sync connection');
       databaseService.closeAndRemoveSync(oldSyncId);
 
       // cleanup old remote DB
@@ -569,7 +675,8 @@ const projectsSlice = createSlice({
         // These are retained
         metadata: project.metadata,
         projectId: project.projectId,
-        uiSpecification: project.uiSpecification,
+        rawUiSpecification: project.rawUiSpecification,
+        uiSpecificationId: project.uiSpecificationId,
         createdAt: project.createdAt,
         lastUpdated: project.lastUpdated,
         serverId: project.serverId,
@@ -662,7 +769,6 @@ const projectsSlice = createSlice({
       }
 
       // cleanup old sync
-      console.log('Closing existing sync connection');
       const oldSyncId = project.database.remote.sync;
       databaseService.closeAndRemoveSync(oldSyncId);
       const newSyncId = buildSyncId({
@@ -688,7 +794,8 @@ const projectsSlice = createSlice({
         // These are retained
         metadata: project.metadata,
         projectId: project.projectId,
-        uiSpecification: project.uiSpecification,
+        rawUiSpecification: project.rawUiSpecification,
+        uiSpecificationId: project.uiSpecificationId,
         createdAt: project.createdAt,
         lastUpdated: project.lastUpdated,
         serverId: project.serverId,
@@ -776,7 +883,6 @@ const projectsSlice = createSlice({
       // cleanup old sync
       const oldSyncId = project.database.remote.sync;
 
-      console.log('Closing existing sync connection');
       databaseService.closeAndRemoveSync(oldSyncId);
 
       const newSyncId = buildSyncId({
@@ -799,7 +905,8 @@ const projectsSlice = createSlice({
         // These are retained
         metadata: project.metadata,
         projectId: project.projectId,
-        uiSpecification: project.uiSpecification,
+        rawUiSpecification: project.rawUiSpecification,
+        uiSpecificationId: project.uiSpecificationId,
         createdAt: project.createdAt,
         lastUpdated: project.lastUpdated,
         serverId: project.serverId,
@@ -883,41 +990,62 @@ export function getAllDataDbs(
 // SELECTORS
 // =========
 
-export const selectAllProjects = (state: RootState) => {
-  const allProjects: Project[] = [];
-  for (const server of Object.values(state.projects.servers)) {
-    allProjects.concat(Object.values(server.projects));
+/**
+ * Returns all projects from all servers as a flat array.
+ * Memoized to prevent unnecessary re-renders.
+ *
+ * @param state Redux state
+ * @returns Array of all projects
+ */
+export const selectAllProjects = createSelector(
+  (state: RootState) => state.projects.servers,
+  servers => {
+    let allProjects: Project[] = [];
+    for (const server of Object.values(servers)) {
+      allProjects = allProjects.concat(Object.values(server.projects));
+    }
+    return allProjects;
   }
-  return allProjects;
-};
-
-export const selectServers = (state: RootState) => {
-  return Object.values(state.projects.servers);
-};
+);
 
 /**
- * Selector that finds a project by its ID across all servers
+ * Returns all servers as an array.
+ * Memoized to prevent unnecessary re-renders.
  *
- * @param state - The Redux root state
- * @param projectId - The ID of the project to find
- * @returns The project if found, undefined otherwise
+ * @param state Redux state
+ * @returns Array of all servers
  */
-export const selectProjectById = (
-  state: RootState,
-  projectId: string
-): Project | undefined => {
-  // Loop through all servers
-  for (const server of Object.values(state.projects.servers)) {
-    // Check if this server has the project
-    const project = server.projects[projectId];
-    if (project) {
-      return project;
-    }
-  }
+export const selectServers = createSelector(
+  (state: RootState) => state.projects.servers,
+  servers => Object.values(servers)
+);
 
-  // Project not found in any server
-  return undefined;
-};
+/**
+ * Finds a project by its ID across all servers.
+ * Memoized to prevent unnecessary re-renders.
+ *
+ * @param state Redux state
+ * @param projectId ID of the project to find
+ * @returns The found project or undefined
+ */
+export const selectProjectById = createSelector(
+  [
+    (state: RootState) => state.projects.servers,
+    (_, projectId: string) => projectId,
+  ],
+  (servers, projectId): Project | undefined => {
+    // Loop through all servers
+    for (const server of Object.values(servers)) {
+      // Check if this server has the project
+      const project = server.projects[projectId];
+      if (project) {
+        return project;
+      }
+    }
+    // Project not found in any server
+    return undefined;
+  }
+);
 
 // THUNKS
 // ======
@@ -969,7 +1097,6 @@ export const updateDatabaseCredentials = createAsyncThunk<
 export const initialiseServers = createAsyncThunk<void, {}>(
   'projects/initialiseServers',
   async ({}, {dispatch, getState}) => {
-    console.log('INITIALISING');
     // cast and get state
     const state = getState() as RootState;
     const projectState = state.projects;
@@ -987,7 +1114,6 @@ export const initialiseServers = createAsyncThunk<void, {}>(
     }
 
     for (const apiServerInfo of discoveredServers) {
-      console.log('Discovered server: ', apiServerInfo);
       // pull out the server ID
       const serverId = apiServerInfo.id;
 
@@ -1005,7 +1131,6 @@ export const initialiseServers = createAsyncThunk<void, {}>(
           })
         );
       } else {
-        console.log('Pushing new server');
         // Create
         appDispatch(
           addServer({
@@ -1126,13 +1251,10 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
 
     // Now for each result, merge details
     for (const details of directoryResults) {
-      console.log('GOT DETAILS: ', details);
       const projectId = details._id;
-      console.log('project_id: ', projectId);
       let meta = undefined;
       try {
-        // uncompiled ui spec
-        // TODO need to compile the spec somewhere for conditionals to work!
+        // compile the spec here - it's only recompiled on refresh
         meta = await fetchProjectMetadataAndSpec({
           compile: false,
           projectId: projectId,
@@ -1166,7 +1288,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             metadata: meta.metadata,
             projectId,
             serverId,
-            uiSpecification: meta.uiSpec,
+            rawUiSpecification: meta.uiSpec,
             // TODO verify that this is defined
             couchDbUrl: details.data_db?.base_url!,
             // TODO Where are these populated from
@@ -1183,7 +1305,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             metadata: meta?.metadata ?? project.metadata,
             projectId: projectId,
             serverId,
-            uiSpecification: meta?.uiSpec ?? project.uiSpecification,
+            rawUiSpecification: meta?.uiSpec ?? project.rawUiSpecification,
             // TODO verify that this is defined
             couchDbUrl: details.data_db?.base_url!,
             createdAt: project.createdAt,
@@ -1223,6 +1345,8 @@ export const {
   updateProjectDetails,
   updateServerDetails,
   markInitialised,
+  rebuildDbs,
+  compileSpecs,
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;

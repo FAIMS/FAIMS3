@@ -18,11 +18,7 @@
  *   TODO
  */
 
-import {
-  FAIMSTypeName,
-  ProjectID,
-  ProjectUIModel,
-} from '@faims3/data-model';
+import {FAIMSTypeName, ProjectID, ProjectUIModel} from '@faims3/data-model';
 import {
   compileExpression,
   compileIsLogic,
@@ -194,7 +190,16 @@ export function getReturnedTypesForViewSet(
   const fields = getFieldsForViewSet(uiSpecification, viewsetId);
   const types: {[field_name: string]: FAIMSTypeName} = {};
   for (const field_name in fields) {
-    types[field_name] = fields[field_name]['type-returned'];
+    if (fields[field_name]) {
+      types[field_name] = fields[field_name]['type-returned'];
+    } else {
+      console.warn(
+        'UI Spec had an undefined field with name: ',
+        field_name,
+        '. Ignoring...'
+      );
+      continue;
+    }
   }
   return types;
 }

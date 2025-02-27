@@ -42,6 +42,7 @@ import {
   selectProjectById,
   serverById,
 } from '../../../../context/slices/projectSlice';
+import {compiledSpecService} from '../../../../context/slices/helpers/compiledSpecService';
 
 /**
  * Generate an object containing information to be stored in
@@ -910,9 +911,10 @@ export async function addRecordLink({
   parent: LinkedRelation;
   relationType: string;
 }): Promise<RecordMetadata | null> {
-  const uiSpec = useAppSelector(state =>
+  const uiSpecId = useAppSelector(state =>
     selectProjectById(state, projectId)
-  )?.uiSpecification;
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   let child_record_meta = null;
   try {

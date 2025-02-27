@@ -95,7 +95,7 @@ function getNestedProjects(pouchProjectList: Project[]) {
     projectListItems.push({
       title: project_info.metadata.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_info.projectId,
+      to: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_info.serverId + '/' + project_info.projectId,
       disabled: false,
     });
   });

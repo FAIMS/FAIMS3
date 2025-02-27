@@ -82,6 +82,7 @@ import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
 import {selectProjectById} from '../../context/slices/projectSlice';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 
 export default function Record() {
   /**
@@ -116,7 +117,12 @@ export default function Record() {
   const project = useAppSelector(state => selectProjectById(state, projectId));
   if (!project) return <></>;
 
-  const {uiSpecification: uiSpec} = project;
+  const {uiSpecificationId: uiSpecId} = project;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+
+  if (!uiSpec) {
+    return <></>;
+  }
   const isSyncing = project.database?.isSyncing ?? false;
 
   const [revisions, setRevisions] = React.useState([] as string[]);
@@ -164,7 +170,7 @@ export default function Record() {
             title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
           },
           {
-            link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId,
+            link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
             title: project.metadata.name,
           },
           {title: hrid ?? recordId},
@@ -257,7 +263,8 @@ export default function Record() {
                 })
               );
               history({
-                pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId,
+                pathname:
+                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
               });
             }
             const newRelationship = await getDetailRelatedInformation(
@@ -285,7 +292,8 @@ export default function Record() {
                 title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
               },
               {
-                link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId,
+                link:
+                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
                 title: project.metadata.name,
               },
               {title: hrid! ?? recordId!},
@@ -302,7 +310,11 @@ export default function Record() {
                   title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
                 },
                 {
-                  link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId,
+                  link:
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                    serverId +
+                    '/' +
+                    projectId,
                   title: project.metadata.name,
                 },
                 {
@@ -372,7 +384,7 @@ export default function Record() {
               uiSpecification: uiSpec,
               projectId: projectId!,
               parent: result.new_relation,
-              serverId: serverId
+              serverId: serverId,
             }).then(newParent => {
               setParentLinks(newParent);
             });
@@ -414,7 +426,8 @@ export default function Record() {
     return new Promise(resolve => {
       resolve(() => {
         history({
-          pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId,
+          pathname:
+            ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
         });
       });
     });
@@ -453,7 +466,8 @@ export default function Record() {
             onClick={() => {
               // Go back to the records list
               history({
-                pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId,
+                pathname:
+                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
               });
             }}
           />

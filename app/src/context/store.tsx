@@ -18,6 +18,7 @@ import {
 } from 'redux-persist';
 import {PersistGate} from 'redux-persist/integration/react';
 import storage from 'redux-persist/lib/storage';
+import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 import LoadingApp from '../gui/components/loadingApp';
 import {initialize} from '../sync/initialize';
 import authReducer, {
@@ -25,14 +26,8 @@ import authReducer, {
   refreshIsAuthenticated,
   selectIsAuthenticated,
 } from './slices/authSlice';
-import projectsReducer, {
-  initialProjectState,
-  Project,
-  ProjectsState,
-  Server,
-} from './slices/projectSlice';
+import projectsReducer from './slices/projectSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
-import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 
 // Configure persistence for the auth slice
 const authPersistConfig = {key: 'auth', storage};
@@ -42,58 +37,7 @@ const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 const projectsPersistConfig = {
   key: 'projects',
   storage,
-  transforms: [
-    {
-      // Transform for handling project state before persistence
-      in: (state: ProjectsState) => {
-        return state
-        console.log('IN STATE: ', state);
-        let newStateSource: Partial<ProjectsState> = initialProjectState;
-        if (state.servers !== undefined) {
-          newStateSource = state;
-        }
-
-        let newState: ProjectsState = JSON.parse(JSON.stringify(newStateSource));
-
-        // always force re-initialisation
-        newState.isInitialised = false;
-
-        // Remove all database connections from projects before persisting
-        Object.values(newState.servers).forEach((server: Server) => {
-          Object.values(server.projects).forEach((project: Project) => {
-            if (project.isActivated) {
-              // Keep isActivated flag but remove database object (this is re-produceable)
-              project.database = project.database
-                ? {
-                    isSyncing: project.database.isSyncing,
-                    isSyncingAttachments: project.database.isSyncingAttachments,
-                    // intentionally do not persist this reference - we will initialise it properly
-                    localDb: undefined as any,
-                    remote: project.database.remote
-                      ? {
-                          connectionConfiguration:
-                            project.database.remote.connectionConfiguration,
-                          // restore this
-                          sync: undefined as any,
-                          // restore this
-                          remoteDb: undefined as any,
-                        }
-                      : undefined,
-                  }
-                : undefined;
-            }
-          });
-        });
-
-        console.log('OUT STATE: ', newState);
-        return newState;
-      },
-      // Transform for handling project state after rehydration
-      out: (state: ProjectsState) => {
-        return state;
-      },
-    },
-  ],
+  blacklist: ['isInitialised'],
 };
 
 const persistedProjectsReducer = persistReducer(
@@ -113,15 +57,8 @@ export const store = configureStore({
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
-      // TODO fix this
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-        // Ignore these paths in the state when checking for serializability
-        ignoredPaths: [
-          'projects.servers.*.projects.*.database.localDb',
-          'projects.servers.*.projects.*.database.remote.remoteDb',
-          'projects.servers.*.projects.*.database.remote.sync',
-        ],
       },
     }),
   devTools: process.env.NODE_ENV !== 'production',
@@ -277,10 +214,6 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
 
     // Run initialisation logic
     init();
-
-    return () => {
-      mounted.current = false;
-    };
   }, []);
 
   if (!syncStoreInitialised || !projectStoreInitialised) {

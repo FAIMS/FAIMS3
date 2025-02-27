@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import {registerClient} from '@faims3/data-model';
+import {ProjectDataObject, registerClient} from '@faims3/data-model';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -29,18 +29,34 @@ import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {shouldDisplayRecord} from './users';
 import {store} from './context/store';
 import {selectAllProjects} from './context/slices/projectSlice';
+import {databaseService} from './context/slices/helpers/databaseService';
+import {compiledSpecService} from './context/slices/helpers/compiledSpecService';
 
-const getDataDB = (projectId: string) => {
+const getDataDB = (projectId: string): PouchDB.Database<ProjectDataObject> => {
   const projectState = store.getState();
-  return selectAllProjects(projectState).find(p => p.projectId === projectId)
-    ?.database?.localDb;
+  const dbId = selectAllProjects(projectState).find(
+    p => p.projectId === projectId
+  )?.database?.localDb;
+  if (!dbId) {
+    throw Error(
+      `Could not get Data DB for project with ID. The project store does not contain a reference to this project database ${projectId}.`
+    );
+  }
+  const db = databaseService.getLocalDatabase(dbId);
+  if (!db) {
+    throw Error(
+      `Could not get Data DB for project with ID: ${projectId}. Database service missing entry.`
+    );
+  }
+  return db;
 };
 
 const getUiSpecForProject = (projectId: string) => {
   const projectState = store.getState();
-  const uiSpec = selectAllProjects(projectState).find(
+  const uiSpecId = selectAllProjects(projectState).find(
     p => p.projectId === projectId
-  )?.uiSpecification;
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
   if (!uiSpec) {
     throw Error(
       'Could not find UI Specification for given project: ' + projectId

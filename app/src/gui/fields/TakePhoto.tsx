@@ -419,6 +419,7 @@ export const TakePhoto: React.FC<
   const disabled = props.disabled ?? false;
   const hasUndownloaded = hasNonDownloadedImages(images);
   const projectId = props.form.values['_project_id'];
+  const serverId = props.form.values['_server_id'];
 
   return (
     <FieldWrapper
@@ -438,6 +439,8 @@ export const TakePhoto: React.FC<
               onClick={() => {
                 navigate(
                   ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                    serverId +
+                    '/' +
                     projectId +
                     `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
                 );

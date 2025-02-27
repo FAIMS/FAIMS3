@@ -1,4 +1,13 @@
 import {ProjectDataObject} from '@faims3/data-model';
+import {DraftDB} from '../../../sync/draft-storage';
+import {LOCAL_POUCH_OPTIONS} from './databaseHelpers';
+import PouchDB from 'pouchdb-browser';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+
+export interface RegisterDbOptions {
+  tolerant?: boolean;
+}
 
 // Singleton service to manage database instances
 class DatabaseService {
@@ -11,6 +20,7 @@ class DatabaseService {
   > = new Map();
   private remoteDatabases: Map<string, PouchDB.Database<ProjectDataObject>> =
     new Map();
+  private draftDb: DraftDB = new PouchDB('draft-storage', LOCAL_POUCH_OPTIONS);
 
   private constructor() {}
 
@@ -59,23 +69,60 @@ class DatabaseService {
   }
 
   // Create or get existing database instance
-  registerLocalDatabase(id: string, db: PouchDB.Database<ProjectDataObject>) {
+  registerLocalDatabase(
+    id: string,
+    db: PouchDB.Database<ProjectDataObject>,
+    {tolerant = false}: RegisterDbOptions = {}
+  ) {
     if (this.localDatabases.has(id)) {
-      throw Error('Cannot register database with non-unique key! ' + id);
+      if (tolerant) {
+        this.closeAndRemoveLocalDatabase(id);
+        console.warn(
+          'Tolerant re-creation of existing DB closes the previous and updates with new.'
+        );
+      } else {
+        throw Error('Cannot register database with non-unique key! ' + id);
+      }
     }
-    return this.localDatabases.set(id, db);
+    this.localDatabases.set(id, db);
   }
-  registerRemoteDatabase(id: string, db: PouchDB.Database<ProjectDataObject>) {
+  registerRemoteDatabase(
+    id: string,
+    db: PouchDB.Database<ProjectDataObject>,
+    {tolerant = true}: RegisterDbOptions = {}
+  ) {
     if (this.remoteDatabases.has(id)) {
-      throw Error('Cannot register database with non-unique key! ' + id);
+      if (tolerant) {
+        this.closeAndRemoveRemoteDatabase(id);
+        console.warn(
+          'Tolerant re-creation of existing DB closes the previous and updates with new.'
+        );
+      } else {
+        throw Error('Cannot register database with non-unique key! ' + id);
+      }
     }
-    return this.remoteDatabases.set(id, db);
+    this.remoteDatabases.set(id, db);
   }
-  registerSync(id: string, sync: PouchDB.Replication.Sync<ProjectDataObject>) {
+  registerSync(
+    id: string,
+    sync: PouchDB.Replication.Sync<ProjectDataObject>,
+    {tolerant = true}: RegisterDbOptions = {}
+  ) {
     if (this.databaseSyncs.has(id)) {
-      throw Error('Cannot register database sync with non-unique key! ' + id);
+      if (tolerant) {
+        this.closeAndRemoveSync(id);
+        console.warn(
+          'Tolerant re-creation of existing sync closes the previous and updates with new.'
+        );
+      } else {
+        throw Error('Cannot register sync with non-unique key! ' + id);
+      }
     }
-    return this.databaseSyncs.set(id, sync);
+    this.databaseSyncs.set(id, sync);
+  }
+
+  getDraftDatabase() {
+    return this.draftDb;
   }
 }
 

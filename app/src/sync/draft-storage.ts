@@ -36,16 +36,13 @@ import {
   getIdsByFieldName,
 } from '@faims3/data-model';
 import {logError} from '../logging';
-import {LOCAL_POUCH_OPTIONS} from '../context/slices/databaseHelpers/helpers';
+import {LOCAL_POUCH_OPTIONS} from '../context/slices/helpers/databaseHelpers';
 import {selectProjectById} from '../context/slices/projectSlice';
 import {store} from '../context/store';
+import {databaseService} from '../context/slices/helpers/databaseService';
+import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
-
-export const draft_db: DraftDB = new PouchDB(
-  'draft-storage',
-  LOCAL_POUCH_OPTIONS
-);
 
 // Note: duplicated from @faims3/data-model as it doesn't do anything important
 export function generate_file_name(): string {
@@ -63,7 +60,8 @@ export function generate_file_name(): string {
 export async function getStagedData(
   draft_id: string
 ): Promise<EncodedDraft & PouchDB.Core.GetMeta> {
-  const draft = (await draft_db.get(draft_id, {
+  const draftDb = databaseService.getDraftDatabase();
+  const draft = (await draftDb.get(draft_id, {
     attachments: true,
     binary: true,
   })) as EncodedDraft & PouchDB.Core.GetMeta;
@@ -124,6 +122,7 @@ export async function newStagedData(
   field_types: {[field_name: string]: FAIMSTypeName},
   record_id: string
 ): Promise<PouchDB.Core.DocumentId> {
+  const draftDb = databaseService.getDraftDatabase();
   const _id = 'drf-' + uuidv4();
   const date = new Date();
 
@@ -140,7 +139,7 @@ export async function newStagedData(
     field_types: field_types,
     record_id: record_id,
   };
-  return (await draft_db.put(encodedDraft)).id;
+  return (await draftDb.put(encodedDraft)).id;
 }
 
 /**
@@ -157,7 +156,8 @@ export async function setStagedData(
   field_types: {[field_name: string]: FAIMSTypeName},
   relationship: Relationship
 ): Promise<PouchDB.Core.Response> {
-  const existing = (await draft_db.get(draft_id)) as EncodedDraft;
+  const draftDb = databaseService.getDraftDatabase();
+  const existing = (await draftDb.get(draft_id)) as EncodedDraft;
 
   // merge new annotations with existing
   // each value is an object {annotation, uncertainty} so need
@@ -182,7 +182,7 @@ export async function setStagedData(
   // update the fields and attachments
   updateDraftFields(existing, new_data, field_types);
 
-  return await draft_db.put(existing);
+  return await draftDb.put(existing);
 }
 
 type FileOrRef = File | FAIMSAttachmentReference;
@@ -259,12 +259,13 @@ export async function deleteStagedData(
   draft_id: PouchDB.Core.DocumentId,
   revision_cache: null | PouchDB.Core.RevisionId
 ) {
+  const draftDb = databaseService.getDraftDatabase();
   const revision =
     revision_cache !== null
       ? revision_cache
-      : (await draft_db.get(draft_id))._rev;
+      : (await draftDb.get(draft_id))._rev;
 
-  await (draft_db as PouchDB.Database<{}>).put(
+  await (draftDb as PouchDB.Database<{}>).put(
     {
       _id: draft_id,
       _rev: revision,
@@ -290,7 +291,7 @@ export async function listDraftsEncoded(
   filter: 'updates' | 'created' | 'all'
 ): Promise<EncodedDraft[]> {
   return (
-    await draft_db.find({
+    await databaseService.getDraftDatabase().find({
       selector: {
         project_id: project_id,
         // Based on what value filter takes, we either:
@@ -348,11 +349,13 @@ export async function listDraftMetadata(
 async function getDraftHRID(record: EncodedDraft): Promise<string | null> {
   // Need to find a way here to determine the correct field name to use - we
   // need the uispec at this point
-
-  const uiSpecification = selectProjectById(
+  const uiSpecId = selectProjectById(
     store.getState(),
     record.project_id
-  )?.uiSpecification;
+  )?.uiSpecificationId;
+  const uiSpecification = uiSpecId
+    ? compiledSpecService.getSpec(uiSpecId)
+    : undefined;
 
   if (!uiSpecification) {
     return record.record_id;
@@ -391,4 +394,34 @@ async function getDraftHRID(record: EncodedDraft): Promise<string | null> {
     return null;
   }
   return hrid_id;
+}
+
+export async function deleteDraftsForRecord(
+  project_id: ProjectID,
+  record_id: RecordID
+) {
+  const draftDb = databaseService.getDraftDatabase();
+
+  try {
+    const res = await draftDb.find({
+      selector: {
+        project_id: project_id,
+        record_id: record_id,
+      },
+    });
+    const ids_to_delete = res.docs.map(o => {
+      return {
+        _id: o._id,
+        _rev: o._rev,
+        _deleted: true,
+      };
+    });
+    console.debug('ids_to_delete', ids_to_delete);
+    if (ids_to_delete.length > 0) {
+      await (draftDb as PouchDB.Database<{}>).bulkDocs(ids_to_delete);
+    }
+  } catch (err) {
+    console.debug('Failed to remove drafts', err);
+    throw err;
+  }
 }

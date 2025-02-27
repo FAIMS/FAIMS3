@@ -15,6 +15,7 @@ import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
+import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 
 type AddRecordButtonsProps = {
   project: Project;
@@ -22,7 +23,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {projectId, serverId, uiSpecification, metadata},
+  project: {projectId, serverId, uiSpecificationId, metadata},
   recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
@@ -35,6 +36,7 @@ export default function AddRecordButtons({
   >(undefined);
   const showQRButton = metadata['showQRCodeButton'] === true;
   const buttonLabel = `Add new ${recordLabel}`;
+  const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
 
   if (uiSpecification === undefined) {
     return <CircularProgress thickness={2} size={12} />;

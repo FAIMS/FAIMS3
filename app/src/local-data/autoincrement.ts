@@ -32,9 +32,10 @@ import {
   ProjectUIFields,
 } from '@faims3/data-model';
 import {logError} from '../logging';
-import {getLocalStateDB} from '../context/slices/databaseHelpers/helpers';
+import {getLocalStateDB} from '../context/slices/helpers/databaseHelpers';
 import {store, useAppSelector} from '../context/store';
 import {selectProjectById} from '../context/slices/projectSlice';
+import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
 
 const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 
@@ -219,10 +220,11 @@ export async function setLocalAutoincrementRangesForField(
 export async function getAutoincrementReferencesForProject(
   project_id: ProjectID
 ) {
-  const uiSpec = selectProjectById(
+  const uiSpecId = selectProjectById(
     store.getState(),
     project_id
-  )?.uiSpecification;
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   const references: AutoIncrementReference[] = [];
 

@@ -149,7 +149,7 @@ export default function App() {
                           ':serverId/' +
                           ':projectId' +
                           ROUTES.RECORD_CREATE +
-                          ':type_name'
+                          ':typeName'
                         }
                         element={
                           <TolerantPrivateRoute>

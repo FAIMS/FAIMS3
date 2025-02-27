@@ -19,11 +19,13 @@
  */
 import PouchDB from 'pouchdb-browser';
 import {DEBUG_POUCHDB} from '../buildconfig';
-import {AppDispatch, store} from '../context/store';
+import {store} from '../context/store';
 import {
+  compileSpecs,
   initialiseAllProjects,
   initialiseServers,
   markInitialised,
+  rebuildDbs,
 } from '../context/slices/projectSlice';
 
 /**
@@ -33,7 +35,6 @@ import {
  */
 export async function initialize() {
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
-
   // Get current state/dispatch const state = store.getState();
 
   // TODO confirm we can rely on ordering here
@@ -44,8 +45,14 @@ export async function initialize() {
   // Then we want to initialise all the projects too
   await store.dispatch(initialiseAllProjects({}));
 
+  // Now let's create all the DBs we need (these are persisted only as keys + config)
+  store.dispatch(rebuildDbs());
+
+  // Compile all ui specs
+  store.dispatch(compileSpecs());
+
   // Once this is done - mark initialisation complete
-  await store.dispatch(markInitialised());
+  store.dispatch(markInitialised());
 
   // TODO bring this back?
   // register_basic_automerge_resolver(events);

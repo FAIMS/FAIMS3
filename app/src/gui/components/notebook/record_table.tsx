@@ -56,6 +56,8 @@ import {prettifyFieldName} from '../../../utils/formUtilities';
 import getLocalDate from '../../fields/LocalDate';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import {Project} from '../../../context/slices/projectSlice';
+import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import CircularLoading from '../ui/circular_loading';
 
 // ============================================================================
 // Types & Interfaces
@@ -879,11 +881,15 @@ export function RecordsTable(props: RecordsTableProps) {
     rows,
     loading,
     viewsets,
-    project: {uiSpecification: uiSpec, projectId: project_id, serverId},
+    project: {uiSpecificationId: uiSpecId, projectId: project_id, serverId},
   } = props;
   const theme = useTheme();
   const history = useNavigate();
   const styles = useDataGridStyles(theme);
+  const uiSpec = compiledSpecService.getSpec(uiSpecId);
+  if (!uiSpec) {
+    return <CircularLoading label="Loading" />;
+  }
 
   const visibleTypes = useMemo(() => {
     return getVisibleTypes(uiSpec);

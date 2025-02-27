@@ -38,7 +38,6 @@ export default function NotebookActivationSwitch({
   const handleClose = () => setOpen(false);
   const handleActivationClick = () => {
     if (activeUser) {
-      console.log('Dispatching activate project task');
       dispatch(
         activateProject({
           jwtToken: activeUser.token,

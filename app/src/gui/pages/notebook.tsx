@@ -30,23 +30,24 @@
 import {CircularProgress, Stack, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useContext} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import NotebookComponent from '../components/notebook';
 import BackButton from '../components/ui/BackButton';
 import {useAppSelector} from '../../context/store';
-import {selectAllProjects} from '../../context/slices/projectSlice';
+import NotFound404 from './404';
 
 export default function Notebook() {
   const theme = useTheme();
   const {serverId, projectId} = useParams<{
     projectId: string;
-    serverId: string
+    serverId: string;
   }>();
+  if (!projectId || !serverId) return <NotFound404 />;
+
   const history = useNavigate();
-  const project = useAppSelector(selectAllProjects).find(
-    p => p.projectId === projectId
+  const project = useAppSelector(
+    state => state.projects.servers[serverId]?.projects[projectId]
   );
   const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));
 

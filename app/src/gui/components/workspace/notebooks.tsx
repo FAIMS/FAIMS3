@@ -83,7 +83,6 @@ export default function NoteBooks() {
   const projects = useAppSelector(state =>
     Object.values(state.projects.servers[activeServerId]?.projects ?? {})
   );
-  console.log('Projects: ', projects);
 
   // Refresh mutation
   const doRefresh = useMutation({
@@ -119,7 +118,12 @@ export default function NoteBooks() {
         <Box
           onClick={() => {
             if (row.isActivated) {
-              history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + row.projectId);
+              history(
+                ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                  row.serverId +
+                  '/' +
+                  row.projectId
+              );
             }
           }}
         >

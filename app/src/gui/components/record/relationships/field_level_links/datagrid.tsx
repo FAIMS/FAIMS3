@@ -49,6 +49,7 @@ import {
 import RecordRouteDisplay from '../../../ui/record_link';
 import {gridParamsDataType} from '../record_links';
 import {RecordLinksToolbar} from '../toolbars';
+import {compiledSpecService} from '../../../../../context/slices/helpers/compiledSpecService';
 
 const style = {
   position: 'absolute' as const,
@@ -158,9 +159,10 @@ export function DataGridFieldLinksComponent(
     null as null | GridRowParams['row']
   );
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const uiSpec = useAppSelector(state =>
+  const uiSpecId = useAppSelector(state =>
     selectProjectById(state, props.project_id)
-  )?.uiSpecification;
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   function getRowId(row: any) {
     /***
@@ -216,7 +218,7 @@ export function DataGridFieldLinksComponent(
     }, [props.child_record]);
 
     const route = getRecordRoute(
-        props.serverId,
+      props.serverId,
       props.child_record.project_id,
       props.child_record.record_id,
       props.child_record.revision_id

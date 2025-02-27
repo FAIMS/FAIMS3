@@ -18,6 +18,8 @@ import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
+import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import CircularLoading from '../ui/circular_loading';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -118,7 +120,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
 
-  const {uiSpecification: uiSpecification} = project;
+  const {uiSpecificationId: uiSpecificationId} = project;
+  const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
+  if (!uiSpecification) {
+    return <CircularLoading label="Loading" />;
+  }
 
   // This manages the tab using a query string arg
   const {params, setParam} = useQueryParams<{tab: TabIndexLabel}>({

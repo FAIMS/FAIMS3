@@ -62,9 +62,11 @@ import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {Project, selectProjectById} from '../../context/slices/projectSlice';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
+  serverId: string;
   type_name: string;
   state?: any;
   record_id: string;
@@ -83,7 +85,7 @@ interface DraftCreateActionProps {
 // then the UI created for that (DraftEdit).
 
 function DraftCreateAction(props: DraftCreateActionProps) {
-  const {project_id, type_name, record_id} = props;
+  const {project_id, type_name, record_id, serverId} = props;
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -91,9 +93,10 @@ function DraftCreateAction(props: DraftCreateActionProps) {
   const [error, setError] = useState(null as null | {});
   const [draft_id, setDraft_id] = useState(null as null | string);
 
-  const uiSpec = useAppSelector(state =>
+  const uiSpecId = useAppSelector(state =>
     selectProjectById(state, project_id)
-  )?.uiSpecification;
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   useEffect(() => {
     if (!!uiSpec) {
@@ -127,6 +130,8 @@ function DraftCreateAction(props: DraftCreateActionProps) {
       <Navigate
         to={
           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+          serverId +
+          '/' +
           project_id +
           ROUTES.RECORD_CREATE +
           type_name +
@@ -167,9 +172,11 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const [is_link_ready, setIs_link_ready] = useState(false);
   const [progress, setProgress] = useState(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
-  const uiSpec = useAppSelector(state =>
+
+  const uiSpecId = useAppSelector(state =>
     selectProjectById(state, project_id)
-  )?.uiSpecification;
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   useEffect(() => {
     (async () => {
@@ -193,7 +200,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
           uiSpecification: uiSpec,
           projectId: project_id,
           parent,
-          serverId: props.serverId
+          serverId: props.serverId,
         });
         setParentLinks(newParent);
         setIs_link_ready(true);
@@ -263,19 +270,14 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
 }
 
 export default function RecordCreate() {
-  const {
-    serverId: serverId,
-    projectId: projectId,
-    typeName: typeName,
-    draftId: draftId,
-    recordId: recordId,
-  } = useParams<{
+  const params = useParams<{
     serverId: string;
     projectId: ProjectID;
     typeName: string;
     draftId?: string;
     recordId?: string;
   }>();
+  const {serverId, projectId, typeName, draftId, recordId} = params;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -296,7 +298,9 @@ export default function RecordCreate() {
 
   const handleConfirmNavigation = () => {
     setOpenDialog(false);
-    navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId, {replace: true});
+    navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId, {
+      replace: true,
+    });
   };
 
   let draft_record_id = generateFAIMSDataID();
@@ -310,7 +314,7 @@ export default function RecordCreate() {
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
-      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId,
+      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
       title: project !== null ? project.metadata.name : projectId!,
     },
     {title: 'Draft'},
@@ -360,6 +364,7 @@ export default function RecordCreate() {
         {showBreadcrumbs && <Breadcrumbs data={breadcrumbs} />}
         {draftId === undefined || recordId === undefined ? (
           <DraftCreateAction
+            serverId={serverId}
             project_id={projectId!}
             type_name={typeName!}
             state={location.state}

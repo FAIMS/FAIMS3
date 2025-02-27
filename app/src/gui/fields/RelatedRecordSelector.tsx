@@ -467,6 +467,8 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
             add_related_child={add_related_child}
             pathname={
               ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+              serverId +
+              '/' +
               project_id +
               ROUTES.RECORD_CREATE +
               props.related_type

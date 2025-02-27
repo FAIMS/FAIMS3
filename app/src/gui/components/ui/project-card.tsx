@@ -19,7 +19,7 @@ export default function ProjectCard({
   onClick,
 }: {
   project: ProjectInformation;
-  onClick: (project_id: string, activated: boolean) => void;
+  onClick: (project: ProjectInformation, activated: boolean) => void;
 }): JSX.Element {
   const dispatch = useAppDispatch();
   const activeUser = useAppSelector(selectActiveUser);
@@ -39,7 +39,7 @@ export default function ProjectCard({
         paddingTop: '20px 16px',
         paddingLeft: '16px',
       }}
-      onClick={() => onClick(project.project_id, project.is_activated)}
+      onClick={() => onClick(project, project.is_activated)}
     >
       <div
         style={{

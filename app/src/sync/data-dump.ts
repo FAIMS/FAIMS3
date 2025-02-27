@@ -21,10 +21,10 @@ import {Directory, Encoding, Filesystem} from '@capacitor/filesystem';
 import {jsonStringifyStream} from '@worker-tools/json-stream';
 
 import {Share} from '@capacitor/share';
-import {getLocalStateDB} from '../context/slices/databaseHelpers/helpers';
+import {getLocalStateDB} from '../context/slices/helpers/databaseHelpers';
 import {getAllDataDbs} from '../context/slices/projectSlice';
 import {store} from '../context/store';
-import {draft_db} from './draft-storage';
+import {databaseService} from '../context/slices/helpers/databaseService';
 
 const PREFIX = 'faims3-';
 
@@ -146,7 +146,10 @@ export async function progressiveSaveFiles(
   if (keepDumping)
     keepDumping = await progressiveDump(getLocalStateDB(), writer(10, 12));
   if (keepDumping)
-    keepDumping = await progressiveDump(draft_db, writer(15, 20));
+    keepDumping = await progressiveDump(
+      databaseService.getDraftDatabase(),
+      writer(15, 20)
+    );
 
   // TODO dump the redux store projects here
   /*
@@ -270,7 +273,10 @@ export async function doDumpDownload() {
     'local_state',
     await dumpDatabase(getLocalStateDB())
   );
-  await streamedDumpDownload('draft', await dumpDatabase(draft_db));
+  await streamedDumpDownload(
+    'draft',
+    await dumpDatabase(databaseService.getDraftDatabase())
+  );
 
   for (const db of dataDbs) {
     await streamedDumpDownload('data' + name, await dumpDatabase(db));
