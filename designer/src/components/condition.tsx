@@ -142,6 +142,91 @@ export const findFieldCondtionUsage = (
   return affected;
 };
 
+/**
+ * Finds fields and sections that have visibility conditions relying on this field
+ * and that expect a specific value that no longer exists.
+ *
+ * @param targetFieldName The name of the field being checked
+ * @param targetField The field's definition
+ * @param allFields All fields in the form
+ * @param allFviews All sections in the form
+ * @returns An array of messages identifying conditions with missing expected values
+ */
+export function findInvalidConditionReferences(
+  targetFieldName: string,
+  targetField: FieldType,
+  allFields: Record<string, FieldType>,
+  allFviews: Record<string, {label: string; condition?: ConditionType}>
+): string[] {
+  const invalidConditions: string[] = [];
+
+  // Only need to check fields that have predefined options (Select, MultiSelect, RadioGroup).
+  if (
+    !['Select', 'RadioGroup', 'MultiSelect'].includes(
+      targetField['component-name']
+    )
+  ) {
+    return invalidConditions; // If not a field with predefined choices, no invalid conditions exist.
+  }
+
+  // Get the valid set of selectable options from the field definition.
+  const validOptions: string[] =
+    targetField['component-parameters'].ElementProps?.options?.map(
+      (opt: any) => opt.value
+    ) || [];
+
+  /**
+   * Checks whether a condition is invalid due to a missing expected option.
+   */
+  const getInvalidExpectedValue = (condition: ConditionType): string | null => {
+    if (condition.field !== targetFieldName) {
+      return null; // This condition is about a different field
+    }
+
+    if (Array.isArray(condition.value)) {
+      // MultiSelect: check if any selected values are invalid
+      const missingValues = condition.value.filter(
+        val => !validOptions.includes(val)
+      );
+      return missingValues.length > 0 ? missingValues.join(', ') : null;
+    }
+
+    // Single value: (Select, RadioGroup)
+    return validOptions.includes(String(condition.value))
+      ? null
+      : String(condition.value);
+  };
+
+  // Check field conditions by looping through all fields
+  for (const [fId, fieldDef] of Object.entries(allFields)) {
+    const cond = fieldDef.condition;
+    if (cond && isFieldUsedInCondition(cond, targetFieldName)) {
+      const invalidVal = getInvalidExpectedValue(cond);
+      if (invalidVal) {
+        const label = fieldDef['component-parameters']?.label ?? fId;
+        invalidConditions.push(
+          `Field: ${label} (expects option '${invalidVal}')`
+        );
+      }
+    }
+  }
+
+  // Check section conditions by looping through all sections
+  for (const [, fviewDef] of Object.entries(allFviews)) {
+    const cond = fviewDef.condition;
+    if (cond && isFieldUsedInCondition(cond, targetFieldName)) {
+      const invalidValue = getInvalidExpectedValue(cond);
+      if (invalidValue) {
+        invalidConditions.push(
+          `Section: ${fviewDef.label} (expects option '${invalidValue}')`
+        );
+      }
+    }
+  }
+
+  return invalidConditions;
+}
+
 export const ConditionModal = (props: ConditionProps & {label: string}) => {
   const [open, setOpen] = useState(false);
 
