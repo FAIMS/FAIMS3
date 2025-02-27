@@ -84,6 +84,10 @@ export const createTemplate = async (
     _id: templateId,
     version: 1,
     ...payload,
+    metadata: {
+      ...payload.metadata,
+      project_status: 'active',
+    },
   };
 
   // Try putting the new document
@@ -183,6 +187,39 @@ export const deleteExistingTemplate = async (templateId: string) => {
   } catch (e) {
     throw new Exceptions.InternalSystemError(
       'An unexpected error occurred while trying to delete an existing template.'
+    );
+  }
+};
+
+/**
+ * Archives a template by incrementing the version and setting the project_status to archived.
+ * @param id The ID of the template to archive.
+ * @returns The updated template document.
+ */
+export const archiveTemplate = async (id: string) => {
+  const {get, put} = getTemplatesDb();
+  const template = await get(id);
+
+  try {
+    await put({
+      ...template,
+      version: template.version + 1,
+      metadata: {
+        ...template.metadata,
+        project_status: 'archived',
+      },
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to PUT the new template document into the templates DB.'
+    );
+  }
+
+  try {
+    return await get(id);
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An unexpected error occurred while trying to fetch the updated template.'
     );
   }
 };
