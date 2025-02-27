@@ -251,6 +251,7 @@ export default function NoteBooks() {
         ) : (
           <HeadingProjectGrid
             projects={projects}
+            serverId={activeServerId}
             activatedColumns={activatedColumns}
             notActivatedColumns={notActivatedColumns}
           />

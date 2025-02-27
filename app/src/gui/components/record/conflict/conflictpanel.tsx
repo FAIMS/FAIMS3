@@ -47,6 +47,7 @@ type ConflictSectionPanelProps = {
   istoggleAll: boolean;
   isSyncing: string;
   project_id: ProjectID;
+  serverId: string;
 };
 function ConflictSectionPanel(props: ConflictSectionPanelProps) {
   const {
@@ -58,11 +59,13 @@ function ConflictSectionPanel(props: ConflictSectionPanelProps) {
     fieldslist,
     conflictfields,
     istoggleAll,
+    serverId,
     isSyncing,
   } = props;
   if (data === null) return <CircularProgress size={12} thickness={4} />;
   const initialvalues = getinitial(data, fieldslist);
   initialvalues['_project_id'] = props.project_id;
+  initialvalues['_server_id'] = serverId;
   if (type === 'middle') console.debug('initial values', initialvalues);
   return (
     <>
@@ -161,6 +164,7 @@ function ConflictPanelForm(props: ConflictPanelFormProps) {
       styletypes={props.styletypes}
       fieldslist={props.fieldslist}
       conflictfields={props.conflictfields}
+      serverId={props.serverId}
       istoggleAll={props.istoggleAll}
       isSyncing={props.isSyncing}
       project_id={props.project_id}

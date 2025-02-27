@@ -473,6 +473,7 @@ export const TakePhoto: React.FC<
           project_id={projectId}
           open={open}
           setopen={() => setOpen(false)}
+          serverId={props.form.values['_server_id']}
           filedId={props.id}
           path={photoPath}
           isSyncing={props.issyncing}

@@ -25,10 +25,12 @@ export default function HeadingProjectGrid({
   projects,
   activatedColumns,
   notActivatedColumns,
+  serverId
 }: {
   projects: Project[];
   activatedColumns: GridColDef<Project>[];
   notActivatedColumns: GridColDef<Project>[];
+  serverId: string
 }) {
   // pull out active/inactive surveys
   const activatedProjects = projects.filter(({isActivated}) => isActivated);
@@ -40,7 +42,7 @@ export default function HeadingProjectGrid({
     row: {isActivated, project_id},
   }) => {
     if (isActivated)
-      history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
+      history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${serverId}/${project_id}`);
   };
 
   // we need a state variable to track pagination model since we want to use a

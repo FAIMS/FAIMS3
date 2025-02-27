@@ -146,13 +146,14 @@ interface DraftRecordEditProps {
   draft_id: string;
   project: Project;
   record_id: RecordID;
+  serverId: string;
   state?: any;
   location?: Location;
   onBack: () => void;
 }
 
 function DraftRecordEdit(props: DraftRecordEditProps) {
-  const {type_name, project, draft_id, record_id} = props;
+  const {type_name, project, draft_id, record_id, serverId} = props;
   const project_id = project.projectId;
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -192,6 +193,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
           uiSpecification: uiSpec,
           projectId: project_id,
           parent,
+          serverId: props.serverId
         });
         setParentLinks(newParent);
         setIs_link_ready(true);
@@ -237,6 +239,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               <CircularProgress size={24} />
             )}
             <RecordForm
+              serverId={project.serverId}
               project_id={project_id}
               record_id={record_id}
               type={type_name}
@@ -276,6 +279,7 @@ export default function RecordCreate() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  if (!serverId) return <></>;
   const project = useAppSelector(state =>
     projectId ? selectProjectById(state, projectId) : undefined
   );
@@ -365,6 +369,7 @@ export default function RecordCreate() {
         ) : (
           <DraftRecordEdit
             onBack={() => setOpenDialog(true)}
+            serverId={serverId}
             project={project}
             type_name={typeName!}
             draft_id={draftId}

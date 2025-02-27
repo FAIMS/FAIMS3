@@ -62,6 +62,7 @@ export default function AddRecordButtons({
     return (
       <Navigate
         to={ROUTES.getRecordRoute(
+          serverId,
           projectId || 'dummy',
           (selectedRecord.record_id || '').toString(),
           (selectedRecord.revision_id || '').toString()

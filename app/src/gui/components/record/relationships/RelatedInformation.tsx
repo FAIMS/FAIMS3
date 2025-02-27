@@ -38,7 +38,10 @@ import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
 import {ParentLinkProps, RecordLinkProps} from './types';
 import {useAppSelector} from '../../../../context/store';
-import {selectProjectById} from '../../../../context/slices/projectSlice';
+import {
+  selectProjectById,
+  serverById,
+} from '../../../../context/slices/projectSlice';
 
 /**
  * Generate an object containing information to be stored in
@@ -49,7 +52,8 @@ import {selectProjectById} from '../../../../context/slices/projectSlice';
  */
 export async function generateLocationState(
   parentLink: LinkedRelation,
-  project_id: string
+  project_id: string,
+  serverId: string
 ) {
   const parent_record = {
     project_id: project_id,
@@ -63,6 +67,7 @@ export async function generateLocationState(
       field_id: parentLink.field_id,
       parent: latest_record?.relationship?.parent,
       parent_link: ROUTES.getRecordRoute(
+        serverId,
         project_id,
         parentLink.record_id,
         revision_id
@@ -437,7 +442,8 @@ async function get_field_RelatedFields(
   form_type: string,
   hrid: string,
   relation_type: string,
-  current_revision_id: string
+  current_revision_id: string,
+  serverId: string
 ): Promise<Array<RecordLinkProps>> {
   for (const index in fields) {
     const field = fields[index]['field'];
@@ -484,6 +490,7 @@ async function get_field_RelatedFields(
             latest_record?.updated
           ),
           ROUTES.getRecordRoute(
+            serverId,
             child_record.project_id,
             child_record.record_id,
             revision_id
@@ -498,6 +505,7 @@ async function get_field_RelatedFields(
           field,
           field_name,
           ROUTES.getRecordRoute(
+            serverId,
             child_record?.project_id,
             record_id,
             current_revision_id
@@ -523,7 +531,8 @@ export async function addLinkedRecord(
   record_id: string,
   form_type: string,
   child_hrid: string,
-  current_revision_id: string
+  current_revision_id: string,
+  serverId: string
 ): Promise<Array<RecordLinkProps>> {
   let parent_links: Array<LinkedRelation> = [];
   //add linked from parent
@@ -592,6 +601,7 @@ export async function addLinkedRecord(
         latest_record?.deleted === true
           ? ''
           : ROUTES.getRecordRoute(
+              serverId,
               child_record.project_id,
               child_record.record_id,
               current_revision_id
@@ -608,6 +618,7 @@ export async function addLinkedRecord(
         latest_record?.deleted === true
           ? ''
           : ROUTES.getRecordRoute(
+              serverId,
               child_record.project_id,
               parent_link.record_id,
               revision_id
@@ -677,10 +688,12 @@ export async function getParentPersistenceData({
   uiSpecification,
   projectId,
   parent,
+  serverId,
 }: {
   uiSpecification: ProjectUIModel;
   projectId: string;
   parent: Relationship | null;
+  serverId: string;
 }): Promise<ParentLinkProps[]> {
   let parentRecords: ParentLinkProps[] = [];
   if (parent !== null && parent.parent !== undefined) {
@@ -734,6 +747,7 @@ export async function getParentPersistenceData({
           field_id: parent.parent.field_id,
           field_label: parent.parent.field_id,
           route: ROUTES.getRecordRoute(
+            serverId,
             projectId,
             parent.parent.record_id,
             revision_id
@@ -754,7 +768,8 @@ export async function getDetailRelatedInformation(
   project_id: string,
   parent: Relationship | null,
   record_id: string,
-  current_revision_id: string
+  current_revision_id: string,
+  serverId: string
 ): Promise<RecordLinkProps[]> {
   let record_to_field_links: RecordLinkProps[] = [];
   // get fields that are related field
@@ -778,7 +793,8 @@ export async function getDetailRelatedInformation(
       form_type,
       hrid,
       'Child',
-      current_revision_id
+      current_revision_id,
+      serverId
     );
     //get field linked records
     record_to_field_links = await get_field_RelatedFields(
@@ -789,7 +805,8 @@ export async function getDetailRelatedInformation(
       form_type,
       hrid,
       'Linked',
-      current_revision_id
+      current_revision_id,
+      serverId
     );
     // get parent linked information
     record_to_field_links = await addLinkedRecord(
@@ -800,7 +817,8 @@ export async function getDetailRelatedInformation(
       record_id,
       form_type,
       hrid,
-      current_revision_id
+      current_revision_id,
+      serverId
     );
   }
   //get information for parent

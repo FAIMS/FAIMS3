@@ -879,7 +879,7 @@ export function RecordsTable(props: RecordsTableProps) {
     rows,
     loading,
     viewsets,
-    project: {uiSpecification: uiSpec, projectId: project_id},
+    project: {uiSpecification: uiSpec, projectId: project_id, serverId},
   } = props;
   const theme = useTheme();
   const history = useNavigate();
@@ -907,6 +907,7 @@ export function RecordsTable(props: RecordsTableProps) {
     params => {
       history(
         ROUTES.getRecordRoute(
+          serverId,
           project_id || 'dummy',
           (params.row.record_id || '').toString(),
           (params.row.revision_id || '').toString()

@@ -340,6 +340,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         <TabPanel value={tabIndex} index={5} id={'map'}>
           {uiSpecification !== null && (
             <OverviewMap
+              serverId={project.serverId}
               records={records}
               project_id={project.projectId}
               uiSpec={uiSpecification}

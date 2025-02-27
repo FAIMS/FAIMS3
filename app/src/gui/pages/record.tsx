@@ -267,13 +267,15 @@ export default function Record() {
               projectId!,
               latest_record.relationship ?? null,
               recordId!,
-              updatedRevisionId!
+              updatedRevisionId!,
+              serverId
             );
             setRelatedRecords(newRelationship);
             const newParent = await getParentPersistenceData({
               uiSpecification: uiSpec,
               projectId: projectId!,
               parent: latest_record.relationship ?? null,
+              serverId: serverId,
             });
             setParentLinks(newParent);
             let newBreadcrumbs = [
@@ -370,6 +372,7 @@ export default function Record() {
               uiSpecification: uiSpec,
               projectId: projectId!,
               parent: result.new_relation,
+              serverId: serverId
             }).then(newParent => {
               setParentLinks(newParent);
             });
@@ -640,6 +643,7 @@ export default function Record() {
                             {(isalerting === false ||
                               draftId !== undefined) && (
                               <RecordData
+                                serverId={serverId}
                                 project_id={projectId!}
                                 record_id={recordId!}
                                 hrid={hrid}
@@ -670,6 +674,7 @@ export default function Record() {
                         </Box>
                       ) : (
                         <RecordData
+                          serverId={serverId}
                           project_id={projectId!}
                           record_id={recordId!}
                           hrid={hrid}
@@ -765,6 +770,7 @@ export default function Record() {
                   ui_specification={uiSpec}
                   type={type}
                   conflicts={conflicts}
+                  serverId={serverId}
                   setissavedconflict={setissavedconflict}
                   isSyncing={isSyncing.toString()}
                   not_xs={not_xs}

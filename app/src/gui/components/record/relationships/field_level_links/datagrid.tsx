@@ -132,6 +132,7 @@ export function DataGridNoLink(props: {
 
 interface DataGridLinksComponentProps {
   project_id: string;
+  serverId: string;
   links: Array<RecordMetadata> | null;
   record_id: RecordID;
   record_hrid: string;
@@ -200,6 +201,7 @@ export function DataGridFieldLinksComponent(
   function ChildRecordDisplay(props: {
     current_record_id: RecordID;
     child_record: RecordMetadata;
+    serverId: string;
   }) {
     const [displayFields, setDisplayFields] = useState<Array<string>>([]);
     useEffect(() => {
@@ -214,6 +216,7 @@ export function DataGridFieldLinksComponent(
     }, [props.child_record]);
 
     const route = getRecordRoute(
+        props.serverId,
       props.child_record.project_id,
       props.child_record.record_id,
       props.child_record.revision_id
@@ -285,6 +288,7 @@ export function DataGridFieldLinksComponent(
     renderCell: (params: GridCellParams) => (
       <ChildRecordDisplay
         current_record_id={props.record_id}
+        serverId={props.serverId}
         child_record={params.row}
       />
     ),
