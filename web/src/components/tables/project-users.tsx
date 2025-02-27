@@ -1,8 +1,8 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import {Trash} from 'lucide-react';
-import {Button} from '../ui/button';
+
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {RemoveUserFromSurveyDialog} from '../dialogs/remove-user-from-survey-dialog';
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -30,9 +30,7 @@ export const columns: ColumnDef<any>[] = [
     id: 'remove',
     cell: () => (
       <div className="flex justify-center items-center -my-2">
-        <Button variant="outline" size="icon">
-          <Trash className="h-4 w-4" />
-        </Button>
+        <RemoveUserFromSurveyDialog userId="" />
       </div>
     ),
     header: () => (

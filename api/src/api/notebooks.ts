@@ -510,3 +510,36 @@ if (DEVELOPER_MODE) {
     }
   );
 }
+
+// DELETE a user from a notebook
+api.delete(
+  '/:notebook_id/users/:user_id',
+  processRequest({
+    params: z.object({notebook_id: z.string(), user_id: z.string()}),
+  }),
+  requireAuthenticationAPI,
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
+    if (!userHasPermission(req.user, req.params.notebook_id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to remove this user from this notebook.'
+      );
+    }
+
+    const user = await getUserFromEmailOrUsername(req.params.user_id);
+
+    if (!user) {
+      throw new Exceptions.ItemNotFoundException(
+        'The username provided cannot be found in the user database.'
+      );
+    }
+
+    if (userIsClusterAdmin(req.user)) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to remove cluster admins.'
+      );
+    }
+
+    // await removeProjectRoleFromUser(user, req.params.notebook_id, role);
+    res.status(200).end();
+  }
+);
