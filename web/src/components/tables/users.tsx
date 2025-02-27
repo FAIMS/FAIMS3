@@ -1,5 +1,5 @@
 import {ColumnDef} from '@tanstack/react-table';
-import {KeyRound, Trash} from 'lucide-react';
+import {Ellipsis, KeyRound, PlusCircle, Trash} from 'lucide-react';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {Button} from '../ui/button';
 import Role from '../ui/role-card';
@@ -26,12 +26,14 @@ export const getColumns = ({
       accessorKey: 'roles',
       header: 'Roles',
       cell: ({row}: any) => (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 items-center">
           {row
             .getValue('roles')
             .filter((role: string) => !role.includes('||'))
             .map((role: string) => (
-              <Role key={role}>{role}</Role>
+              <Role key={role} onRemove={() => console.log('YAY')}>
+                {role}
+              </Role>
             ))}
         </div>
       ),
