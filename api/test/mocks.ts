@@ -1,9 +1,19 @@
 import PouchDB from 'pouchdb';
+// enable memory adapter for testing
 // eslint-disable-next-line n/no-unpublished-require
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+PouchDB.plugin(require('pouchdb-adapter-memory')); 
+
+// eslint-disable-next-line n/no-unpublished-require
+PouchDB.plugin(require('pouchdb-find'));
+
+// eslint-disable-next-line n/no-unpublished-require
+PouchDB.plugin(require('pouchdb-mapreduce'));
+
+
 import {ProjectID, DBCallbackObject, ProjectUIModel} from '@faims3/data-model';
 import {
   getAuthDB,
+  getMetadataDb,
   getProjectsDB,
   getTemplatesDb,
   getUsersDB,
@@ -30,16 +40,6 @@ const mockGetDataDB = async (project_id: ProjectID) => {
   return getDatabase(databaseName);
 };
 
-export const mockGetProjectDB = async (project_id: ProjectID) => {
-  return getDatabase('metadatadb-' + project_id);
-};
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mockGetTemplateDB = async (project_id: ProjectID) => {
-  // Right now the mock get template DB does not need the project ID as context
-  return getDatabase('templatedb');
-};
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockGetUiSpec = (projectId: ProjectID) => {
   // TODO make this make sense. Get nothing - might need to fix this
@@ -59,24 +59,11 @@ const clearDB = async (db: PouchDB.Database) => {
 };
 
 export const resetDatabases = async () => {
-  // Fetch and clear all mocked in memory DBs
-  const usersDB = getUsersDB();
-  if (usersDB) {
-    await clearDB(usersDB);
+  // Clear all DBs (including project, data, metadata)
+  for (const db of Object.values(databaseList)){
+    await clearDB(db as PouchDB.Database);
   }
-  const authDB = getAuthDB();
-  if (authDB) {
-    await clearDB(authDB);
-  }
-  const projectsDB = getProjectsDB();
-  if (projectsDB) {
-    await clearDB(projectsDB);
-  }
-  const templatesDB = getTemplatesDb();
-  if (templatesDB) {
-    await clearDB(templatesDB);
-  }
-  await initialiseDatabases({});
+  await initialiseDatabases({force: true});
 };
 
 export const cleanDataDBS = async () => {

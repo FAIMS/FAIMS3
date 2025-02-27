@@ -32,6 +32,7 @@ import {callbackObject, cleanDataDBS, resetDatabases} from './mocks';
 
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
+PouchDB.plugin(require('pouchdb-mapreduce'));
 
 // register our mock database clients with the module
 registerClient(callbackObject);

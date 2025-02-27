@@ -20,6 +20,7 @@
 import PouchDB from 'pouchdb';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
+PouchDB.plugin(require('pouchdb-mapreduce'));
 
 import {initialiseDatabases} from '../src/couchdb';
 import {createNotebook} from '../src/couchdb/notebooks';

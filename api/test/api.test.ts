@@ -62,6 +62,7 @@ import {
 } from './utils';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
+PouchDB.plugin(require('pouchdb-mapreduce'));
 
 export const NOTEBOOKS_API_BASE = '/api/notebooks';
 

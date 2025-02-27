@@ -47,7 +47,7 @@ export const restoreFromBackup = async (filename: string) => {
           // name will be eg. 'projects_default', where 'default' is the
           // conductor instance id
           // we'll put all projects into our projectsDB
-          db = await getProjectsDB();
+          db = getProjectsDB();
         } else if (dbName.startsWith('metadata')) {
           const projectName = dbName.split('||')[1];
           db = await getMetadataDb(projectName);

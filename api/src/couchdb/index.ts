@@ -38,6 +38,9 @@ import {
   initialiseUserDB,
 } from './initialise';
 
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
 const TEMPLATES_DB_NAME = 'templates';

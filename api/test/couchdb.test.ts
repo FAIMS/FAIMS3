@@ -21,7 +21,11 @@ import PouchDB from 'pouchdb';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(require('pouchdb-find'));
 
-import {getDirectoryDB, initialiseDatabases} from '../src/couchdb';
+import {
+  getDirectoryDB,
+  getMetadataDb,
+  initialiseDatabases,
+} from '../src/couchdb';
 import {
   createNotebook,
   getNotebookMetadata,
@@ -43,7 +47,7 @@ import {
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {EncodedProjectUIModel} from '@faims3/data-model';
 import {expect} from 'chai';
-import {mockGetProjectDB, resetDatabases} from './mocks';
+import {resetDatabases} from './mocks';
 import {fail} from 'assert';
 
 const uispec: EncodedProjectUIModel = {
@@ -153,14 +157,14 @@ describe('notebook api', () => {
 
       const notebooks = await getNotebooks(user);
       expect(notebooks.length).to.equal(1);
-      const db = await mockGetProjectDB(projectID);
+      const db = await getMetadataDb(projectID);
       if (db) {
         try {
           const autoInc = (await db.get('local-autoincrementers')) as any;
           expect(autoInc.references.length).to.equal(2);
           expect(autoInc.references[0].form_id).to.equal('FORM1SECTION1');
         } catch (err) {
-          fail('could not get autoincrementers');
+          fail('could not get autoincrementers' + err);
         }
       }
     }
@@ -319,24 +323,21 @@ describe('notebook api', () => {
 
       const notebooks = await getNotebooks(user);
       expect(notebooks.length).to.equal(1);
-      const db = await mockGetProjectDB(projectID);
-      if (db) {
-        const newUISpec = await getNotebookUISpec(projectID);
-        if (newUISpec) {
-          expect(newUISpec['fviews']['FORM1SECTION1']['label']).to.equal(
-            'Updated Label'
-          );
-        }
-        const newMetadata = await getNotebookMetadata(projectID);
-        if (newMetadata) {
-          expect(newMetadata['name']).to.equal('Updated Test Notebook');
-          expect(newMetadata['project_lead']).to.equal('Bob Bobalooba');
-        }
-        const metaDB = await mockGetProjectDB(projectID);
-        if (metaDB) {
-          const autoInc = (await metaDB.get('local-autoincrementers')) as any;
-          expect(autoInc.references.length).to.equal(3);
-        }
+      const newUISpec = await getNotebookUISpec(projectID);
+      if (newUISpec) {
+        expect(newUISpec['fviews']['FORM1SECTION1']['label']).to.equal(
+          'Updated Label'
+        );
+      }
+      const newMetadata = await getNotebookMetadata(projectID);
+      if (newMetadata) {
+        expect(newMetadata['name']).to.equal('Updated Test Notebook');
+        expect(newMetadata['project_lead']).to.equal('Bob Bobalooba');
+      }
+      const metaDB = await getMetadataDb(projectID);
+      if (metaDB) {
+        const autoInc = (await metaDB.get('local-autoincrementers')) as any;
+        expect(autoInc.references.length).to.equal(3);
       }
     }
   });

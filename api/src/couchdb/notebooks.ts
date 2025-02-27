@@ -978,7 +978,9 @@ export const getRolesForNotebook = async (
 export async function countRecordsInNotebook(
   project_id: ProjectID
 ): Promise<Number> {
+  console.log('COUNT RECORDS IN NOTEBOOK');
   const dataDB = await getDataDB(project_id);
+  console.warn('dataDB: ', dataDB);
   try {
     const res = await dataDB.query('index/recordCount');
     if (res.rows.length === 0) {
