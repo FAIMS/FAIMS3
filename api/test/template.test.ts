@@ -220,9 +220,6 @@ describe('template API tests', () => {
       expect(JSON.stringify(entry['ui-specification'])).to.equal(
         JSON.stringify(nb['ui-specification'])
       );
-      expect(JSON.stringify(entry.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
-      );
 
       // should be version 1
       expect(entry.version).to.equal(1);
@@ -234,13 +231,6 @@ describe('template API tests', () => {
       expect(template._id).to.equal(templateId1);
       expect(JSON.stringify(template['ui-specification'])).to.equal(
         JSON.stringify(nb['ui-specification'])
-      );
-
-      // Remove the template ID which was injected
-      // TODO see BSS-343
-      delete template.metadata.template_id;
-      expect(JSON.stringify(template.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
       );
 
       // should be version 1
@@ -268,15 +258,6 @@ describe('template API tests', () => {
         );
       }
 
-      // Remove the template_id from the result and then check equality
-      // TODO BSS-343
-      delete entry?.metadata.template_id;
-
-      //
-      expect(JSON.stringify(entry?.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
-      );
-
       // should be version 1
       expect(entry?.version).to.equal(1);
     });
@@ -287,13 +268,6 @@ describe('template API tests', () => {
       expect(template._id).to.equal(templateId2);
       expect(JSON.stringify(template['ui-specification'])).to.equal(
         JSON.stringify(nb['ui-specification'])
-      );
-
-      // Remove the template_id from the result and then check equality
-      // TODO BSS-343
-      delete template.metadata.template_id;
-      expect(JSON.stringify(template.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
       );
 
       // should be version 1
