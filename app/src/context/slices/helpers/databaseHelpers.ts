@@ -1,9 +1,5 @@
+import {EncodedProjectUIModel, ProjectUIModel} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
-import {
-  EncodedProjectUIModel,
-  ProjectUIModel,
-  UI_SPECIFICATION_NAME,
-} from '@faims3/data-model';
 import {
   POUCH_BATCH_SIZE,
   POUCH_BATCHES_LIMIT,
@@ -188,58 +184,6 @@ export function createPouchDbSync<Content extends {}>({
         dbName: localDb.name,
       });
     });
-}
-
-/**
- * Fetches and optionally compiles the UI specification.
- *
- * This is done by doing a one time fetch from the metadata couch DB.
- *
- * Needs a token for auth.
- *
- * @param dbName the name of the metadata db
- * @param dbUrl the base url of the metadata db
- * @param token the jwt token to use
- * @param compile compile?
- *
- * @returns The UI spec
- */
-export async function fetchUiSpecFromMetadataDb({
-  dbName,
-  dbUrl,
-  token,
-  compile = true,
-}: {
-  dbUrl: string;
-  dbName: string;
-  token: string;
-  compile: boolean;
-}): Promise<ProjectUIModel> {
-  // TODO optimise this
-  const {db} = createRemotePouchDbFromConnectionInfo<EncodedProjectUIModel>({
-    jwtToken: token,
-    couchUrl: dbUrl,
-    databaseName: dbName,
-  });
-
-  try {
-    const encodedUiInfo = await db.get(UI_SPECIFICATION_NAME);
-    const uiSpec = {
-      _id: encodedUiInfo._id,
-      _rev: encodedUiInfo._rev,
-      fields: encodedUiInfo.fields,
-      views: encodedUiInfo.fviews,
-      viewsets: encodedUiInfo.viewsets,
-      visible_types: encodedUiInfo.visible_types,
-    };
-    if (compile) {
-      compileUiSpecConditionals(uiSpec);
-    }
-    return uiSpec;
-  } catch (error) {
-    console.error('Error querying CouchDB:', error);
-    throw error;
-  }
 }
 
 /**
