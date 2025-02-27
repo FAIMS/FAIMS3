@@ -216,7 +216,7 @@ export async function fetchUiSpecFromMetadataDb({
   compile: boolean;
 }): Promise<ProjectUIModel> {
   // TODO optimise this
-  const db = createRemotePouchDbFromConnectionInfo<EncodedProjectUIModel>({
+  const {db} = createRemotePouchDbFromConnectionInfo<EncodedProjectUIModel>({
     jwtToken: token,
     couchUrl: dbUrl,
     databaseName: dbName,

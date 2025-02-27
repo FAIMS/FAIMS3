@@ -26,7 +26,6 @@ import {
   notebookRecordIterator,
   ProjectID,
   ProjectObject,
-  resolve_project_id,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import PouchDB from 'pouchdb';
@@ -98,9 +97,6 @@ export const getNotebooks = async (
   const output: APINotebookList[] = [];
   // DB records are project objects
   const projects: ProjectObject[] = [];
-  // in the frontend, the listing_id names the backend instance,
-  // so far it's either 'default' or 'locallycreatedproject'
-  const listing_id = 'default';
   const projects_db = getProjectsDB();
   if (projects_db) {
     // We want to type hint that this will include all values
@@ -114,20 +110,17 @@ export const getNotebooks = async (
     });
 
     for (const project of projects) {
-      const project_id = project._id;
-      const full_project_id = resolve_project_id(listing_id, project_id);
-      const projectMeta = await getNotebookMetadata(project_id);
-      if (userHasPermission(user, project_id, 'read')) {
+      const projectId = project._id;
+      const projectMeta = await getNotebookMetadata(projectId);
+      if (userHasPermission(user, projectId, 'read')) {
         output.push({
           name: project.name,
-          is_admin: userHasPermission(user, project_id, 'modify'),
+          is_admin: userHasPermission(user, projectId, 'modify'),
           last_updated: project.last_updated,
           created: project.created,
           template_id: project.template_id,
           status: project.status,
-          project_id: full_project_id,
-          listing_id: listing_id,
-          non_unique_project_id: project_id,
+          project_id: projectId,
           metadata: projectMeta,
         });
       }

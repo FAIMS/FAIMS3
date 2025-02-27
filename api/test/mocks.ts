@@ -1,7 +1,7 @@
 import PouchDB from 'pouchdb';
 // eslint-disable-next-line n/no-unpublished-require
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-import {ProjectID, DBCallbackObject} from '@faims3/data-model';
+import {ProjectID, DBCallbackObject, ProjectUIModel} from '@faims3/data-model';
 import {
   getAuthDB,
   getProjectsDB,
@@ -41,12 +41,12 @@ const mockGetTemplateDB = async (project_id: ProjectID) => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mockGetUiSpec = async (project_id: ProjectID) => {
+const mockGetUiSpec = (projectId: ProjectID) => {
   // TODO make this make sense. Get nothing - might need to fix this
-  return {};
+  return {} as unknown as ProjectUIModel;
 };
 
-const mockShouldDisplayRecord = () => {
+const mockShouldDisplayRecord = async (params: any) => {
   return true;
 };
 

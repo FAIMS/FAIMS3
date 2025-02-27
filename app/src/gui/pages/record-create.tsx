@@ -201,7 +201,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
     })();
   }, [project_id, record_id, uiSpec]);
 
-
   if (!uiSpec) return <CircularProgress size={12} thickness={4} />;
 
   return (
@@ -261,18 +260,25 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
 }
 
 export default function RecordCreate() {
-  const {project_id, type_name, draft_id, record_id} = useParams<{
-    project_id: ProjectID;
-    type_name: string;
-    draft_id?: string;
-    record_id?: string;
+  const {
+    serverId: serverId,
+    projectId: projectId,
+    typeName: typeName,
+    draftId: draftId,
+    recordId: recordId,
+  } = useParams<{
+    serverId: string;
+    projectId: ProjectID;
+    typeName: string;
+    draftId?: string;
+    recordId?: string;
   }>();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const projectId = location.pathname.split('/')[2];
-
-  const project = useAppSelector(state => selectProjectById(state, projectId));
+  const project = useAppSelector(state =>
+    projectId ? selectProjectById(state, projectId) : undefined
+  );
   if (!project) return <></>;
 
   const [openDialog, setOpenDialog] = useState(false);
@@ -290,7 +296,7 @@ export default function RecordCreate() {
   };
 
   let draft_record_id = generateFAIMSDataID();
-  if (record_id !== undefined) draft_record_id = record_id;
+  if (recordId !== undefined) draft_record_id = recordId;
   if (location.state && location.state.child_record_id !== undefined)
     draft_record_id = location.state.child_record_id; //pass record_id from parent
 
@@ -300,14 +306,14 @@ export default function RecordCreate() {
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
-      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-      title: project !== null ? project.metadata.name : project_id!,
+      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId,
+      title: project !== null ? project.metadata.name : projectId!,
     },
     {title: 'Draft'},
   ];
 
   // add parent link back for the parent or linked record
-  if (location.state && location.state.parent_record_id !== record_id) {
+  if (location.state && location.state.parent_record_id !== recordId) {
     showBreadcrumbs = true;
     const type =
       location.state.type === 'Child'
@@ -348,10 +354,10 @@ export default function RecordCreate() {
           // only show breadcrumbs if we have parent record
         }
         {showBreadcrumbs && <Breadcrumbs data={breadcrumbs} />}
-        {draft_id === undefined || record_id === undefined ? (
+        {draftId === undefined || recordId === undefined ? (
           <DraftCreateAction
-            project_id={project_id!}
-            type_name={type_name!}
+            project_id={projectId!}
+            type_name={typeName!}
             state={location.state}
             record_id={draft_record_id}
             location={location}
@@ -360,9 +366,9 @@ export default function RecordCreate() {
           <DraftRecordEdit
             onBack={() => setOpenDialog(true)}
             project={project}
-            type_name={type_name!}
-            draft_id={draft_id}
-            record_id={record_id}
+            type_name={typeName!}
+            draft_id={draftId}
+            record_id={recordId}
             state={location.state}
             location={location}
           />

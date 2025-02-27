@@ -40,12 +40,13 @@ import {selectAllProjects} from '../../context/slices/projectSlice';
 
 export default function Notebook() {
   const theme = useTheme();
-  const {project_id} = useParams<{
-    project_id: string;
+  const {serverId, projectId} = useParams<{
+    projectId: string;
+    serverId: string
   }>();
   const history = useNavigate();
   const project = useAppSelector(selectAllProjects).find(
-    p => p.projectId === project_id
+    p => p.projectId === projectId
   );
   const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));
 

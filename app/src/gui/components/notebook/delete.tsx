@@ -45,6 +45,7 @@ import {theme} from '../../themes';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
+  serverId: string;
   record_id: RecordID;
   revision_id: RevisionID | null;
   draft_id: string | null;
@@ -77,7 +78,7 @@ async function deleteFromDB(
 
 export default function RecordDelete(props: RecordDeleteProps) {
   //console.debug('Delete props', props);
-  const {project_id, record_id, revision_id, draft_id} = props;
+  const {project_id, serverId, record_id, revision_id, draft_id} = props;
   const [open, setOpen] = React.useState(false);
   const history = useNavigate();
   const dispatch = useAppDispatch();
@@ -111,7 +112,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
           })
         );
         handleClose();
-        history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id);
+        history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + project_id);
       })
       .catch(err => {
         console.log('Failed to delete', record_id, draft_id, err);

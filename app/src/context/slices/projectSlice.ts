@@ -415,7 +415,7 @@ const projectsSlice = createSlice({
         createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
           connectionConfiguration
         );
-      databaseService.registerRemoteDatabase(remoteDbId, localDb);
+      databaseService.registerRemoteDatabase(remoteDbId, remoteDb);
 
       // creates the sync object (PouchDB.Replication.Sync)
       const sync = createPouchDbSync({
@@ -509,18 +509,25 @@ const projectsSlice = createSlice({
         );
       }
 
+      // fetch the existing local DB
+      const localDb = databaseService.getLocalDatabase(
+        project.database.localDb
+      );
+      if (!localDb) {
+        throw new Error(
+          `The local DB with ID ${project.database.localDb} does not exist, so cannot update connection.`
+        );
+      }
+
       // cleanup old sync
-      const oldSync = project.database.remote.sync;
+      const oldSyncId = project.database.remote.sync;
 
       console.log('Closing existing sync connection');
-      // Remove all listeners
-      oldSync.removeAllListeners();
-      // Cancel the connection
-      oldSync.cancel();
+      databaseService.closeAndRemoveSync(oldSyncId);
 
       // cleanup old remote DB
-      const oldRemote = project.database.remote.remoteDb;
-      oldRemote.close();
+      const oldRemoteId = project.database.remote.remoteDb;
+      databaseService.closeAndRemoveRemoteDatabase(oldRemoteId);
 
       // setup updated connection configuration
       const connectionConfiguration: DatabaseConnectionConfig = {
@@ -535,18 +542,27 @@ const projectsSlice = createSlice({
       };
 
       // creates the remote database (pouch remote)
-      const remoteDb = createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
-        connectionConfiguration
-      );
+      const {db: remoteDb, id: remoteDbId} =
+        createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
+          connectionConfiguration
+        );
+      databaseService.registerRemoteDatabase(remoteDbId, remoteDb);
 
       // creates the sync object (PouchDB.Replication.Sync)
       const sync = createPouchDbSync({
         // reuse existing attachment setting
         attachmentDownload: project.database.isSyncingAttachments,
         // local is fine to continue using!
-        localDb: project.database.localDb,
+        localDb: localDb,
         remoteDb,
       });
+
+      // Register the sync
+      const syncId = buildSyncId({
+        localId: project.database.localDb,
+        remoteId: remoteDbId,
+      });
+      databaseService.registerSync(syncId, sync);
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
@@ -572,9 +588,9 @@ const projectsSlice = createSlice({
             // new connection configuration
             connectionConfiguration,
             // new remote database
-            remoteDb,
+            remoteDb: remoteDbId,
             // new sync
-            sync,
+            sync: syncId,
           },
         },
       };
@@ -625,24 +641,47 @@ const projectsSlice = createSlice({
         );
       }
 
-      // cleanup old sync
-      const oldSync = project.database.remote.sync;
+      // fetch the existing local DB
+      const localDb = databaseService.getLocalDatabase(
+        project.database.localDb
+      );
+      if (!localDb) {
+        throw new Error(
+          `The local DB with ID ${project.database.localDb} does not exist, so cannot update connection.`
+        );
+      }
 
+      // fetch the existing remote DB
+      const remoteDb = databaseService.getLocalDatabase(
+        project.database.remote.remoteDb
+      );
+      if (!remoteDb) {
+        throw new Error(
+          `The remote DB with ID ${project.database.remote.remoteDb} does not exist, so cannot update connection.`
+        );
+      }
+
+      // cleanup old sync
       console.log('Closing existing sync connection');
-      // Remove all listeners
-      oldSync.removeAllListeners();
-      // Cancel the connection
-      oldSync.cancel();
+      const oldSyncId = project.database.remote.sync;
+      databaseService.closeAndRemoveSync(oldSyncId);
+      const newSyncId = buildSyncId({
+        localId: project.database.localDb,
+        remoteId: project.database.remote.remoteDb,
+      });
 
       // creates the sync object (PouchDB.Replication.Sync)
       const sync = createPouchDbSync({
         // STOP syncing attachments
         attachmentDownload: false,
         // local is fine to continue using!
-        localDb: project.database.localDb,
+        localDb,
         // reuse existing remote db
-        remoteDb: project.database.remote.remoteDb,
+        remoteDb,
       });
+
+      // Register the sync
+      databaseService.registerSync(newSyncId, sync);
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
@@ -670,7 +709,7 @@ const projectsSlice = createSlice({
               project.database.remote.connectionConfiguration,
             remoteDb: project.database.remote.remoteDb,
             // new sync
-            sync,
+            sync: newSyncId,
           },
         },
       };
@@ -714,23 +753,45 @@ const projectsSlice = createSlice({
         );
       }
 
+      // fetch the existing local DB
+      const localDb = databaseService.getLocalDatabase(
+        project.database.localDb
+      );
+      if (!localDb) {
+        throw new Error(
+          `The local DB with ID ${project.database.localDb} does not exist, so cannot update connection.`
+        );
+      }
+
+      // fetch the existing remote DB
+      const remoteDb = databaseService.getLocalDatabase(
+        project.database.remote.remoteDb
+      );
+      if (!remoteDb) {
+        throw new Error(
+          `The remote DB with ID ${project.database.remote.remoteDb} does not exist, so cannot update connection.`
+        );
+      }
+
       // cleanup old sync
-      const oldSync = project.database.remote.sync;
+      const oldSyncId = project.database.remote.sync;
 
       console.log('Closing existing sync connection');
-      // Remove all listeners
-      oldSync.removeAllListeners();
-      // Cancel the connection
-      oldSync.cancel();
+      databaseService.closeAndRemoveSync(oldSyncId);
+
+      const newSyncId = buildSyncId({
+        localId: project.database.localDb,
+        remoteId: project.database.remote.remoteDb,
+      });
 
       // creates the sync object (PouchDB.Replication.Sync)
       const sync = createPouchDbSync({
         // START syncing attachments
         attachmentDownload: true,
         // local is fine to continue using!
-        localDb: project.database.localDb,
+        localDb,
         // reuse existing remote db
-        remoteDb: project.database.remote.remoteDb,
+        remoteDb,
       });
 
       // updates the state with all of this new information
@@ -759,7 +820,7 @@ const projectsSlice = createSlice({
               project.database.remote.connectionConfiguration,
             remoteDb: project.database.remote.remoteDb,
             // new sync
-            sync,
+            sync: newSyncId,
           },
         },
       };
@@ -804,7 +865,14 @@ export function getAllDataDbs(
   for (const server of Object.values(state.projects.servers)) {
     for (const project of Object.values(server.projects)) {
       if (project.isActivated && project.database?.localDb) {
-        databases.push(project.database.localDb);
+        const db = databaseService.getLocalDatabase(project.database.localDb);
+        if (db) {
+          databases.push(db);
+        } else {
+          console.warn(
+            `Project store includes activated project with non registered local database. Project ID ${project.projectId}`
+          );
+        }
       }
     }
   }

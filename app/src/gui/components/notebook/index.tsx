@@ -314,6 +314,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         <TabPanel value={tabIndex} index={2} id={'record-drafts'}>
           <DraftsTable
             project_id={project.projectId}
+            serverId={project.serverId}
             maxRows={25}
             rows={drafts.data ?? []}
             loading={drafts.isLoading}

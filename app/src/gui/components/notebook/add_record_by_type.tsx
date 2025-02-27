@@ -22,7 +22,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {projectId, uiSpecification, metadata},
+  project: {projectId, serverId, uiSpecification, metadata},
   recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
@@ -101,6 +101,8 @@ export default function AddRecordButtons({
               key="newRecord"
               to={
                 ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                serverId +
+                '/' +
                 projectId +
                 ROUTES.RECORD_CREATE +
                 visible_types
@@ -116,6 +118,8 @@ export default function AddRecordButtons({
                     component={RouterLink}
                     to={
                       ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      serverId +
+                      '/' +
                       projectId +
                       ROUTES.RECORD_CREATE +
                       viewset_name

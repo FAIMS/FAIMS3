@@ -30,16 +30,29 @@ import {
 
 import {app} from './routes';
 
-import {registerClient} from '@faims3/data-model';
-import {getDataDb } from './couchdb';
+import {
+  ProjectUIModel,
+  RecordMetadata,
+  registerClient,
+  TokenContents,
+} from '@faims3/data-model';
+import {getDataDb} from './couchdb';
 import {validateDatabases} from './couchdb/notebooks';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
   getDataDB: getDataDb,
   // TODO do we need this?
-  getUiSpec: () => {},
-  shouldDisplayRecord: () => true,
+  // Do we actually use this?
+  getUiSpec: (projectId: string) => {
+    console.error('Mock get UI Spec being used');
+    return {} as unknown as ProjectUIModel;
+  },
+  shouldDisplayRecord: async (params: {
+    contents: TokenContents;
+    projectId: string;
+    recordMetadata: RecordMetadata;
+  }) => true,
 });
 
 process.on('unhandledRejection', error => {

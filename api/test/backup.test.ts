@@ -53,7 +53,7 @@ describe('Backup and restore', () => {
 
       // test record iterator while we're here
       const iterator = await notebookRecordIterator(
-        notebooks[0].non_unique_project_id,
+        notebooks[0].project_id,
         'FORM2'
       );
       let count = 0;
@@ -68,7 +68,7 @@ describe('Backup and restore', () => {
       const tokenContents = generateTokenContentsForUser(user);
       const records = await getRecordsWithRegex(
         tokenContents,
-        notebooks[0].non_unique_project_id,
+        notebooks[0].project_id,
         '.*',
         true
       );
