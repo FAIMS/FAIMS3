@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
 import {useAuth} from '@/context/auth-provider';
-import {archiveTemplate} from '@/hooks/put-hooks';
 import {Route} from '@/routes/templates/$templateId';
 import {useQueryClient} from '@tanstack/react-query';
 import {useState} from 'react';
@@ -26,7 +25,16 @@ export const ArchiveTemplateDialog = () => {
   const [open, setOpen] = useState(false);
 
   const onClick = async () => {
-    const response = await archiveTemplate(user, templateId);
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/templates/${templateId}/archive`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user?.token}`,
+        },
+      }
+    );
 
     if (!response.ok) return;
 
