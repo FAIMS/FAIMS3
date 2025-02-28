@@ -18,6 +18,11 @@
  *    Core functions to access the various databases used by the application
  */
 
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-security-helper'));
+
 import {
   AuthDatabase,
   ProjectDataObject,
@@ -26,7 +31,6 @@ import {
   ProjectObject,
   TemplateDetails,
 } from '@faims3/data-model';
-import PouchDB from 'pouchdb';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {COUCHDB_INTERNAL_URL, LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
@@ -37,9 +41,6 @@ import {
   initialiseTemplatesDb,
   initialiseUserDB,
 } from './initialise';
-
-import PouchDBFind from 'pouchdb-find';
-PouchDB.plugin(PouchDBFind);
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';

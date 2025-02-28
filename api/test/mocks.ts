@@ -1,19 +1,11 @@
 import PouchDB from 'pouchdb';
-// enable memory adapter for testing
-// eslint-disable-next-line n/no-unpublished-require
-PouchDB.plugin(require('pouchdb-adapter-memory')); 
-
-// eslint-disable-next-line n/no-unpublished-require
-PouchDB.plugin(require('pouchdb-find'));
-
-// eslint-disable-next-line n/no-unpublished-require
-PouchDB.plugin(require('pouchdb-mapreduce'));
-
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
 
 import {ProjectID, DBCallbackObject, ProjectUIModel} from '@faims3/data-model';
 import {
   getAuthDB,
-  getMetadataDb,
   getProjectsDB,
   getTemplatesDb,
   getUsersDB,
@@ -42,6 +34,7 @@ const mockGetDataDB = async (project_id: ProjectID) => {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockGetUiSpec = (projectId: ProjectID) => {
+    // The UI spec is part of the metadata DB
   // TODO make this make sense. Get nothing - might need to fix this
   return {} as unknown as ProjectUIModel;
 };
@@ -59,10 +52,30 @@ const clearDB = async (db: PouchDB.Database) => {
 };
 
 export const resetDatabases = async () => {
-  // Clear all DBs (including project, data, metadata)
-  for (const db of Object.values(databaseList)){
-    await clearDB(db as PouchDB.Database);
+  // Fetch and clear all mocked in memory DBs
+  const usersDB = getUsersDB();
+  if (usersDB) {
+    await clearDB(usersDB);
   }
+  const authDB = getAuthDB();
+  if (authDB) {
+    await clearDB(authDB);
+  }
+  const projectsDB = getProjectsDB();
+  if (projectsDB) {
+    await clearDB(projectsDB);
+  }
+  const templatesDB = getTemplatesDb();
+  if (templatesDB) {
+    await clearDB(templatesDB);
+  }
+  for (const dbKey of Object.keys(databaseList)) {
+    const toClear = ['metadata', 'projects'];
+    if (toClear.some(prefix => dbKey.startsWith(prefix))) {
+      await clearDB(databaseList[dbKey]);
+    }
+  }
+  // Clear all metadata DBs
   await initialiseDatabases({force: true});
 };
 
@@ -84,6 +97,5 @@ export const cleanDataDBS = async () => {
 // register our mock database clients with the module
 export const callbackObject: DBCallbackObject = {
   getDataDB: mockGetDataDB,
-  getUiSpec: mockGetUiSpec,
   shouldDisplayRecord: mockShouldDisplayRecord,
 };

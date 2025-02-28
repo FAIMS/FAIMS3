@@ -18,6 +18,11 @@
  *   This module provides functions to access notebooks from the database
  */
 
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-security-helper'));
+
 import {
   addDesignDocsForNotebook,
   APINotebookList,
@@ -28,7 +33,6 @@ import {
   ProjectObject,
 } from '@faims3/data-model';
 import archiver from 'archiver';
-import PouchDB from 'pouchdb';
 import {Stream} from 'stream';
 import {getMetadataDb, getProjectsDB, verifyCouchDBConnection} from '.';
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
@@ -50,7 +54,6 @@ import {Stringifier, stringify} from 'csv-stringify';
 import securityPlugin from 'pouchdb-security-helper';
 import {slugify} from '../utils';
 import {userHasPermission} from './users';
-PouchDB.plugin(securityPlugin);
 
 /**
  * getProjects - get the internal project documents that reference
@@ -514,7 +517,7 @@ export const getNotebookMetadata = async (
  */
 export const getNotebookUISpec = async (
   project_id: string
-): Promise<ProjectMetadata | null> => {
+): Promise<EncodedProjectUIModel | null> => {
   try {
     // get the metadata from the db
     const projectDB = await getMetadataDb(project_id);
@@ -530,6 +533,22 @@ export const getNotebookUISpec = async (
     console.log('unknown project', project_id);
   }
   return null;
+};
+
+// Ridiculous!
+export const getProjectUIModel = async (projectId: string) => {
+  const rawUiSpec = await getNotebookUISpec(projectId);
+  if (!rawUiSpec) {
+    throw Error('Could not find UI spec for project with ID ' + projectId);
+  }
+  return {
+    _id: rawUiSpec._id,
+    _rev: rawUiSpec._rev,
+    fields: rawUiSpec.fields,
+    views: rawUiSpec.fviews,
+    viewsets: rawUiSpec.viewsets,
+    visible_types: rawUiSpec.visible_types,
+  };
 };
 
 /**
@@ -728,7 +747,13 @@ export const streamNotebookRecordsAsCSV = async (
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
-  const iterator = await notebookRecordIterator(project_id, viewID);
+  const uiSpec = await getProjectUIModel(project_id);
+  const iterator = await notebookRecordIterator(
+    project_id,
+    viewID,
+    undefined,
+    uiSpec
+  );
   const fields = await getNotebookFieldTypes(project_id, viewID);
 
   let stringifier: Stringifier | null = null;
@@ -814,7 +839,13 @@ export const streamNotebookFilesAsZip = async (
 ) => {
   let allFilesAdded = false;
   let doneFinalize = false;
-  const iterator = await notebookRecordIterator(project_id, viewID);
+  const uiSpec = await getProjectUIModel(project_id);
+  const iterator = await notebookRecordIterator(
+    project_id,
+    viewID,
+    undefined,
+    uiSpec
+  );
   const archive = archiver('zip', {zlib: {level: 9}});
   // good practice to catch warnings (ie stat failures and other non-blocking errors)
   archive.on('warning', err => {
@@ -978,10 +1009,12 @@ export const getRolesForNotebook = async (
 export async function countRecordsInNotebook(
   project_id: ProjectID
 ): Promise<Number> {
-  console.log('COUNT RECORDS IN NOTEBOOK');
   const dataDB = await getDataDB(project_id);
-  console.warn('dataDB: ', dataDB);
   try {
+    console.warn('DATA DB PRIOR TO QUERY: ', dataDB);
+    console.warn(
+      'DATA DB PRIOR TO QUERY (JSON): ' + JSON.stringify(dataDB, undefined, 2)
+    );
     const res = await dataDB.query('index/recordCount');
     if (res.rows.length === 0) {
       return 0;

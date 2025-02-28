@@ -1,11 +1,10 @@
 import PouchDB from 'pouchdb';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+PouchDB.plugin(require('pouchdb-find'));
+
 import {DBCallbackObject, generateFAIMSDataID, upsertFAIMSData} from '../src';
 import {addDesignDocsForNotebook} from '../src/data_storage/databases';
 import {ProjectID, Record} from '../src/types';
-import PouchDBFind from 'pouchdb-find';
-
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(PouchDBFind);
 
 const databaseList: any = {};
 
@@ -22,10 +21,6 @@ const mockGetDataDB = async (project_id: ProjectID) => {
   const db = await getDatabase(databaseName);
   await addDesignDocsForNotebook(db);
   return db;
-};
-
-const mockGetUiSpec = async (project_id: ProjectID) => {
-  return {};
 };
 
 const mockGetProjectDB = async (project_id: ProjectID) => {
@@ -55,7 +50,6 @@ export const cleanDataDBS = async () => {
 // register our mock database clients with the module
 export const callbackObject: DBCallbackObject = {
   getDataDB: mockGetDataDB,
-  getUiSpec: mockGetUiSpec,
   shouldDisplayRecord: mockShouldDisplayRecord,
 };
 

@@ -21,17 +21,16 @@
 
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
   CONDUCTOR_INTERNAL_PORT,
   CONDUCTOR_PUBLIC_URL,
   COUCHDB_INTERNAL_URL,
 } from './buildconfig';
-
 import {app} from './routes';
-
 import {
-  ProjectUIModel,
   RecordMetadata,
   registerClient,
   TokenContents,
@@ -42,12 +41,6 @@ import {validateDatabases} from './couchdb/notebooks';
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
   getDataDB: getDataDb,
-  // TODO do we need this?
-  // Do we actually use this?
-  getUiSpec: (projectId: string) => {
-    console.error('Mock get UI Spec being used');
-    return {} as unknown as ProjectUIModel;
-  },
   shouldDisplayRecord: async (params: {
     contents: TokenContents;
     projectId: string;
@@ -60,8 +53,6 @@ process.on('unhandledRejection', error => {
   console.error(error); // This prints error with stack included (as for normal errors)
   // don't re-throw the error since we don't want to crash the server
 });
-
-PouchDB.plugin(PouchDBFind);
 
 // on startup, run a validation of the databases that can perform
 // any required migrations

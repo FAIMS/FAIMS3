@@ -66,7 +66,6 @@ import {
   file_data_to_attachments,
   files_to_attachments,
 } from './data_storage/attachments';
-import {record} from 'zod';
 export * from './auth';
 export * from './data_storage/authDB';
 export * from './utils';
@@ -113,7 +112,6 @@ export * from './api';
 
 export type DBCallbackObject = {
   getDataDB: (projectId: string) => any;
-  getUiSpec: (projectId: string) => ProjectUIModel;
   shouldDisplayRecord: (params: {
     contents: TokenContents;
     projectId: string;
@@ -132,15 +130,6 @@ export const getDataDB = (project_id: ProjectID) => {
     return moduleCallback.getDataDB(project_id);
   } else {
     logError('No callback registered to get data database');
-    return undefined;
-  }
-};
-
-export const getUiSpec = (projectId: ProjectID) => {
-  if (moduleCallback) {
-    return moduleCallback.getUiSpec(projectId);
-  } else {
-    logError('No callback registered to get ui spec');
     return undefined;
   }
 };

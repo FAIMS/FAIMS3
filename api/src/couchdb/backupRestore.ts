@@ -19,10 +19,8 @@
  */
 import {open} from 'node:fs/promises';
 import {getMetadataDb, getProjectsDB} from '.';
-import {
-  addDesignDocsForNotebook,
-  getDataDB,
-} from '@faims3/data-model';
+import {addDesignDocsForNotebook, getDataDB} from '@faims3/data-model';
+import {safeWriteDocument} from './helpers';
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file
@@ -71,13 +69,16 @@ export const restoreFromBackup = async (filename: string) => {
         // careful and check whether this _rev is present in the db already
         delete doc.doc._rev;
         try {
-          await db.put(doc.doc);
+          // Safe write
+          await safeWriteDocument(db, doc.doc, true);
         } catch (error) {
-          console.log('Error restoring document', doc.id, 'error: ', error);
+          console.log('Error restoring document', doc.id);
         }
       }
-    } catch {
-      console.error(`error parsing JSON on line ${line_number}`);
+    } catch (e: any) {
+      console.error(
+        `error parsing JSON on line ${line_number} ${JSON.stringify(e, undefined, 2)} ${e.stack}`
+      );
       return;
     }
     line_number += 1;

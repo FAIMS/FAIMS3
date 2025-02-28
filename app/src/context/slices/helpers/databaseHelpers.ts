@@ -223,9 +223,6 @@ export const fetchProjectMetadataAndSpec = async ({
   if (compile) {
     compileUiSpecConditionals(uiSpec);
   }
-  if (compile) {
-    compileUiSpecConditionals(uiSpec);
-  }
   return {metadata, uiSpec};
 };
 
