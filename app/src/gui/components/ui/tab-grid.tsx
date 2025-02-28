@@ -60,7 +60,9 @@ export default function TabProjectGrid({
     row: Project;
   }) => {
     if (row.isActivated)
-      history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${row.serverId}/${row.projectId}`);
+      history(
+        `${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${row.serverId}/${row.projectId}`
+      );
   };
   return (
     <TabContext value={tabID}>

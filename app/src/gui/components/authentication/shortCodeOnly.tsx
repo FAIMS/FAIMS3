@@ -110,9 +110,7 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
     const cleanInput = input.toUpperCase().trim();
 
     // Check if input starts with any known prefix (including potential dash)
-    for (const prefix of props.servers.map(
-      server => server.shortCodePrefix
-    )) {
+    for (const prefix of props.servers.map(server => server.shortCodePrefix)) {
       const prefixPattern = new RegExp(`^${prefix}-?`);
       if (prefixPattern.test(cleanInput)) {
         // If found, update selected prefix and remove it from input

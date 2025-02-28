@@ -35,7 +35,6 @@ import {generateTokenContentsForUser} from '../src/utils';
 import {callbackObject, cleanDataDBS, resetDatabases} from './mocks';
 import {initialiseDatabases} from '../src/couchdb';
 
-
 // register our mock database clients with the module
 registerClient(callbackObject);
 

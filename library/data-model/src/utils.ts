@@ -1,11 +1,5 @@
-import {UI_SPECIFICATION_NAME} from '.';
 import {HRID_STRING} from './datamodel/core';
-import {
-  EncodedProjectUIModel,
-  ProjectID,
-  ProjectUIModel,
-  ProjectUIViewset,
-} from './types';
+import {ProjectUIModel, ProjectUIViewset} from './types';
 
 /**
  * Retrieves a viewset from the UI specification by its ID

@@ -18,9 +18,6 @@
  *   Handle storage of draft records
  */
 
-import PouchDB from 'pouchdb-browser';
-import {v4 as uuidv4} from 'uuid';
-
 import {
   DraftMetadataList,
   EncodedDraft,
@@ -35,12 +32,12 @@ import {
   getHridFieldNameForViewset,
   getIdsByFieldName,
 } from '@faims3/data-model';
-import {logError} from '../logging';
-import {LOCAL_POUCH_OPTIONS} from '../context/slices/helpers/databaseHelpers';
+import {v4 as uuidv4} from 'uuid';
+import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
+import {databaseService} from '../context/slices/helpers/databaseService';
 import {selectProjectById} from '../context/slices/projectSlice';
 import {store} from '../context/store';
-import {databaseService} from '../context/slices/helpers/databaseService';
-import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
+import {logError} from '../logging';
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
 

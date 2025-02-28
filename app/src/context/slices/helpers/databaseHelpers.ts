@@ -30,7 +30,7 @@ export interface LocalPouchOptions {
 }
 
 // Default local options is none
-export let LOCAL_POUCH_OPTIONS: LocalPouchOptions = {};
+export const LOCAL_POUCH_OPTIONS: LocalPouchOptions = {};
 
 // enable memory adapter for testing
 if (RUNNING_UNDER_TEST) {

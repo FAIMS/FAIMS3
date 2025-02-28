@@ -18,13 +18,7 @@
  *   TODO
  */
 
-import {
-  generateFAIMSDataID,
-  ProjectID,
-  ProjectInformation,
-  ProjectUIModel,
-  RecordID,
-} from '@faims3/data-model';
+import {generateFAIMSDataID, ProjectID, RecordID} from '@faims3/data-model';
 import {
   Alert,
   AlertTitle,
@@ -49,6 +43,8 @@ import {
 } from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {Project, selectProjectById} from '../../context/slices/projectSlice';
 import {addAlert} from '../../context/slices/syncSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {newStagedData} from '../../sync/draft-storage';
@@ -61,8 +57,6 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {Project, selectProjectById} from '../../context/slices/projectSlice';
-import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -99,7 +93,7 @@ function DraftCreateAction(props: DraftCreateActionProps) {
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   useEffect(() => {
-    if (!!uiSpec) {
+    if (uiSpec) {
       // don't make a new draft if we already have one
       if (draft_id === null) {
         const field_types = getReturnedTypesForViewSet(uiSpec, type_name);
@@ -151,16 +145,14 @@ interface DraftRecordEditProps {
   draft_id: string;
   project: Project;
   record_id: RecordID;
-  serverId: string;
   state?: any;
   location?: Location;
   onBack: () => void;
 }
 
 function DraftRecordEdit(props: DraftRecordEditProps) {
-  const {type_name, project, draft_id, record_id, serverId} = props;
+  const {type_name, project, draft_id, record_id} = props;
   const project_id = project.projectId;
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [isDraftSaving, setIsDraftSaving] = useState(false);
   const [draftLastSaved, setDraftLastSaved] = useState<Date | null>(null);
@@ -374,7 +366,6 @@ export default function RecordCreate() {
         ) : (
           <DraftRecordEdit
             onBack={() => setOpenDialog(true)}
-            serverId={serverId}
             project={project}
             type_name={typeName!}
             draft_id={draftId}

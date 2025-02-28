@@ -25,17 +25,17 @@
 // cannot enforce system-wide unique project IDs without a 'namespace' listing id)
 
 import {
-  ProjectID,
+  AutoIncrementReference,
   LocalAutoIncrementRange,
   LocalAutoIncrementState,
-  AutoIncrementReference,
+  ProjectID,
   ProjectUIFields,
 } from '@faims3/data-model';
-import {logError} from '../logging';
-import {getLocalStateDB} from '../context/slices/helpers/databaseHelpers';
-import {store, useAppSelector} from '../context/store';
-import {selectProjectById} from '../context/slices/projectSlice';
 import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
+import {getLocalStateDB} from '../context/slices/helpers/databaseHelpers';
+import {selectProjectById} from '../context/slices/projectSlice';
+import {store} from '../context/store';
+import {logError} from '../logging';
 
 const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 

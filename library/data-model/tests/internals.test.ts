@@ -19,17 +19,10 @@
  *
  */
 
-import {registerClient} from '../src';
-
-import {HRID_STRING} from '../src/datamodel/core';
-import {Record} from '../src/types';
 import {generateFAIMSDataID, upsertFAIMSData} from '../src/data_storage/index';
-
+import {Record} from '../src/types';
 import {getHRID, getRecord, getRevision} from '../src/data_storage/internals';
-import {callbackObject, cleanDataDBS, sampleUiSpecForViewId} from './mocks';
-
-// register our mock database clients with the module
-registerClient(callbackObject);
+import {cleanDataDBS, sampleUiSpecForViewId} from './mocks';
 
 beforeEach(async () => {
   return await cleanDataDBS();

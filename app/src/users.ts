@@ -143,31 +143,6 @@ export function isClusterAdmin(contents: TokenContents): boolean {
   return couch_roles.includes(CLUSTER_ADMIN_GROUP_NAME);
 }
 
-export async function shouldDisplayProject({
-  contents,
-  projectId,
-  serverId,
-}: {
-  contents: TokenContents;
-  projectId: ProjectID;
-  serverId: string;
-}): Promise<boolean> {
-  const is_admin = isClusterAdmin(contents);
-  if (is_admin) {
-    return true;
-  }
-  const roles = contents.roles;
-  if (roles === undefined) {
-    return false;
-  }
-  for (const role in roles) {
-    if (role === projectId) {
-      return true;
-    }
-  }
-  return false;
-}
-
 export async function shouldDisplayRecord({
   contents,
   recordMetadata: record_metadata,

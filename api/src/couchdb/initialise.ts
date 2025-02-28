@@ -86,7 +86,7 @@ export const initialiseProjectsDB = async (
 
     // do we already have a default document?
     try {
-      let res = await db.get(projectPermissionsDoc._id);
+      const res = await db.get(projectPermissionsDoc._id);
       projectPermissionsDoc._rev = res._rev;
       write = false;
     } catch {
@@ -131,7 +131,7 @@ export const initialiseTemplatesDb = async (
 
     // do we already have a default document?
     try {
-      let res = await db.get(projectPermissionsDoc._id);
+      const res = await db.get(projectPermissionsDoc._id);
       projectPermissionsDoc._rev = res._rev;
     } catch {
       write = true;
@@ -163,7 +163,7 @@ export const initialiseDirectoryDB = async (
   db: PouchDB.Database | undefined,
   {force = false}: {force?: boolean}
 ) => {
-  let directoryDoc = {
+  const directoryDoc = {
     _id: 'default',
     _rev: undefined as undefined | string,
     name: CONDUCTOR_INSTANCE_NAME,
@@ -177,7 +177,7 @@ export const initialiseDirectoryDB = async (
     conductor_url: `${CONDUCTOR_PUBLIC_URL}/`,
   };
 
-  let permissions = {
+  const permissions = {
     _id: '_design/permissions',
     _rev: undefined as undefined | string,
     validate_doc_update: `function(newDoc, oldDoc, userCtx) {
@@ -193,14 +193,14 @@ export const initialiseDirectoryDB = async (
 
     // do we already have a default document?
     try {
-      let res = await db.get(directoryDoc._id);
+      const res = await db.get(directoryDoc._id);
       directoryDoc._rev = res._rev;
     } catch {
       write = true;
     }
 
     try {
-      let res = await db.get(permissions._id);
+      const res = await db.get(permissions._id);
       permissions._rev = res._rev;
     } catch {
       write = true;

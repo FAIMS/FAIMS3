@@ -13,6 +13,7 @@ import {
 import {CONDUCTOR_URLS} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {isTokenValid} from './authSlice';
+import {compiledSpecService} from './helpers/compiledSpecService';
 import {
   buildPouchIdentifier,
   createLocalPouchDatabase,
@@ -22,7 +23,6 @@ import {
   getRemoteDatabaseNameFromId,
 } from './helpers/databaseHelpers';
 import {databaseService} from './helpers/databaseService';
-import {compiledSpecService} from './helpers/compiledSpecService';
 
 export const buildSyncId = ({
   localId,
@@ -71,7 +71,7 @@ export interface DatabaseConnectionConfig {
 /**
  * This manages a remote couch connection
  */
-export interface RemoteCouchConnection<Content extends {}> {
+export interface RemoteCouchConnection {
   // Id of the remote DB - use service to fetch
   remoteDb: string;
   // The sync object (this is created which initiates sync)
@@ -79,7 +79,7 @@ export interface RemoteCouchConnection<Content extends {}> {
   // The configuration for the remote connection e.g. auth, endpoint etc
   connectionConfiguration: DatabaseConnectionConfig;
 }
-export interface DatabaseConnection<Content extends {}> {
+export interface DatabaseConnection {
   // A reference to the local data database
   localDb: string;
 
@@ -93,7 +93,7 @@ export interface DatabaseConnection<Content extends {}> {
 
   // Remote database connection (if the database is not syncing - this is
   // undefined and guarantees no leaking of old connections)
-  remote?: RemoteCouchConnection<Content>;
+  remote?: RemoteCouchConnection;
 }
 
 // This is metadata which is defined as part of the design file
@@ -136,7 +136,7 @@ export interface Project extends ProjectInformation {
   isActivated: boolean;
 
   // Data database (if activated is false -> this is undefined)
-  database?: DatabaseConnection<ProjectDataObject>;
+  database?: DatabaseConnection;
 
   // [Compiled] Key to get the compiled UI Spec from storage - this should not
   // be persisted as it has live JS functions in it
@@ -267,8 +267,8 @@ const projectsSlice = createSlice({
 
               // otherwise we are all good - just local db needed
             } else {
-              // This is weird - we have an activated survey but the database object is missing
-              // TODO determine behaviour
+              // This is weird - we have an activated survey but the database
+              // object is missing TODO determine behaviour
             }
           }
         }
@@ -306,10 +306,10 @@ const projectsSlice = createSlice({
       };
     },
 
-    removeServer: (state, action: PayloadAction<{serverId: string}>) => {
-      // TODO - will we ever do this? What should happen - this will require
-      // deactivating things/deleting databases.
-    },
+    // removeServer: (state, action: PayloadAction<{serverId: string}>) => {
+    //   // TODO - will we ever do this? What should happen - this will require
+    //   // deactivating things/deleting databases.
+    // },
 
     updateServerDetails: (
       state,
@@ -403,9 +403,10 @@ const projectsSlice = createSlice({
         database: undefined,
       };
     },
-    removeProject: (state, action: PayloadAction<{}>) => {
-      // TODO define what this does - implications?
-    },
+
+    //removeProject: (state, action: PayloadAction<{}>) => {
+    //  // TODO define what this does - implications?
+    //},
 
     // Update a project (metadata / details)
     updateProjectDetails: (
@@ -465,7 +466,7 @@ const projectsSlice = createSlice({
       const payload = action.payload;
 
       // Check the server exists
-      let server = serverById(state, payload.serverId);
+      const server = serverById(state, payload.serverId);
       if (!server) {
         // abort
         throw new Error(
@@ -482,7 +483,7 @@ const projectsSlice = createSlice({
       }
 
       // check the project exists
-      let project = projectByIdentity(state, payload);
+      const project = projectByIdentity(state, payload);
       if (!project) {
         // abort
         throw new Error(
@@ -563,10 +564,10 @@ const projectsSlice = createSlice({
     },
 
     // De-activate a project
-    deactivateProject: (state, action: PayloadAction<{}>) => {
-      // TODO
-      // Define what de-activating would do
-    },
+    // deactivateProject: (state, action: PayloadAction<{}>) => {
+    //   // TODO
+    //   // Define what de-activating would do
+    // },
 
     // Update connection details for activated project
     updateConnection: (
@@ -577,7 +578,7 @@ const projectsSlice = createSlice({
       const payload = action.payload;
 
       // Check the server exists
-      let server = serverById(state, payload.serverId);
+      const server = serverById(state, payload.serverId);
       if (!server) {
         // abort
         throw new Error(
@@ -594,7 +595,7 @@ const projectsSlice = createSlice({
       }
 
       // check the project exists
-      let project = projectByIdentity(state, payload);
+      const project = projectByIdentity(state, payload);
       if (!project) {
         // abort
         throw new Error(
@@ -704,12 +705,12 @@ const projectsSlice = createSlice({
     },
 
     // Set project syncing
-    stopSyncingProject: (state, action: PayloadAction<{}>) => {
-      // TODO what does this do?
-    },
-    resumeSyncingProject: (state, action: PayloadAction<{}>) => {
-      // TODO what does this do?
-    },
+    //stopSyncingProject: (state, action: PayloadAction<{}>) => {
+    //  // TODO what does this do?
+    //},
+    //resumeSyncingProject: (state, action: PayloadAction<{}>) => {
+    //  // TODO what does this do?
+    //},
 
     // Set attachment syncing
     stopSyncingAttachments: (state, action: PayloadAction<ProjectIdentity>) => {
@@ -717,7 +718,7 @@ const projectsSlice = createSlice({
       const payload = action.payload;
 
       // Check the server exists
-      let server = serverById(state, payload.serverId);
+      const server = serverById(state, payload.serverId);
       if (!server) {
         // abort
         throw new Error(
@@ -726,7 +727,7 @@ const projectsSlice = createSlice({
       }
 
       // check the project exists
-      let project = projectByIdentity(state, payload);
+      const project = projectByIdentity(state, payload);
       if (!project) {
         // abort
         throw new Error(
@@ -829,7 +830,7 @@ const projectsSlice = createSlice({
       const payload = action.payload;
 
       // Check the server exists
-      let server = serverById(state, payload.serverId);
+      const server = serverById(state, payload.serverId);
       if (!server) {
         // abort
         throw new Error(
@@ -838,7 +839,7 @@ const projectsSlice = createSlice({
       }
 
       // check the project exists
-      let project = projectByIdentity(state, payload);
+      const project = projectByIdentity(state, payload);
       if (!project) {
         // abort
         throw new Error(
@@ -899,6 +900,7 @@ const projectsSlice = createSlice({
         // reuse existing remote db
         remoteDb,
       });
+      databaseService.registerSync(newSyncId, sync);
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
@@ -1067,7 +1069,7 @@ export const updateDatabaseCredentials = createAsyncThunk<
   const {token, serverId} = args;
 
   // Check the server exists
-  let server = serverById(state, serverId);
+  const server = serverById(state, serverId);
   if (!server) {
     // abort
     throw new Error(
@@ -1094,16 +1096,17 @@ export const updateDatabaseCredentials = createAsyncThunk<
  * Initialises servers from the specified conductor URLs.
  * Creates the server if it doesn't exist, otherwise updates details.
  */
-export const initialiseServers = createAsyncThunk<void, {}>(
+export const initialiseServers = createAsyncThunk<void>(
   'projects/initialiseServers',
-  async ({}, {dispatch, getState}) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async (_, {dispatch, getState}) => {
     // cast and get state
     const state = getState() as RootState;
     const projectState = state.projects;
     const appDispatch = dispatch as AppDispatch;
 
     // for each URL in the conductor URLs - fetch directory
-    let discoveredServers: ApiServerInfo[] = [];
+    const discoveredServers: ApiServerInfo[] = [];
     for (const conductorUrl of CONDUCTOR_URLS) {
       // firstly - try and call the info endpoint
       await fetch(`${conductorUrl}/api/info`, {})
@@ -1245,7 +1248,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       })
       .catch(e => {
         console.warn(
-          `Directory request failed despite valid token. Server ID ${serverId}. URL: ${server.serverUrl}.`
+          `Directory request failed despite valid token. Server ID ${serverId}. URL: ${server.serverUrl}. ${e}`
         );
       });
 
@@ -1273,6 +1276,12 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         serverId,
       });
 
+      if (!details.data_db?.base_url) {
+        throw new Error(
+          'Could not initialise from server as the base URL for the couch DB was not defined.'
+        );
+      }
+
       if (!project) {
         if (!meta) {
           // noop here since we don't have mandatory metadata!
@@ -1289,8 +1298,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             projectId,
             serverId,
             rawUiSpecification: meta.uiSpec,
-            // TODO verify that this is defined
-            couchDbUrl: details.data_db?.base_url!,
+            couchDbUrl: details.data_db.base_url,
             // TODO Where are these populated from
             createdAt: undefined,
             lastUpdated: undefined,
@@ -1298,16 +1306,14 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         );
       } else {
         // update existing record
-
-        // TODO created at? Last updated?
         appDispatch(
           updateProjectDetails({
             metadata: meta?.metadata ?? project.metadata,
             projectId: projectId,
             serverId,
             rawUiSpecification: meta?.uiSpec ?? project.rawUiSpecification,
-            // TODO verify that this is defined
-            couchDbUrl: details.data_db?.base_url!,
+            couchDbUrl: details.data_db.base_url,
+            // TODO update these?
             createdAt: project.createdAt,
             lastUpdated: project.lastUpdated,
           })
@@ -1320,9 +1326,10 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
 /**
  * Combines initialisation of all servers' projects.
  */
-export const initialiseAllProjects = createAsyncThunk<void, {}>(
+export const initialiseAllProjects = createAsyncThunk<void>(
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   'projects/initialiseAllProjects',
-  async ({}, {dispatch, getState}) => {
+  async (_, {dispatch, getState}) => {
     // cast and get state
     const state = getState() as RootState;
     const projectState = state.projects;
@@ -1334,7 +1341,6 @@ export const initialiseAllProjects = createAsyncThunk<void, {}>(
     }
   }
 );
-
 
 export const {
   activateProject,
@@ -1351,5 +1357,3 @@ export const {
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;
-
-type ProjectsStore = {projects: ProjectsState};

@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {FAIMSTypeName, ProjectID, ProjectUIModel} from '@faims3/data-model';
+import {FAIMSTypeName, ProjectUIModel} from '@faims3/data-model';
 import {
   compileExpression,
   compileIsLogic,

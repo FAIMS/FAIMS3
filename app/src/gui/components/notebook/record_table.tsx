@@ -19,7 +19,6 @@
  */
 
 import {
-  ProjectID,
   ProjectUIModel,
   ProjectUIViewsets,
   RecordMetadata,
@@ -44,20 +43,19 @@ import {
   GridColDef,
   GridEventListener,
 } from '@mui/x-data-grid';
-import {useQuery} from '@tanstack/react-query';
 import {ReactNode, useCallback, useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
+import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import {Project} from '../../../context/slices/projectSlice';
 import {
   getSummaryFieldInformation,
   getVisibleTypes,
 } from '../../../uiSpecification';
 import {prettifyFieldName} from '../../../utils/formUtilities';
 import getLocalDate from '../../fields/LocalDate';
-import {NotebookDataGridToolbar} from './datagrid_toolbar';
-import {Project} from '../../../context/slices/projectSlice';
-import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import CircularLoading from '../ui/circular_loading';
+import {NotebookDataGridToolbar} from './datagrid_toolbar';
 
 // ============================================================================
 // Types & Interfaces

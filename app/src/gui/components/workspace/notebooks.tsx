@@ -26,7 +26,7 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
 import {useMutation} from '@tanstack/react-query';
-import {useContext, useState} from 'react';
+import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {
   NOTEBOOK_LIST_TYPE,
@@ -36,15 +36,15 @@ import {
 import * as ROUTES from '../../../constants/routes';
 import {useNotification} from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
+import {
+  initialiseProjects,
+  Project,
+} from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {useIsOnline} from '../../../utils/customHooks';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
-import {
-  initialiseProjects,
-  Project,
-} from '../../../context/slices/projectSlice';
 
 // Survey status naming conventions
 

@@ -18,47 +18,22 @@
  *   Main entry point for the module.
  */
 
-import {HRID_STRING, DEFAULT_RELATION_LINK_VOCABULARY} from './datamodel/core';
-import {
-  getEqualityFunctionForType,
-  isEqualFAIMS,
-  setAttachmentDumperForType,
-  setAttachmentLoaderForType,
-  setEqualityFunctionForType,
-} from './datamodel/typesystem';
-import {
-  ProjectDataObject,
-  ProjectID,
-  ProjectUIModel,
-  RecordMetadata,
-  TokenContents,
-} from './types';
 import {
   generateFAIMSDataID,
   getFirstRecordHead,
   getFullRecordData,
   getHRIDforRecordID,
-  getRecordType,
   getMetadataForAllRecords,
-  getRecordMetadata,
+  getMetadataForSomeRecords,
   getPossibleRelatedRecords,
+  getRecordMetadata,
   getRecordsWithRegex,
+  getRecordType,
   listFAIMSRecordRevisions,
   notebookRecordIterator,
   setRecordAsDeleted,
   upsertFAIMSData,
-  getMetadataForSomeRecords,
 } from './data_storage';
-import {addDesignDocsForNotebook} from './data_storage/databases';
-import {
-  mergeHeads,
-  findConflictingFields,
-  getInitialMergeDetails,
-  getMergeInformationForHead,
-  saveUserMergeResult,
-} from './data_storage/merging';
-import {getAllRecordsWithRegex} from './data_storage/queries';
-import {logError} from './logging';
 import {
   attachment_to_file,
   attachments_to_files,
@@ -66,49 +41,68 @@ import {
   file_data_to_attachments,
   files_to_attachments,
 } from './data_storage/attachments';
+import {addDesignDocsForNotebook} from './data_storage/databases';
+import {
+  findConflictingFields,
+  getInitialMergeDetails,
+  getMergeInformationForHead,
+  mergeHeads,
+  saveUserMergeResult,
+} from './data_storage/merging';
+import {getAllRecordsWithRegex} from './data_storage/queries';
+import {DEFAULT_RELATION_LINK_VOCABULARY, HRID_STRING} from './datamodel/core';
+import {
+  getEqualityFunctionForType,
+  isEqualFAIMS,
+  setAttachmentDumperForType,
+  setAttachmentLoaderForType,
+  setEqualityFunctionForType,
+} from './datamodel/typesystem';
+import {logError} from './logging';
+import {ProjectID, RecordMetadata, TokenContents} from './types';
 export * from './auth';
 export * from './data_storage/authDB';
 export * from './utils';
 
 export {
-  HRID_STRING,
+  addDesignDocsForNotebook,
   attachment_to_file,
   attachments_to_files,
-  addDesignDocsForNotebook,
-  findConflictingFields,
-  files_to_attachments,
+  DEFAULT_RELATION_LINK_VOCABULARY,
   file_attachments_to_data,
+  file_data_to_attachments,
+  files_to_attachments,
+  findConflictingFields,
   generateFAIMSDataID,
   getAllRecordsWithRegex,
+  getEqualityFunctionForType,
   getFirstRecordHead,
-  getRecordType,
   getFullRecordData,
   getHRIDforRecordID,
   getInitialMergeDetails,
+  getMergeInformationForHead,
   getMetadataForAllRecords,
   getMetadataForSomeRecords,
-  getRecordMetadata,
   getPossibleRelatedRecords,
+  getRecordMetadata,
   getRecordsWithRegex,
-  getMergeInformationForHead,
+  getRecordType,
+  HRID_STRING,
   isEqualFAIMS,
   listFAIMSRecordRevisions,
   mergeHeads,
   notebookRecordIterator,
   saveUserMergeResult,
+  setAttachmentDumperForType,
+  setAttachmentLoaderForType,
+  setEqualityFunctionForType,
   setRecordAsDeleted,
   upsertFAIMSData,
-  setAttachmentLoaderForType,
-  setAttachmentDumperForType,
-  getEqualityFunctionForType,
-  setEqualityFunctionForType,
-  file_data_to_attachments,
-  DEFAULT_RELATION_LINK_VOCABULARY,
 };
 
+export * from './api';
 export * from './datamodel/database';
 export * from './types';
-export * from './api';
 
 export type DBCallbackObject = {
   getDataDB: (projectId: string) => Promise<any>;

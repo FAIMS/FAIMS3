@@ -42,7 +42,7 @@ import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import React, {useContext, useState} from 'react';
+import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
@@ -50,12 +50,12 @@ import {
   selectActiveServerId,
   selectIsAuthenticated,
 } from '../../context/slices/authSlice';
+import {Project} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import SyncStatus from '../components/sync';
-import { Project } from '../../context/slices/projectSlice';
 
 const drawerWidth = 240;
 
@@ -95,7 +95,11 @@ function getNestedProjects(pouchProjectList: Project[]) {
     projectListItems.push({
       title: project_info.metadata.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_info.serverId + '/' + project_info.projectId,
+      to:
+        ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+        project_info.serverId +
+        '/' +
+        project_info.projectId,
       disabled: false,
     });
   });

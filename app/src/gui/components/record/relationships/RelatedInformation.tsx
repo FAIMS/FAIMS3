@@ -33,16 +33,13 @@ import {
   upsertFAIMSData,
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
+import {compiledSpecService} from '../../../../context/slices/helpers/compiledSpecService';
+import {selectProjectById} from '../../../../context/slices/projectSlice';
+import {useAppSelector} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
 import {ParentLinkProps, RecordLinkProps} from './types';
-import {useAppSelector} from '../../../../context/store';
-import {
-  selectProjectById,
-  serverById,
-} from '../../../../context/slices/projectSlice';
-import {compiledSpecService} from '../../../../context/slices/helpers/compiledSpecService';
 
 /**
  * Generate an object containing information to be stored in

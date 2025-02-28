@@ -25,12 +25,12 @@ export default function HeadingProjectGrid({
   projects,
   activatedColumns,
   notActivatedColumns,
-  serverId
+  serverId,
 }: {
   projects: Project[];
   activatedColumns: GridColDef<Project>[];
   notActivatedColumns: GridColDef<Project>[];
-  serverId: string
+  serverId: string;
 }) {
   // pull out active/inactive surveys
   const activatedProjects = projects.filter(({isActivated}) => isActivated);

@@ -21,13 +21,7 @@
  *   databases should go in the database file.
  */
 
-import {
-  FullyResolvedRecordID,
-  ListingID,
-  NonUniqueProjectID,
-  ProjectID,
-  SplitRecordID,
-} from '../types';
+import {FullyResolvedRecordID, SplitRecordID} from '../types';
 
 export const HRID_STRING = 'hrid';
 

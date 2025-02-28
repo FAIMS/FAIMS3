@@ -23,14 +23,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import {APP_NAME} from './buildconfig';
+import {databaseService} from './context/slices/helpers/databaseService';
+import {selectAllProjects} from './context/slices/projectSlice';
+import {store} from './context/store';
 import './index.css';
 import {addNativeHooks} from './native_hooks';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {shouldDisplayRecord} from './users';
-import {store} from './context/store';
-import {selectAllProjects} from './context/slices/projectSlice';
-import {databaseService} from './context/slices/helpers/databaseService';
-import {compiledSpecService} from './context/slices/helpers/compiledSpecService';
 
 const getDataDB = async (
   projectId: string
@@ -52,7 +51,6 @@ const getDataDB = async (
   }
   return db;
 };
-
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({

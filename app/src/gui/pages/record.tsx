@@ -21,8 +21,6 @@
 import {
   InitialMergeDetails,
   ProjectID,
-  ProjectInformation,
-  ProjectUIModel,
   RecordID,
   Relationship,
   RevisionID,
@@ -54,6 +52,8 @@ import React, {useEffect, useRef, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {selectProjectById} from '../../context/slices/projectSlice';
 import {addAlert} from '../../context/slices/syncSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {logError} from '../../logging';
@@ -81,8 +81,6 @@ import BackButton from '../components/ui/BackButton';
 import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
-import {selectProjectById} from '../../context/slices/projectSlice';
-import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 
 export default function Record() {
   /**

@@ -18,21 +18,15 @@
  *   The settings component for a notebook presents user changeable options
  */
 
-import {
-  ProjectID,
-  ProjectInformation,
-  ProjectUIModel,
-} from '@faims3/data-model';
+import {ProjectID, ProjectUIModel} from '@faims3/data-model';
 import {
   Box,
-  CircularProgress,
   FormControlLabel,
   Grid,
   Paper,
   Switch,
   Typography,
 } from '@mui/material';
-import {useEffect, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
 import {
@@ -42,7 +36,6 @@ import {
 } from '../../../../context/slices/projectSlice';
 import {addAlert} from '../../../../context/slices/syncSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
-import {logError} from '../../../../logging';
 import {theme} from '../../../themes';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
@@ -56,7 +49,6 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
 
   // TODO this is currently not real
   const isSyncing = project.database?.isSyncing ?? false;
-  const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
 
   return (
     <Box>

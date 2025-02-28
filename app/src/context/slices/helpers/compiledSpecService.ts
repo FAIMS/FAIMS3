@@ -1,6 +1,4 @@
-import {ProjectDataObject, ProjectUIModel} from '@faims3/data-model';
-import {DraftDB} from '../../../sync/draft-storage';
-import {LOCAL_POUCH_OPTIONS} from './databaseHelpers';
+import {ProjectUIModel} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import {compileUiSpecConditionals} from '../../../uiSpecification';

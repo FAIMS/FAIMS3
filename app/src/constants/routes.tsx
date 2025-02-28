@@ -54,7 +54,8 @@ export function getRecordRoute(
   if (!!serverId && !!project_id && !!record_id && !!revision_id) {
     return (
       INDIVIDUAL_NOTEBOOK_ROUTE +
-      serverId + '/' + 
+      serverId +
+      '/' +
       project_id +
       RECORD_EXISTING +
       record_id +

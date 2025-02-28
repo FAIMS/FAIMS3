@@ -5,7 +5,6 @@ import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {activateProject} from '../../../context/slices/projectSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 
-
 /**
  * ProjectCard component that displays information about a single project.
  *

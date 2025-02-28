@@ -32,7 +32,7 @@ const mockGetDataDB = async (project_id: ProjectID) => {
   return getDatabase(databaseName);
 };
 
-const mockShouldDisplayRecord = async (params: any) => {
+const mockShouldDisplayRecord = async () => {
   return true;
 };
 

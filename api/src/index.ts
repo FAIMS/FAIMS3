@@ -24,28 +24,20 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-security-helper'));
 
+import {registerClient} from '@faims3/data-model';
 import {
   CONDUCTOR_INTERNAL_PORT,
   CONDUCTOR_PUBLIC_URL,
   COUCHDB_INTERNAL_URL,
 } from './buildconfig';
-import {app} from './routes';
-import {
-  RecordMetadata,
-  registerClient,
-  TokenContents,
-} from '@faims3/data-model';
 import {getDataDb} from './couchdb';
 import {validateDatabases} from './couchdb/notebooks';
+import {app} from './routes';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
   getDataDB: getDataDb,
-  shouldDisplayRecord: async (params: {
-    contents: TokenContents;
-    projectId: string;
-    recordMetadata: RecordMetadata;
-  }) => true,
+  shouldDisplayRecord: async () => true,
 });
 
 process.on('unhandledRejection', error => {

@@ -431,7 +431,7 @@ export async function getPossibleRelatedRecords(
     await listRecordMetadata({
       project_id,
       record_ids: null,
-      uiSpecification
+      uiSpecification,
     }).then(record_list => {
       for (const key in record_list) {
         const metadata = record_list[key];

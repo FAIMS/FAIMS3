@@ -20,8 +20,9 @@
 
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
+import SecurityPlugin from 'pouchdb-security-helper';
 PouchDB.plugin(PouchDBFind);
-PouchDB.plugin(require('pouchdb-security-helper'));
+PouchDB.plugin(SecurityPlugin);
 
 import {
   addDesignDocsForNotebook,
@@ -51,7 +52,6 @@ import {
   setAttachmentLoaderForType,
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
-import securityPlugin from 'pouchdb-security-helper';
 import {slugify} from '../utils';
 import {userHasPermission} from './users';
 

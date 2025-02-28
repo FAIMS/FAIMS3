@@ -41,7 +41,7 @@ type DraftsRecordProps = {
 };
 
 export function DraftsTable(props: DraftsRecordProps) {
-  const {project_id,serverId,  maxRows, rows, loading} = props;
+  const {project_id, serverId, maxRows, rows, loading} = props;
   const theme = useTheme();
   const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));

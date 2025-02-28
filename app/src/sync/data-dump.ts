@@ -170,7 +170,7 @@ export async function progressiveSaveFiles(
   const state = store.getState();
   const dataDbs = getAllDataDbs(state);
 
-  let size = Object.keys(dataDbs).length;
+  const size = Object.keys(dataDbs).length;
   for (const db of dataDbs) {
     end = start + 60 / size;
     if (keepDumping)

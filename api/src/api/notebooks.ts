@@ -70,7 +70,6 @@ import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 import {generateTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
-import {blockParams} from 'handlebars';
 
 // This must occur before express api is used
 patch();

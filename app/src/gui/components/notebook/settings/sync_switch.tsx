@@ -18,6 +18,7 @@
  * This provides a react component to manage the syncing state of a specific
  * project via a toggle.
  */
+
 import {
   Alert,
   AlertTitle,
@@ -27,17 +28,14 @@ import {
   DialogActions,
   FormControlLabel,
   FormHelperText,
-  Paper,
   Switch,
   Typography,
 } from '@mui/material';
-import {grey} from '@mui/material/colors';
-import {useContext, useState} from 'react';
+import {useState} from 'react';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
 import {Project} from '../../../../context/slices/projectSlice';
 import {theme} from '../../../themes';
 import NotebookActivationSwitch from './activation-switch';
-import {useAppDispatch} from '../../../../context/store';
 
 type NotebookSyncSwitchProps = {
   project: Project;
@@ -50,7 +48,6 @@ export default function NotebookSyncSwitch({
   showHelperText,
   setTabID = () => {},
 }: NotebookSyncSwitchProps) {
-  const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
