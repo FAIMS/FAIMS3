@@ -28,6 +28,9 @@ import authReducer, {
 } from './slices/authSlice';
 import projectsReducer from './slices/projectSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
+import {databaseService} from './slices/helpers/databaseService';
+import {logError} from '../logging';
+import {getLocalStateDB} from './slices/helpers/databaseHelpers';
 
 // Configure persistence for the auth slice
 const authPersistConfig = {key: 'auth', storage};
@@ -243,4 +246,33 @@ export const clearReduxAndLocalStorage = async () => {
   await persistor.purge();
   // then also clear all local storage
   localStorage.clear();
+};
+
+export const wipeAllDatabases = async () => {
+  // cast and get state
+  const state = store.getState() as RootState;
+  for (const server of Object.values(state.projects.servers)) {
+    for (const project of Object.values(server.projects)) {
+      if (project.isActivated && project.database) {
+        // Local DB should be wiped
+        const localDb = databaseService.getLocalDatabase(
+          project.database.localDb
+        );
+        // Destroy
+        await localDb?.destroy();
+        // Then remove
+        localDb &&
+          databaseService.closeAndRemoveLocalDatabase(project.database.localDb);
+      }
+    }
+  }
+
+  const dbsToWipe = [databaseService.getDraftDatabase(), getLocalStateDB()];
+  for (const db of dbsToWipe) {
+    try {
+      console.debug(await db.destroy());
+    } catch (err) {
+      logError(err);
+    }
+  }
 };

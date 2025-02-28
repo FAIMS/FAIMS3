@@ -49,7 +49,7 @@ export default function AddRecordButtons({
 
     // TODO validate that this is always defined!
     // TODO WHY IS THERE TWO IDs - this is most likely broken
-    getRecordsWithRegex(activeUser.parsedToken, projectId, value, true).then(
+    getRecordsWithRegex(activeUser.parsedToken, projectId, value, true, uiSpecification).then(
       records => {
         // navigate to it
         // what should happen if there are more than one?

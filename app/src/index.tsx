@@ -32,7 +32,9 @@ import {selectAllProjects} from './context/slices/projectSlice';
 import {databaseService} from './context/slices/helpers/databaseService';
 import {compiledSpecService} from './context/slices/helpers/compiledSpecService';
 
-const getDataDB = (projectId: string): PouchDB.Database<ProjectDataObject> => {
+const getDataDB = async (
+  projectId: string
+): Promise<PouchDB.Database<ProjectDataObject>> => {
   const projectState = store.getState();
   const dbId = selectAllProjects(projectState).find(
     p => p.projectId === projectId
@@ -51,27 +53,12 @@ const getDataDB = (projectId: string): PouchDB.Database<ProjectDataObject> => {
   return db;
 };
 
-const getUiSpecForProject = (projectId: string) => {
-  const projectState = store.getState();
-  const uiSpecId = selectAllProjects(projectState).find(
-    p => p.projectId === projectId
-  )?.uiSpecificationId;
-  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
-  if (!uiSpec) {
-    throw Error(
-      'Could not find UI Specification for given project: ' + projectId
-    );
-  }
-  return uiSpec;
-};
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
   // This will consult with the store to get the current data DB for the
   // project
   getDataDB: getDataDB,
-  // This will get the current ui spec for a project
-  getUiSpec: getUiSpecForProject,
   // This will determine if a record should be displayed
   shouldDisplayRecord: shouldDisplayRecord,
 });

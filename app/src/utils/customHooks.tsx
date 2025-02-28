@@ -1,6 +1,7 @@
 import {
   getMetadataForAllRecords,
   getRecordsWithRegex,
+  ProjectUIModel,
   RecordMetadata,
 } from '@faims3/data-model';
 import {useQuery} from '@tanstack/react-query';
@@ -13,7 +14,6 @@ import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
 import _ from 'lodash';
-
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -308,11 +308,13 @@ export const useRecordList = ({
   projectId,
   filterDeleted,
   refreshIntervalMs,
+  uiSpecification: uiSpec,
 }: {
   query: string;
   projectId: string;
   filterDeleted: boolean;
   refreshIntervalMs?: number | undefined | false;
+  uiSpecification: ProjectUIModel;
 }) => {
   const activeUser = useAppSelector(selectActiveUser);
   const token = activeUser?.parsedToken;
@@ -342,19 +344,25 @@ export const useRecordList = ({
       }
       let rows;
 
-      console.log("Fetching records")
+      console.log('Fetching records');
       if (query.length === 0) {
-        rows = await getMetadataForAllRecords(token, projectId, filterDeleted);
+        rows = await getMetadataForAllRecords(
+          token,
+          projectId,
+          filterDeleted,
+          uiSpec
+        );
       } else {
         rows = await getRecordsWithRegex(
           token,
           projectId,
           query,
-          filterDeleted
+          filterDeleted,
+          uiSpec
         );
       }
 
-      console.log("Done")
+      console.log('Done');
       return rows;
     },
   });

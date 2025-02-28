@@ -42,6 +42,8 @@ import {
 } from '../components/record/relationships/RelatedInformation';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {DataGridFieldLinksComponent} from '../components/record/relationships/field_level_links/datagrid';
+import {selectAllProjects} from '../../context/slices/projectSlice';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 
 function get_default_relation_label(
   multiple: boolean,
@@ -136,6 +138,14 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const serverId = props.form.values['_server_id'] as string;
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;
+  const uiSpecId = useAppSelector(selectAllProjects).find(
+    p => p.projectId === project_id
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+
+  if (!uiSpec) {
+    return <p>Error... could not find ui specification.</p>;
+  }
 
   const [relatedRecords, setRelatedRecords] = React.useState<RecordReference[]>(
     []
@@ -200,7 +210,8 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           props.relation_type,
           record_id,
           field_name,
-          relationshipPair
+          relationshipPair,
+          uiSpec
         );
         const records = excludes_related_record(
           multiple,
@@ -215,7 +226,8 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           project_id,
           props.form.values,
           field_name,
-          multiple
+          multiple,
+          uiSpec
         );
 
         setRecordsInformation(records_info);
@@ -238,7 +250,8 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           project_id,
           props.form.values,
           field_name,
-          multiple
+          multiple,
+          uiSpec
         );
         setRecordsInformation(records_info);
       }

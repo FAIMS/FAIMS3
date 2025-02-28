@@ -342,7 +342,8 @@ export async function getRelatedRecords(
   project_id: ProjectID,
   values: {[field_name: string]: any},
   field_name: string,
-  multiple: boolean
+  multiple: boolean,
+  uiSpecification: ProjectUIModel
 ) {
   const fieldValue = values[field_name];
 
@@ -382,7 +383,8 @@ export async function getRelatedRecords(
     token,
     project_id,
     record_ids,
-    true
+    true,
+    uiSpecification
   );
   return records;
 }

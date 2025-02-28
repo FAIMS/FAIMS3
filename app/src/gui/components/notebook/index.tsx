@@ -154,6 +154,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
     refreshIntervalMs: 10000,
+    uiSpecification: uiSpecification,
   });
   const forceRecordRefresh = records.query.refetch;
 

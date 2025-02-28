@@ -521,7 +521,6 @@ export interface ProjectInformation {
   status?: string;
   is_activated: boolean;
   listing_id: ListingID;
-  non_unique_project_id: NonUniqueProjectID;
   // Was the project created from a template?
   template_id?: string;
 }

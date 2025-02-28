@@ -161,7 +161,11 @@ export default function Record() {
           setRevisions(all_revisions);
         })
         .catch(logError);
-      getHRIDforRecordID(projectId!, recordId!).then(hrid => {
+      getHRIDforRecordID({
+        project_id: projectId!,
+        record_id: recordId!,
+        uiSpecification: uiSpec,
+      }).then(hrid => {
         setHrid(hrid);
         setBreadcrumbs([
           // {link: ROUTES.INDEX, title: 'Home'},
