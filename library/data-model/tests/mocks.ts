@@ -1,6 +1,7 @@
 import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
 
 import {DBCallbackObject, generateFAIMSDataID, upsertFAIMSData} from '../src';
 import {addDesignDocsForNotebook} from '../src/data_storage/databases';
@@ -27,7 +28,7 @@ const mockGetProjectDB = async (project_id: ProjectID) => {
   return getDatabase('project-' + project_id);
 };
 
-const mockShouldDisplayRecord = () => {
+const mockShouldDisplayRecord = async () => {
   return true;
 };
 

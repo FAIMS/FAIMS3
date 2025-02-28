@@ -1011,10 +1011,6 @@ export async function countRecordsInNotebook(
 ): Promise<Number> {
   const dataDB = await getDataDB(project_id);
   try {
-    console.warn('DATA DB PRIOR TO QUERY: ', dataDB);
-    console.warn(
-      'DATA DB PRIOR TO QUERY (JSON): ' + JSON.stringify(dataDB, undefined, 2)
-    );
     const res = await dataDB.query('index/recordCount');
     if (res.rows.length === 0) {
       return 0;

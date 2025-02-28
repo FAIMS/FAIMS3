@@ -25,8 +25,12 @@
  * @category Database
  */
 
-import {v4 as uuidv4} from 'uuid';
+// Install plugin since we use the .query method here
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
 
+import {v4 as uuidv4} from 'uuid';
 import {getDataDB} from '../index';
 import {DEFAULT_RELATION_LINK_VOCABULARY} from '../datamodel/core';
 import {
@@ -42,6 +46,7 @@ import {
   RecordRevisionListing,
   TokenContents,
   ProjectUIModel,
+  ProjectDataObject,
 } from '../types';
 import {shouldDisplayRecord} from '../index';
 import {
@@ -633,7 +638,8 @@ export async function getSomeRecords(
   bookmark: string | null = null,
   filter_deleted = true
 ) {
-  const dataDB = getDataDB(project_id);
+  const dataDB: PouchDB.Database<ProjectDataObject> | undefined =
+    getDataDB(project_id);
   if (!dataDB) throw Error('No data DB with project ID ' + project_id);
 
   const options: {[key: string]: any} = {
