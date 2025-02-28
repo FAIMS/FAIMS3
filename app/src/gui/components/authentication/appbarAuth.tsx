@@ -170,7 +170,7 @@ const AuthenticatedDisplayComponent = () => {
 
     // TODO is this really necessary?
     // initialise everything again
-    dispatch(initialiseAllProjects({}));
+    dispatch(initialiseAllProjects());
 
     if (conductorUrl) {
       if (isWeb()) {

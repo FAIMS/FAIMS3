@@ -145,13 +145,14 @@ interface DraftRecordEditProps {
   draft_id: string;
   project: Project;
   record_id: RecordID;
+  serverId: string;
   state?: any;
   location?: Location;
   onBack: () => void;
 }
 
 function DraftRecordEdit(props: DraftRecordEditProps) {
-  const {type_name, project, draft_id, record_id} = props;
+  const {type_name, project, draft_id, record_id, serverId} = props;
   const project_id = project.projectId;
   const navigate = useNavigate();
   const [isDraftSaving, setIsDraftSaving] = useState(false);
@@ -192,7 +193,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
           uiSpecification: uiSpec,
           projectId: project_id,
           parent,
-          serverId: props.serverId,
+          serverId,
         });
         setParentLinks(newParent);
         setIs_link_ready(true);
@@ -366,6 +367,7 @@ export default function RecordCreate() {
         ) : (
           <DraftRecordEdit
             onBack={() => setOpenDialog(true)}
+            serverId={serverId}
             project={project}
             type_name={typeName!}
             draft_id={draftId}

@@ -40,10 +40,10 @@ export async function initialize() {
   // TODO confirm we can rely on ordering here
 
   // This initialises the servers by fetching their data from corresponding API
-  await store.dispatch(initialiseServers({}));
+  await store.dispatch(initialiseServers());
 
   // Then we want to initialise all the projects too
-  await store.dispatch(initialiseAllProjects({}));
+  await store.dispatch(initialiseAllProjects());
 
   // Now let's create all the DBs we need (these are persisted only as keys + config)
   store.dispatch(rebuildDbs());
