@@ -22,7 +22,10 @@
 import {generateFAIMSDataID, upsertFAIMSData} from '../src/data_storage/index';
 import {Record} from '../src/types';
 import {getHRID, getRecord, getRevision} from '../src/data_storage/internals';
-import {cleanDataDBS, sampleUiSpecForViewId} from './mocks';
+import {callbackObject, cleanDataDBS, sampleUiSpecForViewId} from './mocks';
+import {registerClient} from '../src';
+
+registerClient(callbackObject);
 
 beforeEach(async () => {
   return await cleanDataDBS();
