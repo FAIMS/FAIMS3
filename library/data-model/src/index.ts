@@ -111,7 +111,7 @@ export * from './types';
 export * from './api';
 
 export type DBCallbackObject = {
-  getDataDB: (projectId: string) => any;
+  getDataDB: (projectId: string) => Promise<any>;
   shouldDisplayRecord: (params: {
     contents: TokenContents;
     projectId: string;

@@ -195,7 +195,7 @@ export async function listFAIMSRecordRevisions(
 export async function listFAIMSProjectRevisions(
   project_id: ProjectID
 ): Promise<ProjectRevisionListing> {
-  const dataDB = getDataDB(project_id);
+  const dataDB = await getDataDB(project_id);
   if (!dataDB) throw Error('No data DB with project ID ' + project_id);
 
   try {
@@ -274,7 +274,7 @@ export async function setRecordAsDeleted(
   base_revision_id: RevisionID,
   user: string
 ): Promise<RevisionID> {
-  const dataDB = getDataDB(project_id);
+  const dataDB = await getDataDB(project_id);
   if (!dataDB) throw Error('No data DB with project ID ' + project_id);
 
   const date = new Date();
@@ -303,7 +303,7 @@ export async function setRecordAsUndeleted(
   base_revision_id: RevisionID,
   user: string
 ): Promise<RevisionID> {
-  const dataDB = getDataDB(project_id);
+  const dataDB = await getDataDB(project_id);
   if (!dataDB) throw Error('No data DB with project ID ' + project_id);
 
   const date = new Date();
@@ -431,7 +431,7 @@ export async function getPossibleRelatedRecords(
     await listRecordMetadata({
       project_id,
       record_ids: null,
-      uiSpecification,
+      uiSpecification
     }).then(record_list => {
       for (const key in record_list) {
         const metadata = record_list[key];
@@ -639,7 +639,7 @@ export async function getSomeRecords(
   filter_deleted = true
 ) {
   const dataDB: PouchDB.Database<ProjectDataObject> | undefined =
-    getDataDB(project_id);
+    await getDataDB(project_id);
   if (!dataDB) throw Error('No data DB with project ID ' + project_id);
 
   const options: {[key: string]: any} = {

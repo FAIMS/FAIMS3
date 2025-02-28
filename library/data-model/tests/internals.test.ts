@@ -26,7 +26,7 @@ import {Record} from '../src/types';
 import {generateFAIMSDataID, upsertFAIMSData} from '../src/data_storage/index';
 
 import {getHRID, getRecord, getRevision} from '../src/data_storage/internals';
-import {callbackObject, cleanDataDBS} from './mocks';
+import {callbackObject, cleanDataDBS, sampleUiSpecForViewId} from './mocks';
 
 // register our mock database clients with the module
 registerClient(callbackObject);
@@ -45,6 +45,11 @@ describe('test internals', () => {
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
+    const hridField = 'name';
+    const uiSpec = sampleUiSpecForViewId({
+      viewId: 'test',
+      hridFieldId: hridField,
+    });
 
     const record_id = generateFAIMSDataID();
 
@@ -54,20 +59,19 @@ describe('test internals', () => {
       record_id: record_id,
       revision_id: null,
       type: fulltype,
-      data: {avp1: 1},
+      data: {},
       created_by: user_id,
       updated_by: user_id,
       created: time,
       updated: time,
-      annotations: {
-        avp1: {annotation: '', uncertainty: false},
-      },
+      annotations: {},
       field_types: {field_name: fulltype},
     };
 
-    const hridField = HRID_STRING + 'FieldName';
+    // Need a UI spec which suits this
     const hridValue = 'test HRID value';
     doc.data[hridField] = hridValue;
+    doc.data['age'] = 10;
     doc.annotations[hridField] = {
       annotation: 'annotation for HRID field',
       uncertainty: false,
@@ -76,7 +80,7 @@ describe('test internals', () => {
     return upsertFAIMSData(project_id, doc).then(revisionId => {
       return getRevision(project_id, revisionId)
         .then(revision => {
-          return getHRID(project_id, revision);
+          return getHRID(project_id, revision, uiSpec);
         })
         .then(hrid => {
           expect(hrid).toBe(hridValue);
