@@ -1,9 +1,10 @@
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
-import {ProjectID, DBCallbackObject, ProjectUIModel} from '@faims3/data-model';
+import {DBCallbackObject, ProjectID} from '@faims3/data-model';
+import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 import {
   getAuthDB,
   getProjectsDB,
@@ -11,7 +12,6 @@ import {
   getUsersDB,
   initialiseDatabases,
 } from '../src/couchdb';
-import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 
 export const databaseList: any = {};
 
@@ -30,13 +30,6 @@ const getDatabase = async (databaseName: string) => {
 const mockGetDataDB = async (project_id: ProjectID) => {
   const databaseName = 'data-' + project_id;
   return getDatabase(databaseName);
-};
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mockGetUiSpec = (projectId: ProjectID) => {
-    // The UI spec is part of the metadata DB
-  // TODO make this make sense. Get nothing - might need to fix this
-  return {} as unknown as ProjectUIModel;
 };
 
 const mockShouldDisplayRecord = async (params: any) => {
