@@ -52,6 +52,19 @@ export default function TabProjectGrid({
     setPaginationModel({page: 1, pageSize: projects.length});
   }, [projects]);
 
+  const history = useNavigate();
+
+  const handleRowClick: GridEventListener<'rowClick'> = ({
+    row,
+  }: {
+    row: Project;
+  }) => {
+    if (row.isActivated)
+      history(
+        `${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${row.serverId}/${row.projectId}`
+      );
+  };
+
   return (
     <TabContext value={tabID}>
       <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
@@ -84,6 +97,7 @@ export default function TabProjectGrid({
         <TabPanel key={tab} value={tab} sx={{px: 0}}>
           <div style={{flexGrow: 1}}>
             <DataGrid
+              onRowClick={handleRowClick}
               key={`notebook_list_datagrid_${tab}`}
               rows={tab === '1' ? activatedProjects : availableProjects}
               columns={tab === '1' ? activatedColumns : notActivatedColumns}

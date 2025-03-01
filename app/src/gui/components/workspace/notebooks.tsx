@@ -116,18 +116,7 @@ export default function NoteBooks() {
       type: 'string',
       flex: 0.4,
       renderCell: ({row}) => (
-        <Box
-          onClick={() => {
-            if (row.isActivated) {
-              history(
-                ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                  row.serverId +
-                  '/' +
-                  row.projectId
-              );
-            }
-          }}
-        >
+        <Box>
           <Typography
             variant={is_xs ? 'body2' : 'body1'}
             fontWeight={row.isActivated ? 'bold' : 'normal'}
@@ -152,14 +141,15 @@ export default function NoteBooks() {
       minWidth: 140,
       renderCell: ({row}) => (
         <Button
-          variant={'contained'}
-          onClick={async () => {
+          variant={'outlined'}
+          onClick={async e => {
+            e.stopPropagation();
             dispatch(
               deactivateProject({
                 projectId: row.projectId,
                 serverId: row.serverId,
               })
-            )
+            );
           }}
         >
           Deactivate
