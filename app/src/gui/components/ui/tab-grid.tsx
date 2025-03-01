@@ -52,18 +52,6 @@ export default function TabProjectGrid({
     setPaginationModel({page: 1, pageSize: projects.length});
   }, [projects]);
 
-  const history = useNavigate();
-
-  const handleRowClick: GridEventListener<'rowClick'> = ({
-    row,
-  }: {
-    row: Project;
-  }) => {
-    if (row.isActivated)
-      history(
-        `${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${row.serverId}/${row.projectId}`
-      );
-  };
   return (
     <TabContext value={tabID}>
       <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
@@ -100,7 +88,6 @@ export default function TabProjectGrid({
               rows={tab === '1' ? activatedProjects : availableProjects}
               columns={tab === '1' ? activatedColumns : notActivatedColumns}
               sx={{cursor: tab === '1' ? 'pointer' : 'default'}}
-              onRowClick={handleRowClick}
               getRowId={({projectId}) => projectId}
               rowHeight={75}
               hideFooter

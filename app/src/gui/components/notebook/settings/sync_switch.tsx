@@ -33,9 +33,15 @@ import {
 } from '@mui/material';
 import {useState} from 'react';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
-import {Project} from '../../../../context/slices/projectSlice';
+import {
+  Project,
+  resumeSyncingProject,
+  stopSyncingAttachments,
+  stopSyncingProject,
+} from '../../../../context/slices/projectSlice';
 import {theme} from '../../../themes';
 import NotebookActivationSwitch from './activation-switch';
+import {useAppDispatch} from '../../../../context/store';
 
 type NotebookSyncSwitchProps = {
   project: Project;
@@ -49,6 +55,7 @@ export default function NotebookSyncSwitch({
   setTabID = () => {},
 }: NotebookSyncSwitchProps) {
   const [open, setOpen] = useState(false);
+  const dispatch = useAppDispatch();
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
   const isSyncing = project.database?.isSyncing ?? false;
@@ -67,7 +74,6 @@ export default function NotebookSyncSwitch({
             sx={{mr: 0, md: 2}}
             control={
               <Switch
-                // TODO syncing switch here
                 checked={isSyncing ?? false}
                 disabled={false}
                 onClick={handleOpen}
@@ -129,11 +135,21 @@ export default function NotebookSyncSwitch({
                 disableElevation
                 onClick={async () => {
                   if (isSyncing) {
-                    // TODO finish this
                     // stop syncing
+                    dispatch(
+                      stopSyncingProject({
+                        projectId: project.projectId,
+                        serverId: project.serverId,
+                      })
+                    );
                   } else {
-                    // TODO finish this
                     // start syncing
+                    dispatch(
+                      resumeSyncingProject({
+                        projectId: project.projectId,
+                        serverId: project.serverId,
+                      })
+                    );
                   }
                   handleClose();
                 }}

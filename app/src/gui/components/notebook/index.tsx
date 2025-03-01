@@ -339,9 +339,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         </TabPanel>
 
         <TabPanel value={tabIndex} index={4} id={'settings'}>
-          {uiSpecification !== null && (
-            <NotebookSettings uiSpec={uiSpecification} />
-          )}
+          <NotebookSettings uiSpec={uiSpecification} />
         </TabPanel>
 
         <TabPanel value={tabIndex} index={5} id={'map'}>

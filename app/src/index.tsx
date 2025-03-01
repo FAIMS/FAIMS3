@@ -37,7 +37,7 @@ const getDataDB = async (
   const projectState = store.getState();
   const dbId = selectAllProjects(projectState).find(
     p => p.projectId === projectId
-  )?.database?.localDb;
+  )?.database?.localDbId;
   if (!dbId) {
     throw Error(
       `Could not get Data DB for project with ID. The project store does not contain a reference to this project database ${projectId}.`

@@ -256,13 +256,15 @@ export const wipeAllDatabases = async () => {
       if (project.isActivated && project.database) {
         // Local DB should be wiped
         const localDb = databaseService.getLocalDatabase(
-          project.database.localDb
+          project.database.localDbId
         );
         // Destroy
         await localDb?.destroy();
         // Then remove
         localDb &&
-          databaseService.closeAndRemoveLocalDatabase(project.database.localDb);
+          databaseService.closeAndRemoveLocalDatabase(
+            project.database.localDbId
+          );
       }
     }
   }

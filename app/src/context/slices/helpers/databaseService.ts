@@ -43,9 +43,15 @@ class DatabaseService {
   }
 
   // Clean up database instances
-  closeAndRemoveLocalDatabase(id: string): void {
+  closeAndRemoveLocalDatabase(
+    id: string,
+    {clean = false}: {clean?: boolean} = {}
+  ): void {
     const db = this.localDatabases.get(id);
     if (db) {
+      if (clean) {
+        db.destroy();
+      }
       db.close();
       this.localDatabases.delete(id);
     }

@@ -73,15 +73,15 @@ export interface DatabaseConnectionConfig {
  */
 export interface RemoteCouchConnection {
   // Id of the remote DB - use service to fetch
-  remoteDb: string;
+  remoteDbId: string;
   // The sync object (this is created which initiates sync)
-  sync: string;
+  syncId: string | undefined;
   // The configuration for the remote connection e.g. auth, endpoint etc
   connectionConfiguration: DatabaseConnectionConfig;
 }
 export interface DatabaseConnection {
   // A reference to the local data database
-  localDb: string;
+  localDbId: string;
 
   // This defines whether the database synchronisation is active
 
@@ -225,46 +225,45 @@ const projectsSlice = createSlice({
 
               // First - build the local DB
               const localDb = createLocalPouchDatabase<ProjectDataObject>({
-                id: dbInfo.localDb,
+                id: dbInfo.localDbId,
               });
-              databaseService.registerLocalDatabase(dbInfo.localDb, localDb, {
+              databaseService.registerLocalDatabase(dbInfo.localDbId, localDb, {
                 tolerant: true,
               });
 
               // Next - setup the remote if we need it
-              if (dbInfo.isSyncing) {
-                if (dbInfo.remote) {
-                  // creates the remote database (pouch remote)
-                  const {db: remoteDb, id: remoteDbId} =
-                    createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
-                      dbInfo.remote.connectionConfiguration
-                    );
-                  databaseService.registerRemoteDatabase(remoteDbId, remoteDb, {
-                    tolerant: true,
-                  });
+              if (dbInfo.remote) {
+                // creates the remote database (pouch remote)
+                const {db: remoteDb, id: remoteDbId} =
+                  createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
+                    dbInfo.remote.connectionConfiguration
+                  );
+                databaseService.registerRemoteDatabase(remoteDbId, remoteDb, {
+                  tolerant: true,
+                });
 
-                  // and the sync
-
+                // and the sync
+                let updatedSyncId: string | undefined = undefined;
+                if (dbInfo.isSyncing) {
                   // creates the sync object (PouchDB.Replication.Sync)
                   const sync = createPouchDbSync({
                     attachmentDownload: dbInfo.isSyncingAttachments,
                     localDb,
                     remoteDb,
                   });
-                  const syncId = buildSyncId({
-                    localId: dbInfo.localDb,
+                  updatedSyncId = buildSyncId({
+                    localId: dbInfo.localDbId,
                     remoteId: remoteDbId,
                   });
-                  databaseService.registerSync(syncId, sync, {tolerant: true});
-
-                  // Also worth noting we should update the remote db ID just in case the function changed (to avoid broken store)
-                  dbInfo.remote.remoteDb = remoteDbId;
-                } else {
-                  // Something weird here - why do we have syncing enabled but not remote DB?
-                  // TODO determine behaviour
+                  databaseService.registerSync(updatedSyncId, sync, {
+                    tolerant: true,
+                  });
                 }
-              }
 
+                // Also worth noting we should update the remote db ID just in case the function changed (to avoid broken store)
+                dbInfo.remote.remoteDbId = remoteDbId;
+                dbInfo.remote.syncId = updatedSyncId;
+              }
               // otherwise we are all good - just local db needed
             } else {
               // This is weird - we have an activated survey but the database
@@ -404,9 +403,63 @@ const projectsSlice = createSlice({
       };
     },
 
-    //removeProject: (state, action: PayloadAction<{}>) => {
-    //  // TODO define what this does - implications?
-    //},
+    // Remove a project from local storage
+    // Note: This doesn't delete the project from the server, only removes it from local state
+    removeProject: (state, action: PayloadAction<ProjectIdentity>) => {
+      const payload = action.payload;
+
+      // Check the server exists
+      const server = serverById(state, payload.serverId);
+      if (!server) {
+        // abort
+        throw new Error(
+          `Cannot remove project from non-existent server with ID ${payload.serverId}.`
+        );
+      }
+
+      // Check if project exists
+      const project = projectByIdentity(state, payload);
+      if (!project) {
+        throw new Error(
+          `Cannot remove project that does not exist. Server ID: ${payload.serverId}, Project ID: ${payload.projectId}.`
+        );
+      }
+
+      // If the project is activated, we need to deactivate it first
+      if (project.isActivated) {
+        // Clean up resources: close and remove databases/syncs
+        if (project.database) {
+          // If there's a remote connection with sync
+          if (project.database.remote) {
+            // Close sync (if active/available)
+            const syncId = project.database.remote.syncId;
+            if (syncId) {
+              databaseService.closeAndRemoveSync(syncId);
+            }
+
+            // Close remote database
+            const remoteDatabaseId = project.database.remote.remoteDbId;
+            if (remoteDatabaseId) {
+              databaseService.closeAndRemoveRemoteDatabase(remoteDatabaseId);
+            }
+          }
+
+          // Close and clean local database
+          const localDatabaseId = project.database.localDbId;
+          if (localDatabaseId) {
+            databaseService.closeAndRemoveLocalDatabase(localDatabaseId, {
+              clean: true,
+            });
+          }
+        }
+
+        // Remove compiled spec from service
+        compiledSpecService.removeSpec(project.uiSpecificationId);
+      }
+
+      // Remove the project from the server's projects map
+      delete server.projects[payload.projectId];
+    },
 
     // Update a project (metadata / details)
     updateProjectDetails: (
@@ -553,21 +606,91 @@ const projectsSlice = createSlice({
         database: {
           isSyncing: true,
           isSyncingAttachments: false,
-          localDb: localDatabaseId,
+          localDbId: localDatabaseId,
           remote: {
             connectionConfiguration,
-            remoteDb: remoteDbId,
-            sync: syncId,
+            remoteDbId: remoteDbId,
+            syncId: syncId,
           },
         },
       };
     },
 
-    // De-activate a project
-    // deactivateProject: (state, action: PayloadAction<{}>) => {
-    //   // TODO
-    //   // Define what de-activating would do
-    // },
+    // Deactivate a project
+    deactivateProject: (state, action: PayloadAction<ProjectIdentity>) => {
+      const payload = action.payload;
+
+      // Check the server exists
+      const server = serverById(state, payload.serverId);
+      if (!server) {
+        // abort
+        throw new Error(
+          `You cannot activate a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // check the project exists
+      const project = projectByIdentity(state, payload);
+      if (!project) {
+        // abort
+        throw new Error(
+          `You cannot activate a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // check it's already active
+      if (!project.isActivated) {
+        throw new Error(
+          `You cannot deactivate a project which is not already active. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // creates and/or links to the local data database
+      if (!project.database) {
+        throw new Error(
+          `Failed to deactivate active project due to missing local database. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+      if (!project.database.remote) {
+        throw new Error(
+          `Failed to deactivate active project due to missing remote database. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // close and remove sync (if it's available)
+      const syncId = project.database.remote.syncId;
+      if (syncId) {
+        databaseService.closeAndRemoveSync(syncId);
+      }
+
+      // establish ID of remote DB
+      const remoteDatabaseId = project.database.remote.remoteDbId;
+      // remove (no need to wipe/clean records)
+      databaseService.closeAndRemoveRemoteDatabase(remoteDatabaseId);
+
+      // establish ID of local DB
+      const localDatabaseId = project.database.localDbId;
+      // wipe and remove local database (cleaning records)
+      databaseService.closeAndRemoveLocalDatabase(localDatabaseId, {
+        clean: true,
+      });
+
+      // updates the state with all of this new information
+      state.servers[payload.serverId].projects[payload.projectId] = {
+        // These are retained
+        metadata: project.metadata,
+        projectId: project.projectId,
+        rawUiSpecification: project.rawUiSpecification,
+        uiSpecificationId: project.uiSpecificationId,
+        createdAt: project.createdAt,
+        lastUpdated: project.lastUpdated,
+        serverId: project.serverId,
+
+        // These are updated (to indicate de-activation)
+        isActivated: false,
+        database: undefined,
+      };
+    },
 
     // Update connection details for activated project
     updateConnection: (
@@ -619,21 +742,23 @@ const projectsSlice = createSlice({
 
       // fetch the existing local DB
       const localDb = databaseService.getLocalDatabase(
-        project.database.localDb
+        project.database.localDbId
       );
       if (!localDb) {
         throw new Error(
-          `The local DB with ID ${project.database.localDb} does not exist, so cannot update connection.`
+          `The local DB with ID ${project.database.localDbId} does not exist, so cannot update connection.`
         );
       }
 
       // cleanup old sync
-      const oldSyncId = project.database.remote.sync;
-
-      databaseService.closeAndRemoveSync(oldSyncId);
+      const oldSyncId = project.database.remote.syncId;
+      if (oldSyncId) {
+        // Only update sync object if we are syncing
+        databaseService.closeAndRemoveSync(oldSyncId);
+      }
 
       // cleanup old remote DB
-      const oldRemoteId = project.database.remote.remoteDb;
+      const oldRemoteId = project.database.remote.remoteDbId;
       databaseService.closeAndRemoveRemoteDatabase(oldRemoteId);
 
       // setup updated connection configuration
@@ -655,19 +780,216 @@ const projectsSlice = createSlice({
         );
       databaseService.registerRemoteDatabase(remoteDbId, remoteDb);
 
+      // creates the sync object (PouchDB.Replication.Sync) (only if necessary)
+      let updatedSyncId: string | undefined = undefined;
+      if (project.database.isSyncing) {
+        const sync = createPouchDbSync({
+          // reuse existing attachment setting
+          attachmentDownload: project.database.isSyncingAttachments,
+          // local is fine to continue using!
+          localDb: localDb,
+          remoteDb,
+        });
+        // Register the sync
+        updatedSyncId = buildSyncId({
+          localId: project.database.localDbId,
+          remoteId: remoteDbId,
+        });
+        databaseService.registerSync(updatedSyncId, sync);
+      }
+
+      // updates the state with all of this new information
+      state.servers[payload.serverId].projects[payload.projectId] = {
+        // These are retained
+        metadata: project.metadata,
+        projectId: project.projectId,
+        rawUiSpecification: project.rawUiSpecification,
+        uiSpecificationId: project.uiSpecificationId,
+        createdAt: project.createdAt,
+        lastUpdated: project.lastUpdated,
+        serverId: project.serverId,
+
+        // These are updated
+        isActivated: true,
+        database: {
+          // Retained
+          isSyncing: project.database.isSyncing,
+          // This is retained
+          isSyncingAttachments: project.database.isSyncingAttachments,
+          // This is retained
+          localDbId: project.database.localDbId,
+          remote: {
+            // new connection configuration
+            connectionConfiguration,
+            // new remote database
+            remoteDbId: remoteDbId,
+            // new sync
+            syncId: updatedSyncId,
+          },
+        },
+      };
+    },
+
+    // Temporarily stop syncing a project without deactivating it
+    stopSyncingProject: (state, action: PayloadAction<ProjectIdentity>) => {
+      // check project/server exists
+      const payload = action.payload;
+
+      // Check the server exists
+      const server = serverById(state, payload.serverId);
+      if (!server) {
+        // abort
+        throw new Error(
+          `You cannot stop syncing a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // check the project exists
+      const project = projectByIdentity(state, payload);
+      if (!project) {
+        // abort
+        throw new Error(
+          `You cannot stop syncing a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // check it's already active
+      if (!project.isActivated) {
+        throw new Error(
+          `You cannot stop syncing an inactive project. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // check database and remote are defined
+      if (!project.database || !project.database.remote) {
+        throw new Error(
+          `You cannot stop syncing a project which has no database object and/or remote connection. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}.`
+        );
+      }
+
+      // If already not syncing, nothing to do
+      if (!project.database.isSyncing) {
+        return;
+      }
+
+      // cleanup existing sync
+      const syncId = project.database.remote.syncId;
+      if (!syncId) {
+        throw new Error(
+          `Failed to stop syncing project due to missing sync. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+      databaseService.closeAndRemoveSync(syncId);
+
+      // updates the state to indicate no syncing
+      state.servers[payload.serverId].projects[payload.projectId] = {
+        // These are retained
+        metadata: project.metadata,
+        projectId: project.projectId,
+        rawUiSpecification: project.rawUiSpecification,
+        uiSpecificationId: project.uiSpecificationId,
+        createdAt: project.createdAt,
+        lastUpdated: project.lastUpdated,
+        serverId: project.serverId,
+
+        // Project remains activated, but syncing is stopped
+        isActivated: true,
+        database: {
+          // Update sync state to indicate no syncing
+          isSyncing: false,
+          // Retain attachment sync setting for when sync is resumed
+          isSyncingAttachments: project.database.isSyncingAttachments,
+          // Retain local database reference
+          localDbId: project.database.localDbId,
+          // Retain remote connection info for future re-sync
+          remote: {
+            // Keep connection configuration for when sync is resumed
+            connectionConfiguration:
+              project.database.remote.connectionConfiguration,
+            remoteDbId: project.database.remote.remoteDbId,
+            // No sync object when syncing is paused
+            syncId: undefined,
+          },
+        },
+      };
+    },
+
+    // Resume syncing for a project with syncing temporarily stopped
+    resumeSyncingProject: (state, action: PayloadAction<ProjectIdentity>) => {
+      // check project/server exists
+      const payload = action.payload;
+
+      // Check the server exists
+      const server = serverById(state, payload.serverId);
+      if (!server) {
+        // abort
+        throw new Error(
+          `You cannot resume syncing a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // check the project exists
+      const project = projectByIdentity(state, payload);
+      if (!project) {
+        // abort
+        throw new Error(
+          `You cannot resume syncing a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // check it's already active
+      if (!project.isActivated) {
+        throw new Error(
+          `You cannot resume syncing an inactive project. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+        );
+      }
+
+      // check database and remote are defined
+      if (!project.database || !project.database.remote) {
+        throw new Error(
+          `You cannot resume syncing a project which has no database object and/or remote connection. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}.`
+        );
+      }
+
+      // If already syncing, nothing to do
+      if (project.database.isSyncing) {
+        return;
+      }
+
+      // fetch the existing local DB
+      const localDb = databaseService.getLocalDatabase(
+        project.database.localDbId
+      );
+      if (!localDb) {
+        throw new Error(
+          `The local DB with ID ${project.database.localDbId} does not exist, so cannot resume syncing.`
+        );
+      }
+
+      // fetch the existing remote DB
+      const remoteDb = databaseService.getRemoteDatabase(
+        project.database.remote.remoteDbId
+      );
+      if (!remoteDb) {
+        throw new Error(
+          `The remote DB with ID ${project.database.remote.remoteDbId} does not exist, so cannot resume syncing.`
+        );
+      }
+
       // creates the sync object (PouchDB.Replication.Sync)
       const sync = createPouchDbSync({
-        // reuse existing attachment setting
+        // Use existing setting for attachments
         attachmentDownload: project.database.isSyncingAttachments,
-        // local is fine to continue using!
-        localDb: localDb,
+        // Use existing local DB
+        localDb,
+        // Use existing remote DB
         remoteDb,
       });
 
       // Register the sync
       const syncId = buildSyncId({
-        localId: project.database.localDb,
-        remoteId: remoteDbId,
+        localId: project.database.localDbId,
+        remoteId: project.database.remote.remoteDbId,
       });
       databaseService.registerSync(syncId, sync);
 
@@ -685,32 +1007,23 @@ const projectsSlice = createSlice({
         // These are updated
         isActivated: true,
         database: {
-          // TODO consider what to do with this switch - what behaviour should
-          // it have?
+          // Set syncing to true
           isSyncing: true,
-          // This is retained
+          // Retain attachment sync setting
           isSyncingAttachments: project.database.isSyncingAttachments,
-          // This is retained
-          localDb: project.database.localDb,
+          // Retain local database reference
+          localDbId: project.database.localDbId,
           remote: {
-            // new connection configuration
-            connectionConfiguration,
-            // new remote database
-            remoteDb: remoteDbId,
-            // new sync
-            sync: syncId,
+            // Keep existing connection configuration
+            connectionConfiguration:
+              project.database.remote.connectionConfiguration,
+            remoteDbId: project.database.remote.remoteDbId,
+            // Set new sync ID
+            syncId: syncId,
           },
         },
       };
     },
-
-    // Set project syncing
-    //stopSyncingProject: (state, action: PayloadAction<{}>) => {
-    //  // TODO what does this do?
-    //},
-    //resumeSyncingProject: (state, action: PayloadAction<{}>) => {
-    //  // TODO what does this do?
-    //},
 
     // Set attachment syncing
     stopSyncingAttachments: (state, action: PayloadAction<ProjectIdentity>) => {
@@ -751,44 +1064,50 @@ const projectsSlice = createSlice({
 
       // fetch the existing local DB
       const localDb = databaseService.getLocalDatabase(
-        project.database.localDb
+        project.database.localDbId
       );
       if (!localDb) {
         throw new Error(
-          `The local DB with ID ${project.database.localDb} does not exist, so cannot update connection.`
+          `The local DB with ID ${project.database.localDbId} does not exist, so cannot update connection.`
         );
       }
 
       // fetch the existing remote DB
-      const remoteDb = databaseService.getLocalDatabase(
-        project.database.remote.remoteDb
+      const remoteDb = databaseService.getRemoteDatabase(
+        project.database.remote.remoteDbId
       );
       if (!remoteDb) {
         throw new Error(
-          `The remote DB with ID ${project.database.remote.remoteDb} does not exist, so cannot update connection.`
+          `The remote DB with ID ${project.database.remote.remoteDbId} does not exist, so cannot update connection.`
         );
       }
 
       // cleanup old sync
-      const oldSyncId = project.database.remote.sync;
-      databaseService.closeAndRemoveSync(oldSyncId);
-      const newSyncId = buildSyncId({
-        localId: project.database.localDb,
-        remoteId: project.database.remote.remoteDb,
-      });
+      let updatedSyncId: undefined | string = undefined;
 
-      // creates the sync object (PouchDB.Replication.Sync)
-      const sync = createPouchDbSync({
-        // STOP syncing attachments
-        attachmentDownload: false,
-        // local is fine to continue using!
-        localDb,
-        // reuse existing remote db
-        remoteDb,
-      });
+      // Remove if needed
+      const oldSyncId = project.database.remote.syncId;
+      if (project.database.isSyncing && oldSyncId) {
+        databaseService.closeAndRemoveSync(oldSyncId);
 
-      // Register the sync
-      databaseService.registerSync(newSyncId, sync);
+        updatedSyncId = buildSyncId({
+          localId: project.database.localDbId,
+          remoteId: project.database.remote.remoteDbId,
+        });
+
+        // creates the sync object (PouchDB.Replication.Sync)
+        const sync = createPouchDbSync({
+          // STOP syncing attachments
+          attachmentDownload: false,
+          // local is fine to continue using!
+          localDb,
+          // reuse existing remote db
+          remoteDb,
+        });
+
+        // Register the sync
+        databaseService.registerSync(updatedSyncId, sync);
+      }
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
@@ -804,20 +1123,19 @@ const projectsSlice = createSlice({
         // These are updated
         isActivated: true,
         database: {
-          // TODO consider what to do with this switch - what behaviour should
-          // it have?
-          isSyncing: true,
+          // retain
+          isSyncing: project.database.isSyncing,
           // This is UPDATED
           isSyncingAttachments: false,
           // This is retained
-          localDb: project.database.localDb,
+          localDbId: project.database.localDbId,
           remote: {
             // reuse connection and remote
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
-            remoteDb: project.database.remote.remoteDb,
+            remoteDbId: project.database.remote.remoteDbId,
             // new sync
-            sync: newSyncId,
+            syncId: updatedSyncId,
           },
         },
       };
@@ -863,44 +1181,50 @@ const projectsSlice = createSlice({
 
       // fetch the existing local DB
       const localDb = databaseService.getLocalDatabase(
-        project.database.localDb
+        project.database.localDbId
       );
       if (!localDb) {
         throw new Error(
-          `The local DB with ID ${project.database.localDb} does not exist, so cannot update connection.`
+          `The local DB with ID ${project.database.localDbId} does not exist, so cannot update connection.`
         );
       }
 
       // fetch the existing remote DB
-      const remoteDb = databaseService.getLocalDatabase(
-        project.database.remote.remoteDb
+      const remoteDb = databaseService.getRemoteDatabase(
+        project.database.remote.remoteDbId
       );
       if (!remoteDb) {
         throw new Error(
-          `The remote DB with ID ${project.database.remote.remoteDb} does not exist, so cannot update connection.`
+          `The remote DB with ID ${project.database.remote.remoteDbId} does not exist, so cannot update connection.`
         );
       }
 
       // cleanup old sync
-      const oldSyncId = project.database.remote.sync;
+      let updatedSyncId: undefined | string = undefined;
 
-      databaseService.closeAndRemoveSync(oldSyncId);
+      // Remove if needed
+      const oldSyncId = project.database.remote.syncId;
+      if (project.database.isSyncing && oldSyncId) {
+        databaseService.closeAndRemoveSync(oldSyncId);
 
-      const newSyncId = buildSyncId({
-        localId: project.database.localDb,
-        remoteId: project.database.remote.remoteDb,
-      });
+        updatedSyncId = buildSyncId({
+          localId: project.database.localDbId,
+          remoteId: project.database.remote.remoteDbId,
+        });
 
-      // creates the sync object (PouchDB.Replication.Sync)
-      const sync = createPouchDbSync({
-        // START syncing attachments
-        attachmentDownload: true,
-        // local is fine to continue using!
-        localDb,
-        // reuse existing remote db
-        remoteDb,
-      });
-      databaseService.registerSync(newSyncId, sync);
+        // creates the sync object (PouchDB.Replication.Sync)
+        const sync = createPouchDbSync({
+          // START syncing attachments
+          attachmentDownload: true,
+          // local is fine to continue using!
+          localDb,
+          // reuse existing remote db
+          remoteDb,
+        });
+
+        // Register the sync
+        databaseService.registerSync(updatedSyncId, sync);
+      }
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
@@ -916,20 +1240,19 @@ const projectsSlice = createSlice({
         // These are updated
         isActivated: true,
         database: {
-          // TODO consider what to do with this switch - what behaviour should
-          // it have?
-          isSyncing: true,
+          // retained
+          isSyncing: project.database.isSyncing,
           // This is UPDATED
           isSyncingAttachments: true,
           // This is retained
-          localDb: project.database.localDb,
+          localDbId: project.database.localDbId,
           remote: {
             // reuse connection and remote
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
-            remoteDb: project.database.remote.remoteDb,
+            remoteDbId: project.database.remote.remoteDbId,
             // new sync
-            sync: newSyncId,
+            syncId: updatedSyncId,
           },
         },
       };
@@ -973,8 +1296,8 @@ export function getAllDataDbs(
 
   for (const server of Object.values(state.projects.servers)) {
     for (const project of Object.values(server.projects)) {
-      if (project.isActivated && project.database?.localDb) {
-        const db = databaseService.getLocalDatabase(project.database.localDb);
+      if (project.isActivated && project.database?.localDbId) {
+        const db = databaseService.getLocalDatabase(project.database.localDbId);
         if (db) {
           databases.push(db);
         } else {
@@ -1348,12 +1671,16 @@ export const {
   addServer,
   startSyncingAttachments,
   stopSyncingAttachments,
+  stopSyncingProject,
+  resumeSyncingProject,
+  removeProject,
   updateConnection,
   updateProjectDetails,
   updateServerDetails,
   markInitialised,
   rebuildDbs,
   compileSpecs,
+  deactivateProject,
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;
