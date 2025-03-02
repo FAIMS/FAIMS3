@@ -245,6 +245,46 @@ export const uiSpecificationReducer = createSlice({
         );
       }
     },
+    fieldDuplicated: (
+      state,
+      action: PayloadAction<{
+        originalFieldName: string;
+        newFieldName: string;
+        viewId: string;
+      }>
+    ) => {
+      const {originalFieldName, newFieldName, viewId} = action.payload;
+
+      // check if original field exists
+      if (!(originalFieldName in state.fields)) {
+        throw new Error(
+          `Cannot duplicate unknown field ${originalFieldName} via fieldDuplicated action`
+        );
+      }
+
+      // create a deep copy of the original field
+      const originalField = state.fields[originalFieldName];
+      const newField: FieldType = JSON.parse(JSON.stringify(originalField));
+
+      // generate a unique field label/name
+      let fieldLabel = slugify(newFieldName);
+      let N = 1;
+      while (fieldLabel in state.fields) {
+        fieldLabel = slugify(newFieldName + ' ' + N);
+        N += 1;
+      }
+
+      // update the new field's label and name
+      newField['component-parameters'].label = newFieldName;
+      newField['component-parameters'].name = fieldLabel;
+
+      // add the new field to the state
+      state.fields[fieldLabel] = newField;
+
+      // add the new field to the view right after the original field
+      const position = state.fviews[viewId].fields.indexOf(originalFieldName) + 1;
+      state.fviews[viewId].fields.splice(position, 0, fieldLabel);
+    },
     sectionRenamed: (
       state,
       action: PayloadAction<{viewId: string; label: string}>
@@ -500,6 +540,7 @@ export const {
   fieldRenamed,
   fieldAdded,
   fieldDeleted,
+  fieldDuplicated,
   sectionRenamed,
   sectionAdded,
   sectionDeleted,
