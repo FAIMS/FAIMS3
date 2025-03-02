@@ -204,9 +204,7 @@ export function findInvalidConditionReferences(
       const invalidVal = getInvalidExpectedValue(cond);
       if (invalidVal) {
         const label = fieldDef['component-parameters']?.label ?? fId;
-        invalidConditions.push(
-          `Field: ${label} (expects option '${invalidVal}')`
-        );
+        invalidConditions.push(`Field: ${label} (expects '${invalidVal}')`);
       }
     }
   }
@@ -218,7 +216,7 @@ export function findInvalidConditionReferences(
       const invalidValue = getInvalidExpectedValue(cond);
       if (invalidValue) {
         invalidConditions.push(
-          `Section: ${fviewDef.label} (expects option '${invalidValue}')`
+          `Section: ${fviewDef.label} (expects '${invalidValue}')`
         );
       }
     }
