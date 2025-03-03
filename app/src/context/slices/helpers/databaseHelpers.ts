@@ -1,6 +1,7 @@
 import {EncodedProjectUIModel, ProjectUIModel} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
 import {
+  DEBUG_APP,
   POUCH_BATCH_SIZE,
   POUCH_BATCHES_LIMIT,
   RUNNING_UNDER_TEST,
@@ -153,6 +154,107 @@ export function createRemotePouchDbFromConnectionInfo<Content extends {}>({
 }
 
 /**
+ * Type definitions for PouchDB sync/replication event handlers
+ */
+
+/**
+ * Information about replication progress/completion
+ */
+export interface ChangeSyncInfo {
+  /** Which sync direction is this? */
+  direction: 'push' | 'pull';
+  change: {
+    /** Number of document write failures */
+    doc_write_failures: number;
+    /** Number of documents read during replication */
+    docs_read: number;
+    /** Number of documents written during replication */
+    docs_written: number;
+    /** Array of errors that occurred during replication */
+    errors: Error[];
+    /** Last sequence number processed */
+    last_seq: number | string;
+    /** Whether the replication was successful */
+    ok: boolean;
+    /** How many records pending sync? */
+    pending: number;
+    /** Start time of the replication */
+    start_time: string;
+    /** Documents involved in the change */
+    docs?: Array<{
+      _id: string;
+      _rev: string;
+      [key: string]: any;
+    }>;
+  };
+}
+
+/**
+ * Map of sync event names to their handler function signatures
+ */
+export interface SyncEventHandlers {
+  /**
+   * Fired when the replication has written a new document
+   * @param info Information about the change, including the docs involved
+   */
+  change?: (info: ChangeSyncInfo) => void;
+
+  /**
+   * Fired when replication is paused, either because a live replication is waiting
+   * for changes, or replication has temporarily failed and is attempting to resume
+   * @param err Error object if replication was paused due to an error
+   */
+  paused?: (err?: Error) => void;
+
+  /**
+   * Fired when the replication starts actively processing changes;
+   * e.g. when it recovers from an error or new changes are available
+   */
+  active?: () => void;
+
+  /**
+   * Fired when a document failed to replicate due to validation or authorization errors
+   * @param err Information about the document that failed to replicate
+   */
+  denied?: (err: Error) => void;
+
+  /**
+   * Fired when the replication is stopped due to an unrecoverable failure
+   * If retry is false, this will also fire when the user goes offline
+   * or another network error occurs
+   * @param err Error that caused replication to fail
+   */
+  error?: (err: Error) => void;
+}
+
+let DEFAULT_SYNC_HANDLERS: SyncEventHandlers = {};
+
+if (DEBUG_APP) {
+  DEFAULT_SYNC_HANDLERS = {
+    active: () => {
+      console.log('🔄 Sync: Active - Replication resumed');
+    },
+    change: info => {
+      console.log('🔄 Sync: Change', info);
+    },
+    paused: err => {
+      console.log(
+        '🔄 Sync: Paused',
+        err ? {error: err} : '(replication up to date)'
+      );
+    },
+    denied: err => {
+      console.log('🔄 Sync: Denied - Document failed to replicate', {
+        error: err,
+      });
+    },
+    error: err => {
+      console.log('🔄 Sync: Error', {error: err});
+    },
+  };
+}
+
+/**
  * Creates a new synchronisation (PouchDB.sync) between the specified local and
  * remote DB. This uses the preferred sync options to avoid misconfiguration in
  * caller functions. Two way sync is always enabled, with live and retry. If
@@ -162,6 +264,7 @@ export function createRemotePouchDbFromConnectionInfo<Content extends {}>({
  * @param attachmentDownload Download attachments iff true
  * @param localDb The local DB to sync
  * @param remoteDb The remote DB to sync
+ * @param eventHandlers Optional event handlers for sync events
  *
  * @returns The new sync object
  */
@@ -169,28 +272,25 @@ export function createPouchDbSync<Content extends {}>({
   attachmentDownload,
   localDb,
   remoteDb,
+  eventHandlers = DEFAULT_SYNC_HANDLERS,
 }: {
   attachmentDownload: boolean;
   localDb: PouchDB.Database<Content>;
   remoteDb: PouchDB.Database<Content>;
+  eventHandlers?: SyncEventHandlers;
 }) {
   // Configure attachment filtering if needed
   const pullFilter = attachmentDownload ? {} : ATTACHMENT_FILTER_CONFIG;
-
   const options: DBReplicateOptions = {
     // Live sync mode (i.e. poll)
     live: true,
-
     // Retry on fail
     retry: true,
-
     // Timeout after 15 seconds
     timeout: 15000,
-
     // Sync batch sizing options
     batch_size: POUCH_BATCH_SIZE,
     batches_limit: POUCH_BATCHES_LIMIT,
-
     // Push and pull specific options
     push: {
       checkpoint: 'source',
@@ -201,19 +301,35 @@ export function createPouchDbSync<Content extends {}>({
     },
   };
 
-  return PouchDB.sync(localDb, remoteDb, options)
-    .on('error', err => {
-      console.warn('❌ Sync error occurred:', {
-        error: err,
-        dbName: localDb.name,
-      });
-    })
-    .on('denied', err => {
-      console.warn('🚫 Sync access denied:', {
-        error: err,
-        dbName: localDb.name,
-      });
-    });
+  // Create the sync object
+  let sync = PouchDB.sync(localDb, remoteDb, options);
+
+  // Attach all provided event handlers These types provided in the library are
+  // completely wrong - e.g. see the docs here https://pouchdb.com/api.html#sync
+  // - these events are not even available in the types and the interfaces are
+  //   incomplete/too-restrictive
+  if (eventHandlers.change) {
+    // @ts-ignore
+    sync = sync.on('change', eventHandlers.change);
+  }
+  if (eventHandlers.paused) {
+    // @ts-ignore
+    sync = sync.on('paused', eventHandlers.paused);
+  }
+  if (eventHandlers.active) {
+    // @ts-ignore
+    sync = sync.on('active', eventHandlers.active);
+  }
+  if (eventHandlers.denied) {
+    // @ts-ignore
+    sync = sync.on('denied', eventHandlers.denied);
+  }
+  if (eventHandlers.error) {
+    // @ts-ignore
+    sync = sync.on('error', eventHandlers.error);
+  }
+
+  return sync;
 }
 
 /**
