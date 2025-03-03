@@ -246,9 +246,6 @@ const authSlice = createSlice({
 // =========
 
 export const selectActiveUser = (state: AuthStore) => state.auth.activeUser;
-export const selectActiveServerId = (state: AuthStore) =>
-  state.auth.activeUser?.serverId;
-
 export const selectIsAuthenticated = (state: AuthStore) =>
   state.auth.isAuthenticated;
 export const selectActiveToken = (state: AuthStore) => {
@@ -278,6 +275,14 @@ export const selectSpecificServer = createSelector(
     (_state: AuthStore, serverId: string) => serverId,
   ],
   (servers, serverId) => servers[serverId]?.users ?? {}
+);
+
+/**
+ * Memoized selector for the active server ID
+ */
+export const selectActiveServerId = createSelector(
+  [(state: RootState) => state.auth.activeUser],
+  (activeUser) => activeUser?.serverId
 );
 
 // STATE HELPER FUNCTIONS

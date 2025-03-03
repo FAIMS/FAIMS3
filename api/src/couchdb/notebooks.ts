@@ -54,7 +54,7 @@ import {
 import {Stringifier, stringify} from 'csv-stringify';
 import {slugify} from '../utils';
 import {userHasPermission} from './users';
-import {decodeUiSpec} from '@faims3/data-model/build/src/datamodel/core';
+import {decodeUiSpec} from '@faims3/data-model';
 
 /**
  * getProjects - get the internal project documents that reference

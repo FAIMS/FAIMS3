@@ -50,7 +50,10 @@ import {
   selectActiveServerId,
   selectIsAuthenticated,
 } from '../../context/slices/authSlice';
-import {Project} from '../../context/slices/projectSlice';
+import {
+  Project,
+  selectProjectsByServerId,
+} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
@@ -121,9 +124,7 @@ export default function MainAppBar() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const activeServerId = useAppSelector(selectActiveServerId);
   const projectList = useAppSelector(state =>
-    activeServerId
-      ? Object.values(state.projects.servers[activeServerId]?.projects ?? {})
-      : []
+    activeServerId ? selectProjectsByServerId(state, activeServerId) : []
   );
 
   const [isOpen, setIsOpen] = useState<boolean>(false);

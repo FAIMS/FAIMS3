@@ -24,7 +24,10 @@ import {grey} from '@mui/material/colors';
 import 'animate.css';
 import moment from 'moment';
 import React, {useMemo} from 'react';
-import {Project} from '../../../context/slices/projectSlice';
+import {
+  Project,
+  selectActiveServerProjects,
+} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 
 // Aggregate status type
@@ -159,23 +162,8 @@ const aggregateSyncStatus = (projects: Project[]): AggregatedSyncStatus => {
 };
 
 export default function SyncStatus() {
-  // Get the active user's serverId
-  const activeServerId = useAppSelector(
-    state => state.auth.activeUser?.serverId
-  );
-
   // Get all projects for the active server
-  const activeServerProjects = useAppSelector(state => {
-    if (!activeServerId) return [];
-
-    const server = state.projects.servers[activeServerId];
-    if (!server) return [];
-
-    // Return only activated projects
-    return Object.values(server.projects).filter(
-      project => project.isActivated
-    );
-  });
+  const activeServerProjects = useAppSelector(selectActiveServerProjects);
 
   // Compute aggregated sync status
   const aggregatedStatus = useMemo(

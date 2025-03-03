@@ -12,7 +12,7 @@ import {
   ProjectIdentity,
   ProjectMetadata,
 } from '../projectSlice';
-import {decodeUiSpec} from '@faims3/data-model/build/src/datamodel/core';
+import {decodeUiSpec} from '@faims3/data-model';
 
 type DBReplicateOptions =
   | PouchDB.Replication.ReplicateOptions

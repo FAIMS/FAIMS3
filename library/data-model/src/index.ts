@@ -63,6 +63,7 @@ import {ProjectID, RecordMetadata, TokenContents} from './types';
 export * from './auth';
 export * from './data_storage/authDB';
 export * from './utils';
+import {decodeUiSpec} from './datamodel/core';
 
 export {
   addDesignDocsForNotebook,
@@ -98,6 +99,7 @@ export {
   setEqualityFunctionForType,
   setRecordAsDeleted,
   upsertFAIMSData,
+  decodeUiSpec,
 };
 
 export * from './api';

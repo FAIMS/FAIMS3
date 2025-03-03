@@ -40,6 +40,7 @@ import {
   deactivateProject,
   initialiseProjects,
   Project,
+  selectProjectsByServerId,
 } from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {useIsOnline} from '../../../utils/customHooks';
@@ -82,7 +83,7 @@ export default function NoteBooks() {
 
   const activeServerId = activeUser.serverId;
   const projects = useAppSelector(state =>
-    Object.values(state.projects.servers[activeServerId]?.projects ?? {})
+    selectProjectsByServerId(state, activeServerId)
   );
 
   // Refresh mutation

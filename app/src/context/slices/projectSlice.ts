@@ -12,7 +12,7 @@ import {
 } from '@reduxjs/toolkit';
 import {CONDUCTOR_URLS} from '../../buildconfig';
 import {AppDispatch, RootState, store} from '../store';
-import {isTokenValid} from './authSlice';
+import {isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
 import {
   buildCompiledSpecId,
@@ -84,7 +84,7 @@ export interface SyncState {
   /** Error message if status is 'error' or 'denied' */
   errorMessage?: string;
   /** Error object if status is 'error' or 'denied' */
-  error?: Error;
+  isError?: boolean;
   /** Stats from the most recent change event */
   lastChangeStats?: {
     docsRead: number;
@@ -1506,6 +1506,45 @@ export const selectProjectById = createSelector(
   }
 );
 
+/**
+ * Returns all projects for a specific server as an array.
+ * Memoized to prevent unnecessary re-renders.
+ *
+ * @param state Redux state
+ * @param serverId ID of the server to get projects from
+ * @returns Array of all projects for the specified server
+ */
+export const selectProjectsByServerId = createSelector(
+  [
+    (state: RootState) => state.projects.servers,
+    (_, serverId: string) => serverId,
+  ],
+  (servers, serverId): Project[] => {
+    const server = servers[serverId];
+    if (!server) {
+      return [];
+    }
+    return Object.values(server.projects);
+  }
+);
+
+/**
+ * Combined selector that gets projects for the active server.
+ * This avoids the need to use two separate selectors in components.
+ */
+export const selectActiveServerProjects = createSelector(
+  [
+    (state: RootState) => state.projects.servers,
+    (state: RootState) => selectActiveServerId(state),
+  ],
+  (servers, activeServerId): Project[] => {
+    if (!activeServerId || !servers[activeServerId]) {
+      return [];
+    }
+    return Object.values(servers[activeServerId].projects);
+  }
+);
+
 // THUNKS
 // ======
 
@@ -1901,6 +1940,7 @@ export function createSyncStateHandlers(
           serverId,
           syncState: {
             status: 'active',
+            isError: false,
           },
         })
       );
@@ -1914,6 +1954,7 @@ export function createSyncStateHandlers(
           syncState: {
             status: 'active',
             pendingRecords: info.change.pending,
+            isError: false,
             lastChangeStats: {
               docsRead: info.change.docs_read,
               docsWritten: info.change.docs_written,
@@ -1933,7 +1974,7 @@ export function createSyncStateHandlers(
             syncState: {
               status: 'error',
               errorMessage: err.message,
-              error: err,
+              isError: true,
             },
           })
         );
@@ -1944,7 +1985,7 @@ export function createSyncStateHandlers(
             serverId,
             syncState: {
               status: 'paused',
-              // Keep existing pendingRecords
+              isError: false,
             },
           })
         );
@@ -1959,7 +2000,7 @@ export function createSyncStateHandlers(
           syncState: {
             status: 'denied',
             errorMessage: err.message,
-            error: err,
+            isError: true,
           },
         })
       );
@@ -1973,7 +2014,7 @@ export function createSyncStateHandlers(
           syncState: {
             status: 'error',
             errorMessage: err.message,
-            error: err,
+            isError: true,
           },
         })
       );
