@@ -282,7 +282,7 @@ export const selectSpecificServer = createSelector(
  */
 export const selectActiveServerId = createSelector(
   [(state: RootState) => state.auth.activeUser],
-  (activeUser) => activeUser?.serverId
+  activeUser => activeUser?.serverId
 );
 
 // STATE HELPER FUNCTIONS
