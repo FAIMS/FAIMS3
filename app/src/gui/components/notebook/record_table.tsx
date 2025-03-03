@@ -879,7 +879,11 @@ export function RecordsTable(props: RecordsTableProps) {
     rows,
     loading,
     viewsets,
-    project: {uiSpecificationId: uiSpecId, projectId: project_id, serverId},
+    project: {
+      uiSpecificationId: uiSpecId,
+      projectId: project_id,
+      serverId,
+    },
   } = props;
   const theme = useTheme();
   const history = useNavigate();

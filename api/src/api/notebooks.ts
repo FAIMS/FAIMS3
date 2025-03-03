@@ -48,7 +48,7 @@ import {
   generateFilenameForAttachment,
   getNotebookMetadata,
   getNotebooks,
-  getNotebookUISpec,
+  getEncodedNotebookUISpec,
   getProjectUIModel,
   getRolesForNotebook,
   streamNotebookFilesAsZip,
@@ -203,11 +203,12 @@ api.get(
       throw new Exceptions.UnauthorizedException();
     }
     const metadata = await getNotebookMetadata(project_id);
-    const uiSpec = await getNotebookUISpec(project_id);
+    const uiSpec = await getEncodedNotebookUISpec(project_id);
     if (metadata && uiSpec) {
       res.json({
         metadata,
-        // silly business
+        // TODO fully implement a UI Spec zod model, and do runtime validation
+        // in all client apps
         'ui-specification': uiSpec as unknown as Record<string, unknown>,
       });
     } else {
@@ -308,7 +309,7 @@ api.get(
       throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
     // get the label for this form for the filename header
-    const uiSpec = await getNotebookUISpec(req.params.id);
+    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
     if (uiSpec && req.params.viewID in uiSpec.viewsets) {
       const label = uiSpec.viewsets[req.params.viewID].label;
 
@@ -337,7 +338,7 @@ api.get(
       throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
     // get the label for this form for the filename header
-    const uiSpec = await getNotebookUISpec(req.params.id);
+    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
     if (uiSpec && req.params.viewID in uiSpec.viewsets) {
       const label = uiSpec.viewsets[req.params.viewID].label;
 

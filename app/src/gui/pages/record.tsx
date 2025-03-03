@@ -54,7 +54,7 @@ import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
-import {addAlert} from '../../context/slices/syncSlice';
+import {addAlert} from '../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {logError} from '../../logging';
 import RecordDelete from '../components/notebook/delete';

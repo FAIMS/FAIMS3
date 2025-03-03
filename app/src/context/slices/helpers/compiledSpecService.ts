@@ -4,7 +4,11 @@
  * data is not part of the store since it contains runtime JS functions (which
  * are compiled) meaning that it cannot safely be serialised.
  *
- * Note that is the ProjectUIModel - not the Encoded model (e.g. with fviews)
+ * Note that is the ProjectUIModel - not the Encoded model (e.g. with fviews).
+ *
+ * NOTE The ID used here is arbitrary so long as it unique to the server +
+ * project combo. To this end, databaseHelpers has a buildCompiledSpecId
+ * function which takes the server and project and combines them to form an ID.
  */
 
 import {ProjectUIModel} from '@faims3/data-model';
@@ -13,7 +17,6 @@ import PouchDBFind from 'pouchdb-find';
 import {compileUiSpecConditionals} from '../../../uiSpecification';
 PouchDB.plugin(PouchDBFind);
 
-// Singleton service to manage database instances
 class CompiledUiSpecService {
   private static instance: CompiledUiSpecService;
   private specs: Map<string, ProjectUIModel> = new Map();

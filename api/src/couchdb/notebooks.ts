@@ -54,6 +54,7 @@ import {
 import {Stringifier, stringify} from 'csv-stringify';
 import {slugify} from '../utils';
 import {userHasPermission} from './users';
+import {decodeUiSpec} from '@faims3/data-model/build/src/datamodel/core';
 
 /**
  * getProjects - get the internal project documents that reference
@@ -512,43 +513,43 @@ export const getNotebookMetadata = async (
 
 /**
  * getNotebookUISpec -- return metadata for a single notebook from the database
- * @param project_id a project identifier
+ * @param projectId a project identifier
  * @returns the UISPec of the project or null if it doesn't exist
  */
-export const getNotebookUISpec = async (
-  project_id: string
+export const getEncodedNotebookUISpec = async (
+  projectId: string
 ): Promise<EncodedProjectUIModel | null> => {
   try {
     // get the metadata from the db
-    const projectDB = await getMetadataDb(project_id);
+    const projectDB = await getMetadataDb(projectId);
     if (projectDB) {
       const uiSpec = (await projectDB.get('ui-specification')) as any;
       delete uiSpec._id;
       delete uiSpec._rev;
       return uiSpec;
     } else {
-      console.error('no metadata database found for', project_id);
+      console.error('no metadata database found for', projectId);
     }
   } catch (error) {
-    console.log('unknown project', project_id);
+    console.log('unknown project', projectId);
   }
   return null;
 };
 
-// Ridiculous!
+/**
+ * Gets the ready to use representation of the UI spec for a given project.
+ *
+ * Does this by fetching from the metadata DB and decoding.
+ *
+ * @param projectId
+ * @returns The decoded project UI model (not compiled)
+ */
 export const getProjectUIModel = async (projectId: string) => {
-  const rawUiSpec = await getNotebookUISpec(projectId);
+  const rawUiSpec = await getEncodedNotebookUISpec(projectId);
   if (!rawUiSpec) {
     throw Error('Could not find UI spec for project with ID ' + projectId);
   }
-  return {
-    _id: rawUiSpec._id,
-    _rev: rawUiSpec._rev,
-    fields: rawUiSpec.fields,
-    views: rawUiSpec.fviews,
-    viewsets: rawUiSpec.viewsets,
-    visible_types: rawUiSpec.visible_types,
-  };
+  return decodeUiSpec(rawUiSpec);
 };
 
 /**
@@ -704,7 +705,7 @@ export const getNotebookFields = async (
   viewID: string
 ) => {
   // work out what fields we're going to output from the uiSpec
-  const uiSpec = await getNotebookUISpec(project_id);
+  const uiSpec = await getEncodedNotebookUISpec(project_id);
   if (!uiSpec) {
     throw new Error("can't find project " + project_id);
   }
@@ -722,7 +723,7 @@ export const getNotebookFields = async (
 };
 
 const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
-  const uiSpec = await getNotebookUISpec(project_id);
+  const uiSpec = await getEncodedNotebookUISpec(project_id);
   if (!uiSpec) {
     throw new Error("can't find project " + project_id);
   }

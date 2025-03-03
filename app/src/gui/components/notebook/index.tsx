@@ -120,7 +120,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
 
-  const {uiSpecificationId: uiSpecificationId} = project;
+  const {uiSpecificationId} = project;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
   if (!uiSpecification) {
     return <CircularLoading label="Loading" />;

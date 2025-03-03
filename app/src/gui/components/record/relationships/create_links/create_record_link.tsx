@@ -19,7 +19,7 @@ import React from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../../../constants/routes';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../../../constants/routes';
-import {addAlert} from '../../../../../context/slices/syncSlice';
+import {addAlert} from '../../../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../../../context/store';
 import {logError} from '../../../../../logging';
 import {CreateRecordLinkProps} from '../types';

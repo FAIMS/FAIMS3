@@ -12,6 +12,7 @@ import {
   ProjectIdentity,
   ProjectMetadata,
 } from '../projectSlice';
+import {decodeUiSpec} from '@faims3/data-model/build/src/datamodel/core';
 
 type DBReplicateOptions =
   | PouchDB.Replication.ReplicateOptions
@@ -358,14 +359,7 @@ export const fetchProjectMetadataAndSpec = async ({
   // Zod model validation.
   const metadata = notebook.metadata as ProjectMetadata;
   const rawUiSpec = notebook['ui-specification'] as EncodedProjectUIModel;
-  const uiSpec = {
-    _id: rawUiSpec._id,
-    _rev: rawUiSpec._rev,
-    fields: rawUiSpec.fields,
-    views: rawUiSpec.fviews,
-    viewsets: rawUiSpec.viewsets,
-    visible_types: rawUiSpec.visible_types,
-  };
+  const uiSpec = decodeUiSpec(rawUiSpec);
   if (compile) {
     compileUiSpecConditionals(uiSpec);
   }

@@ -39,7 +39,7 @@ import {
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../buildconfig';
 import {useNotification} from '../../context/popup';
-import {addAlert} from '../../context/slices/syncSlice';
+import {addAlert} from '../../context/slices/alertSlice';
 import {useAppDispatch} from '../../context/store';
 import {isWeb} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';

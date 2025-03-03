@@ -21,7 +21,12 @@
  *   databases should go in the database file.
  */
 
-import {FullyResolvedRecordID, SplitRecordID} from '../types';
+import {
+  EncodedProjectUIModel,
+  FullyResolvedRecordID,
+  ProjectUIModel,
+  SplitRecordID,
+} from '../types';
 
 export const HRID_STRING = 'hrid';
 
@@ -56,3 +61,21 @@ export function split_full_record_id(
     record_id: splitId[1],
   };
 }
+
+/**
+ * converts the encoded UI spec representation into the normal one
+ * @param rawUiSpec The raw encoded spec
+ * @returns Normal functional spec
+ */
+export const decodeUiSpec = (
+  rawUiSpec: EncodedProjectUIModel
+): ProjectUIModel => {
+  return {
+    _id: rawUiSpec._id,
+    _rev: rawUiSpec._rev,
+    fields: rawUiSpec.fields,
+    views: rawUiSpec.fviews,
+    viewsets: rawUiSpec.viewsets,
+    visible_types: rawUiSpec.visible_types,
+  };
+};

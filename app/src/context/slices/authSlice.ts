@@ -10,7 +10,7 @@ import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
 import {AppDispatch, RootState} from '../store';
 import {updateDatabaseCredentials} from './projectSlice';
-import {addAlert} from './syncSlice';
+import {addAlert} from './alertSlice';
 
 // Types
 export interface TokenInfo {

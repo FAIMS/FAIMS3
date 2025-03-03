@@ -104,8 +104,8 @@ export interface RemoteCouchConnection {
   // The sync object ID - use databaseService to fetch - can be undefined if
   // isSyncing = false
   syncId: string | undefined;
-  // If isSyncing - sync state
-  syncState?: SyncState;
+  // Sync state
+  syncState: SyncState;
   // The configuration for the remote connection e.g. auth, endpoint etc
   connectionConfiguration: DatabaseConnectionConfig;
 }
@@ -150,7 +150,8 @@ export interface ProjectInformation {
   // This is metadata information about the project
   metadata: ProjectMetadata;
 
-  // [Stored uncompiled] - changing this prompts a recompile
+  // The UI Specification which is NOT compiled - see compiledSpecId for the
+  // reference to the compiledSpecService instance of the compiled spec.
   rawUiSpecification: ProjectUIModel;
 }
 
@@ -427,7 +428,11 @@ const projectsSlice = createSlice({
           const localDatabaseId = project.database.localDbId;
           if (localDatabaseId) {
             databaseService.closeAndRemoveLocalDatabase(localDatabaseId, {
-              clean: true,
+              // For the time being - don't clean up deactivated databases as a last
+              // resort data recovery mechanism
+
+              // TODO determine a more suitable approach for validating data is synced to allow true cleanup
+              clean: false,
             });
           }
         }
@@ -609,6 +614,7 @@ const projectsSlice = createSlice({
           localDbId: localDatabaseId,
           remote: {
             connectionConfiguration,
+            syncState: createInitialSyncState(),
             remoteDbId: remoteDbId,
             syncId: syncId,
           },
@@ -639,7 +645,7 @@ const projectsSlice = createSlice({
       if (!server) {
         // abort
         throw new Error(
-          `You cannot activate a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+          `You cannot deactivate a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
         );
       }
 
@@ -648,7 +654,7 @@ const projectsSlice = createSlice({
       if (!project) {
         // abort
         throw new Error(
-          `You cannot activate a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+          `You cannot deactivate a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
         );
       }
 
@@ -686,7 +692,11 @@ const projectsSlice = createSlice({
       const localDatabaseId = project.database.localDbId;
       // wipe and remove local database (cleaning records)
       databaseService.closeAndRemoveLocalDatabase(localDatabaseId, {
-        clean: true,
+        // For the time being - don't clean up deactivated databases as a last
+        // resort data recovery mechanism
+
+        // TODO determine a more suitable approach for validating data is synced to allow true cleanup
+        clean: false,
       });
 
       // updates the state with all of this new information
@@ -855,6 +865,7 @@ const projectsSlice = createSlice({
             connectionConfiguration,
             // new remote database
             remoteDbId: remoteDbId,
+            syncState: createInitialSyncState(),
             // new sync
             syncId: updatedSyncId,
           },
@@ -943,6 +954,7 @@ const projectsSlice = createSlice({
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
+            syncState: project.database.remote.syncState,
             // No sync object when syncing is paused
             syncId: undefined,
           },
@@ -1064,6 +1076,7 @@ const projectsSlice = createSlice({
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
+            syncState: project.database.remote.syncState,
             // Set new sync ID
             syncId: syncId,
           },
@@ -1190,6 +1203,7 @@ const projectsSlice = createSlice({
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
+            syncState: project.database.remote.syncState,
             // new sync
             syncId: updatedSyncId,
           },
@@ -1319,6 +1333,7 @@ const projectsSlice = createSlice({
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
+            syncState: project.database.remote.syncState,
             // new sync
             syncId: updatedSyncId,
           },

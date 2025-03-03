@@ -43,7 +43,7 @@ import {
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import React, {useEffect, useState} from 'react';
-import {addAlert} from '../../../../context/slices/syncSlice';
+import {addAlert} from '../../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {theme} from '../../../themes';

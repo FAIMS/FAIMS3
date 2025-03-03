@@ -50,7 +50,7 @@ import {
   selectIsAuthenticated,
   setActiveUser,
 } from '../../../context/slices/authSlice';
-import {addAlert} from '../../../context/slices/syncSlice';
+import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {isWeb} from '../../../utils/helpers';
 import {theme} from '../../themes';

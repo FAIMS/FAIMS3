@@ -21,15 +21,16 @@ import storage from 'redux-persist/lib/storage';
 import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 import LoadingApp from '../gui/components/loadingApp';
 import {initialize} from '../sync/initialize';
+import alertsReducer from './slices/alertSlice';
 import authReducer, {
   refreshAllUsers,
   refreshIsAuthenticated,
   selectIsAuthenticated,
 } from './slices/authSlice';
 import projectsReducer from './slices/projectSlice';
-import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
 import {databaseService} from './slices/helpers/databaseService';
 import {logError} from '../logging';
+import { addAlert } from './slices/alertSlice';
 
 // Configure persistence for the auth slice
 const authPersistConfig = {key: 'auth', storage};
@@ -54,8 +55,8 @@ export const store = configureStore({
     auth: persistedAuthReducer,
     // projects slice (persisted)
     projects: persistedProjectsReducer,
-    // sync slice
-    sync: syncReducer,
+    // not persisted - alerts
+    alerts: alertsReducer
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -180,10 +181,6 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
   const dispatch = useAppDispatch();
   const mounted = useRef(false);
 
-  // Initialised state
-  const syncStoreInitialised = useAppSelector(
-    state => state.sync.isInitialised
-  );
   const projectStoreInitialised = useAppSelector(
     state => state.projects.isInitialised
   );
@@ -198,27 +195,23 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
     mounted.current = true;
 
     const init = async () => {
-      await initialize()
-        .then(() => {
-          dispatch(setInitialized(true));
-        })
-        .catch(err => {
-          console.error('Could not initialize: ', err);
-          dispatch(
-            addAlert({
-              message:
-                err instanceof Error ? err.message : 'Initialization failed',
-              severity: 'error',
-            })
-          );
-        });
+      await initialize().catch(err => {
+        console.error('Could not initialize: ', err);
+        dispatch(
+          addAlert({
+            message:
+              err instanceof Error ? err.message : 'Initialization failed',
+            severity: 'error',
+          })
+        );
+      });
     };
 
     // Run initialisation logic
     init();
   }, []);
 
-  if (!syncStoreInitialised || !projectStoreInitialised) {
+  if (!projectStoreInitialised) {
     return <LoadingComponent />;
   }
 

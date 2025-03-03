@@ -31,7 +31,7 @@ import {
   createNotebook,
   getNotebookMetadata,
   getNotebooks,
-  getNotebookUISpec,
+  getEncodedNotebookUISpec,
   getRolesForNotebook,
   updateNotebook,
   validateNotebookID,
@@ -226,7 +226,7 @@ describe('notebook api', () => {
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const retrieved = await getNotebookUISpec(projectID);
+      const retrieved = await getEncodedNotebookUISpec(projectID);
 
       expect(retrieved).not.to.be.null;
       if (retrieved) {
@@ -324,7 +324,7 @@ describe('notebook api', () => {
 
       const notebooks = await getNotebooks(user);
       expect(notebooks.length).to.equal(1);
-      const newUISpec = await getNotebookUISpec(projectID);
+      const newUISpec = await getEncodedNotebookUISpec(projectID);
       if (newUISpec) {
         expect(newUISpec['fviews']['FORM1SECTION1']['label']).to.equal(
           'Updated Label'

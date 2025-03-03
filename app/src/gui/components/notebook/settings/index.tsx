@@ -34,7 +34,7 @@ import {
   startSyncingAttachments,
   stopSyncingAttachments,
 } from '../../../../context/slices/projectSlice';
-import {addAlert} from '../../../../context/slices/syncSlice';
+import {addAlert} from '../../../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
 import {theme} from '../../../themes';
 import AutoIncrementerSettingsList from './auto_incrementers';

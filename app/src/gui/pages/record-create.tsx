@@ -45,7 +45,7 @@ import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {Project, selectProjectById} from '../../context/slices/projectSlice';
-import {addAlert} from '../../context/slices/syncSlice';
+import {addAlert} from '../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {newStagedData} from '../../sync/draft-storage';
 import {getReturnedTypesForViewSet} from '../../uiSpecification';
