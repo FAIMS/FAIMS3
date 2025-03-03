@@ -19,6 +19,7 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import {
+  Alert,
   Accordion,
   AccordionDetails,
   AccordionSummary,
@@ -52,7 +53,10 @@ import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
 import {useState, useMemo} from 'react';
-import {findFieldCondtionUsage} from './condition';
+import {
+  findFieldCondtionUsage,
+  findInvalidConditionReferences,
+} from './condition';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -86,6 +90,15 @@ export const FieldEditor = ({
   const allFviews = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
+
+  const invalidRefs = useMemo(() => {
+    return findInvalidConditionReferences(
+      fieldName,
+      field,
+      allFields,
+      allFviews
+    );
+  }, [fieldName, field, allFields, allFviews]);
 
   const dispatch = useAppDispatch();
 
@@ -446,6 +459,21 @@ export const FieldEditor = ({
       </Dialog>
 
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
+        {invalidRefs.length > 0 && (
+          <Grid item xs={12} sx={{marginBottom: 3.5}}>
+            <Alert severity="warning">
+              The following fields/sections have visibility conditions that
+              depend on this field having a specific option avaliable:
+              <ul style={{marginTop: '8px', paddingLeft: '20px'}}>
+                {invalidRefs.map((msg, idx) => (
+                  <li key={idx}>{msg}</li>
+                ))}
+              </ul>
+              Please update this field, or remove/modify affected conditions.
+            </Alert>
+          </Grid>
+        )}
+
         {(fieldComponent === 'MultipleTextField' && (
           <MultipleTextFieldEditor fieldName={fieldName} />
         )) ||
