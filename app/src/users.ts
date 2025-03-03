@@ -29,7 +29,6 @@ import {
   ProjectID,
   ProjectRole,
   RecordMetadata,
-  split_full_project_id,
   TokenContents,
 } from '@faims3/data-model';
 import {CLUSTER_ADMIN_GROUP_NAME, IGNORE_TOKEN_EXP} from './buildconfig';
@@ -144,39 +143,21 @@ export function isClusterAdmin(contents: TokenContents): boolean {
   return couch_roles.includes(CLUSTER_ADMIN_GROUP_NAME);
 }
 
-export async function shouldDisplayProject(
-  contents: TokenContents,
-  full_proj_id: ProjectID
-): Promise<boolean> {
-  const split_id = split_full_project_id(full_proj_id);
-  const is_admin = await isClusterAdmin(contents);
-  if (is_admin) {
-    return true;
-  }
-  const roles = contents.roles;
-  if (roles === undefined) {
-    return false;
-  }
-  for (const role in roles) {
-    if (role === split_id.project_id) {
-      return true;
-    }
-  }
-  return false;
-}
-
-export async function shouldDisplayRecord(
-  contents: TokenContents,
-  full_proj_id: ProjectID,
-  record_metadata: RecordMetadata
-): Promise<boolean> {
+export async function shouldDisplayRecord({
+  contents,
+  recordMetadata: record_metadata,
+  projectId,
+}: {
+  contents: TokenContents;
+  projectId: string;
+  recordMetadata: RecordMetadata;
+}): Promise<boolean> {
   // TODO - consider the context in which this is being run - should only be
   // active user notebooks!
   // TODO understand why this is coming through as a full project instead of just project id
 
   // TODO this should not be on a per row basis - it's the same for all of them
   // (facepalm)
-  const split_id = split_full_project_id(full_proj_id);
   const user_id = contents.username;
 
   // Always display your own records
@@ -193,14 +174,14 @@ export async function shouldDisplayRecord(
 
   // Get roles
   const roles = getUserProjectRolesForCluster(contents);
-  for (const projectId of Object.keys(roles)) {
+  for (const currentProjectId of Object.keys(roles)) {
     if (
-      projectId === split_id.project_id &&
+      currentProjectId === projectId &&
       // TODO BSS-453 consider how we handle this
       // This currently hard-codes admin as a special role which allows visibility of all records but
       // a) why is this necessary on client side?
       // b) isn't this configurable in the notebook designer?
-      roles[projectId].includes('admin')
+      roles[currentProjectId].includes('admin')
     ) {
       return true;
     }

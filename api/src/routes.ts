@@ -39,7 +39,7 @@ import {createInvite, getInvitesForNotebook} from './couchdb/invites';
 import {
   countRecordsInNotebook,
   getNotebookMetadata,
-  getNotebookUISpec,
+  getEncodedNotebookUISpec,
   getNotebooks,
   getRolesForNotebook,
 } from './couchdb/notebooks';
@@ -194,7 +194,7 @@ app.get(
     const user = req.user as Express.User; // requireAuthentication ensures user
     const project_id = req.params.notebook_id;
     const notebook = await getNotebookMetadata(project_id);
-    const uiSpec = await getNotebookUISpec(project_id);
+    const uiSpec = await getEncodedNotebookUISpec(project_id);
     const invitesQR: any[] = [];
     if (notebook && uiSpec) {
       const isAdmin = userHasPermission(user, project_id, 'modify');

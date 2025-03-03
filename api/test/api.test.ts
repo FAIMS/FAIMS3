@@ -18,6 +18,11 @@
  *   Tests for the API
  */
 
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+
 import {
   EncodedProjectUIModel,
   getDataDB,
@@ -25,7 +30,6 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import fs from 'fs';
-import PouchDB from 'pouchdb';
 import request from 'supertest';
 import {createAuthKey} from '../src/authkeys/create';
 import {
@@ -60,8 +64,6 @@ import {
   notebookUserName,
   notebookUserToken,
 } from './utils';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
 
 export const NOTEBOOKS_API_BASE = '/api/notebooks';
 

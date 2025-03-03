@@ -18,66 +18,38 @@
  *   The settings component for a notebook presents user changeable options
  */
 
-import {
-  ProjectID,
-  ProjectInformation,
-  ProjectUIModel,
-} from '@faims3/data-model';
+import {ProjectID, ProjectUIModel} from '@faims3/data-model';
 import {
   Box,
-  CircularProgress,
   FormControlLabel,
   Grid,
   Paper,
   Switch,
   Typography,
 } from '@mui/material';
-import {useContext, useEffect, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
-import {ProjectsContext} from '../../../../context/projects-context';
-import {addAlert} from '../../../../context/slices/syncSlice';
-import {useAppDispatch} from '../../../../context/store';
-import {logError} from '../../../../logging';
-import {getProjectInfo} from '../../../../sync/projects';
 import {
-  isSyncingProjectAttachments,
-  setSyncingProjectAttachments,
-} from '../../../../sync/sync-toggle';
+  selectProjectById,
+  startSyncingAttachments,
+  stopSyncingAttachments,
+} from '../../../../context/slices/projectSlice';
+import {addAlert} from '../../../../context/slices/alertSlice';
+import {useAppDispatch, useAppSelector} from '../../../../context/store';
 import {theme} from '../../../themes';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
-  const {project_id} = useParams<{project_id: ProjectID}>();
-
-  const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
+  const {projectId} = useParams<{projectId: ProjectID}>();
+  if (!projectId) return <></>;
   const dispatch = useAppDispatch();
-
-  const project = useContext(ProjectsContext).projects.find(
-    project => project_id === project.project_id
-  );
-
+  const project = useAppSelector(state => selectProjectById(state, projectId));
   if (!project) return <></>;
 
-  useEffect(() => {
-    try {
-      if (project_id !== null)
-        setIsSyncing(isSyncingProjectAttachments(project_id!));
-    } catch (error: any) {
-      logError(error);
-    }
-  }, [project_id]);
+  const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
 
-  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
-    null
-  );
-  useEffect(() => {
-    if (project_id)
-      getProjectInfo(project_id).then(info => setProjectInfo(info));
-  }, [project_id]);
-
-  return projectInfo ? (
+  return (
     <Box>
       <Grid
         container
@@ -103,64 +75,72 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             <Typography variant={'h6'} sx={{mb: 2}}>
               Get attachments from other devices
             </Typography>
-            {isSyncing !== null ? (
-              <Box>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={isSyncing}
-                      sx={{
-                        '& .MuiSwitch-switchBase.Mui-checked': {
-                          color: theme.palette.icon.main,
+
+            <Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={isSyncingAttachments}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: theme.palette.icon.main,
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track':
+                        {
+                          backgroundColor: theme.palette.icon.main,
                         },
-                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track':
-                          {
-                            backgroundColor: theme.palette.icon.main,
-                          },
-                      }}
-                      onChange={async (event, checked) => {
-                        await setSyncingProjectAttachments(
-                          project_id!,
-                          checked
+                    }}
+                    onChange={async (event, checked) => {
+                      if (checked) {
+                        dispatch(
+                          startSyncingAttachments({
+                            projectId: projectId!,
+                            serverId: project.serverId,
+                          })
                         );
-                        setIsSyncing(checked);
-                        if (checked)
-                          dispatch(
-                            addAlert({
-                              message: 'Downloading attachments to device...',
-                              severity: 'success',
-                            })
-                          );
-                      }}
-                    />
-                  }
-                  label={<Typography>{isSyncing ? 'On' : 'Off'}</Typography>}
-                />
-                <Typography variant={'body2'}>
-                  This control is app and device specific. If this option is
-                  enabled, Fieldmark™ will automatically download and show
-                  images and attachments created by other devices. Be aware that
-                  this may be resource intensive and use your mobile data plan.
-                  Disable this setting to minimise network usage. This setting
-                  will not affect uploading of your data from this device to the
-                  central server. Attachments are always uploaded to the server
-                  regardless of this setting.
-                </Typography>
-              </Box>
-            ) : (
-              ''
-            )}
+                      } else {
+                        dispatch(
+                          stopSyncingAttachments({
+                            projectId: projectId!,
+                            serverId: project.serverId,
+                          })
+                        );
+                      }
+                      if (checked) {
+                        dispatch(
+                          addAlert({
+                            message: 'Downloading attachments to device...',
+                            severity: 'success',
+                          })
+                        );
+                      }
+                    }}
+                  />
+                }
+                label={
+                  <Typography>{isSyncingAttachments ? 'On' : 'Off'}</Typography>
+                }
+              />
+              <Typography variant={'body2'}>
+                This control is app and device specific. If this option is
+                enabled, Fieldmark™ will automatically download and show images
+                and attachments created by other devices. Be aware that this may
+                be resource intensive and use your mobile data plan. Disable
+                this setting to minimise network usage. This setting will not
+                affect uploading of your data from this device to the central
+                server. Attachments are always uploaded to the server regardless
+                of this setting.
+              </Typography>
+            </Box>
           </Box>
         </Grid>
         <Grid item xs={12} sm={12} md={6} lg={8}>
           <AutoIncrementerSettingsList
-            project_info={projectInfo}
+            project={project}
             uiSpec={props.uiSpec}
           />
         </Grid>
       </Grid>
     </Box>
-  ) : (
-    <CircularProgress />
   );
 }

@@ -1,20 +1,20 @@
 import {
   Box,
-  Typography,
   Grid,
   Paper,
-  TableContainer,
   Table,
   TableBody,
-  TableRow,
   TableCell,
+  TableContainer,
+  TableRow,
+  Typography,
 } from '@mui/material';
+import {Project} from '../../../context/slices/projectSlice';
 import MetadataRenderer from '../metadataRenderer';
 import RangeHeader from './range_header';
-import {ProjectExtended} from '../../../types/project';
 
 interface MetadataDisplayComponentProps {
-  project: ProjectExtended;
+  project: Project;
   templateId?: string | null | undefined;
   handleTabChange: (index: number) => void;
 }
@@ -54,7 +54,7 @@ export const MetadataDisplayComponent = (
         <Typography variant="body1" gutterBottom sx={{marginBottom: '16px'}}>
           <strong>Name:</strong>{' '}
           <MetadataRenderer
-            project_id={props.project.project_id}
+            project_id={props.project.projectId}
             metadata_key={'name'}
             chips={false}
           />
@@ -73,7 +73,7 @@ export const MetadataDisplayComponent = (
         >
           <strong>Description:</strong>{' '}
           <MetadataRenderer
-            project_id={props.project.project_id}
+            project_id={props.project.projectId}
             metadata_key={'pre_description'}
             chips={false}
           />
@@ -82,7 +82,7 @@ export const MetadataDisplayComponent = (
         <Typography variant="body1" gutterBottom sx={{marginBottom: '16px'}}>
           <strong>Lead Institution:</strong>{' '}
           <MetadataRenderer
-            project_id={props.project.project_id}
+            project_id={props.project.projectId}
             metadata_key={'lead_institution'}
             chips={false}
           />
@@ -94,7 +94,7 @@ export const MetadataDisplayComponent = (
         >
           <strong>Project Lead:</strong>{' '}
           <MetadataRenderer
-            project_id={props.project.project_id}
+            project_id={props.project.projectId}
             metadata_key={'project_lead'}
             chips={false}
           />
@@ -109,7 +109,7 @@ export const MetadataDisplayComponent = (
             </Typography>
             <Typography variant="body2" color="textPrimary" gutterBottom>
               <MetadataRenderer
-                project_id={props.project.project_id}
+                project_id={props.project.projectId}
                 metadata_key={'pre_description'}
                 chips={false}
               />
@@ -129,7 +129,7 @@ export const MetadataDisplayComponent = (
                   </TableCell>
                   <TableCell>
                     <MetadataRenderer
-                      project_id={props.project.project_id}
+                      project_id={props.project.projectId}
                       metadata_key={'project_status'}
                       chips={false}
                     />
@@ -143,7 +143,7 @@ export const MetadataDisplayComponent = (
                   </TableCell>
                   <TableCell>
                     <MetadataRenderer
-                      project_id={props.project.project_id}
+                      project_id={props.project.projectId}
                       metadata_key={'lead_institution'}
                       chips={false}
                     />
@@ -155,7 +155,7 @@ export const MetadataDisplayComponent = (
                   </TableCell>
                   <TableCell>
                     <MetadataRenderer
-                      project_id={props.project.project_id}
+                      project_id={props.project.projectId}
                       metadata_key={'project_lead'}
                       chips={false}
                     />
@@ -167,7 +167,7 @@ export const MetadataDisplayComponent = (
                   </TableCell>
                   <TableCell>
                     <MetadataRenderer
-                      project_id={props.project.project_id}
+                      project_id={props.project.projectId}
                       metadata_key={'last_updated'}
                       chips={false}
                     />

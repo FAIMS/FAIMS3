@@ -38,7 +38,6 @@ export const ActivePrivateRoute = (
   // TODO This will force a re-render if the user is ever logged out - could
   // cause issues in offline context? Or during data collection.
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
-  console.log('auth', isAuthenticated);
 
   if (isAuthenticated) return props.children;
   else return <Navigate to={ROUTES.SIGN_IN} />;

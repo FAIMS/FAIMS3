@@ -1,13 +1,17 @@
-import React, {useContext} from 'react';
-import {Box, Button, Typography} from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
-import {ProjectExtended} from '../../../../types/project';
-import {ProjectsContext} from '../../../../context/projects-context';
-import FaimsDialog from '../../ui/Faims_Dialog';
+import {Box, Button, Typography} from '@mui/material';
+import React from 'react';
 import {
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../../../buildconfig';
+import {selectActiveUser} from '../../../../context/slices/authSlice';
+import {
+  activateProject,
+  Project,
+} from '../../../../context/slices/projectSlice';
+import {useAppDispatch, useAppSelector} from '../../../../context/store';
+import FaimsDialog from '../../ui/Faims_Dialog';
 import {
   ACTIVATE_ACTIVE_VERB_LABEL,
   ACTIVATE_VERB_LABEL,
@@ -16,26 +20,36 @@ import {
 } from '../../workspace/notebooks';
 
 type NotebookActivationSwitchProps = {
-  project: ProjectExtended;
-  project_status: string | undefined;
+  project: Project;
   isWorking: boolean;
   setTabID: Function;
 };
 
 export default function NotebookActivationSwitch({
-  project: {_id, listing},
+  project,
   isWorking,
   setTabID,
 }: NotebookActivationSwitchProps) {
   const [open, setOpen] = React.useState(false);
-  const {activateProject} = useContext(ProjectsContext);
+  const activeUser = useAppSelector(selectActiveUser);
+  const dispatch = useAppDispatch();
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
   const handleActivationClick = () => {
-    activateProject(_id, listing);
-    setTabID('1');
-    handleClose();
+    if (activeUser) {
+      dispatch(
+        activateProject({
+          jwtToken: activeUser.token,
+          projectId: project.projectId,
+          serverId: activeUser.serverId,
+        })
+      );
+      setTabID('1');
+      handleClose();
+    } else {
+      console.warn('No active user but trying to activate a project.');
+    }
   };
 
   return (

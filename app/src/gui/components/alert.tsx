@@ -22,7 +22,7 @@ import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import {ThemeProvider} from '@mui/material/styles';
 import {createUseStyles} from 'react-jss';
-import {deleteAlert} from '../../context/slices/syncSlice';
+import {deleteAlert} from '../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {theme} from '../themes';
 
@@ -49,7 +49,7 @@ const useStyles = createUseStyles({
 export default function SystemAlert() {
   const classes = useStyles();
   const dispatch = useAppDispatch();
-  const alerts = useAppSelector(state => state.sync.alerts);
+  const alerts = useAppSelector(state => state.alerts.alerts);
 
   /**
    * Handles the closing of the current alert.

@@ -6,11 +6,11 @@ import {
   PayloadAction,
 } from '@reduxjs/toolkit';
 import {TOKEN_REFRESH_WINDOW_MS} from '../../buildconfig';
-import {refreshDataDbTokens} from '../../sync/databases';
 import {parseToken} from '../../users';
 import {requestTokenRefresh} from '../../utils/apiOperations/auth';
 import {AppDispatch, RootState} from '../store';
-import {addAlert} from './syncSlice';
+import {updateDatabaseCredentials} from './projectSlice';
+import {addAlert} from './alertSlice';
 
 // Types
 export interface TokenInfo {
@@ -20,13 +20,13 @@ export interface TokenInfo {
   expiresAt: number;
 }
 
-export interface ServerUser {
+export interface ServerUserMap {
   [username: string]: TokenInfo;
 }
 
 export interface ServerMap {
   [serverId: string]: {
-    users: ServerUser;
+    users: ServerUserMap;
   };
 }
 
@@ -186,9 +186,9 @@ const authSlice = createSlice({
       const {serverId, username} = action.payload;
 
       if (state.servers[serverId]?.users) {
-        delete state.servers[serverId].users[username];
+        delete state.servers[serverId]?.users[username];
 
-        if (Object.keys(state.servers[serverId].users).length === 0) {
+        if (Object.keys(state.servers[serverId]?.users ?? {}).length === 0) {
           delete state.servers[serverId];
         }
       }
@@ -246,9 +246,6 @@ const authSlice = createSlice({
 // =========
 
 export const selectActiveUser = (state: AuthStore) => state.auth.activeUser;
-export const selectActiveServerId = (state: AuthStore) =>
-  state.auth.activeUser?.serverId;
-
 export const selectIsAuthenticated = (state: AuthStore) =>
   state.auth.isAuthenticated;
 export const selectActiveToken = (state: AuthStore) => {
@@ -278,6 +275,14 @@ export const selectSpecificServer = createSelector(
     (_state: AuthStore, serverId: string) => serverId,
   ],
   (servers, serverId) => servers[serverId]?.users ?? {}
+);
+
+/**
+ * Memoized selector for the active server ID
+ */
+export const selectActiveServerId = createSelector(
+  [(state: RootState) => state.auth.activeUser],
+  activeUser => activeUser?.serverId
 );
 
 // STATE HELPER FUNCTIONS
@@ -334,7 +339,7 @@ export const setServerConnection = createAsyncThunk<
   let tokenIsChanged = true;
 
   // Check if we've changed the token
-  const existingState = state.servers[serverId].users[username];
+  const existingState = state.servers[serverId]?.users[username];
 
   if (existingState) {
     if (existingState.token === token) {
@@ -346,7 +351,7 @@ export const setServerConnection = createAsyncThunk<
   if (tokenIsChanged) {
     // Here we should update the all remote synced DBs for listing/server with
     // id `serverId` to the new token `token`
-    await refreshDataDbTokens({serverId, newToken: token});
+    await appDispatch(updateDatabaseCredentials({serverId, token}));
   }
 });
 

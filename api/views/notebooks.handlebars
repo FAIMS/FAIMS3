@@ -58,7 +58,7 @@
       {{#each ownNotebooks}}
           <tr>
             <td>
-              <a href="/notebooks/{{this.non_unique_project_id}}">{{this.name}}</a>
+              <a href="/notebooks/{{this.project_id}}">{{this.name}}</a>
             </td>
             <td>
               {{this.metadata.project_lead}}
@@ -80,7 +80,7 @@
       {{#each otherNotebooks}}
           <tr>
             <td>
-              <a href="/notebooks/{{this.non_unique_project_id}}">{{this.name}}</a>
+              <a href="/notebooks/{{this.project_id}}">{{this.name}}</a>
             </td>
             <td>
               {{this.metadata.project_lead}}

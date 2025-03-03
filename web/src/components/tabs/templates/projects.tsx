@@ -26,8 +26,8 @@ const TemplateProjects = ({templateId}: {templateId: string}) => {
       data={data.filter((notebook: any) => notebook.template_id === templateId)}
       button={<ProjectFromTemplateDialog />}
       loading={isPending}
-      onRowClick={({non_unique_project_id}) =>
-        navigate({to: `/${NOTEBOOK_NAME}s/${non_unique_project_id}`})
+      onRowClick={({project_id}) =>
+        navigate({to: `/${NOTEBOOK_NAME}s/${project_id}`})
       }
     />
   );

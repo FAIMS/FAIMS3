@@ -30,12 +30,10 @@ export function AppUrlListener() {
   useEffect(() => {
     CapacitorApp.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
       const url = new URL(event.url);
-      console.log('Event URL', url);
       // grab the 'pathname' part of the URL, note that url.pathname
       // is not correct on Safari so we go the long way around
       const redirect = url.href.substring(url.protocol.length + 1);
       Browser.close();
-      console.log('navigating from app url to', redirect);
       navigate(redirect);
     });
   }, []);

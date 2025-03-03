@@ -3,7 +3,7 @@ import {Box, Button, Typography} from '@mui/material';
 import moment from 'moment/moment';
 import React from 'react';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import {addAlert} from '../../../context/slices/syncSlice';
+import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../context/store';
 import {useInterval} from '../../../utils/useInterval';
 

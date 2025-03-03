@@ -65,6 +65,12 @@ export function getValidationSchemaForViewset(
    */
   const fields = getFieldsForViewSet(ui_specification, viewset_name);
   const fieldNames = getFieldNamesFromFields(fields);
+  console.log(
+    'LOOKING FOR: ',
+    fieldNames,
+    ' in ',
+    JSON.stringify(ui_specification, undefined, 2)
+  );
   const validationSchema = Object();
   fieldNames.forEach(fieldName => {
     validationSchema[fieldName] = expand_validation_schema(

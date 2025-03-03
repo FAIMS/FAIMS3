@@ -67,6 +67,7 @@ export default function CreateLinkComponent(
                     ? false
                     : props.is_enabled
                 }
+                serverId={props.serverId}
                 pathname={props.pathname}
                 state={props.state}
                 text={`Add New ${props.related_type}`}

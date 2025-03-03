@@ -1,39 +1,25 @@
 import styled from '@emotion/styled';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import {
-  Alert,
-  AlertTitle,
-  AppBar,
-  Box,
-  Button,
-  Paper,
-  Tab,
-  Tabs,
-  TabScrollButton,
-  Typography,
-} from '@mui/material';
+import {AppBar, Box, Paper, Tab, Tabs, TabScrollButton} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useQuery} from '@tanstack/react-query';
 import React, {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {NOTEBOOK_NAME} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
-import {getMetadataValue} from '../../../sync/metadata';
-import {ProjectExtended} from '../../../types/project';
-import {getUiSpecForProject} from '../../../uiSpecification';
+import {Project, selectProjectById} from '../../../context/slices/projectSlice';
+import {useAppSelector} from '../../../context/store';
 import {
   useDraftsList,
   useQueryParams,
   useRecordList,
 } from '../../../utils/customHooks';
-import CircularLoading from '../ui/circular_loading';
 import AddRecordButtons from './add_record_by_type';
 import {DraftsTable} from './draft_table';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
+import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import CircularLoading from '../ui/circular_loading';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -120,7 +106,7 @@ const MyTabScrollButton = styled(TabScrollButton)({
  * NotebookComponentProps defines the properties for the NotebookComponent component.
  */
 type NotebookComponentProps = {
-  project: ProjectExtended;
+  project: Project;
 };
 
 /**
@@ -133,7 +119,12 @@ type NotebookComponentProps = {
 export default function NotebookComponent({project}: NotebookComponentProps) {
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
-  const history = useNavigate();
+
+  const {uiSpecificationId} = project;
+  const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
+  if (!uiSpecification) {
+    return <CircularLoading label="Loading" />;
+  }
 
   // This manages the tab using a query string arg
   const {params, setParam} = useQueryParams<{tab: TabIndexLabel}>({
@@ -159,39 +150,29 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const [query, setQuery] = useState<string>('');
   const records = useRecordList({
     query: query,
-    projectId: project.project_id,
+    projectId: project.projectId,
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
     refreshIntervalMs: 10000,
+    uiSpecification: uiSpecification,
   });
   const forceRecordRefresh = records.query.refetch;
 
   // Fetch drafts
   const drafts = useDraftsList({
-    projectId: project.project_id,
+    projectId: project.projectId,
     filter: 'all',
   });
   const forceDraftRefresh = drafts.refetch;
 
-  // Query to get the ui spec
-  const uiSpec = useQuery({
-    queryKey: ['uispecquery', project.project_id],
-    queryFn: async () => {
-      return getUiSpecForProject(project.project_id);
-    },
-  });
-  const viewsets = uiSpec.data?.viewsets;
+  const viewsets = uiSpecification.viewsets;
 
-  // Get the metadata for the template ID
-  const {data: template_id} = useQuery({
-    queryKey: ['project-template-id', project.project_id],
-    queryFn: async (): Promise<string | null> => {
-      // don't return undefined from queryFn
-      const id = await getMetadataValue(project.project_id, 'template_id');
-      if (id !== undefined) return id as string;
-      else return null;
-    },
-  });
+  const templateId = useAppSelector(
+    state =>
+      selectProjectById(state, project.projectId)?.metadata?.['template_id'] as
+        | string
+        | undefined
+  );
 
   /**
    * Handles the change event when the user switches between the tabs.
@@ -212,195 +193,166 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
   // recordLabel based on viewsets
   const recordLabel =
-    uiSpec.data?.visible_types?.length === 1
-      ? uiSpec.data?.viewsets[uiSpec.data.visible_types[0]]?.label ||
-        uiSpec.data.visible_types[0]
+    uiSpecification.visible_types?.length === 1
+      ? uiSpecification.viewsets[uiSpecification.visible_types[0]]?.label ||
+        uiSpecification.visible_types[0]
       : 'Record';
 
   return (
     <Box>
-      {uiSpec.isError ? (
-        <Alert severity="error">
-          <AlertTitle>
-            {' '}
-            {project.name} {NOTEBOOK_NAME} cannot sync right now.
-          </AlertTitle>
-          Your device may be offline.
-          <br />
-          <Typography variant={'caption'}>{uiSpec.error.message}</Typography>
-          <br />
-          <br />
-          Go to
-          <Button
-            variant="text"
-            size={'small'}
-            onClick={() => history(ROUTES.INDEX)}
-            startIcon={<DashboardIcon />}
-          >
-            Workspace
-          </Button>
-        </Alert>
-      ) : uiSpec.isLoading || !uiSpec.data ? (
-        <CircularLoading label={`${NOTEBOOK_NAME_CAPITALIZED} is loading`} />
-      ) : (
-        <Box>
-          <Box sx={{mb: 1.5}}>
-            <AddRecordButtons project={project} recordLabel={recordLabel} />
-          </Box>
-          <Box
-            mb={2}
-            sx={{
-              marginLeft: {sm: '-16px', md: 0},
-              marginRight: {sm: '-16px', md: 0},
-            }}
-            component={Paper}
-            elevation={0}
-            variant={isMedium ? 'outlined' : 'elevation'}
-          >
-            <AppBar
-              position="static"
-              sx={{
-                paddingLeft: '16px',
-                backgroundColor: theme.palette.background.tabsBackground,
-              }}
-            >
-              <Tabs
-                value={tabIndex}
-                onChange={handleTabChange}
-                aria-label={`${NOTEBOOK_NAME} tabs`}
-                indicatorColor="secondary"
-                TabIndicatorProps={{
-                  style: {
-                    backgroundColor: theme.palette.secondary.contrastText,
-                  },
-                }}
-                sx={{
-                  backgroundColor: theme.palette.background.tabsBackground,
-                  justifyItems: 'space-between',
-
-                  // Make more compact if needed
-
-                  '& .MuiTab-root': !isMedium
-                    ? {
-                        // Target all tabs
-                        padding: '3px 6px', // Reduce default padding (normally 12px 16px)
-                        minWidth: 'auto', // Override default min-width
-                        fontSize: '0.8rem',
-                        marginRight: '2px',
-                        marginLeft: '2px',
-                      }
-                    : {},
-                }}
-                ScrollButtonComponent={MyTabScrollButton}
-                textColor="inherit"
-                variant="scrollable"
-                scrollButtons={true}
-                allowScrollButtonsMobile={true}
-              >
-                <Tab
-                  label={`My ${recordLabel}s (${records.myRecords.length})`}
-                  value={0}
-                  {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
-                />
-                {(tabIndex === 1 || records.otherRecords.length > 0) && (
-                  <Tab
-                    value={1}
-                    label={`Other ${recordLabel}s (${records.otherRecords.length})`}
-                    {...a11yProps(1, `${NOTEBOOK_NAME}-otherrecords`)}
-                  />
-                )}
-                {(tabIndex === 2 || (drafts.data?.length ?? 0) > 0) && (
-                  <Tab
-                    value={2}
-                    label={`Drafts (${drafts.data?.length ?? 0})`}
-                    {...a11yProps(2, `${NOTEBOOK_NAME}-drafts`)}
-                  />
-                )}
-                <Tab
-                  value={3}
-                  label="Details"
-                  {...a11yProps(3, NOTEBOOK_NAME)}
-                />
-                <Tab
-                  value={4}
-                  label="Settings"
-                  {...a11yProps(4, NOTEBOOK_NAME)}
-                />
-                <Tab value={5} label="Map" {...a11yProps(5, NOTEBOOK_NAME)} />
-              </Tabs>
-            </AppBar>
-          </Box>
-
-          {
-            // My records
-          }
-          <TabPanel value={tabIndex} index={0} id={'records-mine'}>
-            <RecordsTable
-              project_id={project.project_id}
-              maxRows={25}
-              rows={records.myRecords}
-              loading={records.query.isLoading}
-              viewsets={viewsets}
-              handleQueryFunction={setQuery}
-              handleRefresh={forceRecordRefresh}
-              recordLabel={recordLabel}
-            />
-          </TabPanel>
-          {
-            // Other records
-          }
-
-          <TabPanel value={tabIndex} index={1} id={'records-all'}>
-            <RecordsTable
-              project_id={project.project_id}
-              maxRows={25}
-              rows={records.otherRecords}
-              loading={records.query.isLoading}
-              viewsets={viewsets}
-              handleQueryFunction={setQuery}
-              handleRefresh={forceRecordRefresh}
-              recordLabel={recordLabel}
-            />
-          </TabPanel>
-          {
-            // Drafts
-          }
-          <TabPanel value={tabIndex} index={2} id={'record-drafts'}>
-            <DraftsTable
-              project_id={project.project_id}
-              maxRows={25}
-              rows={drafts.data ?? []}
-              loading={drafts.isLoading}
-              viewsets={viewsets}
-              handleRefresh={forceDraftRefresh}
-            />
-          </TabPanel>
-
-          <TabPanel value={tabIndex} index={3} id={'details'}>
-            <MetadataDisplayComponent
-              handleTabChange={(index: number) =>
-                setTabIndex(index as TabIndex)
-              }
-              project={project}
-              templateId={template_id}
-            />
-          </TabPanel>
-
-          <TabPanel value={tabIndex} index={4} id={'settings'}>
-            {uiSpec !== null && <NotebookSettings uiSpec={uiSpec.data} />}
-          </TabPanel>
-
-          <TabPanel value={tabIndex} index={5} id={'map'}>
-            {uiSpec !== null && (
-              <OverviewMap
-                project_id={project.project_id}
-                uiSpec={uiSpec.data}
-                records={records}
-              />
-            )}
-          </TabPanel>
+      <Box>
+        <Box sx={{mb: 1.5}}>
+          <AddRecordButtons project={project} recordLabel={recordLabel} />
         </Box>
-      )}
+        <Box
+          mb={2}
+          sx={{
+            marginLeft: {sm: '-16px', md: 0},
+            marginRight: {sm: '-16px', md: 0},
+          }}
+          component={Paper}
+          elevation={0}
+          variant={isMedium ? 'outlined' : 'elevation'}
+        >
+          <AppBar
+            position="static"
+            sx={{
+              paddingLeft: '16px',
+              backgroundColor: theme.palette.background.tabsBackground,
+            }}
+          >
+            <Tabs
+              value={tabIndex}
+              onChange={handleTabChange}
+              aria-label={`${NOTEBOOK_NAME} tabs`}
+              indicatorColor="secondary"
+              TabIndicatorProps={{
+                style: {
+                  backgroundColor: theme.palette.secondary.contrastText,
+                },
+              }}
+              sx={{
+                backgroundColor: theme.palette.background.tabsBackground,
+                justifyItems: 'space-between',
+
+                // Make more compact if needed
+
+                '& .MuiTab-root': !isMedium
+                  ? {
+                      // Target all tabs
+                      padding: '3px 6px', // Reduce default padding (normally 12px 16px)
+                      minWidth: 'auto', // Override default min-width
+                      fontSize: '0.8rem',
+                      marginRight: '2px',
+                      marginLeft: '2px',
+                    }
+                  : {},
+              }}
+              ScrollButtonComponent={MyTabScrollButton}
+              textColor="inherit"
+              variant="scrollable"
+              scrollButtons={true}
+              allowScrollButtonsMobile={true}
+            >
+              <Tab
+                label={`My ${recordLabel}s (${records.myRecords.length})`}
+                value={0}
+                {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
+              />
+              {(tabIndex === 1 || records.otherRecords.length > 0) && (
+                <Tab
+                  value={1}
+                  label={`Other ${recordLabel}s (${records.otherRecords.length})`}
+                  {...a11yProps(1, `${NOTEBOOK_NAME}-otherrecords`)}
+                />
+              )}
+              {(tabIndex === 2 || (drafts.data?.length ?? 0) > 0) && (
+                <Tab
+                  value={2}
+                  label={`Drafts (${drafts.data?.length ?? 0})`}
+                  {...a11yProps(2, `${NOTEBOOK_NAME}-drafts`)}
+                />
+              )}
+              <Tab value={3} label="Details" {...a11yProps(3, NOTEBOOK_NAME)} />
+              <Tab
+                value={4}
+                label="Settings"
+                {...a11yProps(4, NOTEBOOK_NAME)}
+              />
+              <Tab value={5} label="Map" {...a11yProps(5, NOTEBOOK_NAME)} />
+            </Tabs>
+          </AppBar>
+        </Box>
+
+        {
+          // My records
+        }
+        <TabPanel value={tabIndex} index={0} id={'records-mine'}>
+          <RecordsTable
+            project={project}
+            maxRows={25}
+            rows={records.myRecords}
+            loading={records.query.isLoading}
+            viewsets={viewsets}
+            handleQueryFunction={setQuery}
+            handleRefresh={forceRecordRefresh}
+            recordLabel={recordLabel}
+          />
+        </TabPanel>
+        {
+          // Other records
+        }
+
+        <TabPanel value={tabIndex} index={1} id={'records-all'}>
+          <RecordsTable
+            project={project}
+            maxRows={25}
+            rows={records.otherRecords}
+            loading={records.query.isLoading}
+            viewsets={viewsets}
+            handleQueryFunction={setQuery}
+            handleRefresh={forceRecordRefresh}
+            recordLabel={recordLabel}
+          />
+        </TabPanel>
+        {
+          // Drafts
+        }
+        <TabPanel value={tabIndex} index={2} id={'record-drafts'}>
+          <DraftsTable
+            project_id={project.projectId}
+            serverId={project.serverId}
+            maxRows={25}
+            rows={drafts.data ?? []}
+            loading={drafts.isLoading}
+            viewsets={viewsets}
+            handleRefresh={forceDraftRefresh}
+          />
+        </TabPanel>
+
+        <TabPanel value={tabIndex} index={3} id={'details'}>
+          <MetadataDisplayComponent
+            handleTabChange={(index: number) => setTabIndex(index as TabIndex)}
+            project={project}
+            templateId={templateId}
+          />
+        </TabPanel>
+
+        <TabPanel value={tabIndex} index={4} id={'settings'}>
+          <NotebookSettings uiSpec={uiSpecification} />
+        </TabPanel>
+
+        <TabPanel value={tabIndex} index={5} id={'map'}>
+          {uiSpecification !== null && (
+            <OverviewMap
+              serverId={project.serverId}
+              records={records}
+              project_id={project.projectId}
+              uiSpec={uiSpecification}
+            />
+          )}
+        </TabPanel>
+      </Box>
     </Box>
   );
 }

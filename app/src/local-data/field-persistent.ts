@@ -22,9 +22,9 @@
  *  persistent state will be updated when record been saved( to be discussed)
  */
 
-import {getLocalStateDB} from '../sync/databases';
 import {Annotations, FAIMSTypeName, ProjectID} from '@faims3/data-model';
 import stable_stringify from 'fast-json-stable-stringify';
+import {databaseService} from '../context/slices/helpers/databaseService';
 import {logError} from '../logging';
 
 const LOCAL_FIELD_PERSISTENT_PREFIX = 'local-fieldpersistent-state';
@@ -52,7 +52,7 @@ export async function getFieldPersistentData(
 ): Promise<fieldPersistentData> {
   const pouch_id = get_pouch_id(project_id, form_id);
   try {
-    const local_state_db = getLocalStateDB();
+    const local_state_db = databaseService.getLocalStateDatabase();
     return await local_state_db.get(pouch_id);
   } catch (err: any) {
     if (err.status === 404) {
@@ -86,7 +86,7 @@ export async function setFieldPersistentData(
   doc.data = new_state.data;
   doc.annotations = new_state.annotations;
   try {
-    const local_state_db = getLocalStateDB();
+    const local_state_db = databaseService.getLocalStateDatabase();
     return await local_state_db.put(doc);
   } catch (err: any) {
     logError(err);

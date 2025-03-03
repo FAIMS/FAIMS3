@@ -36,6 +36,7 @@ import {ParentLinkProps, RecordLinkProps} from './relationships/types';
 import DraftSyncStatus from './sync_status';
 interface RecordDataTypes {
   project_id: ProjectID;
+  serverId: string;
   record_id: RecordID;
   hrid?: string;
   record_type: string;
@@ -89,6 +90,7 @@ export default function RecordData(props: RecordDataTypes) {
         <CircularProgress size={24} />
       )}
       <RecordForm
+        serverId={props.serverId}
         project_id={props.project_id}
         record_id={props.record_id}
         revision_id={props.revision_id}

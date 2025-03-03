@@ -1,14 +1,16 @@
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-security-helper'));
+
 import {
   ProjectID,
   TemplateDocument,
   TemplateEditableDetails,
 } from '@faims3/data-model';
-import PouchDB from 'pouchdb';
-import securityPlugin from 'pouchdb-security-helper';
 import {getTemplatesDb} from '.';
 import {slugify} from '../utils';
 import * as Exceptions from '../exceptions';
-PouchDB.plugin(securityPlugin);
 
 /**
  * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO

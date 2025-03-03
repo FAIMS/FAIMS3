@@ -1,7 +1,10 @@
 import PouchDB from 'pouchdb';
-// eslint-disable-next-line n/no-unpublished-require
+import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-import {ProjectID, DBCallbackObject} from '@faims3/data-model';
+PouchDB.plugin(PouchDBFind);
+
+import {DBCallbackObject, ProjectID} from '@faims3/data-model';
+import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 import {
   getAuthDB,
   getProjectsDB,
@@ -9,7 +12,6 @@ import {
   getUsersDB,
   initialiseDatabases,
 } from '../src/couchdb';
-import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 
 export const databaseList: any = {};
 
@@ -30,17 +32,7 @@ const mockGetDataDB = async (project_id: ProjectID) => {
   return getDatabase(databaseName);
 };
 
-const mockGetProjectDB = async (project_id: ProjectID) => {
-  return getDatabase('metadatadb-' + project_id);
-};
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mockGetTemplateDB = async (project_id: ProjectID) => {
-  // Right now the mock get template DB does not need the project ID as context
-  return getDatabase('templatedb');
-};
-
-const mockShouldDisplayRecord = () => {
+const mockShouldDisplayRecord = async () => {
   return true;
 };
 
@@ -70,7 +62,14 @@ export const resetDatabases = async () => {
   if (templatesDB) {
     await clearDB(templatesDB);
   }
-  await initialiseDatabases({});
+  for (const dbKey of Object.keys(databaseList)) {
+    const toClear = ['metadata', 'projects'];
+    if (toClear.some(prefix => dbKey.startsWith(prefix))) {
+      await clearDB(databaseList[dbKey]);
+    }
+  }
+  // Clear all metadata DBs
+  await initialiseDatabases({force: true});
 };
 
 export const cleanDataDBS = async () => {
@@ -91,6 +90,5 @@ export const cleanDataDBS = async () => {
 // register our mock database clients with the module
 export const callbackObject: DBCallbackObject = {
   getDataDB: mockGetDataDB,
-  getProjectDB: mockGetProjectDB,
   shouldDisplayRecord: mockShouldDisplayRecord,
 };

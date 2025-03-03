@@ -17,21 +17,23 @@
  * Description:
  *   Tests for the interface to couchDB
  */
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+
 import {
   getRecordsWithRegex,
   notebookRecordIterator,
   registerClient,
 } from '@faims3/data-model';
-import PouchDB from 'pouchdb';
-import {restoreFromBackup} from '../src/couchdb/backupRestore';
-import {getNotebooks} from '../src/couchdb/notebooks';
-import {getUserFromEmailOrUsername} from '../src/couchdb/users';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
-
 import {expect} from 'chai';
-import {callbackObject, cleanDataDBS, resetDatabases} from './mocks';
+import {restoreFromBackup} from '../src/couchdb/backupRestore';
+import {getNotebooks, getProjectUIModel} from '../src/couchdb/notebooks';
+import {getUserFromEmailOrUsername} from '../src/couchdb/users';
 import {generateTokenContentsForUser} from '../src/utils';
+import {callbackObject, cleanDataDBS, resetDatabases} from './mocks';
+import {initialiseDatabases} from '../src/couchdb';
 
 // register our mock database clients with the module
 registerClient(callbackObject);
@@ -40,6 +42,7 @@ describe('Backup and restore', () => {
   it('restore backup', async () => {
     await resetDatabases();
     await cleanDataDBS();
+    await initialiseDatabases({});
 
     await restoreFromBackup('test/backup.jsonl');
 
@@ -52,9 +55,12 @@ describe('Backup and restore', () => {
       expect(notebooks[0].name).to.equal('Campus Survey Demo');
 
       // test record iterator while we're here
+      const uiSpec = await getProjectUIModel(notebooks[0].project_id);
       const iterator = await notebookRecordIterator(
-        notebooks[0].non_unique_project_id,
-        'FORM2'
+        notebooks[0].project_id,
+        'FORM2',
+        undefined,
+        uiSpec
       );
       let count = 0;
       let {record, done} = await iterator.next();
@@ -68,9 +74,10 @@ describe('Backup and restore', () => {
       const tokenContents = generateTokenContentsForUser(user);
       const records = await getRecordsWithRegex(
         tokenContents,
-        notebooks[0].non_unique_project_id,
+        notebooks[0].project_id,
         '.*',
-        true
+        true,
+        uiSpec
       );
       expect(records).to.have.lengthOf(28);
     }

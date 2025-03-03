@@ -101,6 +101,7 @@ export const PARENT_CHILD_VOCAB = [
  */
 export interface CreateRecordLinkProps {
   field_name: string;
+  serverId: string;
   relatedRecords: any;
   relationshipLabel: string;
   selectedRecord: any;

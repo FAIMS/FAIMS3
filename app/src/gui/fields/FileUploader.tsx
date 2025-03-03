@@ -187,6 +187,7 @@ export function FileUploader(props: FieldProps & Props) {
         project_id={props.form.values['_project_id']}
         open={open}
         setopen={() => setopen(false)}
+        serverId={props.form.values['_server_id']}
         filedId={props['field']['name']}
         path={path}
         isSyncing={props.issyncing}

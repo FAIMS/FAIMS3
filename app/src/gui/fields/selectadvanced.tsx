@@ -17,20 +17,20 @@
  * Description:
  *   File is the field about Tree view for prototype for hierarchical-vocabularies, not finalized yet
  */
-import React, {useEffect} from 'react';
-import {TextFieldProps} from 'formik-mui';
-import Box from '@mui/material/Box';
-import TreeView from '@mui/lab/TreeView';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TreeItem, {TreeItemProps, useTreeItem} from '@mui/lab/TreeItem';
-import clsx from 'clsx';
-import Typography from '@mui/material/Typography';
+import TreeView from '@mui/lab/TreeView';
+import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import {createTheme, styled} from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import clsx from 'clsx';
+import {TextFieldProps} from 'formik-mui';
+import React, {useEffect} from 'react';
 import {logError} from '../../logging';
-import {getMetadataValue} from '../../sync/metadata';
+
 interface RenderTree {
   // id: string;
   name: string;
@@ -132,7 +132,6 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
 
 type CustomerProps = {
   type: string | undefined;
-  attachments: {[key: string]: File} | null;
   name: string;
 };
 
@@ -146,7 +145,6 @@ const CustomTreeItem = (props: TreeItemProps & SelectProps & CustomerProps) => (
         onselectvalue: (nodeId: string) =>
           props.onselectvalue(nodeId, props.type, props.name, props.label),
         type: props.type,
-        attachments: props.attachments,
         name: props.name,
       } as any
     }
@@ -155,7 +153,6 @@ const CustomTreeItem = (props: TreeItemProps & SelectProps & CustomerProps) => (
 
 interface ValueChipsArrayProps {
   data: any;
-  attachments: {[key: string]: File} | null;
   isactive: boolean;
 }
 const theme = createTheme();
@@ -165,7 +162,6 @@ const ListItem = styled('li')(() => ({
 
 interface ChildChipProps {
   value: any;
-  attachments: {[key: string]: File} | null;
   isactive: boolean;
 }
 
@@ -180,21 +176,6 @@ function ChildChip(props: ChildChipProps) {
   return (
     <ListItem key={props.value}>
       <Chip label={props.value} />
-      <br />
-      <br />
-      {props.isactive &&
-        props.attachments !== undefined &&
-        props.attachments !== null &&
-        props.attachments[leaf_child] !== undefined &&
-        props.attachments[leaf_child].type.includes('image') && (
-          <img
-            style={{maxHeight: 500, maxWidth: 200}}
-            src={URL.createObjectURL(props.attachments[leaf_child])}
-            onClick={() => {
-              console.log('on click');
-            }}
-          />
-        )}
     </ListItem>
   );
 }
@@ -215,7 +196,6 @@ function ValueChipsArray(props: ValueChipsArrayProps) {
       {props.data.map((value: string) =>
         value !== '' ? (
           <ChildChip
-            attachments={props.attachments}
             value={value}
             isactive={props.isactive}
             key={'key' + value}
@@ -235,28 +215,12 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   ]);
   const [isactive, setIsactive] = React.useState(false);
   const project_id = props.form.values['_project_id'];
-  const [attachments, SetAttachments] = React.useState<{
-    [key: string]: File;
-  } | null>(null);
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (project_id !== undefined && mounted) {
         try {
-          const attachfilenames = (await getMetadataValue(
-            project_id,
-            'attachfilenames'
-          )) as string[];
-          const attachments: {[key: string]: File} = {};
-          for (const index in attachfilenames) {
-            const key = attachfilenames[index];
-            // TODO this almost certainly won't work, need to fix up
-            // metadata attachments
-            const file = (await getMetadataValue(project_id, key)) as File;
-            attachments[key] = file;
-          }
           setIsactive(true);
-          SetAttachments(attachments);
         } catch (error) {
           logError(error);
           setIsactive(true);
@@ -317,7 +281,6 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
         name={nodes.name}
         type={nodes.type}
         onselectvalue={onselectvalue}
-        attachments={attachments}
         label={nodes.label} //add label for image
       >
         {Array.isArray(nodes.children)
@@ -331,11 +294,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   return (
     <Box>
       <Typography>{props.label}</Typography>
-      <ValueChipsArray
-        data={value}
-        attachments={attachments}
-        isactive={isactive}
-      />
+      <ValueChipsArray data={value} isactive={isactive} />
 
       <Typography variant="caption">{props.helperText}</Typography>
       {props.disabled !== true && (

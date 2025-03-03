@@ -20,7 +20,8 @@
 
 import PouchDB from 'pouchdb';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
 
 import {expect} from 'chai';
 import fs from 'fs';

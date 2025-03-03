@@ -1,4 +1,3 @@
-import PouchDB from 'pouchdb';
 import {
   generate_file_name,
   generateFAIMSAttachmentID,

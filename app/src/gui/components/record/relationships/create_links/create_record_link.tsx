@@ -19,7 +19,7 @@ import React from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../../../constants/routes';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../../../constants/routes';
-import {addAlert} from '../../../../../context/slices/syncSlice';
+import {addAlert} from '../../../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../../../context/store';
 import {logError} from '../../../../../logging';
 import {CreateRecordLinkProps} from '../types';
@@ -31,6 +31,7 @@ export function AddNewRecordButton(props: {
   text: string;
   handleSubmit: Function;
   project_id: string;
+  serverId: string;
   save_new_record: Function;
   handleError: Function;
 }) {
@@ -45,6 +46,7 @@ export function AddNewRecordButton(props: {
         .then((result: string) => {
           const newState = props.state;
           newState['parent_link'] = ROUTES.getRecordRoute(
+            props.serverId,
             props.project_id,
             (props.state.parent_record_id || '').toString(),
             (result || '').toString()
@@ -90,6 +92,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
   const {
     field_name,
     relatedRecords,
+    serverId,
     handleChange,
     SetSelectedRecord,
     selectedRecord,
@@ -257,6 +260,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                 </Button>
                 {props.relation_type === 'Linked' && (
                   <AddNewRecordButton
+                    serverId={serverId}
                     is_enabled={
                       props.form.isValid === false || props.form.isSubmitting
                         ? false

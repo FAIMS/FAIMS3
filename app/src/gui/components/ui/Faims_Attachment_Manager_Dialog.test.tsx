@@ -26,6 +26,7 @@ const testData = {
   setopen: vi.fn(() => {}),
   filedId: 'test',
   isSyncing: 'true',
+  serverId: 'todo',
 };
 
 describe('Check dialog component', () => {

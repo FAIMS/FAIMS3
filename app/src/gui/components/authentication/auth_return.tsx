@@ -21,36 +21,39 @@
  */
 
 import {Button, Stack} from '@mui/material';
-import {useContext, useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
-import {ProjectsContext} from '../../../context/projects-context';
 import {
   setActiveUser,
   setServerConnection,
 } from '../../../context/slices/authSlice';
-import {useAppDispatch} from '../../../context/store';
-import {getSyncableListingsInfo} from '../../../databaseAccess';
-import {update_directory} from '../../../sync/process-initialization';
+import {
+  initialiseAllProjects,
+  initialiseServers,
+  Server,
+} from '../../../context/slices/projectSlice';
+import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {parseToken} from '../../../users';
 
-async function getListingForConductorUrl(conductor_url: string) {
-  const origin = new URL(conductor_url).origin;
-  const listings = await getSyncableListingsInfo();
-  for (const l of listings) {
-    const possible_origin = new URL(l.conductor_url).origin;
-    if (possible_origin === origin) {
-      return l.id;
+async function getListingForConductorUrl(
+  conductorUrl: string,
+  servers: Server[]
+) {
+  const origin = new URL(conductorUrl).origin;
+  for (const l of servers) {
+    const possibleOrigin = new URL(l.serverUrl).origin;
+    if (possibleOrigin === origin) {
+      return l.serverId;
     }
   }
-  throw Error(`Unknown listing for conductor url ${conductor_url}`);
+  throw Error(`Unknown listing for conductor url ${conductorUrl}`);
 }
 
 export function AuthReturn() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | undefined>(undefined);
   const dispatch = useAppDispatch();
-
-  const {initProjects} = useContext(ProjectsContext);
+  const servers = useAppSelector(state => state.projects.servers);
 
   // track if effect has already run - this should only happen once
   const hasRun = useRef(false);
@@ -86,7 +89,10 @@ export function AuthReturn() {
       const parsedToken = parseToken(decodedToken);
 
       // Get the listing for the server in the token
-      const serverId = await getListingForConductorUrl(parsedToken.server);
+      const serverId = await getListingForConductorUrl(
+        parsedToken.server,
+        Object.values(servers)
+      );
 
       // Store the token in the database
       await dispatch(
@@ -108,8 +114,8 @@ export function AuthReturn() {
       );
 
       const login = async () => {
-        await update_directory();
-        await initProjects();
+        await dispatch(initialiseServers());
+        await dispatch(initialiseAllProjects());
         navigate('/');
       };
 

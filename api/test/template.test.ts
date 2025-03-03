@@ -18,6 +18,11 @@
  *   Tests for the API
  */
 
+import PouchDB from 'pouchdb';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+
 import {
   CreateNotebookFromTemplate,
   EncodedNotebook,
@@ -37,7 +42,6 @@ import {
 import {expect} from 'chai';
 import {Express} from 'express';
 import fs from 'fs';
-import PouchDB from 'pouchdb';
 import request from 'supertest';
 import {app} from '../src/routes';
 import {NOTEBOOKS_API_BASE} from './api.test';
@@ -47,8 +51,6 @@ import {
   localUserToken,
   requestAuthAndType,
 } from './utils';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
 
 // Where it the template API?
 const TEMPLATE_API_BASE = '/api/templates';

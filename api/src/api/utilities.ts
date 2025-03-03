@@ -18,7 +18,7 @@
  */
 
 import {
-  ListingsObject,
+  PublicServerInfo,
   PostRefreshTokenInputSchema,
   PostRefreshTokenResponse,
 } from '@faims3/data-model';
@@ -89,13 +89,14 @@ api.post(
  * Handle info requests, basic identifying information for this server
  */
 api.get('/info', async (req, res) => {
-  res.json({
+  const response: PublicServerInfo = {
     id: slugify(CONDUCTOR_INSTANCE_NAME),
     name: CONDUCTOR_INSTANCE_NAME,
     conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
     prefix: CONDUCTOR_SHORT_CODE_PREFIX,
-  } as ListingsObject);
+  };
+  res.json(response);
 });
 
 api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
