@@ -555,15 +555,19 @@ export const FieldConditionControl = (props: ConditionProps) => {
     const params = fieldDef['component-parameters'] || {};
     const possibleOptions = params.ElementProps?.options || [];
 
+    const isValidOption = possibleOptions.some(
+      (opt: any) => opt.value === condition.value
+    );
+
     switch (cName) {
       case 'Select':
-      case 'RadioGroup':
+      case 'RadioGroup': {
         return (
-          <FormControl sx={{minWidth: 200}}>
+          <FormControl sx={{minWidth: 200}} error={!isValidOption}>
             <InputLabel>Value</InputLabel>
             <Select
               label="Value"
-              value={condition.value ?? ''}
+              value={isValidOption ? condition.value : (condition.value ?? '')} // Show invalid value
               onChange={e => updateValue(e.target.value)}
             >
               {possibleOptions.map((opt: any) => (
@@ -572,17 +576,34 @@ export const FieldConditionControl = (props: ConditionProps) => {
                 </MenuItem>
               ))}
             </Select>
+            {!isValidOption && (
+              <div style={{color: 'red', fontSize: '12px'}}>
+                Invalid value: "{String(condition.value)}"
+              </div>
+            )}
           </FormControl>
         );
+      }
 
-      case 'MultiSelect':
+      case 'MultiSelect': {
+        const selectedValues = Array.isArray(condition.value)
+          ? condition.value
+          : [];
+
         return (
-          <FormControl sx={{minWidth: 200}}>
+          <FormControl
+            sx={{minWidth: 200}}
+            error={
+              !selectedValues.every(v =>
+                possibleOptions.some((opt: any) => opt.value === v)
+              )
+            }
+          >
             <InputLabel>Value</InputLabel>
             <Select
               multiple
               label="Value"
-              value={Array.isArray(condition.value) ? condition.value : []}
+              value={selectedValues}
               onChange={e => updateValue(e.target.value)}
             >
               {possibleOptions.map((opt: any) => (
@@ -591,25 +612,49 @@ export const FieldConditionControl = (props: ConditionProps) => {
                 </MenuItem>
               ))}
             </Select>
+            {selectedValues.some(
+              v => !possibleOptions.some((opt: any) => opt.value === v)
+            ) && (
+              <div style={{color: 'red', fontSize: '12px'}}>
+                Invalid values: "
+                {selectedValues
+                  .filter(
+                    v => !possibleOptions.some((opt: any) => opt.value === v)
+                  )
+                  .join(', ')}
+                "
+              </div>
+            )}
           </FormControl>
         );
+      }
 
-      case 'Checkbox':
+      case 'Checkbox': {
         return (
-          <FormControl sx={{minWidth: 200}}>
+          <FormControl sx={{minWidth: 200}} error={!isValidOption}>
             <InputLabel>Value</InputLabel>
             <Select
               label="Value"
-              value={String(condition.value ?? '')}
+              value={
+                isValidOption
+                  ? String(condition.value)
+                  : (String(condition.value) ?? 'false')
+              }
               onChange={e => updateValue(e.target.value === 'true')}
             >
               <MenuItem value="false">False</MenuItem>
               <MenuItem value="true">True</MenuItem>
             </Select>
+            {!isValidOption && (
+              <div style={{color: 'red', fontSize: '12px'}}>
+                Invalid value: "{String(condition.value)}"
+              </div>
+            )}
           </FormControl>
         );
+      }
 
-      default:
+      default: {
         return (
           <TextField
             variant="outlined"
@@ -617,8 +662,13 @@ export const FieldConditionControl = (props: ConditionProps) => {
             value={condition.value ?? ''}
             onChange={e => updateValue(e.target.value)}
             sx={{minWidth: 200}}
+            error={!isValidOption}
+            helperText={
+              !isValidOption ? `Invalid value: "${condition.value}"` : ''
+            }
           />
         );
+      }
     }
   };
 
