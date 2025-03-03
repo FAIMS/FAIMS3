@@ -1747,10 +1747,11 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           serverUrl: server.serverUrl,
           token,
         });
-      } catch {
+      } catch (e) {
         console.warn(
-          `Failed to get metadata from API for project ${projectId}`
+          `Failed to get metadata from API for project ${projectId}.`
         );
+        console.error(e);
       }
 
       // See if we have an existing matching project
@@ -1782,9 +1783,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             serverId,
             rawUiSpecification: meta.uiSpec,
             couchDbUrl: details.data_db.base_url,
-            // TODO Where are these populated from
-            createdAt: undefined,
-            lastUpdated: undefined,
+            createdAt: details.created,
+            lastUpdated: details.last_updated,
           })
         );
       } else {
@@ -1796,9 +1796,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             serverId,
             rawUiSpecification: meta?.uiSpec ?? project.rawUiSpecification,
             couchDbUrl: details.data_db.base_url,
-            // TODO update these?
-            createdAt: project.createdAt,
-            lastUpdated: project.lastUpdated,
+            createdAt: details.created,
+            lastUpdated: details.last_updated,
           })
         );
       }
