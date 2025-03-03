@@ -21,26 +21,36 @@
 import {ProjectID, ProjectUIModel} from '@faims3/data-model';
 import {
   Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   FormControlLabel,
   Grid,
   Paper,
   Switch,
   Typography,
 } from '@mui/material';
-import {useParams} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
 import {
   selectProjectById,
   startSyncingAttachments,
   stopSyncingAttachments,
+  deactivateProject,
 } from '../../../../context/slices/projectSlice';
 import {addAlert} from '../../../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
 import {theme} from '../../../themes';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
+import React from 'react';
+import {NOTEBOOK_LIST_ROUTE} from '../../../../constants/routes';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
+  const nav = useNavigate();
   const {projectId} = useParams<{projectId: ProjectID}>();
   if (!projectId) return <></>;
   const dispatch = useAppDispatch();
@@ -48,6 +58,26 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   if (!project) return <></>;
 
   const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
+  const [openDeactivateDialog, setOpenDeactivateDialog] = React.useState(false);
+
+  const handleDeactivateClick = () => {
+    setOpenDeactivateDialog(true);
+  };
+
+  const handleDeactivateConfirm = () => {
+    dispatch(
+      deactivateProject({
+        projectId: projectId,
+        serverId: project.serverId,
+      })
+    );
+    setOpenDeactivateDialog(false);
+    nav(NOTEBOOK_LIST_ROUTE);
+  };
+
+  const handleDeactivateCancel = () => {
+    setOpenDeactivateDialog(false);
+  };
 
   return (
     <Box>
@@ -71,7 +101,13 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             <NotebookSyncSwitch project={project} showHelperText={true} />
           </Box>
 
-          <Box component={Paper} variant={'outlined'} elevation={0} p={2}>
+          <Box
+            component={Paper}
+            variant={'outlined'}
+            elevation={0}
+            p={2}
+            mb={{xs: 1, sm: 2, md: 3}}
+          >
             <Typography variant={'h6'} sx={{mb: 2}}>
               Get attachments from other devices
             </Typography>
@@ -133,6 +169,26 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
               </Typography>
             </Box>
           </Box>
+
+          <Box component={Paper} variant={'outlined'} elevation={0} p={2}>
+            <Typography variant={'h6'} sx={{mb: 2}}>
+              Deactivate {NOTEBOOK_NAME_CAPITALIZED}
+            </Typography>
+            <Box>
+              <Typography variant={'body2'} sx={{mb: 2}}>
+                Deactivating this {NOTEBOOK_NAME_CAPITALIZED} will remove it
+                from your active notebooks list. Make sure all your data has
+                been synced to the server before deactivating.
+              </Typography>
+              <Button
+                variant={'outlined'}
+                color={'error'}
+                onClick={handleDeactivateClick}
+              >
+                Deactivate {NOTEBOOK_NAME_CAPITALIZED}
+              </Button>
+            </Box>
+          </Box>
         </Grid>
         <Grid item xs={12} sm={12} md={6} lg={8}>
           <AutoIncrementerSettingsList
@@ -141,6 +197,24 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
           />
         </Grid>
       </Grid>
+
+      {/* Deactivation Confirmation Dialog */}
+      <Dialog open={openDeactivateDialog} onClose={handleDeactivateCancel}>
+        <DialogTitle>Deactivate {NOTEBOOK_NAME_CAPITALIZED}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to deactivate this {NOTEBOOK_NAME_CAPITALIZED}
+            ? Deactivation may result in unintended data loss if your records
+            have not been uploaded to the server.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeactivateCancel}>Cancel</Button>
+          <Button onClick={handleDeactivateConfirm} color="error">
+            Deactivate
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

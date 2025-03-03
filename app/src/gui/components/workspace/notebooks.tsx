@@ -37,7 +37,6 @@ import * as ROUTES from '../../../constants/routes';
 import {useNotification} from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {
-  deactivateProject,
   initialiseProjects,
   Project,
   selectProjectsByServerId,
@@ -135,29 +134,7 @@ export default function NoteBooks() {
       ),
     },
   ];
-  const activatedColumns = baseColumns.concat([
-    {
-      field: 'Deactivate',
-      type: 'Deactivate',
-      minWidth: 140,
-      renderCell: ({row}) => (
-        <Button
-          variant={'outlined'}
-          onClick={async e => {
-            e.stopPropagation();
-            dispatch(
-              deactivateProject({
-                projectId: row.projectId,
-                serverId: row.serverId,
-              })
-            );
-          }}
-        >
-          Deactivate
-        </Button>
-      ),
-    },
-  ]);
+  const activatedColumns = baseColumns;
   const notActivatedColumns = baseColumns.concat([
     {
       field: 'actions',
