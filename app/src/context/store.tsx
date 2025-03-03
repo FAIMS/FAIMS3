@@ -17,7 +17,6 @@ import {
   REHYDRATE,
 } from 'redux-persist';
 import {PersistGate} from 'redux-persist/integration/react';
-import storage from 'redux-persist/lib/storage';
 import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 import LoadingApp from '../gui/components/loadingApp';
 import {initialize} from '../sync/initialize';
@@ -30,16 +29,22 @@ import authReducer, {
 import projectsReducer from './slices/projectSlice';
 import {databaseService} from './slices/helpers/databaseService';
 import {logError} from '../logging';
-import { addAlert } from './slices/alertSlice';
+import {addAlert} from './slices/alertSlice';
+
+// The below configures indexed DB storage which has a greater limit than
+// localStorage. UI specs contain images.
+
+// @ts-ignore
+import storage from 'redux-persist-indexeddb-storage';
 
 // Configure persistence for the auth slice
-const authPersistConfig = {key: 'auth', storage};
+const authPersistConfig = {key: 'auth', storage: storage('faims-auth-db')};
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 
 // Configure persistence for the projects slice
 const projectsPersistConfig = {
   key: 'projects',
-  storage,
+  storage: storage('faims-projects-db'),
   blacklist: ['isInitialised'],
 };
 
@@ -56,7 +61,7 @@ export const store = configureStore({
     // projects slice (persisted)
     projects: persistedProjectsReducer,
     // not persisted - alerts
-    alerts: alertsReducer
+    alerts: alertsReducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
