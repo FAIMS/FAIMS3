@@ -1,106 +1,114 @@
 import {
-  NonUniqueProjectID,
-  PossibleConnectionInfo,
-  ProjectDataObject,
-  ProjectUIModel,
+    NonUniqueProjectID,
+    PossibleConnectionInfo,
+    ProjectDataObject,
+    ProjectUIModel,
 } from '@faims3/data-model';
 import {
-  createAsyncThunk,
-  createSelector,
-  createSlice,
-  PayloadAction,
+    createAsyncThunk,
+    createSelector,
+    createSlice,
+    PayloadAction,
 } from '@reduxjs/toolkit';
-import {CONDUCTOR_URLS} from '../../buildconfig';
-import {AppDispatch, RootState} from '../store';
-import {isTokenValid} from './authSlice';
-import {compiledSpecService} from './helpers/compiledSpecService';
+import { CONDUCTOR_URLS } from '../../buildconfig';
+import { AppDispatch, RootState } from '../store';
+import { isTokenValid } from './authSlice';
+import { compiledSpecService } from './helpers/compiledSpecService';
 import {
-  buildPouchIdentifier,
-  createLocalPouchDatabase,
-  createPouchDbSync,
-  createRemotePouchDbFromConnectionInfo,
-  fetchProjectMetadataAndSpec,
-  getRemoteDatabaseNameFromId,
+    buildCompiledSpecId,
+    buildPouchIdentifier,
+    buildSyncId,
+    createLocalPouchDatabase,
+    createPouchDbSync,
+    createRemotePouchDbFromConnectionInfo,
+    fetchProjectMetadataAndSpec,
+    getRemoteDatabaseNameFromId,
 } from './helpers/databaseHelpers';
-import {databaseService} from './helpers/databaseService';
-
-export const buildSyncId = ({
-  localId,
-  remoteId,
-}: {
-  localId: string;
-  remoteId: string;
-}): string => {
-  return `${localId}-${remoteId}`;
-};
-
-export const buildCompiledSpecId = (id: ProjectIdentity): string => {
-  return `${id.serverId}-${id.projectId}`;
-};
-
-// TODO move this into a store
+import { databaseService } from './helpers/databaseService';
 
 // TYPES
 // =====
 
+// TODO move this into data model
+export interface ApiProjectInfo {
+  _id: NonUniqueProjectID;
+  name: string;
+  description?: string;
+  template_id?: string;
+  data_db?: PossibleConnectionInfo;
+  metadata_db?: PossibleConnectionInfo;
+  last_updated?: string;
+  created?: string;
+  status?: string;
+}
+
 // Server info
 export interface ApiServerInfo {
+  // The identity of the server (which is the serverId)
   id: string;
+  // The display name for the server
   name: string;
+  // The URL of conductor (which presumably we already know if we got this far!)
   conductor_url: string;
+  // A description of the server
   description: string;
+  // The short-code prefix used/expected by this server
   prefix: string;
 }
 
 // Database types
-
-// We connect to databases with a JWT
 export interface DatabaseAuth {
+  // The access token required to talk to this database - this is refreshed
+  // when the token is refreshed
   jwtToken: string;
 }
 
-export interface DatabaseConnectionConfig {
+export interface DatabaseConnectionConfig extends DatabaseAuth {
   // The complete couch DB URL minus the database name (includes port)
   couchUrl: string;
   // The name of the database
   databaseName: string;
-  // The JWT to authorise with
-  jwtToken: string;
 }
 
 /**
- * This manages a remote couch connection
+ * This manages a remote couch connection - a remote connection is a combination
+ * of the remote database ID (see databaseService to retrieve it), the sync
+ * object (which is only instantiated/active if isSyncing = true)
  */
 export interface RemoteCouchConnection {
-  // Id of the remote DB - use service to fetch
+  // ID of the remote DB - use databaseService to fetch
   remoteDbId: string;
-  // The sync object (this is created which initiates sync)
+  // The sync object ID - use databaseService to fetch - can be undefined if
+  // isSyncing = false
   syncId: string | undefined;
   // The configuration for the remote connection e.g. auth, endpoint etc
   connectionConfiguration: DatabaseConnectionConfig;
 }
 export interface DatabaseConnection {
-  // A reference to the local data database
+  // A reference to the local data database - retrieve from databaseService
   localDbId: string;
 
   // This defines whether the database synchronisation is active
-
-  // TODO this is not yet implemented - what behaviour should it have?
   isSyncing: boolean;
 
-  // Is pouch configured to download attachments?
+  // Is pouch configured to download attachments? Attachment download is managed
+  // through a filter on the sync object
   isSyncingAttachments: boolean;
 
-  // Remote database connection (if the database is not syncing - this is
-  // undefined and guarantees no leaking of old connections)
-  remote?: RemoteCouchConnection;
+  // Remote database connection (this is always defined since we will always
+  // have a remoteDb even if sync is not active)
+  remote: RemoteCouchConnection;
 }
 
 // This is metadata which is defined as part of the design file
 export interface KnownProjectMetadata {
+  // The survey name
   name: string;
+  // The description
   description?: string;
 }
+
+// This represents the true metadata which is a combination of mandatory + user added
 export type ProjectMetadata = KnownProjectMetadata & {[key: string]: any};
 
 // Maps a project ID -> project
@@ -117,7 +125,7 @@ export interface ProjectInformation {
   // This is metadata information about the project
   metadata: ProjectMetadata;
 
-  // [Stored uncompiled]
+  // [Stored uncompiled] - changing this prompts a recompile
   rawUiSpecification: ProjectUIModel;
 }
 
@@ -129,17 +137,17 @@ export interface Project extends ProjectInformation {
   // the unique project ID (unique within the server)
   projectId: string;
 
-  // Which server is this in?
+  // Which server is this in? (including here too since it's helpful)
   serverId: string;
 
-  // Is the project activated?
+  // Is the project activated? (Use active/deactive to change)
   isActivated: boolean;
 
   // Data database (if activated is false -> this is undefined)
   database?: DatabaseConnection;
 
   // [Compiled] Key to get the compiled UI Spec from storage - this should not
-  // be persisted as it has live JS functions in it
+  // be persisted/serialised as it has live JS functions in it
   uiSpecificationId: string;
 }
 
@@ -175,6 +183,7 @@ export interface ProjectIdentity {
 // Map from server ID to server details
 export type ServerIdToServerMap = {[serverId: string]: Server};
 
+// The top level project state - servers + initialised flag
 export interface ProjectsState {
   servers: ServerIdToServerMap;
   isInitialised: boolean;
@@ -189,6 +198,7 @@ export interface ProjectsState {
 export const initialProjectState: ProjectsState = {
   // initial state is empty
   servers: {},
+  // start out uninitialised
   isInitialised: false,
 };
 
@@ -196,84 +206,17 @@ const projectsSlice = createSlice({
   name: 'projects',
   initialState: initialProjectState,
   reducers: {
+    /**
+     * Sets the initialised flag to true
+     */
     markInitialised: state => {
       state.isInitialised = true;
     },
 
-    compileSpecs: state => {
-      // For all specs in the project - compile and store
-      for (const server of Object.values(state.servers)) {
-        for (const project of Object.values(server.projects)) {
-          compiledSpecService.compileAndRegisterSpec(
-            project.uiSpecificationId,
-            project.rawUiSpecification
-          );
-        }
-      }
-    },
-    rebuildDbs: state => {
-      // For all DBs in the project, create local, sync and remote as configured
-      for (const server of Object.values(state.servers)) {
-        for (const project of Object.values(server.projects)) {
-          // We have a server/project
-
-          // Now determine what we need to build
-          if (project.isActivated) {
-            if (project.database) {
-              // here we already have stuff ready to go (config etc)
-              const dbInfo = project.database;
-
-              // First - build the local DB
-              const localDb = createLocalPouchDatabase<ProjectDataObject>({
-                id: dbInfo.localDbId,
-              });
-              databaseService.registerLocalDatabase(dbInfo.localDbId, localDb, {
-                tolerant: true,
-              });
-
-              // Next - setup the remote if we need it
-              if (dbInfo.remote) {
-                // creates the remote database (pouch remote)
-                const {db: remoteDb, id: remoteDbId} =
-                  createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
-                    dbInfo.remote.connectionConfiguration
-                  );
-                databaseService.registerRemoteDatabase(remoteDbId, remoteDb, {
-                  tolerant: true,
-                });
-
-                // and the sync
-                let updatedSyncId: string | undefined = undefined;
-                if (dbInfo.isSyncing) {
-                  // creates the sync object (PouchDB.Replication.Sync)
-                  const sync = createPouchDbSync({
-                    attachmentDownload: dbInfo.isSyncingAttachments,
-                    localDb,
-                    remoteDb,
-                  });
-                  updatedSyncId = buildSyncId({
-                    localId: dbInfo.localDbId,
-                    remoteId: remoteDbId,
-                  });
-                  databaseService.registerSync(updatedSyncId, sync, {
-                    tolerant: true,
-                  });
-                }
-
-                // Also worth noting we should update the remote db ID just in case the function changed (to avoid broken store)
-                dbInfo.remote.remoteDbId = remoteDbId;
-                dbInfo.remote.syncId = updatedSyncId;
-              }
-              // otherwise we are all good - just local db needed
-            } else {
-              // This is weird - we have an activated survey but the database
-              // object is missing TODO determine behaviour
-            }
-          }
-        }
-      }
-    },
-    // Add and remove servers
+    /**
+     * Adds a new server - currently this is used only during initialisation but
+     * could eventually form a dynamic server management system
+     */
     addServer: (
       state,
       action: PayloadAction<{
@@ -305,11 +248,9 @@ const projectsSlice = createSlice({
       };
     },
 
-    // removeServer: (state, action: PayloadAction<{serverId: string}>) => {
-    //   // TODO - will we ever do this? What should happen - this will require
-    //   // deactivating things/deleting databases.
-    // },
-
+    /**
+     * Update modifiable details for an existing server
+     */
     updateServerDetails: (
       state,
       action: PayloadAction<{
@@ -344,7 +285,10 @@ const projectsSlice = createSlice({
       };
     },
 
-    // Add and remove projects
+    /**
+     * Add a new project for an existing server - you must specify the couchDB
+     * URL to be used for all databases within this project at this point
+     */
     addProject: (
       state,
       action: PayloadAction<
@@ -403,8 +347,18 @@ const projectsSlice = createSlice({
       };
     },
 
-    // Remove a project from local storage
-    // Note: This doesn't delete the project from the server, only removes it from local state
+    /**
+     * Remove a project. This involves
+     *
+     * - remove and close sync
+     * - remove and close remote db (pouchDB reference to remote)
+     * - destroy, close and remove local db (pouchDB local DB containing data)
+     * - deregister compiled spec
+     * - remove entry in store
+     *
+     * NOTE: currently there is no protection against data loss here.
+     *
+     */
     removeProject: (state, action: PayloadAction<ProjectIdentity>) => {
       const payload = action.payload;
 
@@ -461,7 +415,11 @@ const projectsSlice = createSlice({
       delete server.projects[payload.projectId];
     },
 
-    // Update a project (metadata / details)
+    /**
+     * Update superficial details of a project (e.g. name, description etc)
+     *
+     * Will recompile uiSpec
+     */
     updateProjectDetails: (
       state,
       action: PayloadAction<
@@ -511,7 +469,18 @@ const projectsSlice = createSlice({
       };
     },
 
-    // Activate a project
+    /**
+     * Activates an existing project.
+     *
+     * This involves
+     *
+     * - creating local pouch DB which stores the data synced from the remote (and new records)
+     * - creating the remote pouch DB which is a connection point to the remote data-database
+     * - creating the sync object which performs the synchronisation between the two databases
+     * - registering the above non-serialisable objects into databaseService
+     * - marking the project as activated and updating store state
+     *
+     */
     activateProject: (
       state,
       action: PayloadAction<ProjectIdentity & DatabaseAuth>
@@ -616,7 +585,21 @@ const projectsSlice = createSlice({
       };
     },
 
-    // Deactivate a project
+    /**
+     * De-activates an existing (active) project.
+     *
+     * This involves
+     *
+     * - destroying the sync object which performs the
+     *   synchronisation between the two databases
+     * - destroying the remote pouch DB which is a connection point to the
+     *   remote data-database
+     * - destroying (and cleaning) local pouch DB which stores the data synced
+     *   from the remote (and new records)
+     * - de-registering the above entries
+     * - marking the project as de-activated and updating store state
+     *
+     */
     deactivateProject: (state, action: PayloadAction<ProjectIdentity>) => {
       const payload = action.payload;
 
@@ -692,8 +675,20 @@ const projectsSlice = createSlice({
       };
     },
 
-    // Update connection details for activated project
-    updateConnection: (
+    /**
+     * Updates the database auth for a given project.
+     *
+     * This involves
+     *
+     * - destroy and deregister sync
+     * - destroy and deregister remote DB
+     * - create remote DB with new connection config
+     * - create sync with new remote DB (and existing local DB)
+     * - register new entries
+     *
+     * This method is run when the token is refreshed.
+     */
+    updateDatabaseAuth: (
       state,
       action: PayloadAction<{jwtToken: string} & ProjectIdentity>
     ) => {
@@ -830,7 +825,11 @@ const projectsSlice = createSlice({
       };
     },
 
-    // Temporarily stop syncing a project without deactivating it
+    /**
+     * A syncing database is one where the sync object exists between the local
+     * and remote pouch DBs. This stops this sync by destroying this sync
+     * object. Updates databaseService registrations and store states.
+     */
     stopSyncingProject: (state, action: PayloadAction<ProjectIdentity>) => {
       // check project/server exists
       const payload = action.payload;
@@ -914,7 +913,11 @@ const projectsSlice = createSlice({
       };
     },
 
-    // Resume syncing for a project with syncing temporarily stopped
+    /**
+     * A syncing database is one where the sync object exists between the local
+     * and remote pouch DBs. This stops resumes this sync by establishing this
+     * sync object. Updates databaseService registrations and store states.
+     */
     resumeSyncingProject: (state, action: PayloadAction<ProjectIdentity>) => {
       // check project/server exists
       const payload = action.payload;
@@ -1025,7 +1028,11 @@ const projectsSlice = createSlice({
       };
     },
 
-    // Set attachment syncing
+    /**
+     * Attachment syncing is managed by a filter which can be applied to the
+     * Sync object. This method destroys the existing sync then re-establishes
+     * it with the attachment filter active.
+     */
     stopSyncingAttachments: (state, action: PayloadAction<ProjectIdentity>) => {
       // check project/server exists
       const payload = action.payload;
@@ -1140,6 +1147,12 @@ const projectsSlice = createSlice({
         },
       };
     },
+
+    /**
+     * Attachment syncing is managed by a filter which can be applied to the
+     * Sync object. This method destroys the existing sync then re-establishes
+     * it with the attachment filter not-active.
+     */
     startSyncingAttachments: (
       state,
       action: PayloadAction<ProjectIdentity>
@@ -1293,7 +1306,6 @@ export function getAllDataDbs(
   state: RootState
 ): PouchDB.Database<ProjectDataObject>[] {
   const databases: PouchDB.Database<ProjectDataObject>[] = [];
-
   for (const server of Object.values(state.projects.servers)) {
     for (const project of Object.values(server.projects)) {
       if (project.isActivated && project.database?.localDbId) {
@@ -1405,7 +1417,7 @@ export const updateDatabaseCredentials = createAsyncThunk<
     if (project.isActivated) {
       // Dispatch a connection update
       appDispatch(
-        updateConnection({
+        updateDatabaseAuth({
           jwtToken: token,
           projectId: project.projectId,
           serverId,
@@ -1474,19 +1486,6 @@ export const initialiseServers = createAsyncThunk<void>(
   }
 );
 
-// TODO move this into data model
-export interface ApiProjectInfo {
-  _id: NonUniqueProjectID;
-  name: string;
-  description?: string;
-  template_id?: string;
-  data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
-  last_updated?: string;
-  created?: string;
-  status?: string;
-}
-
 /**
  * Initialises projects for the specified server. Merges superficial details for
  * existing projects, creates new ones for new.
@@ -1498,7 +1497,7 @@ export interface ApiProjectInfo {
  * Also updates the couchDBUrl - warning if there is a difference between
  * discovered project couchDB urls.
  *
- * TODO consider deletion!
+ * TODO consider deletion - i.e. what happens if the server removes a project?
  */
 export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
   'projects/initialiseProjects',
@@ -1665,6 +1664,83 @@ export const initialiseAllProjects = createAsyncThunk<void>(
   }
 );
 
+/**
+ * As part of initialisation, rebuilds and registers all databases (local,
+ * remote) and sync objects, based on the current store configuration.
+ *
+ * Does not make any change to store state. Hence, it is not a reducer.
+ */
+export const rebuildDbs = (state: Readonly<ProjectsState>): void => {
+  // For all DBs in the project, create local, sync and remote as configured
+  for (const server of Object.values(state.servers)) {
+    for (const project of Object.values(server.projects)) {
+      // We have a server/project
+      // Now determine what we need to build
+      if (project.isActivated) {
+        if (project.database) {
+          // here we already have stuff ready to go (config etc)
+          const dbInfo = project.database;
+
+          // First - build the local DB
+          const localDb = createLocalPouchDatabase<ProjectDataObject>({
+            id: dbInfo.localDbId,
+          });
+          databaseService.registerLocalDatabase(dbInfo.localDbId, localDb, {
+            tolerant: true,
+          });
+
+          // Next - setup the remote if we need it
+          if (dbInfo.remote) {
+            // creates the remote database (pouch remote)
+            const {db: remoteDb, id: remoteDbId} =
+              createRemotePouchDbFromConnectionInfo<ProjectDataObject>(
+                dbInfo.remote.connectionConfiguration
+              );
+            databaseService.registerRemoteDatabase(remoteDbId, remoteDb, {
+              tolerant: true,
+            });
+
+            // and the sync (if needed)
+            if (dbInfo.isSyncing && dbInfo.remote.syncId) {
+              // creates the sync object (PouchDB.Replication.Sync)
+              const sync = createPouchDbSync({
+                attachmentDownload: dbInfo.isSyncingAttachments,
+                localDb,
+                remoteDb,
+              });
+              databaseService.registerSync(dbInfo.remote.syncId, sync, {
+                tolerant: true,
+              });
+            }
+          }
+          // otherwise we are all good - just local db needed
+        } else {
+          // This is weird - we have an activated survey but the database
+          // object is missing TODO determine behaviour
+        }
+      }
+    }
+  }
+};
+
+/**
+ * Iterates through all servers and projects and compiles the spec.
+ *
+ * Compiled specs are saved in a separate store due to them containing
+ * unserialisable JS snippets.
+ */
+export const compileSpecs = (state: Readonly<ProjectsState>): void => {
+  // For all specs in the project - compile and store
+  for (const server of Object.values(state.servers)) {
+    for (const project of Object.values(server.projects)) {
+      compiledSpecService.compileAndRegisterSpec(
+        project.uiSpecificationId,
+        project.rawUiSpecification
+      );
+    }
+  }
+};
+
 export const {
   activateProject,
   addProject,
@@ -1674,12 +1750,10 @@ export const {
   stopSyncingProject,
   resumeSyncingProject,
   removeProject,
-  updateConnection,
+  updateDatabaseAuth,
   updateProjectDetails,
   updateServerDetails,
   markInitialised,
-  rebuildDbs,
-  compileSpecs,
   deactivateProject,
 } = projectsSlice.actions;
 

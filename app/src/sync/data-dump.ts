@@ -21,10 +21,9 @@ import {Directory, Encoding, Filesystem} from '@capacitor/filesystem';
 import {jsonStringifyStream} from '@worker-tools/json-stream';
 
 import {Share} from '@capacitor/share';
-import {getLocalStateDB} from '../context/slices/helpers/databaseHelpers';
+import {databaseService} from '../context/slices/helpers/databaseService';
 import {getAllDataDbs} from '../context/slices/projectSlice';
 import {store} from '../context/store';
-import {databaseService} from '../context/slices/helpers/databaseService';
 
 const PREFIX = 'faims3-';
 
@@ -144,7 +143,10 @@ export async function progressiveSaveFiles(
   };
 
   if (keepDumping)
-    keepDumping = await progressiveDump(getLocalStateDB(), writer(10, 12));
+    keepDumping = await progressiveDump(
+      databaseService.getLocalStateDatabase(),
+      writer(10, 12)
+    );
   if (keepDumping)
     keepDumping = await progressiveDump(
       databaseService.getDraftDatabase(),
@@ -271,7 +273,7 @@ export async function doDumpDownload() {
   */
   await streamedDumpDownload(
     'local_state',
-    await dumpDatabase(getLocalStateDB())
+    await dumpDatabase(databaseService.getLocalStateDatabase())
   );
   await streamedDumpDownload(
     'draft',

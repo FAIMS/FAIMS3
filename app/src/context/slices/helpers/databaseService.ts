@@ -1,3 +1,12 @@
+/**
+ * This is a singleton static class database service which manages a mapping of
+ * IDs -> databases and sync objects. These cannot be serialised in the Redux
+ * store safely, so are re-instantiated on boot and maintained while the app is
+ * active.
+ *
+ * This class also contains a static reference to the draft DB.
+ */
+
 import {ProjectDataObject} from '@faims3/data-model';
 import {DraftDB} from '../../../sync/draft-storage';
 import {LOCAL_POUCH_OPTIONS} from './databaseHelpers';
@@ -6,6 +15,8 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
 export interface RegisterDbOptions {
+  // Tolerant = true will disable errors when you are trying to create a
+  // database with the same ID as existing
   tolerant?: boolean;
 }
 
@@ -21,6 +32,7 @@ class DatabaseService {
   private remoteDatabases: Map<string, PouchDB.Database<ProjectDataObject>> =
     new Map();
   private draftDb: DraftDB = new PouchDB('draft-storage', LOCAL_POUCH_OPTIONS);
+  private localStateDb = new PouchDB('local_state', LOCAL_POUCH_OPTIONS);
 
   private constructor() {}
 
@@ -45,6 +57,7 @@ class DatabaseService {
   // Clean up database instances
   closeAndRemoveLocalDatabase(
     id: string,
+    // Clean will also remove entries/fully destroy
     {clean = false}: {clean?: boolean} = {}
   ): void {
     const db = this.localDatabases.get(id);
@@ -129,6 +142,10 @@ class DatabaseService {
 
   getDraftDatabase() {
     return this.draftDb;
+  }
+
+  getLocalStateDatabase() {
+    return this.localStateDb;
   }
 }
 

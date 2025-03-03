@@ -24,13 +24,11 @@ export const ATTACHMENT_FILTER_CONFIG = {
   view: 'attachment_filter/attachment_filter',
 };
 
-// Is this already implemented somewhere?
-export interface LocalPouchOptions {
-  adapter?: 'memory';
-}
+// This is the PouchDB type which provides options for instantiating a database
+type LocalDatabaseOptions = PouchDB.Configuration.DatabaseConfiguration;
 
 // Default local options is none
-export const LOCAL_POUCH_OPTIONS: LocalPouchOptions = {};
+export const LOCAL_POUCH_OPTIONS: LocalDatabaseOptions = {};
 
 // enable memory adapter for testing
 if (RUNNING_UNDER_TEST) {
@@ -38,8 +36,34 @@ if (RUNNING_UNDER_TEST) {
 }
 
 /**
+ * Builds a PouchDB sync object identifier for use in the databaseService
+ * @param localId The local database identifier (which is unique)
+ * @param remoteId The remote database identifier (which is unique)
+ * @returns A suitable identifier which uniquely identifies a sync object
+ */
+export const buildSyncId = ({
+  localId,
+  remoteId,
+}: {
+  localId: string;
+  remoteId: string;
+}): string => {
+  return `${localId}-${remoteId}`;
+};
+
+/**
+ * Builds an identifier for the compiled spec service
+ * @param id A project identity which includes the server + project
+ * @returns A suitable identifier which uniquely identifies a compiled spec
+ */
+export const buildCompiledSpecId = (id: ProjectIdentity): string => {
+  return `${id.serverId}-${id.projectId}`;
+};
+
+/**
  * Generates a predictable (deterministic) unique identifier for local pouch
- * databases
+ * databases. This is unique for the whole app given it combines the server and
+ * project IDs.
  *
  * @param projectId
  * @param serverId
@@ -56,7 +80,11 @@ export function buildPouchIdentifier({
 export const DATA_DB_PREFIX = 'data-';
 
 /**
- * Generates the couch DB name from the project ID
+ * Generates the couch DB name from the project ID.
+ *
+ * TODO is it safe to generate this here? We could use the database name from
+ * the API.
+ *
  * @param projectId The ID of the project
  * @returns The name of the couch DB to connect to
  */
@@ -71,8 +99,7 @@ export function getRemoteDatabaseNameFromId({
 /**
  * Simple function which creates a Pouch database which is local only.
  *
- * @param id The unique identifier for this database - this should uniquely
- * identify it
+ * @param id The unique identifier for this database
  *
  * @returns PouchDB
  */
@@ -90,6 +117,9 @@ export function createLocalPouchDatabase<Content extends {}>({
  * @param jwtToken The token to authorise with
  * @param couchUrl The couch URL e.g. https://couch.domain.com:443
  * @param databaseName The database name e.g. myDatabase
+ *
+ * @return {id, db} The ID is a unique id suitable for the databaseService, db
+ * is the PouchDB instance
  */
 export function createRemotePouchDbFromConnectionInfo<Content extends {}>({
   jwtToken,
@@ -133,7 +163,7 @@ export function createRemotePouchDbFromConnectionInfo<Content extends {}>({
  * @param localDb The local DB to sync
  * @param remoteDb The remote DB to sync
  *
- * @returns sync The new sync object
+ * @returns The new sync object
  */
 export function createPouchDbSync<Content extends {}>({
   attachmentDownload,
@@ -187,8 +217,7 @@ export function createPouchDbSync<Content extends {}>({
 }
 
 /**
- * Fetch project metadata from the server and store it locally for
- * later access.
+ * Fetch project metadata from the server.
  */
 export const fetchProjectMetadataAndSpec = async ({
   token,
@@ -209,7 +238,8 @@ export const fetchProjectMetadataAndSpec = async ({
   });
   const notebook = await response.json();
 
-  // TODO runtime validation. This is a dangerous assumption!
+  // TODO runtime validation. This is a dangerous assumption! This should do a
+  // Zod model validation.
   const metadata = notebook.metadata as ProjectMetadata;
   const rawUiSpec = notebook['ui-specification'] as EncodedProjectUIModel;
   const uiSpec = {
@@ -224,14 +254,4 @@ export const fetchProjectMetadataAndSpec = async ({
     compileUiSpecConditionals(uiSpec);
   }
   return {metadata, uiSpec};
-};
-
-/**
- * This contains any local app state we want to keep across sessions
- * TODO why use pouch?? Redux store with persistence.
- */
-const local_state_db = new PouchDB('local_state', LOCAL_POUCH_OPTIONS);
-
-export const getLocalStateDB = () => {
-  return local_state_db;
 };

@@ -32,10 +32,10 @@ import {
   ProjectUIFields,
 } from '@faims3/data-model';
 import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
-import {getLocalStateDB} from '../context/slices/helpers/databaseHelpers';
 import {selectProjectById} from '../context/slices/projectSlice';
 import {store} from '../context/store';
 import {logError} from '../logging';
+import {databaseService} from '../context/slices/helpers/databaseService';
 
 const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 
@@ -83,7 +83,7 @@ export async function getLocalAutoincrementStateForField(
 ): Promise<LocalAutoIncrementState> {
   const pouch_id = get_pouch_id(project_id, form_id, field_id);
   try {
-    const local_state_db = getLocalStateDB();
+    const local_state_db = databaseService.getLocalStateDatabase();
     return await local_state_db.get(pouch_id);
   } catch (err: any) {
     if (err.status === 404) {
@@ -111,7 +111,7 @@ export async function setLocalAutoincrementStateForField(
   new_state: LocalAutoIncrementState
 ) {
   try {
-    const local_state_db = getLocalStateDB();
+    const local_state_db = databaseService.getLocalStateDatabase();
     // force due to error 409
     return await local_state_db.put(new_state, {force: true});
   } catch (err) {

@@ -30,7 +30,6 @@ import projectsReducer from './slices/projectSlice';
 import syncReducer, {addAlert, setInitialized} from './slices/syncSlice';
 import {databaseService} from './slices/helpers/databaseService';
 import {logError} from '../logging';
-import {getLocalStateDB} from './slices/helpers/databaseHelpers';
 
 // Configure persistence for the auth slice
 const authPersistConfig = {key: 'auth', storage};
@@ -269,7 +268,10 @@ export const wipeAllDatabases = async () => {
     }
   }
 
-  const dbsToWipe = [databaseService.getDraftDatabase(), getLocalStateDB()];
+  const dbsToWipe = [
+    databaseService.getDraftDatabase(),
+    databaseService.getLocalStateDatabase(),
+  ];
   for (const db of dbsToWipe) {
     try {
       console.debug(await db.destroy());

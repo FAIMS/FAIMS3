@@ -1,10 +1,17 @@
+/**
+ * The compiledSpecService is a singleton class service which allows access to
+ * compiled UI Specifications by their identifier in the projects store. This
+ * data is not part of the store since it contains runtime JS functions (which
+ * are compiled) meaning that it cannot safely be serialised.
+ *
+ * Note that is the ProjectUIModel - not the Encoded model (e.g. with fviews)
+ */
+
 import {ProjectUIModel} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import {compileUiSpecConditionals} from '../../../uiSpecification';
 PouchDB.plugin(PouchDBFind);
-
-export interface RegisterSpecOptions {}
 
 // Singleton service to manage database instances
 class CompiledUiSpecService {

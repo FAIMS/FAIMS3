@@ -37,19 +37,18 @@ export async function initialize() {
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
   // Get current state/dispatch const state = store.getState();
 
-  // TODO confirm we can rely on ordering here
+  // Rebuild all of the databases (synchronously)
+  rebuildDbs(store.getState().projects);
 
-  // This initialises the servers by fetching their data from corresponding API
+  // Compile all ui specs (synchronously)
+  compileSpecs(store.getState().projects);
+
+  // This initialises and potentially updates the servers by fetching their data
+  // from corresponding API
   await store.dispatch(initialiseServers());
 
   // Then we want to initialise all the projects too
   await store.dispatch(initialiseAllProjects());
-
-  // Now let's create all the DBs we need (these are persisted only as keys + config)
-  store.dispatch(rebuildDbs());
-
-  // Compile all ui specs
-  store.dispatch(compileSpecs());
 
   // Once this is done - mark initialisation complete
   store.dispatch(markInitialised());
