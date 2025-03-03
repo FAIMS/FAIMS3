@@ -5,7 +5,7 @@ import {z} from 'zod';
 import {NOTEBOOK_NAME} from '@/constants';
 import {Route} from '@/routes/projects/$projectId';
 
-export const fields = [
+const fields = [
   {
     name: 'file',
     type: 'file',
@@ -13,6 +13,13 @@ export const fields = [
   },
 ];
 
+/**
+ * UpdateProjectForm component renders a form for updating a project.
+ * It provides a button to submit the form and a file input for selecting a JSON file.
+ *
+ * @param {React.Dispatch<React.SetStateAction<boolean>>} setDialogOpen - A function to set the dialog open state.
+ * @returns {JSX.Element} The rendered UpdateProjectForm component.
+ */
 export function UpdateProjectForm({
   setDialogOpen,
 }: {
@@ -52,7 +59,7 @@ export function UpdateProjectForm({
       onSubmit={onSubmit}
       submitButtonText={`Update ${NOTEBOOK_NAME}`}
       submitButtonVariant="destructive"
-      warningMessage={`Editing the survey may result in inconsistencies between responses.`}
+      warningMessage={`Editing the ${NOTEBOOK_NAME} may result in inconsistencies between responses.`}
     />
   );
 }

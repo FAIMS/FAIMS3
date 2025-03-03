@@ -15,6 +15,12 @@ import {useState} from 'react';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {UpdateProjectForm} from '../forms/update-project-form';
 
+/**
+ * EditProjectDialog component renders a dialog for editing a project.
+ * It provides a button to open the dialog and a form to update the project.
+ *
+ * @returns {JSX.Element} The rendered EditProjectDialog component.
+ */
 export const EditProjectDialog = () => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
