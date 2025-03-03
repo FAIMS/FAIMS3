@@ -160,64 +160,69 @@ export function findInvalidConditionReferences(
 ): string[] {
   const invalidConditions: string[] = [];
 
-  // Only need to check fields that have predefined options (Select, MultiSelect, RadioGroup).
+  // Only need to check fields with predefined choices
   if (
     !['Select', 'RadioGroup', 'MultiSelect'].includes(
       targetField['component-name']
     )
   ) {
-    return invalidConditions; // If not a field with predefined choices, no invalid conditions exist.
+    return invalidConditions;
   }
 
-  // Get the valid set of selectable options from the field definition.
   const validOptions: string[] =
     targetField['component-parameters'].ElementProps?.options?.map(
       (opt: any) => opt.value
     ) || [];
 
-  /**
-   * Checks whether a condition is invalid due to a missing expected option.
-   */
-  const getInvalidExpectedValue = (condition: ConditionType): string | null => {
+  // Check if a condition is using a value that no longer exists
+  const getInvalidExpectedValue = (condition: ConditionType): string[] => {
+    if (condition.operator === 'and' || condition.operator === 'or') {
+      return condition.conditions
+        ? condition.conditions.flatMap(getInvalidExpectedValue)
+        : [];
+    }
+
     if (condition.field !== targetFieldName) {
-      return null; // This condition is about a different field
+      return [];
     }
 
     if (Array.isArray(condition.value)) {
-      // MultiSelect: check if any selected values are invalid
       const missingValues = condition.value.filter(
         val => !validOptions.includes(val)
       );
-      return missingValues.length > 0 ? missingValues.join(', ') : null;
+      return missingValues.length > 0
+        ? [`expects '${missingValues.join(', ')}'`]
+        : [];
     }
 
-    // Single value: (Select, RadioGroup)
     return validOptions.includes(String(condition.value))
-      ? null
-      : String(condition.value);
+      ? []
+      : [`expects '${String(condition.value)}'`];
   };
 
-  // Check field conditions by looping through all fields
+  // Check field conditions
   for (const [fId, fieldDef] of Object.entries(allFields)) {
     const cond = fieldDef.condition;
     if (cond && isFieldUsedInCondition(cond, targetFieldName)) {
-      const invalidVal = getInvalidExpectedValue(cond);
-      if (invalidVal) {
+      const invalidVals = getInvalidExpectedValue(cond);
+      if (invalidVals.length > 0) {
         const label = fieldDef['component-parameters']?.label ?? fId;
-        invalidConditions.push(`Field: ${label} (expects '${invalidVal}')`);
+        invalidVals.forEach(invalidVal => {
+          invalidConditions.push(`Field: ${label} (${invalidVal})`);
+        });
       }
     }
   }
 
-  // Check section conditions by looping through all sections
+  // Check section conditions
   for (const [, fviewDef] of Object.entries(allFviews)) {
     const cond = fviewDef.condition;
     if (cond && isFieldUsedInCondition(cond, targetFieldName)) {
-      const invalidValue = getInvalidExpectedValue(cond);
-      if (invalidValue) {
-        invalidConditions.push(
-          `Section: ${fviewDef.label} (expects '${invalidValue}')`
-        );
+      const invalidVals = getInvalidExpectedValue(cond);
+      if (invalidVals.length > 0) {
+        invalidVals.forEach(invalidVal => {
+          invalidConditions.push(`Section: ${fviewDef.label} (${invalidVal})`);
+        });
       }
     }
   }
