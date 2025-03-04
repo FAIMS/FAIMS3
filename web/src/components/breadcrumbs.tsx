@@ -37,7 +37,11 @@ const useGetData = (user: User | null, pathname: string[]) => {
  * @param {boolean} isPending - The loading state of the breadcrumb.
  * @returns {JSX.Element} The rendered breadcrumb with hook.
  */
-const breadcrumbWithHook = (name: string, data: any, isPending: boolean) => {
+const breadcrumbWithHook = (
+  name: string,
+  data: {metadata?: {name?: string}; template_name?: string} | null | undefined,
+  isPending: boolean
+) => {
   if (isPending) return <Skeleton className="w-full h-4 rounded-full" />;
 
   return <div>{data?.metadata?.name || data?.template_name || name}</div>;
