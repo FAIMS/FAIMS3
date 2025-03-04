@@ -51,10 +51,11 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               items:
                 templates?.length > 0
                   ? templates.map(({_id, template_name}: any) => ({
+                      id: _id,
                       title: template_name,
                       url: `/templates/${_id}`,
                     }))
-                  : [{title: 'No templates...'}],
+                  : [{id: 'no-templates', title: 'No templates...'}],
             },
             {
               title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
@@ -64,10 +65,11 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               items:
                 projects?.length > 0
                   ? projects.map(({name, non_unique_project_id}: any) => ({
+                      id: non_unique_project_id,
                       title: name,
                       url: `/projects/${non_unique_project_id}`,
                     }))
-                  : [{title: `No ${NOTEBOOK_NAME}s...`}],
+                  : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME}s...`}],
             },
           ]}
         />
