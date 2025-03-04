@@ -533,13 +533,17 @@ api.delete(
       );
     }
 
-    if (userIsClusterAdmin(req.user)) {
+    if (user.project_roles[req.params.notebook_id].includes('admin')) {
       throw new Exceptions.UnauthorizedException(
-        'You are not allowed to remove cluster admins.'
+        'You cannot remove an admin user from this notebook.'
       );
     }
 
-    // await removeProjectRoleFromUser(user, req.params.notebook_id, role);
+    for (const role of user.project_roles[req.params.notebook_id]) {
+      await removeProjectRoleFromUser(user, req.params.notebook_id, role);
+    }
+
+    await saveUser(user);
     res.status(200).end();
   }
 );

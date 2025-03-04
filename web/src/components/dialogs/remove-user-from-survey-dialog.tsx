@@ -14,7 +14,13 @@ import {Trash} from 'lucide-react';
 import {Route} from '@/routes/projects/$projectId';
 import {useQueryClient} from '@tanstack/react-query';
 
-export const RemoveUserFromSurveyDialog = ({userId}: {userId: string}) => {
+export const RemoveUserFromSurveyDialog = ({
+  userId,
+  admin,
+}: {
+  userId: string;
+  admin: boolean;
+}) => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
   const queryClient = useQueryClient();
@@ -23,7 +29,7 @@ export const RemoveUserFromSurveyDialog = ({userId}: {userId: string}) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">
+        <Button variant="outline" disabled={admin}>
           <Trash className="h-4 w-4" />
         </Button>
       </DialogTrigger>
@@ -31,7 +37,8 @@ export const RemoveUserFromSurveyDialog = ({userId}: {userId: string}) => {
         <DialogHeader>
           <DialogTitle>Remove User</DialogTitle>
           <DialogDescription>
-            Remove user: {} from this {NOTEBOOK_NAME}.
+            Remove user: <span className="text-primary">{userId}</span> from
+            this {NOTEBOOK_NAME}.
           </DialogDescription>
         </DialogHeader>
         <Button

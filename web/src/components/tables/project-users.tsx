@@ -3,6 +3,7 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {RemoveUserFromSurveyDialog} from '../dialogs/remove-user-from-survey-dialog';
+import {RoleCard} from '../ui/role-card';
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -12,25 +13,46 @@ export const columns: ColumnDef<any>[] = [
     ),
   },
   {
-    accessorKey: 'team-role',
+    accessorKey: 'team-roles',
     header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Team Role" />
+      <DataTableColumnHeader column={column} title="Team Roles" />
+    ),
+    cell: ({row}: any) => (
+      <div className="flex flex-wrap gap-1">
+        {row.getValue('team-roles').map((role: string) => (
+          <RoleCard key={role}>{role}</RoleCard>
+        ))}
+      </div>
     ),
   },
   {
-    accessorKey: 'survey-role',
+    accessorKey: 'project-roles',
     header: ({column}) => (
       <DataTableColumnHeader
         column={column}
-        title={`${NOTEBOOK_NAME_CAPITALIZED} Role`}
+        title={`${NOTEBOOK_NAME_CAPITALIZED} Roles`}
       />
+    ),
+    cell: ({row}: any) => (
+      <div className="flex flex-wrap gap-1">
+        {row.getValue('project-roles').map((role: string) => (
+          <RoleCard key={role}>{role}</RoleCard>
+        ))}
+      </div>
     ),
   },
   {
     id: 'remove',
-    cell: () => (
+    cell: ({
+      row: {
+        original: {_id, 'project-roles': roles},
+      },
+    }: any) => (
       <div className="flex justify-center items-center -my-2">
-        <RemoveUserFromSurveyDialog userId="" />
+        <RemoveUserFromSurveyDialog
+          userId={_id}
+          admin={roles.includes('admin')}
+        />
       </div>
     ),
     header: () => (
