@@ -43,7 +43,7 @@ export function DataTable<TData, TValue>({
   loading,
   button,
   onRowClick,
-  defaultRowsPerPage = 10
+  defaultRowsPerPage = 10,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);

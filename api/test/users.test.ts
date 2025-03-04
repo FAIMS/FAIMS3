@@ -19,6 +19,10 @@
  */
 
 import PouchDB from 'pouchdb';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+
 import {
   addLocalPasswordForUser,
   validateLocalUser,
@@ -35,8 +39,6 @@ import {
   userHasPermission,
   getUserInfoForNotebook,
 } from '../src/couchdb/users';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
 import {expect, assert} from 'chai';
 
 import * as fs from 'fs';

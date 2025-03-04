@@ -6,12 +6,12 @@ import {
   GridPaginationModel,
 } from '@mui/x-data-grid';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import {ProjectExtended} from '../../../types/project';
 import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
 import {theme} from '../../themes';
 import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
+import {Project} from '../../../context/slices/projectSlice';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -25,21 +25,24 @@ export default function HeadingProjectGrid({
   projects,
   activatedColumns,
   notActivatedColumns,
+  serverId,
 }: {
-  projects: ProjectExtended[];
-  activatedColumns: GridColDef<ProjectExtended>[];
-  notActivatedColumns: GridColDef<ProjectExtended>[];
+  projects: Project[];
+  activatedColumns: GridColDef<Project>[];
+  notActivatedColumns: GridColDef<Project>[];
+  serverId: string;
 }) {
   // pull out active/inactive surveys
-  const activatedProjects = projects.filter(({activated}) => activated);
-  const availableProjects = projects.filter(({activated}) => !activated);
+  const activatedProjects = projects.filter(({isActivated}) => isActivated);
+  const availableProjects = projects.filter(({isActivated}) => !isActivated);
 
   const history = useNavigate();
 
   const handleRowClick: GridEventListener<'rowClick'> = ({
-    row: {activated, project_id},
+    row: {isActivated, project_id},
   }) => {
-    if (activated) history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
+    if (isActivated)
+      history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${serverId}/${project_id}`);
   };
 
   // we need a state variable to track pagination model since we want to use a
@@ -86,7 +89,7 @@ export default function HeadingProjectGrid({
             borderBottom: '1px solid #eee',
           },
         }}
-        getRowId={({_id}) => _id}
+        getRowId={({projectId}) => projectId}
         hideFooter={true}
         getRowHeight={() => 'auto'}
         paginationModel={paginationModel}
@@ -128,7 +131,7 @@ export default function HeadingProjectGrid({
           },
         }}
         onRowClick={handleRowClick}
-        getRowId={({_id}) => _id}
+        getRowId={({projectId}) => projectId}
         getRowHeight={() => 'auto'}
         hideFooter
         paginationModel={paginationModel}
