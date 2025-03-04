@@ -67,7 +67,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                   ? projects.map(({name, project_id}: any) => ({
                       id: project_id,
                       title: name,
-                      url: `/${NOTEBOOK_NAME}s/${project_id}`,
+                      url: `/projects/${project_id}`,
                     }))
                   : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME}s...`}],
             },
