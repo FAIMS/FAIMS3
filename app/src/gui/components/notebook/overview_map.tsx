@@ -40,6 +40,7 @@ import {ImageTileStore} from '../map/tile-source';
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
   project_id: ProjectID;
+  serverId: string;
   records: {allRecords: RecordMetadata[]};
 }
 
@@ -340,6 +341,7 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
             <Box sx={{padding: '50px'}}>
               <Link
                 to={ROUTES.getRecordRoute(
+                  props.serverId,
                   props.project_id || 'dummy',
                   selectedFeature.record_id,
                   selectedFeature.revision_id

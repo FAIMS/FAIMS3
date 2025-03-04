@@ -1,6 +1,5 @@
 import {
   ColumnDef,
-  ColumnFiltersState,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
@@ -43,10 +42,10 @@ export function DataTable<TData, TValue>({
   loading,
   button,
   onRowClick,
-  defaultRowsPerPage = 10
+  defaultRowsPerPage = 10,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = useState('');
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: defaultRowsPerPage,
@@ -60,12 +59,12 @@ export function DataTable<TData, TValue>({
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
     state: {
       sorting,
       pagination,
-      columnFilters,
+      globalFilter,
     },
   });
 
@@ -74,10 +73,8 @@ export function DataTable<TData, TValue>({
       <div className="flex justify-between items-center">
         <Input
           placeholder="Filter results..."
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={event =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
+          value={table.getState().globalFilter || ''}
+          onChange={event => table.setGlobalFilter(event.target.value)}
           className="max-w-sm"
         />
         {button}

@@ -41,23 +41,6 @@ async function mockProjectDB(project_id: ProjectID) {
   return projdbs[project_id];
 }
 
-// async function cleanProjectDBS() {
-//   let db;
-//   for (const project_id in projdbs) {
-//     db = projdbs[project_id];
-//     delete projdbs[project_id];
-
-//     if (db !== undefined) {
-//       try {
-//         await db.destroy();
-//         //await db.close();
-//       } catch (err) {
-//         console.error(err);
-//       }
-//     }
-//   }
-// }
-
 vi.mock('./sync/index', () => ({
   getProjectDB: mockProjectDB,
 }));
