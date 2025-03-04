@@ -528,8 +528,6 @@ export class VectorTileStore extends TileStoreBase {
     this.tileLayer = new VectorTileLayer({
       source: this.source,
     });
-    const styleJson = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAP_SOURCE_KEY}`;
-    console.log('applying style', this.tileLayer, styleJson);
 
     //applyStyle(this.tileLayer, styleJson);
     console.log('initialized vector tile source');

@@ -41,6 +41,8 @@ import {RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
 import {ImageTileStore, StoredTileSet, VectorTileStore} from './tile-source';
+import apply, {applyStyle} from 'ol-mapbox-style';
+import {MAP_SOURCE_KEY} from '../../../buildconfig';
 
 const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
@@ -114,6 +116,10 @@ export const MapDownloadComponent = () => {
       view: view,
       controls: [new Zoom()],
     });
+
+    // apply style to the vector tiles...
+    const styleJson = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAP_SOURCE_KEY}`;
+    apply(theMap, styleJson);
 
     // Add this in the createMap function after creating theMap
     theMap.getView().on('change:resolution', () => {
