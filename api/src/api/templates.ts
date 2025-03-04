@@ -218,18 +218,23 @@ api.put(
   '/:id/archive',
   processRequest({
     params: z.object({id: z.string()}),
+    body: z.object({archive: z.boolean()}),
   }),
   requireAuthenticationAPI,
   async (
-    {params: {id}, user}: {params: {id: string}; user?: Express.User},
+    {
+      params: {id},
+      user,
+      body: {archive},
+    }: {params: {id: string}; user?: Express.User; body: {archive: boolean}},
     res: Response<PutUpdateTemplateResponse>
   ) => {
-    if (!user || !userCanDoWithTemplate(user, id, 'delete'))
+    if (!user || !userCanDoWithTemplate(user, id, 'update'))
       throw new Exceptions.UnauthorizedException(
-        'You are not allowed to delete this template.'
+        'You are not allowed to archive this template.'
       );
 
-    await archiveTemplate(id);
+    await archiveTemplate(id, archive);
     res.sendStatus(200);
   }
 );

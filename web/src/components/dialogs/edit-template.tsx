@@ -13,6 +13,12 @@ import {useAuth} from '@/context/auth-provider';
 import {useGetTemplates} from '@/hooks/get-hooks';
 import {UpdateTemplateForm} from '../forms/update-template-form';
 import {useState} from 'react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 
 /**
  * EditTemplateDialog component renders a dialog for editing a template.
@@ -23,12 +29,27 @@ import {useState} from 'react';
 export const EditTemplateDialog = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-
   const {data} = useGetTemplates(user, templateId);
-
   const [open, setOpen] = useState(false);
+  const archived = data?.metadata.project_status === 'archived';
 
-  return (
+  return archived ? (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger className="w-fit">
+          <Button
+            variant="outline"
+            disabled={data?.metadata.project_status === 'archived'}
+          >
+            Edit Template
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="w-32 text-balance">
+          Unable to edit an archived template.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  ) : (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
         <Button variant="outline">Edit Template</Button>

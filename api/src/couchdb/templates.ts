@@ -196,7 +196,7 @@ export const deleteExistingTemplate = async (templateId: string) => {
  * @param id The ID of the template to archive.
  * @returns The updated template document.
  */
-export const archiveTemplate = async (id: string) => {
+export const archiveTemplate = async (id: string, archive: boolean) => {
   const {get, put} = getTemplatesDb();
   const template = await get(id);
 
@@ -206,7 +206,7 @@ export const archiveTemplate = async (id: string) => {
       version: template.version + 1,
       metadata: {
         ...template.metadata,
-        project_status: 'archived',
+        project_status: archive ? 'archived' : 'active',
       },
     });
   } catch (e) {

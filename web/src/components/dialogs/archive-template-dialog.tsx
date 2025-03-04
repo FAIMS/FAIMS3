@@ -11,6 +11,7 @@ import {useAuth} from '@/context/auth-provider';
 import {Route} from '@/routes/templates/$templateId';
 import {useQueryClient} from '@tanstack/react-query';
 import {useState} from 'react';
+import {NOTEBOOK_NAME} from '@/constants';
 
 /**
  * ArchiveTemplateDialog component renders a dialog for archiving a template.
@@ -18,7 +19,7 @@ import {useState} from 'react';
  *
  * @returns {JSX.Element} The rendered ArchiveTemplateDialog component.
  */
-export const ArchiveTemplateDialog = () => {
+export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
   const queryClient = useQueryClient();
@@ -33,16 +34,38 @@ export const ArchiveTemplateDialog = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user?.token}`,
         },
+        body: JSON.stringify({
+          archive: !archived,
+        }),
       }
     );
 
     if (!response.ok) return;
 
     queryClient.invalidateQueries({queryKey: ['templates', undefined]});
+    queryClient.invalidateQueries({queryKey: ['templates', templateId]});
     setOpen(false);
   };
 
-  return (
+  return archived ? (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild className="w-fit">
+        <Button variant="outline">Un-archive Template</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Un-archive Template</DialogTitle>
+          <DialogDescription>
+            Un-archive the current template. This will allow the template to be
+            edited and used to create {NOTEBOOK_NAME}s.
+          </DialogDescription>
+        </DialogHeader>
+        <Button variant="destructive" className="w-full" onClick={onClick}>
+          Un-archive Template
+        </Button>
+      </DialogContent>
+    </Dialog>
+  ) : (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
         <Button variant="outline">Archive Template</Button>
@@ -51,8 +74,8 @@ export const ArchiveTemplateDialog = () => {
         <DialogHeader>
           <DialogTitle>Archive Template</DialogTitle>
           <DialogDescription>
-            Archive the current template. This will remove the template from the
-            list of templates and make it read-only.
+            Archive the current template. This make the template read-only and
+            prevent {NOTEBOOK_NAME} from being created from it.
           </DialogDescription>
         </DialogHeader>
         <Button variant="destructive" className="w-full" onClick={onClick}>
