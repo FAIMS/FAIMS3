@@ -21,7 +21,7 @@ import {useQueryClient} from '@tanstack/react-query';
  * @param {boolean} admin - Whether the user is an admin.
  * @returns {JSX.Element} The rendered RemoveUserFromSurveyDialog component.
  */
-export const RemoveUserFromSurveyDialog = ({
+export const RemoveUserFromProjectDialog = ({
   userId,
   admin,
 }: {

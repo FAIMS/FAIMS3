@@ -2,7 +2,7 @@ import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {RemoveUserFromSurveyDialog} from '../dialogs/remove-user-from-survey-dialog';
+import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
 import {RoleCard} from '../ui/role-card';
 
 export const columns: ColumnDef<any>[] = [
@@ -49,7 +49,7 @@ export const columns: ColumnDef<any>[] = [
       },
     }: any) => (
       <div className="flex justify-center items-center -my-2">
-        <RemoveUserFromSurveyDialog
+        <RemoveUserFromProjectDialog
           userId={_id}
           admin={roles.includes('admin')}
         />
