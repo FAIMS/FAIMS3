@@ -26,9 +26,7 @@ function RouteComponent() {
       columns={columns}
       data={data}
       loading={isPending}
-      onRowClick={({non_unique_project_id}) =>
-        navigate({to: `/projects/${non_unique_project_id}`})
-      }
+      onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
     />
   );
 }

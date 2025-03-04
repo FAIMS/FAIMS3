@@ -17,9 +17,13 @@
  *   Setup helper functions for the api tests
  */
 
+import PouchDB from 'pouchdb';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+
 import {NOTEBOOK_CREATOR_GROUP_NAME} from '@faims3/data-model';
 import {expect} from 'chai';
-import PouchDB from 'pouchdb';
 import request from 'supertest';
 import {addLocalPasswordForUser} from '../src/auth_providers/local';
 import {createAuthKey} from '../src/authkeys/create';
@@ -31,8 +35,6 @@ import {
   saveUser,
 } from '../src/couchdb/users';
 import {cleanDataDBS, resetDatabases} from './mocks';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
 
 export let adminToken = '';
 export let localUserToken = '';

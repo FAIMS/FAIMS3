@@ -28,6 +28,7 @@ import {useTheme} from '@mui/material/styles';
 
 interface RecordReadViewProps {
   project_id: ProjectID;
+  serverId: string;
   record_id: RecordID;
   // Might be given in the URL:
   revision_id: RevisionID;
@@ -60,6 +61,7 @@ export default function RecordReadView(props: RecordReadViewProps) {
         Record data [component in progress]
       </Typography>
       <RecordForm
+        serverId={props.serverId}
         project_id={props.project_id}
         record_id={props.record_id}
         revision_id={props.revision_id}
