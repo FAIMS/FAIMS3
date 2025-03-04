@@ -39,10 +39,12 @@ export default function HeadingProjectGrid({
   const history = useNavigate();
 
   const handleRowClick: GridEventListener<'rowClick'> = ({
-    row: {isActivated, project_id},
+    row: {isActivated, projectId},
+  }: {
+    row: Project;
   }) => {
     if (isActivated)
-      history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${serverId}/${project_id}`);
+      history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${serverId}/${projectId}`);
   };
 
   // we need a state variable to track pagination model since we want to use a
