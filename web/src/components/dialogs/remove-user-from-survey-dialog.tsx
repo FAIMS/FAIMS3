@@ -14,6 +14,13 @@ import {Trash} from 'lucide-react';
 import {Route} from '@/routes/projects/$projectId';
 import {useQueryClient} from '@tanstack/react-query';
 
+/**
+ *
+ * Removes a user from a survey.
+ * @param {string} userId - The ID of the user to remove.
+ * @param {boolean} admin - Whether the user is an admin.
+ * @returns {JSX.Element} The rendered RemoveUserFromSurveyDialog component.
+ */
 export const RemoveUserFromSurveyDialog = ({
   userId,
   admin,
