@@ -19,12 +19,7 @@ type AddRecordButtonsProps = {
 };
 
 export default function AddRecordButtons({
-  project: {
-    projectId,
-    serverId,
-    uiSpecificationId,
-    metadata,
-  },
+  project: {projectId, serverId, uiSpecificationId, metadata},
   recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
