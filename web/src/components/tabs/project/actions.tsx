@@ -1,8 +1,10 @@
-import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {useAuth} from '@/context/auth-provider';
+import {useGetProjects} from '@/hooks/get-hooks';
+import {Route} from '@/routes/projects/$projectId';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -14,46 +16,32 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
  * @returns {JSX.Element} The rendered ProjectActions component.
  */
 const ProjectActions = (): JSX.Element => {
+  const {user} = useAuth();
+  const {projectId} = Route.useParams();
+  const {data} = useGetProjects(user, projectId);
+
   return (
     <div className="flex flex-col gap-2 justify-between">
       <Card className="flex flex-col gap-4 flex-1">
         <List>
           <ListItem>
-            <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-            <ListDescription>Current Responses: 203</ListDescription>
+            <ListLabel>Download JSON</ListLabel>
+            <ListDescription>
+              Download the JSON file for this {NOTEBOOK_NAME_CAPITALIZED}.
+            </ListDescription>
           </ListItem>
           <ListItem>
-            <Alert variant="destructive">
-              <AlertTitle>Warning</AlertTitle>
-              <AlertDescription>
-                Updating the design for a {NOTEBOOK_NAME} with existing
-                responses could result in data inconsistencies.
-              </AlertDescription>
-            </Alert>
+            <Button variant="outline">
+              <a
+                href={`data:text/json;charset=utf-8,${encodeURIComponent(
+                  JSON.stringify(data)
+                )}`}
+                download={`${projectId}.json`}
+              >
+                Download JSON
+              </a>
+            </Button>
           </ListItem>
-          <ListItem>
-            <Button variant="destructive">Edit {NOTEBOOK_NAME} Design</Button>
-          </ListItem>
-        </List>
-      </Card>
-      <Card className="flex flex-col gap-4 flex-1">
-        <List className="flex flex-col justify-between h-full">
-          <ListItem>
-            <ListLabel>Close {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-            <ListDescription>Current Status: Active</ListDescription>
-          </ListItem>
-          <ListItem>
-            <Alert variant="destructive">
-              <AlertTitle>Warning</AlertTitle>
-              <AlertDescription>
-                Closing a {NOTEBOOK_NAME} prevents new responses from being
-                added to it.
-              </AlertDescription>
-            </Alert>
-          </ListItem>
-          <Button variant="destructive">
-            Close {NOTEBOOK_NAME_CAPITALIZED}
-          </Button>
         </List>
       </Card>
     </div>

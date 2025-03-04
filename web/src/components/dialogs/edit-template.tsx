@@ -23,15 +23,13 @@ import {useState} from 'react';
 export const EditTemplateDialog = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-
   const {data} = useGetTemplates(user, templateId);
-
   const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button>Edit Template</Button>
+        <Button variant="outline">Edit Template</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -46,7 +44,10 @@ export const EditTemplateDialog = () => {
             <Button variant="outline">
               <a
                 href={`data:text/json;charset=utf-8,${encodeURIComponent(
-                  JSON.stringify(data)
+                  JSON.stringify({
+                    metadata: data.metadata,
+                    'ui-specification': data['ui-specification'],
+                  })
                 )}`}
                 download={`${templateId}.json`}
               >
