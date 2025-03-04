@@ -18,17 +18,18 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
+import {RecordID, RecordMetadata, RecordReference} from '@faims3/data-model';
+import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {
   Alert,
   Box,
-  ButtonGroup,
   Button,
-  Typography,
+  ButtonGroup,
+  CircularProgress,
   Modal,
   Paper,
-  CircularProgress,
   Stack,
+  Typography,
 } from '@mui/material';
 import {
   DataGrid,
@@ -37,23 +38,18 @@ import {
   GridRow,
   GridRowParams,
 } from '@mui/x-data-grid';
-import LinkOffIcon from '@mui/icons-material/LinkOff';
-import {RecordLinksToolbar} from '../toolbars';
-import {
-  RecordID,
-  ProjectUIModel,
-  ProjectID,
-  RecordMetadata,
-} from '@faims3/data-model';
-import RecordRouteDisplay from '../../../ui/record_link';
-import {RecordReference} from '@faims3/data-model';
-import {gridParamsDataType} from '../record_links';
+import React, {useEffect, useState} from 'react';
+import {getRecordRoute} from '../../../../../constants/routes';
+import {selectProjectById} from '../../../../../context/slices/projectSlice';
+import {useAppSelector} from '../../../../../context/store';
 import {
   getFieldLabel,
   getSummaryFieldInformation,
-  getUiSpecForProject,
 } from '../../../../../uiSpecification';
-import {getRecordRoute} from '../../../../../constants/routes';
+import RecordRouteDisplay from '../../../ui/record_link';
+import {gridParamsDataType} from '../record_links';
+import {RecordLinksToolbar} from '../toolbars';
+import {compiledSpecService} from '../../../../../context/slices/helpers/compiledSpecService';
 
 const style = {
   position: 'absolute' as const,
@@ -136,7 +132,8 @@ export function DataGridNoLink(props: {
 }
 
 interface DataGridLinksComponentProps {
-  project_id: ProjectID;
+  project_id: string;
+  serverId: string;
   links: Array<RecordMetadata> | null;
   record_id: RecordID;
   record_hrid: string;
@@ -162,16 +159,10 @@ export function DataGridFieldLinksComponent(
     null as null | GridRowParams['row']
   );
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [uiSpec, setUISpec] = React.useState<ProjectUIModel | null>(null);
-
-  useEffect(() => {
-    const get = async () => {
-      const u = await getUiSpecForProject(props.project_id);
-      setUISpec(u);
-    };
-
-    get();
-  }, [props.project_id, props.field_name]);
+  const uiSpecId = useAppSelector(state =>
+    selectProjectById(state, props.project_id)
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   function getRowId(row: any) {
     /***
@@ -212,6 +203,7 @@ export function DataGridFieldLinksComponent(
   function ChildRecordDisplay(props: {
     current_record_id: RecordID;
     child_record: RecordMetadata;
+    serverId: string;
   }) {
     const [displayFields, setDisplayFields] = useState<Array<string>>([]);
     useEffect(() => {
@@ -226,6 +218,7 @@ export function DataGridFieldLinksComponent(
     }, [props.child_record]);
 
     const route = getRecordRoute(
+      props.serverId,
       props.child_record.project_id,
       props.child_record.record_id,
       props.child_record.revision_id
@@ -297,6 +290,7 @@ export function DataGridFieldLinksComponent(
     renderCell: (params: GridCellParams) => (
       <ChildRecordDisplay
         current_record_id={props.record_id}
+        serverId={props.serverId}
         child_record={params.row}
       />
     ),
