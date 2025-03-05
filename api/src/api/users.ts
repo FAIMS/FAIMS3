@@ -148,8 +148,11 @@ api.delete(
         'You are not allowed to remove cluster admins.'
       );
 
-    removeUser(userToRemove);
-
+    try {
+      removeUser(userToRemove);
+    } catch (e) {
+      throw new Exceptions.InternalSystemError('Error removing user');
+    }
     res.status(200).send();
   }
 );

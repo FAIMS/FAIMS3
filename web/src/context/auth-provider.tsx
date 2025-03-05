@@ -73,25 +73,30 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   const getUserDetails = async (token?: string, refreshToken = '') => {
     if (!token) return {status: 'error', message: 'No token provided'};
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/users/current`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/users/current`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    if (!response.ok) return {status: 'error', message: 'Error fetching user'};
+      if (!response.ok)
+        return {status: 'error', message: 'Error fetching user'};
 
-    const user = await response.json();
+      const user = await response.json();
 
-    setStoredUser({user, token, refreshToken});
-    setUser({user, token, refreshToken});
+      setStoredUser({user, token, refreshToken});
+      setUser({user, token, refreshToken});
 
-    return {status: 'success', message: ''};
+      return {status: 'success', message: ''};
+    } catch (e) {
+      return {status: 'error', message: 'Error fetching user'};
+    }
   };
 
   /**

@@ -1,14 +1,14 @@
-import { useAuth } from '@/context/auth-provider'
-import { getColumns } from '@/components/tables/users'
-import { DataTable } from '@/components/data-table/data-table'
-import { createFileRoute } from '@tanstack/react-router'
-import { useGetUsers } from '@/hooks/get-hooks'
-import { useState } from 'react'
-import { GeneratePasswordReset } from '@/components/dialogs/generate-password-reset'
+import {useAuth} from '@/context/auth-provider';
+import {getColumns} from '@/components/tables/users';
+import {DataTable} from '@/components/data-table/data-table';
+import {createFileRoute} from '@tanstack/react-router';
+import {useGetUsers} from '@/hooks/get-hooks';
+import {useState} from 'react';
+import {GeneratePasswordReset} from '@/components/dialogs/generate-password-reset';
 
 export const Route = createFileRoute('/_protected/_admin/users')({
   component: RouteComponent,
-})
+});
 
 /**
  * RouteComponent component renders the users page.
@@ -17,23 +17,25 @@ export const Route = createFileRoute('/_protected/_admin/users')({
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
 function RouteComponent() {
-  const { user: authUser } = useAuth()
-  const { data, isPending } = useGetUsers(authUser)
+  const {user: authUser} = useAuth();
+  const {data, isPending} = useGetUsers(authUser);
 
-  const [resetDialog, setResetDialog] = useState<boolean>(false)
-  const [resetUserId, setResetUserId] = useState<string | undefined>(undefined)
+  const [resetDialog, setResetDialog] = useState<boolean>(false);
+  const [resetUserId, setResetUserId] = useState<string | undefined>(undefined);
 
   const onReset = (id: string) => {
-    setResetUserId(id)
-    setResetDialog(true)
-  }
+    setResetUserId(id);
+    setResetDialog(true);
+  };
+
+  console.log(data);
 
   return (
     <>
       <DataTable
-        columns={getColumns({ onReset })}
+        columns={getColumns({onReset})}
         data={
-          data?.map((user: any) => ({ ...user, email: user.emails[0] })) || []
+          data?.map((user: any) => ({...user, email: user.emails[0]})) || []
         }
         loading={isPending}
         defaultRowsPerPage={15}
@@ -44,5 +46,5 @@ function RouteComponent() {
         userId={resetUserId}
       />
     </>
-  )
+  );
 }

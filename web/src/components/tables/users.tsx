@@ -60,11 +60,14 @@ export const getColumns = ({
       id: 'remove',
       cell: ({
         row: {
-          original: {_id},
+          original: {_id, other_roles},
         },
       }: any) => (
         <div className="flex justify-center items-center -my-2">
-          <RemoveUserDialog userId={_id} />
+          <RemoveUserDialog
+            userId={_id}
+            disabled={!_id || other_roles.includes('cluster-admin')}
+          />
         </div>
       ),
       header: () => (

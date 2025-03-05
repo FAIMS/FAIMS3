@@ -18,9 +18,16 @@ import {useAuth} from '@/context/auth-provider';
  * It provides a button to open the dialog and a form to remove the user.
  *
  * @param {string} userId - The ID of the user to remove.
+ * @param {boolean} admin - Whether the user is an admin.
  * @returns {JSX.Element} The rendered RemoveUserDialog component.
  */
-export const RemoveUserDialog = ({userId}: {userId: string}) => {
+export const RemoveUserDialog = ({
+  userId,
+  disabled,
+}: {
+  userId: string;
+  disabled?: boolean;
+}) => {
   const [open, setOpen] = useState(false);
   const {user} = useAuth();
   const QueryClient = useQueryClient();
@@ -28,7 +35,7 @@ export const RemoveUserDialog = ({userId}: {userId: string}) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">
+        <Button variant="outline" disabled={disabled}>
           <Trash className="h-4 w-4" />
         </Button>
       </DialogTrigger>
@@ -48,24 +55,25 @@ export const RemoveUserDialog = ({userId}: {userId: string}) => {
         <Button
           className="w-full"
           onClick={async () => {
-            const response = await fetch(
-              `${import.meta.env.VITE_API_URL}/api/users/${userId}`,
-              {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${user?.token}`,
-                },
-              }
-            );
+            try {
+              await fetch(
+                `${import.meta.env.VITE_API_URL}/api/users/${userId}`,
+                {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${user?.token}`,
+                  },
+                }
+              );
 
-            if (!response.ok) {
-              console.log('Error removing user:', response);
-              return;
+              QueryClient.invalidateQueries({queryKey: ['users']});
+              QueryClient.invalidateQueries({queryKey: ['project-users']});
+
+              setOpen(false);
+            } catch (e) {
+              console.log(e);
             }
-
-            QueryClient.invalidateQueries({queryKey: ['users', undefined]});
-            setOpen(false);
           }}
         >
           Remove User

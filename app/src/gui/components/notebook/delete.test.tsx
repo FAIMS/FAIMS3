@@ -55,7 +55,7 @@ vi.mock('../../../sync/draft-storage', () => ({
 }));
 
 test('Check delete component', async () => {
-  render(<RecordDelete {...testDeleteData} />);
+  render(<RecordDelete serverId={'todo'} {...testDeleteData} />);
   expect(screen.getByTestId('delete-btn')).toBeTruthy();
 
   fireEvent.click(screen.getByTestId('delete-btn'));

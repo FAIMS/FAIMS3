@@ -25,6 +25,7 @@ import {
   RecordMetadataList,
   AttributeValuePair,
   RecordID,
+  ProjectUIModel,
 } from '../types';
 
 import {listRecordMetadata} from './internals';
@@ -58,7 +59,8 @@ export async function getAllRecordsOfType(
  */
 export async function getAllRecordsWithRegex(
   project_id: ProjectID,
-  regex: string
+  regex: string,
+  uiSpecification: ProjectUIModel
 ): Promise<RecordMetadataList> {
   const dataDB = await getDataDB(project_id);
   // find avp documents with matching data, get the record ids from them
@@ -74,5 +76,9 @@ export async function getAllRecordsWithRegex(
   });
   // Remove duplicates, no order is implied
   const deduped_record_ids = Array.from(new Set<RecordID>(record_ids));
-  return await listRecordMetadata(project_id, deduped_record_ids);
+  return await listRecordMetadata({
+    project_id,
+    record_ids: deduped_record_ids,
+    uiSpecification,
+  });
 }

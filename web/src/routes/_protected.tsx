@@ -47,10 +47,6 @@ export const Route = createFileRoute('/_protected')({
 });
 
 function RouteComponent() {
-  const auth = useAuth();
-
-  if (!auth.user) return <></>;
-
   return (
     <Dialog>
       <SidebarProvider>

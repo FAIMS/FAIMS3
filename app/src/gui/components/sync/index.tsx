@@ -1,22 +1,3 @@
-/*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
- * Filename: syncStatus.tsx
- * Description:
- *   This contains the syncStatus React component, which allows users to see their device's sync status
- */
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import CloudIcon from '@mui/icons-material/Cloud';
@@ -42,51 +23,159 @@ import {
 import {grey} from '@mui/material/colors';
 import 'animate.css';
 import moment from 'moment';
-import React, {useEffect, useRef} from 'react';
-import {shallowEqual} from 'react-redux';
+import React, {useMemo} from 'react';
+import {
+  Project,
+  selectActiveServerProjects,
+} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 
-// custom hook for getting previous value
-function usePrevious(value: any) {
-  const ref = useRef();
-  useEffect(() => {
-    ref.current = value;
-  }, [value]);
-  return ref.current;
+// Aggregate status type
+interface AggregatedSyncStatus {
+  // Overall status of sync across all projects
+  status: 'initial' | 'active' | 'paused' | 'error' | 'denied';
+  // Is any project actively syncing data up?
+  isSyncingUp: boolean;
+  // Is any project actively syncing data down?
+  isSyncingDown: boolean;
+  // Is there any sync error?
+  isSyncError: boolean;
+  // The most recent error message (if any)
+  errorMessage?: string;
+  // The most recent update timestamp
+  lastUpdated: number;
+  // Number of projects with pending records
+  pendingRecords: number;
+  // Number of projects with active sync
+  activeProjects: number;
+  // Total number of projects being monitored
+  totalProjects: number;
 }
-export default function SyncStatus() {
-  /**
-   * sync_up(), sync_down() and sync_both()
-   * States: isSyncingUp, isSyncingDown, isSynced
-   * Icons:
-   *    isSyncingUp true => CloudUploadIcon
-   *    isSyncingDown true => isSyncingDown
-   *    isSynced true => CloudDoneIcon
-   *    isSynced false => ??
-   *
-   * Sync status depending on global state.
-   * state.isSyncError =>  <CloudOffIcon />
-   * state.isSyncingUp =>  <CloudIcon /> + <ArrowDropUpIcon/>
-   * state.isSyncingDown =>  <CloudIcon /> + <ArrowDropDownIcon/>
-   * state.hasUnsyncedChanges =>  <CloudQueueIcon /> <--- not currently in use
-   *
-   */
 
-  // decompose state into fields we want - then do shallow equality so that we
-  // don't rerender on every store change due to object creation
-  const {isSyncError, isSyncingUp, isSyncingDown} = useAppSelector(
-    state => ({
-      isSyncError: state.sync.isSyncError,
-      isSyncingUp: state.sync.isSyncingUp,
-      isSyncingDown: state.sync.isSyncingDown,
-    }),
-    shallowEqual
+/**
+ * Aggregates sync status from multiple projects
+ *
+ * @param projects List of active projects to check
+ * @returns Aggregated sync status
+ */
+const aggregateSyncStatus = (projects: Project[]): AggregatedSyncStatus => {
+  // Default state when no projects are active
+  if (!projects || projects.length === 0) {
+    return {
+      status: 'initial',
+      isSyncingUp: false,
+      isSyncingDown: false,
+      isSyncError: false,
+      lastUpdated: Date.now(),
+      pendingRecords: 0,
+      activeProjects: 0,
+      totalProjects: 0,
+    };
+  }
+
+  // Initialize counts and tracking variables
+  let hasError = false;
+  let hasActive = false;
+  let hasDenied = false;
+  let lastErrorMessage = '';
+  let mostRecentUpdate = 0;
+  let totalPendingRecords = 0;
+  let syncingUpCount = 0;
+  let syncingDownCount = 0;
+  let activeProjectCount = 0;
+
+  // Process each project
+  for (const project of projects) {
+    // Skip if project isn't activated or doesn't have remote connection
+    if (!project.isActivated || !project.database?.remote?.syncState) {
+      continue;
+    }
+
+    const syncState = project.database.remote.syncState;
+    activeProjectCount++;
+
+    // Track the most recent update across all projects
+    if (syncState.lastUpdated > mostRecentUpdate) {
+      mostRecentUpdate = syncState.lastUpdated;
+    }
+
+    // Add up pending records
+    totalPendingRecords += syncState.pendingRecords || 0;
+
+    // Check for syncing activity
+    if (syncState.status === 'active') {
+      hasActive = true;
+
+      // Check direction of sync
+      if (syncState.lastChangeStats) {
+        if (syncState.lastChangeStats.direction === 'push') {
+          syncingUpCount++;
+        } else if (syncState.lastChangeStats.direction === 'pull') {
+          syncingDownCount++;
+        }
+      }
+    }
+
+    // Track errors
+    if (syncState.status === 'error') {
+      hasError = true;
+      // Keep the most recent error message
+      if (!lastErrorMessage && syncState.errorMessage) {
+        lastErrorMessage = syncState.errorMessage;
+      }
+    }
+
+    // Track denied status
+    if (syncState.status === 'denied') {
+      hasDenied = true;
+      if (!lastErrorMessage && syncState.errorMessage) {
+        lastErrorMessage = syncState.errorMessage;
+      }
+    }
+  }
+
+  // Determine the overall status (prioritize errors)
+  let overallStatus: 'initial' | 'active' | 'paused' | 'error' | 'denied' =
+    'initial';
+
+  if (hasError) {
+    overallStatus = 'error';
+  } else if (hasDenied) {
+    overallStatus = 'denied';
+  } else if (hasActive) {
+    overallStatus = 'active';
+  } else if (activeProjectCount > 0) {
+    overallStatus = 'paused';
+  }
+
+  return {
+    status: overallStatus,
+    isSyncingUp: syncingUpCount > 0,
+    isSyncingDown: syncingDownCount > 0,
+    isSyncError: hasError || hasDenied,
+    errorMessage: lastErrorMessage,
+    lastUpdated: mostRecentUpdate,
+    pendingRecords: totalPendingRecords,
+    activeProjects: activeProjectCount,
+    totalProjects: projects.length,
+  };
+};
+
+export default function SyncStatus() {
+  // Get all projects for the active server
+  const activeServerProjects = useAppSelector(selectActiveServerProjects);
+
+  // Compute aggregated sync status
+  const aggregatedStatus = useMemo(
+    () => aggregateSyncStatus(activeServerProjects),
+    [activeServerProjects]
   );
+
+  const {status, isSyncingUp, isSyncingDown, isSyncError, lastUpdated} =
+    aggregatedStatus;
 
   const LAST_SYNC_FORMAT = 'MMMM Do YYYY, LTS';
-  const [lastSync, setLastSync] = React.useState(
-    moment().format(LAST_SYNC_FORMAT)
-  );
+  const lastUpdatedDisplay = moment(lastUpdated).format(LAST_SYNC_FORMAT);
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -96,14 +185,35 @@ export default function SyncStatus() {
 
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popper' : undefined;
-  const prevSync = usePrevious({
-    up: isSyncingUp,
-    down: isSyncingDown,
-  });
 
-  useEffect(() => {
-    setLastSync(moment().format(LAST_SYNC_FORMAT));
-  }, [prevSync]);
+  // Generate status message based on current state
+  const getStatusMessage = () => {
+    if (isSyncError) {
+      return (
+        aggregatedStatus.errorMessage ||
+        'Cannot sync to server, your device may be offline.'
+      );
+    } else if (isSyncingUp || isSyncingDown) {
+      return `Sync is underway${aggregatedStatus.pendingRecords > 0 ? ` (${aggregatedStatus.pendingRecords} pending)` : ''}`;
+    } else if (status === 'paused') {
+      return 'Sync is paused';
+    } else {
+      return 'Waiting for changes';
+    }
+  };
+
+  // Get the simple status label
+  const getStatusLabel = () => {
+    if (isSyncError) {
+      return 'Error';
+    } else if (isSyncingUp || isSyncingDown) {
+      return 'In Progress';
+    } else if (status === 'paused') {
+      return 'Paused';
+    } else {
+      return 'Idle';
+    }
+  };
 
   return (
     <React.Fragment>
@@ -203,22 +313,14 @@ export default function SyncStatus() {
                     <TableCell sx={{verticalAlign: 'top'}}>Status</TableCell>
                     <TableCell sx={{verticalAlign: 'top', textAlign: 'right'}}>
                       <Typography color="text.secondary" sx={{fontSize: 14}}>
-                        {isSyncError
-                          ? 'Error'
-                          : isSyncingUp || isSyncingDown
-                            ? 'In Progress'
-                            : 'Idle'}
+                        {getStatusLabel()}
                       </Typography>
                       <Typography
                         color="text.secondary"
                         gutterBottom
                         variant={'caption'}
                       >
-                        {isSyncError
-                          ? 'Cannot sync to server, your device may be offline.'
-                          : isSyncingUp || isSyncingDown
-                            ? 'Sync is underway'
-                            : 'Waiting for changes'}
+                        {getStatusMessage()}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -230,10 +332,29 @@ export default function SyncStatus() {
                         gutterBottom
                         sx={{fontSize: 14}}
                       >
-                        {lastSync}
+                        {lastUpdatedDisplay}
                       </Typography>
                     </TableCell>
                   </TableRow>
+                  {aggregatedStatus.activeProjects > 0 && (
+                    <TableRow>
+                      <TableCell sx={{verticalAlign: 'top'}}>
+                        Projects
+                      </TableCell>
+                      <TableCell
+                        sx={{verticalAlign: 'top', textAlign: 'right'}}
+                      >
+                        <Typography
+                          color="text.secondary"
+                          gutterBottom
+                          sx={{fontSize: 14}}
+                        >
+                          {aggregatedStatus.activeProjects} active /{' '}
+                          {aggregatedStatus.totalProjects} total
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
