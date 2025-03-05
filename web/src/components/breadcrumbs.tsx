@@ -38,7 +38,12 @@ export default function Breadcrumbs() {
             {index > 0 && <BreadcrumbSeparator />}
             {index === 0 && (
               <BreadcrumbItem>
-                <Link to={pathname.at(0)}>{NOTEBOOK_NAME_CAPITALIZED}s</Link>
+                <Link to={pathname.at(0)}>
+                  {pathname.at(0) === 'projects'
+                    ? NOTEBOOK_NAME_CAPITALIZED
+                    : 'Template'}
+                  s
+                </Link>
               </BreadcrumbItem>
             )}
             {index === 1 &&
