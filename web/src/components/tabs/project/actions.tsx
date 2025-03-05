@@ -1,5 +1,4 @@
-import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
-import {Button} from '@/components/ui/button';
+import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
@@ -16,44 +15,13 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 const ProjectActions = (): JSX.Element => {
   return (
     <div className="flex flex-col gap-2 justify-between">
-      <Card className="flex flex-col gap-4 flex-1">
-        <List>
+      <Card className="flex-1">
+        <List className="flex flex-col gap-4">
           <ListItem>
             <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-            <ListDescription>Current Responses: 203</ListDescription>
+            <ListDescription>Edit the current {NOTEBOOK_NAME}.</ListDescription>
           </ListItem>
-          <ListItem>
-            <Alert variant="destructive">
-              <AlertTitle>Warning</AlertTitle>
-              <AlertDescription>
-                Updating the design for a {NOTEBOOK_NAME} with existing
-                responses could result in data inconsistencies.
-              </AlertDescription>
-            </Alert>
-          </ListItem>
-          <ListItem>
-            <Button variant="destructive">Edit {NOTEBOOK_NAME} Design</Button>
-          </ListItem>
-        </List>
-      </Card>
-      <Card className="flex flex-col gap-4 flex-1">
-        <List className="flex flex-col justify-between h-full">
-          <ListItem>
-            <ListLabel>Close {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-            <ListDescription>Current Status: Active</ListDescription>
-          </ListItem>
-          <ListItem>
-            <Alert variant="destructive">
-              <AlertTitle>Warning</AlertTitle>
-              <AlertDescription>
-                Closing a {NOTEBOOK_NAME} prevents new responses from being
-                added to it.
-              </AlertDescription>
-            </Alert>
-          </ListItem>
-          <Button variant="destructive">
-            Close {NOTEBOOK_NAME_CAPITALIZED}
-          </Button>
+          <EditProjectDialog />
         </List>
       </Card>
     </div>
