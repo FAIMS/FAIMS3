@@ -31,76 +31,78 @@ export const EditTemplateDialog = () => {
   const {templateId} = Route.useParams();
   const {data} = useGetTemplates(user, templateId);
   const [open, setOpen] = useState(false);
-  const archived = data?.metadata.project_status === 'archived';
 
-  return archived ? (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger className="w-fit">
-          <Button
-            variant="outline"
-            disabled={data?.metadata.project_status === 'archived'}
-          >
-            Edit Template
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="w-32 text-balance">
-          Unable to edit an archived template.
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  ) : (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">Edit Template</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit Template</DialogTitle>
-          <DialogDescription>
-            Follow the following steps to edit the current template.
-          </DialogDescription>
-        </DialogHeader>
-        <List>
-          <ListItem className="space-y-2">
-            <ListDescription>1. Download the template file.</ListDescription>
-            <Button variant="outline">
-              <a
-                href={`data:text/json;charset=utf-8,${encodeURIComponent(
-                  JSON.stringify({
-                    metadata: data.metadata,
-                    'ui-specification': data['ui-specification'],
-                  })
-                )}`}
-                download={`${templateId}.json`}
-              >
-                Download
-              </a>
-            </Button>
-          </ListItem>
-          <ListItem>
-            <ListDescription>
-              2. Edit the template either using a text editor or uploading the
-              template file to{' '}
-              <a
-                className="underline text-primary"
-                href={import.meta.env.VITE_DESIGNER_URL}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Fieldmark Designer
-              </a>
-              .
-            </ListDescription>
-          </ListItem>
-          <ListItem className="space-y-2">
-            <ListDescription>
-              3. Upload the edited template file.
-            </ListDescription>
-            <UpdateTemplateForm setDialogOpen={setOpen} />
-          </ListItem>
-        </List>
-      </DialogContent>
-    </Dialog>
+  return (
+    <div>
+      {data?.metadata.project_status === 'archived' ? (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger className="w-fit">
+              <Button variant="outline" disabled={true}>
+                Edit Template
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="w-32 text-balance">
+              Unable to edit an archived template.
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild className="w-fit">
+            <Button variant="outline">Edit Template</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Template</DialogTitle>
+              <DialogDescription>
+                Follow the following steps to edit the current template.
+              </DialogDescription>
+            </DialogHeader>
+            <List>
+              <ListItem className="space-y-2">
+                <ListDescription>
+                  1. Download the template file.
+                </ListDescription>
+                <Button variant="outline">
+                  <a
+                    href={`data:text/json;charset=utf-8,${encodeURIComponent(
+                      JSON.stringify({
+                        metadata: data.metadata,
+                        'ui-specification': data['ui-specification'],
+                      })
+                    )}`}
+                    download={`${templateId}.json`}
+                  >
+                    Download
+                  </a>
+                </Button>
+              </ListItem>
+              <ListItem>
+                <ListDescription>
+                  2. Edit the template either using a text editor or uploading
+                  the template file to{' '}
+                  <a
+                    className="underline text-primary"
+                    href={import.meta.env.VITE_DESIGNER_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Fieldmark Designer
+                  </a>
+                  .
+                </ListDescription>
+              </ListItem>
+              <ListItem className="space-y-2">
+                <ListDescription>
+                  3. Upload the edited template file.
+                </ListDescription>
+                <UpdateTemplateForm setDialogOpen={setOpen} />
+              </ListItem>
+            </List>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
   );
 };

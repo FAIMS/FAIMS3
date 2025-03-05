@@ -26,25 +26,27 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
   const [open, setOpen] = useState(false);
 
   const onClick = async () => {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/templates/${templateId}/archive`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user?.token}`,
-        },
-        body: JSON.stringify({
-          archive: !archived,
-        }),
-      }
-    );
+    try {
+      await fetch(
+        `${import.meta.env.VITE_API_URL}/api/templates/${templateId}/archive`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user?.token}`,
+          },
+          body: JSON.stringify({
+            archive: !archived,
+          }),
+        }
+      );
 
-    if (!response.ok) return;
-
-    queryClient.invalidateQueries({queryKey: ['templates', undefined]});
-    queryClient.invalidateQueries({queryKey: ['templates', templateId]});
-    setOpen(false);
+      queryClient.invalidateQueries({queryKey: ['templates', undefined]});
+      queryClient.invalidateQueries({queryKey: ['templates', templateId]});
+      setOpen(false);
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   return archived ? (

@@ -57,7 +57,9 @@ const TemplateActions = () => {
               Create a new {NOTEBOOK_NAME} based on this template.
             </ListDescription>
           </ListItem>
-          <ProjectFromTemplateDialog />
+          <ListItem>
+            <ProjectFromTemplateDialog />
+          </ListItem>
         </List>
       </Card>
       <Card>
