@@ -18,29 +18,33 @@
  * This provides a react component to manage the syncing state of a specific
  * project via a toggle.
  */
-import {useContext, useState} from 'react';
+
 import {
-  Box,
-  Switch,
-  FormControlLabel,
-  FormHelperText,
-  Typography,
-  Paper,
-  DialogActions,
-  Dialog,
   Alert,
   AlertTitle,
+  Box,
   Button,
+  Dialog,
+  DialogActions,
+  FormControlLabel,
+  FormHelperText,
+  Switch,
+  Typography,
 } from '@mui/material';
-import {grey} from '@mui/material/colors';
-import NotebookActivationSwitch from './activation-switch';
+import {useState} from 'react';
 import {NOTEBOOK_NAME} from '../../../../buildconfig';
-import {ProjectExtended} from '../../../../types/project';
-import {ProjectsContext} from '../../../../context/projects-context';
+import {
+  Project,
+  resumeSyncingProject,
+  stopSyncingAttachments,
+  stopSyncingProject,
+} from '../../../../context/slices/projectSlice';
 import {theme} from '../../../themes';
+import NotebookActivationSwitch from './activation-switch';
+import {useAppDispatch} from '../../../../context/store';
 
 type NotebookSyncSwitchProps = {
-  project: ProjectExtended;
+  project: Project;
   showHelperText: boolean;
   setTabID?: Function;
 };
@@ -51,16 +55,16 @@ export default function NotebookSyncSwitch({
   setTabID = () => {},
 }: NotebookSyncSwitchProps) {
   const [open, setOpen] = useState(false);
-  const {setProjectSync} = useContext(ProjectsContext);
+  const dispatch = useAppDispatch();
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
+  const isSyncing = project.database?.isSyncing ?? false;
 
-  return ['published', 'archived'].includes(String(project.status)) ? (
+  return (
     <Box>
-      {!project.activated ? (
+      {!project.isActivated ? (
         <NotebookActivationSwitch
           project={project}
-          project_status={project.status}
           setTabID={setTabID}
           isWorking={false}
         />
@@ -70,7 +74,7 @@ export default function NotebookSyncSwitch({
             sx={{mr: 0, md: 2}}
             control={
               <Switch
-                checked={project.sync}
+                checked={isSyncing ?? false}
                 disabled={false}
                 onClick={handleOpen}
                 sx={{
@@ -85,7 +89,7 @@ export default function NotebookSyncSwitch({
             }
             label={
               <Typography variant={'button'}>
-                {project.sync ? 'On' : 'Off'}
+                {isSyncing ? 'On' : 'Off'}
               </Typography>
             }
           />
@@ -104,10 +108,10 @@ export default function NotebookSyncSwitch({
               sx: {padding: 2},
             }}
           >
-            <Alert severity={project.sync ? 'warning' : 'info'}>
+            <Alert severity={isSyncing ? 'warning' : 'info'}>
               <AlertTitle>Are you sure?</AlertTitle>
-              Do you want to {project.sync ? 'stop' : 'start'} syncing the{' '}
-              {project.name} {NOTEBOOK_NAME} to your device?
+              Do you want to {isSyncing ? 'stop' : 'start'} syncing the{' '}
+              {project.metadata.name} {NOTEBOOK_NAME} to your device?
             </Alert>
             <DialogActions style={{justifyContent: 'space-between'}}>
               <Button
@@ -130,43 +134,32 @@ export default function NotebookSyncSwitch({
                 }}
                 disableElevation
                 onClick={async () => {
-                  setProjectSync(project._id, project.listing, !project.sync);
+                  if (isSyncing) {
+                    // stop syncing
+                    dispatch(
+                      stopSyncingProject({
+                        projectId: project.projectId,
+                        serverId: project.serverId,
+                      })
+                    );
+                  } else {
+                    // start syncing
+                    dispatch(
+                      resumeSyncingProject({
+                        projectId: project.projectId,
+                        serverId: project.serverId,
+                      })
+                    );
+                  }
                   handleClose();
                 }}
               >
-                {project.sync ? 'Stop ' : 'Start'} sync
+                {isSyncing ? 'Stop ' : 'Start'} sync
               </Button>
             </DialogActions>
           </Dialog>
         </Box>
       )}
-    </Box>
-  ) : (
-    <Box
-      sx={{
-        backgroundColor: grey[100],
-        borderRadius: '4px',
-        px: '4px',
-        py: '2px',
-        borderLeft: 'solid 3px ' + grey[300],
-      }}
-      component={Paper}
-      my={1}
-      elevation={0}
-    >
-      <Typography
-        sx={{
-          backgroundColor: grey[100],
-          borderRadius: '4px',
-          px: '4px',
-          py: '2px',
-        }}
-        component={Paper}
-        variant={'caption'}
-        elevation={0}
-      >
-        Only published or archived ${NOTEBOOK_NAME}s can be synced.
-      </Typography>
     </Box>
   );
 }
