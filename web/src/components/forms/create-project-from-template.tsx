@@ -1,6 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
-import {Route} from '@/routes/templates/$templateId';
+import {Route} from '@/routes/_protected/templates/$templateId';
 import {z} from 'zod';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useQueryClient} from '@tanstack/react-query';

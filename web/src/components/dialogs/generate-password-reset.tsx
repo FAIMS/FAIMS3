@@ -72,7 +72,7 @@ export const GeneratePasswordReset = ({
   if (!userId) return null;
 
   const [qrCodeData, setQrCodeData] = useState<string>('');
-  const resetCode = useMutation({
+  const {data, isPending, mutate} = useMutation({
     mutationKey: ['resetpassword', userId],
     mutationFn: async ({id}: {id: string}) => {
       return await fetch(`${import.meta.env.VITE_API_URL}/api/reset`, {
@@ -90,14 +90,15 @@ export const GeneratePasswordReset = ({
     },
   });
 
-  // Generate QR code when URL is available
   useEffect(() => {
-    if (resetCode.data?.url) {
-      QRCode.toDataURL(resetCode.data.url)
+    if (data?.code) {
+      QRCode.toDataURL(
+        `${import.meta.env.VITE_WEB_URL}/reset-password?code=${data.code}`
+      )
         .then(url => setQrCodeData(url))
         .catch(err => console.error('Error generating QR code:', err));
     }
-  }, [resetCode.data?.url]);
+  }, [data?.code]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -109,17 +110,19 @@ export const GeneratePasswordReset = ({
           </DialogDescription>
         </DialogHeader>
 
-        {resetCode.isPending ? (
+        {isPending ? (
           <div className="flex justify-center p-4">
             <Spinner />
           </div>
-        ) : resetCode.data ? (
+        ) : data ? (
           <div className="space-y-6">
             <div className="flex items-center space-x-2">
               <div className="flex-1 rounded-md border p-2">
-                <code className="text-sm">{resetCode.data.url}</code>
+                <code className="text-sm">{`${import.meta.env.VITE_WEB_URL}/reset-password?code=${data.code}`}</code>
               </div>
-              <CopyButton value={resetCode.data.url} />
+              <CopyButton
+                value={`${import.meta.env.VITE_WEB_URL}/reset-password?code=${data.code}`}
+              />
             </div>
 
             {qrCodeData && (
@@ -132,23 +135,14 @@ export const GeneratePasswordReset = ({
             )}
 
             <div className="flex justify-end">
-              <Button
-                onClick={() => {
-                  resetCode.mutate({id: userId});
-                }}
-                variant="outline"
-              >
+              <Button onClick={() => mutate({id: userId})} variant="outline">
                 Generate New Link
               </Button>
             </div>
           </div>
         ) : (
           <div className="flex justify-end py-4">
-            <Button
-              onClick={() => {
-                resetCode.mutate({id: userId});
-              }}
-            >
+            <Button onClick={() => mutate({id: userId})}>
               Generate Reset Link
             </Button>
           </div>

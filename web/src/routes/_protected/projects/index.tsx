@@ -1,23 +1,24 @@
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
 import {DataTable} from '@/components/data-table/data-table';
-import {columns} from '@/components/tables/templates';
+import {columns} from '@/components/tables/projects';
 import {useAuth} from '@/context/auth-provider';
-import {useGetTemplates} from '@/hooks/get-hooks';
+import {useGetProjects} from '@/hooks/get-hooks';
+import {NOTEBOOK_NAME} from '@/constants';
 
-export const Route = createFileRoute('/templates/')({
+export const Route = createFileRoute('/_protected/projects/')({
   component: RouteComponent,
 });
 
 /**
- * RouteComponent component renders the templates page.
- * It displays a table with the user's templates.
+ * RouteComponent component renders the projects page.
+ * It displays a table with the user's projects.
  *
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
 function RouteComponent() {
   const {user} = useAuth();
 
-  const {isPending, data} = useGetTemplates(user);
+  const {isPending, data} = useGetProjects(user);
 
   const navigate = useNavigate();
 
@@ -26,7 +27,9 @@ function RouteComponent() {
       columns={columns}
       data={data}
       loading={isPending}
-      onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
+      onRowClick={({non_unique_project_id}) =>
+        navigate({to: `/${NOTEBOOK_NAME}s/${non_unique_project_id}`})
+      }
     />
   );
 }

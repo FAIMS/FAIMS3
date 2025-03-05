@@ -1,6 +1,3 @@
-/**
- * Provides a password reset form - public route
- */
 import {Form} from '@/components/form';
 import {Button} from '@/components/ui/button';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
@@ -9,16 +6,11 @@ import {zodValidator} from '@tanstack/zod-adapter';
 import {z} from 'zod';
 import {AlertTriangle} from 'lucide-react';
 
-// Validate that code exists and is non-empty
 const ResetPasswordSearchSchema = z.object({
-  code: z.preprocess(
-    // If value is undefined (no query param), use empty string
-    val => (val === undefined ? '' : String(val)),
-    z.string()
-  ),
+  code: z.preprocess(val => (val === undefined ? '' : String(val)), z.string()),
 });
 
-export const Route = createFileRoute('/auth/resetPassword/')({
+export const Route = createFileRoute('/reset-password')({
   component: RouteComponent,
   validateSearch: zodValidator(ResetPasswordSearchSchema),
 });
@@ -99,7 +91,6 @@ function RouteComponent() {
       };
     }
 
-    // Success - go home
     navigate({to: '/'});
   };
 
