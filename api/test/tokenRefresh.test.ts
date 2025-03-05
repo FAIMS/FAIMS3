@@ -18,8 +18,12 @@
  *   Tests for the API
  */
 
-import {expect} from 'chai';
 import PouchDB from 'pouchdb';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+
+import {expect} from 'chai';
 import request from 'supertest';
 import {generateUserToken} from '../src/authkeys/create';
 import {
@@ -48,9 +52,6 @@ import {
   PostRefreshTokenResponseSchema,
 } from '@faims3/data-model';
 import {listTemplates} from './template.test';
-
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
 
 describe('token refresh tests', () => {
   beforeEach(beforeApiTests);

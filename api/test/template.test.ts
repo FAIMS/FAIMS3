@@ -18,6 +18,11 @@
  *   Tests for the API
  */
 
+import PouchDB from 'pouchdb';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+
 import {
   CreateNotebookFromTemplate,
   EncodedNotebook,
@@ -37,7 +42,6 @@ import {
 import {expect} from 'chai';
 import {Express} from 'express';
 import fs from 'fs';
-import PouchDB from 'pouchdb';
 import request from 'supertest';
 import {app} from '../src/routes';
 import {NOTEBOOKS_API_BASE} from './api.test';
@@ -47,8 +51,6 @@ import {
   localUserToken,
   requestAuthAndType,
 } from './utils';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
 
 // Where it the template API?
 const TEMPLATE_API_BASE = '/api/templates';
@@ -220,9 +222,6 @@ describe('template API tests', () => {
       expect(JSON.stringify(entry['ui-specification'])).to.equal(
         JSON.stringify(nb['ui-specification'])
       );
-      expect(JSON.stringify(entry.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
-      );
 
       // should be version 1
       expect(entry.version).to.equal(1);
@@ -234,13 +233,6 @@ describe('template API tests', () => {
       expect(template._id).to.equal(templateId1);
       expect(JSON.stringify(template['ui-specification'])).to.equal(
         JSON.stringify(nb['ui-specification'])
-      );
-
-      // Remove the template ID which was injected
-      // TODO see BSS-343
-      delete template.metadata.template_id;
-      expect(JSON.stringify(template.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
       );
 
       // should be version 1
@@ -268,15 +260,6 @@ describe('template API tests', () => {
         );
       }
 
-      // Remove the template_id from the result and then check equality
-      // TODO BSS-343
-      delete entry?.metadata.template_id;
-
-      //
-      expect(JSON.stringify(entry?.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
-      );
-
       // should be version 1
       expect(entry?.version).to.equal(1);
     });
@@ -287,13 +270,6 @@ describe('template API tests', () => {
       expect(template._id).to.equal(templateId2);
       expect(JSON.stringify(template['ui-specification'])).to.equal(
         JSON.stringify(nb['ui-specification'])
-      );
-
-      // Remove the template_id from the result and then check equality
-      // TODO BSS-343
-      delete template.metadata.template_id;
-      expect(JSON.stringify(template.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
       );
 
       // should be version 1

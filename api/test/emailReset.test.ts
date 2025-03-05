@@ -1,5 +1,10 @@
 import {expect} from 'chai';
+
 import PouchDB from 'pouchdb';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+
 import request from 'supertest';
 import {app} from '../src/routes';
 import {
@@ -22,9 +27,6 @@ import {
   getCodeByCode,
   hashVerificationCode,
 } from '../src/couchdb/emailCodes';
-
-PouchDB.plugin(require('pouchdb-adapter-memory'));
-PouchDB.plugin(require('pouchdb-find'));
 
 describe('password reset tests', () => {
   beforeEach(beforeApiTests);

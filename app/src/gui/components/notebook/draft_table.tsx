@@ -32,6 +32,7 @@ import RecordDelete from './delete';
 
 type DraftsRecordProps = {
   project_id: ProjectID;
+  serverId: string;
   maxRows: number | null;
   rows: any;
   loading: boolean;
@@ -40,7 +41,7 @@ type DraftsRecordProps = {
 };
 
 export function DraftsTable(props: DraftsRecordProps) {
-  const {project_id, maxRows, rows, loading} = props;
+  const {project_id, serverId, maxRows, rows, loading} = props;
   const theme = useTheme();
   const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
@@ -123,6 +124,7 @@ export function DraftsTable(props: DraftsRecordProps) {
             return (
               <RecordDelete
                 project_id={project_id}
+                serverId={serverId}
                 record_id={params.row.record_id}
                 revision_id={params.row.revision_id}
                 draft_id={params.row._id}
@@ -193,6 +195,7 @@ export function DraftsTable(props: DraftsRecordProps) {
             return (
               <RecordDelete
                 project_id={project_id}
+                serverId={serverId}
                 record_id={params.row.record_id}
                 revision_id={params.row.revision_id}
                 draft_id={params.row._id}

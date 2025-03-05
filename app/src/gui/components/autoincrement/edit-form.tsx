@@ -38,7 +38,7 @@ import {useState} from 'react';
 import {LocalAutoIncrementRange, ProjectID} from '@faims3/data-model';
 import CloseIcon from '@mui/icons-material/Close';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {addAlert} from '../../../context/slices/syncSlice';
+import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../context/store';
 import {
   createNewAutoincrementRange,

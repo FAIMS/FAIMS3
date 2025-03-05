@@ -41,7 +41,6 @@ const testProjectInfo = {
   last_updated: 'Unknown',
   listing_id: 'default',
   name: 'Test Name',
-  non_unique_project_id: 'unique-test-id',
   project_id: 'test-project-id',
   status: 'published',
 };

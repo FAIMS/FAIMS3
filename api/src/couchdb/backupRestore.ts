@@ -18,12 +18,9 @@
  *    Functions to backup and restore databases
  */
 import {open} from 'node:fs/promises';
-import {getProjectsDB} from '.';
-import {
-  addDesignDocsForNotebook,
-  getDataDB,
-  getProjectDB,
-} from '@faims3/data-model';
+import {getMetadataDb, getProjectsDB} from '.';
+import {addDesignDocsForNotebook, getDataDB} from '@faims3/data-model';
+import {safeWriteDocument} from './helpers';
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file
@@ -48,10 +45,10 @@ export const restoreFromBackup = async (filename: string) => {
           // name will be eg. 'projects_default', where 'default' is the
           // conductor instance id
           // we'll put all projects into our projectsDB
-          db = await getProjectsDB();
+          db = getProjectsDB();
         } else if (dbName.startsWith('metadata')) {
           const projectName = dbName.split('||')[1];
-          db = await getProjectDB(projectName);
+          db = await getMetadataDb(projectName);
         } else if (dbName.startsWith('data')) {
           const projectName = dbName.split('||')[1];
           db = await getDataDB(projectName);
@@ -72,13 +69,16 @@ export const restoreFromBackup = async (filename: string) => {
         // careful and check whether this _rev is present in the db already
         delete doc.doc._rev;
         try {
-          await db.put(doc.doc);
+          // Safe write
+          await safeWriteDocument(db, doc.doc, true);
         } catch (error) {
           console.log('Error restoring document', doc.id);
         }
       }
-    } catch {
-      console.error(`error parsing JSON on line ${line_number}`);
+    } catch (e: any) {
+      console.error(
+        `error parsing JSON on line ${line_number} ${JSON.stringify(e, undefined, 2)} ${e.stack}`
+      );
       return;
     }
     line_number += 1;

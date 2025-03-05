@@ -39,8 +39,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     },
     search: {token, refreshToken},
   }) => {
-    // Exclusions
-    console.log(window.location.href);
     if (EXCLUDED_PUBLIC_ROUTES.some(r => window.location.href.includes(r)))
       return;
 
