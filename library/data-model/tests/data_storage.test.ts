@@ -345,9 +345,14 @@ describe('record iterator', () => {
       await cleanDataDBS();
 
       const project_id = 'test' + n;
-      await createNRecords(project_id, viewID, n);
+      const uiSpec = await createNRecords(project_id, viewID, n);
 
-      const iterator = await notebookRecordIterator(project_id, viewID);
+      const iterator = await notebookRecordIterator(
+        project_id,
+        viewID,
+        undefined,
+        uiSpec
+      );
 
       let {record, done} = await iterator.next();
       let sumOfAges = 0;
@@ -370,13 +375,13 @@ describe('record retrieval', () => {
     const project_id = 'test';
 
     await cleanDataDBS();
-    await createNRecords(project_id, viewID, 10);
+    const uiSpec = await createNRecords(project_id, viewID, 10);
 
     const db = await getDataDB(project_id);
     if (db) {
       // use the underlying get all records rather than the token filtered version for now
       const records = Object.values(
-        await getAllRecordsWithRegex(project_id, '.*')
+        await getAllRecordsWithRegex(project_id, '.*', uiSpec)
       );
       expect(records.length).toBe(10);
       // check a few properties
@@ -392,11 +397,17 @@ describe('record retrieval', () => {
     const project_id = 'test';
 
     await cleanDataDBS();
-    await createNRecords(project_id, viewID, 10);
+    const uiSpec = await createNRecords(project_id, viewID, 10);
 
     const db = await getDataDB(project_id);
     if (db) {
-      const records = Object.values(await listRecordMetadata(project_id));
+      const records = Object.values(
+        await listRecordMetadata({
+          project_id,
+          record_ids: null,
+          uiSpecification: uiSpec,
+        })
+      );
       expect(records.length).toBe(10);
       // // check a few properties
       expect(records[0].created_by).toBe('user');
@@ -411,16 +422,26 @@ describe('record retrieval', () => {
     const project_id = 'test';
 
     await cleanDataDBS();
-    await createNRecords(project_id, viewID, 10);
+    const uiSpec = await createNRecords(project_id, viewID, 10);
 
     const db = await getDataDB(project_id);
     if (db) {
-      const all_records = Object.values(await listRecordMetadata(project_id));
+      const all_records = Object.values(
+        await listRecordMetadata({
+          project_id,
+          uiSpecification: uiSpec,
+          record_ids: null,
+        })
+      );
       const record_ids = all_records.map((r: RecordMetadata) => r.record_id);
 
       // get a filtered selection of records
       const records = Object.values(
-        await listRecordMetadata(project_id, record_ids.slice(5))
+        await listRecordMetadata({
+          project_id,
+          record_ids: record_ids.slice(5),
+          uiSpecification: uiSpec,
+        })
       );
       expect(records.length).toBe(5);
       // // check a few properties

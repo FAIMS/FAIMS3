@@ -25,7 +25,7 @@ import {
   generateFAIMSDataID,
   getDataDB,
 } from '@faims3/data-model';
-import {getNotebookUISpec} from './notebooks';
+import {getEncodedNotebookUISpec} from './notebooks';
 import {randomInt} from 'crypto';
 import {readFileSync} from 'node:fs';
 import * as Exceptions from '../exceptions';
@@ -57,7 +57,7 @@ export const createRandomRecord = async (
   // generate data for each field
   // create the record object and call upsertFAIMSData
 
-  const uiSpec = await getNotebookUISpec(project_id);
+  const uiSpec = await getEncodedNotebookUISpec(project_id);
   if (!uiSpec) {
     throw new Exceptions.ItemNotFoundException(
       `Notebook not found with id ${project_id}`

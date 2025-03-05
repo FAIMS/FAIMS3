@@ -1,7 +1,8 @@
 import {Button} from '@/components/ui/button';
+import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/get-hooks';
 import {Route} from '@/routes/projects/$projectId';
@@ -22,8 +23,8 @@ const ProjectActions = (): JSX.Element => {
 
   return (
     <div className="flex flex-col gap-2 justify-between">
-      <Card className="flex flex-col gap-4 flex-1">
-        <List>
+      <Card className="flex-1">
+        <List className="flex flex-col gap-4">
           <ListItem>
             <ListLabel>Download JSON</ListLabel>
             <ListDescription>
@@ -41,6 +42,17 @@ const ProjectActions = (): JSX.Element => {
                 Download JSON
               </a>
             </Button>
+          </ListItem>
+        </List>
+      </Card>
+      <Card className="flex-1">
+        <List className="flex flex-col gap-4">
+          <ListItem>
+            <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
+            <ListDescription>Edit the current {NOTEBOOK_NAME}.</ListDescription>
+          </ListItem>
+          <ListItem>
+            <EditProjectDialog />
           </ListItem>
         </List>
       </Card>
