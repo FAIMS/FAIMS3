@@ -17,10 +17,11 @@ export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs));
  * @param {string} name - The name to extract initials from.
  * @returns {string} The initials of the name.
  */
-export const initials = (name: string) => {
-  const parts = name.split(' ');
-  return parts.map(part => part[0].toUpperCase()).join('');
-};
+export const initials = (name: string) =>
+  name
+    .split(' ')
+    .map(s => s.slice(0, 1).toUpperCase())
+    .join('');
 
 /**
  * capitalize function returns the capitalized version of a string.
