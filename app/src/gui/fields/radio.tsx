@@ -82,8 +82,8 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
   }
 
   render() {
-    const {ElementProps, label, helperText, ...radioGroupProps} = this.props;
-    const {field} = this.props;
+    const {field, form, ElementProps, label, helperText, ...radioGroupProps} =
+      this.props;
 
     return (
       <FieldWrapper
@@ -91,13 +91,9 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
         subheading={helperText}
         required={this.props.required}
       >
-        <FormControl
-          error={Boolean(
-            radioGroupProps.form.errors[radioGroupProps.field.name]
-          )}
-        >
+        <FormControl error={Boolean(form.errors?.[field.name])}>
           <MuiRadioGroup
-            {...fieldToRadioGroup(radioGroupProps)}
+            {...fieldToRadioGroup({field, form, ...radioGroupProps})}
             value={field.value || ''}
             onChange={e => this.handleChange(e)}
           >
