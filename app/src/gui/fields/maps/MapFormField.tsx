@@ -151,7 +151,6 @@ export function MapFormField({
           },
         ],
       };
-      console.log('setting location', pointFeature);
       form.setFieldValue(field.name, pointFeature, true);
     }
   };

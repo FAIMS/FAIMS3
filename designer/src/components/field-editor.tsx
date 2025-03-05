@@ -18,6 +18,7 @@ import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRound
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
+import DuplicateIcon from '@mui/icons-material/ContentCopy';
 import {
   Accordion,
   AccordionDetails,
@@ -52,6 +53,7 @@ import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
 import {useState, useMemo} from 'react';
+import {findFieldCondtionUsage} from './condition';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -78,16 +80,42 @@ export const FieldEditor = ({
   const viewsets = useAppSelector(
     state => state.notebook['ui-specification'].viewsets
   );
-  const views = useAppSelector(
+
+  const allFields = useAppSelector(
+    state => state.notebook['ui-specification'].fields
+  );
+  const allFviews = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
+
   const dispatch = useAppDispatch();
 
   const [openMoveDialog, setOpenMoveDialog] = useState(false);
   const [targetViewId, setTargetViewId] = useState('');
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
+  const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
+  const [duplicateTitle, setDuplicateTitle] = useState('');
 
   const fieldComponent = field['component-name'];
+
+  const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
+  const [conditionsAffected, setConditionsAffected] = useState<string[]>([]);
+
+  const deleteField = (evt: React.SyntheticEvent) => {
+    evt.stopPropagation();
+
+    const usage = findFieldCondtionUsage(fieldName, allFields, allFviews);
+
+    if (usage.length > 0) {
+      setConditionsAffected(usage);
+      setDeleteWarningOpen(true);
+    } else {
+      dispatch({
+        type: 'ui-specification/fieldDeleted',
+        payload: {fieldName, viewId},
+      });
+    }
+  };
 
   const getFieldLabel = () => {
     return (
@@ -97,6 +125,7 @@ export const FieldEditor = ({
       field['component-parameters'].name
     );
   };
+
   const label = getFieldLabel();
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
@@ -115,17 +144,35 @@ export const FieldEditor = ({
     });
   };
 
-  const deleteField = (event: React.SyntheticEvent) => {
-    event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/fieldDeleted',
-      payload: {fieldName, viewId},
-    });
-  };
-
   const addFieldBelow = (event: React.SyntheticEvent) => {
     event.stopPropagation();
     addFieldCallback(fieldName);
+  };
+
+  const handleOpenDuplicateDialog = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+    const currentLabel = getFieldLabel();
+    setDuplicateTitle(currentLabel + ' Copy');
+    setOpenDuplicateDialog(true);
+  };
+
+  const handleCloseDuplicateDialog = () => {
+    setOpenDuplicateDialog(false);
+    setDuplicateTitle('');
+  };
+
+  const duplicateField = () => {
+    if (duplicateTitle.trim()) {
+      dispatch({
+        type: 'ui-specification/fieldDuplicated',
+        payload: {
+          originalFieldName: fieldName,
+          newFieldName: duplicateTitle.trim(),
+          viewId,
+        },
+      });
+      handleCloseDuplicateDialog();
+    }
   };
 
   const handleCloseMoveDialog = () => {
@@ -172,9 +219,9 @@ export const FieldEditor = ({
   const sectionValue = useMemo(
     () =>
       targetViewId
-        ? {id: targetViewId, label: views[targetViewId].label}
+        ? {id: targetViewId, label: allFviews[targetViewId].label}
         : null,
-    [targetViewId, views]
+    [targetViewId, allFviews]
   );
 
   // memoize the section options
@@ -185,10 +232,10 @@ export const FieldEditor = ({
             .filter(sectionId => sectionId !== viewId)
             .map(sectionId => ({
               id: sectionId,
-              label: views[sectionId].label,
+              label: allFviews[sectionId].label,
             }))
         : [],
-    [selectedFormId, viewsets, viewId, views]
+    [selectedFormId, viewsets, viewId, allFviews]
   );
 
   return (
@@ -226,7 +273,6 @@ export const FieldEditor = ({
         <Grid container rowGap={1} alignItems={'center'}>
           <Grid item xs={12} sm={8}>
             <Stack direction="column" spacing={1} pr={{xs: 0, sm: 2}}>
-              {/* Field Title */}
               <Typography
                 variant="subtitle2"
                 sx={{
@@ -243,7 +289,6 @@ export const FieldEditor = ({
                 {label}
               </Typography>
 
-              {/* Chips Below Title (Tighter Spacing) */}
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Chip
                   label={fieldComponent}
@@ -263,7 +308,6 @@ export const FieldEditor = ({
                 )}
               </Stack>
 
-              {/* Helper Text (More Spacing from Chips) */}
               {field['component-parameters'].helperText && (
                 <Typography
                   variant="body2"
@@ -271,7 +315,7 @@ export const FieldEditor = ({
                   fontWeight={400}
                   fontStyle="italic"
                   sx={{
-                    mt: 1.5, // Added extra spacing here
+                    mt: 1.5,
                     display: '-webkit-box',
                     WebkitLineClamp: 3,
                     WebkitBoxOrient: 'vertical',
@@ -314,6 +358,15 @@ export const FieldEditor = ({
                   <PlaylistAddIcon />
                 </IconButton>
               </Tooltip>
+              <Tooltip title="Duplicate Field">
+                <IconButton
+                  onClick={handleOpenDuplicateDialog}
+                  aria-label="duplicate"
+                  size="small"
+                >
+                  <DuplicateIcon />
+                </IconButton>
+              </Tooltip>
               <Tooltip title="Move up">
                 <IconButton onClick={moveFieldUp} aria-label="up" size="small">
                   <ArrowDropUpRoundedIcon />
@@ -331,6 +384,39 @@ export const FieldEditor = ({
             </Stack>
           </Grid>
         </Grid>
+        <Dialog
+          open={deleteWarningOpen}
+          onClose={() => setDeleteWarningOpen(false)}
+        >
+          <DialogTitle>Can Not Delete Field</DialogTitle>
+          <DialogContent>
+            <p>
+              This field is referenced in the following{' '}
+              {conditionsAffected.length === 1 ? 'condition' : 'conditions'}:
+            </p>
+            <ul>
+              {conditionsAffected.map((condition, index) => (
+                <li key={index}>{condition}</li>
+              ))}
+            </ul>
+            <p>
+              Please remove this field from{' '}
+              {conditionsAffected.length === 1 ? 'this' : 'these'} condition
+              condition{conditionsAffected.length === 1 ? '' : 's'} before
+              deleting this field.
+            </p>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={e => {
+                e.stopPropagation();
+                setDeleteWarningOpen(false);
+              }}
+            >
+              Dismiss
+            </Button>
+          </DialogActions>
+        </Dialog>
       </AccordionSummary>
 
       <Dialog
@@ -393,6 +479,40 @@ export const FieldEditor = ({
             disabled={!selectedFormId || !targetViewId}
           >
             Move
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openDuplicateDialog}
+        onClose={handleCloseDuplicateDialog}
+        aria-labelledby="duplicate-dialog-title"
+        maxWidth="sm"
+        onClick={e => e.stopPropagation()}
+      >
+        <DialogTitle id="duplicate-dialog-title" textAlign="center">
+          Duplicate Field
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{mb: 2}}>
+            Enter a title for the duplicated field.
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            value={duplicateTitle}
+            onChange={e => setDuplicateTitle(e.target.value)}
+            label="Field Title"
+            variant="outlined"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDuplicateDialog}>Cancel</Button>
+          <Button
+            onClick={duplicateField}
+            disabled={!duplicateTitle.trim()}
+          >
+            Duplicate
           </Button>
         </DialogActions>
       </Dialog>
