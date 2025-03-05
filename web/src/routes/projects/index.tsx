@@ -3,7 +3,6 @@ import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/projects';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/get-hooks';
-import {NOTEBOOK_NAME} from '@/constants';
 
 export const Route = createFileRoute('/projects/')({
   component: RouteComponent,
@@ -27,9 +26,7 @@ function RouteComponent() {
       columns={columns}
       data={data}
       loading={isPending}
-      onRowClick={({project_id}) =>
-        navigate({to: `/${NOTEBOOK_NAME}s/${project_id}`})
-      }
+      onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
     />
   );
 }

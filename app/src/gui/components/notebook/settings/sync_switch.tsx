@@ -36,7 +36,6 @@ import {NOTEBOOK_NAME} from '../../../../buildconfig';
 import {
   Project,
   resumeSyncingProject,
-  stopSyncingAttachments,
   stopSyncingProject,
 } from '../../../../context/slices/projectSlice';
 import {theme} from '../../../themes';
