@@ -3,30 +3,13 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from './ui/breadcrumb';
-import {capitalize} from '@/lib/utils';
+import {useAuth} from '@/context/auth-provider';
 import {Fragment} from 'react';
+import {useGetProjects, useGetTemplates} from '@/hooks/get-hooks';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-
-/**
- * breadcrumbMap function maps a path to a breadcrumb name.
- * It handles the special case of the projects page.
- *
- * @param {string} name - The name of the path.
- * @param {number} index - The index of the path in the pathname array.
- * @returns {string} The mapped breadcrumb name.
- */
-const breadcrumbMap = (name: string, index: number) => {
-  if (index === 0) {
-    if (name === 'projects') return `${NOTEBOOK_NAME_CAPITALIZED}s`;
-
-    return capitalize(name);
-  }
-
-  return name;
-};
+import {Skeleton} from './ui/skeleton';
 
 /**
  * Breadcrumbs component renders a breadcrumb navigation for the current page.
@@ -41,7 +24,11 @@ export default function Breadcrumbs() {
     .split('/')
     .slice(1);
 
-  if (pathname.length === 0) return <></>;
+  const {user} = useAuth();
+  const {data, isLoading} =
+    pathname.at(0) === 'projects'
+      ? useGetProjects(user, pathname.at(1))
+      : useGetTemplates(user, pathname.at(1));
 
   return (
     <Breadcrumb>
@@ -49,17 +36,24 @@ export default function Breadcrumbs() {
         {pathname.map((path, index) => (
           <Fragment key={path}>
             {index > 0 && <BreadcrumbSeparator />}
-            {index < pathname.length - 1 ? (
-              <BreadcrumbItem className="hidden md:block">
-                <Link to={pathname.slice(0, index + 1).join('/')}>
-                  {breadcrumbMap(path, index)}
+            {index === 0 && (
+              <BreadcrumbItem>
+                <Link to={pathname.at(0)}>
+                  {pathname.at(0) === 'projects'
+                    ? NOTEBOOK_NAME_CAPITALIZED
+                    : 'Template'}
+                  s
                 </Link>
               </BreadcrumbItem>
-            ) : (
-              <BreadcrumbItem>
-                <BreadcrumbPage>{breadcrumbMap(path, index)}</BreadcrumbPage>
-              </BreadcrumbItem>
             )}
+            {index === 1 &&
+              (isLoading ? (
+                <Skeleton className="w-16 h-5 rounded-md" />
+              ) : (
+                <BreadcrumbItem>
+                  {data?.metadata?.name || pathname.at(1)}
+                </BreadcrumbItem>
+              ))}
           </Fragment>
         ))}
       </BreadcrumbList>
