@@ -8,7 +8,6 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import {useAuth} from '@/context/auth-provider';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 
 interface TokenParams {
