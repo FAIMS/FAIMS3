@@ -230,6 +230,104 @@ export function findInvalidConditionReferences(
   return invalidConditions;
 }
 
+/**
+ * Finds all conditions that reference the old option value in a specific field.
+ */
+export function findOptionReferences(
+  allFields: Record<string, FieldType>,
+  allFviews: Record<string, {label: string; condition?: ConditionType}>,
+  fieldName: string,
+  oldValue: string
+): string[] {
+  const references: string[] = [];
+
+  // Check field conditions
+  for (const fieldId in allFields) {
+    const fieldCondition = allFields[fieldId].condition;
+    if (
+      fieldCondition &&
+      doesConditionContainValue(fieldCondition, fieldName, oldValue)
+    ) {
+      const label = allFields[fieldId]['component-parameters'].label ?? fieldId;
+      references.push(`Field: ${label}`);
+    }
+  }
+
+  // Check section conditions
+  for (const sectionId in allFviews) {
+    const sectionCondition = allFviews[sectionId].condition;
+    if (
+      sectionCondition &&
+      doesConditionContainValue(sectionCondition, fieldName, oldValue)
+    ) {
+      references.push(`Section: ${allFviews[sectionId].label}`);
+    }
+  }
+
+  return references;
+}
+
+/**
+ * Checks if a condition contains a specific value for a given field.
+ */
+function doesConditionContainValue(
+  condition: ConditionType,
+  fieldName: string,
+  oldValue: string
+): boolean {
+  const {operator, field, value, conditions} = condition;
+
+  if ((operator === 'and' || operator === 'or') && conditions) {
+    return conditions.some(c =>
+      doesConditionContainValue(c, fieldName, oldValue)
+    );
+  }
+
+  if (field === fieldName) {
+    if (Array.isArray(value)) {
+      return value.includes(oldValue);
+    } else {
+      return value === oldValue;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Updates all references of oldValue to newValue in a condition.
+ */
+export function updateConditionReferences(
+  condition: ConditionType,
+  fieldName: string,
+  oldValue: string,
+  newValue: string
+): ConditionType {
+  const {operator, field, value, conditions} = condition;
+
+  if ((operator === 'and' || operator === 'or') && conditions) {
+    return {
+      ...condition,
+      conditions: conditions.map(c =>
+        updateConditionReferences(c, fieldName, oldValue, newValue)
+      ),
+    };
+  }
+
+  if (field === fieldName) {
+    if (Array.isArray(value)) {
+      return {
+        ...condition,
+        value: value.map(v => (v === oldValue ? newValue : v)),
+      };
+    } else if (value === oldValue) {
+      return {...condition, value: newValue};
+    }
+  }
+
+  return condition;
+}
+
 export const ConditionModal = (props: ConditionProps & {label: string}) => {
   const [open, setOpen] = useState(false);
 

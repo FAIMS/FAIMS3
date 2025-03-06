@@ -60,6 +60,11 @@ import {useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {findOptionReferences, updateConditionReferences} from '../condition';
+import {
+  fieldUpdated,
+  sectionConditionChanged,
+} from '../../state/uiSpec-reducer';
 
 /**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.
@@ -233,6 +238,13 @@ export const OptionsEditor = ({
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
+  const allFields = useAppSelector(
+    state => state.notebook['ui-specification'].fields
+  );
+  const allFviews = useAppSelector(
+    state => state.notebook['ui-specification'].fviews
+  );
+
   const dispatch = useAppDispatch();
 
   // Configure drag-and-drop sensors - just pointer sensor is fine
@@ -249,6 +261,13 @@ export const OptionsEditor = ({
     index: number;
   } | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [renameDialogState, setRenameDialogState] = useState<{
+    open: boolean;
+    references: string[];
+    oldValue: string;
+    newValue: string;
+    index: number;
+  } | null>(null);
 
   // Get options and exclusive options from field state
   const options = field['component-parameters'].ElementProps?.options || [];
@@ -307,6 +326,47 @@ export const OptionsEditor = ({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},
     });
+  };
+
+  const updateConditions = (oldValue: string, newValue: string) => {
+    // Update field conditions
+    for (const fId in allFields) {
+      const fieldDef = allFields[fId];
+      if (!fieldDef.condition) continue;
+
+      const updatedCondition = updateConditionReferences(
+        fieldDef.condition,
+        fieldName,
+        oldValue,
+        newValue
+      );
+      if (updatedCondition !== fieldDef.condition) {
+        dispatch(
+          fieldUpdated({
+            fieldName: fId,
+            newField: {...fieldDef, condition: updatedCondition},
+          })
+        );
+      }
+    }
+
+    // Update section conditions
+    for (const vId in allFviews) {
+      const sectionDef = allFviews[vId];
+      if (!sectionDef.condition) continue;
+
+      const updatedCondition = updateConditionReferences(
+        sectionDef.condition,
+        fieldName,
+        oldValue,
+        newValue
+      );
+      if (updatedCondition !== sectionDef.condition) {
+        dispatch(
+          sectionConditionChanged({viewId: vId, condition: updatedCondition})
+        );
+      }
+    }
   };
 
   /**
@@ -390,24 +450,53 @@ export const OptionsEditor = ({
   const handleEditSubmit = () => {
     if (!editingOption) return;
 
-    const error = validateOptionText(editValue, editingOption.index);
-    if (error) {
-      setErrorMessage(error);
+    const oldValue = options[editingOption.index].value;
+    const newValue = editValue.trim();
+
+    if (!newValue || oldValue === newValue) {
+      setEditingOption(null);
       return;
     }
 
-    // Update option and maintain exclusive status
-    const oldValue = options[editingOption.index].value;
-    const newOptions = [...options];
-    newOptions[editingOption.index] = {label: editValue, value: editValue};
-
-    const updatedExclusiveOptions = exclusiveOptions.map(eo =>
-      eo === oldValue ? editValue : eo
+    // Find conditions referencing this option
+    const references = findOptionReferences(
+      allFields,
+      allFviews,
+      fieldName,
+      oldValue
     );
 
-    updateField(newOptions, updatedExclusiveOptions);
+    if (references.length === 0) {
+      doRenameOption(newValue, editingOption.index);
+    } else {
+      setRenameDialogState({
+        open: true,
+        references,
+        oldValue,
+        newValue,
+        index: editingOption.index,
+      });
+    }
+  };
+  const doRenameOption = (newValue: string, index: number) => {
+    // Clone options and update the edited one
+    const newOptions = [...options];
+    newOptions[index] = {label: newValue, value: newValue};
+
+    // Update field in Redux
+    const newField: FieldType = {
+      ...field,
+      'component-parameters': {
+        ...field['component-parameters'],
+        ElementProps: {
+          ...field['component-parameters'].ElementProps,
+          options: newOptions,
+        },
+      },
+    };
+
+    dispatch(fieldUpdated({fieldName, newField}));
     setEditingOption(null);
-    setErrorMessage('');
   };
 
   /**
@@ -428,9 +517,55 @@ export const OptionsEditor = ({
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
+      {renameDialogState && (
+        <Alert severity="warning" sx={{mt: 2}}>
+          <Typography variant="body2" sx={{mb: 1}}>
+            The option "<strong>{renameDialogState.oldValue}</strong>" is used
+            in:
+          </Typography>
+          <ul>
+            {renameDialogState.references.map((r, idx) => (
+              <li key={idx}>{r}</li>
+            ))}
+          </ul>
+          <Typography variant="body2" sx={{mt: 1}}>
+            Do you want to automatically update these references to "
+            <strong>{renameDialogState.newValue}</strong>"?
+          </Typography>
+          <Stack direction="row" spacing={1} sx={{mt: 2}}>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                doRenameOption(
+                  renameDialogState.newValue,
+                  renameDialogState.index
+                );
+                setRenameDialogState(null);
+              }}
+            >
+              No, Keep Old References
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                doRenameOption(
+                  renameDialogState.newValue,
+                  renameDialogState.index
+                );
+                updateConditions(
+                  renameDialogState.oldValue,
+                  renameDialogState.newValue
+                );
+                setRenameDialogState(null);
+              }}
+            >
+              Yes, Update Conditions
+            </Button>
+          </Stack>
+        </Alert>
+      )}
       <Paper sx={{width: '100%', ml: 2, mt: 2, p: 3}}>
         <Grid container spacing={2}>
-          {/* Info alert and add option form */}
           <Grid item xs={12}>
             <Alert
               severity="info"
