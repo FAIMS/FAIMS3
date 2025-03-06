@@ -35,7 +35,12 @@ import {
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
-import {getMetadataDb, getProjectsDB, verifyCouchDBConnection} from '.';
+import {
+  getMetadataDb,
+  localGetDataDb,
+  localGetProjectsDb,
+  verifyCouchDBConnection,
+} from '.';
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import {
   PROJECT_METADATA_PREFIX,
@@ -66,7 +71,7 @@ export const getProjects = async (
 ): Promise<ProjectObject[]> => {
   const projects: ProjectObject[] = [];
 
-  const projects_db = getProjectsDB();
+  const projects_db = localGetProjectsDb();
   if (projects_db) {
     const res = await projects_db.allDocs({
       include_docs: true,
@@ -101,7 +106,7 @@ export const getNotebooks = async (
   const output: APINotebookList[] = [];
   // DB records are project objects
   const projects: ProjectObject[] = [];
-  const projects_db = getProjectsDB();
+  const projects_db = localGetProjectsDb();
   if (projects_db) {
     // We want to type hint that this will include all values
     const res = await projects_db.allDocs<ProjectObject>({
@@ -201,7 +206,7 @@ export const validateDatabases = async () => {
       return report;
     }
 
-    const projects_db = getProjectsDB();
+    const projects_db = localGetProjectsDb();
     if (projects_db) {
       const res = await projects_db.allDocs({
         include_docs: true,
@@ -259,7 +264,7 @@ export const createNotebook = async (
   try {
     // first add an entry to the projects db about this project
     // this is used to find the other databases below
-    const projectsDB = getProjectsDB();
+    const projectsDB = localGetProjectsDb();
     if (projectsDB) {
       await projectsDB.put(projectDoc);
     }
@@ -410,7 +415,7 @@ export const updateNotebook = async (
  */
 export const deleteNotebook = async (project_id: string) => {
   // Get the projects DB
-  const projectsDB = getProjectsDB();
+  const projectsDB = localGetProjectsDb();
 
   // If not found, 404
   if (!projectsDB) {
@@ -561,7 +566,7 @@ export const validateNotebookID = async (
   project_id: string
 ): Promise<boolean> => {
   try {
-    const projectsDB = getProjectsDB();
+    const projectsDB = localGetProjectsDb();
     if (projectsDB) {
       const projectDoc = await projectsDB.get(project_id);
       if (projectDoc) {
@@ -744,18 +749,19 @@ const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
 };
 
 export const streamNotebookRecordsAsCSV = async (
-  project_id: ProjectID,
+  projectId: ProjectID,
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
-  const uiSpec = await getProjectUIModel(project_id);
-  const iterator = await notebookRecordIterator(
-    project_id,
+  const dataDb = await localGetDataDb(projectId);
+  const uiSpecification = await getProjectUIModel(projectId);
+  const iterator = await notebookRecordIterator({
+    dataDb,
+    projectId,
+    uiSpecification,
     viewID,
-    undefined,
-    uiSpec
-  );
-  const fields = await getNotebookFieldTypes(project_id, viewID);
+  });
+  const fields = await getNotebookFieldTypes(projectId, viewID);
 
   let stringifier: Stringifier | null = null;
   let {record, done} = await iterator.next();
@@ -834,19 +840,21 @@ export const streamNotebookRecordsAsCSV = async (
 };
 
 export const streamNotebookFilesAsZip = async (
-  project_id: ProjectID,
+  projectId: ProjectID,
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
   let allFilesAdded = false;
   let doneFinalize = false;
-  const uiSpec = await getProjectUIModel(project_id);
-  const iterator = await notebookRecordIterator(
-    project_id,
+
+  const dataDb = await localGetDataDb(projectId);
+  const uiSpecification = await getProjectUIModel(projectId);
+  const iterator = await notebookRecordIterator({
+    dataDb,
+    projectId,
+    uiSpecification,
     viewID,
-    undefined,
-    uiSpec
-  );
+  });
   const archive = archiver('zip', {zlib: {level: 9}});
   // good practice to catch warnings (ie stat failures and other non-blocking errors)
   archive.on('warning', err => {

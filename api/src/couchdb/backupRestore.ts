@@ -18,7 +18,7 @@
  *    Functions to backup and restore databases
  */
 import {open} from 'node:fs/promises';
-import {getMetadataDb, getProjectsDB} from '.';
+import {getMetadataDb, localGetProjectsDb} from '.';
 import {addDesignDocsForNotebook, getDataDB} from '@faims3/data-model';
 import {safeWriteDocument} from './helpers';
 
@@ -45,7 +45,7 @@ export const restoreFromBackup = async (filename: string) => {
           // name will be eg. 'projects_default', where 'default' is the
           // conductor instance id
           // we'll put all projects into our projectsDB
-          db = getProjectsDB();
+          db = localGetProjectsDb();
         } else if (dbName.startsWith('metadata')) {
           const projectName = dbName.split('||')[1];
           db = await getMetadataDb(projectName);

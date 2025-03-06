@@ -7,7 +7,7 @@ import {DBCallbackObject, ProjectID} from '@faims3/data-model';
 import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 import {
   getAuthDB,
-  getProjectsDB,
+  localGetProjectsDb,
   getTemplatesDb,
   getUsersDB,
   initialiseDatabases,
@@ -27,7 +27,7 @@ const getDatabase = async (databaseName: string) => {
   return databaseList[databaseName];
 };
 
-const mockGetDataDB = async (project_id: ProjectID) => {
+export const mockGetDataDB = async (project_id: ProjectID) => {
   const databaseName = 'data-' + project_id;
   return getDatabase(databaseName);
 };
@@ -54,7 +54,7 @@ export const resetDatabases = async () => {
   if (authDB) {
     await clearDB(authDB);
   }
-  const projectsDB = getProjectsDB();
+  const projectsDB = localGetProjectsDb();
   if (projectsDB) {
     await clearDB(projectsDB);
   }

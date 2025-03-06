@@ -181,7 +181,7 @@ export const getUsersDB = (): PouchDB.Database<Express.User> | undefined => {
   return _usersDB;
 };
 
-export const getProjectsDB = ():
+export const localGetProjectsDb = ():
   | PouchDB.Database<ProjectObject>
   | undefined => {
   if (!_projectsDB) {
@@ -238,7 +238,7 @@ export const getMetadataDb = async (
   projectID: ProjectID
 ): Promise<PouchDB.Database<ProjectMetaObject>> => {
   // Gets the projects DB
-  const projectsDB = getProjectsDB();
+  const projectsDB = localGetProjectsDb();
   if (!projectsDB) {
     throw new Exceptions.InternalSystemError(
       'Could not fetch the projects DB. Contact system administrator.'
@@ -280,11 +280,11 @@ export const getMetadataDb = async (
  * @param projectID The project ID to use
  * @returns The data DB for this project or undefined if not found
  */
-export const getDataDb = async (
+export const localGetDataDb = async (
   projectID: ProjectID
 ): Promise<PouchDB.Database<ProjectDataObject>> => {
   // Get the projects DB
-  const projectsDB = getProjectsDB();
+  const projectsDB = localGetProjectsDb();
   if (!projectsDB) {
     throw new Exceptions.InternalSystemError(
       'Could not fetch the projects DB. Contact system administrator.'
@@ -340,7 +340,7 @@ export const initialiseDatabases = async ({
     throw error;
   }
 
-  const projectsDB = getProjectsDB();
+  const projectsDB = localGetProjectsDb();
   try {
     await initialiseProjectsDB(projectsDB, {force});
   } catch (error) {

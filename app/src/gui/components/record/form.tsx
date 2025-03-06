@@ -582,6 +582,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
       const initialValues: {[key: string]: any} = {
         _id: this.props.record_id!,
         _project_id: this.props.project_id,
+        _server_id: this.props.serverId,
         _current_revision_id: revision_id,
       };
       const annotations: {[key: string]: any} = {};
