@@ -53,7 +53,7 @@ import {
   addNewRevisionFromForm,
   createNewRecordIfMissing,
   generateFAIMSRevisionID,
-  getRecord,
+  getCouchRecord,
   getRevision,
   getFormDataFromRevision,
   updateHeads,
@@ -81,7 +81,7 @@ export async function getRecordType(
   project_id: ProjectID,
   record_id: RecordID
 ): Promise<string> {
-  const record = await getRecord(project_id, record_id);
+  const record = await getCouchRecord(project_id, record_id);
   return record.type;
 }
 
@@ -95,7 +95,7 @@ export async function getFirstRecordHead(
   project_id: ProjectID,
   record_id: RecordID
 ): Promise<RevisionID> {
-  const record = await getRecord(project_id, record_id);
+  const record = await getCouchRecord(project_id, record_id);
   return record.heads[0];
 }
 
@@ -148,7 +148,7 @@ export async function getFullRecordData(
     // return null when is_deleted is not set or set as true
     return null;
   }
-  const record = await getRecord(project_id, record_id);
+  const record = await getCouchRecord(project_id, record_id);
   const form_data = await getFormDataFromRevision(project_id, revision);
 
   return {
@@ -179,7 +179,7 @@ export async function listFAIMSRecordRevisions(
   record_id: RecordID
 ): Promise<RecordRevisionListing> {
   try {
-    const record = await getRecord(project_id, record_id);
+    const record = await getCouchRecord(project_id, record_id);
     return record.revisions;
   } catch (err) {
     console.warn('failed to list data for id', record_id);
@@ -217,7 +217,7 @@ export async function deleteFAIMSDataForID(
   record_id: RecordID,
   user_id: string
 ): Promise<RevisionID> {
-  const record = await getRecord(project_id, record_id);
+  const record = await getCouchRecord(project_id, record_id);
   if (record.heads.length !== 1) {
     throw Error('Too many head revisions, must choose a specific head');
   }
@@ -245,7 +245,7 @@ export async function undeleteFAIMSDataForID(
   record_id: RecordID,
   user_id: string
 ): Promise<RevisionID> {
-  const record = await getRecord(project_id, record_id);
+  const record = await getCouchRecord(project_id, record_id);
   if (record.heads.length !== 1) {
     throw Error('Too many head revisions, must choose a specific head');
   }
@@ -338,7 +338,7 @@ export async function getRecordMetadata({
   uiSpecification: ProjectUIModel;
 }): Promise<RecordMetadata> {
   try {
-    const record = await getRecord(project_id, record_id);
+    const record = await getCouchRecord(project_id, record_id);
     const revision = await getRevision(project_id, revision_id);
     const hrid =
       (await getHRID(project_id, revision, uiSpecification)) ?? record_id;
@@ -380,7 +380,7 @@ export async function getHRIDforRecordID({
   uiSpecification: ProjectUIModel;
 }): Promise<string> {
   try {
-    const record = await getRecord(project_id, record_id);
+    const record = await getCouchRecord(project_id, record_id);
     const revision_id = record.heads[0];
     const revision = await getRevision(project_id, revision_id);
     const hrid =
@@ -429,8 +429,8 @@ export async function getPossibleRelatedRecords(
 
     const records: RecordReference[] = [];
     await listRecordMetadata({
-      project_id,
-      record_ids: null,
+      projectId: project_id,
+      recordIds: null,
       uiSpecification,
     }).then(record_list => {
       for (const key in record_list) {
@@ -532,7 +532,11 @@ export async function getMetadataForSomeRecords(
 ): Promise<RecordMetadata[]> {
   try {
     const record_list = Object.values(
-      await listRecordMetadata({project_id, record_ids, uiSpecification})
+      await listRecordMetadata({
+        projectId: project_id,
+        recordIds: record_ids,
+        uiSpecification,
+      })
     );
     return await filterRecordMetadata(
       tokenContents,
@@ -547,6 +551,14 @@ export async function getMetadataForSomeRecords(
   }
 }
 
+/**
+ * Gets the full record (including data) for the given project by looking at the data DB registered in the module callback
+ * @param tokenContents The user's parsed token - which allows the data model to check which records should be retrieved
+ * @param project_id The ID of the project
+ * @param filter_deleted Should the deleted records be included?
+ * @param uiSpecification The UI specification - used to ascertain the correct HRID
+ * @returns List of record metadata which includes populated data
+ */
 export async function getMetadataForAllRecords(
   tokenContents: TokenContents,
   project_id: ProjectID,
@@ -555,7 +567,11 @@ export async function getMetadataForAllRecords(
 ): Promise<RecordMetadata[]> {
   try {
     const record_list = Object.values(
-      await listRecordMetadata({project_id, record_ids: null, uiSpecification})
+      await listRecordMetadata({
+        projectId: project_id,
+        recordIds: null,
+        uiSpecification,
+      })
     );
     return await filterRecordMetadata(
       tokenContents,

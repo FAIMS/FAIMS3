@@ -77,8 +77,8 @@ export async function getAllRecordsWithRegex(
   // Remove duplicates, no order is implied
   const deduped_record_ids = Array.from(new Set<RecordID>(record_ids));
   return await listRecordMetadata({
-    project_id,
-    record_ids: deduped_record_ids,
+    projectId: project_id,
+    recordIds: deduped_record_ids,
     uiSpecification,
   });
 }

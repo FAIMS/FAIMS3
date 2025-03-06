@@ -38,7 +38,7 @@ import {
 import {
   generateFAIMSRevisionID,
   generateFAIMSAttributeValuePairID,
-  getRecord,
+  getCouchRecord,
   getRevision,
   getRevisions,
   getAttributeValuePairs,
@@ -340,7 +340,7 @@ export async function mergeHeads(
 ): Promise<boolean> {
   let fully_merged: boolean | undefined = undefined;
   console.debug('Getting record', project_id, record_id);
-  const record = await getRecord(project_id, record_id, true);
+  const record = await getCouchRecord(project_id, record_id, true);
   const revision_ids_to_seed_cache = record.revisions.slice(
     0,
     initial_cache_size
@@ -481,7 +481,7 @@ export async function getInitialMergeDetails(
   project_id: ProjectID,
   record_id: RecordID
 ): Promise<InitialMergeDetails | null> {
-  const record = await getRecord(project_id, record_id);
+  const record = await getCouchRecord(project_id, record_id);
   const available_revisions = await getRevisions(project_id, record.heads);
   const sorted_revisions = sortRevisionsForInitialMerge(available_revisions);
   const initial_head_details = await findInitialMergeDetails(
@@ -504,7 +504,7 @@ export async function findConflictingFields(
   record_id: RecordID,
   revision_id: RevisionID
 ): Promise<string[]> {
-  const record = await getRecord(project_id, record_id);
+  const record = await getCouchRecord(project_id, record_id);
   const conflicting_fields: Set<string> = new Set();
 
   let revs_to_get: RevisionID[];
@@ -542,7 +542,7 @@ export async function getMergeInformationForHead(
   revision_id: RevisionID
 ): Promise<RecordMergeInformation | null> {
   try {
-    const record = await getRecord(project_id, record_id);
+    const record = await getCouchRecord(project_id, record_id);
     if (!record.heads.includes(revision_id)) {
       logError(
         `Not using a head to find conflicting fields: ${project_id}, ${record_id}, ${revision_id}`
