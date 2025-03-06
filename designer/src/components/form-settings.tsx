@@ -158,19 +158,6 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
     .filter((x): x is {label: string; value: string} => x !== null);
 
   /**
-   * Updates the form layout setting
-   */
-  const handleLayoutChange = (event: any) => {
-    dispatch({
-      type: 'ui-specification/viewSetLayoutUpdated',
-      payload: {
-        viewSetId,
-        layout: event.target.value as 'inline' | 'tabs' | undefined,
-      },
-    });
-  };
-
-  /**
    * Updates the selected summary fields
    */
   const handleSummaryFieldsChange = (
