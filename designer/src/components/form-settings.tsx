@@ -71,29 +71,44 @@ const SettingSection = ({
 
 export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   const dispatch = useAppDispatch();
+
   const fields = useAppSelector(
     state => state.notebook['ui-specification'].fields
   );
-  const viewSet: ViewSetType = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets[viewSetId]
+  const viewSet: ViewSetType | undefined = useAppSelector(
+    state =>
+      state.notebook?.['ui-specification']?.viewsets?.[viewSetId] || undefined
   );
   const fviews = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
   const [expanded, setExpanded] = React.useState(false);
 
+  const publishButtonBehaviour = viewSet?.publishButtonBehaviour || 'always';
+
+  const [selectedPublishBehaviour, setSelectedPublishBehaviour] =
+    React.useState('always');
+
+  React.useEffect(() => {
+    if (viewSet?.publishButtonBehaviour) {
+      setSelectedPublishBehaviour(viewSet.publishButtonBehaviour);
+    }
+  }, [viewSet?.publishButtonBehaviour]);
+
   /**
    * Updates the Publish Button Behavior setting
    */
   const handlePublishButtonBehaviourChange = (event: any) => {
+    const newValue = event.target.value;
+    console.log('Dropdown changed to:', newValue); // Debugging log
+
+    setSelectedPublishBehaviour(newValue); // ✅ Update local state
+
     dispatch({
       type: 'ui-specification/viewSetPublishButtonBehaviourUpdated',
       payload: {
         viewSetId,
-        publishButtonBehaviour: event.target.value as
-          | 'always'
-          | 'visited'
-          | 'noErrors',
+        publishButtonBehaviour: newValue as 'always' | 'visited' | 'noErrors',
       },
     });
   };
@@ -189,6 +204,11 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
     ? hridFieldOptions.find(opt => opt.value === viewSet.hridField) || null
     : null;
 
+  console.log(
+    'rrrrrrrrrrrrrrrrDropdown Value:',
+    viewSet.publishButtonBehaviour
+  );
+
   return (
     <Card sx={{width: '100%', mt: 2}}>
       <CardContent
@@ -225,7 +245,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
           >
             <Select
               fullWidth
-              value={viewSet.publishButtonBehaviour || 'always'}
+              value={selectedPublishBehaviour}
               onChange={handlePublishButtonBehaviourChange}
             >
               <MenuItem value="always">Always Show</MenuItem>
