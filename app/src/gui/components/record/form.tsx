@@ -78,6 +78,7 @@ import {
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
+import {c} from 'vitest/dist/reporters-5f784f42';
 
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -1305,6 +1306,23 @@ class RecordForm extends React.Component<any, RecordFormState> {
         viewsetName
       );
       const description = this.requireDescription(viewName);
+      const views = getViewsMatchingCondition(
+        this.props.ui_specification,
+        initialValues,
+        [],
+        viewsetName,
+        {}
+      );
+      // Publish buttons behaviour
+      // const publishButtonBehaviour =
+      //   ui_specification.viewsets[viewsetName]?.publishButtonBehaviour ||
+      //   'always';
+
+      // console.log('publishbuttonbehaviour', publishButtonBehaviour);
+
+      // Track visited sections and errors
+      const allSectionsVisited = this.state.visitedSteps.size === views.length;
+      console.log('allsectionsvisited', allSectionsVisited);
 
       return (
         <Box>
@@ -1368,6 +1386,18 @@ class RecordForm extends React.Component<any, RecordFormState> {
               }}
             >
               {formProps => {
+                const hasErrors = Object.keys(formProps.errors).length > 0;
+                const publishButtonBehaviour =
+                  this.props.ui_specification.viewsets[this.getViewsetName()]
+                    ?.publishButtonBehaviour || 'always';
+                console.log('publishButtonBehaviour', publishButtonBehaviour);
+                const showPublishButton =
+                  publishButtonBehaviour === 'always' ||
+                  (publishButtonBehaviour === 'visited' &&
+                    allSectionsVisited) ||
+                  (publishButtonBehaviour === 'noErrors' &&
+                    allSectionsVisited &&
+                    !hasErrors);
                 // Recompute derived values if something has changed
                 const {values, setValues} = formProps;
                 // Compare current values with last processed values
@@ -1516,6 +1546,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        showPublishButton={showPublishButton}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
@@ -1613,6 +1644,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        showPublishButton={showPublishButton}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
