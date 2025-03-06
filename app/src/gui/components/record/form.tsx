@@ -78,6 +78,7 @@ import {
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
+import {localGetDataDb} from '../../..';
 
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -365,11 +366,12 @@ class RecordForm extends React.Component<any, RecordFormState> {
     if (this.props.type === undefined) {
       if (revision_id !== undefined) {
         // get the record so we can see the type
-        const latest_record = await getFullRecordData(
-          this.props.project_id,
-          this.props.record_id,
-          revision_id
-        );
+        const latest_record = await getFullRecordData({
+          dataDb: localGetDataDb(this.props.project_id),
+          projectId: this.props.project_id,
+          recordId: this.props.record_id,
+          revisionId: revision_id,
+        });
 
         if (latest_record === null) {
           this.props.handleSetDraftError(
@@ -441,10 +443,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
     if (revision_id === undefined) {
       try {
         // for new draft but saved record, get the revision instead of using undefined
-        const first_revision_id = await getFirstRecordHead(
-          this.props.project_id,
-          this.props.record_id
-        );
+        const first_revision_id = await getFirstRecordHead({
+          dataDb: localGetDataDb(this.props.project_id),
+          recordId: this.props.record_id,
+        });
         revision_id = first_revision_id;
       } catch (error) {
         // here if there was no existing record with this id above
@@ -548,11 +550,12 @@ class RecordForm extends React.Component<any, RecordFormState> {
        * (in order high priority to last resort): draft storage, database, ui schema
        */
       const fromdb = revision_id
-        ? ((await getFullRecordData(
-            this.props.project_id,
-            this.props.record_id,
-            revision_id
-          )) ?? undefined)
+        ? ((await getFullRecordData({
+            dataDb: localGetDataDb(this.props.project_id),
+            projectId: this.props.project_id,
+            recordId: this.props.record_id,
+            revisionId: revision_id,
+          })) ?? undefined)
         : undefined;
 
       // data and annotations or nothing
@@ -907,7 +910,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
       ...contextInfo,
     };
     return (
-      upsertFAIMSData(this.props.project_id, doc)
+      upsertFAIMSData({
+        dataDb: localGetDataDb(this.props.project_id),
+        record: doc,
+      })
         .then(revision_id => {
           // update the component state with the new revision id and notify the parent
           try {
@@ -1018,15 +1024,16 @@ class RecordForm extends React.Component<any, RecordFormState> {
                     record_id: new_record_id,
                     project_id: this.props.project_id,
                   };
-                  getFirstRecordHead(
-                    this.props.project_id,
-                    locationState.parent_record_id
-                  ).then(revision_id =>
-                    getFullRecordData(
-                      this.props.project_id,
-                      locationState.parent_record_id,
-                      revision_id
-                    ).then(latest_record => {
+                  getFirstRecordHead({
+                    dataDb: localGetDataDb(this.props.project_id),
+                    recordId: locationState.parent_record_id,
+                  }).then(revision_id =>
+                    getFullRecordData({
+                      dataDb: localGetDataDb(this.props.project_id),
+                      projectId: this.props.project_id,
+                      recordId: locationState.parent_record_id,
+                      revisionId: revision_id,
+                    }).then(latest_record => {
                       const new_doc = latest_record;
                       if (new_doc !== null) {
                         if (
@@ -1043,7 +1050,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             ...new_doc['data'][field_id],
                             new_child_record,
                           ];
-                        upsertFAIMSData(this.props.project_id, new_doc)
+                        upsertFAIMSData({
+                          dataDb: localGetDataDb(this.props.project_id),
+                          record: new_doc,
+                        })
                           .then(new_revision_id => {
                             const location_state: any = locationState;
                             location_state['parent_link'] =
@@ -1163,7 +1173,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             ...new_doc['data'][field_id],
                             new_child_record,
                           ];
-                        upsertFAIMSData(this.props.project_id, new_doc)
+                        upsertFAIMSData({
+                          dataDb: localGetDataDb(this.props.project_id),
+                          record: new_doc,
+                        })
                           .then(new_revision_id => {
                             const location_state: any =
                               locationState.location_state;
