@@ -3,7 +3,12 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
-import {DBCallbackObject, generateFAIMSDataID, upsertFAIMSData} from '../src';
+import {
+  DBCallbackObject,
+  generateFAIMSDataID,
+  getDataDB,
+  upsertFAIMSData,
+} from '../src';
 import {addDesignDocsForNotebook} from '../src/data_storage/databases';
 import {ProjectID, ProjectUIModel, Record} from '../src/types';
 
@@ -145,6 +150,7 @@ export const createRecord = async (
   viewID: string,
   data: {name: string; age: number}
 ) => {
+  const dataDb = await getDataDB(project_id);
   const userID = 'user';
   const doc: Record = {
     project_id: project_id,
@@ -165,7 +171,7 @@ export const createRecord = async (
     deleted: false,
   };
 
-  return await upsertFAIMSData(project_id, doc);
+  return await upsertFAIMSData({dataDb, record: doc});
 };
 
 export const createNRecords = async (

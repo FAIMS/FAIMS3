@@ -391,7 +391,7 @@ export async function mergeHeads({
 }: {
   projectId: ProjectID;
   recordId: RecordID;
-  cacheSize: number;
+  cacheSize?: number;
   dataDb: DataDbType;
 }): Promise<boolean> {
   let fully_merged: boolean | undefined = undefined;

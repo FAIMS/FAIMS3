@@ -88,7 +88,6 @@ describe('round-trip reading and writing to db', () => {
   ])(
     'types round-trip',
     async (project_id, namespace, name, data, userID, time) => {
-      const dataDb = await getDataDB(project_id);
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -99,6 +98,7 @@ describe('round-trip reading and writing to db', () => {
         fail('Failed to clean dbs');
       }
 
+      const dataDb = await getDataDB(project_id);
       const fullType = namespace + '::' + name;
 
       const record_id = generateFAIMSDataID();
