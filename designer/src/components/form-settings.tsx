@@ -100,9 +100,9 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
    */
   const handlePublishButtonBehaviourChange = (event: any) => {
     const newValue = event.target.value;
-    console.log('Dropdown changed to:', newValue); // Debugging log
+    console.log('Dropdown changed to:', newValue);
 
-    setSelectedPublishBehaviour(newValue); // ✅ Update local state
+    setSelectedPublishBehaviour(newValue);
 
     dispatch({
       type: 'ui-specification/viewSetPublishButtonBehaviourUpdated',
