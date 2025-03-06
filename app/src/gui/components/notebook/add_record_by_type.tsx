@@ -1,4 +1,8 @@
-import {getRecordsWithRegex, RecordMetadata} from '@faims3/data-model';
+import {
+  getDataDB,
+  getRecordsWithRegex,
+  RecordMetadata,
+} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
@@ -12,6 +16,7 @@ import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecS
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {localGetDataDb} from '../../..';
 
 type AddRecordButtonsProps = {
   project: Project;
@@ -45,13 +50,14 @@ export default function AddRecordButtons({
 
     // TODO validate that this is always defined!
     // TODO WHY IS THERE TWO IDs - this is most likely broken
-    getRecordsWithRegex(
-      activeUser.parsedToken,
+    getRecordsWithRegex({
+      dataDb: localGetDataDb(projectId),
+      filterDeleted: true,
       projectId,
-      value,
-      true,
-      uiSpecification
-    ).then(records => {
+      regex: value,
+      tokenContents: activeUser.parsedToken,
+      uiSpecification,
+    }).then(records => {
       // navigate to it
       // what should happen if there are more than one?
       for (const key in records) {
