@@ -58,19 +58,19 @@ import {
 // INDEX NAMES
 
 // List of records
-const RECORDS_INDEX = 'index/record';
+export const RECORDS_INDEX = 'index/record';
 // List of revisions
-const REVISIONS_INDEX = 'index/revision';
+export const REVISIONS_INDEX = 'index/revision';
 // List of AVP items
-const AVP_INDEX = 'index/avp';
+export const AVP_INDEX = 'index/avp';
 // ID = record id, emitted = revision - use include_docs
-const RECORD_REVISIONS_INDEX = 'index/recordRevisions';
+export const RECORD_REVISIONS_INDEX = 'index/recordRevisions';
 
 // TYPE FIELDS
 
-const REVISION_TYPE_FIELD = 'revision_format_version';
-const RECORD_TYPE_FIELD = 'record_format_version';
-const AVP_TYPE_FIELD = 'avp_format_version';
+export const REVISION_TYPE_FIELD = 'revision_format_version';
+export const RECORD_TYPE_FIELD = 'record_format_version';
+export const AVP_TYPE_FIELD = 'avp_format_version';
 
 export interface FormData {
   data: {[field_name: string]: any};
@@ -283,7 +283,7 @@ export async function updateHeads({
  * @returns The updated record with merged revision history and resolved
  * conflicts
  */
-async function mergeRecordConflicts({
+export async function mergeRecordConflicts({
   dataDb,
   record,
 }: {
@@ -401,12 +401,15 @@ export async function getAvp({
  * response
  * @returns The recommended HRID for this revision/record
  */
-export async function getHRID(
-  projectId: ProjectID,
-  revision: Revision,
-  uiSpecification: ProjectUIModel
-): Promise<string | null> {
-  const db = await getDataDB(projectId);
+export async function getHRID({
+  revision,
+  uiSpecification,
+  dataDb,
+}: {
+  revision: Revision;
+  uiSpecification: ProjectUIModel;
+  dataDb: DataDbType;
+}): Promise<string | null> {
   let hridFieldName = undefined;
 
   // iterate through field names, trying our very best to find one that is
@@ -453,10 +456,10 @@ export async function getHRID(
     return null;
   }
   try {
-    const hrid_avp = await getAvp({avpId: hridAvpId, dataDb: db});
+    const hrid_avp = await getAvp({avpId: hridAvpId, dataDb});
     return hrid_avp.data as string;
   } catch (err) {
-    console.warn('Failed to load HRID AVP:', projectId, hridAvpId);
+    console.warn('Failed to load HRID AVP:', hridAvpId);
     return null;
   }
 }
@@ -709,6 +712,25 @@ export function buildDocumentMap<Content extends {}>({
  *
  * @returns List of EncodedRecord
  */
+export async function getRecord({
+  recordId,
+  dataDb,
+}: {
+  recordId: RecordID;
+  dataDb: DataDbType;
+}): Promise<PouchDB.Core.ExistingDocument<EncodedRecord> | undefined> {
+  return await getCouchDocument<EncodedRecord>({
+    db: dataDb,
+    id: recordId,
+    typeField: RECORD_TYPE_FIELD,
+  });
+}
+
+/**
+ * Get the Record documents ('rec-') for an array of record ids
+ *
+ * @returns List of EncodedRecord
+ */
 export async function getRecords({
   recordIds,
   dataDb,
@@ -755,19 +777,33 @@ export async function getFormDataFromRevision({
   return form_data;
 }
 
+/**
+ * Builds a new revision by
+ *
+ * a) looking through all data, creating new AVPs for changed data (or new data)
+ * b) determining if the existing record already had a revision - if so we record this as the parent
+ * c) pushing the updated revision document to the data DB with the new AVPs in tow
+ *
+ * @param record The record to publish (with new data in it)
+ * @param dataDb The data DB to write to
+ * @param newRevId The ID provided for the new revision
+ */
 export async function addNewRevisionFromForm({
-  projectId,
   record,
   dataDb,
   newRevId,
 }: {
   dataDb: DataDbType;
-  projectId: ProjectID;
   record: Record;
   newRevId: RevisionID;
 }) {
-  const avpMap = await addNewAttributeValuePairs(projectId, record, newRevId);
+  // Build and push the new AVPs
+  const avpMap = await addNewAttributeValuePairs({dataDb, record, newRevId});
+
+  // Work out if the record has any parent (i.e. previous revision that we worked from)
   const parents = record.revision_id === null ? [] : [record.revision_id];
+
+  // Build the new revision document, including the reference to the parent
   const updatedRevision: Revision = {
     _id: newRevId,
     revision_format_version: 1,
@@ -783,18 +819,22 @@ export async function addNewRevisionFromForm({
   await dataDb.put(updatedRevision);
 }
 
+/**
+ * This method takes a set of updated form data and produces, dumps and writes
+ * new AVPs where the data has changed based on the previous data for the given
+ * record revision.
+ * @returns A map of field name -> new AVP Id
+ */
 async function addNewAttributeValuePairs({
   dataDb,
-  projectId,
   record,
   newRevId,
 }: {
   dataDb: DataDbType;
-  projectId: ProjectID;
   record: Record;
   newRevId: RevisionID;
 }): Promise<AttributeValuePairIDMap> {
-  // Start to construct the new avp map
+  // Start to construct the new avp map - mapping field name -> new AVP
   const avpMap: AttributeValuePairIDMap = {};
   let revision;
   let data;
@@ -815,55 +855,94 @@ async function addNewAttributeValuePairs({
     };
   }
 
+  // Start to build up a list of documents to push to the DB - this includes
+  // both AVPs and also dumped attachments
+  const documentsToWrite: Array<AttributeValuePair | FAIMSAttachment> = [];
 
-  const docs_to_dump: Array<AttributeValuePair | FAIMSAttachment> = [];
-  for (const [field_name, field_value] of Object.entries(record.data)) {
-    const stored_data = data.data[field_name];
-    const stored_anno = data.annotations[field_name];
-    const eqfunc = getEqualityFunctionForType(record.field_types[field_name]);
-    const has_data_changed =
-      stored_data === undefined || !(await eqfunc(stored_data, field_value));
-    const has_anno_changed =
-      stored_anno === undefined ||
-      !(await eqfunc(stored_anno, record.annotations[field_name]));
-    if (has_data_changed || has_anno_changed) {
-      const new_avp_id = generateFAIMSAttributeValuePairID();
-      const new_avp = {
-        _id: new_avp_id,
+  // Iterate through the field values - these are the proposed changes
+  for (const [fieldName, fieldValue] of Object.entries(record.data)) {
+    // Have a look at what data we already have here - along with annotations
+    const storedData = data.data[fieldName];
+    const storedAnnotation = data.annotations[fieldName];
+
+    // Check if the value that was previously stored (if any) === proposed new value
+    const equalityFunction = getEqualityFunctionForType(
+      record.field_types[fieldName]
+    );
+
+    // data has changed if either the existing data is undefined OR there is a diff
+    const hasDataChanged =
+      storedData === undefined
+        ? true
+        : !(await equalityFunction(storedData, fieldValue));
+
+    // annotation has changed if either existing is undefined OR there is a diff
+    const hasAnnotationChanged =
+      storedAnnotation === undefined
+        ? true
+        : !(await equalityFunction(
+            storedAnnotation,
+            record.annotations[fieldName]
+          ));
+
+    // If anything has changed - then we produce a new AVP ID
+    if (hasDataChanged || hasAnnotationChanged) {
+      // Get unique ID
+      const newAvpId = generateFAIMSAttributeValuePairID();
+      // Build the new AVP
+      const newAvp = {
+        _id: newAvpId,
         avp_format_version: 1,
-        type: record.field_types[field_name] ?? '??:??',
-        data: field_value,
+        type: record.field_types[fieldName] ?? '??:??',
+        data: fieldValue,
         revision_id: newRevId,
         record_id: record.record_id,
-        annotations: record.annotations[field_name],
+        annotations: record.annotations[fieldName],
         created: record.updated.toISOString(),
         created_by: record.updated_by,
       };
-      docs_to_dump.push(...dumpAttributeValuePair(new_avp));
-      avpMap[field_name] = new_avp_id;
+      // Dump out attachment if present and add AVP to docs
+      documentsToWrite.push(...dumpAttributeValuePair(newAvp));
+      // Set map
+      avpMap[fieldName] = newAvpId;
     } else {
       if (revision.avps !== undefined) {
-        avpMap[field_name] = revision.avps[field_name];
+        avpMap[fieldName] = revision.avps[fieldName];
       } else {
         // This should not happen, as if stored_data === field_value and
         // stored_data is not undefined, then then revision.avps should be
         // defined
-        throw Error('something odd happened when saving avps...');
+        throw Error(
+          'Unexpected state while producing AVPs - the existing data is defined but there is a missing avp ID for this revision which contains the data.'
+        );
       }
     }
   }
-  await dataDB.bulkDocs(docs_to_dump);
+  // Write all updates
+  await dataDb.bulkDocs(documentsToWrite);
   return avpMap;
 }
 
-// add a new empty record if not already present
-// used to initialise a new record before data is added with addNewRevisionFromForm
-export async function createNewRecordIfMissing(
-  project_id: ProjectID,
-  record: Record,
-  revision_id: RevisionID
-) {
-  const dataDB = await getDataDB(project_id);
+/**
+ * This function is used to ensure that there is a Record in the database for
+ * the given record ID and revision.
+ *
+ * If this method fails due to a prior existing record, that is fine as we just
+ * want to ensure such a parent record exists.
+ * @param record The record to initialise
+ * @param revision_id The revision ID of the head
+ * @param dataDb The data db
+ */
+export async function initialiseRecordForNewRevision({
+  record,
+  revision_id,
+  dataDb,
+}: {
+  dataDb: DataDbType;
+  record: Record;
+  revision_id: RevisionID;
+}) {
+  // build out the new record - noting the singleton revision ID and heads
   const new_encoded_record = {
     _id: record.record_id,
     record_format_version: 1,
@@ -874,7 +953,7 @@ export async function createNewRecordIfMissing(
     type: record.type,
   };
   try {
-    await dataDB.put(new_encoded_record);
+    await dataDb.put(new_encoded_record);
   } catch (err) {
     // if there was an error then the document exists
     // already which is fine

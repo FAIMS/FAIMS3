@@ -31,37 +31,40 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
 import {v4 as uuidv4} from 'uuid';
-import {getDataDB} from '../index';
 import {DEFAULT_RELATION_LINK_VOCABULARY} from '../datamodel/core';
+import {getDataDB, shouldDisplayRecord} from '../index';
+import {logError} from '../logging';
 import {
+  DataDbType,
   FAIMSTypeName,
+  ProjectDataObject,
   ProjectID,
+  ProjectRevisionListing,
+  ProjectUIModel,
   Record,
   RecordID,
   RecordMetadata,
   RecordReference,
+  RecordRevisionListing,
   Revision,
   RevisionID,
-  ProjectRevisionListing,
-  RecordRevisionListing,
   TokenContents,
-  ProjectUIModel,
-  ProjectDataObject,
 } from '../types';
-import {shouldDisplayRecord} from '../index';
 import {
   addNewRevisionFromForm,
-  createNewRecordIfMissing,
+  FormData,
   generateFAIMSRevisionID,
-  getCouchRecord,
-  getRevision,
   getFormDataFromRevision,
-  updateHeads,
   getHRID,
+  getRecord,
+  getRevision,
+  initialiseRecordForNewRevision,
   listRecordMetadata,
+  queryCouch,
+  REVISIONS_INDEX,
+  updateHeads,
 } from './internals';
 import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
-import {logError} from '../logging';
 
 export * from './authDB';
 
@@ -74,14 +77,20 @@ export function generateFAIMSDataID(): RecordID {
  *  simple query, avoiding too many db lookups
  *
  * @param project_id project identifier
- * @param record_id record identifier
+ * @param recordId record identifier
  * @returns the record type as a string
  */
-export async function getRecordType(
-  project_id: ProjectID,
-  record_id: RecordID
-): Promise<string> {
-  const record = await getCouchRecord(project_id, record_id);
+export async function getRecordType({
+  recordId,
+  dataDb,
+}: {
+  dataDb: DataDbType;
+  recordId: RecordID;
+}): Promise<string> {
+  const record = await getRecord({dataDb, recordId: recordId});
+  if (!record) {
+    throw new Error(`Cannot find record with ID ${recordId}`);
+  }
   return record.type;
 }
 
@@ -91,78 +100,106 @@ export async function getRecordType(
  * @param record_id record identifier
  * @returns a promise resolving to a revision id for the record
  */
-export async function getFirstRecordHead(
-  project_id: ProjectID,
-  record_id: RecordID
-): Promise<RevisionID> {
-  const record = await getCouchRecord(project_id, record_id);
+export async function getFirstRecordHead({
+  recordId,
+  dataDb,
+}: {
+  recordId: RecordID;
+  dataDb: DataDbType;
+}): Promise<RevisionID> {
+  const record = await getRecord({dataDb, recordId});
+  if (!record) {
+    throw new Error(
+      `Could not find record with ID ${recordId} unable to get head.`
+    );
+  }
   return record.heads[0];
 }
 
 /**
  * Either create a new record or update an existing one
- * @param project_id project identifier
+ * @param projectId project identifier
  * @param record new or existing record
  * @returns a promise resolving to the revision id of the new or updated record
  */
-export async function upsertFAIMSData(
-  project_id: ProjectID,
-  record: Record
-): Promise<RevisionID> {
+export async function upsertFAIMSData({
+  record,
+  dataDb,
+}: {
+  record: Record;
+  dataDb: DataDbType;
+}): Promise<RevisionID> {
   if (record.record_id === undefined) {
     throw Error('record_id required to save record');
   }
   const revision_id = generateFAIMSRevisionID();
   if (record.revision_id === null) {
-    await createNewRecordIfMissing(project_id, record, revision_id);
-    await addNewRevisionFromForm(project_id, record, revision_id);
+    await initialiseRecordForNewRevision({dataDb, record, revision_id});
+    await addNewRevisionFromForm({dataDb, newRevId: revision_id, record});
   } else {
-    // console.info('Update existing record', record);
-    await addNewRevisionFromForm(project_id, record, revision_id);
-    await updateHeads(
-      project_id,
-      record.record_id,
-      [record.revision_id],
-      revision_id
-    );
+    await addNewRevisionFromForm({dataDb, newRevId: revision_id, record});
+    await updateHeads({
+      baseRevisionId: [record.revision_id],
+      newRevisionId: revision_id,
+      dataDb,
+      recordId: record.record_id,
+    });
   }
   return revision_id;
 }
 
 /**
  * Get the full record data for a given revision of a record
- * @param {ProjectID} project_id  Project identifier
- * @param {RecordID} record_id Record identifier
- * @param {RevisionID} revision_id Revision identifier
- * @param {boolean} is_deleted if true (default), return null if the revision has been deleted. If false, return the record even if deleted
+ * @param projectId  Project identifier
+ * @param dataDb The data DB
+ * @param recordId Record identifier
+ * @param revisionId Revision identifier
+ * @param isDeleted if true (default), return null if the revision has been deleted. If false, return the record even if deleted
  * @returns A promise that resolves to the requested record or null
  */
-export async function getFullRecordData(
-  project_id: ProjectID,
-  record_id: RecordID,
-  revision_id: RevisionID,
-  is_deleted = true //default value should be true
-): Promise<Record | null> {
-  const revision = await getRevision(project_id, revision_id);
-  if (revision.deleted === true && is_deleted) {
+export async function getFullRecordData({
+  dataDb,
+  projectId,
+  recordId,
+  revisionId,
+  isDeleted = true,
+}: {
+  projectId: ProjectID;
+  dataDb: DataDbType;
+  recordId: RecordID;
+  revisionId: RevisionID;
+  isDeleted?: boolean;
+}): Promise<Record | null> {
+  // get the revision
+  const revision = await getRevision({dataDb, revisionId});
+  if (revision.deleted === true && isDeleted) {
     // return null when is_deleted is not set or set as true
     return null;
   }
-  const record = await getCouchRecord(project_id, record_id);
-  const form_data = await getFormDataFromRevision(project_id, revision);
+
+  // Get the record and form data
+  const record = await getRecord({dataDb, recordId});
+  if (!record) {
+    throw new Error(
+      `Could not find the record with ID ${recordId} - unable to return the full record data.`
+    );
+  }
+
+  // Populate data
+  const formData = await getFormDataFromRevision({dataDb, revision});
 
   return {
-    project_id: project_id,
-    record_id: record_id,
-    revision_id: revision_id,
+    project_id: projectId,
+    record_id: recordId,
+    revision_id: revisionId,
     type: revision.type,
-    data: form_data.data,
+    data: formData.data,
     updated_by: revision.created_by,
     updated: new Date(revision.created),
     created: new Date(record.created),
     created_by: record.created_by,
-    annotations: form_data.annotations,
-    field_types: form_data.types,
+    annotations: formData.annotations,
+    field_types: formData.types,
     relationship: revision.relationship,
     deleted: revision.deleted ?? false,
   };
@@ -174,15 +211,21 @@ export async function getFullRecordData(
  * @param {RecordID} record_id
  * @returns {Promise<RecordRevisionListing>} A promise resolving to a revision listing
  */
-export async function listFAIMSRecordRevisions(
-  project_id: ProjectID,
-  record_id: RecordID
-): Promise<RecordRevisionListing> {
+export async function listFAIMSRecordRevisions({
+  recordId,
+  dataDb,
+}: {
+  recordId: RecordID;
+  dataDb: DataDbType;
+}): Promise<RecordRevisionListing> {
   try {
-    const record = await getCouchRecord(project_id, record_id);
+    const record = await getRecord({recordId, dataDb});
+    if (!record) {
+      throw new Error('Could not find record.');
+    }
     return record.revisions;
   } catch (err) {
-    console.warn('failed to list data for id', record_id);
+    console.warn('failed to list data for id', recordId);
     throw err;
   }
 }
@@ -192,160 +235,186 @@ export async function listFAIMSRecordRevisions(
  * @param {ProjectID} project_id
  * @returns {Promise<ProjectRevisionListing>}
  */
-export async function listFAIMSProjectRevisions(
-  project_id: ProjectID
-): Promise<ProjectRevisionListing> {
-  const dataDB = await getDataDB(project_id);
-  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
-
+export async function listFAIMSProjectRevisions({
+  dataDb,
+}: {
+  dataDb: DataDbType;
+}): Promise<ProjectRevisionListing> {
   try {
-    const result = await dataDB.allDocs();
+    // get all revision
+    const result = await queryCouch<Revision>({
+      db: dataDb,
+      index: REVISIONS_INDEX,
+    });
     const revisionMap: ProjectRevisionListing = {};
-    for (const row of result.rows) {
-      const _id: RecordID = row.key;
-      revisionMap[_id] = await listFAIMSRecordRevisions(project_id, _id);
+    for (const row of result) {
+      revisionMap[row._id] = await listFAIMSRecordRevisions({
+        dataDb,
+        recordId: row._id,
+      });
     }
     return revisionMap;
   } catch (err) {
-    console.warn('failed to list data in project', project_id, err);
+    console.warn('failed to list data in project', err);
     throw Error('failed to list data in project');
   }
 }
 
-export async function deleteFAIMSDataForID(
-  project_id: ProjectID,
-  record_id: RecordID,
-  user_id: string
-): Promise<RevisionID> {
-  const record = await getCouchRecord(project_id, record_id);
+export async function deleteFAIMSDataForID({
+  recordId: recordId,
+  userId: userId,
+  dataDb,
+}: {
+  dataDb: DataDbType;
+  recordId: RecordID;
+  userId: string;
+}): Promise<RevisionID> {
+  const record = await getRecord({dataDb, recordId});
+  if (!record) {
+    throw Error(`Could not find record with ID: ${recordId}`);
+  }
   if (record.heads.length !== 1) {
     throw Error('Too many head revisions, must choose a specific head');
   }
   try {
-    return await setRecordAsDeleted(
-      project_id,
-      record_id,
-      record.heads[0],
-      user_id
-    );
+    return await setRecordAsDeleted({
+      dataDb,
+      recordId,
+      userId,
+      baseRevisionId: record.heads[0],
+    });
   } catch (err) {
-    console.warn(
-      'failed to delete data with id',
-      project_id,
-      record_id,
-      user_id,
-      err
-    );
+    console.warn('failed to delete data with id', recordId, userId, err);
     throw Error('failed to delete data with id');
   }
 }
 
-export async function undeleteFAIMSDataForID(
-  project_id: ProjectID,
-  record_id: RecordID,
-  user_id: string
-): Promise<RevisionID> {
-  const record = await getCouchRecord(project_id, record_id);
+export async function undeleteFAIMSDataForID({
+  recordId,
+  userId,
+  dataDb,
+}: {
+  dataDb: DataDbType;
+  recordId: RecordID;
+  userId: string;
+}): Promise<RevisionID> {
+  const record = await getRecord({dataDb, recordId});
+  if (!record) {
+    throw new Error('Cannot find record with ID ' + recordId);
+  }
   if (record.heads.length !== 1) {
     throw Error('Too many head revisions, must choose a specific head');
   }
   try {
-    return await setRecordAsUndeleted(
-      project_id,
-      record_id,
-      record.heads[0],
-      user_id
-    );
+    return await setRecordAsUndeleted({
+      dataDb,
+      recordId,
+      baseRevisionId: record.heads[0],
+      userId,
+    });
   } catch (err) {
-    console.warn(
-      'failed to undelete data with id',
-      project_id,
-      record_id,
-      user_id,
-      err
-    );
+    console.warn('failed to undelete data with id', recordId, userId, err);
     throw Error('failed to undelete data with id');
   }
 }
 
-export async function setRecordAsDeleted(
-  project_id: ProjectID,
-  record_id: RecordID,
-  base_revision_id: RevisionID,
-  user: string
-): Promise<RevisionID> {
-  const dataDB = await getDataDB(project_id);
-  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
-
+export async function setRecordAsDeleted({
+  dataDb,
+  recordId,
+  baseRevisionId,
+  userId,
+}: {
+  dataDb: DataDbType;
+  recordId: RecordID;
+  baseRevisionId: RevisionID;
+  userId: string;
+}): Promise<RevisionID> {
   const date = new Date();
-  const base_revision = await getRevision(project_id, base_revision_id);
-  const new_rev_id = generateFAIMSRevisionID();
-  const new_revision: Revision = {
-    _id: new_rev_id,
+  const baseRevision = await getRevision({dataDb, revisionId: baseRevisionId});
+  const newRevisionId = generateFAIMSRevisionID();
+  const newRevision: Revision = {
+    _id: newRevisionId,
     revision_format_version: 1,
-    avps: base_revision.avps,
-    type: base_revision.type,
-    record_id: record_id,
-    parents: [base_revision_id],
+    avps: baseRevision.avps,
+    type: baseRevision.type,
+    record_id: recordId,
+    parents: [baseRevisionId],
     created: date.toISOString(),
-    created_by: user,
+    created_by: userId,
     deleted: true,
-    relationship: base_revision.relationship,
+    relationship: baseRevision.relationship,
   };
-  await dataDB.put(new_revision);
-  await updateHeads(project_id, record_id, [base_revision._id], new_rev_id);
-  return new_rev_id;
+  await dataDb.put(newRevision);
+  await updateHeads({
+    dataDb,
+    recordId,
+    baseRevisionId: [baseRevision._id],
+    newRevisionId,
+  });
+  return newRevisionId;
 }
 
-export async function setRecordAsUndeleted(
-  project_id: ProjectID,
-  record_id: RecordID,
-  base_revision_id: RevisionID,
-  user: string
-): Promise<RevisionID> {
-  const dataDB = await getDataDB(project_id);
-  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
-
+export async function setRecordAsUndeleted({
+  recordId,
+  baseRevisionId,
+  userId,
+  dataDb,
+}: {
+  recordId: RecordID;
+  dataDb: DataDbType;
+  baseRevisionId: RevisionID;
+  userId: string;
+}): Promise<RevisionID> {
   const date = new Date();
-  const base_revision = await getRevision(project_id, base_revision_id);
-  const new_rev_id = generateFAIMSRevisionID();
-  const new_revision: Revision = {
-    _id: new_rev_id,
+  const baseRevision = await getRevision({dataDb, revisionId: baseRevisionId});
+  const newRevId = generateFAIMSRevisionID();
+  const newRevision: Revision = {
+    _id: newRevId,
     revision_format_version: 1,
-    avps: base_revision.avps,
-    type: base_revision.type,
-    record_id: record_id,
-    parents: [base_revision_id],
+    avps: baseRevision.avps,
+    type: baseRevision.type,
+    record_id: recordId,
+    parents: [baseRevisionId],
     created: date.toISOString(),
-    created_by: user,
+    created_by: userId,
     deleted: false,
-    relationship: base_revision.relationship,
+    relationship: baseRevision.relationship,
   };
-  await dataDB.put(new_revision);
-  await updateHeads(project_id, record_id, [base_revision._id], new_rev_id);
-  return new_rev_id;
+  await dataDb.put(newRevision);
+  await updateHeads({
+    dataDb,
+    recordId,
+    baseRevisionId: [baseRevision._id],
+    newRevisionId: newRevId,
+  });
+  return newRevId;
 }
 
 export async function getRecordMetadata({
-  project_id,
-  record_id,
-  revision_id,
+  recordId,
+  revisionId,
+  dataDb,
   uiSpecification,
+  projectId,
 }: {
-  project_id: ProjectID;
-  record_id: RecordID;
-  revision_id: RevisionID;
+  projectId: string;
+  dataDb: DataDbType;
+  recordId: RecordID;
+  revisionId: RevisionID;
   uiSpecification: ProjectUIModel;
 }): Promise<RecordMetadata> {
   try {
-    const record = await getCouchRecord(project_id, record_id);
-    const revision = await getRevision(project_id, revision_id);
+    const record = await getRecord({dataDb, recordId});
+    if (!record) {
+      throw new Error(`Failed to find record with id ${recordId}`);
+    }
+    const revision = await getRevision({dataDb, revisionId});
     const hrid =
-      (await getHRID(project_id, revision, uiSpecification)) ?? record_id;
+      (await getHRID({dataDb, revision, uiSpecification})) ?? recordId;
     return {
-      project_id: project_id,
-      record_id: record_id,
-      revision_id: revision_id,
+      project_id: projectId,
+      record_id: recordId,
+      revision_id: revisionId,
       created: new Date(record.created),
       created_by: record.created_by,
       updated: new Date(revision.created),
@@ -359,36 +428,39 @@ export async function getRecordMetadata({
   } catch (err) {
     console.debug(
       'failed to get record metadata:',
-      project_id,
-      record_id,
-      revision_id
+      projectId,
+      recordId,
+      revisionId
     );
     logError(err);
     throw Error(
-      'failed to get record metadata: {project_id} {record_id} {revision_id}'
+      `failed to get record metadata: ${projectId} ${recordId} ${revisionId}`
     );
   }
 }
 
 export async function getHRIDforRecordID({
-  project_id,
-  record_id,
+  recordId,
   uiSpecification,
+  dataDb,
 }: {
-  project_id: ProjectID;
-  record_id: RecordID;
+  dataDb: DataDbType;
+  recordId: RecordID;
   uiSpecification: ProjectUIModel;
 }): Promise<string> {
   try {
-    const record = await getCouchRecord(project_id, record_id);
-    const revision_id = record.heads[0];
-    const revision = await getRevision(project_id, revision_id);
+    const record = await getRecord({dataDb, recordId});
+    if (!record) {
+      throw new Error(`Could not find record with id ${recordId}`);
+    }
+    const revisionId = record.heads[0];
+    const revision = await getRevision({dataDb, revisionId});
     const hrid =
-      (await getHRID(project_id, revision, uiSpecification)) ?? record_id;
+      (await getHRID({revision, uiSpecification, dataDb})) ?? recordId;
     return hrid;
   } catch (err) {
     console.warn('Failed to get hrid', err);
-    return record_id;
+    return recordId;
   }
 }
 
@@ -396,41 +468,51 @@ export async function getHRIDforRecordID({
  * getPossibleRelatedRecords - get all records of a given type but remove any that
  *   are already children of some parent if relation_type is Child
  *
- * @param project_id - project identifier
+ * @param projectId - project identifier
  * @param type - type of record we are looking for
- * @param relation_type - 'faims-core::Child' or 'faims-core::Linked'
- * @param record_id - record id that might be the parent/source of this link
- * @param field_id - field that will hold the relationship
- * @param relation_linked_vocabPair - names of the relationship
+ * @param relationType - 'faims-core::Child' or 'faims-core::Linked'
+ * @param recordId - record id that might be the parent/source of this link
+ * @param fieldId - field that will hold the relationship
+ * @param relationLinkedVocabPair - names of the relationship
  * @returns  a promise resolving to an array of RecordReference objects
  */
-export async function getPossibleRelatedRecords(
-  project_id: ProjectID,
-  type: FAIMSTypeName,
-  relation_type: string,
-  record_id: string,
-  field_id: string,
-  relation_linked_vocabPair: string[] | null = null,
-  uiSpecification: ProjectUIModel
-): Promise<RecordReference[]> {
+export async function getPossibleRelatedRecords({
+  projectId,
+  dataDb,
+  type,
+  relationLinkedVocabPair = null,
+  relationType,
+  recordId,
+  fieldId,
+  uiSpecification,
+}: {
+  projectId: ProjectID;
+  dataDb: DataDbType;
+  type: FAIMSTypeName;
+  relationType: string;
+  recordId: string;
+  fieldId: string;
+  relationLinkedVocabPair: string[] | null;
+  uiSpecification: ProjectUIModel;
+}): Promise<RecordReference[]> {
   try {
     let relation_vocab: string[] | null = null;
-    if (relation_type !== 'faims-core::Child') {
+    if (relationType !== 'faims-core::Child') {
       relation_vocab = [
         DEFAULT_RELATION_LINK_VOCABULARY,
         DEFAULT_RELATION_LINK_VOCABULARY,
       ]; //default value of the linked items
       if (
-        relation_linked_vocabPair !== null &&
-        relation_linked_vocabPair.length > 0
+        relationLinkedVocabPair !== null &&
+        relationLinkedVocabPair.length > 0
       )
-        relation_vocab = relation_linked_vocabPair; //get the name from relation_linked_vocabPair
+        relation_vocab = relationLinkedVocabPair; //get the name from relation_linked_vocabPair
     }
 
     const records: RecordReference[] = [];
     await listRecordMetadata({
-      projectId: project_id,
-      recordIds: null,
+      projectId,
+      dataDb,
       uiSpecification,
     }).then(record_list => {
       for (const key in record_list) {
@@ -439,7 +521,7 @@ export async function getPossibleRelatedRecords(
         let is_parent = false;
         const relationship = metadata['relationship'];
 
-        if (relation_type === 'faims-core::Child') {
+        if (relationType === 'faims-core::Child') {
           //check if record has the parent, record should only have one parent
           if (
             relationship === undefined ||
@@ -448,11 +530,11 @@ export async function getPossibleRelatedRecords(
             relationship['parent'].record_id === undefined
           )
             is_parent = false;
-          else if (relationship['parent'].record_id !== record_id)
+          else if (relationship['parent'].record_id !== recordId)
             is_parent = true;
           else if (
-            relationship['parent'].record_id === record_id &&
-            relationship['parent'].field_id !== field_id
+            relationship['parent'].record_id === recordId &&
+            relationship['parent'].field_id !== fieldId
           )
             is_parent = true;
         }
@@ -463,13 +545,13 @@ export async function getPossibleRelatedRecords(
               : metadata.record_id;
           if (relation_vocab === null)
             records.push({
-              project_id: project_id,
+              project_id: projectId,
               record_id: metadata.record_id,
               record_label: hrid,
             });
           else
             records.push({
-              project_id: project_id,
+              project_id: projectId,
               record_id: metadata.record_id,
               record_label: hrid,
               relation_type_vocabPair: relation_vocab, // pass the value of the vocab
@@ -480,7 +562,7 @@ export async function getPossibleRelatedRecords(
     return records;
   } catch (err) {
     // TODO: What are we doing here, why would things error?
-    const records = await getAllRecordsOfType(project_id, type);
+    const records = await getAllRecordsOfType(projectId, type);
     console.warn(err);
     return records;
   }
@@ -488,27 +570,32 @@ export async function getPossibleRelatedRecords(
 
 /**
  * Remove records that are deleted or should not be displayed from a list of record metadata objects
- * @param project_id - project identifier
- * @param record_list - array of record metadata objects
- * @param filter_deleted - if true, we filter out deleted records
+ * @param projectId - project identifier
+ * @param recordList - array of record metadata objects
+ * @param filterDeleted - if true, we filter out deleted records
  * @returns an array of record metadata objects (Promise)
  */
-async function filterRecordMetadata(
-  tokenContents: TokenContents,
-  project_id: ProjectID,
-  record_list: RecordMetadata[],
-  filter_deleted: boolean
-): Promise<RecordMetadata[]> {
+async function filterRecordMetadata({
+  tokenContents,
+  projectId,
+  recordList,
+  filterDeleted,
+}: {
+  tokenContents: TokenContents;
+  projectId: ProjectID;
+  recordList: RecordMetadata[];
+  filterDeleted: boolean;
+}): Promise<RecordMetadata[]> {
   // compute should display and deletion filter for all records - promise
   // collection
   return Promise.all(
-    record_list.map(async metadata => {
+    recordList.map(async metadata => {
       const shouldKeep =
-        !(metadata.deleted && filter_deleted) &&
-        shouldDisplayRecord(tokenContents, project_id, metadata);
+        !(metadata.deleted && filterDeleted) &&
+        shouldDisplayRecord(tokenContents, projectId, metadata);
       return shouldKeep;
     })
-  ).then(results => record_list.filter((_, index) => results[index]));
+  ).then(results => recordList.filter((_, index) => results[index]));
 }
 
 function sortByLastUpdated(record_list: RecordMetadata[]): RecordMetadata[] {
@@ -523,29 +610,38 @@ function sortByLastUpdated(record_list: RecordMetadata[]): RecordMetadata[] {
   });
 }
 
-export async function getMetadataForSomeRecords(
-  tokenContents: TokenContents,
-  project_id: ProjectID,
-  record_ids: RecordID[],
-  filter_deleted: boolean,
-  uiSpecification: ProjectUIModel
-): Promise<RecordMetadata[]> {
+export async function getMetadataForSomeRecords({
+  tokenContents,
+  projectId,
+  recordIds,
+  filterDeleted,
+  uiSpecification,
+  dataDb,
+}: {
+  tokenContents: TokenContents;
+  projectId: ProjectID;
+  recordIds: RecordID[];
+  filterDeleted: boolean;
+  uiSpecification: ProjectUIModel;
+  dataDb: DataDbType;
+}): Promise<RecordMetadata[]> {
   try {
-    const record_list = Object.values(
+    const recordList = Object.values(
       await listRecordMetadata({
-        projectId: project_id,
-        recordIds: record_ids,
+        dataDb,
+        projectId: projectId,
+        recordIds: recordIds,
         uiSpecification,
       })
     );
-    return await filterRecordMetadata(
+    return await filterRecordMetadata({
       tokenContents,
-      project_id,
-      sortByLastUpdated(record_list),
-      filter_deleted
-    );
+      projectId,
+      recordList: sortByLastUpdated(recordList),
+      filterDeleted,
+    });
   } catch (error) {
-    console.debug('Failed to get record metadata for', project_id);
+    console.debug('Failed to get record metadata for', projectId);
     logError(error);
     return [];
   }
@@ -554,77 +650,100 @@ export async function getMetadataForSomeRecords(
 /**
  * Gets the full record (including data) for the given project by looking at the data DB registered in the module callback
  * @param tokenContents The user's parsed token - which allows the data model to check which records should be retrieved
- * @param project_id The ID of the project
- * @param filter_deleted Should the deleted records be included?
+ * @param projectId The ID of the project
+ * @param filterDeleted Should the deleted records be included?
  * @param uiSpecification The UI specification - used to ascertain the correct HRID
  * @returns List of record metadata which includes populated data
  */
-export async function getMetadataForAllRecords(
-  tokenContents: TokenContents,
-  project_id: ProjectID,
-  filter_deleted: boolean,
-  uiSpecification: ProjectUIModel
-): Promise<RecordMetadata[]> {
+export async function getMetadataForAllRecords({
+  tokenContents,
+  projectId,
+  filterDeleted,
+  uiSpecification,
+  dataDb,
+}: {
+  tokenContents: TokenContents;
+  projectId: ProjectID;
+  filterDeleted: boolean;
+  uiSpecification: ProjectUIModel;
+  dataDb: DataDbType;
+}): Promise<RecordMetadata[]> {
   try {
     const record_list = Object.values(
       await listRecordMetadata({
-        projectId: project_id,
-        recordIds: null,
+        dataDb,
+        projectId: projectId,
         uiSpecification,
       })
     );
-    return await filterRecordMetadata(
+    return await filterRecordMetadata({
       tokenContents,
-      project_id,
-      sortByLastUpdated(record_list),
-      filter_deleted
-    );
+      projectId,
+      filterDeleted,
+      recordList: sortByLastUpdated(record_list),
+    });
   } catch (error) {
-    console.debug('Failed to get record metadata for', project_id);
+    console.debug('Failed to get record metadata for', projectId);
     logError(error);
     return [];
   }
 }
 
-export async function getRecordsWithRegex(
-  tokenContents: TokenContents,
-  project_id: ProjectID,
-  regex: string,
-  filter_deleted: boolean,
-  uiSpecification: ProjectUIModel
-): Promise<RecordMetadata[]> {
+export async function getRecordsWithRegex({
+  tokenContents,
+  projectId,
+  regex,
+  filterDeleted,
+  uiSpecification,
+  dataDb,
+}: {
+  tokenContents: TokenContents;
+  projectId: ProjectID;
+  regex: string;
+  filterDeleted: boolean;
+  uiSpecification: ProjectUIModel;
+  dataDb: DataDbType;
+}): Promise<RecordMetadata[]> {
   try {
-    const record_list = Object.values(
-      await getAllRecordsWithRegex(project_id, regex, uiSpecification)
+    const recordList = Object.values(
+      await getAllRecordsWithRegex({dataDb, regex, uiSpecification, projectId})
     );
-    return await filterRecordMetadata(
+    return await filterRecordMetadata({
       tokenContents,
-      project_id,
-      record_list,
-      filter_deleted
-    );
+      projectId,
+      recordList,
+      filterDeleted,
+    });
   } catch (error) {
-    console.debug('Failed to regex search for', project_id, regex);
+    console.debug('Failed to regex search for', projectId, regex);
     logError(error);
     return [];
   }
 }
 
-import {FormData} from './internals';
-
-export const hydrateRecord = async (
-  project_id: string,
-  record: any, // return type of getSomeRecords
-  uiSpecification: ProjectUIModel
-) => {
+export const hydrateRecord = async ({
+  projectId,
+  dataDb,
+  record,
+  uiSpecification,
+}: {
+  projectId: string;
+  dataDb: DataDbType;
+  record: RecordRevisionIndexDocument;
+  uiSpecification: ProjectUIModel;
+}) => {
   try {
-    const hrid = await getHRID(project_id, record.revision, uiSpecification);
-    const formData: FormData = await getFormDataFromRevision(
-      project_id,
-      record.revision
-    );
+    const hrid = await getHRID({
+      dataDb,
+      revision: record.revision,
+      uiSpecification,
+    });
+    const formData: FormData = await getFormDataFromRevision({
+      dataDb,
+      revision: record.revision,
+    });
     const result = {
-      project_id: project_id,
+      project_id: projectId,
       record_id: record.record_id,
       revision_id: record.revision_id,
       created_by: record.created_by,
@@ -648,12 +767,22 @@ export const hydrateRecord = async (
   }
 };
 
+export interface RecordRevisionIndexDocument {
+  record_id: string;
+  revision_id: string;
+  created: number;
+  created_by: string;
+  conflict: boolean;
+  type: string;
+  revision: Revision;
+}
+
 export async function getSomeRecords(
   project_id: ProjectID,
   limit: number,
   bookmark: string | null = null,
   filter_deleted = true
-) {
+): Promise<RecordRevisionIndexDocument[]> {
   const dataDB: PouchDB.Database<ProjectDataObject> | undefined =
     await getDataDB(project_id);
   if (!dataDB) throw Error('No data DB with project ID ' + project_id);
@@ -697,21 +826,28 @@ export async function getSomeRecords(
 
 /**
  * Return an iterator over the records in a notebook
- * @param project_id project identifier
+ * @param projectId project identifier
  */
-export const notebookRecordIterator = async (
-  project_id: string,
-  viewID: string,
-  filter_deleted = true,
-  uiSpecification: ProjectUIModel
-) => {
+export const notebookRecordIterator = async ({
+  projectId,
+  viewID,
+  filterDeleted = true,
+  uiSpecification,
+  dataDb,
+}: {
+  projectId: string;
+  dataDb: DataDbType;
+  viewID: string;
+  filterDeleted?: boolean;
+  uiSpecification: ProjectUIModel;
+}) => {
   const batchSize = 100;
   const getNextBatch = async (bookmark: string | null) => {
     const records = await getSomeRecords(
-      project_id,
+      projectId,
       batchSize,
       bookmark,
-      filter_deleted
+      filterDeleted
     );
     // select just those in this view
     return records.filter((record: any) => {
@@ -742,7 +878,12 @@ export const notebookRecordIterator = async (
       }
       if (record) {
         try {
-          const data = await hydrateRecord(project_id, record, uiSpecification);
+          const data = await hydrateRecord({
+            projectId,
+            record,
+            uiSpecification,
+            dataDb,
+          });
           return {record: data, done: false};
         } catch (error) {
           console.error(error);
