@@ -204,11 +204,6 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
     ? hridFieldOptions.find(opt => opt.value === viewSet.hridField) || null
     : null;
 
-  console.log(
-    'rrrrrrrrrrrrrrrrDropdown Value:',
-    viewSet.publishButtonBehaviour
-  );
-
   return (
     <Card sx={{width: '100%', mt: 2}}>
       <CardContent
