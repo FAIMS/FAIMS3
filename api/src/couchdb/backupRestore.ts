@@ -17,16 +17,9 @@
  * Description:
  *    Functions to backup and restore databases
  */
+import {safeWriteDocument} from '@faims3/data-model';
 import {open} from 'node:fs/promises';
-import {
-  getMetadataDb,
-  initialiseDataDb,
-  initialiseMetadataDb,
-  localGetProjectsDb,
-} from '.';
-import {getDataDB} from '@faims3/data-model';
-import {safeWriteDocument} from '@faims3/data-model/build/src/data_storage/utils';
-import {getRolesForNotebook} from './notebooks';
+import {initialiseDataDb, initialiseMetadataDb, localGetProjectsDb} from '.';
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file

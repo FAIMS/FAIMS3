@@ -136,7 +136,6 @@ async function getCachedRevision({
 }
 
 async function getBaseRevision({
-  projectId,
   revisionCache,
   us,
   them,
@@ -397,7 +396,7 @@ export async function mergeHeads({
   let fully_merged: boolean | undefined = undefined;
   console.debug('Getting record', projectId, recordId);
   // Get the record and merge it
-  let record = await getRecord({dataDb, recordId});
+  const record = await getRecord({dataDb, recordId});
   if (!record) {
     throw new Error(
       `Cannot merge heads for non-existent record with ID ${recordId}`

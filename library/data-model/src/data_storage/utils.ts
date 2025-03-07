@@ -1,3 +1,4 @@
+import PouchDB from 'pouchdb';
 import PouchDBSecurity from 'pouchdb-security-helper';
 PouchDB.plugin(PouchDBSecurity);
 
@@ -135,7 +136,7 @@ export const couchInitialiser = async ({
   // For each design document - write - forcing if necessary
   for (const designDoc of content.designDocuments) {
     // We only write over an existing document if the force argument is provided
-    safeWriteDocument({data: designDoc, db, writeOnClash: forceWrite});
+    await safeWriteDocument({data: designDoc, db, writeOnClash: forceWrite});
   }
   // For security model - always write for now (unless asked not to)
   if (applyPermissions) {
@@ -143,7 +144,7 @@ export const couchInitialiser = async ({
   }
   // Also write a default document, if one is provided
   if (content.defaultDocument) {
-    safeWriteDocument({
+    await safeWriteDocument({
       data: content.defaultDocument,
       db,
       writeOnClash: forceWrite,

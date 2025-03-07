@@ -25,9 +25,7 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(SecurityPlugin);
 
 import {
-  addDesignDocsForNotebook,
   APINotebookList,
-  CLUSTER_ADMIN_GROUP_NAME,
   EncodedProjectUIModel,
   notebookRecordIterator,
   ProjectID,
@@ -52,6 +50,7 @@ import {
 import * as Exceptions from '../exceptions';
 
 import {
+  decodeUiSpec,
   file_attachments_to_data,
   file_data_to_attachments,
   getDataDB,
@@ -61,7 +60,6 @@ import {
 import {Stringifier, stringify} from 'csv-stringify';
 import {slugify} from '../utils';
 import {userHasPermission} from './users';
-import {decodeUiSpec} from '@faims3/data-model';
 
 /**
  * getAllProjects - get the internal project documents that reference
@@ -205,7 +203,6 @@ const getAutoIncrementers = (uiSpec: EncodedProjectUIModel) => {
  *  properly, add design documents if they are missing
  */
 export const validateDatabases = async () => {
-  const projects: ProjectObject[] = [];
   try {
     const report = await verifyCouchDBConnection();
 
@@ -213,23 +210,21 @@ export const validateDatabases = async () => {
       return report;
     }
 
-    const projects_db = localGetProjectsDb();
-    if (projects_db) {
-      const res = await projects_db.allDocs({
-        include_docs: true,
-      });
-      res.rows.forEach(e => {
-        if (e.doc !== undefined && !e.id.startsWith('_')) {
-          projects.push(e.doc as unknown as ProjectObject);
-        }
-      });
+    const projects = await getAllProjects();
 
-      for (const project of projects) {
-        const project_id = project._id;
-        const dataDB = await getDataDB(project_id);
-        // ensure that design documents are here
-        await addDesignDocsForNotebook(dataDB);
+    for (const project of projects) {
+      const projectId = project._id;
+      const metadata = await getNotebookMetadata(projectId);
+      if (!metadata) {
+        throw new Exceptions.InternalSystemError(
+          'No metadata DB setup for project with ID ' + projectId
+        );
       }
+      await initialiseDataDb({
+        projectId,
+        force: true,
+        roles: metadata.accesses,
+      });
     }
     return report;
   } catch (e) {

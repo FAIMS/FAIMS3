@@ -14,7 +14,7 @@ export type DirectoryDBInitialisationConfig = {
 export function initDirectoryDB({
   defaultConfig = undefined,
 }: DirectoryDBInitialisationConfig): InitialisationContent {
-  let base: InitialisationContent = {
+  const base: InitialisationContent = {
     designDocuments: [],
     securityDocument: DirectoryDBSecurityDocument,
   };

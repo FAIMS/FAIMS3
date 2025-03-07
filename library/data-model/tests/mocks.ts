@@ -3,13 +3,13 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
+import {DBCallbackObject, getDataDB} from '../src';
 import {
-  DBCallbackObject,
+  initDataDB,
+  couchInitialiser,
   generateFAIMSDataID,
-  getDataDB,
   upsertFAIMSData,
-} from '../src';
-import {addDesignDocsForNotebook} from '../src/data_storage/databases';
+} from '../src/data_storage';
 import {ProjectID, ProjectUIModel, Record} from '../src/types';
 
 const databaseList: any = {};
@@ -25,7 +25,15 @@ const getDatabase = (databaseName: string) => {
 const mockGetDataDB = async (project_id: ProjectID) => {
   const databaseName = 'data-' + project_id;
   const db = getDatabase(databaseName);
-  await addDesignDocsForNotebook(db);
+  const config = initDataDB({
+    projectId: project_id,
+    roles: ['admin', 'user', 'team'],
+  });
+  await couchInitialiser({
+    db,
+    content: config,
+    config: {forceWrite: true, applyPermissions: false},
+  });
   return db;
 };
 

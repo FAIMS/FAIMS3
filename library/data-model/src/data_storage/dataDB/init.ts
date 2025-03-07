@@ -8,6 +8,7 @@ export type DataDbInitialisationConfig = {
   // Un prefixed roles you'd like to include in the model
   roles: string[];
 };
+
 export function initDataDB({
   projectId,
   roles,

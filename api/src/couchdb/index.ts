@@ -25,15 +25,20 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
   AuthDatabase,
-  getDataDB,
   initAuthDB,
+  initDataDB,
+  initDirectoryDB,
+  initMetadataDB,
+  initPeopleDB,
+  initProjectsDB,
+  initTemplatesDB,
   ProjectDataObject,
   ProjectID,
   ProjectMetaObject,
   ProjectObject,
   TemplateDetails,
+  couchInitialiser,
 } from '@faims3/data-model';
-import {couchInitialiser} from '@faims3/data-model/build/src/data_storage/utils';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
   CONDUCTOR_DESCRIPTION,
@@ -43,20 +48,8 @@ import {
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {
-  initDataDB,
-  initDirectoryDB,
-  initMetadataDB,
-  initPeopleDB,
-  initProjectsDB,
-  initTemplatesDB,
-} from '@faims3/data-model/build/src/data_storage';
+import {getAllProjects, getNotebookMetadata} from './notebooks';
 import {registerAdminUser} from './users';
-import {
-  getAllProjects,
-  getNotebookMetadata,
-  getUserProjects,
-} from './notebooks';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
@@ -546,7 +539,7 @@ export const initialiseDbAndKeys = async ({
 
   for (const project of projects) {
     // Project ID
-    const projectId = project.project_id;
+    const projectId = project._id;
 
     // Try and get the metadata (which has roles in it)
     const roles = ((await getNotebookMetadata(projectId)) ?? undefined)

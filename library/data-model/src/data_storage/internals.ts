@@ -20,40 +20,34 @@
 
 import {v4 as uuidv4} from 'uuid';
 
+import {HRID_STRING} from '../datamodel/core';
 import {
-  getDataDB,
+  getAttachmentDumperForType,
+  getAttachmentLoaderForType,
+  getEqualityFunctionForType,
+} from '../datamodel/typesystem';
+import {
   getHridFieldMap,
   getHridFieldNameForViewset,
   getIdsByFieldName,
 } from '../index';
-import {HRID_STRING} from '../datamodel/core';
 import {
+  Annotations,
   AttributeValuePair,
-  AttributeValuePairMap,
+  AttributeValuePairID,
   AttributeValuePairIDMap,
+  DataDbType,
   EncodedRecord,
   FAIMSAttachment,
-  Record,
-  RecordMap,
-  Revision,
-  RevisionMap,
-  Annotations,
-  AttributeValuePairID,
   FAIMSTypeName,
   ProjectID,
-  RecordID,
-  RecordMetadataList,
-  RevisionID,
   ProjectUIModel,
-  ProjectDataObject,
+  Record,
+  RecordID,
   RecordMetadata,
-  DataDbType,
+  Revision,
+  RevisionID,
 } from '../types';
-import {
-  getAttachmentLoaderForType,
-  getAttachmentDumperForType,
-  getEqualityFunctionForType,
-} from '../datamodel/typesystem';
 
 // INDEX NAMES
 

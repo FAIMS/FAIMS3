@@ -18,15 +18,15 @@
  *   TODO
  */
 
-import {EncodedRecord, Record} from '../src/types';
+import {getDataDB, registerClient} from '../src';
 import {
   generateFAIMSDataID,
-  upsertFAIMSData,
   setRecordAsDeleted,
+  upsertFAIMSData,
 } from '../src/data_storage/index';
 import {getRecord, getRevision} from '../src/data_storage/internals';
 import {mergeHeads} from '../src/data_storage/merging';
-import {getDataDB, registerClient} from '../src';
+import {Record} from '../src/types';
 import {callbackObject, cleanDataDBS} from './mocks';
 
 // register our mock database clients with the module
