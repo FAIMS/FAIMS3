@@ -59,7 +59,7 @@ import {
 import {validateProjectDatabase} from './couchdb/devtools';
 import {
   databaseValidityReport,
-  initialiseDatabases,
+  initialiseDbAndKeys,
   verifyCouchDBConnection,
 } from './couchdb';
 
@@ -113,7 +113,7 @@ app.get('/', async (req, res) => {
 app.post('/fallback-initialise', async (req, res) => {
   if (!databaseValidityReport.valid) {
     console.log('running initialise');
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
     const vv = await verifyCouchDBConnection();
     console.log('updated valid', databaseValidityReport, vv);
   }

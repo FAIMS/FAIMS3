@@ -5,6 +5,7 @@ import {z} from 'zod';
 // =========
 
 export const CLUSTER_ADMIN_GROUP_NAME = 'cluster-admin';
+export const COUCH_ADMIN_ROLE_NAME = '_admin';
 export const NOTEBOOK_CREATOR_GROUP_NAME = 'notebook-creator';
 
 // =====

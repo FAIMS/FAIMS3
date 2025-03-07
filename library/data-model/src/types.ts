@@ -396,6 +396,8 @@ export type DraftMetadataList = {
   [key: string]: DraftMetadata;
 };
 
+export type DataDbType = PouchDB.Database<ProjectDataObject>;
+
 // end of types from datamodel/drafts.ts --------------------------------
 
 // types from datamodel/geo.ts --------------------------------

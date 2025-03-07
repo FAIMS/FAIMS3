@@ -31,7 +31,7 @@ import {
   getInvite,
   getInvitesForNotebook,
 } from '../src/couchdb/invites';
-import {initialiseDatabases} from '../src/couchdb';
+import {initialiseDbAndKeys} from '../src/couchdb';
 import request from 'supertest';
 import {app} from '../src/routes';
 import {expect, assert} from 'chai';
@@ -46,7 +46,7 @@ const uispec: EncodedProjectUIModel = {
 
 describe('Invites', () => {
   beforeEach(async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
   });
 
   it('create invite', async () => {

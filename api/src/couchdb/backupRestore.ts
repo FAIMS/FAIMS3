@@ -17,10 +17,9 @@
  * Description:
  *    Functions to backup and restore databases
  */
+import {safeWriteDocument} from '@faims3/data-model';
 import {open} from 'node:fs/promises';
-import {getMetadataDb, getProjectsDB} from '.';
-import {addDesignDocsForNotebook, getDataDB} from '@faims3/data-model';
-import {safeWriteDocument} from './helpers';
+import {initialiseDataDb, initialiseMetadataDb, localGetProjectsDb} from '.';
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file
@@ -45,17 +44,21 @@ export const restoreFromBackup = async (filename: string) => {
           // name will be eg. 'projects_default', where 'default' is the
           // conductor instance id
           // we'll put all projects into our projectsDB
-          db = getProjectsDB();
+          db = localGetProjectsDb();
         } else if (dbName.startsWith('metadata')) {
           const projectName = dbName.split('||')[1];
-          db = await getMetadataDb(projectName);
+          // TODO: set up permissions for the databases
+          db = await initialiseMetadataDb({
+            projectId: projectName,
+            force: true,
+          });
         } else if (dbName.startsWith('data')) {
           const projectName = dbName.split('||')[1];
-          db = await getDataDB(projectName);
-          if (db) {
-            addDesignDocsForNotebook(db);
-            // TODO: set up permissions for the databases
-          }
+          // TODO: set up permissions for the databases
+          db = await initialiseDataDb({
+            projectId: projectName,
+            force: true,
+          });
         } else {
           // don't try to restore anything we don't know about
           db = undefined;
@@ -70,7 +73,7 @@ export const restoreFromBackup = async (filename: string) => {
         delete doc.doc._rev;
         try {
           // Safe write
-          await safeWriteDocument(db, doc.doc, true);
+          await safeWriteDocument<any>({db, data: doc.doc, writeOnClash: true});
         } catch (error) {
           console.log('Error restoring document', doc.id);
         }

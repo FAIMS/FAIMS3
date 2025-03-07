@@ -1,16 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-
-/**
- * Converts a JavaScript function to a CouchDB-compatible string representation.
- */
-function convertToCouchDBString(func) {
-  if (typeof func !== 'function') {
-    throw new Error('Input must be a function');
-  }
-
-  return func.toString();
-}
+import {convertToCouchDBString} from '../utils';
 
 /**
  * exports the design document to be used for the auth database.

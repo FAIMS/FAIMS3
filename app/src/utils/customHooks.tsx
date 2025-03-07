@@ -14,6 +14,7 @@ import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
 import _ from 'lodash';
+import {localGetDataDb} from '..';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -317,6 +318,7 @@ export const useRecordList = ({
 }) => {
   const activeUser = useAppSelector(selectActiveUser);
   const token = activeUser?.parsedToken;
+  const dataDb = localGetDataDb(projectId);
 
   const records = useQuery({
     queryKey: [
@@ -344,20 +346,22 @@ export const useRecordList = ({
       let rows;
 
       if (query.length === 0) {
-        rows = await getMetadataForAllRecords(
-          token,
-          projectId,
+        rows = await getMetadataForAllRecords({
+          dataDb,
           filterDeleted,
-          uiSpec
-        );
+          projectId,
+          tokenContents: token,
+          uiSpecification: uiSpec,
+        });
       } else {
-        rows = await getRecordsWithRegex(
-          token,
-          projectId,
-          query,
+        rows = await getRecordsWithRegex({
+          dataDb,
+          regex: query,
           filterDeleted,
-          uiSpec
-        );
+          projectId,
+          tokenContents: token,
+          uiSpecification: uiSpec,
+        });
       }
 
       return rows;

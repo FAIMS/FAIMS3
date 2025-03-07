@@ -28,6 +28,7 @@ import {
 } from '@faims3/data-model';
 import {ProjectRole} from '@faims3/data-model/build/src/types';
 import {getUsersDB} from '.';
+import {addLocalPasswordForUser} from '../auth_providers/local';
 import {
   AllProjectRoles,
   ConductorRole,
@@ -37,7 +38,31 @@ import {
 } from '../datamodel/users';
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
-import {addLocalPasswordForUser} from '../auth_providers/local';
+import {registerLocalUser} from '../auth_providers/local';
+import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
+
+export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
+  // register a local admin user with the same password as couchdb if there
+  // isn't already one there
+  if (db && LOCAL_COUCHDB_AUTH) {
+    const adminUser = await getUserFromEmailOrUsername('admin');
+    if (adminUser) {
+      return;
+    }
+    const [user, error] = await registerLocalUser(
+      'admin',
+      '', // no email address
+      'Admin User',
+      LOCAL_COUCHDB_AUTH.password
+    );
+    if (user) {
+      addOtherRoleToUser(user, CLUSTER_ADMIN_GROUP_NAME);
+      saveUser(user);
+    } else {
+      console.error(error);
+    }
+  }
+};
 
 /**
  * createUser - create a new user record ensuring that the username or password

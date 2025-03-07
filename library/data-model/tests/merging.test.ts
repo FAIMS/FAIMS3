@@ -18,15 +18,15 @@
  *   TODO
  */
 
-import {Record} from '../src/types';
+import {getDataDB, registerClient} from '../src';
 import {
   generateFAIMSDataID,
-  upsertFAIMSData,
   setRecordAsDeleted,
+  upsertFAIMSData,
 } from '../src/data_storage/index';
 import {getRecord, getRevision} from '../src/data_storage/internals';
 import {mergeHeads} from '../src/data_storage/merging';
-import {registerClient} from '../src';
+import {Record} from '../src/types';
 import {callbackObject, cleanDataDBS} from './mocks';
 
 // register our mock database clients with the module
@@ -48,6 +48,7 @@ describe('test basic automerge', () => {
     // This tests the case where there is a single revision (i.e. new record)
 
     const project_id = 'test';
+    const dataDb = await getDataDB(project_id);
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
@@ -70,19 +71,19 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    return upsertFAIMSData(project_id, doc)
+    return upsertFAIMSData({dataDb, record: doc})
       .then(_result => {
-        return mergeHeads(project_id, record_id);
+        return mergeHeads({dataDb, projectId: project_id, recordId: record_id});
       })
       .then(status => {
         expect(status).toBe(true);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(1);
-        expect(record.revisions).toHaveLength(1);
+        expect(record!.heads).toHaveLength(1);
+        expect(record!.revisions).toHaveLength(1);
       });
   });
 
@@ -91,6 +92,7 @@ describe('test basic automerge', () => {
     // for merging
 
     const project_id = 'test';
+    const dataDb = await getDataDB(project_id);
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
@@ -113,7 +115,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+    const revision_id1 = await upsertFAIMSData({dataDb, record: doc1});
 
     const doc2: Record = {
       project_id: project_id,
@@ -131,7 +133,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id2 = await upsertFAIMSData(project_id, doc2);
+    const revision_id2 = await upsertFAIMSData({dataDb, record: doc2});
 
     const doc3: Record = {
       project_id: project_id,
@@ -149,7 +151,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id3 = await upsertFAIMSData(project_id, doc3);
+    const revision_id3 = await upsertFAIMSData({dataDb, record: doc3});
 
     const doc4: Record = {
       project_id: project_id,
@@ -167,18 +169,18 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc4);
+    await upsertFAIMSData({dataDb, record: doc4});
 
-    return mergeHeads(project_id, record_id)
+    return mergeHeads({dataDb, projectId: project_id, recordId: record_id})
       .then(status => {
         expect(status).toBe(true);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(1); // Should be one head
-        expect(record.revisions).toHaveLength(4); // No merge should happen
+        expect(record!.heads).toHaveLength(1); // Should be one head
+        expect(record!.revisions).toHaveLength(4); // No merge should happen
       });
   });
 
@@ -188,6 +190,7 @@ describe('test basic automerge', () => {
     // integration code that wrote to couchdb
 
     const project_id = 'test';
+    const dataDb = await getDataDB(project_id);
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
@@ -210,7 +213,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+    const revision_id1 = await upsertFAIMSData({dataDb, record: doc1});
 
     const doc2: Record = {
       project_id: project_id,
@@ -228,7 +231,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id2 = await upsertFAIMSData(project_id, doc2);
+    const revision_id2 = await upsertFAIMSData({dataDb, record: doc2});
 
     const doc3: Record = {
       project_id: project_id,
@@ -246,7 +249,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id3 = await upsertFAIMSData(project_id, doc3);
+    const revision_id3 = await upsertFAIMSData({dataDb, record: doc3});
 
     const doc4: Record = {
       project_id: project_id,
@@ -264,24 +267,24 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc4);
+    await upsertFAIMSData({dataDb, record: doc4});
 
-    const record = await getRecord(project_id, record_id);
+    const record = await getRecord({dataDb, recordId: record_id});
     // add all revisions to heads
-    record.heads = record.revisions.concat();
+    record!.heads = record!.revisions.concat();
     const dataDB = await callbackObject.getDataDB(project_id);
     await dataDB.put(record);
 
-    return mergeHeads(project_id, record_id)
+    return mergeHeads({dataDb, projectId: project_id, recordId: record_id})
       .then(status => {
         expect(status).toBe(true);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(1); // Should be one head
-        expect(record.revisions).toHaveLength(4); // No merge should happen
+        expect(record!.heads).toHaveLength(1); // Should be one head
+        expect(record!.revisions).toHaveLength(4); // No merge should happen
       });
   });
 
@@ -290,6 +293,7 @@ describe('test basic automerge', () => {
     // been made. This should cause the basic automerge to fail.
 
     const project_id = 'test';
+    const dataDb = await getDataDB(project_id);
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
@@ -312,7 +316,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+    const revision_id1 = await upsertFAIMSData({dataDb, record: doc1});
 
     const doc2: Record = {
       project_id: project_id,
@@ -330,7 +334,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc2);
+    await upsertFAIMSData({dataDb, record: doc2});
 
     const doc3: Record = {
       project_id: project_id,
@@ -348,7 +352,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id3 = await upsertFAIMSData(project_id, doc3);
+    const revision_id3 = await upsertFAIMSData({dataDb, record: doc3});
 
     const doc4: Record = {
       project_id: project_id,
@@ -366,18 +370,18 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc4);
+    await upsertFAIMSData({dataDb, record: doc4});
 
-    return mergeHeads(project_id, record_id)
+    return mergeHeads({dataDb, projectId: project_id, recordId: record_id})
       .then(status => {
         expect(status).toBe(false);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(2); // Should be 2 head
-        expect(record.revisions).toHaveLength(4); // no merge should happen
+        expect(record!.heads).toHaveLength(2); // Should be 2 head
+        expect(record!.revisions).toHaveLength(4); // no merge should happen
       });
   });
 
@@ -386,6 +390,7 @@ describe('test basic automerge', () => {
     // have been made. This should cause the basic automerge to fail.
 
     const project_id = 'test';
+    const dataDb = await getDataDB(project_id);
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
@@ -408,7 +413,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+    const revision_id1 = await upsertFAIMSData({dataDb, record: doc1});
 
     const doc2: Record = {
       project_id: project_id,
@@ -426,7 +431,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc2);
+    await upsertFAIMSData({dataDb, record: doc2});
 
     const doc3: Record = {
       project_id: project_id,
@@ -444,7 +449,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id3 = await upsertFAIMSData(project_id, doc3);
+    const revision_id3 = await upsertFAIMSData({dataDb, record: doc3});
 
     const doc4: Record = {
       project_id: project_id,
@@ -462,18 +467,18 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc4);
+    await upsertFAIMSData({dataDb, record: doc4});
 
-    return mergeHeads(project_id, record_id)
+    return mergeHeads({dataDb, projectId: project_id, recordId: record_id})
       .then(status => {
         expect(status).toBe(false);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(2); // Should be two heads
-        expect(record.revisions).toHaveLength(4); // No merge should happen
+        expect(record!.heads).toHaveLength(2); // Should be two heads
+        expect(record!.revisions).toHaveLength(4); // No merge should happen
       });
   });
 
@@ -482,6 +487,7 @@ describe('test basic automerge', () => {
     // been to different avps
 
     const project_id = 'test';
+    const dataDb = await getDataDB(project_id);
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
@@ -508,7 +514,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+    const revision_id1 = await upsertFAIMSData({dataDb, record: doc1});
 
     const doc2: Record = {
       project_id: project_id,
@@ -530,7 +536,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc2);
+    await upsertFAIMSData({dataDb, record: doc2});
 
     const doc3: Record = {
       project_id: project_id,
@@ -552,18 +558,18 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc3);
+    await upsertFAIMSData({dataDb, record: doc3});
 
-    return mergeHeads(project_id, record_id)
+    return mergeHeads({dataDb, projectId: project_id, recordId: record_id})
       .then(status => {
         expect(status).toBe(true);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(1); // Should be 1 head
-        expect(record.revisions).toHaveLength(4); // 1 merge should happen
+        expect(record!.heads).toHaveLength(1); // Should be 1 head
+        expect(record!.revisions).toHaveLength(4); // 1 merge should happen
       });
   });
 
@@ -572,6 +578,7 @@ describe('test basic automerge', () => {
     // merged
 
     const project_id = 'test';
+    const dataDb = await getDataDB(project_id);
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
@@ -598,7 +605,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+    const revision_id1 = await upsertFAIMSData({dataDb, record: doc1});
 
     const doc2: Record = {
       project_id: project_id,
@@ -620,7 +627,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc2);
+    await upsertFAIMSData({dataDb, record: doc2});
 
     const doc3: Record = {
       project_id: project_id,
@@ -642,7 +649,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc3);
+    await upsertFAIMSData({dataDb, record: doc3});
 
     const doc4: Record = {
       project_id: project_id,
@@ -664,18 +671,18 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc4);
+    await upsertFAIMSData({dataDb, record: doc4});
 
-    return mergeHeads(project_id, record_id)
+    return mergeHeads({dataDb, projectId: project_id, recordId: record_id})
       .then(status => {
         expect(status).toBe(false);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(2); // Should be 2 heads
-        expect(record.revisions).toHaveLength(5); // 1 merge should happen
+        expect(record!.heads).toHaveLength(2); // Should be 2 heads
+        expect(record!.revisions).toHaveLength(5); // 1 merge should happen
       });
   });
 
@@ -684,6 +691,7 @@ describe('test basic automerge', () => {
     // together
 
     const project_id = 'test';
+    const dataDb = await getDataDB(project_id);
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
@@ -712,7 +720,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+    const revision_id1 = await upsertFAIMSData({dataDb, record: doc1});
 
     const doc2: Record = {
       project_id: project_id,
@@ -736,7 +744,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc2);
+    await upsertFAIMSData({dataDb, record: doc2});
 
     const doc3: Record = {
       project_id: project_id,
@@ -760,7 +768,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc3);
+    await upsertFAIMSData({dataDb, record: doc3});
 
     const doc4: Record = {
       project_id: project_id,
@@ -784,7 +792,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc4);
+    await upsertFAIMSData({dataDb, record: doc4});
 
     const doc5: Record = {
       project_id: project_id,
@@ -808,18 +816,18 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc5);
+    await upsertFAIMSData({dataDb, record: doc5});
 
-    return mergeHeads(project_id, record_id)
+    return mergeHeads({dataDb, projectId: project_id, recordId: record_id})
       .then(status => {
         expect(status).toBe(false);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(2); // Should be 2 heads
-        expect(record.revisions).toHaveLength(7); // 2 merges should happen
+        expect(record!.heads).toHaveLength(2); // Should be 2 heads
+        expect(record!.revisions).toHaveLength(7); // 2 merges should happen
       });
   });
 
@@ -857,7 +865,7 @@ describe('test basic automerge', () => {
       updated: time,
     };
 
-    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+    const revision_id1 = await upsertFAIMSData({dataDb, record: doc1});
 
     const doc2: Record = {
       project_id: project_id,
@@ -875,7 +883,7 @@ describe('test basic automerge', () => {
       updated: time,
     };
 
-    await upsertFAIMSData(project_id, doc2);
+    await upsertFAIMSData({dataDb, record: doc2});
 
     const doc3: Record = {
       project_id: project_id,
@@ -893,7 +901,7 @@ describe('test basic automerge', () => {
       updated: time,
     };
 
-    await upsertFAIMSData(project_id, doc3);
+    await upsertFAIMSData({dataDb, record: doc3});
 
     const doc4: Record = {
       project_id: project_id,
@@ -911,7 +919,7 @@ describe('test basic automerge', () => {
       updated: time,
     };
 
-    await upsertFAIMSData(project_id, doc4);
+    await upsertFAIMSData({dataDb, record: doc4});
 
     const doc5: Record = {
       project_id: project_id,
@@ -929,18 +937,18 @@ describe('test basic automerge', () => {
       updated: time,
     };
 
-    await upsertFAIMSData(project_id, doc5);
+    await upsertFAIMSData({dataDb, record: doc5});
 
-    return mergeHeads(project_id, record_id)
+    return mergeHeads({dataDb, projectId : project_id, recordId: record_id})
       .then(status => {
         expect(status).toBe(false);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb,recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(2); // Should be 2 heads
-        expect(record.revisions).toHaveLength(7); // 2 merges should happen
+        expect(record!.heads).toHaveLength(2); // Should be 2 heads
+        expect(record!.revisions).toHaveLength(7); // 2 merges should happen
       });
   });
   */
@@ -950,6 +958,7 @@ describe('test basic automerge', () => {
     // deleted
 
     const project_id = 'test';
+    const dataDb = await getDataDB(project_id);
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
@@ -976,7 +985,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+    const revision_id1 = await upsertFAIMSData({dataDb, record: doc1});
 
     const doc2: Record = {
       project_id: project_id,
@@ -995,7 +1004,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc2);
+    await upsertFAIMSData({dataDb, record: doc2});
 
     const doc3: Record = {
       project_id: project_id,
@@ -1017,20 +1026,25 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id3 = await upsertFAIMSData(project_id, doc3);
+    const revision_id3 = await upsertFAIMSData({dataDb, record: doc3});
 
-    await setRecordAsDeleted(project_id, record_id, revision_id3, user_id);
+    await setRecordAsDeleted({
+      dataDb,
+      recordId: record_id,
+      baseRevisionId: revision_id3,
+      userId: user_id,
+    });
 
-    return mergeHeads(project_id, record_id)
+    return mergeHeads({dataDb, projectId: project_id, recordId: record_id})
       .then(status => {
         expect(status).toBe(false);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(2); // Should be 1 head
-        expect(record.revisions).toHaveLength(4); // 1 merge should happen
+        expect(record!.heads).toHaveLength(2); // Should be 1 head
+        expect(record!.revisions).toHaveLength(4); // 1 merge should happen
       });
   });
 
@@ -1039,6 +1053,7 @@ describe('test basic automerge', () => {
     // marked deleted
 
     const project_id = 'test';
+    const dataDb = await getDataDB(project_id);
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
@@ -1065,7 +1080,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+    const revision_id1 = await upsertFAIMSData({dataDb, record: doc1});
 
     const doc2: Record = {
       project_id: project_id,
@@ -1087,7 +1102,7 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id2 = await upsertFAIMSData(project_id, doc2);
+    const revision_id2 = await upsertFAIMSData({dataDb, record: doc2});
 
     const doc3: Record = {
       project_id: project_id,
@@ -1109,30 +1124,40 @@ describe('test basic automerge', () => {
       field_types: {field_name: fulltype},
     };
 
-    const revision_id3 = await upsertFAIMSData(project_id, doc3);
+    const revision_id3 = await upsertFAIMSData({dataDb, record: doc3});
 
-    await setRecordAsDeleted(project_id, record_id, revision_id2, user_id);
-    await setRecordAsDeleted(project_id, record_id, revision_id3, user_id);
+    await setRecordAsDeleted({
+      dataDb,
+      recordId: record_id,
+      baseRevisionId: revision_id2,
+      userId: user_id,
+    });
+    await setRecordAsDeleted({
+      dataDb,
+      recordId: record_id,
+      baseRevisionId: revision_id3,
+      userId: user_id,
+    });
 
-    return mergeHeads(project_id, record_id)
+    return mergeHeads({dataDb, projectId: project_id, recordId: record_id})
       .then(status => {
         expect(status).toBe(true);
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id})!;
       })
       .then(record => {
-        return getRevision(project_id, record.heads[0]);
+        return getRevision({dataDb, revisionId: record!.heads[0]});
       })
       .then(revision => {
         expect(revision.deleted).toBe(true); // Should be deleted
       })
       .then(() => {
-        return getRecord(project_id, record_id);
+        return getRecord({dataDb, recordId: record_id});
       })
       .then(record => {
-        expect(record.heads).toHaveLength(1); // Should be 1 head
-        expect(record.revisions).toHaveLength(6); // 1 merge should happen
+        expect(record!.heads).toHaveLength(1); // Should be 1 head
+        expect(record!.revisions).toHaveLength(6); // 1 merge should happen
       });
   });
 });

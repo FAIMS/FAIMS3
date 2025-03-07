@@ -6,6 +6,7 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
 import {Navigate, Link as RouterLink} from 'react-router-dom';
+import {localGetDataDb} from '../../..';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -45,13 +46,14 @@ export default function AddRecordButtons({
 
     // TODO validate that this is always defined!
     // TODO WHY IS THERE TWO IDs - this is most likely broken
-    getRecordsWithRegex(
-      activeUser.parsedToken,
+    getRecordsWithRegex({
+      dataDb: localGetDataDb(projectId),
+      filterDeleted: true,
       projectId,
-      value,
-      true,
-      uiSpecification
-    ).then(records => {
+      regex: value,
+      tokenContents: activeUser.parsedToken,
+      uiSpecification,
+    }).then(records => {
       // navigate to it
       // what should happen if there are more than one?
       for (const key in records) {

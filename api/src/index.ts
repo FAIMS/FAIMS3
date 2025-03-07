@@ -30,13 +30,13 @@ import {
   CONDUCTOR_PUBLIC_URL,
   COUCHDB_INTERNAL_URL,
 } from './buildconfig';
-import {getDataDb} from './couchdb';
+import {localGetDataDb} from './couchdb';
 import {validateDatabases} from './couchdb/notebooks';
 import {app} from './routes';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
-  getDataDB: getDataDb,
+  getDataDB: localGetDataDb,
   shouldDisplayRecord: async () => true,
 });
 

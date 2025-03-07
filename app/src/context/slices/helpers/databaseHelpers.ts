@@ -310,22 +310,27 @@ export function createPouchDbSync<Content extends {}>({
   // - these events are not even available in the types and the interfaces are
   //   incomplete/too-restrictive
   if (eventHandlers.change) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     sync = sync.on('change', eventHandlers.change);
   }
   if (eventHandlers.paused) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     sync = sync.on('paused', eventHandlers.paused);
   }
   if (eventHandlers.active) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     sync = sync.on('active', eventHandlers.active);
   }
   if (eventHandlers.denied) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     sync = sync.on('denied', eventHandlers.denied);
   }
   if (eventHandlers.error) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     sync = sync.on('error', eventHandlers.error);
   }

@@ -23,7 +23,7 @@ import {generateFAIMSDataID, upsertFAIMSData} from '../src/data_storage/index';
 import {Record} from '../src/types';
 import {getHRID, getRecord, getRevision} from '../src/data_storage/internals';
 import {callbackObject, cleanDataDBS, sampleUiSpecForViewId} from './mocks';
-import {registerClient} from '../src';
+import {getDataDB, registerClient} from '../src';
 
 registerClient(callbackObject);
 
@@ -73,10 +73,12 @@ describe('test internals', () => {
       uncertainty: false,
     };
 
-    return upsertFAIMSData(project_id, doc).then(revisionId => {
-      return getRevision(project_id, revisionId)
+    const dataDb = await getDataDB(project_id);
+
+    return upsertFAIMSData({dataDb, record: doc}).then(revisionId => {
+      return getRevision({dataDb, revisionId})
         .then(revision => {
-          return getHRID(project_id, revision, uiSpec);
+          return getHRID({dataDb, revision, uiSpecification: uiSpec});
         })
         .then(hrid => {
           expect(hrid).toBe(hridValue);
@@ -85,8 +87,8 @@ describe('test internals', () => {
   });
 
   test('test getRecord - undefined', () => {
-    expect(() => getRecord('test', 'unknownId')).rejects.toThrow(
-      /no such record/
-    );
+    expect(async () =>
+      getRecord({dataDb: await getDataDB('test'), recordId: 'unknownId'})
+    ).rejects.toThrow(/no such record/);
   });
 });
