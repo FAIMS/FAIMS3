@@ -786,29 +786,64 @@ class RecordForm extends React.Component<any, RecordFormState> {
     return new_values;
   }
 
+  checkAllSectionsVisited() {
+    const allSections =
+      this.props.ui_specification.viewsets[this.getViewsetName()].views;
+
+    const allVisited = allSections.every((section: string) =>
+      this.state.visitedSteps.has(section)
+    );
+
+    console.log('All Sections:', allSections);
+    console.log('All Sections Visited?', allVisited);
+
+    if (allVisited) {
+      console.log('All sections are now visited.');
+    } else {
+      console.log('ome sections are still unvisited.');
+    }
+  }
+
   onChangeStepper(view_name: string, activeStepIndex: number) {
-    this.setState(prevState => {
-      const {activeStep} = prevState;
+    this.setState(
+      prevState => {
+        const {activeStep} = prevState;
 
-      const wasVisitedBefore = prevState.visitedSteps.has(view_name);
+        const wasVisitedBefore = prevState.visitedSteps.has(view_name);
 
-      // add to visitedSteps if it has not been visited before
-      const updatedVisitedSteps = new Set(prevState.visitedSteps);
-      updatedVisitedSteps.add(view_name);
+        console.log('Current Step:', view_name);
+        console.log('Previous Steps:', prevState.visitedSteps);
+        console.log('Was Visited Before:', wasVisitedBefore);
 
-      const isFirstStep = activeStepIndex === 0;
+        // add to visitedSteps if it has not been visited before
+        const updatedVisitedSteps = new Set(prevState.visitedSteps);
+        updatedVisitedSteps.add(view_name);
+        console.log('Updated Visited Steps:', updatedVisitedSteps);
 
-      const isRevisiting =
-        wasVisitedBefore || (isFirstStep && activeStep !== activeStepIndex);
+        const isFirstStep = activeStepIndex === 0;
 
-      return {
-        ...prevState,
-        view_cached: view_name,
-        activeStep: activeStepIndex,
-        visitedSteps: updatedVisitedSteps,
-        isRevisiting,
-      };
-    });
+        const isRevisiting =
+          wasVisitedBefore || (isFirstStep && activeStep !== activeStepIndex);
+
+        console.log('Is Revisiting:', isRevisiting);
+
+        return {
+          ...prevState,
+          view_cached: view_name,
+          activeStep: activeStepIndex,
+          visitedSteps: updatedVisitedSteps,
+          isRevisiting,
+        };
+      },
+      () => {
+        // 🔹 Add a callback function after setState to verify if all sections are visited
+        console.log(
+          'Final Visited Steps (after update):',
+          this.state.visitedSteps
+        );
+        this.checkAllSectionsVisited(); // Check if all sections are visited
+      }
+    );
   }
 
   onChangeTab(event: React.ChangeEvent<{}>, newValue: string) {
@@ -1390,7 +1425,14 @@ class RecordForm extends React.Component<any, RecordFormState> {
                 const publishButtonBehaviour =
                   this.props.ui_specification.viewsets[this.getViewsetName()]
                     ?.publishButtonBehaviour || 'always';
-                console.log('publishButtonBehaviour', publishButtonBehaviour);
+
+                console.log(
+                  ' Publish Button Behaviour:',
+                  publishButtonBehaviour
+                );
+                console.log(' All Sections Visited?', allSectionsVisited);
+                console.log(' Form Has Errors?', hasErrors);
+
                 const showPublishButton =
                   publishButtonBehaviour === 'always' ||
                   (publishButtonBehaviour === 'visited' &&
@@ -1398,6 +1440,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   (publishButtonBehaviour === 'noErrors' &&
                     allSectionsVisited &&
                     !hasErrors);
+
                 // Recompute derived values if something has changed
                 const {values, setValues} = formProps;
                 // Compare current values with last processed values
