@@ -25,6 +25,7 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
   AuthDatabase,
+  getDataDB,
   initAuthDB,
   ProjectDataObject,
   ProjectID,
@@ -43,12 +44,19 @@ import {
 } from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {
+  initDataDB,
   initDirectoryDB,
+  initMetadataDB,
   initPeopleDB,
   initProjectsDB,
   initTemplatesDB,
 } from '@faims3/data-model/build/src/data_storage';
-import {registerAdminUser} from './initialise';
+import {registerAdminUser} from './users';
+import {
+  getAllProjects,
+  getNotebookMetadata,
+  getUserProjects,
+} from './notebooks';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
@@ -152,8 +160,9 @@ export const getDirectoryDB = (): PouchDB.Database => {
     try {
       _directoryDB = new PouchDB(directorydb, pouch_options);
     } catch (error) {
-      console.log('bad thing happened', error);
-      throw error;
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting directory database.'
+      );
     }
   }
   return _directoryDB;
@@ -326,12 +335,96 @@ export const localGetDataDb = async (
 };
 
 /**
+ * Initialises the database level configuration for a project's metadata DB. Can
+ * create the DB if it doesn't already exist.
+ */
+export const initialiseMetadataDb = async ({
+  projectId,
+  roles = ['admin', 'user', 'team'],
+  force = false,
+}: {
+  projectId: string;
+  roles?: string[];
+  force?: boolean;
+}): Promise<PouchDB.Database<ProjectMetaObject>> => {
+  // Are we in a testing environment?
+  const isTesting = process.env.NODE_ENV === 'test';
+
+  // Get the metadata DB
+  const metaDb = await getMetadataDb(projectId);
+
+  // get roles from the notebook, ensure that 'user' and 'admin' are included
+  if (roles.indexOf('user') < 0) {
+    roles.push('user');
+  }
+  if (roles.indexOf('admin') < 0) {
+    roles.push('admin');
+  }
+
+  try {
+    await couchInitialiser({
+      db: metaDb,
+      content: initMetadataDB({projectId, roles}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      `An error occurred while initialising the metadata DB for project ${projectId}!... ${e}`
+    );
+  }
+
+  return metaDb;
+};
+
+/**
+ * Initialises the database level configuration for a project's data DB. Can
+ * create the DB if it doesn't already exist.
+ */
+export const initialiseDataDb = async ({
+  projectId,
+  roles = ['admin', 'user', 'team'],
+  force = false,
+}: {
+  projectId: string;
+  roles?: string[];
+  force?: boolean;
+}): Promise<PouchDB.Database<ProjectDataObject>> => {
+  // Are we in a testing environment?
+  const isTesting = process.env.NODE_ENV === 'test';
+
+  // Get the metadata DB
+  const dataDb = await localGetDataDb(projectId);
+
+  // get roles from the notebook, ensure that 'user' and 'admin' are included
+  if (roles.indexOf('user') < 0) {
+    roles.push('user');
+  }
+  if (roles.indexOf('admin') < 0) {
+    roles.push('admin');
+  }
+
+  try {
+    await couchInitialiser({
+      db: dataDb,
+      content: initDataDB({projectId, roles}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      `An error occurred while initialising the data DB for project ${projectId}!... ${e}`
+    );
+  }
+
+  return dataDb;
+};
+
+/**
  * Critical method which initialises all databases, including remotely on the configured couch instance.
  *
  * This systematically generates a set of initialisation content from the data model, then applies this initialisation using a helper method in the data model.
  *
  * Some local information is injected as part of the config generation step - e.g. conductor name/description.
- * 
+ *
  * Also initialises keys based on the configured key service.
  *
  * If force = true, documents will always be written, even if it already exists.
@@ -393,8 +486,8 @@ export const initialiseDbAndKeys = async ({
           conductorInstanceName: CONDUCTOR_INSTANCE_NAME,
           conductorUrl: CONDUCTOR_PUBLIC_URL,
           description: CONDUCTOR_DESCRIPTION,
-          peopleDbName: peopleDb.name,
-          projectsDbName: projectsDB.name,
+          peopleDbName: PEOPLE_DB_NAME,
+          projectsDbName: PROJECTS_DB_NAME,
         },
       }),
       config: {applyPermissions: !isTesting, forceWrite: force},
@@ -446,6 +539,23 @@ export const initialiseDbAndKeys = async ({
 
   // For users, we also establish an admin user, if not already present
   await registerAdminUser(peopleDb);
+
+  // For each project, ensure the metadata and data DBs are also
+  // initialised/synced
+  const projects = await getAllProjects();
+
+  for (const project of projects) {
+    // Project ID
+    const projectId = project.project_id;
+
+    // Try and get the metadata (which has roles in it)
+    const roles = ((await getNotebookMetadata(projectId)) ?? undefined)
+      ?.accesses as string[] | undefined;
+
+    // Now initialise the DBs (potentially updating security documents etc)
+    await initialiseMetadataDb({projectId, roles, force});
+    await initialiseDataDb({projectId, roles, force});
+  }
 
   // Setup keys
   try {

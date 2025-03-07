@@ -37,6 +37,8 @@ import archiver from 'archiver';
 import {Stream} from 'stream';
 import {
   getMetadataDb,
+  initialiseDataDb,
+  initialiseMetadataDb,
   localGetDataDb,
   localGetProjectsDb,
   verifyCouchDBConnection,
@@ -62,36 +64,41 @@ import {userHasPermission} from './users';
 import {decodeUiSpec} from '@faims3/data-model';
 
 /**
- * getProjects - get the internal project documents that reference
+ * getAllProjects - get the internal project documents that reference
+ * the project databases that the front end will connnect to
+ */
+export const getAllProjects = async (): Promise<ProjectObject[]> => {
+  const projectsDb = localGetProjectsDb();
+  const projects: ProjectObject[] = [];
+  const res = await projectsDb.allDocs({
+    include_docs: true,
+  });
+  res.rows.forEach(e => {
+    if (e.doc !== undefined && !e.id.startsWith('_')) {
+      const doc = e.doc as any;
+      delete doc._rev;
+      const project = doc as unknown as ProjectObject;
+      // add database connection details
+      if (project.metadata_db)
+        project.metadata_db.base_url = COUCHDB_PUBLIC_URL;
+      if (project.data_db) project.data_db.base_url = COUCHDB_PUBLIC_URL;
+      projects.push(project);
+    }
+  });
+  return projects;
+};
+
+/**
+ * getUserProjects - get the internal project documents that reference
  * the project databases that the front end will connnect to
  * @param user - only return projects visible to this user
  */
-export const getProjects = async (
+export const getUserProjects = async (
   user: Express.User
 ): Promise<ProjectObject[]> => {
-  const projects: ProjectObject[] = [];
-
-  const projects_db = localGetProjectsDb();
-  if (projects_db) {
-    const res = await projects_db.allDocs({
-      include_docs: true,
-    });
-    res.rows.forEach(e => {
-      if (e.doc !== undefined && !e.id.startsWith('_')) {
-        const doc = e.doc as any;
-        if (userHasPermission(user, e.id, 'read')) {
-          delete doc._rev;
-          const project = doc as unknown as ProjectObject;
-          // add database connection details
-          if (project.metadata_db)
-            project.metadata_db.base_url = COUCHDB_PUBLIC_URL;
-          if (project.data_db) project.data_db.base_url = COUCHDB_PUBLIC_URL;
-          projects.push(project);
-        }
-      }
-    });
-  }
-  return projects;
+  return (await getAllProjects()).filter(p =>
+    userHasPermission(user, p._id, 'read')
+  );
 };
 
 /**
@@ -273,28 +280,12 @@ export const createNotebook = async (
     return undefined;
   }
 
-  const metaDB = await getMetadataDb(projectId);
-  if (!metaDB) {
-    return undefined;
-  }
-  // get roles from the notebook, ensure that 'user' and 'admin' are included
-  const roles = metadata.accesses || ['admin', 'user', 'team'];
-  if (roles.indexOf('user') < 0) {
-    roles.push('user');
-  }
-  if (roles.indexOf('admin') < 0) {
-    roles.push('admin');
-  }
-
-  // can't save security on a memory database so skip this if we're testing
-  if (process.env.NODE_ENV !== 'test') {
-    const metaSecurity = await metaDB.security();
-    metaSecurity.admins.roles.add(CLUSTER_ADMIN_GROUP_NAME);
-    roles.forEach((role: string) => {
-      metaSecurity.members.roles.add(`${projectId}||${role}`);
-    });
-    await metaSecurity.save();
-  }
+  // Initialise the metadata DB
+  const metaDB = await initialiseMetadataDb({
+    projectId,
+    force: true,
+    roles: metadata.accesses,
+  });
 
   // derive autoincrementers from uispec
   const autoIncrementers = getAutoIncrementers(uispec);
@@ -307,74 +298,40 @@ export const createNotebook = async (
   // ensure that the name is in the metadata
   metadata.name = projectName.trim();
   await writeProjectMetadata(metaDB, metadata);
-  // data database
-  const dataDB = await getDataDB(projectId);
-  if (!dataDB) {
-    return undefined;
-  }
-  // can't save security on a memory database so skip this if we're testing
-  if (process.env.NODE_ENV !== 'test') {
-    const dataSecurity = await dataDB.security();
-    dataSecurity.admins.roles.add(CLUSTER_ADMIN_GROUP_NAME);
-    roles.forEach((role: string) => {
-      dataSecurity.members.roles.add(`${projectId}||${role}`);
-    });
-    await dataSecurity.save();
-  }
 
-  try {
-    await addDesignDocsForNotebook(dataDB);
-  } catch (error) {
-    console.log(error);
-  }
+  // data database
+  await initialiseDataDb({
+    projectId,
+    force: true,
+    roles: metadata.accesses,
+  });
+
   return projectId;
 };
 
 /**
  * Update an existing notebook definition
- * @param project_id Project identifier
+ * @param projectId Project identifier
  * @param uispec Project UI Spec object
  * @param metadata Project Metadata
  * @returns project_id or undefined if the project doesn't exist
  */
 export const updateNotebook = async (
-  project_id: string,
+  projectId: string,
   uispec: EncodedProjectUIModel,
   metadata: any
 ) => {
-  const metaDB = await getMetadataDb(project_id);
-  const dataDB = await getDataDB(project_id);
-  if (!dataDB || !metaDB) {
-    return undefined;
-  }
-
-  // get roles from the notebook, ensure that 'user' and 'admin' are included
-  const roles = metadata.accesses || ['admin', 'user', 'team'];
-  if (roles.indexOf('user') < 0) {
-    roles.push('user');
-  }
-  if (roles.indexOf('admin') < 0) {
-    roles.push('admin');
-  }
-
-  // can't save security on a memory database so skip this if we're testing
-  if (process.env.NODE_ENV !== 'test') {
-    const metaSecurity = metaDB.security();
-    const dataSecurity = dataDB.security();
-
-    if (!(CLUSTER_ADMIN_GROUP_NAME in metaSecurity.admins.roles)) {
-      metaSecurity.admins.roles.add(CLUSTER_ADMIN_GROUP_NAME);
-      dataSecurity.admins.roles.add(CLUSTER_ADMIN_GROUP_NAME);
-    }
-    roles.forEach((role: string) => {
-      const permission = `${project_id}||${role}`;
-      if (!(permission in metaSecurity.members.roles)) {
-        metaSecurity.members.roles.add(permission);
-        dataSecurity.members.roles.add(permission);
-      }
-    });
-    await metaSecurity.save();
-  }
+  // Re-initialise metadata/data dbs (includes security update)
+  const metaDB = await initialiseMetadataDb({
+    projectId,
+    force: true,
+    roles: metadata.accesses,
+  });
+  await initialiseMetadataDb({
+    projectId,
+    force: true,
+    roles: metadata.accesses,
+  });
 
   // derive autoincrementers from uispec
   const autoIncrementers = getAutoIncrementers(uispec);
@@ -406,7 +363,7 @@ export const updateNotebook = async (
   await writeProjectMetadata(metaDB, metadata);
 
   // no need to write design docs for existing projects
-  return project_id;
+  return projectId;
 };
 
 /**

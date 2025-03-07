@@ -33,7 +33,7 @@ import {
 } from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
-import {getProjects} from '../couchdb/notebooks';
+import {getUserProjects} from '../couchdb/notebooks';
 import {userIsClusterAdmin} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {
@@ -104,7 +104,7 @@ api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
   if (!req.user) {
     throw new Exceptions.UnauthorizedException();
   }
-  const projects = await getProjects(req.user);
+  const projects = await getUserProjects(req.user);
   res.json(projects);
 });
 
