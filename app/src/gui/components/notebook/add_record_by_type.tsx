@@ -1,8 +1,4 @@
-import {
-  getDataDB,
-  getRecordsWithRegex,
-  RecordMetadata,
-} from '@faims3/data-model';
+import {getRecordsWithRegex, RecordMetadata} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
@@ -10,13 +6,13 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
 import {Navigate, Link as RouterLink} from 'react-router-dom';
+import {localGetDataDb} from '../../..';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
-import {localGetDataDb} from '../../..';
 
 type AddRecordButtonsProps = {
   project: Project;

@@ -56,7 +56,9 @@ export const localGetDataDb = (
 registerClient({
   // This will consult with the store to get the current data DB for the
   // project
-  getDataDB: async (id: string) => {return localGetDataDb(id)},
+  getDataDB: async (id: string) => {
+    return localGetDataDb(id);
+  },
   // This will determine if a record should be displayed
   shouldDisplayRecord: shouldDisplayRecord,
 });

@@ -5,8 +5,8 @@ import {AuthDatabaseSecurityDocument} from './security';
 // currently no config for the auth DB
 export type AuthDbInitialisationConfig = {};
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function initAuthDB(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   config: AuthDbInitialisationConfig
 ): InitialisationContent {
   return {

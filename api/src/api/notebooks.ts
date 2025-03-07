@@ -40,15 +40,16 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
+import {localGetDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {
   createNotebook,
   deleteNotebook,
   generateFilenameForAttachment,
+  getEncodedNotebookUISpec,
   getNotebookMetadata,
   getNotebooks,
-  getEncodedNotebookUISpec,
   getProjectUIModel,
   getRolesForNotebook,
   streamNotebookFilesAsZip,
@@ -70,8 +71,6 @@ import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 import {generateTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
-import {localGetDataDb} from '../couchdb';
-import {blockParams} from 'handlebars';
 
 // This must occur before express api is used
 patch();

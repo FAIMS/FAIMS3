@@ -25,6 +25,7 @@ export const attachmentFilterDocument = {
 export const permissionsDocument = {
   _id: '_design/permissions',
   validate_doc_update: convertToCouchDBString(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (newDoc, oldDoc, userCtx, _secObj) => {
       if (userCtx === null || userCtx === undefined) {
         throw {
