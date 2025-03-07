@@ -115,6 +115,7 @@ export type NotebookUISpec = {
       summary_fields?: string[];
       layout?: 'inline' | 'tabs';
       hridField?: string;
+      publishButtonBehaviour: 'always'; // setting default as always.
     };
   };
   visible_types: string[];
