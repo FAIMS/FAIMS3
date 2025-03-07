@@ -25,7 +25,7 @@ PouchDB.plugin(PouchDBFind);
 import {
   getDirectoryDB,
   getMetadataDb,
-  initialiseDatabases,
+  initialiseDbAndKeys,
 } from '../src/couchdb';
 import {
   createNotebook,
@@ -78,7 +78,7 @@ describe('notebook api', () => {
   });
 
   it('check initialise', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
 
     const directoryDB = getDirectoryDB();
     expect(directoryDB).not.to.equal(undefined);
@@ -135,7 +135,7 @@ describe('notebook api', () => {
   });
 
   it('can create a notebook', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
     const user = await getUserFromEmailOrUsername('admin');
 
     const jsonText = fs.readFileSync(
@@ -172,7 +172,7 @@ describe('notebook api', () => {
   });
 
   it('getNotebookMetadata', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -214,7 +214,7 @@ describe('notebook api', () => {
   });
 
   it('getNotebookUISpec', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -237,7 +237,7 @@ describe('notebook api', () => {
   });
 
   it('get notebook roles', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -259,7 +259,7 @@ describe('notebook api', () => {
   });
 
   it('updateNotebook', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
     const user = await getUserFromEmailOrUsername('admin');
 
     const jsonText = fs.readFileSync(

@@ -10,7 +10,7 @@ import {
   localGetProjectsDb,
   getTemplatesDb,
   getUsersDB,
-  initialiseDatabases,
+  initialiseDbAndKeys,
 } from '../src/couchdb';
 
 export const databaseList: any = {};
@@ -69,7 +69,7 @@ export const resetDatabases = async () => {
     }
   }
   // Clear all metadata DBs
-  await initialiseDatabases({force: true});
+  await initialiseDbAndKeys({force: true});
 };
 
 export const cleanDataDBS = async () => {

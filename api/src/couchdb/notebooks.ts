@@ -244,12 +244,12 @@ export const createNotebook = async (
   metadata: any,
   template_id: string | undefined = undefined
 ) => {
-  const project_id = generateProjectID(projectName);
+  const projectId = generateProjectID(projectName);
 
-  const metaDBName = `metadata-${project_id}`;
-  const dataDBName = `data-${project_id}`;
+  const metaDBName = `metadata-${projectId}`;
+  const dataDBName = `data-${projectId}`;
   const projectDoc = {
-    _id: project_id,
+    _id: projectId,
     template_id: template_id,
     name: projectName.trim(),
     metadata_db: {
@@ -273,7 +273,7 @@ export const createNotebook = async (
     return undefined;
   }
 
-  const metaDB = await getMetadataDb(project_id);
+  const metaDB = await getMetadataDb(projectId);
   if (!metaDB) {
     return undefined;
   }
@@ -291,7 +291,7 @@ export const createNotebook = async (
     const metaSecurity = await metaDB.security();
     metaSecurity.admins.roles.add(CLUSTER_ADMIN_GROUP_NAME);
     roles.forEach((role: string) => {
-      metaSecurity.members.roles.add(`${project_id}||${role}`);
+      metaSecurity.members.roles.add(`${projectId}||${role}`);
     });
     await metaSecurity.save();
   }
@@ -308,7 +308,7 @@ export const createNotebook = async (
   metadata.name = projectName.trim();
   await writeProjectMetadata(metaDB, metadata);
   // data database
-  const dataDB = await getDataDB(project_id);
+  const dataDB = await getDataDB(projectId);
   if (!dataDB) {
     return undefined;
   }
@@ -317,7 +317,7 @@ export const createNotebook = async (
     const dataSecurity = await dataDB.security();
     dataSecurity.admins.roles.add(CLUSTER_ADMIN_GROUP_NAME);
     roles.forEach((role: string) => {
-      dataSecurity.members.roles.add(`${project_id}||${role}`);
+      dataSecurity.members.roles.add(`${projectId}||${role}`);
     });
     await dataSecurity.save();
   }
@@ -327,7 +327,7 @@ export const createNotebook = async (
   } catch (error) {
     console.log(error);
   }
-  return project_id;
+  return projectId;
 };
 
 /**

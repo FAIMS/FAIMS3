@@ -67,6 +67,12 @@ import {
 import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
 
 export * from './authDB';
+export * from './dataDB';
+export * from './directoryDB';
+export * from './metadataDB';
+export * from './peopleDB';
+export * from './projectsDB';
+export * from './templatesDB';
 
 export function generateFAIMSDataID(): RecordID {
   return 'rec-' + uuidv4();

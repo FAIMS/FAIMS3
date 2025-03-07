@@ -38,7 +38,7 @@ import {
   mockGetDataDB,
   resetDatabases,
 } from './mocks';
-import {initialiseDatabases} from '../src/couchdb';
+import {initialiseDbAndKeys} from '../src/couchdb';
 
 // register our mock database clients with the module
 registerClient(callbackObject);
@@ -47,7 +47,7 @@ describe('Backup and restore', () => {
   it('restore backup', async () => {
     await resetDatabases();
     await cleanDataDBS();
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
 
     await restoreFromBackup('test/backup.jsonl');
 

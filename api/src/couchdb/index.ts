@@ -25,22 +25,30 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
   AuthDatabase,
+  initAuthDB,
   ProjectDataObject,
   ProjectID,
   ProjectMetaObject,
   ProjectObject,
   TemplateDetails,
 } from '@faims3/data-model';
+import {couchInitialiser} from '@faims3/data-model/build/src/data_storage/utils';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
-import {COUCHDB_INTERNAL_URL, LOCAL_COUCHDB_AUTH} from '../buildconfig';
+import {
+  CONDUCTOR_DESCRIPTION,
+  CONDUCTOR_INSTANCE_NAME,
+  CONDUCTOR_PUBLIC_URL,
+  COUCHDB_INTERNAL_URL,
+  LOCAL_COUCHDB_AUTH,
+} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {
-  initialiseAuthDb,
-  initialiseDirectoryDB,
-  initialiseProjectsDB,
-  initialiseTemplatesDb,
-  initialiseUserDB,
-} from './initialise';
+  initDirectoryDB,
+  initPeopleDB,
+  initProjectsDB,
+  initTemplatesDB,
+} from '@faims3/data-model/build/src/data_storage';
+import {registerAdminUser} from './initialise';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
@@ -136,7 +144,7 @@ export const verifyCouchDBConnection = async () => {
   return result;
 };
 
-export const getDirectoryDB = (): PouchDB.Database | undefined => {
+export const getDirectoryDB = (): PouchDB.Database => {
   if (!_directoryDB) {
     const pouch_options = pouchOptions();
 
@@ -145,6 +153,7 @@ export const getDirectoryDB = (): PouchDB.Database | undefined => {
       _directoryDB = new PouchDB(directorydb, pouch_options);
     } catch (error) {
       console.log('bad thing happened', error);
+      throw error;
     }
   }
   return _directoryDB;
@@ -165,7 +174,7 @@ export const getAuthDB = (): AuthDatabase => {
   return _authDB;
 };
 
-export const getUsersDB = (): PouchDB.Database<Express.User> | undefined => {
+export const getUsersDB = (): PouchDB.Database<Express.User> => {
   if (!_usersDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PEOPLE_DB_NAME;
@@ -181,9 +190,7 @@ export const getUsersDB = (): PouchDB.Database<Express.User> | undefined => {
   return _usersDB;
 };
 
-export const localGetProjectsDb = ():
-  | PouchDB.Database<ProjectObject>
-  | undefined => {
+export const localGetProjectsDb = (): PouchDB.Database<ProjectObject> => {
   if (!_projectsDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PROJECTS_DB_NAME;
@@ -318,60 +325,127 @@ export const localGetDataDb = async (
   return new PouchDB(dbUrl, pouch_options);
 };
 
-export const initialiseDatabases = async ({
+/**
+ * Critical method which initialises all databases, including remotely on the configured couch instance.
+ *
+ * This systematically generates a set of initialisation content from the data model, then applies this initialisation using a helper method in the data model.
+ *
+ * Some local information is injected as part of the config generation step - e.g. conductor name/description.
+ * 
+ * Also initialises keys based on the configured key service.
+ *
+ * If force = true, documents will always be written, even if it already exists.
+ *
+ * @param force Write on clash
+ */
+export const initialiseDbAndKeys = async ({
   force = false,
 }: {
   force?: boolean;
 }) => {
-  // Setup the auth DB
+  // Are we in a testing environment?
+  const isTesting = process.env.NODE_ENV === 'test';
+
+  // Establish databases (this either fetches or creates)
+  // Auth
   const authDB = getAuthDB();
-  try {
-    await initialiseAuthDb(authDB, {force});
-  } catch (error) {
-    console.log('Could not initialise the auth database', error);
-    throw error;
-  }
 
+  // Directory
   const directoryDB = getDirectoryDB();
-  try {
-    await initialiseDirectoryDB(directoryDB, {force});
-  } catch (error) {
-    console.log('something wrong with directory db init', error);
-    throw error;
-  }
 
+  // Projects
   const projectsDB = localGetProjectsDb();
-  try {
-    await initialiseProjectsDB(projectsDB, {force});
-  } catch (error) {
-    console.log('something wrong with projects db init', error);
-    throw error;
-  }
 
+  // Templates
   let templatesDb: PouchDB.Database;
   try {
     templatesDb = getTemplatesDb();
   } catch {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while instantiating the templates local DB. Aborting operation.'
+      'An error occurred while instantiating the templates DB. Aborting operation.'
     );
   }
+  // Users
+  const peopleDb = getUsersDB();
 
+  // Now for each, generate their initialisation documents and apply
+
+  // Auth DB
   try {
-    await initialiseTemplatesDb(templatesDb, {force});
-  } catch {
+    await couchInitialiser({
+      db: authDB,
+      content: initAuthDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'Something wrong during templates db initialisation'
+      'An error occurred while initialising the auth database!...' + e
     );
   }
 
-  const usersDB = getUsersDB();
+  // Directory DB (include default document which establishes identity of this
+  // conductor)
   try {
-    await initialiseUserDB(usersDB);
-  } catch (error) {
-    console.log('something wrong with user db init', error);
-    throw error;
+    await couchInitialiser({
+      db: directoryDB,
+      content: initDirectoryDB({
+        defaultConfig: {
+          conductorInstanceName: CONDUCTOR_INSTANCE_NAME,
+          conductorUrl: CONDUCTOR_PUBLIC_URL,
+          description: CONDUCTOR_DESCRIPTION,
+          peopleDbName: peopleDb.name,
+          projectsDbName: projectsDB.name,
+        },
+      }),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the directory database!...' + e
+    );
   }
+
+  // Projects DB
+  try {
+    await couchInitialiser({
+      db: projectsDB,
+      content: initProjectsDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the projects database!...' + e
+    );
+  }
+
+  // Templates DB
+  try {
+    await couchInitialiser({
+      db: templatesDb,
+      content: initTemplatesDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the templates database!...' + e
+    );
+  }
+
+  // People DB
+  try {
+    await couchInitialiser({
+      db: peopleDb,
+      content: initPeopleDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the people database!...' + e
+    );
+  }
+
+  // For users, we also establish an admin user, if not already present
+  await registerAdminUser(peopleDb);
 
   // Setup keys
   try {
@@ -382,24 +456,5 @@ export const initialiseDatabases = async ({
       error
     );
     throw error;
-  }
-};
-
-export const closeDatabases = async () => {
-  if (_projectsDB) {
-    try {
-      await _projectsDB.close();
-      _projectsDB = undefined;
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  if (_directoryDB) {
-    try {
-      await _directoryDB.close();
-      _directoryDB = undefined;
-    } catch (error) {
-      console.log(error);
-    }
   }
 };

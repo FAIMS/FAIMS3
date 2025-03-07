@@ -5,7 +5,7 @@
 import {COUCH_ADMIN_ROLE_NAME} from '../../auth';
 import {SecurityDocument} from '../utils';
 
-export const AuthDatabaseSecurityDocument: SecurityDocument = {
+export const PeopleDBSecurityDocument: SecurityDocument = {
   // Only DB admins or cluster admins can interact with the AuthDB
   admins: {
     names: [],
