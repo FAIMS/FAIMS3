@@ -18,9 +18,15 @@
  *    Functions to backup and restore databases
  */
 import {open} from 'node:fs/promises';
-import {getMetadataDb, localGetProjectsDb} from '.';
-import {addDesignDocsForNotebook, getDataDB} from '@faims3/data-model';
+import {
+  getMetadataDb,
+  initialiseDataDb,
+  initialiseMetadataDb,
+  localGetProjectsDb,
+} from '.';
+import {getDataDB} from '@faims3/data-model';
 import {safeWriteDocument} from '@faims3/data-model/build/src/data_storage/utils';
+import {getRolesForNotebook} from './notebooks';
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file
@@ -48,14 +54,18 @@ export const restoreFromBackup = async (filename: string) => {
           db = localGetProjectsDb();
         } else if (dbName.startsWith('metadata')) {
           const projectName = dbName.split('||')[1];
-          db = await getMetadataDb(projectName);
+          // TODO: set up permissions for the databases
+          db = await initialiseMetadataDb({
+            projectId: projectName,
+            force: true,
+          });
         } else if (dbName.startsWith('data')) {
           const projectName = dbName.split('||')[1];
-          db = await getDataDB(projectName);
-          if (db) {
-            addDesignDocsForNotebook(db);
-            // TODO: set up permissions for the databases
-          }
+          // TODO: set up permissions for the databases
+          db = await initialiseDataDb({
+            projectId: projectName,
+            force: true,
+          });
         } else {
           // don't try to restore anything we don't know about
           db = undefined;
@@ -70,7 +80,7 @@ export const restoreFromBackup = async (filename: string) => {
         delete doc.doc._rev;
         try {
           // Safe write
-          await safeWriteDocument({db, data: doc.doc, writeOnClash: true});
+          await safeWriteDocument<any>({db, data: doc.doc, writeOnClash: true});
         } catch (error) {
           console.log('Error restoring document', doc.id);
         }

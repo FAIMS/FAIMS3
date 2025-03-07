@@ -41,7 +41,6 @@ import {
   file_data_to_attachments,
   files_to_attachments,
 } from './data_storage/attachments';
-import {addDesignDocsForNotebook} from './data_storage/databases';
 import {
   findConflictingFields,
   getInitialMergeDetails,
@@ -66,7 +65,6 @@ export * from './utils';
 import {decodeUiSpec} from './datamodel/core';
 
 export {
-  addDesignDocsForNotebook,
   attachment_to_file,
   attachments_to_files,
   DEFAULT_RELATION_LINK_VOCABULARY,

@@ -19,15 +19,14 @@
  */
 import {getDataDB} from '../index';
 import {
-  ProjectID,
-  FAIMSTypeName,
-  RecordReference,
-  RecordMetadataList,
   AttributeValuePair,
-  RecordID,
-  ProjectUIModel,
   DataDbType,
+  FAIMSTypeName,
+  ProjectID,
+  ProjectUIModel,
+  RecordID,
   RecordMetadata,
+  RecordReference,
 } from '../types';
 
 import {listRecordMetadata} from './internals';
