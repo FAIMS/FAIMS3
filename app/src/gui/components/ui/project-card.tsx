@@ -1,24 +1,9 @@
 import {ProjectInformation} from '@faims3/data-model';
 import tick from '../../../tick.svg';
 import cross from '../../../cross.svg';
-import {activate_project} from '../../../sync/process-initialization';
-
-/**
- * Function to handle the click event on the activate button.
- *
- * @param {ProjectInformation} project - The project object containing details to be displayed in the card.
- * @returns {void}
- */
-const onActivate = async ({
-  listing_id,
-  non_unique_project_id,
-}: ProjectInformation) => {
-  const projectID = await activate_project(listing_id, non_unique_project_id);
-
-  console.log('DEBUG_projectID: ', projectID);
-
-  if (projectID) window.location.reload();
-};
+import {useAppDispatch, useAppSelector} from '../../../context/store';
+import {activateProject} from '../../../context/slices/projectSlice';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 
 /**
  * ProjectCard component that displays information about a single project.
@@ -33,8 +18,16 @@ export default function ProjectCard({
   onClick,
 }: {
   project: ProjectInformation;
-  onClick: (project_id: string, activated: boolean) => void;
+  onClick: (project: ProjectInformation, activated: boolean) => void;
 }): JSX.Element {
+  const dispatch = useAppDispatch();
+  const activeUser = useAppSelector(selectActiveUser);
+
+  if (!activeUser) {
+    // You shouldn't be here!
+    return <></>;
+  }
+
   return (
     <div
       style={{
@@ -45,7 +38,7 @@ export default function ProjectCard({
         paddingTop: '20px 16px',
         paddingLeft: '16px',
       }}
-      onClick={() => onClick(project.project_id, project.is_activated)}
+      onClick={() => onClick(project, project.is_activated)}
     >
       <div
         style={{
@@ -79,7 +72,15 @@ export default function ProjectCard({
                 fontSize: 16,
                 borderRadius: 10,
               }}
-              onClick={() => onActivate(project)}
+              onClick={() => {
+                dispatch(
+                  activateProject({
+                    projectId: project.project_id,
+                    serverId: activeUser.serverId,
+                    jwtToken: activeUser.token,
+                  })
+                );
+              }}
             >
               Activate
             </button>

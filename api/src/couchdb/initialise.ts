@@ -70,6 +70,7 @@ export const initialiseProjectsDB = async (
   // javascript in here will run inside CouchDB
   const projectPermissionsDoc = {
     _id: '_design/permissions',
+    _rev: undefined as undefined | string,
     validate_doc_update: `function (newDoc, oldDoc, userCtx) {
       // Reject update if user does not have an _admin role
       if (userCtx.roles.indexOf('_admin') < 0) {
@@ -83,20 +84,17 @@ export const initialiseProjectsDB = async (
   if (db) {
     let write = false;
 
-    if (force) {
+    // do we already have a default document?
+    try {
+      const res = await db.get(projectPermissionsDoc._id);
+      projectPermissionsDoc._rev = res._rev;
+      write = false;
+    } catch {
       write = true;
-    } else {
-      // do we already have a default document?
-      try {
-        await db.get(projectPermissionsDoc._id);
-        write = false;
-      } catch {
-        write = true;
-      }
     }
 
     if (write) {
-      await db.put(projectPermissionsDoc);
+      await db.put(projectPermissionsDoc, {force});
       // can't save security on an in-memory database so skip if testing
       if (process.env.NODE_ENV !== 'test') {
         const security = db.security();
@@ -117,6 +115,7 @@ export const initialiseTemplatesDb = async (
   // javascript in here will run inside CouchDB
   const projectPermissionsDoc = {
     _id: '_design/permissions',
+    _rev: undefined as undefined | string,
     validate_doc_update: `function (newDoc, oldDoc, userCtx) {
       // Reject update if user does not have an _admin role
       if (userCtx.roles.indexOf('_admin') < 0) {
@@ -130,21 +129,17 @@ export const initialiseTemplatesDb = async (
   if (db) {
     let write = false;
 
-    if (force) {
+    // do we already have a default document?
+    try {
+      const res = await db.get(projectPermissionsDoc._id);
+      projectPermissionsDoc._rev = res._rev;
+    } catch {
       write = true;
-    } else {
-      // do we already have a default document?
-      try {
-        await db.get(projectPermissionsDoc._id);
-        write = false;
-      } catch {
-        write = true;
-      }
     }
 
-    if (write) {
+    if (force || write) {
       try {
-        await db.put(projectPermissionsDoc);
+        await db.put(projectPermissionsDoc, {force});
       } catch (e) {
         console.error(
           'Failed to initialise security document for templates database.'
@@ -170,6 +165,7 @@ export const initialiseDirectoryDB = async (
 ) => {
   const directoryDoc = {
     _id: 'default',
+    _rev: undefined as undefined | string,
     name: CONDUCTOR_INSTANCE_NAME,
     description: `Fieldmark instance on ${CONDUCTOR_PUBLIC_URL}`,
     people_db: {
@@ -183,6 +179,7 @@ export const initialiseDirectoryDB = async (
 
   const permissions = {
     _id: '_design/permissions',
+    _rev: undefined as undefined | string,
     validate_doc_update: `function(newDoc, oldDoc, userCtx) {
       if (userCtx.roles.indexOf('_admin') >= 0) {
         return;
@@ -194,19 +191,22 @@ export const initialiseDirectoryDB = async (
   if (db) {
     let write = false;
 
-    if (force) {
+    // do we already have a default document?
+    try {
+      const res = await db.get(directoryDoc._id);
+      directoryDoc._rev = res._rev;
+    } catch {
       write = true;
-    } else {
-      // do we already have a default document?
-      try {
-        await db.get('default');
-        write = false;
-      } catch {
-        write = true;
-      }
     }
 
-    if (write) {
+    try {
+      const res = await db.get(permissions._id);
+      permissions._rev = res._rev;
+    } catch {
+      write = true;
+    }
+
+    if (force || write) {
       await db.put(directoryDoc);
       await db.put(permissions);
 

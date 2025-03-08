@@ -50,12 +50,14 @@ import {
   selectIsAuthenticated,
   setActiveUser,
 } from '../../../context/slices/authSlice';
-import {addAlert} from '../../../context/slices/syncSlice';
+import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
-import {update_directory} from '../../../sync/process-initialization';
-import {getListing} from '../../../sync/state';
 import {isWeb} from '../../../utils/helpers';
 import {theme} from '../../themes';
+import {
+  initialiseAllProjects,
+  Server,
+} from '../../../context/slices/projectSlice';
 
 const SignInButtonComponent = () => {
   return (
@@ -99,19 +101,23 @@ const AuthenticatedDisplayComponent = () => {
 
   const userInitial =
     activeUser?.parsedToken.username.charAt(0).toUpperCase() || '';
+
+  const servers = useAppSelector(state => state.projects.servers);
   const activeServerInfo = activeUser
-    ? getListing(activeUser.serverId)
+    ? servers[activeUser.serverId]
     : undefined;
 
   // Generate available connections list and map into full info
-  const availableConnections = listAllConnections({state: authState}).map(c => {
-    const info = getListing(c.serverId);
-    return {
-      ...c,
-      serverName: info.listing.name,
-      conductorUrl: info.listing.conductor_url,
-    };
-  });
+  const availableConnections = listAllConnections({state: authState}).map(
+    connection => {
+      const info: Server | undefined = servers[connection.serverId];
+      return {
+        ...connection,
+        serverName: info?.serverTitle ?? 'Loading...',
+        conductorUrl: info?.serverUrl ?? undefined,
+      };
+    }
+  );
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -161,7 +167,10 @@ const AuthenticatedDisplayComponent = () => {
 
     // remove the server connection on logout
     dispatch(removeServerConnection({serverId, username}));
-    update_directory();
+
+    // TODO is this really necessary?
+    // initialise everything again
+    dispatch(initialiseAllProjects());
 
     if (conductorUrl) {
       if (isWeb()) {
@@ -308,7 +317,7 @@ const AuthenticatedDisplayComponent = () => {
                 display: 'block',
               }}
             >
-              {activeServerInfo?.listing.name}
+              {activeServerInfo?.serverTitle}
             </Typography>
           </Box>
         </Box>
@@ -377,7 +386,7 @@ const AuthenticatedDisplayComponent = () => {
               await handleLogout({
                 serverId: activeUser.serverId,
                 username: activeUser.username,
-                conductorUrl: activeServerInfo?.listing.conductor_url ?? '',
+                conductorUrl: activeServerInfo?.serverUrl ?? '',
               });
             }}
           >
