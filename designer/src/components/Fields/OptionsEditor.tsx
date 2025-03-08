@@ -56,7 +56,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -80,7 +80,6 @@ import {
  * - Validation for duplicate and empty options
  *
  * Drag and drop implementation:
- *
  * - DndContext: Provides drag-and-drop environment with sensors and collision detection
  * - SortableContext: Manages sortable items using vertical list strategy
  * - useSortable: Hook that provides drag attributes, listeners, and transform states
@@ -91,30 +90,23 @@ import {
  * 3. SortableItem components use useSortable hook for drag functionality
  * 4. handleDragEnd reorders items on drop
  * 5. Visual feedback during drag
- *
  */
 
+/**
+ * Props for the individual sortable item row component
+ * used within the options table.
+ */
 interface SortableItemProps {
-  // item ID
-  id: string;
-  // option information
-  option: {label: string; value: string};
-  // index in the list
-  index: number;
-  // should we show exclusive options control/column
-  showExclusiveOptions?: boolean;
-  // if so, which are the exclusive options
-  exclusiveOptions: string[];
-  // handler for toggling exclusive
-  onExclusiveToggle: (value: string) => void;
-  // to change an option value
-  onEdit: (value: string, index: number) => void;
-  // when removed
-  onRemove: (option: {label: string; value: string}) => void;
-  // when moved up/down
-  onMove: (index: number, direction: 'up' | 'down') => void;
-  // how many items in total?
-  totalItems: number;
+  id: string; // item ID
+  option: {label: string; value: string}; // option information
+  index: number; // index in the list
+  showExclusiveOptions?: boolean; // should we show exclusive options control/column
+  exclusiveOptions: string[]; // if so, which are the exclusive options
+  onExclusiveToggle: (value: string) => void; // handler for toggling exclusive
+  onEdit: (value: string, index: number) => void; // to change an option value
+  onRemove: (option: {label: string; value: string}) => void; // when removed
+  onMove: (index: number, direction: 'up' | 'down') => void; // when moved up/down
+  totalItems: number; // how many items in total
 }
 
 /**
@@ -123,7 +115,7 @@ interface SortableItemProps {
  *
  * @component
  * @param props - See SortableItemProps interface
- */
+ * */
 const SortableItem = ({
   id,
   option,
@@ -144,11 +136,8 @@ const SortableItem = ({
     <TableRow
       ref={setNodeRef}
       style={{
-        // transform the row based on the drag state
         transform: CSS.Transform.toString(transform),
-        // use sortable provides transition information
         transition,
-        // make it less opacity when draggin
         opacity: isDragging ? 0.5 : 1,
       }}
     >
@@ -157,7 +146,6 @@ const SortableItem = ({
         <IconButton
           size="small"
           sx={{cursor: 'grab', p: 0.5}}
-          // attach all the use draggable stuff
           {...attributes}
           {...listeners}
         >
@@ -197,6 +185,7 @@ const SortableItem = ({
             <ArrowDropUpRoundedIcon fontSize="large" />
           </IconButton>
         </Tooltip>
+
         <Tooltip title="Move down">
           <IconButton
             size="small"
@@ -207,6 +196,7 @@ const SortableItem = ({
             <ArrowDropDownRoundedIcon fontSize="large" />
           </IconButton>
         </Tooltip>
+
         <IconButton
           size="small"
           onClick={() => onEdit(option.label, index)}
@@ -214,6 +204,7 @@ const SortableItem = ({
         >
           <EditIcon fontSize="small" />
         </IconButton>
+
         <IconButton size="small" onClick={() => onRemove(option)} sx={{p: 0.5}}>
           <DeleteIcon fontSize="small" />
         </IconButton>
@@ -229,9 +220,9 @@ export const OptionsEditor = ({
 }: {
   // Field name of this options editor
   fieldName: string;
-  // should we show the expanded checklist control?
+  // optionally show the expanded checklist control
   showExpandedChecklist?: boolean;
-  // should we show the exclusive options controls?
+  // optionally show the exclusive options control
   showExclusiveOptions?: boolean;
 }) => {
   // Get field state from Redux store
@@ -247,13 +238,10 @@ export const OptionsEditor = ({
 
   const dispatch = useAppDispatch();
 
-  // Configure drag-and-drop sensors - just pointer sensor is fine
+  // Set up drag-and-drop sensors
   const sensors = useSensors(useSensor(PointerSensor));
 
-  // Component state
-  const isShowExpandedList =
-    field['component-parameters'].ElementProps?.expandedChecklist ?? false;
-  const showExpandedCheckListControl = showExpandedChecklist ?? false;
+  // Local component state
   const [newOption, setNewOption] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [editingOption, setEditingOption] = useState<{
@@ -261,24 +249,20 @@ export const OptionsEditor = ({
     index: number;
   } | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [lastEditedOption, setLastEditedOption] = useState<string | null>(null);
+
+  // State for showing the alert inside the Edit Option dialog if the option is used in a condition
   const [renameDialogState, setRenameDialogState] = useState<{
-    open: boolean;
     references: string[];
-    oldValue: string;
-    newValue: string;
-    index: number;
+    updateConditions: boolean;
   } | null>(null);
 
-  // Get options and exclusive options from field state
   const options = field['component-parameters'].ElementProps?.options || [];
   const exclusiveOptions =
     field['component-parameters'].ElementProps?.exclusiveOptions || [];
 
   /**
-   * Validates option text for duplicates and empty values
-   * @param text - Option text to validate
-   * @param currentIndex - Index of option being edited (for duplicate check)
-   * @returns Error message string or null if valid
+   * Validate the user-entered text for a new or edited option
    */
   const validateOptionText = (
     text: string,
@@ -288,8 +272,8 @@ export const OptionsEditor = ({
       return 'Option text cannot be empty';
     }
 
-    const duplicateExists = options.some((element, index: number) => {
-      if (currentIndex !== undefined && index === currentIndex) return false;
+    const duplicateExists = options.some((element, idx: number) => {
+      if (currentIndex !== undefined && idx === currentIndex) return false;
       return element.label.toLowerCase() === text.toLowerCase();
     });
 
@@ -297,9 +281,7 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Updates field state in Redux store
-   * @param updatedOptions - New options array
-   * @param updatedExclusiveOptions - New exclusive options array
+   * Update the field in Redux with new or changed options
    */
   const updateField = (
     updatedOptions: Array<{label: string; value: string}>,
@@ -307,13 +289,13 @@ export const OptionsEditor = ({
   ) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
 
-    // Update field with new options and handle radio button IDs
     newField['component-parameters'].ElementProps = {
       ...newField['component-parameters'].ElementProps,
-      options: updatedOptions.map((o, index) => {
+      options: updatedOptions.map((o, i) => {
+        // For radio fields, attach a special ID
         if (fieldName.includes('radio')) {
           return {
-            RadioProps: {id: 'radio-group-field-' + index},
+            RadioProps: {id: 'radio-group-field-' + i},
             ...o,
           };
         }
@@ -328,8 +310,11 @@ export const OptionsEditor = ({
     });
   };
 
+  /**
+   * If user chooses to auto-update references in conditions
+   */
   const updateConditions = (oldValue: string, newValue: string) => {
-    // Update field conditions
+    // Field-level conditions
     for (const fId in allFields) {
       const fieldDef = allFields[fId];
       if (!fieldDef.condition) continue;
@@ -340,6 +325,7 @@ export const OptionsEditor = ({
         oldValue,
         newValue
       );
+
       if (updatedCondition !== fieldDef.condition) {
         dispatch(
           fieldUpdated({
@@ -350,7 +336,7 @@ export const OptionsEditor = ({
       }
     }
 
-    // Update section conditions
+    // Section-level conditions
     for (const vId in allFviews) {
       const sectionDef = allFviews[vId];
       if (!sectionDef.condition) continue;
@@ -361,6 +347,7 @@ export const OptionsEditor = ({
         oldValue,
         newValue
       );
+
       if (updatedCondition !== sectionDef.condition) {
         dispatch(
           sectionConditionChanged({viewId: vId, condition: updatedCondition})
@@ -370,18 +357,14 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Handles drag-and-drop reordering
+   * handleDragEnd is triggered after a user finishes dragging an option
    */
   const handleDragEnd = (event: DragEndEvent) => {
     const {active, over} = event;
-
-    // if we are over something - and the over id is not equal to the active id
-    // (i.e. we have moved)
     if (over && active.id !== over.id) {
       const oldIndex = options.findIndex(item => item.value === active.id);
       const newIndex = options.findIndex(item => item.value === over.id);
 
-      // Reorder options array
       const newOptions = [...options];
       const [movedItem] = newOptions.splice(oldIndex, 1);
       newOptions.splice(newIndex, 0, movedItem);
@@ -391,12 +374,11 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Moves option up or down using arrow buttons
+   * Moves an option up or down in the list
    */
   const moveOption = (index: number, direction: 'up' | 'down') => {
     const newOptions = [...options];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
-
     if (newIndex >= 0 && newIndex < options.length) {
       [newOptions[index], newOptions[newIndex]] = [
         newOptions[newIndex],
@@ -407,12 +389,11 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Handles adding new option submission
+   * Add a new option via user form submission
    */
   const addOption = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const error = validateOptionText(newOption);
-
     if (error) {
       setErrorMessage(error);
     } else {
@@ -424,17 +405,18 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Toggles exclusive status of an option
+   * Toggle an option's "exclusive" flag (for multi-select)
    */
   const handleExclusiveToggle = (value: string) => {
     const newExclusiveOptions = exclusiveOptions.includes(value)
       ? exclusiveOptions.filter(o => o !== value)
       : [...exclusiveOptions, value];
+
     updateField(options, newExclusiveOptions);
   };
 
   /**
-   * Removes an option from the list
+   * Removes an existing option from the list
    */
   const removeOption = (option: {label: string; value: string}) => {
     const newOptions = options.filter(o => o.value !== option.value);
@@ -445,45 +427,34 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Handles editing option submission
+   * Open the dialog to edit an existing option
    */
-  const handleEditSubmit = () => {
-    if (!editingOption) return;
+  const handleOpenEditDialog = (value: string, index: number) => {
+    setEditingOption({value, index});
+    setEditValue(value);
+    setLastEditedOption(value);
 
-    const oldValue = options[editingOption.index].value;
-    const newValue = editValue.trim();
-
-    if (!newValue || oldValue === newValue) {
-      setEditingOption(null);
-      return;
-    }
-
-    // Find conditions referencing this option
+    // Check if this option is referenced in conditions
     const references = findOptionReferences(
       allFields,
       allFviews,
       fieldName,
-      oldValue
+      value
     );
-
-    if (references.length === 0) {
-      doRenameOption(newValue, editingOption.index);
+    if (references.length > 0) {
+      setRenameDialogState({references, updateConditions: true});
     } else {
-      setRenameDialogState({
-        open: true,
-        references,
-        oldValue,
-        newValue,
-        index: editingOption.index,
-      });
+      setRenameDialogState(null);
     }
   };
+
+  /**
+   * Actually rename the option in the Redux store (does not alter conditions)
+   */
   const doRenameOption = (newValue: string, index: number) => {
-    // Clone options and update the edited one
     const newOptions = [...options];
     newOptions[index] = {label: newValue, value: newValue};
 
-    // Update field in Redux
     const newField: FieldType = {
       ...field,
       'component-parameters': {
@@ -496,19 +467,52 @@ export const OptionsEditor = ({
     };
 
     dispatch(fieldUpdated({fieldName, newField}));
+  };
+
+  /**
+   * Finalizes the edit, optionally updates conditions
+   */
+  const handleEditSubmit = () => {
+    if (!editingOption) return;
+
+    const newValue = editValue.trim();
+    if (!newValue || editingOption.value === newValue) {
+      setEditingOption(null);
+      return;
+    }
+
+    // Validate before renaming
+    const error = validateOptionText(newValue, editingOption.index);
+    if (error) {
+      setErrorMessage(error);
+      return;
+    }
+
+    // Rename in Redux
+    doRenameOption(newValue, editingOption.index);
+
+    // If chosen, also update references in conditions
+    if (renameDialogState?.updateConditions) {
+      updateConditions(editingOption.value, newValue);
+    }
+
+    // Close dialog
     setEditingOption(null);
   };
 
   /**
-   * Toggles expanded checklist view
+   * Toggles whether multi-select is displayed as an expanded checklist
    */
   const toggleShowExpanded = () => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    const newValue = !isShowExpandedList;
+    const newValue =
+      !field['component-parameters'].ElementProps?.expandedChecklist;
+
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
       expandedChecklist: newValue,
     };
+
     dispatch({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},
@@ -517,53 +521,6 @@ export const OptionsEditor = ({
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      {renameDialogState && (
-        <Alert severity="warning" sx={{mt: 2}}>
-          <Typography variant="body2" sx={{mb: 1}}>
-            The option "<strong>{renameDialogState.oldValue}</strong>" is used
-            in:
-          </Typography>
-          <ul>
-            {renameDialogState.references.map((r, idx) => (
-              <li key={idx}>{r}</li>
-            ))}
-          </ul>
-          <Typography variant="body2" sx={{mt: 1}}>
-            Do you want to automatically update these references to "
-            <strong>{renameDialogState.newValue}</strong>"?
-          </Typography>
-          <Stack direction="row" spacing={1} sx={{mt: 2}}>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                doRenameOption(
-                  renameDialogState.newValue,
-                  renameDialogState.index
-                );
-                setRenameDialogState(null);
-              }}
-            >
-              No, Keep Old References
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => {
-                doRenameOption(
-                  renameDialogState.newValue,
-                  renameDialogState.index
-                );
-                updateConditions(
-                  renameDialogState.oldValue,
-                  renameDialogState.newValue
-                );
-                setRenameDialogState(null);
-              }}
-            >
-              Yes, Update Conditions
-            </Button>
-          </Stack>
-        </Alert>
-      )}
       <Paper sx={{width: '100%', ml: 2, mt: 2, p: 3}}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -615,39 +572,38 @@ export const OptionsEditor = ({
               </form>
             </Box>
 
-            {/* Error message display */}
             {errorMessage && (
               <Alert severity="error" sx={{mt: 2, mb: 2}}>
                 {errorMessage}
               </Alert>
             )}
 
-            {/* Expanded checklist toggle */}
-            {showExpandedCheckListControl && (
+            {field['component-parameters'].ElementProps?.expandedChecklist !==
+              undefined && (
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={isShowExpandedList}
+                    checked={
+                      field['component-parameters'].ElementProps
+                        ?.expandedChecklist
+                    }
                     onChange={toggleShowExpanded}
                     size="small"
                   />
                 }
                 label={
-                  <>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <p>Display multi-select as an expanded checklist?</p>
-                      <Tooltip title="This option changes the multi-select from a dropdown menu, to a pre-expanded checklist of items. This takes up more space on the user's screen, but requires less clicks to interact with.">
-                        <InfoIcon color="action" fontSize="small" />
-                      </Tooltip>
-                    </Stack>
-                  </>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <p>Display multi-select as an expanded checklist?</p>
+                    <Tooltip title="This option changes the multi-select from a dropdown menu to a pre-expanded checklist of items. This takes up more space, but requires fewer clicks to interact with.">
+                      <InfoIcon color="action" fontSize="small" />
+                    </Tooltip>
+                  </Stack>
                 }
                 sx={{mb: 2}}
               />
             )}
           </Grid>
 
-          {/* Options table */}
           <Grid item xs={12}>
             <TableContainer
               component={Paper}
@@ -699,7 +655,7 @@ export const OptionsEditor = ({
                           }}
                         >
                           Exclusive
-                          <Tooltip title="Checking this setting marks the option as 'exclusive'. Exclusive options cannot be combined with other selections. For example, choosing 'None' will exclude other selections.">
+                          <Tooltip title="Marking an option as 'exclusive' means it cannot be combined with other selections. For instance, choosing 'None' excludes all other choices.">
                             <InfoIcon color="action" fontSize="small" />
                           </Tooltip>
                         </Box>
@@ -719,7 +675,6 @@ export const OptionsEditor = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {/* Drag and drop context wrapper */}
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -738,11 +693,7 @@ export const OptionsEditor = ({
                           showExclusiveOptions={showExclusiveOptions}
                           exclusiveOptions={exclusiveOptions}
                           onExclusiveToggle={handleExclusiveToggle}
-                          onEdit={(value, index) => {
-                            setEditingOption({value, index});
-                            setEditValue(value);
-                            setErrorMessage('');
-                          }}
+                          onEdit={(val, idx) => handleOpenEditDialog(val, idx)}
                           onRemove={removeOption}
                           onMove={moveOption}
                           totalItems={options.length}
@@ -756,12 +707,15 @@ export const OptionsEditor = ({
           </Grid>
         </Grid>
 
-        {/* Edit option dialog */}
+        {/* Edit Option Dialog */}
         <Dialog
           open={!!editingOption}
-          onClose={() => {
-            setEditingOption(null);
-            setErrorMessage('');
+          onClose={() => setEditingOption(null)}
+          TransitionProps={{
+            onExited: () => {
+              setRenameDialogState(null);
+              setLastEditedOption(null);
+            },
           }}
         >
           <DialogTitle>Edit Option</DialogTitle>
@@ -774,21 +728,44 @@ export const OptionsEditor = ({
               value={editValue}
               onChange={e => setEditValue(e.target.value)}
             />
+
             {errorMessage && (
               <Alert severity="error" sx={{mt: 2}}>
                 {errorMessage}
               </Alert>
             )}
+
+            {renameDialogState && (
+              <Alert severity="warning" sx={{mt: 2}}>
+                <Typography variant="body2" sx={{mb: 1}}>
+                  The option "<strong>{lastEditedOption}</strong>" is used in:
+                </Typography>
+                <ul>
+                  {renameDialogState.references.map((r, idx) => (
+                    <li key={idx}>{r}</li>
+                  ))}
+                </ul>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={renameDialogState.updateConditions}
+                      onChange={e =>
+                        setRenameDialogState(prev =>
+                          prev
+                            ? {...prev, updateConditions: e.target.checked}
+                            : null
+                        )
+                      }
+                    />
+                  }
+                  label="Automatically update conditions to use the new option name"
+                  sx={{mt: 1}}
+                />
+              </Alert>
+            )}
           </DialogContent>
           <DialogActions>
-            <Button
-              onClick={() => {
-                setEditingOption(null);
-                setErrorMessage('');
-              }}
-            >
-              Cancel
-            </Button>
+            <Button onClick={() => setEditingOption(null)}>Cancel</Button>
             <Button onClick={handleEditSubmit} color="primary">
               Save
             </Button>
