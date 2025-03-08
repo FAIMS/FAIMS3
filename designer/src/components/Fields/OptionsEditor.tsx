@@ -56,7 +56,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -80,6 +80,7 @@ import {
  * - Validation for duplicate and empty options
  *
  * Drag and drop implementation:
+ *
  * - DndContext: Provides drag-and-drop environment with sensors and collision detection
  * - SortableContext: Manages sortable items using vertical list strategy
  * - useSortable: Hook that provides drag attributes, listeners, and transform states
@@ -90,23 +91,30 @@ import {
  * 3. SortableItem components use useSortable hook for drag functionality
  * 4. handleDragEnd reorders items on drop
  * 5. Visual feedback during drag
+ *
  */
 
-/**
- * Props for the individual sortable item row component
- * used within the options table.
- */
 interface SortableItemProps {
-  id: string; // item ID
-  option: {label: string; value: string}; // option information
-  index: number; // index in the list
-  showExclusiveOptions?: boolean; // should we show exclusive options control/column
-  exclusiveOptions: string[]; // if so, which are the exclusive options
-  onExclusiveToggle: (value: string) => void; // handler for toggling exclusive
-  onEdit: (value: string, index: number) => void; // to change an option value
-  onRemove: (option: {label: string; value: string}) => void; // when removed
-  onMove: (index: number, direction: 'up' | 'down') => void; // when moved up/down
-  totalItems: number; // how many items in total
+  // item ID
+  id: string;
+  // option information
+  option: {label: string; value: string};
+  // index in the list
+  index: number;
+  // should we show exclusive options control/column
+  showExclusiveOptions?: boolean;
+  // if so, which are the exclusive options
+  exclusiveOptions: string[];
+  // handler for toggling exclusive
+  onExclusiveToggle: (value: string) => void;
+  // to change an option value
+  onEdit: (value: string, index: number) => void;
+  // when removed
+  onRemove: (option: {label: string; value: string}) => void;
+  // when moved up/down
+  onMove: (index: number, direction: 'up' | 'down') => void;
+  // how many items in total?
+  totalItems: number;
 }
 
 /**
@@ -115,7 +123,7 @@ interface SortableItemProps {
  *
  * @component
  * @param props - See SortableItemProps interface
- * */
+ */
 const SortableItem = ({
   id,
   option,
@@ -136,8 +144,11 @@ const SortableItem = ({
     <TableRow
       ref={setNodeRef}
       style={{
+        // transform the row based on the drag state
         transform: CSS.Transform.toString(transform),
+        // use sortable provides transition information
         transition,
+        // make it less opacity when draggin
         opacity: isDragging ? 0.5 : 1,
       }}
     >
@@ -146,6 +157,7 @@ const SortableItem = ({
         <IconButton
           size="small"
           sx={{cursor: 'grab', p: 0.5}}
+          // attach all the use draggable stuff
           {...attributes}
           {...listeners}
         >
@@ -185,7 +197,6 @@ const SortableItem = ({
             <ArrowDropUpRoundedIcon fontSize="large" />
           </IconButton>
         </Tooltip>
-
         <Tooltip title="Move down">
           <IconButton
             size="small"
@@ -196,7 +207,6 @@ const SortableItem = ({
             <ArrowDropDownRoundedIcon fontSize="large" />
           </IconButton>
         </Tooltip>
-
         <IconButton
           size="small"
           onClick={() => onEdit(option.label, index)}
@@ -204,7 +214,6 @@ const SortableItem = ({
         >
           <EditIcon fontSize="small" />
         </IconButton>
-
         <IconButton size="small" onClick={() => onRemove(option)} sx={{p: 0.5}}>
           <DeleteIcon fontSize="small" />
         </IconButton>
@@ -220,9 +229,9 @@ export const OptionsEditor = ({
 }: {
   // Field name of this options editor
   fieldName: string;
-  // optionally show the expanded checklist control
+  // should we show the expanded checklist control?
   showExpandedChecklist?: boolean;
-  // optionally show the exclusive options control
+  // should we show the exclusive options controls?
   showExclusiveOptions?: boolean;
 }) => {
   // Get field state from Redux store
@@ -238,10 +247,13 @@ export const OptionsEditor = ({
 
   const dispatch = useAppDispatch();
 
-  // Set up drag-and-drop sensors
+  // Configure drag-and-drop sensors - just pointer sensor is fine
   const sensors = useSensors(useSensor(PointerSensor));
 
-  // Local component state
+  // Component state
+  const isShowExpandedList =
+    field['component-parameters'].ElementProps?.expandedChecklist ?? false;
+  const showExpandedCheckListControl = showExpandedChecklist ?? false;
   const [newOption, setNewOption] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [editingOption, setEditingOption] = useState<{
@@ -262,7 +274,10 @@ export const OptionsEditor = ({
     field['component-parameters'].ElementProps?.exclusiveOptions || [];
 
   /**
-   * Validate the user-entered text for a new or edited option
+   * Validates option text for duplicates and empty values
+   * @param text - Option text to validate
+   * @param currentIndex - Index of option being edited (for duplicate check)
+   * @returns Error message string or null if valid
    */
   const validateOptionText = (
     text: string,
@@ -281,7 +296,9 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Update the field in Redux with new or changed options
+   * Updates field state in Redux store
+   * @param updatedOptions - New options array
+   * @param updatedExclusiveOptions - New exclusive options array
    */
   const updateField = (
     updatedOptions: Array<{label: string; value: string}>,
@@ -289,13 +306,13 @@ export const OptionsEditor = ({
   ) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
 
+    // Update field with new options and handle radio button IDs
     newField['component-parameters'].ElementProps = {
       ...newField['component-parameters'].ElementProps,
-      options: updatedOptions.map((o, i) => {
-        // For radio fields, attach a special ID
+      options: updatedOptions.map((o, index) => {
         if (fieldName.includes('radio')) {
           return {
-            RadioProps: {id: 'radio-group-field-' + i},
+            RadioProps: {id: 'radio-group-field-' + index},
             ...o,
           };
         }
@@ -311,7 +328,7 @@ export const OptionsEditor = ({
   };
 
   /**
-   * If user chooses to auto-update references in conditions
+   * Used when user chooses to auto-update references in conditions
    */
   const updateConditions = (oldValue: string, newValue: string) => {
     // Field-level conditions
@@ -357,14 +374,18 @@ export const OptionsEditor = ({
   };
 
   /**
-   * handleDragEnd is triggered after a user finishes dragging an option
+   * Handles drag-and-drop reordering
    */
   const handleDragEnd = (event: DragEndEvent) => {
     const {active, over} = event;
+
+    // if we are over something - and the over id is not equal to the active id
+    // (i.e. we have moved)
     if (over && active.id !== over.id) {
       const oldIndex = options.findIndex(item => item.value === active.id);
       const newIndex = options.findIndex(item => item.value === over.id);
 
+      // Reorder options array
       const newOptions = [...options];
       const [movedItem] = newOptions.splice(oldIndex, 1);
       newOptions.splice(newIndex, 0, movedItem);
@@ -374,11 +395,12 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Moves an option up or down in the list
+   * Moves option up or down using arrow buttons
    */
   const moveOption = (index: number, direction: 'up' | 'down') => {
     const newOptions = [...options];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
+
     if (newIndex >= 0 && newIndex < options.length) {
       [newOptions[index], newOptions[newIndex]] = [
         newOptions[newIndex],
@@ -389,11 +411,12 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Add a new option via user form submission
+   * Handles adding new option submission
    */
   const addOption = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const error = validateOptionText(newOption);
+
     if (error) {
       setErrorMessage(error);
     } else {
@@ -405,18 +428,17 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Toggle an option's "exclusive" flag (for multi-select)
+   * Toggles exclusive status of an option
    */
   const handleExclusiveToggle = (value: string) => {
     const newExclusiveOptions = exclusiveOptions.includes(value)
       ? exclusiveOptions.filter(o => o !== value)
       : [...exclusiveOptions, value];
-
     updateField(options, newExclusiveOptions);
   };
 
   /**
-   * Removes an existing option from the list
+   * Removes an option from the list
    */
   const removeOption = (option: {label: string; value: string}) => {
     const newOptions = options.filter(o => o.value !== option.value);
@@ -501,18 +523,16 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Toggles whether multi-select is displayed as an expanded checklist
+   * Toggles expanded checklist view
    */
   const toggleShowExpanded = () => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     const newValue =
       !field['component-parameters'].ElementProps?.expandedChecklist;
-
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
       expandedChecklist: newValue,
     };
-
     dispatch({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},
@@ -523,6 +543,7 @@ export const OptionsEditor = ({
     <BaseFieldEditor fieldName={fieldName}>
       <Paper sx={{width: '100%', ml: 2, mt: 2, p: 3}}>
         <Grid container spacing={2}>
+          {/* Info alert and add option form */}
           <Grid item xs={12}>
             <Alert
               severity="info"
@@ -572,12 +593,14 @@ export const OptionsEditor = ({
               </form>
             </Box>
 
+            {/* Error message display */}
             {errorMessage && (
               <Alert severity="error" sx={{mt: 2, mb: 2}}>
                 {errorMessage}
               </Alert>
             )}
 
+            {/* Expanded checklist toggle */}
             {field['component-parameters'].ElementProps?.expandedChecklist !==
               undefined && (
               <FormControlLabel
@@ -594,7 +617,7 @@ export const OptionsEditor = ({
                 label={
                   <Stack direction="row" spacing={1} alignItems="center">
                     <p>Display multi-select as an expanded checklist?</p>
-                    <Tooltip title="This option changes the multi-select from a dropdown menu to a pre-expanded checklist of items. This takes up more space, but requires fewer clicks to interact with.">
+                    <Tooltip title="This option changes the multi-select from a dropdown menu, to a pre-expanded checklist of items. This takes up more space on the user's screen, but requires less clicks to interact with.">
                       <InfoIcon color="action" fontSize="small" />
                     </Tooltip>
                   </Stack>
@@ -604,6 +627,7 @@ export const OptionsEditor = ({
             )}
           </Grid>
 
+          {/* Options table */}
           <Grid item xs={12}>
             <TableContainer
               component={Paper}
@@ -655,7 +679,7 @@ export const OptionsEditor = ({
                           }}
                         >
                           Exclusive
-                          <Tooltip title="Marking an option as 'exclusive' means it cannot be combined with other selections. For instance, choosing 'None' excludes all other choices.">
+                          <Tooltip title="Checking this setting marks the option as 'exclusive'. Exclusive options cannot be combined with other selections. For example, choosing 'None' will exclude other selections.">
                             <InfoIcon color="action" fontSize="small" />
                           </Tooltip>
                         </Box>
@@ -675,6 +699,7 @@ export const OptionsEditor = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
+                  {/* Drag and drop context wrapper */}
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -707,7 +732,7 @@ export const OptionsEditor = ({
           </Grid>
         </Grid>
 
-        {/* Edit Option Dialog */}
+        {/* Edit option dialog */}
         <Dialog
           open={!!editingOption}
           onClose={() => setEditingOption(null)}
@@ -728,7 +753,6 @@ export const OptionsEditor = ({
               value={editValue}
               onChange={e => setEditValue(e.target.value)}
             />
-
             {errorMessage && (
               <Alert severity="error" sx={{mt: 2}}>
                 {errorMessage}
