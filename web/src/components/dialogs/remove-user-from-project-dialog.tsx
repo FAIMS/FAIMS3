@@ -28,6 +28,7 @@ export const RemoveUserFromProjectDialog = ({
   userId: string;
   admin: boolean;
 }) => {
+  const [error, setError] = useState('');
   const {user} = useAuth();
   const {projectId} = Route.useParams();
   const queryClient = useQueryClient();
@@ -52,28 +53,37 @@ export const RemoveUserFromProjectDialog = ({
           variant="destructive"
           className="w-full"
           onClick={async () => {
-            const response = await fetch(
-              `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/users/${userId}`,
-              {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${user?.token}`,
-                },
+            try {
+              const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/users/${userId}`,
+                {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${user?.token}`,
+                  },
+                }
+              );
+
+              if (!response.ok) {
+                setError('Error removing user');
               }
-            );
 
-            if (!response.ok) return;
+              queryClient.invalidateQueries({
+                queryKey: ['project-users', projectId],
+              });
 
-            queryClient.invalidateQueries({
-              queryKey: ['project-users', projectId],
-            });
+              setOpen(false);
+            } catch (error) {
+              console.log(error);
 
-            setOpen(false);
+              setError('Error removing user');
+            }
           }}
         >
           Remove User
         </Button>
+        <div className="text-red-500 text-sm mt-2">{error}</div>
       </DialogContent>
     </Dialog>
   );

@@ -508,10 +508,7 @@ export const FieldEditor = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDuplicateDialog}>Cancel</Button>
-          <Button
-            onClick={duplicateField}
-            disabled={!duplicateTitle.trim()}
-          >
+          <Button onClick={duplicateField} disabled={!duplicateTitle.trim()}>
             Duplicate
           </Button>
         </DialogActions>
