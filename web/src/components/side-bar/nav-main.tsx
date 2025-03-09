@@ -23,6 +23,7 @@ interface NavItem {
   icon?: LucideIcon;
   isActive?: boolean;
   items?: {
+    id: string;
     title: string;
     url?: string;
   }[];
@@ -83,7 +84,7 @@ export function NavMain({title, items}: NavMainProps) {
               <CollapsibleContent>
                 <SidebarMenuSub>
                   {item.items?.map(subItem => (
-                    <SidebarMenuSubItem key={subItem.title}>
+                    <SidebarMenuSubItem key={subItem.id}>
                       <SidebarMenuSubButton asChild>
                         {subItem.url ? (
                           <Link

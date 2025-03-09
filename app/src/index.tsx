@@ -17,25 +17,47 @@
  * Description:
  *   TODO
  */
-import ReactDOM from 'react-dom/client';
+import {ProjectDataObject, registerClient} from '@faims3/data-model';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';
-
-import './index.css';
-import App from './App';
-import * as serviceWorkerRegistration from './serviceWorkerRegistration';
-import {addNativeHooks} from './native_hooks';
-// import {EFooter} from './footer';
-//import reportWebVitals from './reportWebVitals';
 import React from 'react';
-import {registerClient} from '@faims3/data-model';
-import {getDataDB, getMetadataDbForProject} from './sync';
-import {shouldDisplayRecord} from './users';
+import ReactDOM from 'react-dom/client';
+import App from './App';
 import {APP_NAME} from './buildconfig';
+import {databaseService} from './context/slices/helpers/databaseService';
+import {selectAllProjects} from './context/slices/projectSlice';
+import {store} from './context/store';
+import './index.css';
+import {addNativeHooks} from './native_hooks';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import {shouldDisplayRecord} from './users';
+
+const getDataDB = async (
+  projectId: string
+): Promise<PouchDB.Database<ProjectDataObject>> => {
+  const projectState = store.getState();
+  const dbId = selectAllProjects(projectState).find(
+    p => p.projectId === projectId
+  )?.database?.localDbId;
+  if (!dbId) {
+    throw Error(
+      `Could not get Data DB for project with ID. The project store does not contain a reference to this project database ${projectId}.`
+    );
+  }
+  const db = databaseService.getLocalDatabase(dbId);
+  if (!db) {
+    throw Error(
+      `Could not get Data DB for project with ID: ${projectId}. Database service missing entry.`
+    );
+  }
+  return db;
+};
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
+  // This will consult with the store to get the current data DB for the
+  // project
   getDataDB: getDataDB,
-  getProjectDB: getMetadataDbForProject,
+  // This will determine if a record should be displayed
   shouldDisplayRecord: shouldDisplayRecord,
 });
 
