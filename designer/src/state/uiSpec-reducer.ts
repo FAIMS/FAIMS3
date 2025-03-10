@@ -282,7 +282,8 @@ export const uiSpecificationReducer = createSlice({
       state.fields[fieldLabel] = newField;
 
       // add the new field to the view right after the original field
-      const position = state.fviews[viewId].fields.indexOf(originalFieldName) + 1;
+      const position =
+        state.fviews[viewId].fields.indexOf(originalFieldName) + 1;
       state.fviews[viewId].fields.splice(position, 0, fieldLabel);
     },
     sectionRenamed: (
@@ -402,6 +403,7 @@ export const uiSpecificationReducer = createSlice({
       const newViewSet = {
         label: formName,
         views: [],
+        publishButtonBehaviour: 'always' as 'always' | 'visited' | 'noErrors',
       };
       const formID = slugify(formName);
       // add this to the viewsets
@@ -412,6 +414,7 @@ export const uiSpecificationReducer = createSlice({
         state.visible_types.push(formID);
       }
     },
+
     viewSetDeleted: (state, action: PayloadAction<{viewSetId: string}>) => {
       const {viewSetId} = action.payload;
 
@@ -529,6 +532,20 @@ export const uiSpecificationReducer = createSlice({
         state.visible_types.splice(state.visible_types.length, 0, viewSetId);
       }
     },
+
+    viewSetPublishButtonBehaviourUpdated: (
+      state,
+      action: PayloadAction<{
+        viewSetId: string;
+        publishButtonBehaviour: 'always' | 'visited' | 'noErrors';
+      }>
+    ) => {
+      const {viewSetId, publishButtonBehaviour} = action.payload;
+      if (viewSetId in state.viewsets) {
+        state.viewsets[viewSetId].publishButtonBehaviour =
+          publishButtonBehaviour;
+      }
+    },
   },
 });
 
@@ -552,6 +569,7 @@ export const {
   viewSetMoved,
   viewSetRenamed,
   formVisibilityUpdated,
+  viewSetPublishButtonBehaviourUpdated,
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
 } = uiSpecificationReducer.actions;
