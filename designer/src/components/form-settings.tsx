@@ -99,10 +99,10 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
    */
   const handlePublishButtonBehaviourChange = (event: any) => {
     const newValue = event.target.value;
-    setSelectedPublishBehaviour(newValue); // ✅ Update local state
+    setSelectedPublishBehaviour(newValue);
 
     dispatch({
-      type: 'ui-specification/viewSetPublishButtonBehaviourUpdated', // ✅ FIXED DISPATCH
+      type: 'ui-specification/viewSetPublishButtonBehaviourUpdated',
       payload: {
         viewSetId,
         publishButtonBehaviour: newValue as 'always' | 'visited' | 'noErrors',
