@@ -35,17 +35,15 @@ import GeoJSON from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform} from 'ol/proj';
-import {Attribution} from 'ol/source/Source';
 import VectorSource from 'ol/source/Vector';
 import {RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
-import {ImageTileStore, StoredTileSet, VectorTileStore} from './tile-source';
-import apply, {applyStyle} from 'ol-mapbox-style';
-import {MAP_SOURCE_KEY} from '../../../buildconfig';
+import {StoredTileSet, VectorTileStore} from './tile-source';
 
 const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
+const TILE_MAX_ZOOM = 14; // for vector tiles...need a better way to handle this
 const MIN_ZOOM = 12;
 
 /**
@@ -109,6 +107,7 @@ export const MapDownloadComponent = () => {
       zoom: zoomLevel,
       maxZoom: MAX_ZOOM,
     });
+    console.log('created map at zoom level', zoomLevel);
 
     const theMap = new Map({
       target: element,
@@ -117,10 +116,7 @@ export const MapDownloadComponent = () => {
       controls: [new Zoom()],
     });
 
-    // apply style to the vector tiles...
-    const styleJson = `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAP_SOURCE_KEY}`;
-    apply(theMap, styleJson);
-
+    // create a center control
     // Add this in the createMap function after creating theMap
     theMap.getView().on('change:resolution', () => {
       const z = theMap.getView().getZoom();
@@ -134,16 +130,18 @@ export const MapDownloadComponent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
       let sizeStr = '';
-      tileStore.estimateSizeForRegion(extent, MIN_ZOOM, MAX_ZOOM).then(size => {
-        if (size > 1024 * 1024) {
-          sizeStr = (size / 1024 / 1024).toFixed(2) + ' TB';
-        } else if (size > 1024) {
-          sizeStr = (size / 1024).toFixed(2) + ' GB';
-        } else {
-          sizeStr = size + ' MB';
-        }
-        setCacheSize(sizeStr);
-      });
+      tileStore
+        .estimateSizeForRegion(extent, zoomLevel, TILE_MAX_ZOOM)
+        .then(size => {
+          if (size > 1024 * 1024) {
+            sizeStr = (size / 1024 / 1024).toFixed(2) + ' TB';
+          } else if (size > 1024) {
+            sizeStr = (size / 1024).toFixed(2) + ' GB';
+          } else {
+            sizeStr = size + ' MB';
+          }
+          setCacheSize(sizeStr);
+        });
     }
   };
 
@@ -154,8 +152,8 @@ export const MapDownloadComponent = () => {
       try {
         await tileStore.createTileSet(
           extent,
-          MIN_ZOOM,
-          MAX_ZOOM,
+          zoomLevel,
+          TILE_MAX_ZOOM,
           downloadSetName
         );
         // when something happens, get the new tileSets

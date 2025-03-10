@@ -19,22 +19,21 @@
  */
 
 import {Extent} from 'ol/extent';
+import {FeatureLike} from 'ol/Feature';
 import MVT from 'ol/format/MVT';
 import TileLayer from 'ol/layer/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import {LoaderOptions} from 'ol/source/DataTile';
 import ImageTileSource from 'ol/source/ImageTile';
-import {ATTRIBUTION} from 'ol/source/OSM';
+import OSM, {ATTRIBUTION} from 'ol/source/OSM';
 import VectorTileSource from 'ol/source/VectorTile';
-import {MAP_SOURCE, MAP_SOURCE_KEY} from '../../../buildconfig';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
-import {FeatureLike} from 'ol/Feature';
-import {applyStyle} from 'ol-mapbox-style';
+import {MAP_SOURCE, MAP_SOURCE_KEY} from '../../../buildconfig';
+import {mapStyle} from './map-style';
+
 interface StoredTile {
-  x: number;
-  y: number;
-  z: number;
+  url: string;
   data: Blob;
   sets: string[];
 }
@@ -93,7 +92,6 @@ class IDB<Type> {
       if (!this.db) {
         return;
       }
-      console.log('getAll', this.dbName);
       const transaction = this.db.transaction(this.dbName, 'readonly');
       const store = transaction.objectStore(this.dbName);
       const request = store.getAll();
@@ -169,11 +167,7 @@ class TileStoreBase {
         console.log('running onsuccess');
         TileStoreBase.db = request.result;
         if (!this.tileDB)
-          this.tileDB = new IDB<StoredTile>(TileStoreBase.db, 'tiles', [
-            'z',
-            'x',
-            'y',
-          ]);
+          this.tileDB = new IDB<StoredTile>(TileStoreBase.db, 'tiles', ['url']);
         if (!this.tileSetDB)
           this.tileSetDB = new IDB<StoredTileSet>(
             TileStoreBase.db,
@@ -189,7 +183,7 @@ class TileStoreBase {
           const db = event.target.result;
           if (!db.objectStoreNames.contains('tiles')) {
             db.createObjectStore('tiles', {
-              keyPath: ['z', 'x', 'y'],
+              keyPath: ['url'],
             });
           }
           if (!db.objectStoreNames.contains('tileSets')) {
@@ -206,18 +200,13 @@ class TileStoreBase {
    * Store a tile in the database
    * @returns the key of the tile in the database
    */
-  async storeTileRecord(
-    z: number,
-    x: number,
-    y: number,
-    data: Blob,
-    set: string
-  ) {
-    const tile = {z, x, y, data, sets: [set]};
-    const existingTile = await this.tileDB.get([z, x, y]);
+  async storeTileRecord(url: string, data: Blob, set: string) {
+    const tile = {url, data, sets: [set]};
+    const existingTile = await this.tileDB.get(url);
     if (existingTile) {
       tile.sets = [...existingTile.sets, set];
     }
+    console.log('storing tile', tile);
     const tileKey = await this.tileDB.put(tile);
     const size = tile.data.size;
     return {tileKey, size};
@@ -227,23 +216,32 @@ class TileStoreBase {
     return undefined;
   }
 
-  async getTileBlob(
-    z: number,
-    x: number,
-    y: number
-  ): Promise<Blob | undefined> {
-    const image = await this.tileDB.get([z, x, y]);
-    if (image) console.log('got tile from cache', z, x, y);
-    if (image) return image.data;
-    else if (navigator.onLine) {
-      const urlTemplate = this.getTileURL();
-      if (urlTemplate) {
-        console.log('fetching tile', z, x, y);
-        const url = urlTemplate
-          .replace('{z}', z.toString())
-          .replace('{x}', x.toString())
-          .replace('{y}', y.toString())
-          .replace('{key}', MAP_SOURCE_KEY);
+  getURLForTile({
+    z,
+    x,
+    y,
+  }: {
+    z: number;
+    x: number;
+    y: number;
+  }): string | undefined {
+    const urlTemplate = this.getTileURL();
+    if (urlTemplate) {
+      return urlTemplate
+        .replace('{z}', z.toString())
+        .replace('{x}', x.toString())
+        .replace('{y}', y.toString())
+        .replace('{key}', MAP_SOURCE_KEY);
+    }
+  }
+
+  async getTileBlob(url: string | undefined): Promise<Blob | undefined> {
+    if (url) {
+      const image = await this.tileDB.get([url]);
+      // if (image) console.log('got tile from cache', url);
+      if (image) return image.data;
+      else if (navigator.onLine) {
+        // console.log('cache miss, fetching tile', url);
         const response = await fetch(url);
         return await response.blob();
       }
@@ -252,27 +250,7 @@ class TileStoreBase {
     return undefined;
   }
 
-  async getTileAsDataURL(
-    z: number,
-    x: number,
-    y: number
-  ): Promise<string | null> {
-    const image = await this.getTileBlob(z, x, y);
-    return new Promise((resolve, reject) => {
-      if (!image) {
-        resolve(null);
-      } else {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve(reader.result as string);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(image);
-      }
-    });
-  }
-
-  // get the tile grid, will be overridden by subclasses but 
+  // get the tile grid, will be overridden by subclasses but
   // here git the generic OSM grid
   getTileGrid() {
     const osm = new OSM();
@@ -292,14 +270,17 @@ class TileStoreBase {
     maxZoom: number
   ) {
     const tileGrid = this.getTileGrid();
-    const average_size = 10; // kb
+    const average_size = 100; // kb
 
+    console.log('estimate size for region', extent, minZoom, maxZoom);
     const tileSet = new Set<string>();
-    for (let zoom = minZoom; zoom <= maxZoom; zoom += 1) {
+    const startZoom = Math.floor(minZoom - 1);
+    for (let zoom = startZoom; zoom <= maxZoom; zoom += 1) {
       tileGrid?.forEachTileCoord(
         extent,
         Math.ceil(zoom),
         ([z, x, y]: number[]) => {
+          console.log('tile', z, x, y);
           tileSet.add(`${z}|${x}|${y}`);
         }
       );
@@ -340,7 +321,7 @@ class TileStoreBase {
     const tileSet: StoredTileSet = {
       setName,
       extent,
-      minZoom,
+      minZoom: Math.floor(minZoom - 1),
       maxZoom,
       size: 0,
       expectedTileCount: 0,
@@ -387,12 +368,12 @@ class TileStoreBase {
 
     for (const tileCoord of tileCoords) {
       const [z, x, y] = tileCoord;
-      const tileBlob = await this.getTileBlob(z, x, y);
-      if (tileBlob) {
+      const url = this.getURLForTile({z, x, y});
+      console.log('looking for tile', url);
+      const tileBlob = await this.getTileBlob(url);
+      if (tileBlob && url) {
         const {tileKey, size} = await this.storeTileRecord(
-          z,
-          x,
-          y,
+          url,
           tileBlob,
           tileSet.setName
         );
@@ -483,6 +464,26 @@ export class ImageTileStore extends TileStoreBase {
     return '&copy; OSM contributors';
   }
 
+  async getTileAsDataURL(
+    z: number,
+    x: number,
+    y: number
+  ): Promise<string | null> {
+    const image = await this.getTileBlob(this.getURLForTile({z, x, y}));
+    return new Promise((resolve, reject) => {
+      if (!image) {
+        resolve(null);
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result as string);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(image);
+      }
+    });
+  }
+
   /**
    * @param {number} z The tile z coordinate.
    * @param {number} x The tile x coordinate.
@@ -505,11 +506,9 @@ export class ImageTileStore extends TileStoreBase {
 
 // A vector tile source, will download and store vector tiles
 // which should be smaller.
-// TODO: Need to apply a style to the tiles to get a useful map, looked at
-// ol-mapbox-style which might work but it needs a licence key. Need to
-// find an open alternative.
+//
 // Also works with tiles served from local Planetiler instance
-// <https://github.com/onthegomap/planetiler> but again no style.
+// <https://github.com/onthegomap/planetiler>
 // TODO: work out how to implement the download/cache option for these
 // tiles.  `tileLoaderFunction` should be the way.
 
@@ -523,14 +522,14 @@ export class VectorTileStore extends TileStoreBase {
       attributions: ATTRIBUTION,
       url: this.getTileURL(),
       format: new MVT(),
+      maxZoom: 14,
       tileLoadFunction: this.tileLoader.bind(this),
     });
+
     this.tileLayer = new VectorTileLayer({
       source: this.source,
+      style: mapStyle,
     });
-
-    //applyStyle(this.tileLayer, styleJson);
-    console.log('initialized vector tile source');
   }
 
   getTileURL(): string | undefined {
@@ -538,6 +537,7 @@ export class VectorTileStore extends TileStoreBase {
   }
 
   getTileGrid() {
+    console.log('tileGrid', this.source.getTileGrid());
     return this.source.getTileGrid();
   }
 
@@ -555,20 +555,24 @@ export class VectorTileStore extends TileStoreBase {
    * @return {}
    */
   async tileLoader(tile: VectorTile<FeatureLike>, url: string) {
-    tile.setLoader((extent, resolution, projection) => {
-      console.log('loading tile', tile, url);
-      const fullURL = url.replace('{key}', MAP_SOURCE_KEY);
-
-      fetch(fullURL).then(response => {
-        response.arrayBuffer().then(data => {
-          console.log('got data', data.byteLength);
-          const format = tile.getFormat(); // ol/format/MVT configured as source format
-          const features = format.readFeatures(data, {
-            extent: extent,
-            featureProjection: projection,
+    tile.setLoader(async (extent, resolution, projection) => {
+      const tileCoords = tile.getTileCoord();
+      const tileUrl = this.getURLForTile({
+        z: tileCoords[0],
+        x: tileCoords[1],
+        y: tileCoords[2],
+      });
+      this.getTileBlob(tileUrl).then(blob => {
+        if (blob) {
+          blob.arrayBuffer().then(data => {
+            const format = tile.getFormat(); // ol/format/MVT configured as source format
+            const features = format.readFeatures(data, {
+              extent: extent,
+              featureProjection: projection,
+            });
+            tile.setFeatures(features);
           });
-          tile.setFeatures(features);
-        });
+        }
       });
     });
   }
