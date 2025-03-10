@@ -206,7 +206,6 @@ class TileStoreBase {
     if (existingTile) {
       tile.sets = [...existingTile.sets, set];
     }
-    console.log('storing tile', tile);
     const tileKey = await this.tileDB.put(tile);
     const size = tile.data.size;
     return {tileKey, size};
@@ -280,7 +279,6 @@ class TileStoreBase {
         extent,
         Math.ceil(zoom),
         ([z, x, y]: number[]) => {
-          console.log('tile', z, x, y);
           tileSet.add(`${z}|${x}|${y}`);
         }
       );
@@ -366,29 +364,37 @@ class TileStoreBase {
     tileSet.expectedTileCount = tileCoords.length;
     this.tileSetDB.put(tileSet);
 
-    for (const tileCoord of tileCoords) {
-      const [z, x, y] = tileCoord;
-      const url = this.getURLForTile({z, x, y});
-      console.log('looking for tile', url);
-      const tileBlob = await this.getTileBlob(url);
-      if (tileBlob && url) {
-        const {tileKey, size} = await this.storeTileRecord(
-          url,
-          tileBlob,
-          tileSet.setName
-        );
-        if (tileKey) {
-          tileSet.tileKeys.push(tileKey);
-          tileSet.size += size;
-          // update DB after each download to enable live progress
-          this.tileSetDB.put(tileSet);
-          // signal to anyone listening that we have made progress
-          const event = new CustomEvent('offline-map-download', {
-            detail: tileSet,
-          });
-          dispatchEvent(event);
-        }
-      }
+    // Create batches of downloads to avoid overwhelming the browser
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < tileCoords.length; i += BATCH_SIZE) {
+      const batch = tileCoords.slice(i, i + BATCH_SIZE);
+
+      await Promise.all(
+        batch.map(async tileCoord => {
+          const [z, x, y] = tileCoord;
+          const url = this.getURLForTile({z, x, y});
+          const tileBlob = await this.getTileBlob(url);
+
+          if (tileBlob && url) {
+            const {tileKey, size} = await this.storeTileRecord(
+              url,
+              tileBlob,
+              tileSet.setName
+            );
+            if (tileKey) {
+              tileSet.tileKeys.push(tileKey);
+              tileSet.size += size;
+              await this.tileSetDB.put(tileSet);
+
+              dispatchEvent(
+                new CustomEvent('offline-map-download', {
+                  detail: tileSet,
+                })
+              );
+            }
+          }
+        })
+      );
     }
   }
 

@@ -24,8 +24,7 @@ export const mapStyle = (feature: any, resolution: number): Style | Style[] => {
 
       return new Style({
         fill: new Fill({
-          //color: `rgba(222, 211, 190, ${opacity})`,
-          color: `rgba(256, 0, 0, ${opacity})`,
+          color: `rgba(222, 211, 190, ${opacity})`,
         }),
         stroke: new Stroke({
           color: `rgba(212, 177, 146, ${opacity / 2})`,
@@ -105,7 +104,7 @@ export const mapStyle = (feature: any, resolution: number): Style | Style[] => {
           colour = 'hsl(132, 42%, 60%)';
           break;
         case 'railway':
-          colour = 'hsl(54, 12%, 31%)';
+          colour = 'hsla(54, 12%, 31%, 0.517)';
           break;
         case 'industrial':
           colour = '#EAE0D0';
