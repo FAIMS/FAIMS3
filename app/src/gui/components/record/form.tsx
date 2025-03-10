@@ -793,15 +793,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
     const allVisited = allSections.every((section: string) =>
       this.state.visitedSteps.has(section)
     );
-
-    console.log('All Sections:', allSections);
-    console.log('All Sections Visited?', allVisited);
-
-    if (allVisited) {
-      console.log('All sections are now visited.');
-    } else {
-      console.log('ome sections are still unvisited.');
-    }
   }
 
   onChangeStepper(view_name: string, activeStepIndex: number) {
@@ -811,21 +802,14 @@ class RecordForm extends React.Component<any, RecordFormState> {
 
         const wasVisitedBefore = prevState.visitedSteps.has(view_name);
 
-        console.log('Current Step:', view_name);
-        console.log('Previous Steps:', prevState.visitedSteps);
-        console.log('Was Visited Before:', wasVisitedBefore);
-
         // add to visitedSteps if it has not been visited before
         const updatedVisitedSteps = new Set(prevState.visitedSteps);
         updatedVisitedSteps.add(view_name);
-        console.log('Updated Visited Steps:', updatedVisitedSteps);
 
         const isFirstStep = activeStepIndex === 0;
 
         const isRevisiting =
           wasVisitedBefore || (isFirstStep && activeStep !== activeStepIndex);
-
-        console.log('Is Revisiting:', isRevisiting);
 
         return {
           ...prevState,
@@ -836,11 +820,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
         };
       },
       () => {
-        // 🔹 Add a callback function after setState to verify if all sections are visited
-        console.log(
-          'Final Visited Steps (after update):',
-          this.state.visitedSteps
-        );
         this.checkAllSectionsVisited(); // Check if all sections are visited
       }
     );
@@ -1425,13 +1404,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
                 const publishButtonBehaviour =
                   this.props.ui_specification.viewsets[this.getViewsetName()]
                     ?.publishButtonBehaviour || 'always';
-
-                console.log(
-                  ' Publish Button Behaviour:',
-                  publishButtonBehaviour
-                );
-                console.log(' All Sections Visited?', allSectionsVisited);
-                console.log(' Form Has Errors?', hasErrors);
 
                 const showPublishButton =
                   publishButtonBehaviour === 'always' ||
