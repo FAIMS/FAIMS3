@@ -1,5 +1,5 @@
 import {ColumnDef} from '@tanstack/react-table';
-import {Ellipsis, KeyRound, PlusCircle, Trash} from 'lucide-react';
+import {KeyRound, Trash} from 'lucide-react';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {Button} from '../ui/button';
 import Role from '../ui/role-card';
