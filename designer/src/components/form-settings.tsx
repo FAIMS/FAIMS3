@@ -84,11 +84,10 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   );
   const [expanded, setExpanded] = React.useState(false);
 
-  const publishButtonBehaviour = viewSet?.publishButtonBehaviour || 'always';
-
   const [selectedPublishBehaviour, setSelectedPublishBehaviour] =
     React.useState('always');
 
+  // Ensure selected value persists and is updated in the Redux store
   React.useEffect(() => {
     if (viewSet?.publishButtonBehaviour) {
       setSelectedPublishBehaviour(viewSet.publishButtonBehaviour);
@@ -96,15 +95,14 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   }, [viewSet?.publishButtonBehaviour]);
 
   /**
-   * Updates the Publish Button Behavior setting
+   * Updates the Publish Button Behavior setting in Redux and persists it
    */
   const handlePublishButtonBehaviourChange = (event: any) => {
     const newValue = event.target.value;
-
-    setSelectedPublishBehaviour(newValue);
+    setSelectedPublishBehaviour(newValue); // ✅ Update local state
 
     dispatch({
-      type: 'ui-specification/viewSetPublishButtonBehaviourUpdated',
+      type: 'ui-specification/viewSetPublishButtonBehaviourUpdated', // ✅ FIXED DISPATCH
       payload: {
         viewSetId,
         publishButtonBehaviour: newValue as 'always' | 'visited' | 'noErrors',
