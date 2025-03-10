@@ -1327,16 +1327,9 @@ class RecordForm extends React.Component<any, RecordFormState> {
         viewsetName,
         {}
       );
-      // Publish buttons behaviour
-      // const publishButtonBehaviour =
-      //   ui_specification.viewsets[viewsetName]?.publishButtonBehaviour ||
-      //   'always';
-
-      // console.log('publishbuttonbehaviour', publishButtonBehaviour);
 
       // Track visited sections and errors
       const allSectionsVisited = this.state.visitedSteps.size === views.length;
-      console.log('allsectionsvisited', allSectionsVisited);
 
       return (
         <Box>
