@@ -35,14 +35,14 @@ import MapWrapper, {MapAction} from './MapWrapper';
 
 // If no center is available - pass this through
 // Sydney CBD
-const FALLBACK_CENTER = [151.2093, -33.8688];
+const FALLBACK_CENTER: [number, number] = [151.2093, -33.8688];
 
 export interface MapFieldProps extends FieldProps {
   label?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
   geoTiff?: string;
   projection?: string;
-  center?: Array<number>;
+  center?: [number, number];
   zoom?: number;
   FormLabelProps?: any;
   helperText: string;
@@ -59,7 +59,9 @@ export function MapFormField({
   const {isOnline} = useIsOnline();
 
   // center location of map - use provided center if any
-  const [center, setCenter] = useState<number[] | undefined>(props.center);
+  const [center, setCenter] = useState<[number, number] | undefined>(
+    props.center
+  );
 
   // and a ref to track if gps location has already been requested
   const gpsCenterRequested = useRef<boolean>(false);
