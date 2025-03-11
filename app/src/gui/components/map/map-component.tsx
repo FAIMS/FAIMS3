@@ -79,7 +79,7 @@ export const MapComponent = (props: MapComponentProps) => {
    * Create the OpenLayers map element
    */
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
-    setAttribution(tileStore.getAttribution());
+    setAttribution(tileStore.getAttribution() as unknown as string);
     const tileLayer = tileStore.getTileLayer();
     const view = new View({
       projection: defaultMapProjection,

@@ -32,6 +32,7 @@ import VectorTile from 'ol/VectorTile';
 import {MAP_SOURCE, MAP_SOURCE_KEY, MAP_STYLE} from '../../../buildconfig';
 import {applyStyle} from 'ol-mapbox-style';
 import {getMapStylesheet} from './styles';
+import Tile from 'ol/Tile';
 
 // Table of map tile sources for raster and vector tiles
 // based on configuration settings we select which of these to use
@@ -560,8 +561,10 @@ export class VectorTileStore extends TileStoreBase {
    * @param {url} the URL of the target tile
    * @return {}
    */
-  async tileLoader(tile: VectorTile<FeatureLike>) {
-    tile.setLoader(async (extent, resolution, projection) => {
+  async tileLoader(tile: Tile) {
+    // a little dance for Typescript...
+    const vTile = tile as VectorTile<FeatureLike>;
+    vTile.setLoader(async (extent, resolution, projection) => {
       const tileCoords = tile.getTileCoord();
       const tileUrl = this.getURLForTile({
         z: tileCoords[0],
@@ -571,12 +574,12 @@ export class VectorTileStore extends TileStoreBase {
       this.getTileBlob(tileUrl).then(blob => {
         if (blob) {
           blob.arrayBuffer().then(data => {
-            const format = tile.getFormat(); // ol/format/MVT configured as source format
+            const format = vTile.getFormat(); // ol/format/MVT configured as source format
             const features = format.readFeatures(data, {
               extent: extent,
               featureProjection: projection,
             });
-            tile.setFeatures(features);
+            vTile.setFeatures(features);
           });
         }
       });
