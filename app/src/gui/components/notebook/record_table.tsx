@@ -750,6 +750,22 @@ const useTableRows = (
     } else {
       relevantRows = rows.filter(row => visibleTypes.includes(row.type));
     }
+
+    relevantRows.sort((a, b) => {
+      const dateA = a.created
+        ? new Date(a.created).getTime()
+        : a.updated
+          ? new Date(a.updated).getTime()
+          : 0;
+      const dateB = b.created
+        ? new Date(b.created).getTime()
+        : b.updated
+          ? new Date(b.updated).getTime()
+          : 0;
+
+      return dateB - dateA; // Sort descending (newest first)
+    });
+
     return {
       rows: relevantRows,
       hasConflict: relevantRows.some(r => {
