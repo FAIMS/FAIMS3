@@ -343,7 +343,6 @@ export const useRecordList = ({
       }
       let rows;
 
-      console.log('Fetching records');
       if (query.length === 0) {
         rows = await getMetadataForAllRecords(
           token,
@@ -361,7 +360,6 @@ export const useRecordList = ({
         );
       }
 
-      console.log('Done');
       return rows;
     },
   });
