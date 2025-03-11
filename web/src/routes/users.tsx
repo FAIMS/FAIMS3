@@ -19,7 +19,7 @@ export const Route = createFileRoute('/users')({
 function RouteComponent() {
   const {user: authUser} = useAuth();
   const {data: users, isPending} = useGetUsers(authUser);
-  const {data: roles, isPending: isRolesPending} = useGetRoles(authUser);
+  const {data: roles} = useGetRoles(authUser);
 
   const [resetDialog, setResetDialog] = useState<boolean>(false);
   const [resetUserId, setResetUserId] = useState<string | undefined>(undefined);

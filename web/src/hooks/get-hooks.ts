@@ -109,5 +109,5 @@ export const useGetRecords = (user: User | null, projectId: string) =>
 export const useGetRoles = (user: User | null) =>
   useQuery({
     queryKey: ['roles'],
-    queryFn: () => get(`/api/users/roles`, user),
+    queryFn: () => get('/api/users/roles', user),
   });
