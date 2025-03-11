@@ -17,7 +17,7 @@ The overall workflow of refresh tokens is
 
 A refresh token is a unique random UUID string which authorises the user to exchange said token for current access token JWTs up to the expiry of the refresh token.
 
-A refresh token is an opaque unique ID which corresponds to a database document which describes the authority of the token. The schema of the document is defined in [data model](../../library/data-model/src/data_storage/authDB/document.ts) e.g.
+A refresh token is an opaque unique ID which corresponds to a database document which describes the authority of the token. The schema of the document is defined in `library/data-model/src/data_storage/authDB/document.ts` e.g.
 
 ```typescript
 export interface RefreshRecordFields {
@@ -44,7 +44,7 @@ These tokens are created by generating an opaque unique ID, then lodging a docum
 
 These tokens will not be generated unless the user has provided original credentials, and cannot be extended.
 
-The method which generates these tokens is [shown below](../../api/src/couchdb/refreshTokens.ts)
+The method which generates these tokens is `api/src/couchdb/refreshTokens.ts`
 
 ```typescript
 /**
@@ -85,7 +85,7 @@ export const createNewRefreshToken = async (
 
 Refresh tokens are stored in a database called `auth` which, while containing an indexing and ID prefixing structure which allows for multiple document types, currently contains only refresh tokens.
 
-This database is initialised alongside other initialisation methods in the [initialisation code](../../api/src/couchdb/initialise.ts). Notably, we inject a permission document, some views/indexes and set the security settings
+This database is initialised alongside other initialisation methods in the `api/src/couchdb/initialise.ts`. Notably, we inject a permission document, some views/indexes and set the security settings
 
 ```typescript
 try {
@@ -114,7 +114,7 @@ try {
 }
 ```
 
-These documents are defined in [data model](../../library/data-model/src/data_storage/authDB). Notably, view map methods are implemented in native JS and then compiled into a string and injected into the DB, which provides an advantage over plain strings due to the availability of linting, IDE syntax highlighting etc.
+These documents are defined in `library/data-model/src/data_storage/authDB`. Notably, view map methods are implemented in native JS and then compiled into a string and injected into the DB, which provides an advantage over plain strings due to the availability of linting, IDE syntax highlighting etc.
 
 **Note**: If these documents change, the initialisation method will not apply the updates due to the existence of prior records. To update documents, this could be done by
 
@@ -212,7 +212,7 @@ This is returned as a query string and then parsed by the front end in the Auth 
 
 ### How are refresh tokens used in the FAIMS3 app?
 
-The FAIMS3 application has a local pouch DB which stores the following [data structure](../../app/src/sync/databases.ts):
+The FAIMS3 application has a local pouch DB which stores the following data structure:
 
 ```typescript
 /**
@@ -243,7 +243,7 @@ Note that there is an entry for `LocalAuthDoc` for each listing.
 
 TODO: understand which token is 'relevant'/'active' at a given time for the user - currently the first listing is used as a default to render protected routes, for example.
 
-This database is initialised on application startup, then kept synchronised through the [auth return](../../app/src/gui/components/authentication/auth_return.tsx) component, which retrieves the token(s) from the query strings provided in the URL, then redirects the user.
+This database is initialised on application startup, then kept synchronised through the auth return component, which retrieves the token(s) from the query strings provided in the URL, then redirects the user.
 
 The refresh endpoint is used, on demand, when the user creates a new survey - this ensures the new token has the required roles to allow the user to see and interact with this new survey.
 
