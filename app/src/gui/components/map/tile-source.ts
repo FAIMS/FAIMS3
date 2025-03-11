@@ -560,7 +560,7 @@ export class VectorTileStore extends TileStoreBase {
    * @param {url} the URL of the target tile
    * @return {}
    */
-  async tileLoader(tile: VectorTile<FeatureLike>, url: string) {
+  async tileLoader(tile: VectorTile<FeatureLike>) {
     tile.setLoader(async (extent, resolution, projection) => {
       const tileCoords = tile.getTileCoord();
       const tileUrl = this.getURLForTile({

@@ -78,15 +78,6 @@ import {useNotification} from '../../../context/popup';
 import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
 
-const styles = {
-  mapContainer: {
-    height: '90%',
-  },
-  mapSubmitButton: {
-    height: '10%',
-  },
-} as const;
-
 function MapWrapper(props: MapProps) {
   const [mapOpen, setMapOpen] = useState<boolean>(false);
   const [map, setMap] = useState<Map | undefined>();

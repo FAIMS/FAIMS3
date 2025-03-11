@@ -49,7 +49,6 @@ import {AppUrlListener} from './native_hooks';
 import {InitialiseGate, StateProvider} from './context/store';
 import {MapDownloadComponent} from './gui/components/map/map-download';
 import {OFFLINE_MAPS} from './buildconfig';
-import {MapComponent} from './gui/components/map/map-component';
 
 // type AppProps = {};
 

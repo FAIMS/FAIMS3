@@ -18,15 +18,7 @@
  *   Display an overview map of the records in the notebook.
  */
 
-import {
-  Alert,
-  Box,
-  Button,
-  FormGroup,
-  Grid,
-  Paper,
-  TextField,
-} from '@mui/material';
+import {Alert, Button, FormGroup, Grid, Paper, TextField} from '@mui/material';
 import Map from 'ol/Map';
 import {useEffect, useMemo, useState} from 'react';
 import {MapComponent} from './map-component';
@@ -58,6 +50,17 @@ export const MapDownloadComponent = () => {
     fn();
   }, []);
 
+  useEffect(() => {
+    if (map) {
+      // invalidate calculation if the map moves and keep track of zoom level
+      map.on('movestart', () => {
+        setCacheSize('');
+        const zoom = map.getView().getZoom();
+        if (zoom) setZoomLevel(zoom);
+      });
+    }
+  }, [map]);
+
   // Update the list of tilesets for display, called on init and when we remove
   // a tileset
   const updateTileSets = async () => {
@@ -81,10 +84,6 @@ export const MapDownloadComponent = () => {
           }
           setCacheSize(sizeStr);
         });
-      // invalidate calculation if the map moves
-      map.on('movestart', () => {
-        setCacheSize('');
-      });
     }
   };
 

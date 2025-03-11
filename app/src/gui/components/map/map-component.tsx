@@ -28,7 +28,7 @@ import Map from 'ol/Map';
 import {transform} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {RegularShape, Stroke, Style} from 'ol/style';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
 import {VectorTileStore} from './tile-source';
 
