@@ -2,7 +2,7 @@ import {useAuth} from '@/context/auth-provider';
 import {getColumns} from '@/components/tables/users';
 import {DataTable} from '@/components/data-table/data-table';
 import {createFileRoute} from '@tanstack/react-router';
-import {useGetUsers} from '@/hooks/get-hooks';
+import {useGetRoles, useGetUsers} from '@/hooks/get-hooks';
 import {useState} from 'react';
 import {GeneratePasswordReset} from '@/components/dialogs/generate-password-reset';
 
@@ -18,7 +18,8 @@ export const Route = createFileRoute('/users')({
  */
 function RouteComponent() {
   const {user: authUser} = useAuth();
-  const {data, isPending} = useGetUsers(authUser);
+  const {data: users, isPending} = useGetUsers(authUser);
+  const {data: roles, isPending: isRolesPending} = useGetRoles(authUser);
 
   const [resetDialog, setResetDialog] = useState<boolean>(false);
   const [resetUserId, setResetUserId] = useState<string | undefined>(undefined);
@@ -33,7 +34,11 @@ function RouteComponent() {
       <DataTable
         columns={getColumns({onReset})}
         data={
-          data?.map((user: any) => ({...user, email: user.emails[0]})) || []
+          users?.map((user: any) => ({
+            ...user,
+            email: user.emails[0],
+            all_roles: roles,
+          })) || []
         }
         loading={isPending}
         defaultRowsPerPage={15}

@@ -1,4 +1,5 @@
-import {CircleX} from 'lucide-react';
+import {cn} from '@/lib/utils';
+import {X} from 'lucide-react';
 
 /**
  * Role component renders a role in a table cell.
@@ -6,15 +7,26 @@ import {CircleX} from 'lucide-react';
  * @param {string} role - The role to render.
  * @returns {JSX.Element} The rendered Role component.
  */
-export default function RoleCard({
+export function RoleCard({
   children,
+  onClick,
   onRemove,
+  className,
 }: {
   children: React.ReactNode;
+  onClick?: () => void;
   onRemove?: () => void;
+  className?: string;
 }) {
   return (
-    <div className="group relative cursor-default bg-muted text-muted-foreground px-2 py-1 rounded-md w-fit hover:bg-muted/90 transition-colors">
+    <div
+      className={cn(
+        'group relative cursor-default bg-muted text-muted-foreground px-2 py-1 rounded-md w-fit hover:bg-muted/90 transition-colors',
+        onClick && 'cursor-pointer',
+        className
+      )}
+      onClick={onClick}
+    >
       {children}
       {onRemove && (
         <button
@@ -22,7 +34,7 @@ export default function RoleCard({
           onClick={onRemove}
           aria-label="Remove"
         >
-          <CircleX className="w-4 h-4" />
+          <X size={16} />
         </button>
       )}
     </div>

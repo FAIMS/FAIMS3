@@ -2,7 +2,8 @@ import {ColumnDef} from '@tanstack/react-table';
 import {KeyRound, Trash} from 'lucide-react';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {Button} from '../ui/button';
-import Role from '../ui/role-card';
+import {RoleCard} from '../ui/role-card';
+import {AddRolePopover} from '../popovers/add-role-popover';
 
 export const getColumns = ({
   onReset,
@@ -23,18 +24,26 @@ export const getColumns = ({
       ),
     },
     {
-      accessorKey: 'roles',
+      accessorKey: 'other_roles',
       header: 'Roles',
-      cell: ({row}: any) => (
+      cell: ({
+        row: {
+          original: {other_roles, all_roles, _id: userId},
+        },
+      }: any) => (
         <div className="flex flex-wrap gap-1 items-center">
-          {row
-            .getValue('roles')
-            .filter((role: string) => !role.includes('||'))
-            .map((role: string) => (
-              <Role key={role} onRemove={() => console.log('YAY')}>
-                {role}
-              </Role>
-            ))}
+          {other_roles.map((role: string) => (
+            <RoleCard key={role}>{role}</RoleCard>
+          ))}
+          {all_roles.filter((role: string) => !other_roles.includes(role))
+            .length > 0 && (
+            <AddRolePopover
+              roles={all_roles.filter(
+                (role: string) => !other_roles.includes(role)
+              )}
+              userId={userId}
+            />
+          )}
         </div>
       ),
     },

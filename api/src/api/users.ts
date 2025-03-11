@@ -102,6 +102,25 @@ api.get(
       );
     }
 
+    const users = await getUsers();
+
+    console.log(users);
+
     return res.json(await getUsers());
+  }
+);
+
+// GET all roles
+api.get(
+  '/roles',
+  requireAuthenticationAPI,
+  async (req: any, res: Response<string[]>) => {
+    if (!req.user || !userIsClusterAdmin(req.user)) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to get roles.'
+      );
+    }
+
+    return res.json(['cluster-admin']);
   }
 );
