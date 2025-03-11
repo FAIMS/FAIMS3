@@ -5,6 +5,12 @@ import {RoleCard} from '../ui/role-card';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 
+/**
+ * A popover that allows the user to add a role to a user.
+ * @param roles - The list of roles that the user can have.
+ * @param userId - The ID of the user to add the role to.
+ * @returns A popover that allows the user to add a role to a user.
+ */
 export const AddRolePopover = ({
   roles,
   userId,
