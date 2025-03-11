@@ -29,10 +29,24 @@ import OSM, {ATTRIBUTION} from 'ol/source/OSM';
 import VectorTileSource from 'ol/source/VectorTile';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
-import {MAP_SOURCE, MAP_SOURCE_KEY} from '../../../buildconfig';
+import {MAP_SOURCE, MAP_SOURCE_KEY, MAP_STYLE} from '../../../buildconfig';
 import {applyStyle} from 'ol-mapbox-style';
 import {getMapStylesheet} from './styles';
 
+// Table of map tile sources for raster and vector tiles
+// based on configuration settings we select which of these to use
+//
+const TILE_URL_MAP: {[key: string]: {[key: string]: string}} = {
+  osm: {
+    raster: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    vector: 'https://tile.openstreetmap.org/data/{z}/{x}/{y}.pbf',
+  },
+  maptiler: {
+    raster:
+      'https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key={key}',
+    vector: 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key={key}',
+  },
+};
 
 interface StoredTile {
   url: string;
@@ -66,7 +80,6 @@ class IDB<Type> {
   // Create the object store for this database, called in
   // onupgradeneeded for the database
   createObjectStore() {
-    console.log('createObjectStore', this.dbName);
     if (!this.db.objectStoreNames.contains(this.dbName)) {
       this.db.createObjectStore(this.dbName, {
         keyPath: this.keyPath,
@@ -166,7 +179,6 @@ class TileStoreBase {
       const request = indexedDB.open(TileStoreBase.DB_NAME, DB_VERSION);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
-        console.log('running onsuccess');
         TileStoreBase.db = request.result;
         if (!this.tileDB)
           this.tileDB = new IDB<StoredTile>(TileStoreBase.db, 'tiles', ['url']);
@@ -176,11 +188,9 @@ class TileStoreBase {
             'tileSets',
             ['setName']
           );
-        console.log('initialized base tile source');
         resolve();
       };
       request.onupgradeneeded = (event: any) => {
-        console.log('onupgradeneeded', event);
         if (event.target) {
           const db = event.target.result;
           if (!db.objectStoreNames.contains('tiles')) {
@@ -237,12 +247,10 @@ class TileStoreBase {
   }
 
   async getTileBlob(url: string | undefined): Promise<Blob | undefined> {
-    if (url) {
+    if (url && this.tileDB) {
       const image = await this.tileDB.get([url]);
-      // if (image) console.log('got tile from cache', url);
       if (image) return image.data;
       else if (navigator.onLine) {
-        // console.log('cache miss, fetching tile', url);
         const response = await fetch(url);
         return await response.blob();
       }
@@ -273,7 +281,6 @@ class TileStoreBase {
     const tileGrid = this.getTileGrid();
     const average_size = 100; // kb
 
-    console.log('estimate size for region', extent, minZoom, maxZoom);
     const tileSet = new Set<string>();
     const startZoom = Math.floor(minZoom - 1);
     for (let zoom = startZoom; zoom <= maxZoom; zoom += 1) {
@@ -348,7 +355,6 @@ class TileStoreBase {
     if (!tileSet) {
       throw new Error(`No offline map '${setName}' found`);
     }
-    console.log('downloading tiles for ', tileSet);
 
     const tileGrid = this.getTileGrid();
     const tileCoords: number[][] = [];
@@ -435,14 +441,6 @@ class TileStoreBase {
   }
 }
 
-const TILE_URL_MAP: {[key: string]: string} = {
-  'lima-labs': 'https://cdn.lima-labs.com/{z}/{x}/{y}.png?api={key}',
-  osm: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  maptiler:
-    //'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.jpg?key={key}',
-    'https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key={key}',
-  //'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.jpg?key={key}',
-};
 export class ImageTileStore extends TileStoreBase {
   declare source: ImageTileSource;
   declare tileLayer: TileLayer;
@@ -457,7 +455,7 @@ export class ImageTileStore extends TileStoreBase {
   }
 
   getTileURL(): string | undefined {
-    return TILE_URL_MAP[MAP_SOURCE];
+    return TILE_URL_MAP[MAP_SOURCE]['image'];
   }
 
   getTileGrid() {
@@ -512,13 +510,7 @@ export class ImageTileStore extends TileStoreBase {
   }
 }
 
-// A vector tile source, will download and store vector tiles
-// which should be smaller.
-//
-// Also works with tiles served from local Planetiler instance
-// <https://github.com/onthegomap/planetiler>
-// TODO: work out how to implement the download/cache option for these
-// tiles.  `tileLoaderFunction` should be the way.
+// A vector tile source
 
 export class VectorTileStore extends TileStoreBase {
   declare source: VectorTileSource;
@@ -538,20 +530,20 @@ export class VectorTileStore extends TileStoreBase {
       source: this.source,
       background: 'hsl(40, 26%, 93%)',
     });
-    applyStyle(this.tileLayer, getMapStylesheet('basic'), {
+    applyStyle(this.tileLayer, getMapStylesheet(MAP_STYLE), {
       transformRequest: (url: string) => {
-        console.log('transformRequest', url.replace('{key}', MAP_SOURCE_KEY));
+        // TODO: cache these requests...
+        //console.log('transformRequest', url.replace('{key}', MAP_SOURCE_KEY));
         return url.replace('{key}', MAP_SOURCE_KEY);
       },
     });
   }
 
   getTileURL(): string | undefined {
-    return 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key={key}';
+    return TILE_URL_MAP[MAP_SOURCE]['vector'];
   }
 
   getTileGrid() {
-    console.log('tileGrid', this.source.getTileGrid());
     return this.source.getTileGrid();
   }
 

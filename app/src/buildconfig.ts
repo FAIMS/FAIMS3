@@ -390,6 +390,11 @@ function get_map_key(): string {
   return map_key || '';
 }
 
+function get_map_style(): string {
+  const map_style = import.meta.env.VITE_MAP_STYLE;
+  return map_style || 'basic';
+}
+
 function offline_maps(): boolean {
   const offline_maps = import.meta.env.VITE_OFFLINE_MAPS === 'true';
   const map_source = get_map_source();
@@ -425,3 +430,4 @@ export const IGNORE_TOKEN_EXP = ignoreTokenExp();
 export const OFFLINE_MAPS = offline_maps();
 export const MAP_SOURCE_KEY = get_map_key();
 export const MAP_SOURCE = get_map_source();
+export const MAP_STYLE = get_map_style();

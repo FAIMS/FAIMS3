@@ -18,24 +18,19 @@
  *   Display an overview map of the records in the notebook.
  */
 
-import {Geolocation} from '@capacitor/geolocation';
 import {ProjectID, ProjectUIModel, RecordMetadata} from '@faims3/data-model';
-import {Box, Popover} from '@mui/material';
+import {Box, Grid, Popover} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
-import {View} from 'ol';
-import {Zoom} from 'ol/control';
 import GeoJSON from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
-import {transform} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
-import {Fill, RegularShape, Stroke, Style} from 'ol/style';
+import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {memo, useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {createCenterControl} from '../map/center-control';
-import {ImageTileStore} from '../map/tile-source';
+import {MapComponent} from '../map/map-component';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -50,8 +45,6 @@ interface FeatureProps {
   revision_id: string;
 }
 
-const defaultMapProjection = 'EPSG:3857';
-
 /**
  * Create an overview map of the records in the notebook.
  * Wrapped in memo to prevent re-rendering when nothing has changed.
@@ -63,7 +56,6 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
-  const tileStore = useMemo(() => new ImageTileStore(), []);
 
   /**
    * Get the names of all GIS fields in this UI Specification
@@ -134,104 +126,13 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
     queryFn: getFeatures,
   });
 
-  // create state ref that can be accessed in OpenLayers onclick callback function
-  //  https://stackoverflow.com/a/60643670
-  const mapRef = useRef<Map | undefined>();
-  mapRef.current = map;
-
-  const {data: map_center, isLoading: loadingLocation} = useQuery({
-    queryKey: ['current_location'],
-    queryFn: async (): Promise<[number, number]> => {
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      });
-      return [position.coords.longitude, position.coords.latitude];
-    },
-  });
-
-  /**
-   * Create the OpenLayers map element
-   */
-  const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
-    const tileLayer = tileStore.getTileLayer();
-    const view = new View({
-      projection: defaultMapProjection,
-      zoom: 12,
-    });
-
-    const theMap = new Map({
-      target: element,
-      layers: [tileLayer],
-      view: view,
-      controls: [new Zoom()],
-    });
-
-    theMap.on('click', evt => {
-      const feature = theMap.forEachFeatureAtPixel(evt.pixel, feature => {
-        return feature.getProperties();
-      });
-      if (!feature) {
-        return;
-      }
-      setSelectedFeature(feature as FeatureProps);
-    });
-
-    return theMap;
-  }, []);
-
-  /**
-   * Add a marker to the map at the current location
-   *
-   * @param map the map element
-   */
-  const addCurrentLocationMarker = (map: Map) => {
-    const source = new VectorSource();
-    const geoJson = new GeoJSON();
-
-    const stroke = new Stroke({color: 'black', width: 2});
-    const layer = new VectorLayer({
-      source: source,
-      style: new Style({
-        image: new RegularShape({
-          stroke: stroke,
-          points: 4,
-          radius: 10,
-          radius2: 0,
-          angle: 0,
-        }),
-      }),
-    });
-
-    // only do this if we have a real map_center
-    if (map_center) {
-      const centerFeature = {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: map_center,
-        },
-      };
-
-      // there is only one feature but readFeature return type is odd and readFeatures works for singletons
-      const theFeatures = geoJson.readFeatures(centerFeature, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: map.getView().getProjection(),
-      });
-      source.addFeature(theFeatures[0]);
-      map.addLayer(layer);
-    }
-  };
-
   /**
    * Add the features to the map and set the map view to
    * encompass the features.
    *
-   * @param map OpenLayers map object
+   * @param theMap OpenLayers map object
    */
-  const addFeaturesToMap = (map: Map) => {
-    console.log('Adding features to map');
+  const addFeaturesToMap = (theMap: Map) => {
     const source = new VectorSource();
     const geoJson = new GeoJSON();
 
@@ -252,7 +153,7 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
     if (features && features.features.length > 0) {
       const parsedFeatures = geoJson.readFeatures(features, {
         dataProjection: 'EPSG:4326',
-        featureProjection: map.getView().getProjection(),
+        featureProjection: theMap.getView().getProjection(),
       });
       source.addFeatures(parsedFeatures);
 
@@ -264,49 +165,32 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
 
       // don't fit if the extent is infinite because it crashes
       if (!extent.includes(Infinity)) {
-        map.getView().fit(extent, {padding: [100, 100, 100, 100], maxZoom: 12});
+        theMap
+          .getView()
+          .fit(extent, {padding: [100, 100, 100, 100], maxZoom: 12});
       }
     }
 
-    map.addLayer(layer);
+    theMap.addLayer(layer);
   };
-
-  // when we have a location and a map, add the 'here' marker to the map
-  if (!loadingLocation && map) {
-    addCurrentLocationMarker(map);
-    if (map_center) {
-      const center = transform(map_center, 'EPSG:4326', defaultMapProjection);
-      // add the 'here' button to go to the current location
-      map.addControl(createCenterControl(map.getView(), center));
-    }
-  }
 
   useEffect(() => {
     // when we have features, add them to the map
     if (!loadingFeatures && map) {
       addFeaturesToMap(map);
+
+      // add click handler for map features
+      map.on('click', evt => {
+        const feature = map.forEachFeatureAtPixel(evt.pixel, feature => {
+          return feature.getProperties();
+        });
+        if (!feature) {
+          return;
+        }
+        setSelectedFeature(feature as FeatureProps);
+      });
     }
   }, [loadingFeatures, map]);
-
-  // callback to add the map to the DOM
-  const refCallback = useCallback(
-    (element: HTMLElement | null) => {
-      if (element === null) return;
-
-      if (!map) {
-        // First render - create new map
-        console.log('creating map');
-        createMap(element).then((theMap: Map) => {
-          setMap(theMap);
-        });
-      } else if (element !== map.getTarget()) {
-        // Subsequent renders - only set target if it has changed
-        console.log('setting target');
-        map.setTarget(element);
-      }
-    },
-    [map, createMap]
-  );
 
   const handlePopoverClose = () => {
     setSelectedFeature(null);
@@ -320,18 +204,12 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
     return <Box>Loading...</Box>;
   } else
     return (
-      <>
-        <Box
-          ref={refCallback}
-          sx={{
-            height: 600,
-            width: '100%',
-          }}
-        />
+      <Grid container spacing={2} sx={{height: '100%'}}>
+        <MapComponent parentSetMap={setMap} />
         <Popover
           open={!!selectedFeature}
           onClose={handlePopoverClose}
-          anchorEl={mapRef.current?.getTargetElement()}
+          anchorEl={map?.getTargetElement()}
           anchorOrigin={{
             vertical: 'bottom',
             horizontal: 'left',
@@ -352,6 +230,6 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
             </Box>
           )}
         </Popover>
-      </>
+      </Grid>
     );
 });

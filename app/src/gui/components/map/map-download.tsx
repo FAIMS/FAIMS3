@@ -18,7 +18,6 @@
  *   Display an overview map of the records in the notebook.
  */
 
-import {Geolocation} from '@capacitor/geolocation';
 import {
   Alert,
   Box,
@@ -28,21 +27,11 @@ import {
   Paper,
   TextField,
 } from '@mui/material';
-import {useQuery} from '@tanstack/react-query';
-import {View} from 'ol';
-import {Zoom} from 'ol/control';
-import GeoJSON from 'ol/format/GeoJSON';
-import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
-import {transform} from 'ol/proj';
-import VectorSource from 'ol/source/Vector';
-import {RegularShape, Stroke, Style} from 'ol/style';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {createCenterControl} from '../map/center-control';
+import {useEffect, useMemo, useState} from 'react';
+import {MapComponent} from './map-component';
 import {StoredTileSet, VectorTileStore} from './tile-source';
 
-const defaultMapProjection = 'EPSG:3857';
-const MAX_ZOOM = 20;
 const TILE_MAX_ZOOM = 14; // for vector tiles...need a better way to handle this
 const MIN_ZOOM = 12;
 
@@ -55,31 +44,11 @@ export const MapDownloadComponent = () => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [cacheSize, setCacheSize] = useState('');
   const [zoomLevel, setZoomLevel] = useState(MIN_ZOOM); // Default zoom level
-  const [attribution, setAttribution] = useState<string | null>(null);
   const [downloadSetName, setDownloadSetName] = useState('Default');
   const [message, setMessage] = useState('');
   const [tileSets, setTileSets] = useState<StoredTileSet[]>([]);
 
-  // create state ref that can be accessed in OpenLayers onclick callback function
-  //  https://stackoverflow.com/a/60643670
-  const mapRef = useRef<Map | undefined>();
-  mapRef.current = map;
-
-  // alternately use VectorTileStore for vector tiles (in progress)
-  //const tileStore = useMemo(() => new ImageTileStore(), []);
   const tileStore = useMemo(() => new VectorTileStore(), []);
-
-  const {data: map_center, isLoading: loadingLocation} = useQuery({
-    queryKey: ['current_location'],
-    queryFn: async (): Promise<[number, number]> => {
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      });
-      return [position.coords.longitude, position.coords.latitude];
-    },
-  });
 
   useEffect(() => {
     const fn = async () => {
@@ -95,36 +64,6 @@ export const MapDownloadComponent = () => {
     const sets = await tileStore.getTileSets();
     if (sets) setTileSets(sets);
   };
-
-  /**
-   * Create the OpenLayers map element
-   */
-  const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
-    setAttribution(tileStore.getAttribution());
-    const tileLayer = tileStore.getTileLayer();
-    const view = new View({
-      projection: defaultMapProjection,
-      zoom: zoomLevel,
-      maxZoom: MAX_ZOOM,
-    });
-    console.log('created map at zoom level', zoomLevel);
-
-    const theMap = new Map({
-      target: element,
-      layers: [tileLayer],
-      view: view,
-      controls: [new Zoom()],
-    });
-
-    // create a center control
-    // Add this in the createMap function after creating theMap
-    theMap.getView().on('change:resolution', () => {
-      const z = theMap.getView().getZoom();
-      if (z) setZoomLevel(z);
-    });
-
-    return theMap;
-  }, []);
 
   const handleCacheMapExtent = () => {
     if (map) {
@@ -142,6 +81,10 @@ export const MapDownloadComponent = () => {
           }
           setCacheSize(sizeStr);
         });
+      // invalidate calculation if the map moves
+      map.on('movestart', () => {
+        setCacheSize('');
+      });
     }
   };
 
@@ -167,168 +110,91 @@ export const MapDownloadComponent = () => {
     }
   };
 
-  /**
-   * Add a marker to the map at the current location
-   *
-   * @param map the map element
-   */
-  const addCurrentLocationMarker = (map: Map) => {
-    const source = new VectorSource();
-    const geoJson = new GeoJSON();
-
-    const stroke = new Stroke({color: 'black', width: 2});
-    const layer = new VectorLayer({
-      source: source,
-      style: new Style({
-        image: new RegularShape({
-          stroke: stroke,
-          points: 4,
-          radius: 10,
-          radius2: 0,
-          angle: 0,
-        }),
-      }),
-    });
-
-    // only do this if we have a real map_center
-    if (map_center) {
-      const centerFeature = {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: map_center,
-        },
-      };
-
-      // there is only one feature but readFeature return type is odd and readFeatures works for singletons
-      const theFeatures = geoJson.readFeatures(centerFeature, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: map.getView().getProjection(),
-      });
-      source.addFeature(theFeatures[0]);
-      map.addLayer(layer);
-    }
-  };
-
-  // when we have a location and a map, add the 'here' marker to the map
-  useEffect(() => {
-    if (!loadingLocation && map) {
-      addCurrentLocationMarker(map);
-      if (map_center) {
-        const center = transform(map_center, 'EPSG:4326', defaultMapProjection);
-        // add the 'here' button to go to the current location
-        map.addControl(createCenterControl(map.getView(), center));
-        map.getView().setCenter(center);
-      }
-    }
-  }, [map, map_center, loadingLocation]);
-
-  // callback to add the map to the DOM
-  const refCallback = useCallback(
-    (element: HTMLElement | null) => {
-      if (element === null) return;
-
-      if (!map) {
-        // First render - create new map
-        console.log('creating map');
-        createMap(element).then((theMap: Map) => {
-          setMap(theMap);
-        });
-      } else if (element !== map.getTarget()) {
-        // Subsequent renders - only set target if it has changed
-        console.log('setting target');
-        map.setTarget(element);
-      }
-    },
-    [map, createMap]
-  );
-
   const handleDeleteTileSet = async (setName: string) => {
     await tileStore.removeTileSet(setName);
     await updateTileSets();
   };
 
   const handleShowExtent = (tileSet: StoredTileSet) => {
-    console.log('extent', tileSet.extent);
     if (map) map.getView().fit(tileSet.extent);
   };
 
   return (
-    <>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={8} md={8}>
-          <p>Download the current region for offline use.</p>
-          <FormGroup row>
-            <TextField
-              label="Name for Downloaded Map"
-              value={downloadSetName}
-              onChange={e => setDownloadSetName(e.target.value)}
-            />
-            <Button variant="outlined" onClick={confirmCacheMapExtent}>
-              Download
-            </Button>
-            <Button variant="outlined" onClick={handleCacheMapExtent}>
-              Estimate Size
-            </Button>
-            {cacheSize && <Box>Estimated Download Size: {cacheSize}</Box>}
-          </FormGroup>
-
-          {loadingLocation ? (
-            <div>Loading location...</div>
+    <Grid
+      container
+      spacing={2}
+      sx={{
+        height: '90vh',
+        position: 'relative',
+      }}
+    >
+      <Grid item xs={12}>
+        <p>Download the current region for offline use.</p>
+        <FormGroup row>
+          <TextField
+            label="Name for Downloaded Map"
+            value={downloadSetName}
+            onChange={e => setDownloadSetName(e.target.value)}
+          />
+          <Button variant="outlined" onClick={confirmCacheMapExtent}>
+            Download
+          </Button>
+          {cacheSize ? (
+            <Alert>Estimated Download Size: {cacheSize}</Alert>
           ) : (
-            <>
-              <Box
-                ref={refCallback}
-                sx={{
-                  height: 600,
-                  width: '100%',
-                }}
-              />
-              <Box>
-                {attribution && (
-                  <p dangerouslySetInnerHTML={{__html: attribution}} />
-                )}
-              </Box>
-            </>
+            <Button variant="outlined" onClick={handleCacheMapExtent}>
+              Estimate Download Size
+            </Button>
           )}
-        </Grid>
-        <Grid item xs={12} sm={4} md={4}>
-          <h3>Offline Maps</h3>
-
-          {message && <Alert severity="error">{message}</Alert>}
-
-          <h4>Maps Downloaded</h4>
-          {tileSets.length === 0 && <p>No maps downloaded.</p>}
-          {tileSets.map((mapSet: StoredTileSet, idx: number) => (
-            <Paper key={idx}>
-              <h4>{mapSet.setName}</h4>
-              <p>
-                Size: {Math.round((100 * mapSet.size) / 1024 / 1024) / 100} MB
-              </p>
-              <p>
-                Tiles: {mapSet.tileKeys.length}/{mapSet.expectedTileCount} (avg.{' '}
-                {Math.round(
-                  (100 * mapSet.size) / mapSet.tileKeys.length / 1024
-                ) / 100}{' '}
-                Kb)
-              </p>
-              <p>Downloaded on: {mapSet.created.toLocaleDateString()}</p>
-              <Button
-                variant="outlined"
-                onClick={() => handleDeleteTileSet(mapSet.setName)}
-              >
-                Delete
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => handleShowExtent(mapSet)}
-              >
-                Show Download Area
-              </Button>
-            </Paper>
-          ))}
-        </Grid>
+        </FormGroup>
       </Grid>
-    </>
+
+      <Grid
+        item
+        xs={12}
+        sm={8}
+        sx={{
+          '& > div': {
+            // Target MapComponent's container
+            height: '100%',
+          },
+        }}
+      >
+        <MapComponent parentSetMap={setMap} />
+      </Grid>
+
+      <Grid item xs={4} sm={4} md={4}>
+        <h3>Offline Maps</h3>
+
+        {message && <Alert severity="error">{message}</Alert>}
+
+        <h4>Maps Downloaded</h4>
+        {tileSets.length === 0 && <p>No maps downloaded.</p>}
+        {tileSets.map((mapSet: StoredTileSet, idx: number) => (
+          <Paper key={idx}>
+            <h4>{mapSet.setName}</h4>
+            <p>
+              Size: {Math.round((100 * mapSet.size) / 1024 / 1024) / 100} MB
+            </p>
+            <p>
+              Tiles: {mapSet.tileKeys.length}/{mapSet.expectedTileCount} (avg.{' '}
+              {Math.round((100 * mapSet.size) / mapSet.tileKeys.length / 1024) /
+                100}{' '}
+              Kb)
+            </p>
+            <p>Downloaded on: {mapSet.created.toLocaleDateString()}</p>
+            <Button
+              variant="outlined"
+              onClick={() => handleDeleteTileSet(mapSet.setName)}
+            >
+              Delete
+            </Button>
+            <Button variant="outlined" onClick={() => handleShowExtent(mapSet)}>
+              Show Download Area
+            </Button>
+          </Paper>
+        ))}
+      </Grid>
+    </Grid>
   );
 };

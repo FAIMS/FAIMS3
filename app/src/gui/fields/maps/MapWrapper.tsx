@@ -22,21 +22,14 @@ import EditIcon from '@mui/icons-material/Edit';
 import MapIcon from '@mui/icons-material/LocationOn';
 import Button, {ButtonProps} from '@mui/material/Button';
 import Map from 'ol/Map';
-import View from 'ol/View';
-import Zoom from 'ol/control/Zoom';
 import GeoJSON from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
-import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
-import WebGLTileLayer from 'ol/layer/WebGLTile';
-import {transform} from 'ol/proj';
 import {register} from 'ol/proj/proj4';
-import GeoTIFF from 'ol/source/GeoTIFF';
-import OSM from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
-import {useCallback, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 
 // define some EPSG codes - these are for two sample images
 // TODO: we need to have a better way to include a useful set or allow
@@ -60,7 +53,7 @@ interface MapProps extends ButtonProps {
   projection?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
   zoom: number;
-  center: Array<number>;
+  center: [number, number];
   fallbackCenter: boolean;
   setFeatures: (features: object, action: MapAction) => void;
   setNoPermission: (flag: boolean) => void;
@@ -75,15 +68,15 @@ import {
   Box,
   Dialog,
   DialogActions,
+  Grid,
   IconButton,
   Toolbar,
   Tooltip,
   Typography,
 } from '@mui/material';
 import {useNotification} from '../../../context/popup';
-import {createCenterControl} from '../../components/map/center-control';
+import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
-import {ImageTileStore} from '../../components/map/tile-source';
 
 const styles = {
   mapContainer: {
@@ -98,79 +91,14 @@ function MapWrapper(props: MapProps) {
   const [mapOpen, setMapOpen] = useState<boolean>(false);
   const [map, setMap] = useState<Map | undefined>();
   const [featuresLayer, setFeaturesLayer] = useState<VectorLayer<any>>();
-  const defaultMapProjection = 'EPSG:3857';
   const geoJson = new GeoJSON();
-  const tileStore = useMemo(() => new ImageTileStore(), []);
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
 
   // notifications
   const notify = useNotification();
 
-  console.log('map props', props);
-
-  // create state ref that can be accessed in OpenLayers onclick callback function
-  //  https://stackoverflow.com/a/60643670
-  const mapRef = useRef<Map | undefined>();
-  mapRef.current = map;
-
-  const createMap = useCallback(
-    async (element: HTMLElement, props: MapProps): Promise<Map> => {
-      const center = transform(
-        props.center,
-        'EPSG:4326',
-        props.projection || defaultMapProjection
-      );
-      let tileLayer: any;
-      let view: View;
-
-      if (props.geoTiff) {
-        const geoTIFFSource = new GeoTIFF({
-          sources: [
-            {
-              url: props.geoTiff,
-            },
-          ],
-          convertToRGB: true,
-        });
-        tileLayer = new WebGLTileLayer({source: geoTIFFSource});
-        const viewOptions = await geoTIFFSource.getView();
-        // if the geoTiff doesn't have projection info we
-        // need to set it from the props or it will default to EPSG:3857
-        // can't see a way to test the geoTIFF image so we just set the
-        // projection if it has been passed in via the props
-        if (props.projection) {
-          view = new View({...viewOptions, projection: props.projection});
-        } else {
-          view = new View(viewOptions);
-        }
-      } else {
-        tileLayer = tileStore.getTileLayer();
-        view = new View({
-          projection: props.projection || defaultMapProjection,
-          center: center,
-          zoom: props.zoom,
-          maxZoom: 20,
-        });
-      }
-
-      const theMap = new Map({
-        target: element,
-        layers: [tileLayer],
-        view: view,
-        controls: [new Zoom()],
-      });
-
-      theMap.addControl(createCenterControl(theMap.getView(), center));
-
-      theMap.getView().setCenter(center);
-
-      return theMap;
-    },
-    []
-  );
-
   const addDrawInteraction = useCallback(
-    (map: Map, props: MapProps) => {
+    (theMap: Map, props: MapProps) => {
       const source = new VectorSource();
 
       const layer = new VectorLayer({
@@ -196,9 +124,10 @@ function MapWrapper(props: MapProps) {
 
       // add features to map if we're passed any in
       if (props.features && props.features.type) {
+        console.log('map has features', props.features);
         const parsedFeatures = geoJson.readFeatures(props.features, {
           dataProjection: 'EPSG:4326',
-          featureProjection: map.getView().getProjection(),
+          featureProjection: theMap.getView().getProjection(),
         });
         source.addFeatures(parsedFeatures);
 
@@ -207,15 +136,15 @@ function MapWrapper(props: MapProps) {
         const extent = source.getExtent();
         // don't fit if the extent is infinite because it crashes
         if (!extent.includes(Infinity)) {
-          map
+          theMap
             .getView()
             .fit(extent, {padding: [20, 20, 20, 20], maxZoom: props.zoom});
         }
       }
 
-      map.addLayer(layer);
-      map.addInteraction(draw);
-      map.addInteraction(modify);
+      theMap.addLayer(layer);
+      theMap.addInteraction(draw);
+      theMap.addInteraction(modify);
       setFeaturesLayer(layer);
 
       draw.on('drawstart', () => {
@@ -269,19 +198,11 @@ function MapWrapper(props: MapProps) {
     setMapOpen(true);
   };
 
-  const refCallback = (element: HTMLElement | null) => {
-    if (element) {
-      if (!map) {
-        // create map
-        createMap(element, props).then((theMap: Map) => {
-          addDrawInteraction(theMap, props);
-          setMap(theMap);
-        });
-      } else {
-        map.setTarget(element);
-      }
+  useEffect(() => {
+    if (map) {
+      addDrawInteraction(map, props);
     }
-  };
+  }, [map]);
 
   return (
     <div>
@@ -460,7 +381,10 @@ function MapWrapper(props: MapProps) {
           </Toolbar>
         </AppBar>
 
-        <div ref={refCallback} style={styles.mapContainer} />
+        {/* <div ref={refCallback} style={styles.mapContainer} /> */}
+        <Grid container spacing={2} sx={{height: '100%'}}>
+          <MapComponent parentSetMap={setMap} center={props.center} />
+        </Grid>
       </Dialog>
 
       <Dialog open={showConfirmSave} onClose={() => setShowConfirmSave(false)}>

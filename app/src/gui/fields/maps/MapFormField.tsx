@@ -70,7 +70,6 @@ export function MapFormField({
   // Derive the features from the field value (this forces re-render anyway)
   const drawnFeatures = form.values[field.name] ?? {};
 
-  console.log('map field props', props);
   // Default zoom level
   const zoom = typeof props.zoom === 'number' ? props.zoom : 14;
 
