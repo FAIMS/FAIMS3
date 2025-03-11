@@ -19,7 +19,7 @@ export const AddRolePopover = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger>
-        <div className="invisible group p-px cursor-pointer relative bg-muted text-muted-foreground rounded-full w-fit hover:bg-muted/90 transition-colors [tr:hover_&]:visible">
+        <div className="invisible text-primary group p-0.5 border cursor-pointer relative bg-background rounded-full w-fit hover:bg-muted/90 transition-colors [tr:hover_&]:visible">
           <Plus size={12} />
         </div>
       </PopoverTrigger>

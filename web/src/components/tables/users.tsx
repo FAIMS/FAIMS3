@@ -4,12 +4,17 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {Button} from '../ui/button';
 import {RoleCard} from '../ui/role-card';
 import {AddRolePopover} from '../popovers/add-role-popover';
+import {useAuth} from '@/context/auth-provider';
+import {useQueryClient} from '@tanstack/react-query';
 
 export const getColumns = ({
   onReset,
 }: {
   onReset: (id: string) => void;
 }): ColumnDef<any>[] => {
+  const {user} = useAuth();
+  const queryClient = useQueryClient();
+
   return [
     {
       accessorKey: 'name',
@@ -33,7 +38,41 @@ export const getColumns = ({
       }: any) => (
         <div className="flex flex-wrap gap-1 items-center">
           {other_roles.map((role: string) => (
-            <RoleCard key={role}>{role}</RoleCard>
+            <RoleCard
+              key={role}
+              onRemove={
+                userId === user?.user.id
+                  ? undefined
+                  : async () => {
+                      try {
+                        const response = await fetch(
+                          `${import.meta.env.VITE_API_URL}/api/users/${userId}/admin`,
+                          {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${user?.token}`,
+                            },
+                            body: JSON.stringify({
+                              addrole: false,
+                              role,
+                            }),
+                          }
+                        );
+
+                        if (!response.ok) {
+                          console.log('Error removing role', response);
+                        }
+
+                        queryClient.invalidateQueries({queryKey: ['users']});
+                      } catch (error) {
+                        console.log('Error removing role', error);
+                      }
+                    }
+              }
+            >
+              {role}
+            </RoleCard>
           ))}
           {all_roles.filter((role: string) => !other_roles.includes(role))
             .length > 0 && (

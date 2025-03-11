@@ -34,11 +34,13 @@ function RouteComponent() {
       <DataTable
         columns={getColumns({onReset})}
         data={
-          users?.map((user: any) => ({
-            ...user,
-            email: user.emails[0],
-            all_roles: roles,
-          })) || []
+          isPending
+            ? []
+            : users.map((user: any) => ({
+                ...user,
+                email: user.emails[0],
+                all_roles: roles,
+              }))
         }
         loading={isPending}
         defaultRowsPerPage={15}

@@ -30,11 +30,11 @@ export function RoleCard({
       {children}
       {onRemove && (
         <button
-          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute -top-2 p-0.5 hover:bg-muted border text-primary rounded-full bg-background -right-2 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={onRemove}
           aria-label="Remove"
         >
-          <X size={16} />
+          <X size={12} />
         </button>
       )}
     </div>
