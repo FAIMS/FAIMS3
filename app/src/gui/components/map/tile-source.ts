@@ -30,7 +30,9 @@ import VectorTileSource from 'ol/source/VectorTile';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
 import {MAP_SOURCE, MAP_SOURCE_KEY} from '../../../buildconfig';
-import {mapStyle} from './map-style';
+import {applyStyle} from 'ol-mapbox-style';
+import {getMapStylesheet} from './styles';
+
 
 interface StoredTile {
   url: string;
@@ -534,12 +536,18 @@ export class VectorTileStore extends TileStoreBase {
 
     this.tileLayer = new VectorTileLayer({
       source: this.source,
-      style: mapStyle,
+      background: 'hsl(40, 26%, 93%)',
+    });
+    applyStyle(this.tileLayer, getMapStylesheet('basic'), {
+      transformRequest: (url: string) => {
+        console.log('transformRequest', url.replace('{key}', MAP_SOURCE_KEY));
+        return url.replace('{key}', MAP_SOURCE_KEY);
+      },
     });
   }
 
   getTileURL(): string | undefined {
-    return 'https://api.maptiler.com/tiles/v3-openmaptiles/{z}/{x}/{y}.pbf?key={key}';
+    return 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key={key}';
   }
 
   getTileGrid() {

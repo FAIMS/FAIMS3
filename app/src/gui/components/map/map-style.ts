@@ -37,7 +37,7 @@ export const mapStyle = (feature: any, resolution: number): Style | Style[] => {
     case 'transportation':
       return new Style({
         stroke: new Stroke({
-          color: '#fff',
+          color: 'hsl(0, 63%, 84%)',
           width: 1.4,
           lineCap: 'round',
           lineJoin: 'round',
