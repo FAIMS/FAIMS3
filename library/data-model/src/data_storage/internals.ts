@@ -350,7 +350,7 @@ export async function getRevision({
     }
   } catch (e) {
     throw Error(
-      `Could not find the revision with ID ${revisionId}. Error: {e}.`
+      `Could not find the revision with ID ${revisionId}. Error: ${e}.`
     );
   }
 }
@@ -570,65 +570,73 @@ export async function listRecordMetadata({
     // Process records in parallel using Promise.all with map. Each record is
     // hydrated with data, HRID derived, and processed.
     const recordMetadataPromises = rawRecords.map(async record => {
-      const revId = record.heads[0];
+      try {
+        const revId = record.heads[0];
 
-      // Skip if revision not found
-      if (!revId) {
-        console.warn(
-          `There exists a record in the data DB with no heads[0]. Id: ${record._id}`
-        );
-        return null;
-      }
-
-      const revision = await getRevision({dataDb: dataDb, revisionId: revId});
-
-      // Skip if revision not found
-      if (!revision) {
-        console.warn(
-          `There exists a record in the data DB with a revision which is missing. ID: ${record._id}. Revision ID: ${revId}`
-        );
-        return null;
-      }
-
-      // Get data for the revision and hrid (if hydrate == true)
-      let data = undefined;
-      let hrid = undefined;
-      if (hydrate && hridFieldMap) {
-        // Hydrate with data by fetching AVPs
-        data = await getDataForRevision({dataDb, revision});
-
-        // Ensure it's defined
-        if (!data) {
+        // Skip if revision not found
+        if (!revId) {
           console.warn(
-            `There exists a record in the data DB where data hydration failed. ID: ${record._id}. Revision ID: ${revId}`
+            `There exists a record in the data DB with no heads[0]. Id: ${record._id}`
           );
           return null;
         }
 
-        // Determine HRID based on field mapping or fall back to record ID
-        const hridFieldName = hridFieldMap[revision.type];
-        hrid = (hridFieldName ? data[hridFieldName] : record._id) ?? record._id;
+        const revision = await getRevision({dataDb: dataDb, revisionId: revId});
+
+        // Skip if revision not found
+        if (!revision) {
+          console.warn(
+            `There exists a record in the data DB with a revision which is missing. ID: ${record._id}. Revision ID: ${revId}`
+          );
+          return null;
+        }
+
+        // Get data for the revision and hrid (if hydrate == true)
+        let data = undefined;
+        let hrid = undefined;
+        if (hydrate && hridFieldMap) {
+          // Hydrate with data by fetching AVPs
+          data = await getDataForRevision({dataDb, revision});
+
+          // Ensure it's defined
+          if (!data) {
+            console.warn(
+              `There exists a record in the data DB where data hydration failed. ID: ${record._id}. Revision ID: ${revId}`
+            );
+            return null;
+          }
+
+          // Determine HRID based on field mapping or fall back to record ID
+          const hridFieldName = hridFieldMap[revision.type];
+          hrid =
+            (hridFieldName ? data[hridFieldName] : record._id) ?? record._id;
+        }
+
+        // Return record metadata
+        return {
+          project_id: projectId,
+          record_id: record._id,
+          revision_id: revId,
+          created: new Date(record.created),
+          created_by: record.created_by,
+          updated: new Date(revision.created),
+          updated_by: revision.created_by,
+          conflicts: record.heads.length > 1,
+          deleted: revision.deleted ? true : false,
+          type: record.type,
+          relationship: revision.relationship,
+          avps: revision.avps,
+
+          // If hydrate == true these will be defined
+          data: data,
+          hrid: hrid,
+        } satisfies RecordMetadata;
+      } catch (e) {
+        console.error(
+          `Failed to get record information. Record ID ${record._id}. Project ID ${projectId}. Due to error: ${e}.`
+        );
+        return null;
       }
-
-      // Return record metadata
-      return {
-        project_id: projectId,
-        record_id: record._id,
-        revision_id: revId,
-        created: new Date(record.created),
-        created_by: record.created_by,
-        updated: new Date(revision.created),
-        updated_by: revision.created_by,
-        conflicts: record.heads.length > 1,
-        deleted: revision.deleted ? true : false,
-        type: record.type,
-        relationship: revision.relationship,
-        avps: revision.avps,
-
-        // If hydrate == true these will be defined
-        data: data,
-        hrid: hrid,
-      } satisfies RecordMetadata;
     });
 
     // Resolve all promises and filter out null values (skipped records)

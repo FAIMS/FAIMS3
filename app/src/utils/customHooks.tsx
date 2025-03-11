@@ -300,6 +300,9 @@ export function filterByActiveUser<T extends UnhydratedRecord>(
   return rows.filter(record => record.created_by === username);
 }
 
+const HYDRATION_KEY_PREFIX = 'recordhydration';
+const RECORD_LIST_KEY_PREFIX = 'allrecords';
+
 /**
  * Helper function to build the hydrate query keys consistently
  */
@@ -312,7 +315,7 @@ function buildHydrateKeys({
   recordId: string;
   revisionId: string;
 }) {
-  return ['recordhydration', projectId, recordId, revisionId];
+  return [HYDRATION_KEY_PREFIX, projectId, recordId, revisionId];
 }
 
 /**
@@ -335,6 +338,58 @@ export function invalidateTargetRecordHydration({
     queryKey: buildHydrateKeys({recordId, projectId, revisionId}),
     refetchType: 'all',
   });
+}
+
+/**
+ * Forces refetch/cache invalidation of a target record hydration. This is the
+ * data fetching component of the record listing which involves many AVP
+ * fetches.
+ */
+export function invalidateProjectHydration({
+  projectId,
+  client,
+  reset = false,
+}: {
+  projectId: string;
+  client: QueryClient;
+  reset?: boolean;
+}) {
+  if (reset) {
+    client.resetQueries({
+      queryKey: [HYDRATION_KEY_PREFIX, projectId],
+    });
+  } else {
+    client.invalidateQueries({
+      queryKey: [HYDRATION_KEY_PREFIX, projectId],
+      refetchType: 'all',
+    });
+  }
+}
+
+/**
+ * Forces refetch/cache invalidation of a target record hydration. This is the
+ * data fetching component of the record listing which involves many AVP
+ * fetches.
+ */
+export function invalidateProjectRecordList({
+  projectId,
+  client,
+  reset = false,
+}: {
+  projectId: string;
+  client: QueryClient;
+  reset?: boolean;
+}) {
+  if (reset) {
+    client.resetQueries({
+      queryKey: [RECORD_LIST_KEY_PREFIX, projectId],
+    });
+  } else {
+    client.invalidateQueries({
+      queryKey: [RECORD_LIST_KEY_PREFIX, projectId],
+      refetchType: 'all',
+    });
+  }
 }
 
 /**
@@ -363,13 +418,15 @@ export const useRecordList = ({
   query = undefined,
   projectId,
   filterDeleted,
-  refreshIntervalMs,
+  metadataRefreshIntervalMs,
+  hydrationRefreshIntervalMs,
   uiSpecification: uiSpec,
 }: {
   query?: string;
   projectId: string;
   filterDeleted: boolean;
-  refreshIntervalMs?: number | undefined | false;
+  metadataRefreshIntervalMs?: number | undefined | false;
+  hydrationRefreshIntervalMs?: number | undefined | false;
   uiSpecification: ProjectUIModel;
 }) => {
   // Work out our context e.g. active user, token, data db etc
@@ -385,16 +442,16 @@ export const useRecordList = ({
   // First - just fetch a list of all unhydrated records
   const unhydratedRecordQuery = useQuery({
     queryKey: [
-      'allrecords',
-      query,
+      RECORD_LIST_KEY_PREFIX,
       projectId,
+      query,
       filterDeleted,
       activeUser?.username,
       token?.roles,
     ],
     networkMode: 'always',
     gcTime: 0,
-    refetchInterval: refreshIntervalMs,
+    refetchInterval: metadataRefreshIntervalMs,
     // implement a custom structural sharing function to avoid re-renders when
     // the list of records is the same
     structuralSharing: (oldData, newData) => {
@@ -451,7 +508,6 @@ export const useRecordList = ({
         revisionId: unhydrated.revision_id,
       }),
       queryFn: () => {
-        console.log('Running hydrate individual record' + unhydrated.record_id);
         return hydrateIndividualRecord({
           record: unhydrated,
           dataDb,
@@ -460,9 +516,9 @@ export const useRecordList = ({
         });
       },
       refetchOnMount: false,
+      gcTime: 0,
+      refetchInterval: hydrationRefreshIntervalMs,
       placeholderData: {...unhydrated, data: {}, hrid: 'Loading...'},
-      // two minutes - don't refetch super often as it's expensive!
-      staleTime: 120000,
     })),
   });
 

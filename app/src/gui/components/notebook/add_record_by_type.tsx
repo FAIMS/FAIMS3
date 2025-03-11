@@ -13,14 +13,17 @@ import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecS
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {Refresh} from '@mui/icons-material';
 
 type AddRecordButtonsProps = {
   project: Project;
   recordLabel: string;
+  refreshList: () => void;
 };
 
 export default function AddRecordButtons({
   project: {projectId, serverId, uiSpecificationId, metadata},
+  refreshList,
   recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
@@ -82,6 +85,7 @@ export default function AddRecordButtons({
           sx={{
             maxHeight: '400px',
             justifyContent: mq_above_sm ? 'flex-start' : 'center',
+            gap: mq_above_sm? '8px' : '0px'
           }}
         >
           {/*If the list of views hasn't loaded yet*/}
@@ -159,6 +163,20 @@ export default function AddRecordButtons({
           ) : (
             <span />
           )}
+
+          <Button
+            variant="outlined"
+            sx={{
+              mb: 1,
+              mt: 1,
+              fontWeight: 'bold',
+            }}
+            startIcon={<Refresh />}
+            key="refreshList"
+            onClick={refreshList}
+          >
+            Refresh records
+          </Button>
         </ButtonGroup>
       </Box>
     );
