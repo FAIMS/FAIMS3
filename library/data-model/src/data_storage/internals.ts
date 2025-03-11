@@ -30,6 +30,7 @@ import {
   getHridFieldMap,
   getHridFieldNameForViewset,
   getIdsByFieldName,
+  HridFieldMap,
 } from '../index';
 import {
   Annotations,
@@ -47,6 +48,7 @@ import {
   RecordMetadata,
   Revision,
   RevisionID,
+  UnhydratedRecord,
 } from '../types';
 
 // INDEX NAMES
@@ -477,7 +479,7 @@ export async function getDataForRevision({
   revision,
   dataDb,
 }: {
-  revision: Revision;
+  revision: {avps: AttributeValuePairIDMap};
   dataDb: DataDbType;
 }): Promise<{[fieldName: string]: any} | undefined> {
   // Create an array to hold all of our AVP fetch promises
@@ -513,18 +515,26 @@ export async function getDataForRevision({
 }
 
 /**
- * Retrieves a list of non-deleted record metadata with populated data fields.
+ * Retrieves a list of non-deleted record metadata.
  *
- * This function fetches records based on optional filtering criteria, retrieves their
- * latest revisions, and constructs metadata objects containing record information
- * along with human-readable identifiers (HRIDs) determined by the UI specification.
+ *
+ * This function fetches records based on optional filtering criteria, retrieves
+ * their latest revisions, and constructs metadata objects containing record
+ * information along with human-readable identifiers (HRIDs) determined by the
+ * UI specification.
+ *
+ * If hydrate is set to true, then the data and hrid fields will be populated.
+ * NOTE that this incurs additional queries (since we need to fetch AVPs for
+ * every field in the response).
  *
  * @param projectId - The project identifier
  * @param recordIds - Optional array of specific record IDs to retrieve
+ * @param hydrate - should AVPs be fetched to allow data and hrid to be populated?
  * @param uiSpecification - UI model containing HRID field configurations
  * @param dataDb - Database connection for retrieving record data
  *
- * @returns {Promise<RecordMetadata[]>} A promise that resolves to an array of record metadata objects
+ * @returns {Promise<RecordMetadata[]>} A promise that resolves to an array of
+ * record metadata objects
  * @throws {Error} If record retrieval fails
  */
 export async function listRecordMetadata({
@@ -532,13 +542,24 @@ export async function listRecordMetadata({
   recordIds,
   uiSpecification,
   dataDb,
+  hydrate = true,
 }: {
   projectId: ProjectID;
   recordIds?: RecordID[];
+  hydrate?: boolean;
   uiSpecification: ProjectUIModel;
   dataDb: DataDbType;
 }): Promise<RecordMetadata[]> {
   try {
+    // Based on the UI spec, establish the ideal HRID for each viewset - this
+    // can be done once since all records are part of the same project/spec
+
+    // Only needs to be done if hydrating records.
+    let hridFieldMap = undefined;
+    if (hydrate) {
+      hridFieldMap = getHridFieldMap(uiSpecification);
+    }
+
     // Get records - either allDocs or query from index based on provision of
     // recordIds filter
     const rawRecords = await getRecords({
@@ -546,46 +567,48 @@ export async function listRecordMetadata({
       dataDb,
     });
 
-    // Now work out which revisions we should fetch - this is based on heads[0]
-    const revisionIds = rawRecords.map(r => r.heads[0]);
-
-    // If no revisions - then pass on
-    if (revisionIds.length === 0) {
-      return [];
-    }
-
-    // Now get the revisions based on the ID list - uses the revision query
-    const revisionMap = buildDocumentMap({
-      docs: await getRevisions({dataDb: dataDb, revisionIds}),
-    });
-
-    // Based on the UI spec, establish the ideal HRID for each viewset - this
-    // can be done once since all records are part of the same project/spec
-    const hridFieldMap = getHridFieldMap(uiSpecification);
-
     // Process records in parallel using Promise.all with map. Each record is
     // hydrated with data, HRID derived, and processed.
     const recordMetadataPromises = rawRecords.map(async record => {
       const revId = record.heads[0];
-      const revision = revisionMap[revId];
+
+      // Skip if revision not found
+      if (!revId) {
+        console.warn(
+          `There exists a record in the data DB with no heads[0]. Id: ${record._id}`
+        );
+        return null;
+      }
+
+      const revision = await getRevision({dataDb: dataDb, revisionId: revId});
 
       // Skip if revision not found
       if (!revision) {
+        console.warn(
+          `There exists a record in the data DB with a revision which is missing. ID: ${record._id}. Revision ID: ${revId}`
+        );
         return null;
       }
 
-      // Get data for the revision
-      const data = await getDataForRevision({dataDb, revision});
+      // Get data for the revision and hrid (if hydrate == true)
+      let data = undefined;
+      let hrid = undefined;
+      if (hydrate && hridFieldMap) {
+        // Hydrate with data by fetching AVPs
+        data = await getDataForRevision({dataDb, revision});
 
-      // Skip if data couldn't be fetched
-      if (data === undefined) {
-        return null;
+        // Ensure it's defined
+        if (!data) {
+          console.warn(
+            `There exists a record in the data DB where data hydration failed. ID: ${record._id}. Revision ID: ${revId}`
+          );
+          return null;
+        }
+
+        // Determine HRID based on field mapping or fall back to record ID
+        const hridFieldName = hridFieldMap[revision.type];
+        hrid = (hridFieldName ? data[hridFieldName] : record._id) ?? record._id;
       }
-
-      // Determine HRID based on field mapping or fall back to record ID
-      const hridFieldName = hridFieldMap[revision.type];
-      const hrid =
-        (hridFieldName ? data[hridFieldName] : record._id) ?? record._id;
 
       // Return record metadata
       return {
@@ -598,11 +621,14 @@ export async function listRecordMetadata({
         updated_by: revision.created_by,
         conflicts: record.heads.length > 1,
         deleted: revision.deleted ? true : false,
-        hrid: hrid,
         type: record.type,
         relationship: revision.relationship,
+        avps: revision.avps,
+
+        // If hydrate == true these will be defined
         data: data,
-      };
+        hrid: hrid,
+      } satisfies RecordMetadata;
     });
 
     // Resolve all promises and filter out null values (skipped records)
@@ -612,6 +638,66 @@ export async function listRecordMetadata({
     console.log(err);
     throw Error(`failed to get metadata. ${err}`);
   }
+}
+
+/**
+ * Retrieves a list of non-deleted record metadata.
+ *
+ *
+ * This function fetches records based on optional filtering criteria, retrieves
+ * their latest revisions, and constructs metadata objects containing record
+ * information along with human-readable identifiers (HRIDs) determined by the
+ * UI specification.
+ *
+ * If hydrate is set to true, then the data and hrid fields will be populated.
+ * NOTE that this incurs additional queries (since we need to fetch AVPs for
+ * every field in the response).
+ *
+ * @param projectId - The project identifier
+ * @param recordIds - Optional array of specific record IDs to retrieve
+ * @param hydrate - should AVPs be fetched to allow data and hrid to be populated?
+ * @param uiSpecification - UI model containing HRID field configurations
+ * @param dataDb - Database connection for retrieving record data
+ *
+ * @returns {Promise<RecordMetadata[]>} A promise that resolves to an array of
+ * record metadata objects
+ * @throws {Error} If record retrieval fails
+ */
+export async function hydrateIndividualRecord({
+  record,
+  uiSpecification,
+  dataDb,
+  hridFieldMap: providedFieldMap = undefined,
+}: {
+  record: UnhydratedRecord;
+  hridFieldMap?: HridFieldMap;
+  uiSpecification: ProjectUIModel;
+  dataDb: DataDbType;
+}): Promise<RecordMetadata> {
+  // Only needs to be done if not provided
+  const hridFieldMap = providedFieldMap ?? getHridFieldMap(uiSpecification);
+
+  // Hydrate with data by fetching AVPs
+  const data = await getDataForRevision({
+    dataDb,
+    revision: {avps: record.avps},
+  });
+
+  // Ensure it's defined
+  if (!data) {
+    throw new Error(
+      `There exists a record in the data DB where data hydration failed. ID: ${record.record_id}. Revision ID: ${record.revision_id}`
+    );
+  }
+
+  // Determine HRID based on field mapping or fall back to record ID
+  const hridFieldName = hridFieldMap[record.type];
+  const hrid =
+    (hridFieldName ? data[hridFieldName] : record.record_id) ??
+    record.record_id;
+
+  // Return record with populated data
+  return {...record, data, hrid} satisfies RecordMetadata;
 }
 
 /**

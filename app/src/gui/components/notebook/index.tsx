@@ -156,7 +156,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     refreshIntervalMs: 10000,
     uiSpecification: uiSpecification,
   });
-  const forceRecordRefresh = records.query.refetch;
+  const forceRecordRefresh = records.initialQuery.refetch;
 
   // Fetch drafts
   const drafts = useDraftsList({
@@ -292,7 +292,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             project={project}
             maxRows={25}
             rows={records.myRecords}
-            loading={records.query.isLoading}
+            loading={records.initialQuery.isLoading}
             viewsets={viewsets}
             handleQueryFunction={setQuery}
             handleRefresh={forceRecordRefresh}
@@ -308,7 +308,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             project={project}
             maxRows={25}
             rows={records.otherRecords}
-            loading={records.query.isLoading}
+            loading={records.initialQuery.isLoading}
             viewsets={viewsets}
             handleQueryFunction={setQuery}
             handleRefresh={forceRecordRefresh}

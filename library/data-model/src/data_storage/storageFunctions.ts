@@ -28,6 +28,7 @@ import {
   Revision,
   RevisionID,
   TokenContents,
+  UnhydratedRecord,
 } from '../types';
 import {
   addNewRevisionFromForm,
@@ -401,6 +402,7 @@ export async function getRecordMetadata({
       hrid: hrid,
       type: record.type,
       relationship: revision.relationship,
+      avps: revision.avps,
     };
   } catch (err) {
     console.debug(
@@ -682,17 +684,99 @@ export async function getRecordsWithRegex({
   dataDb: DataDbType;
 }): Promise<RecordMetadata[]> {
   try {
-    const recordList = Object.values(
-      await getAllRecordsWithRegex({dataDb, regex, uiSpecification, projectId})
-    );
+    const recordList = await getAllRecordsWithRegex({
+      dataDb,
+      regex,
+      uiSpecification,
+      projectId,
+    });
     return await filterRecordMetadata({
       tokenContents,
       projectId,
-      recordList,
+      recordList: sortByLastUpdated(recordList),
       filterDeleted,
     });
   } catch (error) {
     console.debug('Failed to regex search for', projectId, regex);
+    logError(error);
+    return [];
+  }
+}
+
+export async function getMinimalRecordDataWithRegex({
+  tokenContents,
+  projectId,
+  regex,
+  filterDeleted,
+  uiSpecification,
+  dataDb,
+}: {
+  tokenContents: TokenContents;
+  projectId: ProjectID;
+  regex: string;
+  filterDeleted: boolean;
+  uiSpecification: ProjectUIModel;
+  dataDb: DataDbType;
+}): Promise<UnhydratedRecord[]> {
+  try {
+    const recordList = await getAllRecordsWithRegex({
+      dataDb,
+      regex,
+      uiSpecification,
+      projectId,
+      hydrate: false,
+    });
+    return await filterRecordMetadata({
+      tokenContents,
+      projectId,
+      recordList: sortByLastUpdated(recordList),
+      filterDeleted,
+    });
+  } catch (error) {
+    console.debug('Failed to regex search for', projectId, regex);
+    logError(error);
+    return [];
+  }
+}
+
+/**
+ * Gets minimal info about responses - does NOT hydrate data/hrid.
+ *
+ * @param tokenContents The user's parsed token - which allows the data model to check which records should be retrieved
+ * @param projectId The ID of the project
+ * @param filterDeleted Should the deleted records be included?
+ * @param uiSpecification The UI specification - used to ascertain the correct HRID
+ * @param dataDb The record data db
+ * @returns List of record metadata which excludes HRID and data fields (as omitted in typing)
+ */
+export async function getMinimalRecordData({
+  tokenContents,
+  projectId,
+  filterDeleted,
+  uiSpecification,
+  dataDb,
+}: {
+  tokenContents: TokenContents;
+  projectId: ProjectID;
+  filterDeleted: boolean;
+  uiSpecification: ProjectUIModel;
+  dataDb: DataDbType;
+}): Promise<UnhydratedRecord[]> {
+  try {
+    const recordList = await listRecordMetadata({
+      dataDb,
+      projectId: projectId,
+      uiSpecification,
+      hydrate: false,
+    });
+    return await filterRecordMetadata({
+      tokenContents,
+      projectId,
+      recordList: sortByLastUpdated(recordList),
+      filterDeleted,
+    });
+  } catch (error) {
+    console.debug('Failed to get record metadata for', projectId);
     logError(error);
     return [];
   }

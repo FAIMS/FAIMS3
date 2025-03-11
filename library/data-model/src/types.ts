@@ -552,9 +552,12 @@ export interface RecordMetadata {
   deleted: boolean;
   hrid: string;
   type: FAIMSTypeName;
+  avps: AttributeValuePairIDMap;
   relationship?: Relationship;
   data?: {[key: string]: any};
 }
+
+export type UnhydratedRecord = Omit<RecordMetadata, 'data' | 'hrid'>;
 
 export type RecordMetadataList = {
   [key: string]: RecordMetadata;

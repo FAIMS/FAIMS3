@@ -79,6 +79,9 @@ import {
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
 import {localGetDataDb} from '../../..';
+import {invalidateTargetRecordHydration} from '../../../utils/customHooks';
+import {QueryClient} from '@tanstack/react-query';
+import {queryClient} from '../../../App';
 
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -910,6 +913,20 @@ class RecordForm extends React.Component<any, RecordFormState> {
       deleted: false,
       ...contextInfo,
     };
+
+    // Invalidate any query for this record's data
+    console.log('INVALIDATING', {
+      recordId: this.props.record_id,
+      client: queryClient,
+      projectId: this.props.project_id,
+    });
+    invalidateTargetRecordHydration({
+      recordId: this.props.record_id,
+      client: queryClient,
+      projectId: this.props.project_id,
+    });
+    queryClient.invalidateQueries({})
+
     return (
       upsertFAIMSData({
         dataDb: localGetDataDb(this.props.project_id),

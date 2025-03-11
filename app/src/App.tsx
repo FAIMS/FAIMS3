@@ -48,8 +48,8 @@ import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
 import {InitialiseGate, StateProvider} from './context/store';
 
-// Setup react query
-const queryClient = new QueryClient({
+// Setup react query (prefer to use context provider but can import for legacy class components)
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Queries should be enabled by default

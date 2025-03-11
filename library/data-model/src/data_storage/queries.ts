@@ -17,7 +17,7 @@
  * Description:
  *   Functions to query specific information from pouchdb
  */
-import {getDataDB} from '../index';
+import {getDataDB, listRecordMetadata} from '../index';
 import {
   AttributeValuePair,
   DataDbType,
@@ -29,7 +29,6 @@ import {
   RecordReference,
 } from '../types';
 
-import {listRecordMetadata} from './internals';
 
 export async function getAllRecordsOfType(
   project_id: ProjectID,
@@ -56,6 +55,7 @@ export async function getAllRecordsOfType(
  * Get an array of records with values that match a regular expression
  * @param projectId - Project Id
  * @param regex - regular expression matching data values
+ * @param hydrate - should the data/hrid fields be populated?
  * @returns an array of record objects
  */
 export async function getAllRecordsWithRegex({
@@ -63,11 +63,13 @@ export async function getAllRecordsWithRegex({
   regex,
   uiSpecification,
   dataDb,
+  hydrate = true,
 }: {
   projectId: ProjectID;
   regex: string;
   uiSpecification: ProjectUIModel;
   dataDb: DataDbType;
+  hydrate?: boolean;
 }): Promise<RecordMetadata[]> {
   // find avp documents with matching data, get the record ids from them
   const res = await dataDb.find({
@@ -87,5 +89,6 @@ export async function getAllRecordsWithRegex({
     projectId: projectId,
     recordIds: deduped_record_ids,
     uiSpecification,
+    hydrate,
   });
 }
