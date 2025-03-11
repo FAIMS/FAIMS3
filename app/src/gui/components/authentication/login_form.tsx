@@ -13,6 +13,7 @@ export type LoginButtonProps = {
   size?: ButtonProps['size'];
   sx?: object;
   startIcon: React.ReactNode;
+  variant?: 'text' | 'outlined' | 'contained';
 };
 
 /**
@@ -22,7 +23,7 @@ export type LoginButtonProps = {
 export function LoginButton(props: LoginButtonProps) {
   return (
     <Button
-      variant="outlined"
+      variant={props.variant ?? 'outlined'}
       color="primary"
       size={props.size}
       sx={{

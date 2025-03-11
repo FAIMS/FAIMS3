@@ -61,6 +61,13 @@ const allOperators = new Map([
   ['less', 'Less than'],
   ['less-equal', 'Less than or equal'],
   ['regex', 'Matches regular expression'],
+  ['contains', 'List contains this value'],
+  ['does-not-contain', 'List does not contain this value'],
+  ['contains-regex', 'List contains a value matching this regex'],
+  [
+    'does-not-contain-regex',
+    'List does not contain any value matching this regex',
+  ],
 ]);
 
 const getFieldLabel = (f: FieldType) => {
@@ -69,6 +76,70 @@ const getFieldLabel = (f: FieldType) => {
       f['component-parameters'].InputLabelProps.label) ||
     f['component-parameters'].name
   );
+};
+
+// Recursively checks if a field is used in a single condition
+export function isFieldUsedInCondition(
+  condition: ConditionType | null | undefined,
+  fieldName: string
+): boolean {
+  if (!condition) return false;
+
+  const {operator, field, conditions} = condition;
+
+  // Base case
+  if (field === fieldName) {
+    return true;
+  }
+
+  // If it's an AND/OR group, check subconditions
+  if ((operator === 'and' || operator === 'or') && conditions) {
+    return conditions.some(sub => isFieldUsedInCondition(sub, fieldName));
+  }
+
+  return false;
+}
+
+/**
+ * Finds where a field is used in conditions or templated string fields
+ */
+export const findFieldCondtionUsage = (
+  fieldName: string,
+  allFields: Record<string, any>,
+  allFviews: Record<string, any>
+): string[] => {
+  const affected: string[] = [];
+
+  // Check section-level conditions
+  for (const sectionId in allFviews) {
+    const condition = allFviews[sectionId].condition;
+    if (isFieldUsedInCondition(condition, fieldName)) {
+      affected.push(`Section: ${allFviews[sectionId].label}`);
+    }
+  }
+
+  // Check field-level conditions
+  for (const fId in allFields) {
+    const condition = allFields[fId].condition;
+    if (isFieldUsedInCondition(condition, fieldName)) {
+      const label = allFields[fId]['component-parameters']?.label ?? fId;
+      affected.push(`Field Condition: ${label}`);
+    }
+  }
+
+  // Check for Templated String Fields using the deleted field
+  for (const fId in allFields) {
+    if (allFields[fId]['component-name'] === 'TemplatedStringField') {
+      const template = allFields[fId]['component-parameters']?.template || '';
+
+      if (template.includes(`{{${fieldName}}}`)) {
+        const label = allFields[fId]['component-parameters']?.label ?? fId;
+        affected.push(`Templated String: ${label} (uses '{{${fieldName}}}')`);
+      }
+    }
+  }
+
+  return affected;
 };
 
 export const ConditionModal = (props: ConditionProps & {label: string}) => {

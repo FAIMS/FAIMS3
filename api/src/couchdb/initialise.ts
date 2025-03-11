@@ -63,12 +63,14 @@ const adminOnlySecurityHelper = async (
 };
 
 export const initialiseProjectsDB = async (
-  db: PouchDB.Database | undefined
+  db: PouchDB.Database | undefined,
+  {force = false}: {force?: boolean}
 ) => {
   // Permissions doc goes into _design/permissions in a project
   // javascript in here will run inside CouchDB
   const projectPermissionsDoc = {
     _id: '_design/permissions',
+    _rev: undefined as undefined | string,
     validate_doc_update: `function (newDoc, oldDoc, userCtx) {
       // Reject update if user does not have an _admin role
       if (userCtx.roles.indexOf('_admin') < 0) {
@@ -80,30 +82,40 @@ export const initialiseProjectsDB = async (
     }`,
   };
   if (db) {
+    let write = false;
+
+    // do we already have a default document?
     try {
-      await db.get(projectPermissionsDoc._id);
+      const res = await db.get(projectPermissionsDoc._id);
+      projectPermissionsDoc._rev = res._rev;
+      write = false;
     } catch {
-      await db.put(projectPermissionsDoc);
+      write = true;
     }
 
-    // can't save security on an in-memory database so skip if testing
-    if (process.env.NODE_ENV !== 'test') {
-      const security = db.security();
-      await adminOnlySecurityHelper(security, [
-        CLUSTER_ADMIN_GROUP_NAME,
-        '_admin',
-      ]);
+    if (write) {
+      await db.put(projectPermissionsDoc, {force});
+      // can't save security on an in-memory database so skip if testing
+      if (process.env.NODE_ENV !== 'test') {
+        const security = db.security();
+        await adminOnlySecurityHelper(security, [
+          CLUSTER_ADMIN_GROUP_NAME,
+          '_admin',
+        ]);
+      }
     }
   }
 };
 
 export const initialiseTemplatesDb = async (
-  db: PouchDB.Database | undefined
+  db: PouchDB.Database | undefined,
+  {force = false}: {force?: boolean}
 ) => {
   // Permissions doc goes into _design/permissions in a project
   // javascript in here will run inside CouchDB
   const projectPermissionsDoc = {
     _id: '_design/permissions',
+    _rev: undefined as undefined | string,
     validate_doc_update: `function (newDoc, oldDoc, userCtx) {
       // Reject update if user does not have an _admin role
       if (userCtx.roles.indexOf('_admin') < 0) {
@@ -115,35 +127,45 @@ export const initialiseTemplatesDb = async (
     }`,
   };
   if (db) {
+    let write = false;
+
+    // do we already have a default document?
     try {
-      await db.get(projectPermissionsDoc._id);
+      const res = await db.get(projectPermissionsDoc._id);
+      projectPermissionsDoc._rev = res._rev;
     } catch {
+      write = true;
+    }
+
+    if (force || write) {
       try {
-        await db.put(projectPermissionsDoc);
+        await db.put(projectPermissionsDoc, {force});
       } catch (e) {
         console.error(
           'Failed to initialise security document for templates database.'
         );
         throw e;
       }
-    }
 
-    // can't save security on an in-memory database so skip if testing
-    if (process.env.NODE_ENV !== 'test') {
-      const security = db.security();
-      await adminOnlySecurityHelper(security, [
-        CLUSTER_ADMIN_GROUP_NAME,
-        '_admin',
-      ]);
+      // can't save security on an in-memory database so skip if testing
+      if (process.env.NODE_ENV !== 'test') {
+        const security = db.security();
+        await adminOnlySecurityHelper(security, [
+          CLUSTER_ADMIN_GROUP_NAME,
+          '_admin',
+        ]);
+      }
     }
   }
 };
 
 export const initialiseDirectoryDB = async (
-  db: PouchDB.Database | undefined
+  db: PouchDB.Database | undefined,
+  {force = false}: {force?: boolean}
 ) => {
   const directoryDoc = {
     _id: 'default',
+    _rev: undefined as undefined | string,
     name: CONDUCTOR_INSTANCE_NAME,
     description: `Fieldmark instance on ${CONDUCTOR_PUBLIC_URL}`,
     people_db: {
@@ -157,6 +179,7 @@ export const initialiseDirectoryDB = async (
 
   const permissions = {
     _id: '_design/permissions',
+    _rev: undefined as undefined | string,
     validate_doc_update: `function(newDoc, oldDoc, userCtx) {
       if (userCtx.roles.indexOf('_admin') >= 0) {
         return;
@@ -166,10 +189,24 @@ export const initialiseDirectoryDB = async (
   };
 
   if (db) {
+    let write = false;
+
     // do we already have a default document?
     try {
-      await db.get('default');
+      const res = await db.get(directoryDoc._id);
+      directoryDoc._rev = res._rev;
     } catch {
+      write = true;
+    }
+
+    try {
+      const res = await db.get(permissions._id);
+      permissions._rev = res._rev;
+    } catch {
+      write = true;
+    }
+
+    if (force || write) {
       await db.put(directoryDoc);
       await db.put(permissions);
 
@@ -229,7 +266,10 @@ export const initialiseUserDB = async (db: PouchDB.Database | undefined) => {
  * @param db The database to initialise, intentionally not typed so as to not
  * include type errors for interacting with permission and security documents.
  */
-export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
+export const initialiseAuthDb = async (
+  db: PouchDB.Database,
+  {force = true}: {force?: boolean}
+): Promise<void> => {
   // To check if we are initialised - we check for presence of expected
   // documents
   let initialised = true;
@@ -248,7 +288,7 @@ export const initialiseAuthDb = async (db: PouchDB.Database): Promise<void> => {
     initialised = false;
   }
 
-  if (initialised) {
+  if (!force && initialised) {
     return;
   }
 

@@ -18,26 +18,39 @@
  *   TODO
  */
 
-import React from 'react';
-import {Typography, Grid} from '@mui/material';
-import Notebooks from '../components/workspace/notebooks';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {Grid, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
+import React from 'react';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {selectActiveUser} from '../../context/slices/authSlice';
+import {useAppSelector} from '../../context/store';
+import Notebooks from '../components/workspace/notebooks';
 
 export default function Workspace() {
   const theme = useTheme();
+  const activeUser = useAppSelector(selectActiveUser);
+  const listing = useAppSelector(state =>
+    activeUser ? state.projects.servers[activeUser.serverId] : undefined
+  );
+  const serverName = listing?.serverTitle;
+
   return (
     <React.Fragment>
-      <Breadcrumbs data={[{title: 'Workspace'}]} />
       <Grid container spacing={3}>
         <Grid item xs={12} md={12} lg={8}>
           <Typography
-            variant="h1"
+            variant="h2"
             color="textSecondary"
             style={{marginBottom: theme.spacing(2)}}
           >
             My {NOTEBOOK_NAME_CAPITALIZED}s
+          </Typography>
+          <Typography
+            variant="h4"
+            color="textSecondary"
+            style={{marginBottom: theme.spacing(2)}}
+          >
+            {serverName}
           </Typography>
           <Notebooks />
         </Grid>

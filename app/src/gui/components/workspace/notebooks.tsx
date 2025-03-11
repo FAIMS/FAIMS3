@@ -20,13 +20,13 @@
 
 import {RefreshOutlined} from '@mui/icons-material';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
-import FolderIcon from '@mui/icons-material/Folder';
 import {Alert, AlertTitle, Box, Button, Paper, Typography} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
-import {useContext, useState} from 'react';
+import {useMutation} from '@tanstack/react-query';
+import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {
   NOTEBOOK_LIST_TYPE,
@@ -35,10 +35,14 @@ import {
 } from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {useNotification} from '../../../context/popup';
-import {ProjectsContext} from '../../../context/projects-context';
-import {ProjectExtended} from '../../../types/project';
-import {CREATE_NOTEBOOK_ROLES, userHasRoleInAnyListing} from '../../../users';
-import {useGetAllUserInfo} from '../../../utils/useGetCurrentUser';
+import {selectActiveUser} from '../../../context/slices/authSlice';
+import {
+  initialiseProjects,
+  Project,
+  selectProjectsByServerId,
+} from '../../../context/slices/projectSlice';
+import {useAppDispatch, useAppSelector} from '../../../context/store';
+import {useIsOnline} from '../../../utils/customHooks';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
@@ -64,152 +68,88 @@ export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 export const DE_ACTIVATE_VERB = 'De-activate';
 
 export default function NoteBooks() {
-  const [refresh, setRefresh] = useState(false);
-  const {projects, syncProjects} = useContext(ProjectsContext);
+  // get the active user - this will allow us to check roles against it
+  // TODO what do we do if this is not defined
+  const dispatch = useAppDispatch();
 
-  const activatedProjects = projects.filter(({activated}) => activated);
+  // Are we online
+  const isOnline = useIsOnline();
+  const activeUser = useAppSelector(selectActiveUser);
+  if (!activeUser) {
+    // You shouldn't be here!
+    return <></>;
+  }
+
+  const activeServerId = activeUser.serverId;
+  const projects = useAppSelector(state =>
+    selectProjectsByServerId(state, activeServerId)
+  );
+
+  // Refresh mutation
+  const doRefresh = useMutation({
+    mutationFn: async () => {
+      await dispatch(initialiseProjects({serverId: activeServerId}));
+    },
+    onSuccess: () => {
+      notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
+    },
+    onError: err => {
+      console.log(err);
+      notify.showError(`Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`);
+    },
+  });
+  const showRefreshButton = isOnline.isOnline;
+
+  const activeUserActivatedProjects = projects.filter(nb => nb.isActivated);
 
   const [tabID, setTabID] = useState('1');
 
   const history = useNavigate();
 
   const theme = useTheme();
-  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const is_xs = !useMediaQuery(theme.breakpoints.up('sm'));
 
-  const columns: GridColDef<ProjectExtended>[] = not_xs
-    ? [
-        {
-          field: 'name',
-          headerName: 'Name',
-          type: 'string',
-          flex: 0.4,
-          minWidth: 200,
-          renderCell: ({row: {activated, name, description}}) => (
-            <Box my={3}>
-              <span
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'nowrap',
-                  padding: '12px 0',
-                }}
-              >
-                <FolderIcon
-                  fontSize={'small'}
-                  color={activated ? 'primary' : 'disabled'}
-                  sx={{mr: '8px'}}
-                />
-                <Typography
-                  variant={'body1'}
-                  fontWeight={activated ? 'bold' : 'normal'}
-                  color={activated ? 'black' : grey[800]}
-                  sx={{
-                    padding: '4px 0',
-                    lineHeight: 1,
-                  }}
-                >
-                  {name}
-                </Typography>
-              </span>
-              <Typography variant={'caption'}>{description}</Typography>
-            </Box>
-          ),
-        },
-        // commenting this untill the functionality is fixed for this column.
-        // {
-        //   field: 'last_updated',
-        //   headerName: 'Last Updated',
-        //   type: 'dateTime',
-        //   minWidth: 160,
-        //   flex: 0.2,
-        //   valueGetter: ({value}) => value && new Date(value),
-        // },
-        {
-          field: 'actions',
-          type: 'actions',
-          flex: 0.2,
-          minWidth: 160,
-          headerName: 'Sync',
-          description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
-          renderCell: ({row}) => (
-            <NotebookSyncSwitch
-              project={row}
-              showHelperText={false}
-              setTabID={setTabID}
-            />
-          ),
-        },
-      ]
-    : [
-        {
-          field: 'name',
-          headerName: 'Name',
-          type: 'string',
-          flex: 0.4,
-          minWidth: 160,
-          renderCell: ({row: {activated, name, description}}) => (
-            <div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  padding: '12px 0',
-                }}
-              >
-                <FolderIcon
-                  fontSize={'small'}
-                  color={activated ? 'secondary' : 'disabled'}
-                  sx={{mr: '4px'}}
-                />
-                <Typography
-                  variant={'body2'}
-                  fontWeight={activated ? 'bold' : 'normal'}
-                  color={activated ? 'black' : grey[800]}
-                  sx={{
-                    padding: '4px 0',
-                  }}
-                >
-                  {name}
-                </Typography>
-              </div>
-              <Typography variant={'caption'} sx={{paddingTop: '4px'}}>
-                {description}
-              </Typography>
-            </div>
-          ),
-        },
-        // commenting this until the functionality is fixed for this column.
-
-        // {
-        //   field: 'last_updated',
-        //   headerName: 'Last Updated',
-        //   type: 'dateTime',
-        //   minWidth: 100,
-        //   flex: 0.3,
-        //   valueGetter: ({value}) => value && new Date(value),
-        // },
-        {
-          field: 'actions',
-          type: 'actions',
-          flex: 0.3,
-          minWidth: 80,
-          headerName: 'Sync',
-          description: `Toggle syncing this ${NOTEBOOK_NAME} to the server`,
-          renderCell: ({row}) => (
-            <NotebookSyncSwitch
-              project={row}
-              showHelperText={false}
-              setTabID={setTabID}
-            />
-          ),
-        },
-      ];
-
-  // fetch all user info then determine if any listing has permission to create notebooks
-  const allUserInfo = useGetAllUserInfo();
-  const showCreateNewNotebookButton = allUserInfo?.data
-    ? userHasRoleInAnyListing(allUserInfo.data, CREATE_NOTEBOOK_ROLES)
-    : false;
+  const baseColumns: GridColDef<Project>[] = [
+    {
+      field: 'name',
+      headerName: 'Name',
+      type: 'string',
+      flex: 0.4,
+      renderCell: ({row}) => (
+        <Box>
+          <Typography
+            variant={is_xs ? 'body2' : 'body1'}
+            fontWeight={row.isActivated ? 'bold' : 'normal'}
+            color={row.isActivated ? 'black' : grey[800]}
+            sx={{
+              padding: '8px 0px',
+            }}
+          >
+            {row.metadata.name}
+          </Typography>
+          <Typography variant="caption" sx={{display: 'block', mt: 1}}>
+            {row.metadata.description}
+          </Typography>
+        </Box>
+      ),
+    },
+  ];
+  const activatedColumns = baseColumns;
+  const notActivatedColumns = baseColumns.concat([
+    {
+      field: 'actions',
+      type: 'actions',
+      width: 100,
+      renderCell: ({row}) => (
+        <NotebookSyncSwitch
+          project={row}
+          showHelperText={false}
+          setTabID={setTabID}
+        />
+      ),
+    },
+  ]);
+  const showCreateNewNotebookButton = false;
 
   // What type of layout are we using?
   const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';
@@ -234,9 +174,9 @@ export default function NoteBooks() {
 
   const notActivatedAdvice = (
     <>
-      You have {activatedProjects.length} {NOTEBOOK_NAME}
-      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
-      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
+      You have {activeUserActivatedProjects.length} {NOTEBOOK_NAME}
+      {activeUserActivatedProjects.length !== 1 ? 's' : ''} currently{' '}
+      {ACTIVATED_LABEL} on this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (
@@ -271,6 +211,7 @@ export default function NoteBooks() {
         >
           {showCreateNewNotebookButton ? (
             <Button
+              disabled={!isOnline.isOnline}
               variant="contained"
               onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
               sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
@@ -283,22 +224,11 @@ export default function NoteBooks() {
           )}
           <Button
             variant="contained"
-            disabled={refresh}
+            disabled={!showRefreshButton || doRefresh.isPending}
             sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
             startIcon={<RefreshOutlined />}
-            onClick={async () => {
-              setRefresh(true);
-              await syncProjects()
-                .then(() => {
-                  notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
-                })
-                .catch(e => {
-                  console.log(e);
-                  notify.showError(
-                    `Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`
-                  );
-                });
-              setRefresh(false);
+            onClick={() => {
+              doRefresh.mutate();
             }}
           >
             Refresh {NOTEBOOK_NAME}s
@@ -309,10 +239,16 @@ export default function NoteBooks() {
             projects={projects}
             tabID={tabID}
             handleChange={setTabID}
-            columns={columns}
+            activatedColumns={activatedColumns}
+            notActivatedColumns={notActivatedColumns}
           />
         ) : (
-          <HeadingProjectGrid projects={projects} columns={columns} />
+          <HeadingProjectGrid
+            projects={projects}
+            serverId={activeServerId}
+            activatedColumns={activatedColumns}
+            notActivatedColumns={notActivatedColumns}
+          />
         )}
         <Alert severity="info">
           <AlertTitle>

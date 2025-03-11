@@ -18,31 +18,21 @@
  *   TODO need to check created draft route
  */
 
-import React, {useEffect, useState} from 'react';
-import _ from 'lodash';
-import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-import {Typography, Box, Paper, Grid, Link} from '@mui/material';
+import {DraftMetadata, ProjectID, ProjectUIViewsets} from '@faims3/data-model';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
-import {useNavigate} from 'react-router-dom';
+import {Box, Grid, Link, Paper, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-
-import {ProjectID, DraftMetadata} from '@faims3/data-model';
+import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
+import React from 'react';
+import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {listenDrafts} from '../../../drafts';
-import {ProjectUIViewsets} from '@faims3/data-model';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 
-type DraftsTableProps = {
-  project_id: ProjectID;
-  maxRows: number | null;
-  viewsets?: ProjectUIViewsets | null;
-  handleRefresh: () => void;
-};
-
 type DraftsRecordProps = {
   project_id: ProjectID;
+  serverId: string;
   maxRows: number | null;
   rows: any;
   loading: boolean;
@@ -50,8 +40,8 @@ type DraftsRecordProps = {
   handleRefresh: () => void;
 };
 
-function DraftRecord(props: DraftsRecordProps) {
-  const {project_id, maxRows, rows, loading} = props;
+export function DraftsTable(props: DraftsRecordProps) {
+  const {project_id, serverId, maxRows, rows, loading} = props;
   const theme = useTheme();
   const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
@@ -134,6 +124,7 @@ function DraftRecord(props: DraftsRecordProps) {
             return (
               <RecordDelete
                 project_id={project_id}
+                serverId={serverId}
                 record_id={params.row.record_id}
                 revision_id={params.row.revision_id}
                 draft_id={params.row._id}
@@ -204,6 +195,7 @@ function DraftRecord(props: DraftsRecordProps) {
             return (
               <RecordDelete
                 project_id={project_id}
+                serverId={serverId}
                 record_id={params.row.record_id}
                 revision_id={params.row.revision_id}
                 draft_id={params.row._id}
@@ -275,41 +267,3 @@ function DraftRecord(props: DraftsRecordProps) {
     </React.Fragment>
   );
 }
-export default function DraftsTable(props: DraftsTableProps) {
-  const {project_id, maxRows} = props;
-  const [loading, setLoading] = useState(true);
-
-  const [rows, setRows] = useState<Array<DraftMetadata>>([]);
-
-  useEffect(() => {
-    //  Dependency is only the project_id, ie., register one callback for this component
-    // on load - if the record list is updated, the callback should be fired
-    if (project_id === undefined) return; //dummy project
-    const destroyListener = listenDrafts(
-      project_id,
-      'all',
-      newPouchRecordList => {
-        setLoading(false);
-        if (!_.isEqual(Object.values(newPouchRecordList), rows)) {
-          setRows(Object.values(newPouchRecordList));
-        }
-      }
-    );
-
-    return destroyListener; // destroyListener called when this component unmounts.
-  }, [project_id, rows]);
-
-  return (
-    <DraftRecord
-      project_id={project_id}
-      maxRows={maxRows}
-      rows={rows}
-      loading={loading}
-      viewsets={props.viewsets}
-      handleRefresh={props.handleRefresh}
-    />
-  );
-}
-DraftsTable.defaultProps = {
-  maxRows: null,
-};

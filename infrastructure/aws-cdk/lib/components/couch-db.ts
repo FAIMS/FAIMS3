@@ -121,6 +121,9 @@ writer = file
 file = ${this.couchDataPath}/couch.log
 level = info
 
+[jwt_auth]
+required_claims = exp
+
 [cors]
 origins = *
 headers = accept, authorization, content-type, origin, referer
@@ -370,9 +373,17 @@ EOL`,
     // Create the EC2 instance
     this.instance = new ec2.Instance(this, 'CouchDBInstance' + debugIdPostfix, {
       vpc: props.vpc,
+      // Amazon Linux 2 (latest as of 10/02/25) - pin to avoid instance
+      // replacement
+      machineImage: new ec2.GenericLinuxImage({
+        'ap-southeast-2': 'ami-0efef54e960e4e17f',
+      }),
+      // Was like this
+      /*
       machineImage: new ec2.AmazonLinuxImage({
         generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
       }),
+      */
       userData,
       vpcSubnets: {subnetType: ec2.SubnetType.PUBLIC},
       securityGroup: couchSecurityGroup,

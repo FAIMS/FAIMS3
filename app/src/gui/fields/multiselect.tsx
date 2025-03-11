@@ -20,101 +20,259 @@
 
 import {ElementOption} from '@faims3/data-model';
 import {
+  Box,
   Checkbox,
   FormControl,
-  FormHelperText,
-  InputLabel,
+  FormControlLabel,
   ListItemText,
   MenuItem,
-  OutlinedInput,
   Select,
 } from '@mui/material';
 import {FieldProps} from 'formik';
 import {TextFieldProps} from 'formik-mui';
+import {ReactNode} from 'react';
+import FieldWrapper from './fieldWrapper';
 
+/**
+ * Base properties for multi-select components
+ */
 interface ElementProps {
   options: Array<ElementOption>;
+  expandedChecklist?: boolean;
+  exclusiveOptions?: Array<string>;
 }
 
+/**
+ * Combined props for the main MultiSelect component
+ */
 interface Props {
   ElementProps: ElementProps;
   select_others?: string;
 }
 
-import {useTheme} from '@mui/material/styles';
+/**
+ * Props for the ExpandedChecklist component
+ */
+interface ExpandedChecklistProps {
+  options: Array<ElementOption>;
+  value: string[];
+  onChange: (values: string[]) => void;
+  label?: ReactNode;
+  helperText?: ReactNode;
+  exclusiveOptions?: Array<string>;
+}
 
-export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
-  const theme = useTheme();
-  const handleChange = (e: any) => {
-    props.form.setFieldValue(props.field.name, e.target.value, true);
+/**
+ * Props for the MuiMultiSelect component
+ */
+interface MuiMultiSelectProps {
+  options: Array<ElementOption>;
+  value: string[];
+  onChange: (values: string[]) => void;
+  label?: ReactNode;
+  helperText?: ReactNode;
+  exclusiveOptions?: Array<string>;
+}
+
+/**
+ * A component that displays options as an expanded list of checkboxes
+ */
+export const ExpandedChecklist = ({
+  options,
+  value,
+  onChange,
+  exclusiveOptions = [],
+}: ExpandedChecklistProps) => {
+  const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
+
+  const handleChange = (optionValue: string) => {
+    // If the new selection is exclusive, then we either deselect all or select
+    // just that value
+    if (exclusiveOptions.includes(optionValue)) {
+      onChange(value.includes(optionValue) ? [] : [optionValue]);
+    } else {
+      // As long as we don't have an exclusive option selected, add or remove
+      // this option as per usual
+      if (!selectedExclusiveOption) {
+        const newValues = value.includes(optionValue)
+          ? value.filter(v => v !== optionValue)
+          : [...value, optionValue];
+        onChange(newValues);
+      }
+    }
   };
 
   return (
-    <FormControl sx={{m: 1, width: '100%'}}>
-      <InputLabel
-        id="multi-select-label"
-        style={{backgroundColor: theme.palette.background.default}}
-      >
-        {props.label}
-      </InputLabel>
+    <FormControl sx={{width: '100%'}}>
+      <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+        {options.map(option => (
+          <FormControlLabel
+            key={option.key || option.value}
+            control={
+              <Checkbox
+                checked={value.includes(option.value)}
+                onChange={() => handleChange(option.value)}
+                disabled={
+                  selectedExclusiveOption !== undefined &&
+                  option.value !== selectedExclusiveOption
+                }
+              />
+            }
+            label={option.label}
+            sx={{
+              '& .MuiFormControlLabel-label': {
+                whiteSpace: 'normal',
+                wordWrap: 'break-word',
+              },
+            }}
+          />
+        ))}
+      </Box>
+    </FormControl>
+  );
+};
+
+/**
+ * A component that displays options in a Material-UI dropdown select
+ */
+export const MuiMultiSelect = ({
+  options,
+  value,
+  onChange,
+  exclusiveOptions = [],
+}: MuiMultiSelectProps) => {
+  const handleChange = (event: any) => {
+    const selectedValues = event.target.value;
+
+    // Check if any selection is exclusive, if so just update with that
+    let exclusive = undefined;
+    for (const v of selectedValues) {
+      if (exclusiveOptions.includes(v)) {
+        exclusive = v;
+        break;
+      }
+    }
+
+    // Just update with exclusive - deleting all other selections
+    if (exclusive) {
+      onChange([exclusive]);
+      return;
+    }
+
+    // Otherwise, just update with the raw selection
+    onChange(selectedValues);
+  };
+
+  const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
+
+  return (
+    <FormControl sx={{width: '100%'}}>
       <Select
-        labelId="multi-select-label"
         multiple
-        label={props.label}
         onChange={handleChange}
-        value={props.field.value}
-        input={<OutlinedInput label={props.label} />}
+        value={value}
         renderValue={selected => selected.join(', ')}
       >
-        {props.ElementProps.options.map((option: any) => (
+        {options.map(option => (
           <MenuItem
             key={option.key ? option.key : option.value}
             value={option.value}
+            disabled={
+              selectedExclusiveOption !== undefined &&
+              option.value !== selectedExclusiveOption
+            }
             sx={{
               whiteSpace: 'normal',
               wordWrap: 'break-word',
             }}
           >
-            <Checkbox checked={props.field.value.includes(option.value)} />
+            <Checkbox checked={value.includes(option.value)} />
             <ListItemText primary={option.label} />
           </MenuItem>
         ))}
       </Select>
-      {props.helperText && <FormHelperText>{props.helperText}</FormHelperText>}
     </FormControl>
   );
 };
 
-// const uiSpec = {
-//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-//   'component-name': 'MultiSelect',
-//   'type-returned': 'faims-core::Array', // matches a type in the Project Model
-//   'component-parameters': {
-//     fullWidth: true,
-//     helperText: 'Choose items from the dropdown',
-//     variant: 'outlined',
-//     required: false,
-//     select: true,
-//     InputProps: {},
-//     SelectProps: {
-//       multiple: true,
-//     },
-//     ElementProps: {
-//       options: [
-//         {
-//           value: 'Default',
-//           label: 'Default',
-//         },
-//         {
-//           value: 'Default2',
-//           label: 'Default2',
-//         },
-//       ],
-//     },
-//     InputLabelProps: {
-//       label: 'Select Multiple',
-//     },
-//   },
-//   validationSchema: [['yup.array']],
-//   initialValue: [],
-// };
+/**
+ * Main MultiSelect component that switches between ExpandedChecklist and MuiMultiSelect
+ * based on the expandedChecklist prop
+ */
+export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
+  const handleChange = (value: string[]) => {
+    props.form.setFieldValue(props.field.name, value, true);
+  };
+
+  const isExpandedChecklist = props.ElementProps.expandedChecklist ?? false;
+
+  const commonProps = {
+    options: props.ElementProps.options,
+    value: props.field.value,
+    onChange: handleChange,
+    label: props.label,
+    helperText: props.helperText,
+    exclusiveOptions: props.ElementProps.exclusiveOptions,
+  };
+
+  return (
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText}
+      required={props.required}
+    >
+      {isExpandedChecklist ? (
+        <ExpandedChecklist {...commonProps} />
+      ) : (
+        <MuiMultiSelect {...commonProps} />
+      )}
+    </FieldWrapper>
+  );
+};
+
+/*
+An example of ui-spec for this multi-select:
+{
+  'component-namespace': 'faims-custom',
+  'component-name': 'MultiSelect',
+  'type-returned': 'faims-core::Array',
+  'component-parameters': {
+    fullWidth: true,
+    helperText: 'Choose items from the dropdown',
+    variant: 'outlined',
+    required: false,
+    select: true,
+    InputProps: {},
+    SelectProps: {
+      multiple: true,
+    },
+    ElementProps: {
+      expandedChecklist : false,
+      exclusiveOptions : ['None', 'NotApplicable'],
+      options: [
+        {
+          value: 'Option1',
+          label: 'Option 1',
+        },
+        {
+          value: 'Option2',
+          label: 'Option 2',
+        },
+        {
+          value: 'None',
+          label: 'None of the above',
+        },
+        {
+          value: 'NotApplicable',
+          label: 'Not applicable',
+        }
+      ],
+    },
+    InputLabelProps: {
+      label: 'Select Multiple',
+    },
+  },
+  validationSchema: [['yup.array']],
+  initialValue: [],
+};
+*/

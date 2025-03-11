@@ -18,22 +18,21 @@
  *   Tests of the data storage API
  */
 
-import {test, fc} from '@fast-check/jest';
+import {fc, test} from '@fast-check/jest';
 import {getDataDB, registerClient} from '../src';
-import {Record, RecordMetadata} from '../src/types';
 import {
   deleteFAIMSDataForID,
   generateFAIMSDataID,
   getFirstRecordHead,
   getFullRecordData,
-  getMetadataForAllRecords,
-  getMetadataForSomeRecords,
-  getRecordsWithRegex,
   listFAIMSProjectRevisions,
   notebookRecordIterator,
   undeleteFAIMSDataForID,
   upsertFAIMSData,
 } from '../src/data_storage';
+import {listRecordMetadata} from '../src/data_storage/internals';
+import {getAllRecordsWithRegex} from '../src/data_storage/queries';
+import {Record, RecordMetadata} from '../src/types';
 import {equals} from './eqTestSupport';
 import {
   callbackObject,
@@ -346,9 +345,14 @@ describe('record iterator', () => {
       await cleanDataDBS();
 
       const project_id = 'test' + n;
-      await createNRecords(project_id, viewID, n);
+      const uiSpec = await createNRecords(project_id, viewID, n);
 
-      const iterator = await notebookRecordIterator(project_id, viewID);
+      const iterator = await notebookRecordIterator(
+        project_id,
+        viewID,
+        undefined,
+        uiSpec
+      );
 
       let {record, done} = await iterator.next();
       let sumOfAges = 0;
@@ -362,7 +366,7 @@ describe('record iterator', () => {
       // expect the sum of the first n integers from 0 to n-1
       expect(sumOfAges).toBe(Math.abs((n * (n - 1)) / 2));
     }
-  });
+  }, 10000);
 });
 
 describe('record retrieval', () => {
@@ -371,11 +375,14 @@ describe('record retrieval', () => {
     const project_id = 'test';
 
     await cleanDataDBS();
-    await createNRecords(project_id, viewID, 10);
+    const uiSpec = await createNRecords(project_id, viewID, 10);
 
     const db = await getDataDB(project_id);
     if (db) {
-      const records = await getRecordsWithRegex(project_id, '.*', true);
+      // use the underlying get all records rather than the token filtered version for now
+      const records = Object.values(
+        await getAllRecordsWithRegex(project_id, '.*', uiSpec)
+      );
       expect(records.length).toBe(10);
       // check a few properties
       expect(records[0].created_by).toBe('user');
@@ -390,11 +397,17 @@ describe('record retrieval', () => {
     const project_id = 'test';
 
     await cleanDataDBS();
-    await createNRecords(project_id, viewID, 10);
+    const uiSpec = await createNRecords(project_id, viewID, 10);
 
     const db = await getDataDB(project_id);
     if (db) {
-      const records = await getMetadataForAllRecords(project_id, true);
+      const records = Object.values(
+        await listRecordMetadata({
+          project_id,
+          record_ids: null,
+          uiSpecification: uiSpec,
+        })
+      );
       expect(records.length).toBe(10);
       // // check a few properties
       expect(records[0].created_by).toBe('user');
@@ -402,24 +415,33 @@ describe('record retrieval', () => {
     } else {
       fail('Failed to get database');
     }
-  });
+  }, 10000);
 
   test('get some record metadata', async () => {
     const viewID = 'Test';
     const project_id = 'test';
 
     await cleanDataDBS();
-    await createNRecords(project_id, viewID, 10);
+    const uiSpec = await createNRecords(project_id, viewID, 10);
 
     const db = await getDataDB(project_id);
     if (db) {
-      const all_records = await getMetadataForAllRecords(project_id, true);
+      const all_records = Object.values(
+        await listRecordMetadata({
+          project_id,
+          uiSpecification: uiSpec,
+          record_ids: null,
+        })
+      );
       const record_ids = all_records.map((r: RecordMetadata) => r.record_id);
 
-      const records = await getMetadataForSomeRecords(
-        project_id,
-        record_ids.slice(5),
-        true
+      // get a filtered selection of records
+      const records = Object.values(
+        await listRecordMetadata({
+          project_id,
+          record_ids: record_ids.slice(5),
+          uiSpecification: uiSpec,
+        })
       );
       expect(records.length).toBe(5);
       // // check a few properties

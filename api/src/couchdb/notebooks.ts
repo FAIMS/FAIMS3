@@ -18,19 +18,22 @@
  *   This module provides functions to access notebooks from the database
  */
 
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+import SecurityPlugin from 'pouchdb-security-helper';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(SecurityPlugin);
+
 import {
   addDesignDocsForNotebook,
   APINotebookList,
   CLUSTER_ADMIN_GROUP_NAME,
   EncodedProjectUIModel,
-  getProjectDB,
   notebookRecordIterator,
   ProjectID,
   ProjectObject,
-  resolve_project_id,
 } from '@faims3/data-model';
 import archiver from 'archiver';
-import PouchDB from 'pouchdb';
 import {Stream} from 'stream';
 import {getMetadataDb, getProjectsDB, verifyCouchDBConnection} from '.';
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
@@ -45,17 +48,13 @@ import {
   file_attachments_to_data,
   file_data_to_attachments,
   getDataDB,
-  getFullRecordData,
-  getRecordsWithRegex,
-  HRID_STRING,
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
-import securityPlugin from 'pouchdb-security-helper';
 import {slugify} from '../utils';
 import {userHasPermission} from './users';
-PouchDB.plugin(securityPlugin);
+import {decodeUiSpec} from '@faims3/data-model';
 
 /**
  * getProjects - get the internal project documents that reference
@@ -102,9 +101,6 @@ export const getNotebooks = async (
   const output: APINotebookList[] = [];
   // DB records are project objects
   const projects: ProjectObject[] = [];
-  // in the frontend, the listing_id names the backend instance,
-  // so far it's either 'default' or 'locallycreatedproject'
-  const listing_id = 'default';
   const projects_db = getProjectsDB();
   if (projects_db) {
     // We want to type hint that this will include all values
@@ -118,20 +114,17 @@ export const getNotebooks = async (
     });
 
     for (const project of projects) {
-      const project_id = project._id;
-      const full_project_id = resolve_project_id(listing_id, project_id);
-      const projectMeta = await getNotebookMetadata(project_id);
-      if (userHasPermission(user, project_id, 'read')) {
+      const projectId = project._id;
+      const projectMeta = await getNotebookMetadata(projectId);
+      if (userHasPermission(user, projectId, 'read')) {
         output.push({
           name: project.name,
-          is_admin: userHasPermission(user, project_id, 'modify'),
+          is_admin: userHasPermission(user, projectId, 'modify'),
           last_updated: project.last_updated,
           created: project.created,
           template_id: project.template_id,
           status: project.status,
-          project_id: full_project_id,
-          listing_id: listing_id,
-          non_unique_project_id: project_id,
+          project_id: projectId,
           metadata: projectMeta,
         });
       }
@@ -275,7 +268,7 @@ export const createNotebook = async (
     return undefined;
   }
 
-  const metaDB = await getProjectDB(project_id);
+  const metaDB = await getMetadataDb(project_id);
   if (!metaDB) {
     return undefined;
   }
@@ -344,7 +337,7 @@ export const updateNotebook = async (
   uispec: EncodedProjectUIModel,
   metadata: any
 ) => {
-  const metaDB = await getProjectDB(project_id);
+  const metaDB = await getMetadataDb(project_id);
   const dataDB = await getDataDB(project_id);
   if (!dataDB || !metaDB) {
     return undefined;
@@ -492,7 +485,7 @@ export const getNotebookMetadata = async (
   if (isValid) {
     try {
       // get the metadata from the db
-      const projectDB = await getProjectDB(project_id);
+      const projectDB = await getMetadataDb(project_id);
       if (projectDB) {
         const metaDocs = await projectDB.allDocs({include_docs: true});
         metaDocs.rows.forEach((doc: any) => {
@@ -520,27 +513,43 @@ export const getNotebookMetadata = async (
 
 /**
  * getNotebookUISpec -- return metadata for a single notebook from the database
- * @param project_id a project identifier
+ * @param projectId a project identifier
  * @returns the UISPec of the project or null if it doesn't exist
  */
-export const getNotebookUISpec = async (
-  project_id: string
-): Promise<ProjectMetadata | null> => {
+export const getEncodedNotebookUISpec = async (
+  projectId: string
+): Promise<EncodedProjectUIModel | null> => {
   try {
     // get the metadata from the db
-    const projectDB = await getProjectDB(project_id);
+    const projectDB = await getMetadataDb(projectId);
     if (projectDB) {
       const uiSpec = (await projectDB.get('ui-specification')) as any;
       delete uiSpec._id;
       delete uiSpec._rev;
       return uiSpec;
     } else {
-      console.error('no metadata database found for', project_id);
+      console.error('no metadata database found for', projectId);
     }
   } catch (error) {
-    console.log('unknown project', project_id);
+    console.log('unknown project', projectId);
   }
   return null;
+};
+
+/**
+ * Gets the ready to use representation of the UI spec for a given project.
+ *
+ * Does this by fetching from the metadata DB and decoding.
+ *
+ * @param projectId
+ * @returns The decoded project UI model (not compiled)
+ */
+export const getProjectUIModel = async (projectId: string) => {
+  const rawUiSpec = await getEncodedNotebookUISpec(projectId);
+  if (!rawUiSpec) {
+    throw Error('Could not find UI spec for project with ID ' + projectId);
+  }
+  return decodeUiSpec(rawUiSpec);
 };
 
 /**
@@ -566,38 +575,6 @@ export const validateNotebookID = async (
 };
 
 /**
- * getNotebookRecords - retrieve all data records for this notebook
- * including record metadata, data fields and annotations
- * @param project_id project identifier
- * @returns an array of records
- */
-export const getNotebookRecords = async (
-  project_id: string
-): Promise<any | null> => {
-  const records = await getRecordsWithRegex(project_id, '.*', true);
-  const fullRecords: any[] = [];
-  for (let i = 0; i < records.length; i++) {
-    const data = await getFullRecordData(
-      project_id,
-      records[i].record_id,
-      records[i].revision_id,
-      true
-    );
-    fullRecords.push(data);
-  }
-  return fullRecords;
-};
-
-const getRecordHRID = (record: any) => {
-  for (const possible_name of Object.keys(record.data)) {
-    if (possible_name.startsWith(HRID_STRING)) {
-      return record.data[possible_name];
-    }
-  }
-  return record.record_id;
-};
-
-/**
  * generate a suitable value for the CSV export from a field
  * value.  Serialise filenames, gps coordinates, etc.
  */
@@ -617,7 +594,12 @@ const csvFormatValue = (
       }
       const valueList = value.map((v: any) => {
         if (v instanceof File) {
-          const filename = generateFilename(v, fieldName, hrid, filenames);
+          const filename = generateFilenameForAttachment(
+            v,
+            fieldName,
+            hrid,
+            filenames
+          );
           filenames.push(filename);
           return filename;
         } else {
@@ -666,6 +648,10 @@ const csvFormatValue = (
       result[fieldName + '_longitude'] =
         value.features[0].geometry.coordinates[0];
       return result;
+    } else {
+      result[fieldName] = value;
+      result[fieldName + '_latitude'] = '';
+      result[fieldName + '_longitude'] = '';
     }
   }
 
@@ -719,7 +705,7 @@ export const getNotebookFields = async (
   viewID: string
 ) => {
   // work out what fields we're going to output from the uiSpec
-  const uiSpec = await getNotebookUISpec(project_id);
+  const uiSpec = await getEncodedNotebookUISpec(project_id);
   if (!uiSpec) {
     throw new Error("can't find project " + project_id);
   }
@@ -737,7 +723,7 @@ export const getNotebookFields = async (
 };
 
 const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
-  const uiSpec = await getNotebookUISpec(project_id);
+  const uiSpec = await getEncodedNotebookUISpec(project_id);
   if (!uiSpec) {
     throw new Error("can't find project " + project_id);
   }
@@ -762,7 +748,13 @@ export const streamNotebookRecordsAsCSV = async (
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
-  const iterator = await notebookRecordIterator(project_id, viewID);
+  const uiSpec = await getProjectUIModel(project_id);
+  const iterator = await notebookRecordIterator(
+    project_id,
+    viewID,
+    undefined,
+    uiSpec
+  );
   const fields = await getNotebookFieldTypes(project_id, viewID);
 
   let stringifier: Stringifier | null = null;
@@ -772,7 +764,7 @@ export const streamNotebookRecordsAsCSV = async (
   while (!done) {
     // record might be null if there was an invalid db entry
     if (record) {
-      const hrid = getRecordHRID(record);
+      const hrid = record.hrid || record.record_id;
       const row = [
         hrid,
         record.record_id,
@@ -848,7 +840,13 @@ export const streamNotebookFilesAsZip = async (
 ) => {
   let allFilesAdded = false;
   let doneFinalize = false;
-  const iterator = await notebookRecordIterator(project_id, viewID);
+  const uiSpec = await getProjectUIModel(project_id);
+  const iterator = await notebookRecordIterator(
+    project_id,
+    viewID,
+    undefined,
+    uiSpec
+  );
   const archive = archiver('zip', {zlib: {level: 9}});
   // good practice to catch warnings (ie stat failures and other non-blocking errors)
   archive.on('warning', err => {
@@ -890,7 +888,7 @@ export const streamNotebookFilesAsZip = async (
     // iterate over the fields, if it's a file, then
     // append it to the archive
     if (record !== null) {
-      const hrid = getRecordHRID(record);
+      const hrid = record.hrid || record.record_id;
       Object.keys(record.data).forEach(async (key: string) => {
         if (record && record.data[key] instanceof Array) {
           if (record.data[key].length === 0) {
@@ -913,7 +911,12 @@ export const streamNotebookFilesAsZip = async (
                 chunks.push(value);
               }
               const stream = Stream.Readable.from(chunks);
-              const filename = generateFilename(file, key, hrid, fileNames);
+              const filename = generateFilenameForAttachment(
+                file,
+                key,
+                hrid,
+                fileNames
+              );
               fileNames.push(filename);
               await archive.append(stream, {
                 name: filename,
@@ -939,7 +942,7 @@ export const streamNotebookFilesAsZip = async (
   archive.emit('progress', {entries: {processed: 0, total: 0}});
 };
 
-const generateFilename = (
+export const generateFilenameForAttachment = (
   file: File,
   key: string,
   hrid: string,

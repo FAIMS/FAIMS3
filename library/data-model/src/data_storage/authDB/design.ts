@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
+
 /**
  * Converts a JavaScript function to a CouchDB-compatible string representation.
  */
@@ -17,6 +18,9 @@ function convertToCouchDBString(func) {
 export const viewsDocument = {
   _id: '_design/viewsDocument',
   views: {
+    // REFRESH TOKENS
+    // ==============
+
     // All refresh tokens by _id
     refreshTokens: {
       map: convertToCouchDBString(doc => {
@@ -68,6 +72,65 @@ export const viewsDocument = {
         ) {
           // Emit the record by token
           emit(doc.token, doc);
+        }
+      }),
+    },
+
+    // EMAIL RESETS
+    // ==============
+
+    // All email resets by _id
+    emailCodes: {
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'emailcode';
+        const ID_PREFIX = 'emailcode_';
+
+        // Check that document type is defined and that the type is refresh and
+        // the prefix is correct
+        if (
+          doc.documentType &&
+          doc.documentType === DOCUMENT_TYPE &&
+          doc._id.indexOf(ID_PREFIX) === 0
+        ) {
+          // Emit the whole refresh object indexed by the _id
+          emit(doc._id, doc);
+        }
+      }),
+    },
+    // Refresh tokens for a specific user (by user id)
+    emailCodesByUserId: {
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'emailcode';
+        const ID_PREFIX = 'emailcode_';
+
+        // Check that document type is defined and that the type is refresh and
+        // the prefix is correct
+        if (
+          doc.documentType &&
+          doc.documentType === DOCUMENT_TYPE &&
+          doc._id.indexOf(ID_PREFIX) === 0 &&
+          doc.userId
+        ) {
+          // Emit the record by userId
+          emit(doc.userId, doc);
+        }
+      }),
+    },
+    // Refresh tokens by token
+    emailCodesByCode: {
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'emailcode';
+        const ID_PREFIX = 'emailcode_';
+
+        // Check that document type is defined and that the type is refresh and the prefix is correct
+        if (
+          doc.documentType &&
+          doc.documentType === DOCUMENT_TYPE &&
+          doc._id.indexOf(ID_PREFIX) === 0 &&
+          doc.code
+        ) {
+          // Emit the record by token
+          emit(doc.code, doc);
         }
       }),
     },

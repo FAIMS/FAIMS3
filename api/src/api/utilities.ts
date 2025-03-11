@@ -18,7 +18,7 @@
  */
 
 import {
-  ListingsObject,
+  PublicServerInfo,
   PostRefreshTokenInputSchema,
   PostRefreshTokenResponse,
 } from '@faims3/data-model';
@@ -39,6 +39,7 @@ import * as Exceptions from '../exceptions';
 import {
   optionalAuthenticationJWT,
   requireAuthenticationAPI,
+  requireClusterAdmin,
 } from '../middleware';
 import {slugify} from '../utils';
 
@@ -66,21 +67,36 @@ api.get('/hello/', requireAuthenticationAPI, (_req: any, res: any) => {
  *   if databases exist, this is a no-op
  */
 api.post('/initialise/', async (req, res) => {
-  initialiseDatabases();
+  initialiseDatabases({force: false});
   res.json({success: true});
 });
+
+/**
+ * Forcefully re-initialise the DB i.e. disable checks for existing design
+ * documents.
+ */
+api.post(
+  '/forceInitialise',
+  requireAuthenticationAPI,
+  requireClusterAdmin,
+  async (req, res) => {
+    initialiseDatabases({force: true});
+    res.json({success: true});
+  }
+);
 
 /**
  * Handle info requests, basic identifying information for this server
  */
 api.get('/info', async (req, res) => {
-  res.json({
+  const response: PublicServerInfo = {
     id: slugify(CONDUCTOR_INSTANCE_NAME),
     name: CONDUCTOR_INSTANCE_NAME,
     conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
     prefix: CONDUCTOR_SHORT_CODE_PREFIX,
-  } as ListingsObject);
+  };
+  res.json(response);
 });
 
 api.get('/directory/', requireAuthenticationAPI, async (req, res) => {

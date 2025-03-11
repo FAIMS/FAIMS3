@@ -1,5 +1,4 @@
 import {Browser} from '@capacitor/browser';
-import {ListingsObject} from '@faims3/data-model/src/types';
 import LoginIcon from '@mui/icons-material/Login';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import {
@@ -14,28 +13,29 @@ import {
   TextField,
   useTheme,
 } from '@mui/material';
-import React, {useContext, useState} from 'react';
+import React, {useState} from 'react';
 import {APP_ID} from '../../../buildconfig';
-import {ActionType} from '../../../context/actions';
 import {useNotification} from '../../../context/popup';
-import {store} from '../../../context/store';
+import {addAlert} from '../../../context/slices/alertSlice';
+import {useAppDispatch} from '../../../context/store';
 import {isWeb} from '../../../utils/helpers';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {Server} from '../../../context/slices/projectSlice';
 
 /**
  * Component to register a button for scanning a QR code to register
  * for a notebook
- * @param props Component properties include only `listings`
+ * @param props Component properties include only `servers`
  * @returns component content
  */
-export function QRCodeButtonOnly(props: {listings: ListingsObject[]}) {
-  const {dispatch} = useContext(store);
+export function QRCodeButtonOnly(props: {servers: Server[]}) {
+  const dispatch = useAppDispatch();
   const theme = useTheme();
   const handleRegister = async (url: string) => {
     // verify that this URL is one that's going to work
     // valid urls look like:
     // http://192.168.1.2:8154/register/DEV-TMKZSM
-    const valid_hosts = props.listings.map(listing => listing.conductor_url);
+    const valid_hosts = props.servers.map(server => server.serverUrl);
     const valid_re = valid_hosts.join('|') + '/register/.*-[A-Z1-9]+';
 
     if (url.match(valid_re)) {
@@ -44,13 +44,12 @@ export function QRCodeButtonOnly(props: {listings: ListingsObject[]}) {
         url: `${url}?redirect=${APP_ID}://auth-return`,
       });
     } else {
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
+      dispatch(
+        addAlert({
           message: 'Invalid QRCode Scanned',
           severity: 'warning',
-        },
-      });
+        })
+      );
     }
   };
 
@@ -83,7 +82,7 @@ export function QRCodeButtonOnly(props: {listings: ListingsObject[]}) {
 }
 
 interface ShortCodeOnlyComponentProps {
-  listings: ListingsObject[];
+  servers: Server[];
 }
 export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
   /**
@@ -93,7 +92,7 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
   const [shortCode, setShortCode] = useState('');
   const {showSuccess, showError, showInfo} = useNotification();
   const [selectedPrefix, setSelectedPrefix] = useState(
-    props.listings[0]?.prefix || ''
+    props.servers[0]?.shortCodePrefix || ''
   );
 
   // pattern for allowed short codes (excluding prefix, 0, O, and dash)
@@ -111,7 +110,7 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
     const cleanInput = input.toUpperCase().trim();
 
     // Check if input starts with any known prefix (including potential dash)
-    for (const prefix of props.listings.map(listing => listing.prefix)) {
+    for (const prefix of props.servers.map(server => server.shortCodePrefix)) {
       const prefixPattern = new RegExp(`^${prefix}-?`);
       if (prefixPattern.test(cleanInput)) {
         // If found, update selected prefix and remove it from input
@@ -149,19 +148,19 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
       return;
     }
 
-    const listing_info = props.listings.find(
-      listing => listing.prefix === selectedPrefix
+    const serverInfo = props.servers.find(
+      server => server.shortCodePrefix === selectedPrefix
     );
 
-    if (!listing_info) {
+    if (!serverInfo) {
       showError('Invalid prefix selected');
       return;
     }
 
     const url =
-      listing_info.conductor_url +
+      serverInfo.serverUrl +
       '/register/' +
-      listing_info.prefix +
+      serverInfo.shortCodePrefix +
       '-' +
       shortCode;
 
@@ -178,12 +177,12 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
   };
 
   // only show the prefix selection dropdown if
-  const showPrefixSelector = props.listings.length > 1;
+  const showPrefixSelector = props.servers.length > 1;
 
   return (
     <Stack direction="row" spacing={1} alignItems="center">
       {
-        // Only show selector if condition is true i.e. more than one listing
+        // Only show selector if condition is true i.e. more than one server
       }
       {showPrefixSelector && (
         <FormControl sx={{minWidth: 80, maxWidth: 120}}>
@@ -196,9 +195,12 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
             onChange={handlePrefixChange}
             size="small"
           >
-            {props.listings.map(listing => (
-              <MenuItem key={listing.prefix} value={listing.prefix}>
-                {listing.prefix}
+            {props.servers.map(server => (
+              <MenuItem
+                key={server.shortCodePrefix}
+                value={server.shortCodePrefix}
+              >
+                {server.shortCodePrefix}
               </MenuItem>
             ))}
           </Select>

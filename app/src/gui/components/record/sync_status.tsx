@@ -1,11 +1,10 @@
-import React from 'react';
-import {Box, Alert, Typography} from '@mui/material';
-import {useTheme} from '@mui/material/styles';
-import moment from 'moment';
 import CheckIcon from '@mui/icons-material/Check';
 import SaveIcon from '@mui/icons-material/Save';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import {Alert, Box} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
 import 'animate.css';
+import {useLoadingDebounce} from '../../../utils/customHooks';
+
 interface DraftSyncStatusProps {
   last_saved: Date | null;
   is_saving: boolean;
@@ -18,10 +17,13 @@ export default function DraftSyncStatus(props: DraftSyncStatusProps) {
    * at all times (i.e., not just on the edit tab)
    */
   const theme = useTheme();
+  const throttledSave = useLoadingDebounce(props.is_saving);
+
   return (
     <Box
       sx={{
         width: '100%',
+        minWidth: '65px',
         textAlign: 'right',
       }}
     >
@@ -32,49 +34,34 @@ export default function DraftSyncStatus(props: DraftSyncStatusProps) {
       ) : (
         <Box
           sx={{
-            backgroundColor: theme.palette.background.draftBackground, // Use the new color
             color: theme.palette.text.primary,
             fontWeight: 'bold',
           }}
           p={1}
         >
-          {props.is_saving ? (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                justifyContent: 'end',
-              }}
-            >
-              <Typography variant={'body2'} sx={{mr: 1}}>
-                Saving draft to your device...{' '}
-              </Typography>
-              <SaveIcon
-                className={
-                  'animate__animated animate__flash animate__slow animate__infinite'
-                }
-              />
-            </div>
-          ) : (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                justifyContent: 'end',
-              }}
-            >
-              <Typography variant={'body2'} sx={{mr: 1}}>
-                {props.last_saved !== null
-                  ? `Local draft last saved ${moment(
-                      props.last_saved
-                    ).fromNow()}`
-                  : 'Initializing draft save'}
-              </Typography>
-              {props.last_saved !== null ? <CheckIcon /> : <AccessTimeIcon />}
-            </div>
-          )}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              justifyContent: 'end',
+            }}
+          >
+            {throttledSave ? (
+              <>
+                <SaveIcon
+                  className={
+                    'animate__animated animate__flash animate__slow animate__infinite'
+                  }
+                />
+              </>
+            ) : (
+              <>
+                <CheckIcon />
+                <SaveIcon />
+              </>
+            )}
+          </div>
         </Box>
       )}
     </Box>

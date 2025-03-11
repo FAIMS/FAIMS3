@@ -17,14 +17,23 @@ import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
+import DuplicateIcon from '@mui/icons-material/ContentCopy';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Autocomplete,
+  Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
   IconButton,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -33,6 +42,7 @@ import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {BaseFieldEditor} from './Fields/BaseFieldEditor';
 import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
 import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
+import HiddenFieldEditor from './Fields/HiddenToggle';
 import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
 import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
 import {OptionsEditor} from './Fields/OptionsEditor';
@@ -42,29 +52,70 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
+import {useState, useMemo} from 'react';
+import {findFieldCondtionUsage} from './condition';
 
 type FieldEditorProps = {
   fieldName: string;
-  viewSetId?: string;
+  viewSetId: string;
   viewId: string;
   expanded: boolean;
   addFieldCallback: (fieldName: string) => void;
   handleExpandChange: (event: React.SyntheticEvent, newState: boolean) => void;
+  moveFieldCallback: (targetViewId: string) => void;
 };
 
 export const FieldEditor = ({
   fieldName,
   viewId,
+  viewSetId,
   expanded,
   addFieldCallback,
   handleExpandChange,
+  moveFieldCallback,
 }: FieldEditorProps) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
+  const viewsets = useAppSelector(
+    state => state.notebook['ui-specification'].viewsets
+  );
+
+  const allFields = useAppSelector(
+    state => state.notebook['ui-specification'].fields
+  );
+  const allFviews = useAppSelector(
+    state => state.notebook['ui-specification'].fviews
+  );
+
   const dispatch = useAppDispatch();
 
+  const [openMoveDialog, setOpenMoveDialog] = useState(false);
+  const [targetViewId, setTargetViewId] = useState('');
+  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
+  const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
+  const [duplicateTitle, setDuplicateTitle] = useState('');
+
   const fieldComponent = field['component-name'];
+
+  const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
+  const [conditionsAffected, setConditionsAffected] = useState<string[]>([]);
+
+  const deleteField = (evt: React.SyntheticEvent) => {
+    evt.stopPropagation();
+
+    const usage = findFieldCondtionUsage(fieldName, allFields, allFviews);
+
+    if (usage.length > 0) {
+      setConditionsAffected(usage);
+      setDeleteWarningOpen(true);
+    } else {
+      dispatch({
+        type: 'ui-specification/fieldDeleted',
+        payload: {fieldName, viewId},
+      });
+    }
+  };
 
   const getFieldLabel = () => {
     return (
@@ -74,6 +125,7 @@ export const FieldEditor = ({
       field['component-parameters'].name
     );
   };
+
   const label = getFieldLabel();
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
@@ -92,18 +144,99 @@ export const FieldEditor = ({
     });
   };
 
-  const deleteField = (event: React.SyntheticEvent) => {
-    event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/fieldDeleted',
-      payload: {fieldName, viewId},
-    });
-  };
-
   const addFieldBelow = (event: React.SyntheticEvent) => {
     event.stopPropagation();
     addFieldCallback(fieldName);
   };
+
+  const handleOpenDuplicateDialog = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+    const currentLabel = getFieldLabel();
+    setDuplicateTitle(currentLabel + ' Copy');
+    setOpenDuplicateDialog(true);
+  };
+
+  const handleCloseDuplicateDialog = () => {
+    setOpenDuplicateDialog(false);
+    setDuplicateTitle('');
+  };
+
+  const duplicateField = () => {
+    if (duplicateTitle.trim()) {
+      dispatch({
+        type: 'ui-specification/fieldDuplicated',
+        payload: {
+          originalFieldName: fieldName,
+          newFieldName: duplicateTitle.trim(),
+          viewId,
+        },
+      });
+      handleCloseDuplicateDialog();
+    }
+  };
+
+  const handleCloseMoveDialog = () => {
+    setOpenMoveDialog(false);
+    setSelectedFormId(null); // reset selectedFormId when dialog is closed
+    setTargetViewId(''); // reset section value when dialog is closed
+  };
+
+  const moveFieldToSection = () => {
+    if (targetViewId) {
+      dispatch({
+        type: 'ui-specification/fieldMovedToSection',
+        payload: {
+          fieldName,
+          sourceViewId: viewId,
+          targetViewId,
+        },
+      });
+      moveFieldCallback(targetViewId);
+      handleCloseMoveDialog();
+    }
+  };
+
+  // memoize the form value
+  const formValue = useMemo(
+    () =>
+      selectedFormId
+        ? {id: selectedFormId, label: viewsets[selectedFormId].label}
+        : null,
+    [selectedFormId, viewsets]
+  );
+
+  // memoize the form options
+  const formOptions = useMemo(
+    () =>
+      Object.entries(viewsets).map(([formId, form]) => ({
+        id: formId,
+        label: form.label,
+      })),
+    [viewsets]
+  );
+
+  // memoize the section value
+  const sectionValue = useMemo(
+    () =>
+      targetViewId
+        ? {id: targetViewId, label: allFviews[targetViewId].label}
+        : null,
+    [targetViewId, allFviews]
+  );
+
+  // memoize the section options
+  const sectionOptions = useMemo(
+    () =>
+      selectedFormId
+        ? viewsets[selectedFormId].views
+            .filter(sectionId => sectionId !== viewId)
+            .map(sectionId => ({
+              id: sectionId,
+              label: allFviews[sectionId].label,
+            }))
+        : [],
+    [selectedFormId, viewsets, viewId, allFviews]
+  );
 
   return (
     <Accordion
@@ -137,70 +270,66 @@ export const FieldEditor = ({
           },
         }}
       >
-        <Grid container rowGap={1}>
-          <Grid
-            container
-            item
-            xs={12}
-            sm={5}
-            columnGap={1}
-            rowGap={0.5}
-            alignItems="center"
-          >
-            {typeof label === 'string' && label.length > 25 ? (
-              <Typography variant="subtitle2">
-                {label.substring(0, 24)}...
+        <Grid container rowGap={1} alignItems={'center'}>
+          <Grid item xs={12} sm={8}>
+            <Stack direction="column" spacing={1} pr={{xs: 0, sm: 2}}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  minWidth: 210,
+                  maxWidth: 210,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'normal',
+                }}
+              >
+                {label}
               </Typography>
-            ) : (
-              <Typography variant="subtitle2">{label}</Typography>
-            )}
 
-            <Chip
-              label={fieldComponent}
-              size="small"
-              variant="outlined"
-              sx={{
-                '&.MuiChip-outlined': {
-                  background: '#f9fafb',
-                  color: '#546e7a',
-                  borderColor: '#546e7a',
-                },
-              }}
-            />
-            {field['component-parameters'].required && (
-              <Chip label="Required" size="small" color="primary" />
-            )}
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Chip
+                  label={fieldComponent}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    '&.MuiChip-outlined': {
+                      background: '#f9fafb',
+                      color: '#546e7a',
+                      borderColor: '#546e7a',
+                    },
+                  }}
+                />
+
+                {field['component-parameters'].required && (
+                  <Chip label="Required" size="small" color="primary" />
+                )}
+              </Stack>
+
+              {field['component-parameters'].helperText && (
+                <Typography
+                  variant="body2"
+                  fontSize={12}
+                  fontWeight={400}
+                  fontStyle="italic"
+                  sx={{
+                    mt: 1.5,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {field['component-parameters'].helperText}
+                </Typography>
+              )}
+            </Stack>
           </Grid>
-          <Grid
-            container
-            item
-            xs={12}
-            sm={4}
-            alignItems="center"
-            pl={{xs: 0, sm: 1}}
-          >
-            {field['component-parameters'].helperText &&
-            field['component-parameters'].helperText.length > 60 ? (
-              <Typography
-                variant="body2"
-                fontSize={12}
-                fontWeight={400}
-                fontStyle="italic"
-              >
-                {field['component-parameters'].helperText.substring(0, 59)}...
-              </Typography>
-            ) : (
-              <Typography
-                variant="body2"
-                fontSize={12}
-                fontWeight={400}
-                fontStyle="italic"
-              >
-                {field['component-parameters'].helperText}
-              </Typography>
-            )}
-          </Grid>
-          <Grid item xs={12} sm={3}>
+
+          <Grid item xs={12} sm={4}>
             <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
               <Tooltip title="Delete Field">
                 <IconButton
@@ -211,6 +340,15 @@ export const FieldEditor = ({
                   <DeleteRoundedIcon />
                 </IconButton>
               </Tooltip>
+              <Tooltip title="Move Field">
+                <IconButton
+                  onClick={() => setOpenMoveDialog(true)}
+                  aria-label="move"
+                  size="small"
+                >
+                  <MoveRoundedIcon />
+                </IconButton>
+              </Tooltip>
               <Tooltip title="Add Field Below">
                 <IconButton
                   onClick={addFieldBelow}
@@ -218,6 +356,15 @@ export const FieldEditor = ({
                   size="small"
                 >
                   <PlaylistAddIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Duplicate Field">
+                <IconButton
+                  onClick={handleOpenDuplicateDialog}
+                  aria-label="duplicate"
+                  size="small"
+                >
+                  <DuplicateIcon />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Move up">
@@ -237,7 +384,138 @@ export const FieldEditor = ({
             </Stack>
           </Grid>
         </Grid>
+        <Dialog
+          open={deleteWarningOpen}
+          onClose={() => setDeleteWarningOpen(false)}
+        >
+          <DialogTitle>Can Not Delete Field</DialogTitle>
+          <DialogContent>
+            <p>
+              This field is referenced in the following{' '}
+              {conditionsAffected.length === 1 ? 'condition' : 'conditions'}:
+            </p>
+            <ul>
+              {conditionsAffected.map((condition, index) => (
+                <li key={index}>{condition}</li>
+              ))}
+            </ul>
+            <p>
+              Please remove this field from{' '}
+              {conditionsAffected.length === 1 ? 'this' : 'these'} condition
+              condition{conditionsAffected.length === 1 ? '' : 's'} before
+              deleting this field.
+            </p>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={e => {
+                e.stopPropagation();
+                setDeleteWarningOpen(false);
+              }}
+            >
+              Dismiss
+            </Button>
+          </DialogActions>
+        </Dialog>
       </AccordionSummary>
+
+      <Dialog
+        open={openMoveDialog}
+        onClose={handleCloseMoveDialog}
+        aria-labelledby="move-dialog-title"
+        maxWidth="sm"
+      >
+        <DialogTitle id="move-dialog-title" textAlign="center">
+          Move Question
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
+                Destination Form
+              </Typography>
+              <Typography variant="body2" sx={{mb: 0.5}}>
+                Choose the form you want to move the question to.
+              </Typography>
+              <Autocomplete
+                fullWidth
+                value={formValue}
+                onChange={(_event, newValue) => {
+                  setSelectedFormId(newValue ? newValue.id : null);
+                  setTargetViewId(''); // reset section when form changes
+                }}
+                options={formOptions}
+                getOptionLabel={option => option.label}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                renderInput={params => <TextField {...params} />}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
+                Destination Section
+              </Typography>
+              <Typography variant="body2" sx={{mb: 0.5}}>
+                Choose the section you want to move the question to.
+              </Typography>
+              <Autocomplete
+                fullWidth
+                value={selectedFormId ? sectionValue : null}
+                onChange={(_event, newValue) => {
+                  setTargetViewId(newValue ? newValue.id : '');
+                }}
+                options={sectionOptions}
+                getOptionLabel={option => option.label}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                disabled={!selectedFormId}
+                renderInput={params => <TextField {...params} />}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMoveDialog}>Cancel</Button>
+          <Button
+            onClick={moveFieldToSection}
+            disabled={!selectedFormId || !targetViewId}
+          >
+            Move
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openDuplicateDialog}
+        onClose={handleCloseDuplicateDialog}
+        aria-labelledby="duplicate-dialog-title"
+        maxWidth="sm"
+        onClick={e => e.stopPropagation()}
+      >
+        <DialogTitle id="duplicate-dialog-title" textAlign="center">
+          Duplicate Field
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{mb: 2}}>
+            Enter a title for the duplicated field.
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            value={duplicateTitle}
+            onChange={e => setDuplicateTitle(e.target.value)}
+            label="Field Title"
+            variant="outlined"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDuplicateDialog}>Cancel</Button>
+          <Button
+            onClick={duplicateField}
+            disabled={!duplicateTitle.trim()}
+          >
+            Duplicate
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
         {(fieldComponent === 'MultipleTextField' && (
@@ -256,7 +534,11 @@ export const FieldEditor = ({
             <OptionsEditor fieldName={fieldName} />
           )) ||
           (fieldComponent === 'MultiSelect' && (
-            <OptionsEditor fieldName={fieldName} />
+            <OptionsEditor
+              fieldName={fieldName}
+              showExpandedChecklist={true}
+              showExclusiveOptions={true}
+            />
           )) ||
           (fieldComponent === 'AdvancedSelect' && (
             <AdvancedSelectEditor fieldName={fieldName} />
@@ -280,7 +562,14 @@ export const FieldEditor = ({
             <BasicAutoIncrementerEditor fieldName={fieldName} viewId={viewId} />
           )) ||
           (fieldComponent === 'TemplatedStringField' && (
-            <TemplatedStringFieldEditor fieldName={fieldName} viewId={viewId} />
+            <>
+              <TemplatedStringFieldEditor
+                fieldName={fieldName}
+                viewId={viewId}
+                viewsetId={viewSetId}
+              />
+              <HiddenFieldEditor fieldName={fieldName} />
+            </>
           )) || <BaseFieldEditor fieldName={fieldName} />}
       </AccordionDetails>
     </Accordion>

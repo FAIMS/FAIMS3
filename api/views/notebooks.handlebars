@@ -10,6 +10,10 @@
     New Notebook
   </button>
 
+  {{#if DESIGNER_URL}}
+    <p>Create a new notebook JSON file with <a href="{{DESIGNER_URL}}">Designer</a></p>
+  {{/if}}
+
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -54,7 +58,7 @@
       {{#each ownNotebooks}}
           <tr>
             <td>
-              <a href="/notebooks/{{this.non_unique_project_id}}">{{this.name}}</a>
+              <a href="/notebooks/{{this.project_id}}">{{this.name}}</a>
             </td>
             <td>
               {{this.metadata.project_lead}}
@@ -76,7 +80,7 @@
       {{#each otherNotebooks}}
           <tr>
             <td>
-              <a href="/notebooks/{{this.non_unique_project_id}}">{{this.name}}</a>
+              <a href="/notebooks/{{this.project_id}}">{{this.name}}</a>
             </td>
             <td>
               {{this.metadata.project_lead}}

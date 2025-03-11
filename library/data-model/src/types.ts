@@ -58,14 +58,15 @@ export type FAIMSAttachmentID = string;
 
 export type FAIMSTypeName = string;
 
-// This should be locked down more
-export type Annotations = any;
+export type Annotations = {annotation: string; uncertainty: boolean};
 
 export interface TokenContents {
   username: string;
   roles: string[];
   name?: string;
   server: string;
+  // This is required now - all tokens must have an expiry
+  exp: number;
 }
 
 export type ProjectRole = string;
@@ -153,8 +154,6 @@ export const APINotebookListSchema = z.object({
   template_id: z.string().optional(),
   status: z.string().optional(),
   project_id: z.string(),
-  listing_id: z.string(),
-  non_unique_project_id: z.string(),
   metadata: z.record(z.unknown()).optional().nullable(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
@@ -345,13 +344,22 @@ export type ProjectDataObject =
 // end of types from datamodel/database.ts --------------------------------
 
 // types from datamodel/drafts.ts --------------------------------
-
 export interface EncodedDraft {
   _id: string;
   // Fields (may itself contain an _id)
   fields: {[key: string]: unknown};
-  annotations: {[key: string]: unknown};
-  attachments: {[key: string]: string[]};
+  annotations: {
+    [key: string]: Annotations;
+  };
+  attachments: {
+    [key: string]: (
+      | FAIMSAttachmentReference
+      | {
+          filename: string;
+          draft_attachment: boolean;
+        }
+    )[];
+  };
   _attachments?: PouchDB.Core.Attachments;
   project_id: ProjectID;
   // If this draft is for the user updating an existing record, the following
@@ -448,14 +456,20 @@ export interface ProjectUIFields {
   [key: string]: any;
 }
 
+export interface ProjectUIViewset {
+  label?: string;
+  views: string[];
+  submit_label?: string;
+  is_visible?: boolean;
+  summary_fields?: Array<string>;
+  // Which field should be used as the hrid?
+  hridField?: string;
+  // Layout option
+  layout?: 'inline' | 'tabs';
+}
+
 export interface ProjectUIViewsets {
-  [type: string]: {
-    label?: string;
-    views: string[];
-    submit_label?: string;
-    is_visible?: boolean;
-    summary_fields?: Array<string>;
-  };
+  [type: string]: ProjectUIViewset;
 }
 
 export interface ConditionalExpression {
@@ -490,15 +504,11 @@ export interface ElementOption {
 // end of types from datamodel/typeSystems.ts --------------------------------
 
 // types from datamodel/ui.ts --------------------------------
-
-export interface ListingInformation {
-  id: ListingID;
+export interface PublicServerInfo {
+  id: string;
   name: string;
-  description: string;
   conductor_url: string;
-}
-
-export interface ListingsObject extends ListingInformation {
+  description: string;
   prefix: string;
 }
 
@@ -511,7 +521,6 @@ export interface ProjectInformation {
   status?: string;
   is_activated: boolean;
   listing_id: ListingID;
-  non_unique_project_id: NonUniqueProjectID;
   // Was the project created from a template?
   template_id?: string;
 }

@@ -20,7 +20,11 @@
 
 import {v4 as uuidv4} from 'uuid';
 
-import {getDataDB} from '../index';
+import {
+  getDataDB,
+  getHridFieldNameForViewset,
+  getIdsByFieldName,
+} from '../index';
 import {HRID_STRING} from '../datamodel/core';
 import {
   AttributeValuePair,
@@ -39,6 +43,7 @@ import {
   RecordID,
   RecordMetadataList,
   RevisionID,
+  ProjectUIModel,
 } from '../types';
 import {
   getAttachmentLoaderForType,
@@ -193,31 +198,76 @@ export async function getLatestRevision(
   }
 }
 
+/**
+ * Returns the recommended HRID for this record (which is a revision) - this is
+ * achieved by a) get the ui spec for the project b) look at fields in the
+ * revision (via avp keys) c) determine which viewset these fields are in d)
+ * getting the HRID for that viewset which is either i) the top level configured
+ * hridField for new notebooks or ii) a field starting with hrid...  for the old
+ * style. Returns the value of the HRID field, not the field name.
+ *
+ * If null is returned, typically a parent would use the record_id as a backup.
+ *
+ * @param projectId The project ID for which to ascertain the HRID
+ * @param revision The revision - this reflects a particular version of a
+ * response
+ * @returns The recommended HRID for this revision/record
+ */
 export async function getHRID(
-  project_id: ProjectID,
-  revision: Revision
+  projectId: ProjectID,
+  revision: Revision,
+  uiSpecification: ProjectUIModel
 ): Promise<string | null> {
-  let hrid_name: string | null = null;
-  for (const possible_name of Object.keys(revision.avps)) {
-    if (possible_name.startsWith(HRID_STRING)) {
-      hrid_name = possible_name;
-      break;
+  let hridFieldName = undefined;
+
+  // iterate through field names, trying our very best to find one that is
+  // described in the uispec appropriately. Unless the uispec is very broken,
+  // this should succeed.
+  const fieldNames = Array.from(Object.keys(revision.avps));
+  for (const candidateFieldName of fieldNames) {
+    try {
+      const {viewSetId} = getIdsByFieldName({
+        uiSpecification,
+        fieldName: candidateFieldName,
+      });
+      // get the HRID for the view set - might not succeed
+      hridFieldName = getHridFieldNameForViewset({
+        uiSpecification,
+        viewSetId,
+      });
+      if (hridFieldName) {
+        break;
+      }
+    } catch (e) {
+      console.log(
+        `Could not find suitable viewset/HRID for field name: ${candidateFieldName}. Error: ${e}.`
+      );
     }
   }
 
-  if (hrid_name === null) {
+  // only try the backup if necessary
+  if (!hridFieldName) {
+    for (const possible_name of Object.keys(revision.avps)) {
+      if (possible_name.startsWith(HRID_STRING)) {
+        hridFieldName = possible_name;
+        break;
+      }
+    }
+  }
+
+  if (!hridFieldName) {
     return null;
   }
-  const hrid_avp_id = revision.avps[hrid_name];
+  const hrid_avp_id = revision.avps[hridFieldName];
   if (hrid_avp_id === undefined) {
     console.warn('No HRID field set for revision');
     return null;
   }
   try {
-    const hrid_avp = await getAttributeValuePair(project_id, hrid_avp_id);
+    const hrid_avp = await getAttributeValuePair(projectId, hrid_avp_id);
     return hrid_avp.data as string;
   } catch (err) {
-    console.warn('Failed to load HRID AVP:', project_id, hrid_avp_id);
+    console.warn('Failed to load HRID AVP:', projectId, hrid_avp_id);
     return null;
   }
 }
@@ -248,10 +298,15 @@ export async function getRecordFields(
  * @param record_ids Optional set of record IDs to specifically fetch
  * @returns Object with {key: record id, value: record (NOT NULL)}
  */
-export async function listRecordMetadata(
-  project_id: ProjectID,
-  record_ids: RecordID[] | null = null
-): Promise<RecordMetadataList> {
+export async function listRecordMetadata({
+  project_id,
+  record_ids,
+  uiSpecification,
+}: {
+  project_id: ProjectID;
+  record_ids: RecordID[] | null;
+  uiSpecification: ProjectUIModel;
+}): Promise<RecordMetadataList> {
   try {
     const out: RecordMetadataList = {};
     const records =
@@ -275,7 +330,7 @@ export async function listRecordMetadata(
         continue;
       }
       const hrid = revision
-        ? ((await getHRID(project_id, revision)) ?? record_id)
+        ? ((await getHRID(project_id, revision, uiSpecification)) ?? record_id)
         : record_id;
 
       const summary_fields = await getRecordFields(project_id, revision);
@@ -299,7 +354,7 @@ export async function listRecordMetadata(
     return out;
   } catch (err) {
     console.log(err);
-    throw Error('failed to get metadata');
+    throw Error(`failed to get metadata. ${err}`);
   }
 }
 

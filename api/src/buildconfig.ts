@@ -53,18 +53,17 @@ function app_url(): string {
 
 function android_url(): string {
   const url = process.env.ANDROID_APP_PUBLIC_URL;
-  if (url === '' || url === undefined) {
-    return 'http://localhost:3000';
-  }
-  return url;
+  return url || '';
 }
 
 function ios_url(): string {
   const url = process.env.IOS_APP_PUBLIC_URL;
-  if (url === '' || url === undefined) {
-    return 'http://localhost:3000';
-  }
-  return url;
+  return url || '';
+}
+
+function designer_url(): string {
+  const url = process.env.DESIGNER_URL;
+  return url || '';
 }
 
 function is_testing() {
@@ -151,7 +150,7 @@ function key_file_path(): string {
   }
 }
 
-function private_key_path(): string {
+export function private_key_path(): string {
   let host = process.env.PROFILE_NAME;
   if (host === '' || host === undefined) {
     host = 'conductor';
@@ -168,7 +167,7 @@ function private_key_path(): string {
   }
 }
 
-function public_key_path(): string {
+export function public_key_path(): string {
   let host = process.env.PROFILE_NAME;
   if (host === '' || host === undefined) {
     host = 'conductor';
@@ -274,6 +273,152 @@ function developer_mode(): any {
   }
 }
 
+// 5 minute access token expiry by default
+const DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES = 5;
+
+/**
+ * @returns The minimum valid time for a token before attempting refreshes
+ */
+function accessTokenExpiryMinutes(): number {
+  const accessTokenExpiryMinutes = process.env.ACCESS_TOKEN_EXPIRY_MINUTES;
+  if (
+    accessTokenExpiryMinutes === '' ||
+    accessTokenExpiryMinutes === undefined
+  ) {
+    return DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES;
+  }
+  try {
+    return parseInt(accessTokenExpiryMinutes);
+  } catch (err) {
+    console.error(
+      'ACCESS_TOKEN_EXPIRY_MINUTES unparseable, defaulting to ' +
+        DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES
+    );
+    return DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES;
+  }
+}
+
+// 2 days refresh token expiry by default
+const DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES = 60 * 24 * 2;
+
+/**
+ * @returns The minimum valid time for a token before attempting refreshes
+ */
+function refreshTokenExpiryMinutes(): number {
+  const refreshTokenExpiryMinutes = process.env.REFRESH_TOKEN_EXPIRY_MINUTES;
+  if (
+    refreshTokenExpiryMinutes === '' ||
+    refreshTokenExpiryMinutes === undefined
+  ) {
+    return DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES;
+  }
+  try {
+    return parseInt(refreshTokenExpiryMinutes);
+  } catch (err) {
+    console.error(
+      'REFRESH_TOKEN_EXPIRY_MINUTES unparseable, defaulting to ' +
+        DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES
+    );
+    return DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES;
+  }
+}
+
+// 30 minute default expiry for email verification codes
+const DEFAULT_EMAIL_CODE_EXPIRY_MINUTES = 30;
+
+/**
+ * @returns The expiry time in minutes for email verification codes
+ */
+function emailCodeExpiryMinutes(): number {
+  const emailCodeExpiryMinutes = process.env.EMAIL_CODE_EXPIRY_MINUTES;
+  if (emailCodeExpiryMinutes === '' || emailCodeExpiryMinutes === undefined) {
+    return DEFAULT_EMAIL_CODE_EXPIRY_MINUTES;
+  }
+  try {
+    return parseInt(emailCodeExpiryMinutes);
+  } catch (err) {
+    console.error(
+      'EMAIL_CODE_EXPIRY_MINUTES unparseable, defaulting to ' +
+        DEFAULT_EMAIL_CODE_EXPIRY_MINUTES
+    );
+    return DEFAULT_EMAIL_CODE_EXPIRY_MINUTES;
+  }
+}
+
+const DEFAULT_RATE_LIMITER_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const DEFAULT_RATE_LIMITER_PER_WINDOW = 1000; // 1000 requests per window
+const DEFAULT_RATE_LIMITER_ENABLED = true;
+
+/**
+ * Gets the rate limiter window duration in milliseconds from environment variables
+ * @returns The window duration in milliseconds
+ */
+function rateLimiterWindowMs(): number {
+  const rateLimiterWindowMs = process.env.RATE_LIMITER_WINDOW_MS;
+  if (rateLimiterWindowMs === '' || rateLimiterWindowMs === undefined) {
+    return DEFAULT_RATE_LIMITER_WINDOW_MS;
+  }
+  try {
+    return parseInt(rateLimiterWindowMs);
+  } catch (err) {
+    console.error(
+      'RATE_LIMITER_WINDOW_MS unparseable, defaulting to ' +
+        DEFAULT_RATE_LIMITER_WINDOW_MS
+    );
+    return DEFAULT_RATE_LIMITER_WINDOW_MS;
+  }
+}
+
+/**
+ * Gets the number of requests allowed per window from environment variables
+ * @returns The number of requests allowed per window
+ */
+function rateLimiterPerWindow(): number {
+  const rateLimiterPerWindow = process.env.RATE_LIMITER_PER_WINDOW;
+  if (rateLimiterPerWindow === '' || rateLimiterPerWindow === undefined) {
+    return DEFAULT_RATE_LIMITER_PER_WINDOW;
+  }
+  try {
+    return parseInt(rateLimiterPerWindow);
+  } catch (err) {
+    console.error(
+      'RATE_LIMITER_PER_WINDOW unparseable, defaulting to ' +
+        DEFAULT_RATE_LIMITER_PER_WINDOW
+    );
+    return DEFAULT_RATE_LIMITER_PER_WINDOW;
+  }
+}
+
+/**
+ * Checks if rate limiting is enabled from environment variables
+ * @returns Boolean indicating if rate limiting is enabled
+ */
+function rateLimiterEnabled(): boolean {
+  const rateLimiterEnabled = process.env.RATE_LIMITER_ENABLED;
+  if (rateLimiterEnabled === undefined) {
+    return DEFAULT_RATE_LIMITER_ENABLED;
+  }
+  return rateLimiterEnabled.toLowerCase() === 'true';
+}
+
+/**
+ * What is the URL of the new conductor? Required.
+ *
+ * @returns The new conductor URL, no trailing /
+ */
+function newConductorUrl(): string {
+  let conductorUrl = process.env.NEW_CONDUCTOR_URL;
+  if (conductorUrl === '' || conductorUrl === undefined) {
+    throw Error('You must provide a NEW_CONDUCTOR_URL in your environment.');
+  } else {
+    if (conductorUrl.endsWith('/')) {
+      console.log('NEW_CONDUCTOR_URL should not end with / - removing it');
+      conductorUrl = conductorUrl.substring(0, conductorUrl.length - 1);
+    }
+    return conductorUrl;
+  }
+}
+
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -282,8 +427,6 @@ export const RUNNING_UNDER_TEST = is_testing();
 export const CONDUCTOR_PUBLIC_URL = conductor_url();
 export const CONDUCTOR_INTERNAL_PORT = conductor_internal_port();
 export const CONDUCTOR_KEY_ID = signing_key_id();
-export const CONDUCTOR_PRIVATE_KEY_PATH = private_key_path();
-export const CONDUCTOR_PUBLIC_KEY_PATH = public_key_path();
 export const CONDUCTOR_INSTANCE_NAME = instance_name();
 export const CONDUCTOR_SHORT_CODE_PREFIX = short_code_prefix();
 export const CONDUCTOR_DESCRIPTION = instance_description();
@@ -294,6 +437,14 @@ export const CONDUCTOR_AUTH_PROVIDERS = get_providers_to_use();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
+export const ACCESS_TOKEN_EXPIRY_MINUTES = accessTokenExpiryMinutes();
+export const REFRESH_TOKEN_EXPIRY_MINUTES = refreshTokenExpiryMinutes();
+export const DESIGNER_URL = designer_url();
+export const RATE_LIMITER_WINDOW_MS = rateLimiterWindowMs();
+export const RATE_LIMITER_PER_WINDOW = rateLimiterPerWindow();
+export const RATE_LIMITER_ENABLED = rateLimiterEnabled();
+export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
+export const NEW_CONDUCTOR_URL = newConductorUrl();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to

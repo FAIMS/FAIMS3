@@ -1,6 +1,6 @@
 {
   "name": "faims3",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "engines": {
     "node": "^20.9.0"
@@ -8,6 +8,7 @@
   "workspaces": [
     "api",
     "app",
+    "web",
     "designer",
     "library/data-model",
     "tests",
@@ -26,6 +27,7 @@
     "start": "npm start --workspace=api --workspace=app",
     "start-api": "npm start --workspace=api",
     "start-app": "npm start --workspace=app",
+    "start-web": "npm start --workspace=web",
     "force-start-app": "npm force-start --workspace=app",
     "watch-api": "npm run local --workspace=api",
     "start-designer": "npm run start --workspace=designer",
@@ -33,6 +35,7 @@
     "load-notebooks": "npm run load-notebooks --workspace=api",
     "load-templates": "npm run load-templates --workspace=api",
     "generate-local-keys": "./api/keymanagement/makeInstanceKeys.sh",
+    "build-web" :"turbo build --filter web",
     "lint": "turbo lint",
     "clean": "turbo clean",
     "build": "turbo build"
@@ -54,7 +57,7 @@
   "dependencies": {
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
-    "esbuild": "^0.23.1",
+    "esbuild": "^0.25.0",
     "eslint": "^8.57.0",
     "gts": "^5.3.1"
   }

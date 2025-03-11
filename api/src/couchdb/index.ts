@@ -18,6 +18,11 @@
  *    Core functions to access the various databases used by the application
  */
 
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-security-helper'));
+
 import {
   AuthDatabase,
   ProjectDataObject,
@@ -26,7 +31,6 @@ import {
   ProjectObject,
   TemplateDetails,
 } from '@faims3/data-model';
-import PouchDB from 'pouchdb';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {COUCHDB_INTERNAL_URL, LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
@@ -314,11 +318,15 @@ export const getDataDb = async (
   return new PouchDB(dbUrl, pouch_options);
 };
 
-export const initialiseDatabases = async () => {
+export const initialiseDatabases = async ({
+  force = false,
+}: {
+  force?: boolean;
+}) => {
   // Setup the auth DB
   const authDB = getAuthDB();
   try {
-    await initialiseAuthDb(authDB);
+    await initialiseAuthDb(authDB, {force});
   } catch (error) {
     console.log('Could not initialise the auth database', error);
     throw error;
@@ -326,7 +334,7 @@ export const initialiseDatabases = async () => {
 
   const directoryDB = getDirectoryDB();
   try {
-    await initialiseDirectoryDB(directoryDB);
+    await initialiseDirectoryDB(directoryDB, {force});
   } catch (error) {
     console.log('something wrong with directory db init', error);
     throw error;
@@ -334,7 +342,7 @@ export const initialiseDatabases = async () => {
 
   const projectsDB = getProjectsDB();
   try {
-    await initialiseProjectsDB(projectsDB);
+    await initialiseProjectsDB(projectsDB, {force});
   } catch (error) {
     console.log('something wrong with projects db init', error);
     throw error;
@@ -350,7 +358,7 @@ export const initialiseDatabases = async () => {
   }
 
   try {
-    await initialiseTemplatesDb(templatesDb);
+    await initialiseTemplatesDb(templatesDb, {force});
   } catch {
     throw new Exceptions.InternalSystemError(
       'Something wrong during templates db initialisation'

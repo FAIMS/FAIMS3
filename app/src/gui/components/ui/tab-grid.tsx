@@ -4,15 +4,16 @@ import TabPanel from '@mui/lab/TabPanel';
 import {Box, Tab} from '@mui/material';
 import {
   DataGrid,
+  GridColDef,
   GridEventListener,
   GridPaginationModel,
 } from '@mui/x-data-grid';
-import {ProjectExtended} from '../../../types/project';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
 import {theme} from '../../themes';
 import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
+import {Project} from '../../../context/slices/projectSlice';
 
 /**
  * Renders a tabbed grid component.
@@ -27,15 +28,17 @@ export default function TabProjectGrid({
   projects,
   tabID,
   handleChange,
-  columns,
+  activatedColumns,
+  notActivatedColumns,
 }: {
-  projects: ProjectExtended[];
+  projects: Project[];
   tabID: string;
   handleChange: React.Dispatch<React.SetStateAction<string>>;
-  columns: any;
+  activatedColumns: GridColDef<Project>[];
+  notActivatedColumns: GridColDef<Project>[];
 }) {
-  const activatedProjects = projects.filter(({activated}) => activated);
-  const availableProjects = projects.filter(({activated}) => !activated);
+  const activatedProjects = projects.filter(({isActivated}) => isActivated);
+  const availableProjects = projects.filter(({isActivated}) => !isActivated);
 
   // we need a state variable to track pagination model since we want to use a
   // controlled component style to force pagination to behave how we want
@@ -52,10 +55,16 @@ export default function TabProjectGrid({
   const history = useNavigate();
 
   const handleRowClick: GridEventListener<'rowClick'> = ({
-    row: {activated, project_id},
+    row,
+  }: {
+    row: Project;
   }) => {
-    if (activated) history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
+    if (row.isActivated)
+      history(
+        `${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${row.serverId}/${row.projectId}`
+      );
   };
+
   return (
     <TabContext value={tabID}>
       <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
@@ -78,7 +87,7 @@ export default function TabProjectGrid({
               }
               value={tab}
               disabled={
-                !projects.filter(r => r.activated).length && tab === '1'
+                !projects.filter(r => r.isActivated).length && tab === '1'
               }
             />
           ))}
@@ -88,12 +97,13 @@ export default function TabProjectGrid({
         <TabPanel key={tab} value={tab} sx={{px: 0}}>
           <div style={{flexGrow: 1}}>
             <DataGrid
+              onRowClick={handleRowClick}
               key={`notebook_list_datagrid_${tab}`}
               rows={tab === '1' ? activatedProjects : availableProjects}
-              columns={columns}
+              columns={tab === '1' ? activatedColumns : notActivatedColumns}
               sx={{cursor: tab === '1' ? 'pointer' : 'default'}}
-              onRowClick={handleRowClick}
-              getRowId={({_id}) => _id}
+              getRowId={({projectId}) => projectId}
+              rowHeight={75}
               hideFooter
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}

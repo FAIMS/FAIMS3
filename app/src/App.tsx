@@ -22,9 +22,12 @@ import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {Route, BrowserRouter as Router, Routes} from 'react-router-dom';
 import './App.css';
-import {PrivateRoute} from './constants/privateRouter';
+import {
+  ActivePrivateRoute,
+  OnlineOnlyRoute,
+  TolerantPrivateRoute,
+} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
-import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';
 import AboutBuild from './gui/pages/about-build';
 import Notebook from './gui/pages/notebook';
@@ -37,21 +40,13 @@ import Workspace from './gui/pages/workspace';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 
-import {theme} from './gui/themes';
-import {ProjectsProvider} from './context/projects-context';
+import {NotificationProvider} from './context/popup';
 import {AuthReturn} from './gui/components/authentication/auth_return';
 import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
+import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
-import {NotificationProvider} from './context/popup';
-
-// type AppProps = {};
-
-// type AppState = {
-//   projects: ProjectsList;
-//   global_error: null | {};
-//   token: boolean;
-// };
+import {InitialiseGate, StateProvider} from './context/store';
 
 // Setup react query
 const queryClient = new QueryClient({
@@ -84,9 +79,9 @@ const queryClient = new QueryClient({
 
 export default function App() {
   return (
-    <NotificationProvider>
-      <StateProvider>
-        <ProjectsProvider>
+    <StateProvider>
+      <InitialiseGate>
+        <NotificationProvider>
           <QueryClientProvider client={queryClient}>
             <StyledEngineProvider injectFirst>
               <ThemeProvider theme={theme}>
@@ -102,25 +97,28 @@ export default function App() {
                       <Route
                         path={ROUTES.INDEX}
                         element={
-                          <PrivateRoute>
+                          <TolerantPrivateRoute>
                             <Workspace />
-                          </PrivateRoute>
+                          </TolerantPrivateRoute>
                         }
                       />
                       <Route
-                        path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:project_id`}
+                        path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId`}
                         element={
-                          <PrivateRoute>
+                          <TolerantPrivateRoute>
                             <Notebook />
-                          </PrivateRoute>
+                          </TolerantPrivateRoute>
                         }
                       />
                       <Route
                         path={ROUTES.CREATE_NEW_SURVEY}
                         element={
-                          <PrivateRoute>
-                            <CreateNewSurvey />
-                          </PrivateRoute>
+                          // Online only and authenticated
+                          <OnlineOnlyRoute>
+                            <ActivePrivateRoute>
+                              <CreateNewSurvey />
+                            </ActivePrivateRoute>
+                          </OnlineOnlyRoute>
                         }
                       />
                       {/* Draft creation happens by redirecting to a fresh minted UUID
@@ -130,31 +128,33 @@ export default function App() {
                       <Route
                         path={
                           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
+                          ':serverId/' +
+                          ':projectId' +
                           ROUTES.RECORD_CREATE +
-                          ':type_name' +
+                          ':typeName' +
                           ROUTES.RECORD_DRAFT +
-                          ':draft_id' + //added for keep the record id same for draft
+                          ':draftId' + //added for keep the record id same for draft
                           ROUTES.RECORD_RECORD +
-                          ':record_id'
+                          ':recordId'
                         }
                         element={
-                          <PrivateRoute>
+                          <TolerantPrivateRoute>
                             <RecordCreate />
-                          </PrivateRoute>
+                          </TolerantPrivateRoute>
                         }
                       />
                       <Route
                         path={
                           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
+                          ':serverId/' +
+                          ':projectId' +
                           ROUTES.RECORD_CREATE +
-                          ':type_name'
+                          ':typeName'
                         }
                         element={
-                          <PrivateRoute>
+                          <TolerantPrivateRoute>
                             <RecordCreate />
-                          </PrivateRoute>
+                          </TolerantPrivateRoute>
                         }
                       />
                       {/*Record editing and viewing is a separate affair, separated by
@@ -168,33 +168,35 @@ export default function App() {
                       <Route
                         path={
                           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
+                          ':serverId/' +
+                          ':projectId' +
                           ROUTES.RECORD_EXISTING +
-                          ':record_id' +
+                          ':recordId' +
                           ROUTES.REVISION +
-                          ':revision_id'
+                          ':revisionId'
                         }
                         element={
-                          <PrivateRoute>
+                          <TolerantPrivateRoute>
                             <Record />
-                          </PrivateRoute>
+                          </TolerantPrivateRoute>
                         }
                       />
                       <Route
                         path={
                           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':project_id' +
+                          ':serverId/' +
+                          ':projectId' +
                           ROUTES.RECORD_EXISTING +
-                          ':record_id' +
+                          ':recordId' +
                           ROUTES.REVISION +
-                          ':revision_id' +
+                          ':revisionId' +
                           ROUTES.RECORD_DRAFT +
-                          ':draft_id'
+                          ':draftId'
                         }
                         element={
-                          <PrivateRoute>
+                          <TolerantPrivateRoute>
                             <Record />
-                          </PrivateRoute>
+                          </TolerantPrivateRoute>
                         }
                       />
                       <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
@@ -205,8 +207,8 @@ export default function App() {
               </ThemeProvider>
             </StyledEngineProvider>
           </QueryClientProvider>
-        </ProjectsProvider>
-      </StateProvider>
-    </NotificationProvider>
+        </NotificationProvider>
+      </InitialiseGate>
+    </StateProvider>
   );
 }

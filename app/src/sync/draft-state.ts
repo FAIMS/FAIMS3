@@ -88,6 +88,10 @@ type StagedData = {
   [fieldName: string]: unknown;
 };
 
+type StagedAnnotations = {
+  [fieldName: string]: Annotations;
+};
+
 /**
  * Intermediary between React and Pouch Draft storage.
  *
@@ -121,7 +125,7 @@ class RecordDraftState {
         // in a certain execution, would be to pass down initialValues from
         // the form component, but that's more complicated.)
         fields: StagedData | null;
-        annotations: StagedData | null;
+        annotations: StagedAnnotations | null;
         field_types: {[field_name: string]: FAIMSTypeName};
         relationship?: Relationship;
       }
@@ -134,7 +138,7 @@ class RecordDraftState {
         // and this is only up to date with fields in the current view
         // (view_fields)
         fields: StagedData;
-        annotations: StagedData;
+        annotations: StagedAnnotations;
         type: string;
         field_types: {[field_name: string]: FAIMSTypeName};
         relationship?: Relationship;
@@ -154,7 +158,7 @@ class RecordDraftState {
 
   data_listeners: [
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    (data: [StagedData, StagedData]) => unknown,
+    (data: [StagedData, StagedAnnotations]) => unknown,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (err: unknown) => unknown,
   ][] = [];
@@ -254,7 +258,7 @@ class RecordDraftState {
    */
   renderHook(
     values: FormikValues,
-    annotations: {[field_name: string]: Annotations},
+    annotations: StagedAnnotations,
     relationship: Relationship
   ) {
     if (this.fetch_error === null && this.data.state !== 'uninitialized') {
@@ -464,14 +468,14 @@ class RecordDraftState {
    * fetchData() is running or data is immediately available) then returns
    * the staged data, ONLY fields that are touched
    */
-  async _touchedData(): Promise<[StagedData, StagedData]> {
+  async _touchedData(): Promise<[StagedData, StagedAnnotations]> {
     // Function to filter the data
     const with_data = (
       data: StagedData,
-      annotations: StagedData
-    ): [StagedData, StagedData] => {
+      annotations: StagedAnnotations
+    ): [StagedData, StagedAnnotations] => {
       const filtered_data: StagedData = {};
-      const filtered_annotations: StagedData = {};
+      const filtered_annotations: StagedAnnotations = {};
       this.touched_fields.forEach(fieldName => {
         filtered_data[fieldName] = data[fieldName];
         filtered_annotations[fieldName] = annotations[fieldName];
@@ -533,7 +537,7 @@ class RecordDraftState {
       result = await setStagedData(
         await this.data.draft_id,
         data_to_save,
-        annotations_to_save,
+        annotations_to_save as StagedAnnotations,
         this.data.field_types,
         this.data.relationship ?? {}
       );
@@ -577,7 +581,7 @@ class RecordDraftState {
    * Called by setInitialValues, this function retrieves any existing
    * data from the draft storage for this current record/revision
    */
-  async getInitialValues(): Promise<[StagedData, StagedData]> {
+  async getInitialValues(): Promise<[StagedData, StagedAnnotations]> {
     return this._touchedData();
   }
 

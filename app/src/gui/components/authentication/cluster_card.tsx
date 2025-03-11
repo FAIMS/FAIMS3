@@ -17,181 +17,84 @@
  * Description:
  *   TODO
  */
+
 import {Browser} from '@capacitor/browser';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+import {Person2Sharp} from '@mui/icons-material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
-  Autocomplete,
+  Alert,
   Box,
   Button,
   Chip,
   Divider,
   Grid,
-  TextField,
+  Paper,
+  Stack,
   Typography,
 } from '@mui/material';
-import React, {useContext, useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import * as ROUTES from '../../../constants/routes';
-import {ActionType} from '../../../context/actions';
-import {store} from '../../../context/store';
-import {logError} from '../../../logging';
-import {update_directory} from '../../../sync/process-initialization';
-import {PossibleToken} from '../../../types/misc';
-import {
-  forgetCurrentToken,
-  getAllUsernamesForCluster,
-  getTokenContentsForCluster,
-  switchUsername,
-} from '../../../users';
-import {isWeb} from '../../../utils/helpers';
 import {APP_ID} from '../../../buildconfig';
+import {
+  isTokenValid,
+  removeServerConnection,
+  selectActiveUser,
+  selectAllServerUsers,
+  setActiveUser,
+} from '../../../context/slices/authSlice';
+import {useAppDispatch, useAppSelector} from '../../../context/store';
+import {isWeb} from '../../../utils/helpers';
 import MainCard from '../ui/main-card';
 import {LoginButton} from './login_form';
-import {useGetToken} from '../../../utils/tokenHooks';
+
+// TODO when we fix the add new user logic, bring this back
+const ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED = false;
 
 type ClusterCardProps = {
-  listing_id: string;
+  serverId: string;
   listing_name: string;
   listing_description: string;
   conductor_url: string;
 };
 
-type UserSwitcherProps = {
-  listing_id: string;
-  current_username: string;
-  onUpdated: (newToken: PossibleToken) => void;
-};
+export default function ClusterCard(props: ClusterCardProps) {
+  // Auth store interactions
+  const dispatch = useAppDispatch();
 
-function UserSwitcher(props: UserSwitcherProps) {
-  /**
-   * Allow the user to switch to another locally-logged-in user
-   * Autocomplete is controlled, switchUsername is called on button click
-   */
-
-  // List of tokens for this cluster
-  const [usernameList, setUsernameList] = useState<string[]>([]);
-  const [selectedUsername, setSelectedUsername] = useState<string | undefined>(
-    undefined
+  // For the current server, get logged in usernames
+  const usernames = useAppSelector(selectAllServerUsers).filter(
+    s => s.serverId === props.serverId
   );
+  const activeUser = useAppSelector(selectActiveUser);
+  const authServers = useAppSelector(state => state.auth.servers);
 
-  const {dispatch} = useContext(store);
-
-  // Fetch the user list for the given listing
-  useEffect(() => {
-    const getUserList = async () => {
-      setUsernameList(await getAllUsernamesForCluster(props.listing_id));
-    };
-    getUserList();
-  }, [props.listing_id]);
-
-  if (usernameList.length === 0) {
-    return <p>No logged in users</p>;
-  }
-
-  const handleClick = () => {
-    if (!selectedUsername) {
-      console.error('Trying to switch to undefined username.');
-      return;
-    }
-    switchUsername(props.listing_id, selectedUsername)
-      .then(async r => {
-        console.log('switchUsername returned', r);
-        const token_contents = await getTokenContentsForCluster(
-          props.listing_id
-        );
-        console.log(
-          'awaiting getTokenContentsForCluster() returned',
-          token_contents
-        );
-        props.onUpdated(token_contents);
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: 'Switching user ' + selectedUsername,
-            severity: 'success',
-          },
-        });
-      })
-      .catch(err => {
-        logError(err); // failed to switch user
+  const handleLogout = async (username: string) => {
+    // remove the server connection on logout
+    dispatch(removeServerConnection({serverId: props.serverId, username}));
+    // TODO Update directory was here - why did we need it?
+    if (isWeb()) {
+      const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
+      window.location.href =
+        props.conductor_url + '/logout?redirect=' + redirect;
+    } else {
+      // Use the capacitor browser plugin in apps
+      await Browser.open({
+        url: `${props.conductor_url}/logout?redirect=${APP_ID}://auth-return`,
       });
+    }
   };
 
-  return (
-    <React.Fragment>
-      <Grid
-        container
-        direction="row"
-        justifyContent="flex-start"
-        alignItems="stretch"
-      >
-        <Grid item xs alignItems="stretch" style={{display: 'flex'}}>
-          <Autocomplete
-            disablePortal
-            id={`user-switcher-${props.listing_id}`}
-            options={usernameList}
-            renderOption={(props, option) => {
-              return (
-                <Box component="li" {...props}>
-                  <span>
-                    <Chip size={'small'} label={option} />
-                  </span>
-                </Box>
-              );
-            }}
-            value={selectedUsername}
-            onChange={(event: any, newValue: string | undefined | null) => {
-              setSelectedUsername(newValue ?? undefined);
-            }}
-            fullWidth
-            renderInput={params => (
-              <TextField {...params} label="Choose Active User" />
-            )}
-          />
-        </Grid>
-        <Grid item xs={'auto'} alignItems="stretch" style={{display: 'flex'}}>
-          <Button
-            variant={'contained'}
-            color={'primary'}
-            disableElevation
-            sx={{ml: 1}}
-            onClick={handleClick}
-          >
-            Switch
-          </Button>
-        </Grid>
-      </Grid>
-    </React.Fragment>
-  );
-}
-
-export default function ClusterCard(props: ClusterCardProps) {
-  const history = useNavigate();
-
-  // Get the token for this listing, if any
-  const tokenQuery = useGetToken({listingId: props.listing_id});
-
-  const token = tokenQuery.data;
-
-  const handleLogout = () => {
-    forgetCurrentToken(props.listing_id).then(async () => {
-      update_directory();
-
-      if (isWeb()) {
-        const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-        window.location.href =
-          props.conductor_url + '/logout?redirect=' + redirect;
-      } else {
-        // Use the capacitor browser plugin in apps
-        await Browser.open({
-          url: `${props.conductor_url}/logout?redirect=${APP_ID}://auth-return`,
-        });
-      }
-    });
+  const handleAddNewUser = async () => {
+    if (isWeb()) {
+      const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
+      window.location.href = props.conductor_url + '/auth?redirect=' + redirect;
+    } else {
+      await Browser.open({
+        url: `${props.conductor_url}/auth?redirect=${APP_ID}://auth-return`,
+      });
+    }
   };
 
   return (
@@ -199,137 +102,174 @@ export default function ClusterCard(props: ClusterCardProps) {
       title={
         <Grid container>
           <Grid item xs>
-            <Typography variant={'overline'}>Provider</Typography>
-            <Typography variant={'body2'} fontWeight={700} sx={{mb: 0}}>
+            <Typography variant={'h4'} fontWeight={700} sx={{mb: 0}}>
               {props.listing_name}
             </Typography>
-            <Typography variant={'caption'}>
+            <Typography variant={'subtitle1'}>
               {props.listing_description}
             </Typography>
           </Grid>
-          <Divider orientation="vertical" flexItem />
         </Grid>
       }
       content={true}
-      secondary={
-        <Button
-          color="primary"
-          variant="text"
-          onClick={() => history(ROUTES.INDEX)}
-          startIcon={<DashboardIcon />}
-          sx={{ml: 2}}
-        >
-          Workspace
-        </Button>
-      }
     >
-      {!token ? (
+      {usernames.length === 0 ? (
         <LoginButton
-          key={props.listing_id}
+          key={props.serverId}
           conductor_url={props.conductor_url}
           is_refresh={false}
           startIcon={<LoginIcon />}
         />
       ) : (
-        <React.Fragment>
-          <Grid
-            container
-            direction="row"
-            justifyContent="flex-start"
-            alignItems="center"
-            spacing={1}
-          >
-            <Grid item sm={3} xs={12}>
-              <Typography variant={'overline'}>Current User</Typography>
-            </Grid>
-            <Grid item sm={6} xs={12}>
-              <Typography variant={'body2'} fontWeight={700}>
-                {token.parsedToken.username}
-              </Typography>
-            </Grid>
-            <Grid item sm={3} xs={12}>
-              <Button
-                size={'small'}
-                sx={{float: 'right'}}
-                variant={'contained'}
-                disableElevation
-                onClick={handleLogout}
-                startIcon={<LogoutIcon />}
-              >
-                Log&nbsp;Out
-              </Button>
-            </Grid>
-          </Grid>
-          <Divider sx={{my: 2}} />
-          <Grid
-            container
-            direction="row"
-            justifyContent="flex-start"
-            alignItems="flex-start"
-            spacing={1}
-          >
-            <Grid item sm={3} xs={12}>
-              <Typography variant={'overline'}>Roles</Typography>
-            </Grid>
-            <Grid item sm={6} xs={12}>
-              <Box sx={{maxHeight: '400px', overflowY: 'scroll'}}>
-                {token.parsedToken.roles.map((group, index) => {
-                  return <Chip key={index} label={group} sx={{mb: 1}} />;
-                })}
+        <>
+          {ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED && (
+            <>
+              <Box sx={{textAlign: 'center'}}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<PersonAddIcon />}
+                  onClick={handleAddNewUser}
+                  sx={{
+                    borderStyle: 'dashed',
+                    '&:hover': {
+                      borderStyle: 'solid',
+                    },
+                  }}
+                >
+                  Add New User
+                </Button>
               </Box>
-            </Grid>
-            <Grid item sm={3} xs={12}>
-              <Grid
-                container
-                direction="row"
-                justifyContent="flex-end"
-                alignItems="flex-start"
-                spacing={1}
-              >
-                <Grid item xs={12}>
-                  <LoginButton
-                    key={props.listing_id}
-                    conductor_url={props.conductor_url}
-                    is_refresh={true}
-                    label={'refresh'}
-                    size={'small'}
-                    sx={{float: 'right'}}
-                    startIcon={<RefreshIcon />}
-                  />
-                </Grid>
-                <Grid item xs={12} sx={{textAlign: 'right'}}>
-                  <Typography variant={'caption'}>
-                    Sign in again to refresh roles
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Grid>
-          </Grid>
-
-          <Divider sx={{my: 2}} />
-          {token.parsedToken.username ? (
-            <React.Fragment>
-              <UserSwitcher
-                listing_id={props.listing_id}
-                current_username={token.parsedToken.username}
-                // TODO should anything happen when the token/username changes?
-                onUpdated={() => {}}
-              />
-
-              <LoginButton
-                key={props.listing_id}
-                conductor_url={props.conductor_url}
-                is_refresh={true}
-                label={'add another user'}
-                size={'small'}
-                sx={{my: 1}}
-                startIcon={<PersonAddIcon />}
-              />
-            </React.Fragment>
-          ) : (
-            ''
+              <Divider sx={{my: 2}} />
+            </>
           )}
-        </React.Fragment>
+          {usernames.map(identity => {
+            const username = identity.username;
+            const tokenInfo = authServers[props.serverId]?.users[username];
+            const isActive =
+              activeUser?.username === username &&
+              activeUser?.serverId === props.serverId;
+            const tokenValid = isTokenValid(tokenInfo);
+            const isLoggedIn = !!tokenInfo?.token;
+
+            return (
+              <Paper
+                key={username}
+                elevation={0}
+                sx={{
+                  p: 2,
+                  mb: 2,
+                  border: '2px solid',
+                  borderColor: isActive ? 'primary.main' : 'divider',
+                  boxShadow: isActive
+                    ? '0 0 0 2px rgba(25, 118, 210, 0.2)'
+                    : 'none',
+                  bgcolor: isActive ? 'primary.lighter' : 'background.paper',
+                  transition: 'all 0.2s ease-in-out',
+                }}
+              >
+                <Stack spacing={2}>
+                  {/* User Info Section */}
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="h5" component="h4">
+                      {username}
+                    </Typography>
+                    {isActive && (
+                      <Chip
+                        icon={<CheckCircleIcon />}
+                        label="Active User"
+                        color="primary"
+                        size="small"
+                      />
+                    )}
+                  </Stack>
+
+                  {tokenInfo?.parsedToken?.name && (
+                    <Typography variant="body2" color="text.secondary">
+                      {tokenInfo.parsedToken.name}
+                    </Typography>
+                  )}
+
+                  {/* Session Alerts Section */}
+                  {isLoggedIn && !tokenValid && (
+                    <Alert
+                      severity="error"
+                      sx={{
+                        '& .MuiAlert-action': {
+                          alignItems: 'center',
+                          pt: 0,
+                        },
+                      }}
+                      action={
+                        <LoginButton
+                          key={props.serverId}
+                          conductor_url={props.conductor_url}
+                          is_refresh={true}
+                          label="Renew"
+                          size="small"
+                          variant="contained"
+                          sx={{color: 'error'}}
+                          startIcon={<RefreshIcon />}
+                        />
+                      }
+                    >
+                      Your session has expired. Your data will be saved on your
+                      device, but not uploaded. Please renew your session to
+                      enable data upload.
+                    </Alert>
+                  )}
+
+                  {/* Button Section */}
+                  {!isLoggedIn ? (
+                    <LoginButton
+                      key={props.serverId}
+                      conductor_url={props.conductor_url}
+                      is_refresh={false}
+                      startIcon={<LoginIcon />}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 1,
+                        '& > button': {
+                          flex: {
+                            xs: '1 1 100%',
+                            sm: '1 1 auto',
+                          },
+                          minWidth: {
+                            sm: '120px',
+                          },
+                        },
+                      }}
+                    >
+                      {!isActive && (
+                        <Button
+                          size={'small'}
+                          variant={'outlined'}
+                          onClick={() => dispatch(setActiveUser(identity))}
+                          startIcon={<Person2Sharp />}
+                        >
+                          Activate
+                        </Button>
+                      )}
+                      <Button
+                        size={'small'}
+                        variant={'outlined'}
+                        color="error"
+                        onClick={() => handleLogout(username)}
+                        startIcon={<LogoutIcon />}
+                      >
+                        Log out
+                      </Button>
+                    </Box>
+                  )}
+                </Stack>
+              </Paper>
+            );
+          })}
+        </>
       )}
     </MainCard>
   );

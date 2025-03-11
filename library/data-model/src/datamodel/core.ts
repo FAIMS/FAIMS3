@@ -22,44 +22,15 @@
  */
 
 import {
+  EncodedProjectUIModel,
   FullyResolvedRecordID,
-  ListingID,
-  NonUniqueProjectID,
-  ProjectID,
+  ProjectUIModel,
   SplitRecordID,
 } from '../types';
 
 export const HRID_STRING = 'hrid';
 
 export const DEFAULT_RELATION_LINK_VOCABULARY = 'is related to';
-
-export function resolve_project_id(
-  listing_id: ListingID,
-  nonunique_id: NonUniqueProjectID
-): ProjectID {
-  const cleaned_listing_id = listing_id.replace('||', '\\|\\|');
-  return cleaned_listing_id + '||' + nonunique_id;
-}
-
-export function split_full_project_id(full_proj_id: ProjectID): {
-  listing_id: ListingID;
-  project_id: NonUniqueProjectID;
-} {
-  const splitId = full_proj_id.split('||');
-  if (
-    splitId.length !== 2 ||
-    splitId[0].trim() === '' ||
-    splitId[1].trim() === ''
-  ) {
-    throw Error('{full_proj_id} is not a valid full project id.');
-  }
-  const cleaned_listing_id = splitId[0].replace('\\|\\|', '||');
-  const cleaned_project_id = splitId[1].replace('\\|\\|', '||');
-  return {
-    listing_id: cleaned_listing_id,
-    project_id: cleaned_project_id,
-  };
-}
 
 /**
  * Generate a {FullyResolvedRecordID} from a {SplitRecordID}
@@ -90,3 +61,21 @@ export function split_full_record_id(
     record_id: splitId[1],
   };
 }
+
+/**
+ * converts the encoded UI spec representation into the normal one
+ * @param rawUiSpec The raw encoded spec
+ * @returns Normal functional spec
+ */
+export const decodeUiSpec = (
+  rawUiSpec: EncodedProjectUIModel
+): ProjectUIModel => {
+  return {
+    _id: rawUiSpec._id,
+    _rev: rawUiSpec._rev,
+    fields: rawUiSpec.fields,
+    views: rawUiSpec.fviews,
+    viewsets: rawUiSpec.viewsets,
+    visible_types: rawUiSpec.visible_types,
+  };
+};

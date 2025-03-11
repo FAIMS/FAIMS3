@@ -23,6 +23,12 @@ import typography from './typography';
 const primaryMainColor = '#000000';
 
 const theme = createTheme({
+  stepperColors: {
+    current: '#E18200',
+    visited: '#669911',
+    error: '#D50C0CFF',
+    notVisited: '#B7C1A6F1',
+  },
   palette: {
     background: {
       default: '#FAFAFB',
@@ -35,6 +41,12 @@ const theme = createTheme({
       main: primaryMainColor,
       light: '#FFFFFF',
     },
+    stepper: {
+      current: '#E18200',
+      visited: '#669911',
+      error: '#D50C0CFF',
+      notVisited: '#B7C1A6F1',
+    },
     highlightColor: {
       main: '#B10000',
       contrastText: 'F4F4F4',
@@ -46,12 +58,14 @@ const theme = createTheme({
     text: {
       primary: '#000000FF',
       secondary: '#000000',
+      helpText: '#000000',
     },
     alert: {
       warningBackground: '#FFFFFF',
       warningText: '#BC0505',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
+      successBackground: '#669911',
     },
     dialogButton: {
       cancel: '#606060',
@@ -66,6 +80,8 @@ const theme = createTheme({
     icon: {
       main: '#197A01',
       light: '#EAEAEA',
+      required: '197A01',
+      highlight: '#B10000',
     },
     table: {
       divider: '#828789FF',

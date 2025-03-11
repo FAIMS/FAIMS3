@@ -1,4 +1,3 @@
-import PouchDB from 'pouchdb';
 import {
   generate_file_name,
   generateFAIMSAttachmentID,
@@ -34,7 +33,7 @@ describe('attachments', () => {
         _id: 'test',
         avp_format_version: 1,
         type: 'file',
-        annotations: [],
+        annotations: {annotation: '', uncertainty: false},
         revision_id: '1-1234567890abcdef1234567890abcdef',
         record_id: 'test',
         created: '2021-01-01T00:00:00.000Z',
@@ -116,7 +115,7 @@ describe('attachments', () => {
         _id: 'test',
         avp_format_version: 1,
         type: 'file',
-        annotations: [],
+        annotations: {annotation: '', uncertainty: false},
         revision_id: '1-1234567890abcdef1234567890abcdef',
         record_id: 'test',
         created: '2021-01-01T00:00:00.000Z',

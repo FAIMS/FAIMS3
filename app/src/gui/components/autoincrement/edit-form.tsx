@@ -33,13 +33,13 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {useContext, useState} from 'react';
+import {useState} from 'react';
 
 import {LocalAutoIncrementRange, ProjectID} from '@faims3/data-model';
 import CloseIcon from '@mui/icons-material/Close';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {ActionType} from '../../../context/actions';
-import {store} from '../../../context/store';
+import {addAlert} from '../../../context/slices/alertSlice';
+import {useAppDispatch} from '../../../context/store';
 import {
   createNewAutoincrementRange,
   getLocalAutoincrementRangesForField,
@@ -63,7 +63,7 @@ export const AutoIncrementEditForm = ({
   open,
   handleClose,
 }: Props) => {
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
 
   // useQuery to get the current ranges for the field,
   // we will invalidate the query when we update the ranges
@@ -99,13 +99,12 @@ export const AutoIncrementEditForm = ({
       );
       queryClient.invalidateQueries({queryKey: queryKey});
     } catch (err: any) {
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
+      dispatch(
+        addAlert({
           message: err.toString(),
           severity: 'error',
-        },
-      });
+        })
+      );
     }
   };
 

@@ -1,177 +1,280 @@
-/*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
- * Filename: store.tsx
- * Description:
- *   Define a global Context store to hold the state of sync and alerts
- */
-
+import {configureStore} from '@reduxjs/toolkit';
+import React, {useEffect, useRef} from 'react';
 import {
-  createContext,
-  useReducer,
-  Dispatch,
-  useEffect,
-  useState,
-  useRef,
-} from 'react';
-
-import {v4 as uuidv4} from 'uuid';
-
-import {getSyncStatusCallbacks} from '../utils/status';
-import {SyncingActions, AlertActions, ActionType} from './actions';
+  Provider,
+  TypedUseSelectorHook,
+  useDispatch,
+  useSelector,
+} from 'react-redux';
+import {
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  persistReducer,
+  persistStore,
+  PURGE,
+  REGISTER,
+  REHYDRATE,
+} from 'redux-persist';
+import {PersistGate} from 'redux-persist/integration/react';
+import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 import LoadingApp from '../gui/components/loadingApp';
 import {initialize} from '../sync/initialize';
-import {set_sync_status_callbacks} from '../sync/connection';
-import {AlertColor} from '@mui/material/Alert/Alert';
+import alertsReducer from './slices/alertSlice';
+import authReducer, {
+  refreshAllUsers,
+  refreshIsAuthenticated,
+  selectIsAuthenticated,
+} from './slices/authSlice';
+import projectsReducer from './slices/projectSlice';
+import {databaseService} from './slices/helpers/databaseService';
+import {logError} from '../logging';
+import {addAlert} from './slices/alertSlice';
 
-interface InitialStateProps {
-  isSyncingUp: boolean;
-  isSyncingDown: boolean;
-  hasUnsyncedChanges: boolean;
-  isSyncError: boolean;
+// The below configures indexed DB storage which has a greater limit than
+// localStorage. UI specs contain images.
 
-  alerts: Array<
-    {
-      severity: AlertColor;
-      key: string;
-    } & ({message: string} | {element: JSX.Element[]})
-  >;
-}
+// @ts-ignore
+import storage from 'redux-persist-indexeddb-storage';
 
-const InitialState = {
-  isSyncingUp: false,
-  isSyncingDown: false,
-  hasUnsyncedChanges: false,
-  isSyncError: false,
-  alerts: [],
+// Configure persistence for the auth slice
+const authPersistConfig = {key: 'auth', storage: storage('faims-auth-db')};
+const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
+
+// Configure persistence for the projects slice
+const projectsPersistConfig = {
+  key: 'projects',
+  storage: storage('faims-projects-db'),
+  blacklist: ['isInitialised'],
 };
 
-export interface ContextType {
-  state: InitialStateProps;
-  dispatch: Dispatch<SyncingActions | AlertActions>;
-}
+const persistedProjectsReducer = persistReducer(
+  projectsPersistConfig,
+  projectsReducer
+);
 
-const store = createContext<ContextType>({
-  state: InitialState,
-  dispatch: () => null,
+// Configure the store
+export const store = configureStore({
+  reducer: {
+    // auth slice (persisted)
+    auth: persistedAuthReducer,
+    // projects slice (persisted)
+    projects: persistedProjectsReducer,
+    // not persisted - alerts
+    alerts: alertsReducer,
+  },
+  middleware: getDefaultMiddleware =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }),
+  devTools: process.env.NODE_ENV !== 'production',
 });
 
-const {Provider} = store;
+// Setup persistor export for app persist gate
+const persistor = persistStore(store);
 
-const StateProvider = (props: any) => {
-  const [initialized, setInitialized] = useState(false);
-  const startedInitialisation = useRef(false);
+// Infer types from store
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
 
-  const [state, dispatch] = useReducer(
-    (state: InitialStateProps, action: SyncingActions | AlertActions) => {
-      switch (action.type) {
-        case ActionType.IS_SYNCING_UP: {
-          return {
-            ...state,
-            isSyncingUp: action.payload,
-          };
-        }
-        case ActionType.IS_SYNCING_DOWN: {
-          return {
-            ...state,
-            isSyncingDown: action.payload,
-          };
-        }
-        case ActionType.HAS_UNSYNCED_CHANGES: {
-          return {
-            ...state,
-            hasUnsyncedChanges: action.payload,
-          };
-        }
-        case ActionType.IS_SYNC_ERROR: {
-          return {
-            ...state,
-            isSyncError: action.payload,
-          };
-        }
+// Create typed hooks
+export const useAppDispatch: () => AppDispatch = useDispatch;
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
-        case ActionType.ADD_ALERT: {
-          const alert = {
-            ...action.payload,
-            key: uuidv4(),
-            message: action.payload.message,
-            severity: action.payload.severity,
-          };
-          return {
-            ...state,
-            alerts: [...state.alerts, alert],
-          };
-        }
-        case ActionType.DELETE_ALERT: {
-          return {
-            ...state,
-            alerts: state.alerts.filter(
-              alert => alert.key !== action.payload.key
-            ),
-          };
-        }
-        case ActionType.ADD_CUSTOM_ALERT: {
-          const alert = {
-            ...action.payload,
-            key: uuidv4(),
-            element: action.payload.element,
-            severity: action.payload.severity,
-          };
-          return {
-            ...state,
-            alerts: [...state.alerts, alert],
-          };
-        }
-        default:
-          throw new Error();
+const LoadingComponent = LoadingApp;
+
+// Provider component
+export const StateProvider: React.FC<{children: React.ReactNode}> = ({
+  children,
+}) => {
+  return (
+    <Provider store={store}>
+      {
+        // Persistence gate to ensure app is not loaded before auth slice persists
       }
-    },
-    InitialState
+      <PersistGate loading={<LoadingComponent />} persistor={persistor}>
+        {children}
+      </PersistGate>
+    </Provider>
   );
+};
 
-  set_sync_status_callbacks(getSyncStatusCallbacks(dispatch));
+/**
+ * TokenRefreshTimer component
+ * Handles periodic token refresh attempts and authentication status checks
+ */
+const TokenRefreshTimer: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   useEffect(() => {
-    if (startedInitialisation.current) {
+    const refreshTokenAndCheckAuth = async () => {
+      try {
+        // This dispatch handles the case where there is no active user or
+        // similar concerns - avoids us needing to worry about reading state
+        // synchronously here
+        await dispatch(refreshAllUsers());
+      } finally {
+        // Always check authentication status after refresh attempt
+        dispatch(refreshIsAuthenticated({}));
+      }
+    };
+
+    // Initial check
+    refreshTokenAndCheckAuth();
+
+    // Set up interval
+    const intervalId = setInterval(
+      refreshTokenAndCheckAuth,
+      TOKEN_REFRESH_INTERVAL_MS
+    );
+
+    // Cleanup
+    return () => clearInterval(intervalId);
+  }, [dispatch, isAuthenticated]);
+
+  return null;
+};
+
+/**
+ * NetworkUpHandler component
+ *
+ * Attaches to the network up condition a token
+ * refresh so that a token refresh is always attempted when the network comes
+ * back up.
+ */
+const NetworkUpHandler: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
+  useEffect(() => {
+    const promptRefresh = async () => {
+      try {
+        // This dispatch handles the case where there is no active user or
+        // similar concerns - avoids us needing to worry about reading state
+        // synchronously here
+        await dispatch(refreshAllUsers());
+      } finally {
+        // Always check authentication status after refresh attempt
+        dispatch(refreshIsAuthenticated({}));
+      }
+    };
+
+    // Attach to network up handler
+    window.addEventListener('online', promptRefresh);
+
+    return () => {
+      // Detach for cleanup
+      window.removeEventListener('online', promptRefresh);
+    };
+  }, [dispatch, isAuthenticated]);
+
+  return null;
+};
+
+/**
+ * InitialiseGate component This checks that the app store is initialised,
+ * returning loading fall back. Initiates if not, and only runs once.
+ *
+ * It also starts a timer process which refreshes the token.
+ */
+export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
+  children,
+}) => {
+  const dispatch = useAppDispatch();
+  const mounted = useRef(false);
+
+  const projectStoreInitialised = useAppSelector(
+    state => state.projects.isInitialised
+  );
+
+  useEffect(() => {
+    // Don't initialise twice
+    if (mounted.current) {
       return;
     }
 
-    // Mark that we've started
-    startedInitialisation.current = true;
-    initialize()
-      .then(() => {
-        setInitialized(true);
-      })
-      .catch(err => {
-        console.log('Could not initialize: ', err);
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {message: err.message, severity: 'error'},
-        });
+    // mark as started
+    mounted.current = true;
+
+    const init = async () => {
+      await initialize().catch(err => {
+        console.error('Could not initialize: ', err);
+        dispatch(
+          addAlert({
+            message:
+              err instanceof Error ? err.message : 'Initialization failed',
+            severity: 'error',
+          })
+        );
       });
+    };
+
+    // Run initialisation logic
+    init();
   }, []);
 
-  if (initialized) {
-    return <Provider value={{state, dispatch}}>{props.children}</Provider>;
-  } else {
-    return (
-      <Provider value={{state, dispatch}}>
-        <LoadingApp />
-      </Provider>
-    );
+  if (!projectStoreInitialised) {
+    return <LoadingComponent />;
   }
+
+  return (
+    <>
+      {
+        // Include timer
+      }
+      <TokenRefreshTimer />
+      <NetworkUpHandler />
+      {children}
+    </>
+  );
 };
 
-export {store, StateProvider};
+/**
+ * Dangerous function which resets the redux store, purges persistence, and
+ * clears all localStorage
+ */
+export const clearReduxAndLocalStorage = async () => {
+  // Reset the store
+  store.dispatch({type: 'RESET_STORE'});
+  // then ensure persistence is cleared out
+  await persistor.purge();
+  // then also clear all local storage
+  localStorage.clear();
+};
+
+export const wipeAllDatabases = async () => {
+  // cast and get state
+  const state = store.getState() as RootState;
+  for (const server of Object.values(state.projects.servers)) {
+    for (const project of Object.values(server.projects)) {
+      if (project.isActivated && project.database) {
+        // Local DB should be wiped
+        const localDb = databaseService.getLocalDatabase(
+          project.database.localDbId
+        );
+        // Destroy
+        await localDb?.destroy();
+        // Then remove
+        localDb &&
+          databaseService.closeAndRemoveLocalDatabase(
+            project.database.localDbId
+          );
+      }
+    }
+  }
+
+  const dbsToWipe = [
+    databaseService.getDraftDatabase(),
+    databaseService.getLocalStateDatabase(),
+  ];
+  for (const db of dbsToWipe) {
+    try {
+      console.debug(await db.destroy());
+    } catch (err) {
+      logError(err);
+    }
+  }
+};

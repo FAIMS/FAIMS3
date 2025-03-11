@@ -25,8 +25,12 @@
  * @category Database
  */
 
-import {v4 as uuidv4} from 'uuid';
+// Install plugin since we use the .query method here
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
 
+import {v4 as uuidv4} from 'uuid';
 import {getDataDB} from '../index';
 import {DEFAULT_RELATION_LINK_VOCABULARY} from '../datamodel/core';
 import {
@@ -40,6 +44,9 @@ import {
   RevisionID,
   ProjectRevisionListing,
   RecordRevisionListing,
+  TokenContents,
+  ProjectUIModel,
+  ProjectDataObject,
 } from '../types';
 import {shouldDisplayRecord} from '../index';
 import {
@@ -189,6 +196,8 @@ export async function listFAIMSProjectRevisions(
   project_id: ProjectID
 ): Promise<ProjectRevisionListing> {
   const dataDB = await getDataDB(project_id);
+  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
+
   try {
     const result = await dataDB.allDocs();
     const revisionMap: ProjectRevisionListing = {};
@@ -266,6 +275,8 @@ export async function setRecordAsDeleted(
   user: string
 ): Promise<RevisionID> {
   const dataDB = await getDataDB(project_id);
+  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
+
   const date = new Date();
   const base_revision = await getRevision(project_id, base_revision_id);
   const new_rev_id = generateFAIMSRevisionID();
@@ -293,6 +304,8 @@ export async function setRecordAsUndeleted(
   user: string
 ): Promise<RevisionID> {
   const dataDB = await getDataDB(project_id);
+  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
+
   const date = new Date();
   const base_revision = await getRevision(project_id, base_revision_id);
   const new_rev_id = generateFAIMSRevisionID();
@@ -313,15 +326,22 @@ export async function setRecordAsUndeleted(
   return new_rev_id;
 }
 
-export async function getRecordMetadata(
-  project_id: ProjectID,
-  record_id: RecordID,
-  revision_id: RevisionID
-): Promise<RecordMetadata> {
+export async function getRecordMetadata({
+  project_id,
+  record_id,
+  revision_id,
+  uiSpecification,
+}: {
+  project_id: ProjectID;
+  record_id: RecordID;
+  revision_id: RevisionID;
+  uiSpecification: ProjectUIModel;
+}): Promise<RecordMetadata> {
   try {
     const record = await getRecord(project_id, record_id);
     const revision = await getRevision(project_id, revision_id);
-    const hrid = (await getHRID(project_id, revision)) ?? record_id;
+    const hrid =
+      (await getHRID(project_id, revision, uiSpecification)) ?? record_id;
     return {
       project_id: project_id,
       record_id: record_id,
@@ -350,15 +370,21 @@ export async function getRecordMetadata(
   }
 }
 
-export async function getHRIDforRecordID(
-  project_id: ProjectID,
-  record_id: RecordID
-): Promise<string> {
+export async function getHRIDforRecordID({
+  project_id,
+  record_id,
+  uiSpecification,
+}: {
+  project_id: ProjectID;
+  record_id: RecordID;
+  uiSpecification: ProjectUIModel;
+}): Promise<string> {
   try {
     const record = await getRecord(project_id, record_id);
     const revision_id = record.heads[0];
     const revision = await getRevision(project_id, revision_id);
-    const hrid = (await getHRID(project_id, revision)) ?? record_id;
+    const hrid =
+      (await getHRID(project_id, revision, uiSpecification)) ?? record_id;
     return hrid;
   } catch (err) {
     console.warn('Failed to get hrid', err);
@@ -384,7 +410,8 @@ export async function getPossibleRelatedRecords(
   relation_type: string,
   record_id: string,
   field_id: string,
-  relation_linked_vocabPair: string[] | null = null
+  relation_linked_vocabPair: string[] | null = null,
+  uiSpecification: ProjectUIModel
 ): Promise<RecordReference[]> {
   try {
     let relation_vocab: string[] | null = null;
@@ -401,7 +428,11 @@ export async function getPossibleRelatedRecords(
     }
 
     const records: RecordReference[] = [];
-    await listRecordMetadata(project_id).then(record_list => {
+    await listRecordMetadata({
+      project_id,
+      record_ids: null,
+      uiSpecification,
+    }).then(record_list => {
       for (const key in record_list) {
         const metadata = record_list[key];
 
@@ -463,20 +494,21 @@ export async function getPossibleRelatedRecords(
  * @returns an array of record metadata objects (Promise)
  */
 async function filterRecordMetadata(
+  tokenContents: TokenContents,
   project_id: ProjectID,
   record_list: RecordMetadata[],
   filter_deleted: boolean
 ): Promise<RecordMetadata[]> {
-  const new_record_list: RecordMetadata[] = [];
-  for (const metadata of record_list) {
-    if (
-      !(metadata.deleted && filter_deleted) &&
-      (await shouldDisplayRecord(project_id, metadata))
-    ) {
-      new_record_list.push(metadata);
-    }
-  }
-  return new_record_list;
+  // compute should display and deletion filter for all records - promise
+  // collection
+  return Promise.all(
+    record_list.map(async metadata => {
+      const shouldKeep =
+        !(metadata.deleted && filter_deleted) &&
+        shouldDisplayRecord(tokenContents, project_id, metadata);
+      return shouldKeep;
+    })
+  ).then(results => record_list.filter((_, index) => results[index]));
 }
 
 function sortByLastUpdated(record_list: RecordMetadata[]): RecordMetadata[] {
@@ -492,15 +524,18 @@ function sortByLastUpdated(record_list: RecordMetadata[]): RecordMetadata[] {
 }
 
 export async function getMetadataForSomeRecords(
+  tokenContents: TokenContents,
   project_id: ProjectID,
   record_ids: RecordID[],
-  filter_deleted: boolean
+  filter_deleted: boolean,
+  uiSpecification: ProjectUIModel
 ): Promise<RecordMetadata[]> {
   try {
     const record_list = Object.values(
-      await listRecordMetadata(project_id, record_ids)
+      await listRecordMetadata({project_id, record_ids, uiSpecification})
     );
     return await filterRecordMetadata(
+      tokenContents,
       project_id,
       sortByLastUpdated(record_list),
       filter_deleted
@@ -513,12 +548,17 @@ export async function getMetadataForSomeRecords(
 }
 
 export async function getMetadataForAllRecords(
+  tokenContents: TokenContents,
   project_id: ProjectID,
-  filter_deleted: boolean
+  filter_deleted: boolean,
+  uiSpecification: ProjectUIModel
 ): Promise<RecordMetadata[]> {
   try {
-    const record_list = Object.values(await listRecordMetadata(project_id));
+    const record_list = Object.values(
+      await listRecordMetadata({project_id, record_ids: null, uiSpecification})
+    );
     return await filterRecordMetadata(
+      tokenContents,
       project_id,
       sortByLastUpdated(record_list),
       filter_deleted
@@ -531,15 +571,22 @@ export async function getMetadataForAllRecords(
 }
 
 export async function getRecordsWithRegex(
+  tokenContents: TokenContents,
   project_id: ProjectID,
   regex: string,
-  filter_deleted: boolean
+  filter_deleted: boolean,
+  uiSpecification: ProjectUIModel
 ): Promise<RecordMetadata[]> {
   try {
     const record_list = Object.values(
-      await getAllRecordsWithRegex(project_id, regex)
+      await getAllRecordsWithRegex(project_id, regex, uiSpecification)
     );
-    return await filterRecordMetadata(project_id, record_list, filter_deleted);
+    return await filterRecordMetadata(
+      tokenContents,
+      project_id,
+      record_list,
+      filter_deleted
+    );
   } catch (error) {
     console.debug('Failed to regex search for', project_id, regex);
     logError(error);
@@ -551,10 +598,11 @@ import {FormData} from './internals';
 
 export const hydrateRecord = async (
   project_id: string,
-  record: any // return type of getSomeRecords
+  record: any, // return type of getSomeRecords
+  uiSpecification: ProjectUIModel
 ) => {
   try {
-    const hrid = await getHRID(project_id, record.revision);
+    const hrid = await getHRID(project_id, record.revision, uiSpecification);
     const formData: FormData = await getFormDataFromRevision(
       project_id,
       record.revision
@@ -577,9 +625,9 @@ export const hydrateRecord = async (
       type: record.revision.type,
     };
     return result;
-  } catch {
+  } catch (e) {
     throw new Error(
-      `Failed to get HRID of record ${record.record_id} revision ${record.revision}`
+      `Failed to get HRID of record ${record.record_id} revision ${record.revision}. ${e}`
     );
   }
 };
@@ -590,7 +638,10 @@ export async function getSomeRecords(
   bookmark: string | null = null,
   filter_deleted = true
 ) {
-  const dataDB = await getDataDB(project_id);
+  const dataDB: PouchDB.Database<ProjectDataObject> | undefined =
+    await getDataDB(project_id);
+  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
+
   const options: {[key: string]: any} = {
     limit: limit,
     include_docs: true,
@@ -635,7 +686,8 @@ export async function getSomeRecords(
 export const notebookRecordIterator = async (
   project_id: string,
   viewID: string,
-  filter_deleted = true
+  filter_deleted = true,
+  uiSpecification: ProjectUIModel
 ) => {
   const batchSize = 100;
   const getNextBatch = async (bookmark: string | null) => {
@@ -674,7 +726,7 @@ export const notebookRecordIterator = async (
       }
       if (record) {
         try {
-          const data = await hydrateRecord(project_id, record);
+          const data = await hydrateRecord(project_id, record, uiSpecification);
           return {record: data, done: false};
         } catch (error) {
           console.error(error);
