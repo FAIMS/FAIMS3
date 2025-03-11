@@ -301,17 +301,18 @@ export function filterByActiveUser<T extends UnhydratedRecord>(
 }
 
 /**
- * Helper function to build the hydrate query keys - private
- * @returns
+ * Helper function to build the hydrate query keys consistently
  */
 function buildHydrateKeys({
   recordId,
   projectId,
+  revisionId,
 }: {
   projectId: string;
   recordId: string;
+  revisionId: string;
 }) {
-  return ['recordhydration', projectId, recordId];
+  return ['recordhydration', projectId, recordId, revisionId];
 }
 
 /**
@@ -322,13 +323,18 @@ function buildHydrateKeys({
 export function invalidateTargetRecordHydration({
   recordId,
   projectId,
+  revisionId,
   client,
 }: {
   projectId: string;
   recordId: string;
+  revisionId: string;
   client: QueryClient;
 }) {
-  client.invalidateQueries({queryKey: buildHydrateKeys({recordId, projectId})});
+  client.invalidateQueries({
+    queryKey: buildHydrateKeys({recordId, projectId, revisionId}),
+    refetchType: 'all',
+  });
 }
 
 /**
@@ -427,14 +433,20 @@ export const useRecordList = ({
   // needed) - cached based on record id
   const hydrateQueries = useQueries<RecordMetadata[]>({
     queries: nonDraftRecords.map(unhydrated => ({
-      queryKey: buildHydrateKeys({projectId, recordId: unhydrated.record_id}),
-      queryFn: () =>
-        hydrateIndividualRecord({
+      queryKey: buildHydrateKeys({
+        projectId,
+        recordId: unhydrated.record_id,
+        revisionId: unhydrated.revision_id,
+      }),
+      queryFn: () => {
+        console.log('Running hydrate individual record' + unhydrated.record_id);
+        return hydrateIndividualRecord({
           record: unhydrated,
           dataDb,
           uiSpecification: uiSpec,
           hridFieldMap: hridFieldMap,
-        }),
+        });
+      },
       refetchOnMount: false,
       placeholderData: {...unhydrated, data: {}, hrid: 'Loading...'},
       // two minutes - don't refetch super often as it's expensive!

@@ -111,10 +111,12 @@ export async function upsertFAIMSData({
     throw Error('record_id required to save record');
   }
   const revision_id = generateFAIMSRevisionID();
+  // New record
   if (record.revision_id === null) {
     await initialiseRecordForNewRevision({dataDb, record, revision_id});
     await addNewRevisionFromForm({dataDb, newRevId: revision_id, record});
   } else {
+    // existing record
     await addNewRevisionFromForm({dataDb, newRevId: revision_id, record});
     await updateHeads({
       baseRevisionId: [record.revision_id],
