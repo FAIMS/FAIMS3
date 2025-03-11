@@ -342,6 +342,18 @@ export function invalidateTargetRecordHydration({
  * built in getMetadataForAllRecords filtering (which does client side
  * permission filtering) and also provides my records vs all records list(s).
  *
+ * At a high level:
+ * - calculate hrid field map (memoised by ui spec)
+ * - useQuery to get minimal record info (i.e. gets records and their latest
+ *   revision) (refetches every 10 seconds and on mount)
+ * - filter out drafts (memoised by record list which has structural sharing to
+ *   avoid re-renders)
+ * - useQueries which for each record, performs hydration and returns the
+ *   hydrated record (this is cached for 2 minutes and is told not to refetch on
+ *   mount) - uses placeholder data where data = {} and hrid = "Loading..."
+ * - split by current user and others (memoised)
+ * - return the hydrated records (always present due to placeholder data)
+ *
  * @param query The search string, if any - regex match
  * @param projectId Project ID to get records for
  * @param filterDeleted Whether to filter out deleted records
