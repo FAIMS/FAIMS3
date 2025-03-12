@@ -582,7 +582,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
     selectFields = selectFields.filter(f => f !== props.field);
   } else if (props.view) {
     const view = views[props.view];
-    selectFields = selectFields.filter(f => !view.fields.indexOf(f));
+    selectFields = selectFields.filter(f => view.fields.indexOf(f) < 0);
   }
 
   const targetFieldDef = condition.field ? allFields[condition.field] : null;
