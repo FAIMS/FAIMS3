@@ -521,3 +521,40 @@ if (DEVELOPER_MODE) {
     }
   );
 }
+
+// DELETE a user from a notebook
+api.delete(
+  '/:notebook_id/users/:user_id',
+  processRequest({
+    params: z.object({notebook_id: z.string(), user_id: z.string()}),
+  }),
+  requireAuthenticationAPI,
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
+    if (!userHasPermission(req.user, req.params.notebook_id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to remove this user from this notebook.'
+      );
+    }
+
+    const user = await getUserFromEmailOrUsername(req.params.user_id);
+
+    if (!user) {
+      throw new Exceptions.ItemNotFoundException(
+        'The username provided cannot be found in the user database.'
+      );
+    }
+
+    if (user.project_roles[req.params.notebook_id].includes('admin')) {
+      throw new Exceptions.UnauthorizedException(
+        'You cannot remove an admin user from this notebook.'
+      );
+    }
+
+    for (const role of user.project_roles[req.params.notebook_id]) {
+      await removeProjectRoleFromUser(user, req.params.notebook_id, role);
+    }
+
+    await saveUser(user);
+    res.status(200).end();
+  }
+);

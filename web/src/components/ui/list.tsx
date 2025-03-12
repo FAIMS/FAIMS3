@@ -7,7 +7,11 @@ const List = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({className, ...props}, ref) => (
-  <div ref={ref} className={cn('space-y-3', className)} {...props} />
+  <div
+    ref={ref}
+    className={cn('space-y-3 flex flex-col justify-between h-full', className)}
+    {...props}
+  />
 ));
 List.displayName = 'List';
 

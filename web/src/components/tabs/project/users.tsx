@@ -16,23 +16,26 @@ const ProjectUsers = ({projectId}: {projectId: string}) => {
   const {data, isPending} = useQuery({
     queryKey: ['project-users', projectId],
     queryFn: async () => {
-      if (!user) return [];
-
-      const data = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/users`,
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/users`,
         {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
+            Authorization: `Bearer ${user?.token}`,
           },
         }
-      ).then(response => response.json());
+      );
 
-      return data.users.map((user: any) => ({
-        ...user,
-        'project-role': user.roles.find((role: any) => role.value)?.name,
-      }));
+      const data = await response.json();
+
+      return data
+        .filter((user: any) => user.project_roles[projectId])
+        .map((user: any) => ({
+          ...user,
+          'team-roles': user.other_roles,
+          'project-roles': user.project_roles[projectId],
+        }));
     },
   });
 
