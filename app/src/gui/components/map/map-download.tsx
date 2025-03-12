@@ -28,9 +28,8 @@ const TILE_MAX_ZOOM = 14; // for vector tiles...need a better way to handle this
 const MIN_ZOOM = 12;
 
 /**
- * Create an overview map of the records in the notebook.
+ * Map download component presents the UI for downloading offline maps.
  *
- * @param props {uiSpec, project_id}
  */
 export const MapDownloadComponent = () => {
   const [map, setMap] = useState<Map | undefined>(undefined);
@@ -44,7 +43,7 @@ export const MapDownloadComponent = () => {
 
   useEffect(() => {
     const fn = async () => {
-      await tileStore.initDB();
+      // this is happening too early, the database isn't there yet...
       await updateTileSets();
     };
     fn();

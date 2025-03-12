@@ -54,10 +54,7 @@ export function MapFormField({
   form,
   ...props
 }: MapFieldProps): JSX.Element {
-  // State
-
-  const {isOnline} = useIsOnline();
-
+ 
   // center location of map - use provided center if any
   const [center, setCenter] = useState<[number, number] | undefined>(
     props.center
@@ -204,31 +201,19 @@ export function MapFormField({
           width: '100%',
         }}
       >
-        {!isOnline && featureType === 'Point' ? (
-          <>
-            <Alert variant="outlined" severity="warning">
-              The interactive map is not available while <b>offline</b>. Use the
-              button below to submit your current GPS location.
-            </Alert>
-            <Button variant="outlined" onClick={handleCurrentLocation}>
-              Use my current location
-            </Button>
-          </>
-        ) : (
-          <MapWrapper
-            label={label}
-            featureType={featureType}
-            features={drawnFeatures}
-            zoom={zoom}
-            center={center ?? FALLBACK_CENTER}
-            fallbackCenter={center === undefined}
-            setFeatures={setFeaturesCallback}
-            geoTiff={props.geoTiff}
-            projection={props.projection}
-            setNoPermission={setNoPermission}
-            isLocationSelected={isLocationSelected}
-          />
-        )}
+        <MapWrapper
+          label={label}
+          featureType={featureType}
+          features={drawnFeatures}
+          zoom={zoom}
+          center={center ?? FALLBACK_CENTER}
+          fallbackCenter={center === undefined}
+          setFeatures={setFeaturesCallback}
+          geoTiff={props.geoTiff}
+          projection={props.projection}
+          setNoPermission={setNoPermission}
+          isLocationSelected={isLocationSelected}
+        />
         <Box
           sx={{
             alignItems: 'center',

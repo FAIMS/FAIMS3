@@ -52,7 +52,7 @@ export const MapComponent = (props: MapComponentProps) => {
 
   const tileStore = useMemo(() => new VectorTileStore(), []);
 
-  const {data: map_center, isLoading: loadingLocation} = useQuery({
+  const {data: mapCenter, isLoading: loadingLocation} = useQuery({
     queryKey: ['current_location'],
     queryFn: async (): Promise<[number, number]> => {
       // if we are passed a center location use that, otherwise get the current location
@@ -68,12 +68,11 @@ export const MapComponent = (props: MapComponentProps) => {
     },
   });
 
-  useEffect(() => {
-    const fn = async () => {
-      await tileStore.initDB();
-    };
-    fn();
-  }, []);
+  // useEffect(() => {
+  //   const fn = async () => {
+  //     await Tile.initDB();
+  //   fn();
+  // }, []);
 
   /**
    * Create the OpenLayers map element
@@ -128,12 +127,12 @@ export const MapComponent = (props: MapComponentProps) => {
     });
 
     // only do this if we have a real map_center
-    if (map_center) {
+    if (mapCenter) {
       const centerFeature = {
         type: 'Feature',
         geometry: {
           type: 'Point',
-          coordinates: map_center,
+          coordinates: mapCenter,
         },
       };
 
@@ -151,14 +150,14 @@ export const MapComponent = (props: MapComponentProps) => {
   useEffect(() => {
     if (!loadingLocation && map) {
       addCurrentLocationMarker(map);
-      if (map_center) {
-        const center = transform(map_center, 'EPSG:4326', defaultMapProjection);
+      if (mapCenter) {
+        const center = transform(mapCenter, 'EPSG:4326', defaultMapProjection);
         // add the 'here' button to go to the current location
         map.addControl(createCenterControl(map.getView(), center));
         map.getView().setCenter(center);
       }
     }
-  }, [map, map_center, loadingLocation]);
+  }, [map, mapCenter, loadingLocation]);
 
   // callback to add the map to the DOM
   const refCallback = useCallback(

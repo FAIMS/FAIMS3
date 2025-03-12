@@ -157,7 +157,9 @@ class IDB<Type> {
   }
 }
 
-class TileStoreBase {
+// TileStore - a singleton class holding the tile database references
+export class TileStore {
+  static #instance: TileStore;
   // The database is a static member of this class, there is only
   // one connection to the DB in the app
   static DB_NAME = 'tiles_db';
@@ -170,25 +172,29 @@ class TileStoreBase {
     this.initDB();
   }
 
-  // initDB is called from the constructor but clients may want
-  // to call it directly and wait for it to resolve if they
-  // need to ensure that the databases are ready
+  static getInstance(): TileStore {
+    if (!TileStore.#instance) {
+      TileStore.#instance = new TileStore();
+    }
+    return TileStore.#instance;
+  }
+
   initDB(): Promise<void> {
     return new Promise((resolve, reject) => {
       // incrementing the version number will allow update to the schema
       const DB_VERSION = 1;
-      const request = indexedDB.open(TileStoreBase.DB_NAME, DB_VERSION);
+      const request = indexedDB.open(TileStore.DB_NAME, DB_VERSION);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
-        TileStoreBase.db = request.result;
-        if (!this.tileDB)
-          this.tileDB = new IDB<StoredTile>(TileStoreBase.db, 'tiles', ['url']);
+        TileStore.db = request.result;
+        if (!this.tileDB) {
+          console.log('creating tile store');
+          this.tileDB = new IDB<StoredTile>(TileStore.db, 'tiles', ['url']);
+        }
         if (!this.tileSetDB)
-          this.tileSetDB = new IDB<StoredTileSet>(
-            TileStoreBase.db,
-            'tileSets',
-            ['setName']
-          );
+          this.tileSetDB = new IDB<StoredTileSet>(TileStore.db, 'tileSets', [
+            'setName',
+          ]);
         resolve();
       };
       request.onupgradeneeded = (event: any) => {
@@ -208,6 +214,14 @@ class TileStoreBase {
       };
     });
   }
+}
+
+class TileStoreBase {
+  tileStore: TileStore;
+
+  constructor() {
+    this.tileStore = TileStore.getInstance();
+  }
 
   /**
    * Store a tile in the database
@@ -215,11 +229,11 @@ class TileStoreBase {
    */
   async storeTileRecord(url: string, data: Blob, set: string) {
     const tile = {url, data, sets: [set]};
-    const existingTile = await this.tileDB.get(url);
+    const existingTile = await this.tileStore.tileDB.get(url);
     if (existingTile) {
       tile.sets = [...existingTile.sets, set];
     }
-    const tileKey = await this.tileDB.put(tile);
+    const tileKey = await this.tileStore.tileDB.put(tile);
     const size = tile.data.size;
     return {tileKey, size};
   }
@@ -248,15 +262,22 @@ class TileStoreBase {
   }
 
   async getTileBlob(url: string | undefined): Promise<Blob | undefined> {
-    if (url && this.tileDB) {
-      const image = await this.tileDB.get([url]);
-      if (image) return image.data;
-      else if (navigator.onLine) {
+    if (url) {
+      if (this.tileStore.tileDB) {
+        const image = await this.tileStore.tileDB.get([url]);
+        if (image) console.log('cache hit', url);
+        if (image) return image.data;
+      }
+      if (navigator.onLine) {
+        console.log('cache miss', url);
         const response = await fetch(url);
         return await response.blob();
       }
+    } else {
+      console.log('no url', url);
     }
-    // fallback, we can't get the tile
+    // fallback, we can't get the tile - offline or no url
+    console.log('fallback', navigator.onLine, this.tileStore.tileDB, url);
     return undefined;
   }
 
@@ -280,7 +301,7 @@ class TileStoreBase {
     maxZoom: number
   ) {
     const tileGrid = this.getTileGrid();
-    const average_size = 100; // kb
+    const averageSize = 100; // kb
 
     const tileSet = new Set<string>();
     const startZoom = Math.floor(minZoom - 1);
@@ -294,7 +315,7 @@ class TileStoreBase {
       );
     }
     const counter = tileSet.size;
-    const estimatedSize = Math.round((counter * average_size) / 1024);
+    const estimatedSize = Math.round((counter * averageSize) / 1024);
     console.log(
       'estimated size',
       Math.round(estimatedSize * 1000) / 1000,
@@ -319,7 +340,7 @@ class TileStoreBase {
     maxZoom: number,
     setName: string
   ) {
-    const existingTileSet = await this.tileSetDB.get([setName]);
+    const existingTileSet = await this.tileStore.tileSetDB.get([setName]);
     if (existingTileSet) {
       throw new Error(
         `Offline map '${setName}' already exists, please choose a different name`
@@ -336,7 +357,7 @@ class TileStoreBase {
       created: new Date(),
       tileKeys: [],
     };
-    this.tileSetDB.put(tileSet);
+    this.tileStore.tileSetDB.put(tileSet);
 
     return tileSet;
   }
@@ -352,7 +373,7 @@ class TileStoreBase {
    * @param setName The name of the set to store the tiles in
    */
   async downloadTileSet(setName: string) {
-    const tileSet = await this.tileSetDB.get([setName]);
+    const tileSet = await this.tileStore.tileSetDB.get([setName]);
     if (!tileSet) {
       throw new Error(`No offline map '${setName}' found`);
     }
@@ -371,7 +392,7 @@ class TileStoreBase {
 
     // update the record with the tile count
     tileSet.expectedTileCount = tileCoords.length;
-    this.tileSetDB.put(tileSet);
+    this.tileStore.tileSetDB.put(tileSet);
 
     // Create batches of downloads to avoid overwhelming the browser
     const BATCH_SIZE = 10;
@@ -393,7 +414,7 @@ class TileStoreBase {
             if (tileKey) {
               tileSet.tileKeys.push(tileKey);
               tileSet.size += size;
-              await this.tileSetDB.put(tileSet);
+              await this.tileStore.tileSetDB.put(tileSet);
 
               dispatchEvent(
                 new CustomEvent('offline-map-download', {
@@ -408,8 +429,8 @@ class TileStoreBase {
   }
 
   async getTileSets() {
-    if (this.tileSetDB) {
-      const tileSets = await this.tileSetDB.getAll();
+    if (this.tileStore.tileSetDB) {
+      const tileSets = await this.tileStore.tileSetDB.getAll();
       return tileSets?.toSorted(
         (a, b) => b.created.getTime() - a.created.getTime()
       );
@@ -419,23 +440,23 @@ class TileStoreBase {
   }
 
   async removeTileSet(setName: string) {
-    const tileSet = await this.tileSetDB.get([setName]);
+    const tileSet = await this.tileStore.tileSetDB.get([setName]);
     if (!tileSet) {
       throw new Error(`Offline map '${setName}' does not exist`);
     }
     // delete the tile set
-    await this.tileSetDB.delete([setName]);
+    await this.tileStore.tileSetDB.delete([setName]);
     // delete the tiles if they are not part of another set
     for (const tileKey of tileSet.tileKeys) {
-      const tileRecord = await this.tileDB.get(tileKey);
+      const tileRecord = await this.tileStore.tileDB.get(tileKey);
       if (tileRecord) {
         const tileSetNames = tileRecord.sets;
         if (tileSetNames.length === 1) {
-          await this.tileDB.delete(tileKey);
+          await this.tileStore.tileDB.delete(tileKey);
         } else {
           // remove the tile set name from the tile record
           tileSetNames.splice(tileSetNames.indexOf(setName), 1);
-          await this.tileDB.put(tileRecord);
+          await this.tileStore.tileDB.put(tileRecord);
         }
       }
     }
@@ -531,13 +552,28 @@ export class VectorTileStore extends TileStoreBase {
       source: this.source,
       background: 'hsl(40, 26%, 93%)',
     });
+    console.log('calling applyStyle', getMapStylesheet(MAP_STYLE));
     applyStyle(this.tileLayer, getMapStylesheet(MAP_STYLE), {
-      transformRequest: (url: string) => {
-        // TODO: cache these requests...
-        //console.log('transformRequest', url.replace('{key}', MAP_SOURCE_KEY));
-        return url.replace('{key}', MAP_SOURCE_KEY);
-      },
+      transformRequest: this.transformRequest.bind(this),
     });
+  }
+
+  async transformRequest(url: string) {
+    // TODO: cache these requests...
+    const fullURL = url.replace('{key}', MAP_SOURCE_KEY);
+    console.log('transformRequest', fullURL);
+    const blob = await this.getTileBlob(fullURL);
+    if (blob) {
+      console.log('storing blob for', fullURL);
+      this.storeTileRecord(fullURL, blob, 'cache');
+      const response = new Response(blob);
+      // need to very explicity set the url which is supposed to be read only
+      Object.defineProperty(response, 'url', {value: fullURL});
+      return response;
+    } else {
+      console.log('no blob for', fullURL);
+      return fullURL;
+    }
   }
 
   getTileURL(): string | undefined {
