@@ -18,13 +18,7 @@
  *   TODO
  */
 
-import {
-  generateFAIMSDataID,
-  ProjectID,
-  ProjectInformation,
-  ProjectUIModel,
-  RecordID,
-} from '@faims3/data-model';
+import {generateFAIMSDataID, ProjectID, RecordID} from '@faims3/data-model';
 import {
   Alert,
   AlertTitle,
@@ -33,8 +27,6 @@ import {
   CircularProgress,
   Dialog,
   DialogActions,
-  DialogContent,
-  DialogTitle,
   Grid,
   Paper,
 } from '@mui/material';
@@ -51,25 +43,24 @@ import {
 } from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {addAlert} from '../../context/slices/syncSlice';
-import {useAppDispatch} from '../../context/store';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {Project, selectProjectById} from '../../context/slices/projectSlice';
+import {addAlert} from '../../context/slices/alertSlice';
+import {useAppDispatch, useAppSelector} from '../../context/store';
 import {newStagedData} from '../../sync/draft-storage';
-import {getProjectInfo} from '../../sync/projects';
-import {
-  getReturnedTypesForViewSet,
-  getUiSpecForProject,
-} from '../../uiSpecification';
+import {getReturnedTypesForViewSet} from '../../uiSpecification';
 import ProgressBar from '../components/progress-bar';
 import RecordForm from '../components/record/form';
 import InheritedDataComponent from '../components/record/inherited_data';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import BackButton from '../components/ui/BackButton';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
+  serverId: string;
   type_name: string;
   state?: any;
   record_id: string;
@@ -88,21 +79,21 @@ interface DraftCreateActionProps {
 // then the UI created for that (DraftEdit).
 
 function DraftCreateAction(props: DraftCreateActionProps) {
-  const {project_id, type_name, record_id} = props;
+  const {project_id, type_name, record_id, serverId} = props;
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const [error, setError] = useState(null as null | {});
   const [draft_id, setDraft_id] = useState(null as null | string);
-  const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
+
+  const uiSpecId = useAppSelector(state =>
+    selectProjectById(state, project_id)
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   useEffect(() => {
-    getUiSpecForProject(project_id).then(setUISpec, setError);
-  }, [project_id]);
-
-  useEffect(() => {
-    if (uiSpec !== null) {
+    if (uiSpec) {
       // don't make a new draft if we already have one
       if (draft_id === null) {
         const field_types = getReturnedTypesForViewSet(uiSpec, type_name);
@@ -133,6 +124,8 @@ function DraftCreateAction(props: DraftCreateActionProps) {
       <Navigate
         to={
           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+          serverId +
+          '/' +
           project_id +
           ROUTES.RECORD_CREATE +
           type_name +
@@ -148,23 +141,20 @@ function DraftCreateAction(props: DraftCreateActionProps) {
 }
 
 interface DraftRecordEditProps {
-  project_id: ProjectID;
   type_name: string;
   draft_id: string;
-  project_info: ProjectInformation | null;
+  project: Project;
   record_id: RecordID;
+  serverId: string;
   state?: any;
   location?: Location;
   onBack: () => void;
 }
 
 function DraftRecordEdit(props: DraftRecordEditProps) {
-  const {project_id, type_name, draft_id, record_id} = props;
-  const dispatch = useAppDispatch();
+  const {type_name, project, draft_id, record_id, serverId} = props;
+  const project_id = project.projectId;
   const navigate = useNavigate();
-  const [uiSpec, setUISpec] = useState<ProjectUIModel | null>(null);
-  const [error, setError] = useState<Record<string, unknown> | null>(null);
-
   const [isDraftSaving, setIsDraftSaving] = useState(false);
   const [draftLastSaved, setDraftLastSaved] = useState<Date | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
@@ -176,14 +166,15 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const [progress, setProgress] = useState(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    getUiSpecForProject(project_id).then(setUISpec, setError);
-  }, [project_id]);
+  const uiSpecId = useAppSelector(state =>
+    selectProjectById(state, project_id)
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   useEffect(() => {
     (async () => {
       if (
-        uiSpec !== null &&
+        !!uiSpec &&
         props.state &&
         props.state.parent_record_id &&
         props.state.parent_record_id !== record_id &&
@@ -202,6 +193,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
           uiSpecification: uiSpec,
           projectId: project_id,
           parent,
+          serverId,
         });
         setParentLinks(newParent);
         setIs_link_ready(true);
@@ -211,18 +203,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
     })();
   }, [project_id, record_id, uiSpec]);
 
-  if (error !== null) {
-    dispatch(
-      addAlert({
-        message: 'Could not edit draft: ' + error.toString(),
-        severity: 'warning',
-      })
-    );
-    navigate(-1);
-    return null;
-  }
-
-  if (uiSpec === null) return <CircularProgress size={12} thickness={4} />;
+  if (!uiSpec) return <CircularProgress size={12} thickness={4} />;
 
   return (
     <React.Fragment>
@@ -258,6 +239,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               <CircularProgress size={24} />
             )}
             <RecordForm
+              serverId={project.serverId}
               project_id={project_id}
               record_id={record_id}
               type={type_name}
@@ -281,20 +263,24 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
 }
 
 export default function RecordCreate() {
-  const {project_id, type_name, draft_id, record_id} = useParams<{
-    project_id: ProjectID;
-    type_name: string;
-    draft_id?: string;
-    record_id?: string;
+  const params = useParams<{
+    serverId: string;
+    projectId: ProjectID;
+    typeName: string;
+    draftId?: string;
+    recordId?: string;
   }>();
+  const {serverId, projectId, typeName, draftId, recordId} = params;
   const location = useLocation();
   const navigate = useNavigate();
 
-  const projectId = location.pathname.split('/')[2];
+  if (!serverId) return <></>;
+  const project = useAppSelector(state =>
+    projectId ? selectProjectById(state, projectId) : undefined
+  );
+  if (!project) return <></>;
 
   const [openDialog, setOpenDialog] = useState(false);
-  //for android back button
-  const [androidBackPressed, setAndroidBackPressed] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -305,36 +291,30 @@ export default function RecordCreate() {
 
   const handleConfirmNavigation = () => {
     setOpenDialog(false);
-    navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + projectId, {replace: true});
+    navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId, {
+      replace: true,
+    });
   };
 
   let draft_record_id = generateFAIMSDataID();
-  if (record_id !== undefined) draft_record_id = record_id;
+  if (recordId !== undefined) draft_record_id = recordId;
   if (location.state && location.state.child_record_id !== undefined)
     draft_record_id = location.state.child_record_id; //pass record_id from parent
-  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
-    null
-  );
-  useEffect(() => {
-    if (project_id)
-      getProjectInfo(project_id).then(info => setProjectInfo(info));
-  }, [project_id]);
 
   let showBreadcrumbs = false;
-  const history = useNavigate();
 
   const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
-      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-      title: projectInfo !== null ? projectInfo.name! : project_id!,
+      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
+      title: project !== null ? project.metadata.name : projectId!,
     },
     {title: 'Draft'},
   ];
 
   // add parent link back for the parent or linked record
-  if (location.state && location.state.parent_record_id !== record_id) {
+  if (location.state && location.state.parent_record_id !== recordId) {
     showBreadcrumbs = true;
     const type =
       location.state.type === 'Child'
@@ -353,7 +333,6 @@ export default function RecordCreate() {
   useEffect(() => {
     const handleBackEvent = (event: Event) => {
       event.preventDefault();
-      setAndroidBackPressed(true);
       setOpenDialog(true);
     };
     window.history.pushState(null, '', window.location.href);
@@ -376,10 +355,11 @@ export default function RecordCreate() {
           // only show breadcrumbs if we have parent record
         }
         {showBreadcrumbs && <Breadcrumbs data={breadcrumbs} />}
-        {draft_id === undefined || record_id === undefined ? (
+        {draftId === undefined || recordId === undefined ? (
           <DraftCreateAction
-            project_id={project_id!}
-            type_name={type_name!}
+            serverId={serverId}
+            project_id={projectId!}
+            type_name={typeName!}
             state={location.state}
             record_id={draft_record_id}
             location={location}
@@ -387,11 +367,11 @@ export default function RecordCreate() {
         ) : (
           <DraftRecordEdit
             onBack={() => setOpenDialog(true)}
-            project_info={projectInfo}
-            project_id={project_id!}
-            type_name={type_name!}
-            draft_id={draft_id}
-            record_id={record_id}
+            serverId={serverId}
+            project={project}
+            type_name={typeName!}
+            draft_id={draftId}
+            record_id={recordId}
             state={location.state}
             location={location}
           />

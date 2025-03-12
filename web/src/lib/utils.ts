@@ -17,10 +17,11 @@ export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs));
  * @param {string} name - The name to extract initials from.
  * @returns {string} The initials of the name.
  */
-export const initials = (name: string) => {
-  const parts = name.split(' ');
-  return parts.map(part => part[0].toUpperCase()).join('');
-};
+export const initials = (name: string) =>
+  name
+    .split(' ')
+    .map(s => s.slice(0, 1).toUpperCase())
+    .join('');
 
 /**
  * capitalize function returns the capitalized version of a string.
@@ -70,3 +71,21 @@ export const readFileAsText = (file: File): Promise<string> =>
 export async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/**
+ * downloadFile function downloads a file from a URL.
+ *
+ * @param {string} filename - The name of the file to download.
+ * @param {Blob | MediaSource} obj - The object to download.
+ */
+export const downloadFile = async (
+  obj: Blob | MediaSource,
+  filename: string
+) => {
+  const link = document.createElement('a');
+
+  link.href = window.URL.createObjectURL(obj);
+  link.download = filename;
+
+  link.click();
+};

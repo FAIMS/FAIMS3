@@ -16,6 +16,12 @@ interface UpdateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+/**
+ * UpdateTemplateForm component renders a form for updating a template.
+ * It provides a button to open the dialog and a form to update the template.
+ *
+ * @returns {JSX.Element} The rendered UpdateTemplateForm component.
+ */
 export function UpdateTemplateForm({setDialogOpen}: UpdateTemplateFormProps) {
   const {user} = useAuth();
 

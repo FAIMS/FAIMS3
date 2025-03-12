@@ -18,8 +18,12 @@
  *   Tests for invite handling
  */
 
-import {EncodedProjectUIModel} from '@faims3/data-model';
 import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+
+import {EncodedProjectUIModel} from '@faims3/data-model';
 import {createNotebook} from '../src/couchdb/notebooks';
 import {
   createInvite,
@@ -30,9 +34,6 @@ import {
 import {initialiseDatabases} from '../src/couchdb';
 import request from 'supertest';
 import {app} from '../src/routes';
-
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
 import {expect, assert} from 'chai';
 
 const uispec: EncodedProjectUIModel = {
@@ -44,7 +45,9 @@ const uispec: EncodedProjectUIModel = {
 };
 
 describe('Invites', () => {
-  beforeEach(initialiseDatabases);
+  beforeEach(async () => {
+    await initialiseDatabases({});
+  });
 
   it('create invite', async () => {
     const project_id = await createNotebook('Test Notebook', uispec, {});

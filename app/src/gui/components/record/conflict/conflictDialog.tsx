@@ -191,7 +191,7 @@ function ConflictDialogContent() {
             style={{paddingRight: 5}}
           >
             <FieldButton
-              onButtonClick={() => console.log('click')}
+              onButtonClick={() => {}}
               startIcon={<DeleteOutlineIcon style={iconstyle.icon} />}
               id={''}
               disabled={false}
@@ -227,7 +227,7 @@ function ConflictDialogContent() {
             style={{paddingRight: 5}}
           >
             <FieldButton
-              onButtonClick={() => console.log('click')}
+              onButtonClick={() => {}}
               startIcon={<DoneIcon style={iconstyle.icon} />}
               id={''}
               disabled={false}

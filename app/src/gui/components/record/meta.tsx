@@ -34,6 +34,9 @@ import {
   RecordID,
   RevisionID,
 } from '@faims3/data-model';
+import {useAppSelector} from '../../../context/store';
+import {selectAllProjects} from '../../../context/slices/projectSlice';
+import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 
 type RecordMetaProps = {
   project_id: ProjectID;
@@ -44,14 +47,23 @@ type RecordMetaProps = {
 export default function RecordMeta(props: RecordMetaProps) {
   const {project_id, record_id, revision_id} = props;
   const [meta, setMeta] = React.useState<{[key: string]: any}>({});
+  const uiSpecId = useAppSelector(selectAllProjects).find(
+    p => p.projectId === project_id
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+
+  if (!uiSpec) {
+    return <p>Error... could not find ui specification.</p>;
+  }
 
   useEffect(() => {
     async function fetchRecordMeta() {
-      const record = await getRecordMetadata(
+      const record = await getRecordMetadata({
         project_id,
         record_id,
-        revision_id
-      );
+        revision_id,
+        uiSpecification: uiSpec!,
+      });
       setMeta({
         Created: record?.created.toString(),
         Updated: record?.updated.toString(),

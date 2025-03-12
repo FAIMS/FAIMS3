@@ -19,9 +19,14 @@
  */
 import PouchDB from 'pouchdb-browser';
 import {DEBUG_POUCHDB} from '../buildconfig';
-import {events} from './events';
-import {update_directory} from './process-initialization';
-import {register_basic_automerge_resolver, register_sync_state} from './state';
+import {store} from '../context/store';
+import {
+  compileSpecs,
+  initialiseAllProjects,
+  initialiseServers,
+  markInitialised,
+  rebuildDbs,
+} from '../context/slices/projectSlice';
 
 /**
  *
@@ -30,8 +35,24 @@ import {register_basic_automerge_resolver, register_sync_state} from './state';
  */
 export async function initialize() {
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
+  // Get current state/dispatch const state = store.getState();
 
-  register_sync_state(events);
-  register_basic_automerge_resolver(events);
-  await update_directory().catch(err => events.emit('directory_error', err));
+  // Rebuild all of the databases (synchronously)
+  rebuildDbs(store.getState().projects);
+
+  // Compile all ui specs (synchronously)
+  compileSpecs(store.getState().projects);
+
+  // This initialises and potentially updates the servers by fetching their data
+  // from corresponding API
+  await store.dispatch(initialiseServers());
+
+  // Then we want to initialise all the projects too
+  await store.dispatch(initialiseAllProjects());
+
+  // Once this is done - mark initialisation complete
+  store.dispatch(markInitialised());
+
+  // TODO bring this back?
+  // register_basic_automerge_resolver(events);
 }

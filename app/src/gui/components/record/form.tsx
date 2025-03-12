@@ -81,6 +81,7 @@ import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
 
 type RecordFormProps = {
   navigate: NavigateFunction;
+  serverId: string;
   project_id: ProjectID;
   record_id: RecordID;
   // Might be given in the URL:
@@ -499,6 +500,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
         initialValues: {
           _id: this.props.record_id!,
           _project_id: this.props.project_id,
+          _server_id: this.props.serverId,
         },
       });
     }
@@ -580,21 +582,31 @@ class RecordForm extends React.Component<any, RecordFormState> {
         _current_revision_id: revision_id,
       };
       const annotations: {[key: string]: any} = {};
-
       fieldNames.forEach(fieldName => {
         let initial_value = fields[fieldName]['initialValue'];
+
         // set value from persistence
         if (
           persistentvalue.data !== undefined &&
           persistentvalue.data[fieldName] !== undefined
-        )
+        ) {
           initial_value = persistentvalue.data[fieldName];
+        }
+
+        // check if record is exisitng.
+        const isExistingRecord = !!this.state.revision_cached;
+
+        // Only apply initialValue if it's a new record.
+        if (isExistingRecord) {
+          initial_value = undefined;
+        }
 
         initialValues[fieldName] = firstDefinedFromList([
           staged_data[fieldName],
           database_data[fieldName],
           initial_value,
         ]);
+
         // set annotation from persistence
         let annotation_value = {annotation: '', uncertainty: false};
 
@@ -953,7 +965,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
                 // publish and close
                 if (is_close === 'close') {
                   this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + this.props.project_id
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
+                      this.props.project_id
                   ); //update for save and close button
                   window.scrollTo(0, 0);
                   return hrid;
@@ -963,6 +978,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   setSubmitting(false);
                   this.props.navigate(
                     ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached
@@ -974,7 +991,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
                 // or we're dealing with a child record
                 if (is_close === 'close') {
                   this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + state_parent.parent_link,
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
+                      state_parent.parent_link,
                     {state: state_parent}
                   );
                   window.scrollTo(0, 0);
@@ -985,6 +1005,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   setSubmitting(false);
                   this.props.navigate(
                     ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached,
@@ -1026,6 +1048,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             const location_state: any = locationState;
                             location_state['parent_link'] =
                               ROUTES.getRecordRoute(
+                                this.props.serverId,
                                 this.props.project_id,
                                 (
                                   location_state.parent_record_id || ''
@@ -1035,6 +1058,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             location_state['child_record_id'] = new_record_id;
                             this.props.navigate(
                               ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                                this.props.serverId +
+                                '/' +
                                 this.props.project_id +
                                 ROUTES.RECORD_CREATE +
                                 this.state.type_cached,
@@ -1051,6 +1076,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         );
                         this.props.navigate(
                           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            this.props.serverId +
+                            '/' +
                             this.props.project_id +
                             ROUTES.RECORD_CREATE +
                             this.state.type_cached,
@@ -1075,7 +1102,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
               ) {
                 if (is_close === 'close') {
                   this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + this.props.project_id
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
+                      this.props.project_id
                   );
                   window.scrollTo(0, 0);
                   return hrid;
@@ -1084,6 +1114,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   setSubmitting(false);
                   this.props.navigate(
                     ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached
@@ -1093,7 +1125,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
               } else {
                 generateLocationState(
                   relationship.parent,
-                  this.props.project_id
+                  this.props.project_id,
+                  this.props.serverId
                 )
                   .then(locationState => {
                     if (is_close === 'close') {
@@ -1136,6 +1169,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                               locationState.location_state;
                             location_state['parent_link'] =
                               ROUTES.getRecordRoute(
+                                this.props.serverId,
                                 this.props.project_id,
                                 (
                                   location_state.parent_record_id || ''
@@ -1145,6 +1179,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             location_state['child_record_id'] = new_record_id;
                             this.props.navigate(
                               ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                                this.props.serverId +
+                                '/' +
                                 this.props.project_id +
                                 ROUTES.RECORD_CREATE +
                                 this.state.type_cached,
@@ -1161,6 +1197,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         );
                         this.props.navigate(
                           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            this.props.serverId +
+                            '/' +
                             this.props.project_id +
                             ROUTES.RECORD_CREATE +
                             this.state.type_cached,

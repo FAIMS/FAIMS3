@@ -32,6 +32,7 @@ import {
   PostCreateNotebookResponse,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
+  ProjectUIModel,
   PutUpdateNotebookInputSchema,
   PutUpdateNotebookResponse,
 } from '@faims3/data-model';
@@ -47,7 +48,8 @@ import {
   generateFilenameForAttachment,
   getNotebookMetadata,
   getNotebooks,
-  getNotebookUISpec,
+  getEncodedNotebookUISpec,
+  getProjectUIModel,
   getRolesForNotebook,
   streamNotebookFilesAsZip,
   streamNotebookRecordsAsCSV,
@@ -201,9 +203,14 @@ api.get(
       throw new Exceptions.UnauthorizedException();
     }
     const metadata = await getNotebookMetadata(project_id);
-    const uiSpec = await getNotebookUISpec(project_id);
+    const uiSpec = await getEncodedNotebookUISpec(project_id);
     if (metadata && uiSpec) {
-      res.json({metadata, 'ui-specification': uiSpec});
+      res.json({
+        metadata,
+        // TODO fully implement a UI Spec zod model, and do runtime validation
+        // in all client apps
+        'ui-specification': uiSpec as unknown as Record<string, unknown>,
+      });
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found.');
     }
@@ -246,11 +253,15 @@ api.get(
       throw new Exceptions.UnauthorizedException();
     }
     const tokenContent = generateTokenContentsForUser(req.user);
+    const uiSpecification = (await getProjectUIModel(
+      req.params.id
+    )) as ProjectUIModel;
     const records = await getRecordsWithRegex(
       tokenContent,
       req.params.id,
       '.*',
-      true
+      true,
+      uiSpecification
     );
     if (records) {
       const filenames: string[] = [];
@@ -298,7 +309,7 @@ api.get(
       throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
     // get the label for this form for the filename header
-    const uiSpec = await getNotebookUISpec(req.params.id);
+    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
     if (uiSpec && req.params.viewID in uiSpec.viewsets) {
       const label = uiSpec.viewsets[req.params.viewID].label;
 
@@ -327,7 +338,7 @@ api.get(
       throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
     // get the label for this form for the filename header
-    const uiSpec = await getNotebookUISpec(req.params.id);
+    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
     if (uiSpec && req.params.viewID in uiSpec.viewsets) {
       const label = uiSpec.viewsets[req.params.viewID].label;
 
@@ -510,3 +521,40 @@ if (DEVELOPER_MODE) {
     }
   );
 }
+
+// DELETE a user from a notebook
+api.delete(
+  '/:notebook_id/users/:user_id',
+  processRequest({
+    params: z.object({notebook_id: z.string(), user_id: z.string()}),
+  }),
+  requireAuthenticationAPI,
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
+    if (!userHasPermission(req.user, req.params.notebook_id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to remove this user from this notebook.'
+      );
+    }
+
+    const user = await getUserFromEmailOrUsername(req.params.user_id);
+
+    if (!user) {
+      throw new Exceptions.ItemNotFoundException(
+        'The username provided cannot be found in the user database.'
+      );
+    }
+
+    if (user.project_roles[req.params.notebook_id].includes('admin')) {
+      throw new Exceptions.UnauthorizedException(
+        'You cannot remove an admin user from this notebook.'
+      );
+    }
+
+    for (const role of user.project_roles[req.params.notebook_id]) {
+      await removeProjectRoleFromUser(user, req.params.notebook_id, role);
+    }
+
+    await saveUser(user);
+    res.status(200).end();
+  }
+);

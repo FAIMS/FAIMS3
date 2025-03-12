@@ -17,20 +17,13 @@
  * Description:
  *   Wrapper around local databases to preform a device-level dump.
  */
-import PouchDB from 'pouchdb-browser';
+import {Directory, Encoding, Filesystem} from '@capacitor/filesystem';
 import {jsonStringifyStream} from '@worker-tools/json-stream';
-import {Filesystem, Directory, Encoding} from '@capacitor/filesystem';
 
-import {draft_db} from './draft-storage';
-import {
-  directory_db,
-  active_db,
-  getLocalStateDB,
-  projects_dbs,
-  metadata_dbs,
-  data_dbs,
-} from './databases';
 import {Share} from '@capacitor/share';
+import {databaseService} from '../context/slices/helpers/databaseService';
+import {getAllDataDbs} from '../context/slices/projectSlice';
+import {store} from '../context/store';
 
 const PREFIX = 'faims3-';
 
@@ -149,14 +142,19 @@ export async function progressiveSaveFiles(
     };
   };
 
-  keepDumping = await progressiveDump(directory_db.local, writer(0, 5));
   if (keepDumping)
-    keepDumping = await progressiveDump(active_db, writer(5, 10));
+    keepDumping = await progressiveDump(
+      databaseService.getLocalStateDatabase(),
+      writer(10, 12)
+    );
   if (keepDumping)
-    keepDumping = await progressiveDump(getLocalStateDB(), writer(10, 12));
-  if (keepDumping)
-    keepDumping = await progressiveDump(draft_db, writer(15, 20));
+    keepDumping = await progressiveDump(
+      databaseService.getDraftDatabase(),
+      writer(15, 20)
+    );
 
+  // TODO dump the redux store projects here
+  /*
   let start = 20;
   let end;
   let size = Object.keys(projects_dbs).length;
@@ -166,22 +164,19 @@ export async function progressiveSaveFiles(
       keepDumping = await progressiveDump(db.local, writer(start, end));
     start = end;
   }
+  */
+  let start = 40;
+  let end;
 
-  start = 30;
-  size = Object.keys(metadata_dbs).length;
-  for (const [, db] of Object.entries(metadata_dbs)) {
-    end = start + 10 / size;
-    if (keepDumping)
-      keepDumping = await progressiveDump(db.local, writer(start, end));
-    start = end;
-  }
+  // List out all of the data DBs
+  const state = store.getState();
+  const dataDbs = getAllDataDbs(state);
 
-  start = 40;
-  size = Object.keys(data_dbs).length;
-  for (const [, db] of Object.entries(data_dbs)) {
+  const size = Object.keys(dataDbs).length;
+  for (const db of dataDbs) {
     end = start + 60 / size;
     if (keepDumping)
-      keepDumping = await progressiveDump(db.local, writer(start, end));
+      keepDumping = await progressiveDump(db, writer(start, end));
     start = end;
   }
 
@@ -265,26 +260,27 @@ async function dumpDatabase(db: PouchDB.Database<any>) {
 export async function doDumpDownload() {
   console.debug('Starting browser system dump');
 
+  // Get all data Dbs
+  const dataDbs = getAllDataDbs(store.getState());
+
+  // Fix this
+  /*
   await streamedDumpDownload(
     'directory',
     await dumpDatabase(directory_db.local)
   );
   await streamedDumpDownload('active', await dumpDatabase(active_db));
+  */
   await streamedDumpDownload(
     'local_state',
-    await dumpDatabase(getLocalStateDB())
+    await dumpDatabase(databaseService.getLocalStateDatabase())
   );
-  await streamedDumpDownload('draft', await dumpDatabase(draft_db));
+  await streamedDumpDownload(
+    'draft',
+    await dumpDatabase(databaseService.getDraftDatabase())
+  );
 
-  for (const [name, db] of Object.entries(projects_dbs)) {
-    await streamedDumpDownload('proj' + name, await dumpDatabase(db.local));
-  }
-
-  for (const [name, db] of Object.entries(metadata_dbs)) {
-    await streamedDumpDownload('meta' + name, await dumpDatabase(db.local));
-  }
-
-  for (const [name, db] of Object.entries(data_dbs)) {
-    await streamedDumpDownload('data' + name, await dumpDatabase(db.local));
+  for (const db of dataDbs) {
+    await streamedDumpDownload('data' + name, await dumpDatabase(db));
   }
 }

@@ -38,6 +38,7 @@ type DiagProps = {
   filedId?: string;
   path?: string | null;
   isSyncing?: string;
+  serverId: string;
 };
 export default function FaimsAttachmentManagerDialog(props: DiagProps) {
   const {open, setopen, project_id, path, isSyncing} = props;
@@ -125,6 +126,8 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
             component={RouterLink}
             to={
               ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+              props.serverId +
+              '/' +
               project_id +
               `?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
             }

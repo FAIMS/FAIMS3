@@ -30,6 +30,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
+  archiveTemplate,
   createTemplate,
   deleteExistingTemplate,
   getTemplate,
@@ -208,6 +209,32 @@ api.post(
     await deleteExistingTemplate(templateId);
 
     // Indicate successful deletion and send
+    res.sendStatus(200);
+  }
+);
+
+// Archive a template
+api.put(
+  '/:id/archive',
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: z.object({archive: z.boolean()}),
+  }),
+  requireAuthenticationAPI,
+  async (
+    {
+      params: {id},
+      user,
+      body: {archive},
+    }: {params: {id: string}; user?: Express.User; body: {archive: boolean}},
+    res: Response<PutUpdateTemplateResponse>
+  ) => {
+    if (!user || !userCanDoWithTemplate(user, id, 'update'))
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to archive this template.'
+      );
+
+    await archiveTemplate(id, archive);
     res.sendStatus(200);
   }
 );
