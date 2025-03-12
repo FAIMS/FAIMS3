@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
 import {useAuth} from '@/context/auth-provider';
-import {Route} from '@/routes/templates/$templateId';
+import {Route} from '@/routes/_protected/templates/$templateId';
 import {useQueryClient} from '@tanstack/react-query';
 import {useState} from 'react';
 import {NOTEBOOK_NAME} from '@/constants';

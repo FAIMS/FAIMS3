@@ -6,7 +6,7 @@ import {useGetUsers} from '@/hooks/get-hooks';
 import {useState} from 'react';
 import {GeneratePasswordReset} from '@/components/dialogs/generate-password-reset';
 
-export const Route = createFileRoute('/users')({
+export const Route = createFileRoute('/_protected/_admin/users')({
   component: RouteComponent,
 });
 
@@ -27,6 +27,8 @@ function RouteComponent() {
     setResetUserId(id);
     setResetDialog(true);
   };
+
+  console.log(data);
 
   return (
     <>

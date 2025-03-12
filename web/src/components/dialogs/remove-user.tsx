@@ -7,37 +7,35 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import {NOTEBOOK_NAME} from '@/constants';
 import {useState} from 'react';
-import {useAuth} from '@/context/auth-provider';
 import {Trash} from 'lucide-react';
-import {Route} from '@/routes/_protected/projects/$projectId';
 import {useQueryClient} from '@tanstack/react-query';
+import {Alert, AlertDescription, AlertTitle} from '../ui/alert';
+import {useAuth} from '@/context/auth-provider';
 
 /**
+ * RemoveUserDialog component renders a dialog for removing a user.
+ * It provides a button to open the dialog and a form to remove the user.
  *
- * Removes a user from a survey.
  * @param {string} userId - The ID of the user to remove.
  * @param {boolean} admin - Whether the user is an admin.
- * @returns {JSX.Element} The rendered RemoveUserFromSurveyDialog component.
+ * @returns {JSX.Element} The rendered RemoveUserDialog component.
  */
-export const RemoveUserFromProjectDialog = ({
+export const RemoveUserDialog = ({
   userId,
-  admin,
+  disabled,
 }: {
   userId: string;
-  admin: boolean;
+  disabled?: boolean;
 }) => {
-  const [error, setError] = useState('');
-  const {user} = useAuth();
-  const {projectId} = Route.useParams();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const {user} = useAuth();
+  const QueryClient = useQueryClient();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline" disabled={admin}>
+        <Button variant="outline" disabled={disabled}>
           <Trash className="h-4 w-4" />
         </Button>
       </DialogTrigger>
@@ -45,17 +43,21 @@ export const RemoveUserFromProjectDialog = ({
         <DialogHeader>
           <DialogTitle>Remove User</DialogTitle>
           <DialogDescription>
-            Remove user: <span className="text-primary">{userId}</span> from
-            this {NOTEBOOK_NAME}.
+            Are you sure you wish to remove user: {userId}?
           </DialogDescription>
         </DialogHeader>
+        <Alert variant="destructive" className="w-full">
+          <AlertTitle>Warning</AlertTitle>
+          <AlertDescription>
+            Removing a user will mean they can no longer log in to the system.
+          </AlertDescription>
+        </Alert>
         <Button
-          variant="destructive"
           className="w-full"
           onClick={async () => {
             try {
-              const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/users/${userId}`,
+              await fetch(
+                `${import.meta.env.VITE_API_URL}/api/users/${userId}`,
                 {
                   method: 'DELETE',
                   headers: {
@@ -65,25 +67,17 @@ export const RemoveUserFromProjectDialog = ({
                 }
               );
 
-              if (!response.ok) {
-                setError('Error removing user');
-              }
-
-              queryClient.invalidateQueries({
-                queryKey: ['project-users', projectId],
-              });
+              QueryClient.invalidateQueries({queryKey: ['users']});
+              QueryClient.invalidateQueries({queryKey: ['project-users']});
 
               setOpen(false);
-            } catch (error) {
-              console.log(error);
-
-              setError('Error removing user');
+            } catch (e) {
+              console.log(e);
             }
           }}
         >
           Remove User
         </Button>
-        <div className="text-red-500 text-sm mt-2">{error}</div>
       </DialogContent>
     </Dialog>
   );
