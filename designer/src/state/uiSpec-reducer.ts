@@ -282,7 +282,8 @@ export const uiSpecificationReducer = createSlice({
       state.fields[fieldLabel] = newField;
 
       // add the new field to the view right after the original field
-      const position = state.fviews[viewId].fields.indexOf(originalFieldName) + 1;
+      const position =
+        state.fviews[viewId].fields.indexOf(originalFieldName) + 1;
       state.fviews[viewId].fields.splice(position, 0, fieldLabel);
     },
     sectionRenamed: (
