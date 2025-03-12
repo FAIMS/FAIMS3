@@ -44,7 +44,11 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+  OFFLINE_MAPS,
+} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {
   selectActiveServerId,
@@ -161,20 +165,29 @@ export default function MainAppBar() {
       to: ROUTES.ABOUT_BUILD,
       disabled: false,
     },
-    isAuthenticated
-      ? {
-          title: 'Sign out',
-          icon: <AccountCircleIcon />,
-          to: ROUTES.SIGN_IN,
-          disabled: false,
-        }
-      : {
-          title: 'Sign out',
-          icon: <AccountCircleIcon />,
-          to: '/',
-          disabled: true,
-        },
   ];
+  if (OFFLINE_MAPS)
+    bottomMenuItems.push({
+      title: 'Offline Maps',
+      icon: <SettingsIcon />,
+      to: ROUTES.OFFLINE_MAPS,
+      disabled: false,
+    });
+
+  if (isAuthenticated)
+    bottomMenuItems.push({
+      title: 'Sign out',
+      icon: <AccountCircleIcon />,
+      to: ROUTES.SIGN_IN,
+      disabled: false,
+    });
+  else
+    bottomMenuItems.push({
+      title: 'Sign out',
+      icon: <AccountCircleIcon />,
+      to: '/',
+      disabled: true,
+    });
 
   const [nestedMenuOpen, setNestedMenuOpen] = useState<{
     [key: string]: boolean;
