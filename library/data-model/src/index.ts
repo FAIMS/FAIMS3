@@ -30,3 +30,4 @@ export * from './utils';
 // Nested folders
 export * from './datamodel';
 export * from './data_storage';
+export * from './permissionModel';
