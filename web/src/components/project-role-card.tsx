@@ -17,8 +17,6 @@ export function ProjectRoleCard({
   const queryClient = useQueryClient();
   const {projectId} = Route.useParams();
 
-  console.log('ProjectRoleCard', {userId, projectId, role});
-
   return (
     <div
       className={cn(
