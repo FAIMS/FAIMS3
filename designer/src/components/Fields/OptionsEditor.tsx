@@ -600,16 +600,12 @@ export const OptionsEditor = ({
               </Alert>
             )}
 
-            {/* Expanded checklist toggle */}
-            {field['component-parameters'].ElementProps?.expandedChecklist !==
-              undefined && (
+            {/* Expanded checklist toggle (restored usage of isShowExpandedList/showExpandedCheckListControl) */}
+            {showExpandedCheckListControl && (
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={
-                      field['component-parameters'].ElementProps
-                        ?.expandedChecklist
-                    }
+                    checked={isShowExpandedList}
                     onChange={toggleShowExpanded}
                     size="small"
                   />
