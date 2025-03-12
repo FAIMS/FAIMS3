@@ -1,10 +1,10 @@
-import React from 'react';
-import {Box, Collapse, Button, Grid} from '@mui/material';
-import {grey} from '@mui/material/colors';
-import {styled} from '@mui/material/styles';
-import IconButton, {IconButtonProps} from '@mui/material/IconButton';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {Box, Button, Collapse, Grid} from '@mui/material';
+import {grey} from '@mui/material/colors';
+import IconButton, {IconButtonProps} from '@mui/material/IconButton';
+import {styled} from '@mui/material/styles';
+import React from 'react';
 interface MetaDataJsonComponentProps {
   value: any;
 }
@@ -13,6 +13,7 @@ interface ExpandMoreProps extends IconButtonProps {
 }
 
 const ExpandMore = styled((props: ExpandMoreProps) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const {expand, ...other} = props;
   return <IconButton {...other} />;
 })(({theme, expand}) => ({

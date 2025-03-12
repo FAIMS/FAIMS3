@@ -251,7 +251,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               draftLastSaved={draftLastSaved}
               mq_above_md={mq_above_md}
               navigate={navigate}
-              location={props.location}
               setProgress={setProgress}
               buttonRef={buttonRef}
             />
