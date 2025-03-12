@@ -8,6 +8,7 @@ import {
   createProjectFromFile,
   createProjectFromTemplate,
 } from '@/hooks/create-project';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 interface CreateProjectFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -102,7 +103,7 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
       fields={fields}
       dividers={dividers}
       onSubmit={onSubmit}
-      submitButtonText="Create Project"
+      submitButtonText={NOTEBOOK_NAME_CAPITALIZED}
     />
   );
 }

@@ -23,14 +23,14 @@ function RouteComponent() {
 
   const navigate = useNavigate();
 
+  console.log(data);
+
   return (
     <DataTable
       columns={columns}
       data={data}
       loading={isPending}
-      onRowClick={({non_unique_project_id}) =>
-        navigate({to: `/${NOTEBOOK_NAME}s/${non_unique_project_id}`})
-      }
+      onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
       button={<CreateProjectDialog />}
     />
   );

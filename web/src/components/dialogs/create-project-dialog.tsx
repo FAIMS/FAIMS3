@@ -9,6 +9,7 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateProjectForm} from '../forms/create-project-form';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 export const CreateProjectDialog = () => {
   const [open, setOpen] = useState(false);
@@ -16,14 +17,14 @@ export const CreateProjectDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant={'outline'}>Create Project</Button>
+        <Button variant={'outline'}>Create {NOTEBOOK_NAME_CAPITALIZED}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Project</DialogTitle>
+          <DialogTitle>Create {NOTEBOOK_NAME_CAPITALIZED}</DialogTitle>
           <DialogDescription>
-            Create a new project by selecting an existing template or uploading
-            a JSON notebook specification file.
+            Create a new {NOTEBOOK_NAME_CAPITALIZED} by selecting an existing
+            template or uploading a JSON notebook specification file.
           </DialogDescription>
         </DialogHeader>
         <CreateProjectForm setDialogOpen={setOpen} />
