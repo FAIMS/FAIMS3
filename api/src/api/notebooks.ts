@@ -40,7 +40,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
-import {localGetDataDb} from '../couchdb';
+import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {
@@ -258,7 +258,7 @@ api.get(
     const uiSpecification = (await getProjectUIModel(
       req.params.id
     )) as ProjectUIModel;
-    const dataDb = await localGetDataDb(projectId);
+    const dataDb = await getDataDb(projectId);
     const records = await getRecordsWithRegex({
       dataDb,
       filterDeleted: true,
