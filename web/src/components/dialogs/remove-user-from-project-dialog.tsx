@@ -11,7 +11,7 @@ import {NOTEBOOK_NAME} from '@/constants';
 import {useState} from 'react';
 import {useAuth} from '@/context/auth-provider';
 import {Trash} from 'lucide-react';
-import {Route} from '@/routes/projects/$projectId';
+import {Route} from '@/routes/_protected/projects/$projectId';
 import {useQueryClient} from '@tanstack/react-query';
 
 /**

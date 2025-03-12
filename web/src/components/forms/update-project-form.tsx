@@ -3,7 +3,7 @@ import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {NOTEBOOK_NAME} from '@/constants';
-import {Route} from '@/routes/projects/$projectId';
+import {Route} from '@/routes/_protected/projects/$projectId';
 
 const fields = [
   {
