@@ -28,7 +28,7 @@ import {
   validateLocalUser,
 } from '../src/auth_providers/local';
 import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
-import {getUsersDB, initialiseDatabases} from '../src/couchdb';
+import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   addProjectRoleToUser,
   addOtherRoleToUser,
@@ -263,7 +263,7 @@ describe('user creation', () => {
   });
 
   it('listing users for notebooks', async () => {
-    await initialiseDatabases({force: false});
+    await initialiseDbAndKeys({force: false});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',

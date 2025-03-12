@@ -7,7 +7,7 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTemplates} from '@/hooks/get-hooks';
-import {Route} from '@/routes/templates/$templateId';
+import {Route} from '@/routes/_protected/templates/$templateId';
 
 /**
  * TemplateActions component renders action cards for creating a project from a template,

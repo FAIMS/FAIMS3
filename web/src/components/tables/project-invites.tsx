@@ -1,6 +1,6 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import RoleCard from '../ui/role-card';
+import {RoleCard} from '../ui/role-card';
 import {CopyButton} from '../ui/copy-button';
 import {QRCodeDialog} from '../dialogs/qr-code-dialog';
 

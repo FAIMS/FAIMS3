@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {Form} from '../form';
 import {downloadFile} from '@/lib/utils';
-import {Route} from '@/routes/projects/$projectId';
+import {Route} from '@/routes/_protected/projects/$projectId';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/get-hooks';
 
