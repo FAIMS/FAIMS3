@@ -29,8 +29,6 @@ function RouteComponent() {
     setResetDialog(true);
   };
 
-  console.log(data);
-
   return (
     <>
       <DataTable
