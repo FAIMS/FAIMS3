@@ -20,6 +20,14 @@ export const PostUpdateUserInputSchema = z.object({
 });
 export type PostUpdateUserInput = z.infer<typeof PostUpdateUserInputSchema>;
 
+export const UpdateUserProjectRoleInputSchema = z.object({
+  action: z.enum(['add', 'remove']),
+  role: z.enum(['user', 'team', 'moderator', 'admin']),
+});
+export type UpdateUserProjectRoleInput = z.infer<
+  typeof UpdateUserProjectRoleInputSchema
+>;
+
 // Optional redirect
 
 export const OptionalRedirectQuery = z.object({
