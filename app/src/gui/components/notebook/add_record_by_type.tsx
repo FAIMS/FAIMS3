@@ -6,25 +6,24 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
 import {Navigate, Link as RouterLink} from 'react-router-dom';
+import {localGetDataDb} from '../../..';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {Refresh} from '@mui/icons-material';
 
 type AddRecordButtonsProps = {
   project: Project;
   recordLabel: string;
+  refreshList: () => void;
 };
 
 export default function AddRecordButtons({
-  project: {
-    projectId,
-    serverId,
-    uiSpecificationId,
-    metadata,
-  },
+  project: {projectId, serverId, uiSpecificationId, metadata},
+  refreshList,
   recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
@@ -50,13 +49,14 @@ export default function AddRecordButtons({
 
     // TODO validate that this is always defined!
     // TODO WHY IS THERE TWO IDs - this is most likely broken
-    getRecordsWithRegex(
-      activeUser.parsedToken,
+    getRecordsWithRegex({
+      dataDb: localGetDataDb(projectId),
+      filterDeleted: true,
       projectId,
-      value,
-      true,
-      uiSpecification
-    ).then(records => {
+      regex: value,
+      tokenContents: activeUser.parsedToken,
+      uiSpecification,
+    }).then(records => {
       // navigate to it
       // what should happen if there are more than one?
       for (const key in records) {
@@ -85,6 +85,7 @@ export default function AddRecordButtons({
           sx={{
             maxHeight: '400px',
             justifyContent: mq_above_sm ? 'flex-start' : 'center',
+            gap: mq_above_sm ? '8px' : '0px',
           }}
         >
           {/*If the list of views hasn't loaded yet*/}
@@ -162,6 +163,20 @@ export default function AddRecordButtons({
           ) : (
             <span />
           )}
+
+          <Button
+            variant="outlined"
+            sx={{
+              mb: 1,
+              mt: 1,
+              fontWeight: 'bold',
+            }}
+            startIcon={<Refresh />}
+            key="refreshList"
+            onClick={refreshList}
+          >
+            Refresh records
+          </Button>
         </ButtonGroup>
       </Box>
     );

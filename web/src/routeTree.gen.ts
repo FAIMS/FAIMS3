@@ -11,218 +11,279 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as UsersImport } from './routes/users'
-import { Route as ProfileImport } from './routes/profile'
-import { Route as IndexImport } from './routes/index'
-import { Route as TemplatesIndexImport } from './routes/templates/index'
-import { Route as ProjectsIndexImport } from './routes/projects/index'
-import { Route as TemplatesTemplateIdImport } from './routes/templates/$templateId'
-import { Route as ProjectsProjectIdImport } from './routes/projects/$projectId'
-import { Route as AuthResetPasswordIndexImport } from './routes/auth/resetPassword/index'
+import { Route as ResetPasswordImport } from './routes/reset-password'
+import { Route as ProtectedImport } from './routes/_protected'
+import { Route as ProtectedIndexImport } from './routes/_protected/index'
+import { Route as ProtectedProfileImport } from './routes/_protected/profile'
+import { Route as ProtectedAdminImport } from './routes/_protected/_admin'
+import { Route as ProtectedTemplatesIndexImport } from './routes/_protected/templates/index'
+import { Route as ProtectedProjectsIndexImport } from './routes/_protected/projects/index'
+import { Route as ProtectedTemplatesTemplateIdImport } from './routes/_protected/templates/$templateId'
+import { Route as ProtectedProjectsProjectIdImport } from './routes/_protected/projects/$projectId'
+import { Route as ProtectedAdminUsersImport } from './routes/_protected/_admin/users'
 
 // Create/Update Routes
 
-const UsersRoute = UsersImport.update({
-  id: '/users',
-  path: '/users',
+const ResetPasswordRoute = ResetPasswordImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRoute,
 } as any)
 
-const ProfileRoute = ProfileImport.update({
-  id: '/profile',
-  path: '/profile',
+const ProtectedRoute = ProtectedImport.update({
+  id: '/_protected',
   getParentRoute: () => rootRoute,
 } as any)
 
-const IndexRoute = IndexImport.update({
+const ProtectedIndexRoute = ProtectedIndexImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => ProtectedRoute,
 } as any)
 
-const TemplatesIndexRoute = TemplatesIndexImport.update({
+const ProtectedProfileRoute = ProtectedProfileImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+
+const ProtectedAdminRoute = ProtectedAdminImport.update({
+  id: '/_admin',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+
+const ProtectedTemplatesIndexRoute = ProtectedTemplatesIndexImport.update({
   id: '/templates/',
   path: '/templates/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => ProtectedRoute,
 } as any)
 
-const ProjectsIndexRoute = ProjectsIndexImport.update({
+const ProtectedProjectsIndexRoute = ProtectedProjectsIndexImport.update({
   id: '/projects/',
   path: '/projects/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => ProtectedRoute,
 } as any)
 
-const TemplatesTemplateIdRoute = TemplatesTemplateIdImport.update({
-  id: '/templates/$templateId',
-  path: '/templates/$templateId',
-  getParentRoute: () => rootRoute,
-} as any)
+const ProtectedTemplatesTemplateIdRoute =
+  ProtectedTemplatesTemplateIdImport.update({
+    id: '/templates/$templateId',
+    path: '/templates/$templateId',
+    getParentRoute: () => ProtectedRoute,
+  } as any)
 
-const ProjectsProjectIdRoute = ProjectsProjectIdImport.update({
-  id: '/projects/$projectId',
-  path: '/projects/$projectId',
-  getParentRoute: () => rootRoute,
-} as any)
+const ProtectedProjectsProjectIdRoute = ProtectedProjectsProjectIdImport.update(
+  {
+    id: '/projects/$projectId',
+    path: '/projects/$projectId',
+    getParentRoute: () => ProtectedRoute,
+  } as any,
+)
 
-const AuthResetPasswordIndexRoute = AuthResetPasswordIndexImport.update({
-  id: '/auth/resetPassword/',
-  path: '/auth/resetPassword/',
-  getParentRoute: () => rootRoute,
+const ProtectedAdminUsersRoute = ProtectedAdminUsersImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => ProtectedAdminRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
+    '/_protected': {
+      id: '/_protected'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof ProtectedImport
       parentRoute: typeof rootRoute
     }
-    '/profile': {
-      id: '/profile'
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordImport
+      parentRoute: typeof rootRoute
+    }
+    '/_protected/_admin': {
+      id: '/_protected/_admin'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof ProtectedAdminImport
+      parentRoute: typeof ProtectedImport
+    }
+    '/_protected/profile': {
+      id: '/_protected/profile'
       path: '/profile'
       fullPath: '/profile'
-      preLoaderRoute: typeof ProfileImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ProtectedProfileImport
+      parentRoute: typeof ProtectedImport
     }
-    '/users': {
-      id: '/users'
+    '/_protected/': {
+      id: '/_protected/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof ProtectedIndexImport
+      parentRoute: typeof ProtectedImport
+    }
+    '/_protected/_admin/users': {
+      id: '/_protected/_admin/users'
       path: '/users'
       fullPath: '/users'
-      preLoaderRoute: typeof UsersImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ProtectedAdminUsersImport
+      parentRoute: typeof ProtectedAdminImport
     }
-    '/projects/$projectId': {
-      id: '/projects/$projectId'
+    '/_protected/projects/$projectId': {
+      id: '/_protected/projects/$projectId'
       path: '/projects/$projectId'
       fullPath: '/projects/$projectId'
-      preLoaderRoute: typeof ProjectsProjectIdImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ProtectedProjectsProjectIdImport
+      parentRoute: typeof ProtectedImport
     }
-    '/templates/$templateId': {
-      id: '/templates/$templateId'
+    '/_protected/templates/$templateId': {
+      id: '/_protected/templates/$templateId'
       path: '/templates/$templateId'
       fullPath: '/templates/$templateId'
-      preLoaderRoute: typeof TemplatesTemplateIdImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ProtectedTemplatesTemplateIdImport
+      parentRoute: typeof ProtectedImport
     }
-    '/projects/': {
-      id: '/projects/'
+    '/_protected/projects/': {
+      id: '/_protected/projects/'
       path: '/projects'
       fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsIndexImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ProtectedProjectsIndexImport
+      parentRoute: typeof ProtectedImport
     }
-    '/templates/': {
-      id: '/templates/'
+    '/_protected/templates/': {
+      id: '/_protected/templates/'
       path: '/templates'
       fullPath: '/templates'
-      preLoaderRoute: typeof TemplatesIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/auth/resetPassword/': {
-      id: '/auth/resetPassword/'
-      path: '/auth/resetPassword'
-      fullPath: '/auth/resetPassword'
-      preLoaderRoute: typeof AuthResetPasswordIndexImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ProtectedTemplatesIndexImport
+      parentRoute: typeof ProtectedImport
     }
   }
 }
 
 // Create and export the route tree
 
+interface ProtectedAdminRouteChildren {
+  ProtectedAdminUsersRoute: typeof ProtectedAdminUsersRoute
+}
+
+const ProtectedAdminRouteChildren: ProtectedAdminRouteChildren = {
+  ProtectedAdminUsersRoute: ProtectedAdminUsersRoute,
+}
+
+const ProtectedAdminRouteWithChildren = ProtectedAdminRoute._addFileChildren(
+  ProtectedAdminRouteChildren,
+)
+
+interface ProtectedRouteChildren {
+  ProtectedAdminRoute: typeof ProtectedAdminRouteWithChildren
+  ProtectedProfileRoute: typeof ProtectedProfileRoute
+  ProtectedIndexRoute: typeof ProtectedIndexRoute
+  ProtectedProjectsProjectIdRoute: typeof ProtectedProjectsProjectIdRoute
+  ProtectedTemplatesTemplateIdRoute: typeof ProtectedTemplatesTemplateIdRoute
+  ProtectedProjectsIndexRoute: typeof ProtectedProjectsIndexRoute
+  ProtectedTemplatesIndexRoute: typeof ProtectedTemplatesIndexRoute
+}
+
+const ProtectedRouteChildren: ProtectedRouteChildren = {
+  ProtectedAdminRoute: ProtectedAdminRouteWithChildren,
+  ProtectedProfileRoute: ProtectedProfileRoute,
+  ProtectedIndexRoute: ProtectedIndexRoute,
+  ProtectedProjectsProjectIdRoute: ProtectedProjectsProjectIdRoute,
+  ProtectedTemplatesTemplateIdRoute: ProtectedTemplatesTemplateIdRoute,
+  ProtectedProjectsIndexRoute: ProtectedProjectsIndexRoute,
+  ProtectedTemplatesIndexRoute: ProtectedTemplatesIndexRoute,
+}
+
+const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
+  ProtectedRouteChildren,
+)
+
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/profile': typeof ProfileRoute
-  '/users': typeof UsersRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
-  '/templates/$templateId': typeof TemplatesTemplateIdRoute
-  '/projects': typeof ProjectsIndexRoute
-  '/templates': typeof TemplatesIndexRoute
-  '/auth/resetPassword': typeof AuthResetPasswordIndexRoute
+  '': typeof ProtectedAdminRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
+  '/profile': typeof ProtectedProfileRoute
+  '/': typeof ProtectedIndexRoute
+  '/users': typeof ProtectedAdminUsersRoute
+  '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
+  '/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
+  '/projects': typeof ProtectedProjectsIndexRoute
+  '/templates': typeof ProtectedTemplatesIndexRoute
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/profile': typeof ProfileRoute
-  '/users': typeof UsersRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
-  '/templates/$templateId': typeof TemplatesTemplateIdRoute
-  '/projects': typeof ProjectsIndexRoute
-  '/templates': typeof TemplatesIndexRoute
-  '/auth/resetPassword': typeof AuthResetPasswordIndexRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '': typeof ProtectedAdminRouteWithChildren
+  '/profile': typeof ProtectedProfileRoute
+  '/': typeof ProtectedIndexRoute
+  '/users': typeof ProtectedAdminUsersRoute
+  '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
+  '/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
+  '/projects': typeof ProtectedProjectsIndexRoute
+  '/templates': typeof ProtectedTemplatesIndexRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/profile': typeof ProfileRoute
-  '/users': typeof UsersRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
-  '/templates/$templateId': typeof TemplatesTemplateIdRoute
-  '/projects/': typeof ProjectsIndexRoute
-  '/templates/': typeof TemplatesIndexRoute
-  '/auth/resetPassword/': typeof AuthResetPasswordIndexRoute
+  '/_protected': typeof ProtectedRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
+  '/_protected/_admin': typeof ProtectedAdminRouteWithChildren
+  '/_protected/profile': typeof ProtectedProfileRoute
+  '/_protected/': typeof ProtectedIndexRoute
+  '/_protected/_admin/users': typeof ProtectedAdminUsersRoute
+  '/_protected/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
+  '/_protected/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
+  '/_protected/projects/': typeof ProtectedProjectsIndexRoute
+  '/_protected/templates/': typeof ProtectedTemplatesIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
+    | ''
+    | '/reset-password'
     | '/profile'
+    | '/'
     | '/users'
     | '/projects/$projectId'
     | '/templates/$templateId'
     | '/projects'
     | '/templates'
-    | '/auth/resetPassword'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/reset-password'
+    | ''
     | '/profile'
+    | '/'
     | '/users'
     | '/projects/$projectId'
     | '/templates/$templateId'
     | '/projects'
     | '/templates'
-    | '/auth/resetPassword'
   id:
     | '__root__'
-    | '/'
-    | '/profile'
-    | '/users'
-    | '/projects/$projectId'
-    | '/templates/$templateId'
-    | '/projects/'
-    | '/templates/'
-    | '/auth/resetPassword/'
+    | '/_protected'
+    | '/reset-password'
+    | '/_protected/_admin'
+    | '/_protected/profile'
+    | '/_protected/'
+    | '/_protected/_admin/users'
+    | '/_protected/projects/$projectId'
+    | '/_protected/templates/$templateId'
+    | '/_protected/projects/'
+    | '/_protected/templates/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ProfileRoute: typeof ProfileRoute
-  UsersRoute: typeof UsersRoute
-  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
-  TemplatesTemplateIdRoute: typeof TemplatesTemplateIdRoute
-  ProjectsIndexRoute: typeof ProjectsIndexRoute
-  TemplatesIndexRoute: typeof TemplatesIndexRoute
-  AuthResetPasswordIndexRoute: typeof AuthResetPasswordIndexRoute
+  ProtectedRoute: typeof ProtectedRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  ProfileRoute: ProfileRoute,
-  UsersRoute: UsersRoute,
-  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
-  TemplatesTemplateIdRoute: TemplatesTemplateIdRoute,
-  ProjectsIndexRoute: ProjectsIndexRoute,
-  TemplatesIndexRoute: TemplatesIndexRoute,
-  AuthResetPasswordIndexRoute: AuthResetPasswordIndexRoute,
+  ProtectedRoute: ProtectedRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 
 export const routeTree = rootRoute
@@ -235,39 +296,59 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/",
-        "/profile",
-        "/users",
-        "/projects/$projectId",
-        "/templates/$templateId",
-        "/projects/",
-        "/templates/",
-        "/auth/resetPassword/"
+        "/_protected",
+        "/reset-password"
       ]
     },
-    "/": {
-      "filePath": "index.tsx"
+    "/_protected": {
+      "filePath": "_protected.tsx",
+      "children": [
+        "/_protected/_admin",
+        "/_protected/profile",
+        "/_protected/",
+        "/_protected/projects/$projectId",
+        "/_protected/templates/$templateId",
+        "/_protected/projects/",
+        "/_protected/templates/"
+      ]
     },
-    "/profile": {
-      "filePath": "profile.tsx"
+    "/reset-password": {
+      "filePath": "reset-password.tsx"
     },
-    "/users": {
-      "filePath": "users.tsx"
+    "/_protected/_admin": {
+      "filePath": "_protected/_admin.tsx",
+      "parent": "/_protected",
+      "children": [
+        "/_protected/_admin/users"
+      ]
     },
-    "/projects/$projectId": {
-      "filePath": "projects/$projectId.tsx"
+    "/_protected/profile": {
+      "filePath": "_protected/profile.tsx",
+      "parent": "/_protected"
     },
-    "/templates/$templateId": {
-      "filePath": "templates/$templateId.tsx"
+    "/_protected/": {
+      "filePath": "_protected/index.tsx",
+      "parent": "/_protected"
     },
-    "/projects/": {
-      "filePath": "projects/index.tsx"
+    "/_protected/_admin/users": {
+      "filePath": "_protected/_admin/users.tsx",
+      "parent": "/_protected/_admin"
     },
-    "/templates/": {
-      "filePath": "templates/index.tsx"
+    "/_protected/projects/$projectId": {
+      "filePath": "_protected/projects/$projectId.tsx",
+      "parent": "/_protected"
     },
-    "/auth/resetPassword/": {
-      "filePath": "auth/resetPassword/index.tsx"
+    "/_protected/templates/$templateId": {
+      "filePath": "_protected/templates/$templateId.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/projects/": {
+      "filePath": "_protected/projects/index.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/templates/": {
+      "filePath": "_protected/templates/index.tsx",
+      "parent": "/_protected"
     }
   }
 }

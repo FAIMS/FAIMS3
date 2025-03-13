@@ -233,7 +233,6 @@ export function useEventedPromise<A extends Array<unknown>, V>(
   dependencies: React.DependencyList,
   ...args: A
 ): PromiseState<V, A> {
-  //console.log('useEventedPromise', label, dependencies);
   const [state, setState] = useState(
     new PromiseState<V, A>({loading: undefined})
   );

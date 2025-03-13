@@ -37,6 +37,7 @@ import {
 import {useAppSelector} from '../../../context/store';
 import {selectAllProjects} from '../../../context/slices/projectSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import {localGetDataDb} from '../../..';
 
 type RecordMetaProps = {
   project_id: ProjectID;
@@ -59,9 +60,10 @@ export default function RecordMeta(props: RecordMetaProps) {
   useEffect(() => {
     async function fetchRecordMeta() {
       const record = await getRecordMetadata({
-        project_id,
-        record_id,
-        revision_id,
+        projectId: project_id,
+        recordId: record_id,
+        revisionId: revision_id,
+        dataDb: localGetDataDb(project_id),
         uiSpecification: uiSpec!,
       });
       setMeta({

@@ -31,9 +31,9 @@ import {addNativeHooks} from './native_hooks';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {shouldDisplayRecord} from './users';
 
-const getDataDB = async (
+export const localGetDataDb = (
   projectId: string
-): Promise<PouchDB.Database<ProjectDataObject>> => {
+): PouchDB.Database<ProjectDataObject> => {
   const projectState = store.getState();
   const dbId = selectAllProjects(projectState).find(
     p => p.projectId === projectId
@@ -56,7 +56,9 @@ const getDataDB = async (
 registerClient({
   // This will consult with the store to get the current data DB for the
   // project
-  getDataDB: getDataDB,
+  getDataDB: async (id: string) => {
+    return localGetDataDb(id);
+  },
   // This will determine if a record should be displayed
   shouldDisplayRecord: shouldDisplayRecord,
 });

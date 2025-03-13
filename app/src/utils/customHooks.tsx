@@ -1,19 +1,23 @@
 import {
-  getMetadataForAllRecords,
-  getRecordsWithRegex,
+  getHridFieldMap,
+  getMinimalRecordData,
+  getMinimalRecordDataWithRegex,
+  hydrateIndividualRecord,
   ProjectUIModel,
   RecordMetadata,
+  UnhydratedRecord,
 } from '@faims3/data-model';
-import {useQuery} from '@tanstack/react-query';
+import {QueryClient, useQueries, useQuery} from '@tanstack/react-query';
+import _ from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {useSearchParams} from 'react-router-dom';
+import {localGetDataDb} from '..';
 import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
-import _ from 'lodash';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -278,9 +282,9 @@ export function useQueryParams<T extends Record<string, any>>(config: {
  *
  * Draft records are identified by the prefix `drf-` in their `record_id`.
  */
-const filterOutDrafts = (rows: RecordMetadata[]) => {
+export function filterOutDrafts<T extends UnhydratedRecord>(rows: T[]): T[] {
   return rows.filter(record => !record.record_id.startsWith('drf-'));
-};
+}
 
 /**
  * Filters records to include only thosse created by the active user.
@@ -288,14 +292,121 @@ const filterOutDrafts = (rows: RecordMetadata[]) => {
  * @param rows - The dataset of records.
  * @param username - The active user's username.
  */
-const filterByActiveUser = (rows: RecordMetadata[], username: string) => {
+export function filterByActiveUser<T extends UnhydratedRecord>(
+  rows: T[],
+  username: string
+): T[] {
   return rows.filter(record => record.created_by === username);
-};
+}
+
+const HYDRATION_KEY_PREFIX = 'recordhydration';
+const RECORD_LIST_KEY_PREFIX = 'allrecords';
+
+/**
+ * Helper function to build the hydrate query keys consistently
+ */
+function buildHydrateKeys({
+  recordId,
+  projectId,
+  revisionId,
+}: {
+  projectId: string;
+  recordId: string;
+  revisionId: string;
+}) {
+  return [HYDRATION_KEY_PREFIX, projectId, recordId, revisionId];
+}
+
+/**
+ * Forces refetch/cache invalidation of a target record hydration. This is the
+ * data fetching component of the record listing which involves many AVP
+ * fetches.
+ */
+export function invalidateTargetRecordHydration({
+  recordId,
+  projectId,
+  revisionId,
+  client,
+}: {
+  projectId: string;
+  recordId: string;
+  revisionId: string;
+  client: QueryClient;
+}) {
+  client.invalidateQueries({
+    queryKey: buildHydrateKeys({recordId, projectId, revisionId}),
+    refetchType: 'all',
+  });
+}
+
+/**
+ * Forces refetch/cache invalidation of a target record hydration. This is the
+ * data fetching component of the record listing which involves many AVP
+ * fetches.
+ */
+export function invalidateProjectHydration({
+  projectId,
+  client,
+  reset = false,
+}: {
+  projectId: string;
+  client: QueryClient;
+  reset?: boolean;
+}) {
+  if (reset) {
+    client.resetQueries({
+      queryKey: [HYDRATION_KEY_PREFIX, projectId],
+    });
+  } else {
+    client.invalidateQueries({
+      queryKey: [HYDRATION_KEY_PREFIX, projectId],
+      refetchType: 'all',
+    });
+  }
+}
+
+/**
+ * Forces refetch/cache invalidation of a target record hydration. This is the
+ * data fetching component of the record listing which involves many AVP
+ * fetches.
+ */
+export function invalidateProjectRecordList({
+  projectId,
+  client,
+  reset = false,
+}: {
+  projectId: string;
+  client: QueryClient;
+  reset?: boolean;
+}) {
+  if (reset) {
+    client.resetQueries({
+      queryKey: [RECORD_LIST_KEY_PREFIX, projectId],
+    });
+  } else {
+    client.invalidateQueries({
+      queryKey: [RECORD_LIST_KEY_PREFIX, projectId],
+      refetchType: 'all',
+    });
+  }
+}
 
 /**
  * Returns a list of all records, and active user records. This applies the
  * built in getMetadataForAllRecords filtering (which does client side
  * permission filtering) and also provides my records vs all records list(s).
+ *
+ * At a high level:
+ * - calculate hrid field map (memoised by ui spec)
+ * - useQuery to get minimal record info (i.e. gets records and their latest
+ *   revision) (refetches every 10 seconds and on mount)
+ * - filter out drafts (memoised by record list which has structural sharing to
+ *   avoid re-renders)
+ * - useQueries which for each record, performs hydration and returns the
+ *   hydrated record (this is cached for 2 minutes and is told not to refetch on
+ *   mount) - uses placeholder data where data = {} and hrid = "Loading..."
+ * - split by current user and others (memoised)
+ * - return the hydrated records (always present due to placeholder data)
  *
  * @param query The search string, if any - regex match
  * @param projectId Project ID to get records for
@@ -303,33 +414,43 @@ const filterByActiveUser = (rows: RecordMetadata[], username: string) => {
  * @param refreshIntervalMs Supply a refresh interval if desired
  */
 export const useRecordList = ({
-  query,
+  query = undefined,
   projectId,
   filterDeleted,
-  refreshIntervalMs,
+  metadataRefreshIntervalMs,
+  hydrationRefreshIntervalMs,
   uiSpecification: uiSpec,
 }: {
-  query: string;
+  query?: string;
   projectId: string;
   filterDeleted: boolean;
-  refreshIntervalMs?: number | undefined | false;
+  metadataRefreshIntervalMs?: number | undefined | false;
+  hydrationRefreshIntervalMs?: number | undefined | false;
   uiSpecification: ProjectUIModel;
 }) => {
+  // Work out our context e.g. active user, token, data db etc
   const activeUser = useAppSelector(selectActiveUser);
   const token = activeUser?.parsedToken;
+  const dataDb = localGetDataDb(projectId);
 
-  const records = useQuery({
+  // memoise the hrid field map (do once per ui spec)
+  const hridFieldMap = useMemo(() => {
+    return getHridFieldMap(uiSpec);
+  }, [uiSpec]);
+
+  // First - just fetch a list of all unhydrated records
+  const unhydratedRecordQuery = useQuery({
     queryKey: [
-      'allrecords',
-      query,
+      RECORD_LIST_KEY_PREFIX,
       projectId,
+      query,
       filterDeleted,
       activeUser?.username,
       token?.roles,
     ],
     networkMode: 'always',
     gcTime: 0,
-    refetchInterval: refreshIntervalMs,
+    refetchInterval: metadataRefreshIntervalMs,
     // implement a custom structural sharing function to avoid re-renders when
     // the list of records is the same
     structuralSharing: (oldData, newData) => {
@@ -343,53 +464,96 @@ export const useRecordList = ({
       }
       let rows;
 
-      console.log('Fetching records');
-      if (query.length === 0) {
-        rows = await getMetadataForAllRecords(
-          token,
-          projectId,
+      if (query === undefined || query.length === 0) {
+        rows = await getMinimalRecordData({
+          dataDb,
           filterDeleted,
-          uiSpec
-        );
+          projectId,
+          tokenContents: token,
+          uiSpecification: uiSpec,
+        });
       } else {
-        rows = await getRecordsWithRegex(
-          token,
-          projectId,
-          query,
+        rows = await getMinimalRecordDataWithRegex({
+          dataDb,
+          regex: query,
           filterDeleted,
-          uiSpec
-        );
+          projectId,
+          tokenContents: token,
+          uiSpecification: uiSpec,
+        });
       }
 
-      console.log('Done');
       return rows;
     },
   });
 
   // Get all rows - defaulting to an empty list
-  const allRows = records.data ?? [];
+  const allRows = unhydratedRecordQuery.data ?? [];
+
+  // Memoize the calculation of the non-draft rows
+  const nonDraftRecords = useMemo(() => {
+    return filterOutDrafts(allRows);
+  }, [unhydratedRecordQuery]);
+
+  // Now we do a separate cached query for each element of the unhydrated record
+  // list (this means we can maintain separate freshness times for each new
+  // element of the list, and or force a refetch of data for given records as
+  // needed) - cached based on record id
+  const hydrateQueries = useQueries<RecordMetadata[]>({
+    queries: nonDraftRecords.map(unhydrated => ({
+      queryKey: buildHydrateKeys({
+        projectId,
+        recordId: unhydrated.record_id,
+        revisionId: unhydrated.revision_id,
+      }),
+      queryFn: () => {
+        return hydrateIndividualRecord({
+          record: unhydrated,
+          dataDb,
+          uiSpecification: uiSpec,
+          hridFieldMap: hridFieldMap,
+        });
+      },
+      refetchOnMount: false,
+      gcTime: 0,
+      refetchInterval: hydrationRefreshIntervalMs,
+      placeholderData: {...unhydrated, data: {}, hrid: 'Loading...'},
+    })),
+  });
+
+  // Parse the response out as a list - only include rows with data
+  const hydratedRecords = hydrateQueries
+    .map(q => q.data)
+    .filter(d => !!d) as RecordMetadata[];
 
   // Memoize the calculation of the current user rows
   const {myRecords, otherRecords} = useMemo(() => {
-    const noDrafts = filterOutDrafts(allRows);
     let justMyRecords: RecordMetadata[] = [];
 
     // Get just my records
     if (activeUser) {
-      justMyRecords = filterByActiveUser(noDrafts, activeUser.username);
+      justMyRecords = filterByActiveUser(hydratedRecords, activeUser.username);
     }
 
     // Get all other records
-    const otherRecords = noDrafts.filter(r => {
+    const otherRecords = hydratedRecords.filter(r => {
       // other records are all drafts are not in the my records list
       return !justMyRecords.map(r => r.record_id).includes(r.record_id);
     });
-
-    return {myRecords: justMyRecords, otherRecords: otherRecords};
-  }, [records, activeUser]);
+    return {
+      myRecords: justMyRecords,
+      otherRecords,
+    };
+  }, [hydratedRecords, activeUser]);
 
   // return both curated record lists and the underlying query where necessary
-  return {allRecords: allRows, myRecords, otherRecords, query: records};
+  return {
+    allRecords: hydratedRecords,
+    myRecords: myRecords,
+    otherRecords: otherRecords,
+    initialQuery: unhydratedRecordQuery,
+    hydrateQuery: hydrateQueries,
+  };
 };
 
 /**
