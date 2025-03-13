@@ -588,25 +588,41 @@ export const FieldConditionControl = (props: ConditionProps) => {
 
   const targetFieldDef = condition.field ? allFields[condition.field] : null;
 
+  /* Checks if a field has predefined options */
+  const isPredefinedOptions = (fieldDef: FieldType | null): boolean => {
+    if (!fieldDef) return false;
+    return ['Select', 'RadioGroup', 'MultiSelect', 'Checkbox'].includes(
+      fieldDef['component-name']
+    );
+  };
+
   const updateField = (value: string) => {
     const newFieldDef = allFields[value] ?? null;
-    const isPredefinedOptionsField =
-      newFieldDef && isPredefinedOptions(newFieldDef);
+    if (newFieldDef && newFieldDef['component-name'] === 'Checkbox') {
+      updateCondition({
+        field: value,
+        operator: 'equal',
+        value: true,
+      });
+    } else {
+      const isPredefinedOptionsField =
+        newFieldDef && isPredefinedOptions(newFieldDef);
 
-    let firstOption = '';
-    if (isPredefinedOptionsField) {
-      const options =
-        newFieldDef?.['component-parameters']?.ElementProps?.options ?? [];
-      if (options.length > 0) {
-        firstOption = options[0].value;
+      let firstOption = '';
+      if (isPredefinedOptionsField) {
+        const options =
+          newFieldDef?.['component-parameters']?.ElementProps?.options ?? [];
+        if (options.length > 0) {
+          firstOption = options[0].value;
+        }
       }
-    }
 
-    updateCondition({
-      field: value,
-      operator: isPredefinedOptionsField ? 'equal' : condition.operator,
-      value: firstOption,
-    });
+      updateCondition({
+        field: value,
+        operator: isPredefinedOptionsField ? 'equal' : condition.operator,
+        value: firstOption,
+      });
+    }
   };
 
   const updateOperator = (value: string) => {
@@ -623,7 +639,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       props.onChange &&
       condition.field &&
       condition.operator &&
-      condition.value
+      condition.value !== undefined
     ) {
       props.onChange(condition);
     }
@@ -634,38 +650,34 @@ export const FieldConditionControl = (props: ConditionProps) => {
     f?.['component-parameters']?.name ||
     '<unlabeled>';
 
-  /* Checks if a field has predefined options */
-  const isPredefinedOptions = (fieldDef: FieldType | null): boolean => {
-    if (!fieldDef) return false;
-    return ['Select', 'RadioGroup', 'MultiSelect', 'Checkbox'].includes(
-      fieldDef['component-name']
-    );
-  };
-
-  /* Filter the allowed operators based on field type */
-  const getAllowedOperators = (fieldDef: FieldType | null) => {
-    if (!fieldDef) return [];
-    if (fieldDef['component-name'] === 'MultiSelect') {
-      return ['contains-one-of', 'does-not-contain'];
-    }
-    if (isPredefinedOptions(fieldDef)) {
-      return ['equal', 'not-equal'];
-    }
-    return ['equal', 'not-equal', 'greater', 'less', 'contains', 'regex'];
-  };
-
   const renderValueEditor = (fieldDef: FieldType) => {
     const cName = fieldDef['component-name'];
     const params = fieldDef['component-parameters'] || {};
     const possibleOptions = params.ElementProps?.options || [];
 
-    const isValidOption = possibleOptions.some(
-      (opt: any) => opt.value === condition.value
-    );
+    if (
+      cName !== 'Select' &&
+      cName !== 'RadioGroup' &&
+      cName !== 'MultiSelect' &&
+      cName !== 'Checkbox'
+    ) {
+      return (
+        <TextField
+          variant="outlined"
+          label="Value"
+          value={condition.value ?? ''}
+          onChange={e => updateValue(e.target.value)}
+          sx={{minWidth: 200}}
+        />
+      );
+    }
 
     switch (cName) {
       case 'Select':
       case 'RadioGroup': {
+        const isValidOption = possibleOptions.some(
+          (opt: any) => opt.value === condition.value
+        );
         return (
           <FormControl sx={{minWidth: 200}} error={!isValidOption}>
             <InputLabel>Value</InputLabel>
@@ -688,21 +700,15 @@ export const FieldConditionControl = (props: ConditionProps) => {
           </FormControl>
         );
       }
-
       case 'MultiSelect': {
         const selectedValues = Array.isArray(condition.value)
           ? condition.value
           : [];
-
+        const areAllValid = selectedValues.every(v =>
+          possibleOptions.some((opt: any) => opt.value === v)
+        );
         return (
-          <FormControl
-            sx={{minWidth: 200}}
-            error={
-              !selectedValues.every(v =>
-                possibleOptions.some((opt: any) => opt.value === v)
-              )
-            }
-          >
+          <FormControl sx={{minWidth: 200}} error={!areAllValid}>
             <InputLabel>Value</InputLabel>
             <Select
               multiple
@@ -732,46 +738,54 @@ export const FieldConditionControl = (props: ConditionProps) => {
           </FormControl>
         );
       }
-
       case 'Checkbox': {
+        let booleanValue = condition.value;
+        if (typeof booleanValue !== 'boolean') {
+          booleanValue = true;
+        }
         return (
-          <FormControl sx={{minWidth: 200}} error={!isValidOption}>
+          <FormControl sx={{minWidth: 200}}>
             <InputLabel>Value</InputLabel>
             <Select
               label="Value"
-              value={
-                isValidOption
-                  ? String(condition.value)
-                  : (String(condition.value) ?? 'false')
-              }
+              value={booleanValue ? 'true' : 'false'}
               onChange={e => updateValue(e.target.value === 'true')}
             >
-              <MenuItem value="false">False</MenuItem>
-              <MenuItem value="true">True</MenuItem>
+              <MenuItem value="true">Checked</MenuItem>
+              <MenuItem value="false">Not Checked</MenuItem>
             </Select>
-            {!isValidOption && (
-              <div style={{color: 'red', fontSize: '12px'}}>
-                Invalid value: "{String(condition.value)}"
-              </div>
-            )}
           </FormControl>
         );
       }
-
       default: {
-        return (
-          <TextField
-            variant="outlined"
-            label="Value"
-            value={condition.value ?? ''}
-            onChange={e => updateValue(e.target.value)}
-            sx={{minWidth: 200}}
-            error={!isValidOption}
-            helperText={
-              !isValidOption ? `Invalid value: "${condition.value}"` : ''
-            }
-          />
-        );
+        if (possibleOptions.length === 0) {
+          return (
+            <TextField
+              variant="outlined"
+              label="Value"
+              value={condition.value ?? ''}
+              onChange={e => updateValue(e.target.value)}
+              sx={{minWidth: 200}}
+            />
+          );
+        } else {
+          const isValidOption = possibleOptions.some(
+            (opt: any) => opt.value === condition.value
+          );
+          return (
+            <TextField
+              variant="outlined"
+              label="Value"
+              value={condition.value ?? ''}
+              onChange={e => updateValue(e.target.value)}
+              sx={{minWidth: 200}}
+              error={!isValidOption}
+              helperText={
+                !isValidOption ? `Invalid value: "${condition.value}"` : ''
+              }
+            />
+          );
+        }
       }
     }
   };
@@ -813,7 +827,16 @@ export const FieldConditionControl = (props: ConditionProps) => {
   };
 
   const valueMismatch = !isValueValidForField();
-  const allowedOperators = getAllowedOperators(targetFieldDef);
+  const allowedOperators = targetFieldDef
+    ? (() => {
+        const cName = targetFieldDef['component-name'];
+        if (cName === 'MultiSelect')
+          return ['contains-one-of', 'does-not-contain'];
+        if (cName === 'Checkbox') return ['equal'];
+        if (isPredefinedOptions(targetFieldDef)) return ['equal', 'not-equal'];
+        return ['equal', 'not-equal', 'greater', 'less', 'contains', 'regex'];
+      })()
+    : [];
 
   return (
     <Grid container>
@@ -837,7 +860,11 @@ export const FieldConditionControl = (props: ConditionProps) => {
             ))}
           </Select>
         </FormControl>
-        <FormControl sx={{minWidth: 200}} data-testid="operator-input">
+        <FormControl
+          sx={{minWidth: 200}}
+          data-testid="operator-input"
+          disabled={allowedOperators.length === 1}
+        >
           <InputLabel id="operator">Operator</InputLabel>
           <Select
             labelId="operator"
