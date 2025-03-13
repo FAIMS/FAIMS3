@@ -145,6 +145,127 @@ export const findFieldCondtionUsage = (
 };
 
 /**
+ * findSectionExternalUsage:
+ * Checks if any other section references the fields belonging to `targetSectionId`.
+ * If so, returns references for display (like "Section: X references your fields").
+ *
+ * @param targetSectionId The ID of the section you plan to delete.
+ * @param allFviews All sections
+ * @param allFields All fields
+ * @returns Array of strings describing external references
+ */
+export function findSectionExternalUsage(
+  targetSectionId: string,
+  allFviews: Record<
+    string,
+    {label: string; condition?: ConditionType; fields: string[]}
+  >,
+  allFields: Record<string, any>
+): string[] {
+  const references: string[] = [];
+
+  // 1. gather all fields that belong to the target section
+  const targetFields = allFviews[targetSectionId]?.fields || [];
+
+  // 2. For each section in fviews
+  for (const [sectionId, sectionDef] of Object.entries(allFviews)) {
+    // If it's the same section, skip. Self-contained references are okay if you're deleting the whole section
+    if (sectionId === targetSectionId) continue;
+
+    // 2a. check section-level condition
+    const sectionCond = sectionDef.condition;
+    if (
+      sectionCond &&
+      targetFields.some(f => isFieldUsedInCondition(sectionCond, f))
+    ) {
+      references.push(`Section: ${sectionDef.label}`);
+    }
+
+    // 2b. check each field in that section
+    for (const fieldName of sectionDef.fields) {
+      const fieldCond = allFields[fieldName]?.condition;
+      if (
+        fieldCond &&
+        targetFields.some(f => isFieldUsedInCondition(fieldCond, f))
+      ) {
+        const label =
+          allFields[fieldName]?.['component-parameters']?.label || fieldName;
+        references.push(`Field: ${label} (section: ${sectionDef.label})`);
+      }
+    }
+  }
+
+  return references;
+}
+
+/**
+ * findFormExternalUsage:
+ * Similar logic to findSectionExternalUsage, treats the entire form (across all its sections) as the target,
+ * Then we see if other forms' conditions reference any of this form's fields.
+ *
+ * @param targetFormId The ID of the form you plan to delete
+ * @param viewsets All forms
+ * @param allFviews All sections
+ * @param allFields All fields
+ * @returns Array of strings describing references from outside forms
+ */
+export function findFormExternalUsage(
+  targetFormId: string,
+  viewsets: Record<string, {label: string; views: string[]}>,
+  allFviews: Record<
+    string,
+    {label: string; condition?: ConditionType; fields: string[]}
+  >,
+  allFields: Record<string, any>
+): string[] {
+  const references: string[] = [];
+
+  const targetFormDef = viewsets[targetFormId];
+  if (!targetFormDef) return references;
+
+  // 1. gather all fields across all sections in the target form
+  const targetFields: string[] = [];
+  for (const sectionId of targetFormDef.views) {
+    targetFields.push(...(allFviews[sectionId]?.fields || []));
+  }
+
+  // 2. For each form in viewsets
+  for (const [formId, formDef] of Object.entries(viewsets)) {
+    if (formId === targetFormId) continue; // skip same form
+
+    // 2a. for each section in that form
+    for (const secId of formDef.views) {
+      const secDef = allFviews[secId];
+      if (!secDef) continue;
+      // check section-level condition
+      if (
+        secDef.condition &&
+        targetFields.some(f => isFieldUsedInCondition(secDef.condition, f))
+      ) {
+        references.push(`Section: ${secDef.label} (Form: ${formDef.label})`);
+      }
+
+      // check each field
+      for (const fieldName of secDef.fields) {
+        const fieldCond = allFields[fieldName]?.condition;
+        if (
+          fieldCond &&
+          targetFields.some(f => isFieldUsedInCondition(fieldCond, f))
+        ) {
+          const label =
+            allFields[fieldName]?.['component-parameters']?.label || fieldName;
+          references.push(
+            `Field: ${label} (Form: ${formDef.label}, Section: ${secDef.label})`
+          );
+        }
+      }
+    }
+  }
+
+  return references;
+}
+
+/**
  * Finds fields and sections that have visibility conditions relying on this field
  * and that expect a specific value that no longer exists.
  *
