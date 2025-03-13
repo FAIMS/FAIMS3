@@ -796,6 +796,20 @@ class RecordForm extends React.Component<any, RecordFormState> {
     );
   }
 
+  /**
+   * Handles navigation between form sections (steps).
+   *
+   * Tracks visited sections and updates the active step.
+   * When all sections are visited, forces Formik to revalidate the form
+   * to ensure the "Publish" button is shown correctly.
+   *
+   * This function supports the `publishButtonBehaviour` setting, which controls
+   * when the publish button should be displayed:
+   *
+   * - `'always'`: The publish button is always visible.
+   * - `'visited'`: The publish button is shown only after all sections are visited.
+   * - `'noErrors'`: The publish button is shown only after all the errors/required fields of the form as addressed.
+   */
   onChangeStepper(view_name: string, activeStepIndex: number) {
     this.setState(
       prevState => {
