@@ -243,6 +243,43 @@ registerCompiler('contains', (expression: ConditionalExpression) => {
 });
 
 /**
+ * This condition checks if the list contains at least one of the specified values.
+ * This effectively acts as an OR condition for multi-select fields.
+ * If an error occurs or other edge case is encountered, returns false to reflect 'not containing'.
+ */
+registerCompiler('contains-one-of', (expression: ConditionalExpression) => {
+  return (values: RecordValues) => {
+    if (expression.field && expression.field in values) {
+      try {
+        const valuePresent = values[expression.field]! as
+          | string[]
+          | undefined
+          | null;
+        const targets = expression.value as string[] | undefined | null;
+
+        // Ensure targets is a valid array of strings
+        if (!targets || !Array.isArray(targets) || !isStringArray(targets)) {
+          return false;
+        }
+        // Ensure the value from the field is a valid array
+        if (!valuePresent || !Array.isArray(valuePresent)) {
+          return false;
+        }
+        // Check if any of the target values exist in the field's array
+        return targets.some(target =>
+          valuePresent
+            .map(v => sanitizeComparisonInput(v))
+            .includes(sanitizeComparisonInput(target))
+        );
+      } catch (e) {
+        console.error("Exception during 'contains-one-of' evaluation:", e);
+        return false;
+      }
+    } else return false;
+  };
+});
+
+/**
  * This condition checks that the list does not contain the targeted entry.
  * Chooses to be error tolerant to only match on the exact case. If an error
  * occurs or other edge case, returns true to reflect 'not' containing.

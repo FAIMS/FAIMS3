@@ -68,6 +68,7 @@ const allOperators = new Map([
     'does-not-contain-regex',
     'List does not contain any value matching this regex',
   ],
+  ['contains-one-of', 'List contains one of these values'],
 ]);
 
 const getFieldLabel = (f: FieldType) => {
@@ -645,7 +646,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const getAllowedOperators = (fieldDef: FieldType | null) => {
     if (!fieldDef) return [];
     if (fieldDef['component-name'] === 'MultiSelect') {
-      return ['contains', 'does-not-contain'];
+      return ['contains-one-of', 'does-not-contain'];
     }
     if (isPredefinedOptions(fieldDef)) {
       return ['equal', 'not-equal'];
