@@ -60,6 +60,7 @@ import ConflictLinkBar from './conflictLinkBar';
 import ConflictPanel from './conflictpanel';
 import ConflictToolBar from './conflicttoolbar';
 import RecordTabBar from './recordTab';
+import {localGetDataDb} from '../../../..';
 
 type ConflictFormProps = {
   project_id: ProjectID;
@@ -269,11 +270,12 @@ export default function ConflictForm(props: ConflictFormProps) {
       setconflict(null);
       setIsloading(true);
       // setUserMergeResult({...mergeresult, parents: revisionlist}); // update the value when conflist revision changes
-      const result = await getMergeInformationForHead(
-        project_id,
-        record_id,
-        revisionvalue
-      );
+      const result = await getMergeInformationForHead({
+        dataDb: localGetDataDb(project_id),
+        recordId: record_id,
+        projectId: project_id,
+        revisionId: revisionvalue,
+      });
       await updateconflictvalue(setconflict, result, compareconflict, {
         ...mergeresult,
         parents: revisionlist,

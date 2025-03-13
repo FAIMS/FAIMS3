@@ -3,9 +3,8 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {RoleCard} from '../ui/role-card';
 import {AddRolePopover} from '../popovers/add-role-popover';
-import {useAuth} from '@/context/auth-provider';
-import {useQueryClient} from '@tanstack/react-query';
 import {ProjectRoleCard} from '../project-role-card';
+import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -53,7 +52,18 @@ export const columns: ColumnDef<any>[] = [
   },
   {
     id: 'remove',
-    cell: () => <div className="flex justify-center items-center -my-2"></div>,
+    cell: ({
+      row: {
+        original: {_id, 'project-roles': roles},
+      },
+    }: any) => (
+      <div className="flex justify-center items-center -my-2">
+        <RemoveUserFromProjectDialog
+          userId={_id}
+          admin={roles.includes('admin')}
+        />
+      </div>
+    ),
     header: () => (
       <div className="flex justify-center items-center">Remove</div>
     ),

@@ -27,14 +27,15 @@ import {
   getUsers,
   removeOtherRoleFromUser,
   removeProjectRoleFromUser,
+  removeUser,
   saveUser,
   userIsClusterAdmin,
 } from '../couchdb/users';
 import {processRequest} from 'zod-express-middleware';
 import {z} from 'zod';
 import {
+  CLUSTER_ADMIN_GROUP_NAME,
   PostUpdateUserInputSchema,
-  UpdateUserProjectRoleInputSchema,
 } from '@faims3/data-model';
 
 import patch from '../utils/patchExpressAsync';
@@ -85,7 +86,7 @@ api.put(
   requireAuthenticationAPI,
   processRequest({
     params: z.object({id: z.string(), project: z.string()}),
-    body: UpdateUserProjectRoleInputSchema,
+    body: z.object({action: z.string(), role: z.string()}),
   }),
   async (req, res) => {
     if (!userIsClusterAdmin(req.user)) {
@@ -120,7 +121,12 @@ api.get(
   requireAuthenticationAPI,
   async (
     req: any,
-    res: Response<{id: string; name: string; email: string}>
+    res: Response<{
+      id: string;
+      name: string;
+      email: string;
+      cluster_admin: boolean;
+    }>
   ) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException(
@@ -129,7 +135,13 @@ api.get(
     }
 
     const {_id: id, name, emails} = req.user;
-    return res.json({id, name, email: emails[0]});
+
+    return res.json({
+      id,
+      name,
+      email: emails[0],
+      cluster_admin: req.user.other_roles.includes(CLUSTER_ADMIN_GROUP_NAME),
+    });
   }
 );
 
@@ -145,5 +157,41 @@ api.get(
     }
 
     return res.json(await getUsers());
+  }
+);
+
+// REMOVE a user
+api.delete(
+  '/:id',
+  requireAuthenticationAPI,
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async ({params: {id}, user}, res) => {
+    if (!userIsClusterAdmin(user))
+      throw new Exceptions.UnauthorizedException(
+        'Only cluster admins can remove users.'
+      );
+
+    if (!id) throw new Exceptions.ValidationException('User ID not specified');
+
+    const userToRemove = await getUserFromEmailOrUsername(id);
+
+    if (!userToRemove)
+      throw new Exceptions.ItemNotFoundException(
+        'Username cannot be found in user database.'
+      );
+
+    if (userIsClusterAdmin(userToRemove))
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to remove cluster admins.'
+      );
+
+    try {
+      removeUser(userToRemove);
+    } catch (e) {
+      throw new Exceptions.InternalSystemError('Error removing user');
+    }
+    res.status(200).send();
   }
 );
