@@ -175,10 +175,10 @@ export default function FormButtonGroup({
               <>
                 <FormSubmitButton
                   color="primary"
-                  data-testid="publish-close-record"
+                  data-testid="finish-close-record"
                   disabled={disabled}
                   formProps={formProps}
-                  text={`Publish and close ${record_type}`}
+                  text={`Finish and close ${record_type}`}
                   is_close="close"
                   handleFormSubmit={handleFormSubmit}
                   is_final_view={is_final_view}
@@ -187,7 +187,7 @@ export default function FormButtonGroup({
                   color="secondary"
                   disabled={disabled}
                   formProps={formProps}
-                  text={`Publish and new ${record_type}`}
+                  text={`Finish and new ${record_type}`}
                   is_close="new"
                   handleFormSubmit={handleFormSubmit}
                   is_final_view={is_final_view}
