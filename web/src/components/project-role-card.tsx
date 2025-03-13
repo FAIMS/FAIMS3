@@ -1,6 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {cn} from '@/lib/utils';
-import {Route} from '@/routes/projects/$projectId';
+import {Route} from '@/routes/_protected/projects/$projectId';
 import {useQueryClient} from '@tanstack/react-query';
 import {X} from 'lucide-react';
 

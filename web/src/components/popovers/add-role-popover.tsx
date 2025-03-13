@@ -4,7 +4,7 @@ import {useAuth} from '@/context/auth-provider';
 import {RoleCard} from '../ui/role-card';
 import {act, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {Route} from '@/routes/projects/$projectId';
+import {Route} from '@/routes/_protected/projects/$projectId';
 
 /**
  * A popover that allows the user to add a role to a user.
