@@ -643,9 +643,14 @@ export const FieldConditionControl = (props: ConditionProps) => {
 
   /* Filter the allowed operators based on field type */
   const getAllowedOperators = (fieldDef: FieldType | null) => {
-    return isPredefinedOptions(fieldDef)
-      ? ['equal', 'not-equal']
-      : ['equal', 'not-equal', 'greater', 'less', 'contains', 'regex'];
+    if (!fieldDef) return [];
+    if (fieldDef['component-name'] === 'MultiSelect') {
+      return ['contains', 'does-not-contain'];
+    }
+    if (isPredefinedOptions(fieldDef)) {
+      return ['equal', 'not-equal'];
+    }
+    return ['equal', 'not-equal', 'greater', 'less', 'contains', 'regex'];
   };
 
   const renderValueEditor = (fieldDef: FieldType) => {
@@ -665,7 +670,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             <InputLabel>Value</InputLabel>
             <Select
               label="Value"
-              value={isValidOption ? condition.value : (condition.value ?? '')} // Show invalid value
+              value={isValidOption ? condition.value : (condition.value ?? '')}
               onChange={e => updateValue(e.target.value)}
             >
               {possibleOptions.map((opt: any) => (
