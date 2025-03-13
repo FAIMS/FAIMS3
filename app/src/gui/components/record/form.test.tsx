@@ -1320,6 +1320,7 @@ describe('Check form component', () => {
         <BrowserRouter>
           <RecordForm
             project_id={testProjectId}
+            serverId={'todo'}
             ui_specification={testUiSpecification}
             record_id={testRecordId}
             type={testTypeName}
@@ -1327,8 +1328,10 @@ describe('Check form component', () => {
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
-            draftLastSaved={testDraftLastSaved}
+            draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
+            setProgress={null as any}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );
@@ -1398,13 +1401,16 @@ describe('Check form component', () => {
             project_id={testProjectId}
             ui_specification={testUiSpecification}
             record_id={testRecordId}
+            serverId={'todo'}
             type={testTypeName}
             draft_id={testDraftId}
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
-            draftLastSaved={testDraftLastSaved}
+            draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
+            setProgress={null as any}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );
@@ -1443,8 +1449,11 @@ describe('Check form component', () => {
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
-            draftLastSaved={testDraftLastSaved}
+            draftLastSaved={new Date(testDraftLastSaved)}
+            serverId="todo"
             navigate={vi.fn(() => {})}
+            setProgress={null as any}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );
@@ -1475,13 +1484,16 @@ describe('Check form component', () => {
             project_id={testProjectId}
             ui_specification={testUiSpecification}
             record_id={testRecordId}
+            serverId="todo"
             type={testTypeName}
             draft_id={testDraftId}
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
-            draftLastSaved={testDraftLastSaved}
+            draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
+            setProgress={null as any}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );
@@ -1514,14 +1526,17 @@ describe('Check form component', () => {
           <RecordForm
             project_id={testProjectId}
             ui_specification={testUiSpecification}
+            serverId="todo"
             record_id={testRecordId}
             type={testTypeName}
             draft_id={testDraftId}
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
-            draftLastSaved={testDraftLastSaved}
+            draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
+            setProgress={null as any}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );
@@ -1556,6 +1571,7 @@ describe('Check form component', () => {
         <BrowserRouter>
           <RecordForm
             project_id={testProjectId}
+            serverId="todo"
             ui_specification={testUiSpecification}
             record_id={testRecordId}
             type={testTypeName}
@@ -1563,8 +1579,10 @@ describe('Check form component', () => {
             handleSetIsDraftSaving={vi.fn(() => {})}
             handleSetDraftLastSaved={vi.fn(() => {})}
             handleSetDraftError={vi.fn(() => {})}
-            draftLastSaved={testDraftLastSaved}
+            draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
+            setProgress={null as any}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );

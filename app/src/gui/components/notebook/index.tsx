@@ -2,24 +2,27 @@ import styled from '@emotion/styled';
 import {AppBar, Box, Paper, Tab, Tabs, TabScrollButton} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import {useQueryClient} from '@tanstack/react-query';
 import React, {useState} from 'react';
 import {NOTEBOOK_NAME} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {
+  invalidateProjectHydration,
+  invalidateProjectRecordList,
   useDraftsList,
   useQueryParams,
   useRecordList,
 } from '../../../utils/customHooks';
+import CircularLoading from '../ui/circular_loading';
 import AddRecordButtons from './add_record_by_type';
 import {DraftsTable} from './draft_table';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
-import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
-import CircularLoading from '../ui/circular_loading';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -119,6 +122,7 @@ type NotebookComponentProps = {
 export default function NotebookComponent({project}: NotebookComponentProps) {
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
+  const queryClient = useQueryClient();
 
   const {uiSpecificationId} = project;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
@@ -153,10 +157,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     projectId: project.projectId,
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
-    refreshIntervalMs: 10000,
+    metadataRefreshIntervalMs: 10000,
+    // rehydrate every 2 minutes (local only fetch - no network traffic here)
+    hydrationRefreshIntervalMs: 120000,
     uiSpecification: uiSpecification,
   });
-  const forceRecordRefresh = records.query.refetch;
+  const forceRecordRefresh = records.initialQuery.refetch;
 
   // Fetch drafts
   const drafts = useDraftsList({
@@ -202,7 +208,22 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     <Box>
       <Box>
         <Box sx={{mb: 1.5}}>
-          <AddRecordButtons project={project} recordLabel={recordLabel} />
+          <AddRecordButtons
+            project={project}
+            recordLabel={recordLabel}
+            refreshList={() => {
+              invalidateProjectRecordList({
+                client: queryClient,
+                projectId: project.projectId,
+                reset: true,
+              });
+              invalidateProjectHydration({
+                client: queryClient,
+                projectId: project.projectId,
+                reset: true,
+              });
+            }}
+          />
         </Box>
         <Box
           mb={2}
@@ -292,7 +313,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             project={project}
             maxRows={25}
             rows={records.myRecords}
-            loading={records.query.isLoading}
+            loading={records.initialQuery.isLoading}
             viewsets={viewsets}
             handleQueryFunction={setQuery}
             handleRefresh={forceRecordRefresh}
@@ -308,7 +329,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             project={project}
             maxRows={25}
             rows={records.otherRecords}
-            loading={records.query.isLoading}
+            loading={records.initialQuery.isLoading}
             viewsets={viewsets}
             handleQueryFunction={setQuery}
             handleRefresh={forceRecordRefresh}

@@ -191,6 +191,9 @@ export const getIdsByFieldName = ({
   return {viewSetId: matchingViewSetId, viewId: matchingViewId};
 };
 
+export type ViewsetId = string;
+export type HridFieldMap = Record<ViewsetId, string | undefined>;
+
 /**
  * Creates a mapping of viewset IDs to their corresponding HRID field names
  * @param {ProjectUIModel} uiSpecification - The UI specification to analyze
@@ -198,7 +201,7 @@ export const getIdsByFieldName = ({
  */
 export const getHridFieldMap = (
   uiSpecification: ProjectUIModel
-): Record<string, string | undefined> => {
+): HridFieldMap => {
   // Get all viewset IDs from the specification
   const viewSetIds = Object.keys(uiSpecification.viewsets);
 

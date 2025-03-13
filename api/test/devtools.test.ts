@@ -22,7 +22,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
-import {initialiseDatabases} from '../src/couchdb';
+import {initialiseDbAndKeys} from '../src/couchdb';
 import {createNotebook} from '../src/couchdb/notebooks';
 import * as fs from 'fs';
 import {createRandomRecord} from '../src/couchdb/devtools';
@@ -36,7 +36,7 @@ registerClient(callbackObject);
 
 if (DEVELOPER_MODE) {
   it('createRecords', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',

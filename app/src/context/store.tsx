@@ -19,21 +19,21 @@ import {
 import {PersistGate} from 'redux-persist/integration/react';
 import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 import LoadingApp from '../gui/components/loadingApp';
+import {logError} from '../logging';
 import {initialize} from '../sync/initialize';
-import alertsReducer from './slices/alertSlice';
+import alertsReducer, {addAlert} from './slices/alertSlice';
 import authReducer, {
   refreshAllUsers,
   refreshIsAuthenticated,
   selectIsAuthenticated,
 } from './slices/authSlice';
-import projectsReducer from './slices/projectSlice';
 import {databaseService} from './slices/helpers/databaseService';
-import {logError} from '../logging';
-import {addAlert} from './slices/alertSlice';
+import projectsReducer from './slices/projectSlice';
 
 // The below configures indexed DB storage which has a greater limit than
 // localStorage. UI specs contain images.
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import storage from 'redux-persist-indexeddb-storage';
 
