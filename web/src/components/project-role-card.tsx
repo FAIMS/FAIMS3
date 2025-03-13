@@ -4,6 +4,13 @@ import {Route} from '@/routes/_protected/projects/$projectId';
 import {useQueryClient} from '@tanstack/react-query';
 import {X} from 'lucide-react';
 
+/**
+ * A card that displays a user's role in a project.
+ * @param children - The content of the card.
+ * @param userId - The ID of the user.
+ * @param role - The role of the user.
+ * @returns A card that displays a user's role in a project.
+ */
 export function ProjectRoleCard({
   children,
   userId,

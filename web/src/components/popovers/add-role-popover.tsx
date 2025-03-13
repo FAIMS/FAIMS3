@@ -2,7 +2,7 @@ import {Plus} from 'lucide-react';
 import {Popover, PopoverContent, PopoverTrigger} from '../ui/popover';
 import {useAuth} from '@/context/auth-provider';
 import {RoleCard} from '../ui/role-card';
-import {act, useState} from 'react';
+import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Route} from '@/routes/_protected/projects/$projectId';
 
