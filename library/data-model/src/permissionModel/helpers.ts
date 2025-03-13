@@ -27,6 +27,9 @@ export function canPerformAction({
   );
 }
 
+// Cache the role drill
+const rolePermissionsCache = new Map<Role, Permission[]>();
+
 /**
  * Given a role, drills into all permissions that it grants. This includes both
  * direct permissions and those granted through inherited roles
@@ -34,6 +37,10 @@ export function canPerformAction({
  * @returns Array of all permissions granted by this role
  */
 export function drillRolePermissions({role}: {role: Role}): Permission[] {
+  // Check cache first
+  if (rolePermissionsCache.has(role)) {
+    return rolePermissionsCache.get(role)!;
+  }
   // Set to track unique permissions (avoid duplicates)
   const permissionSet = new Set<Permission>();
   // Helper function to recursively collect permissions from roles
@@ -66,8 +73,19 @@ export function drillRolePermissions({role}: {role: Role}): Permission[] {
   }
   // Start the collection process
   collectPermissionsFromRole(role);
+
   // Convert set back to array
-  return Array.from(permissionSet);
+  const permissions = Array.from(permissionSet);
+
+  // Cache the result
+  rolePermissionsCache.set(role, permissions);
+
+  return permissions;
+}
+
+// Clear cache if needed
+export function clearRolePermissionsCache(): void {
+  rolePermissionsCache.clear();
 }
 
 /**

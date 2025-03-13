@@ -97,12 +97,15 @@ export function decodeAndValidateToken(
       const {resourceId, permissionString} = decodePerResourcePermission({
         input: encodedRole,
       });
+
       return {
         resourceId,
-        role: permissionString as Role,
+        role: permissionString,
       };
-    } catch (error) {
-      throw new Error(`Invalid resource role encoding: ${encodedRole}`);
+    } catch (error: any) {
+      throw new Error(
+        `Invalid resource role encoding: ${encodedRole}. ${error.message}`
+      );
     }
   });
 
@@ -113,13 +116,14 @@ export function decodeAndValidateToken(
         const {resourceId, permissionString} = decodePerResourcePermission({
           input: encodedPermission,
         });
+
         return {
           resourceId,
-          permission: permissionString as Permission,
+          permission: permissionString,
         };
-      } catch (error) {
+      } catch (error: any) {
         throw new Error(
-          `Invalid resource permission encoding: ${encodedPermission}`
+          `Invalid resource permission encoding: ${encodedPermission}. ${error.message}`
         );
       }
     }
@@ -127,11 +131,7 @@ export function decodeAndValidateToken(
 
   // Transform general roles
   const globalRoles = validatedRawToken.globalRoles.map(roleString => {
-    try {
-      return roleString as Role;
-    } catch (error) {
-      throw new Error(`Invalid general role: ${roleString}`);
-    }
+    return roleString;
   });
 
   // Create the decoded token
