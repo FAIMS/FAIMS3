@@ -6,7 +6,7 @@ import {ProjectFromTemplateDialog} from '@/components/dialogs/project-from-templ
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {useAuth} from '@/context/auth-provider';
-import {useGetTemplates} from '@/hooks/get-hooks';
+import {useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 
 /**
@@ -19,7 +19,7 @@ import {Route} from '@/routes/_protected/templates/$templateId';
 const TemplateActions = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-  const {data} = useGetTemplates(user, templateId);
+  const {data} = useGetTemplate(user, templateId);
   const archived = data?.metadata.project_status === 'archived';
 
   return (
@@ -37,8 +37,8 @@ const TemplateActions = () => {
               <a
                 href={`data:text/json;charset=utf-8,${encodeURIComponent(
                   JSON.stringify({
-                    metadata: data.metadata,
-                    'ui-specification': data['ui-specification'],
+                    metadata: data?.metadata,
+                    'ui-specification': data?.['ui-specification'],
                   })
                 )}`}
                 download={`${templateId}.json`}

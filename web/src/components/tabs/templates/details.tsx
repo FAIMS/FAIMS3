@@ -3,7 +3,7 @@ import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
-import {useGetTemplates} from '@/hooks/get-hooks';
+import {useGetTemplate} from '@/hooks/queries';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -28,7 +28,7 @@ interface TemplateDetailsProps {
 const TemplateDetails = ({templateId}: TemplateDetailsProps) => {
   const {user} = useAuth();
 
-  const {data, isPending} = useGetTemplates(user, templateId);
+  const {data, isPending} = useGetTemplate(user, templateId);
 
   return (
     <Card>
@@ -39,7 +39,7 @@ const TemplateDetails = ({templateId}: TemplateDetailsProps) => {
             {isPending ? (
               <Skeleton />
             ) : (
-              <ListDescription>{data.metadata[field]}</ListDescription>
+              <ListDescription>{data?.metadata[field]}</ListDescription>
             )}
           </ListItem>
         ))}

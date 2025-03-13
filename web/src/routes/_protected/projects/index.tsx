@@ -2,7 +2,7 @@ import {createFileRoute, useNavigate} from '@tanstack/react-router';
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/projects';
 import {useAuth} from '@/context/auth-provider';
-import {useGetProjects} from '@/hooks/get-hooks';
+import {useGetProjects} from '@/hooks/queries';
 import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 
 export const Route = createFileRoute('/_protected/projects/')({

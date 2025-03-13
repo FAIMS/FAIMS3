@@ -1,7 +1,15 @@
 import {useQuery} from '@tanstack/react-query';
 import {User} from '@/context/auth-provider';
 import QRCode from 'qrcode';
-import {GetNotebookListResponse, GetNotebookResponse} from '@faims3/data-model';
+import type {
+  ExpressUser,
+  RecordMetadata,
+  RoleInvite,
+  GetListTemplatesResponse,
+  GetNotebookListResponse,
+  GetNotebookResponse,
+  GetTemplateByIdResponse,
+} from '@faims3/data-model';
 
 /**
  * get function is a utility function for making GET requests to the API.
@@ -37,7 +45,7 @@ export const useGetProject = (user: User | null, projectId: string) =>
   useQuery({
     queryKey: ['projects', projectId],
     queryFn: () =>
-      get<GetNotebookResponse>(`/api/notebooks/${projectId || ''}`, user),
+      get<GetNotebookResponse>(`/api/notebooks/${projectId}`, user),
   });
 
 /**
@@ -53,20 +61,32 @@ export const useGetProjects = (user: User | null) =>
   });
 
 /**
+ * useGetTemplate hook returns a query for fetching a template.
+ *
+ * @param {User} user - The user object.
+ * @param {string} templateId - The ID of the template.
+ * @returns {Query} A query for fetching a template.
+ */
+export const useGetTemplate = (user: User | null, templateId: string) =>
+  useQuery({
+    queryKey: ['templates', templateId],
+    queryFn: () =>
+      get<GetTemplateByIdResponse>(`/api/templates/${templateId}`, user),
+  });
+
+/**
  * useGetTemplates hook returns a query for fetching templates.
  *
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching templates.
  */
-export const useGetTemplates = (user: User | null, templateId?: string) =>
+export const useGetTemplates = (user: User | null) =>
   useQuery({
-    queryKey: ['templates', templateId],
+    queryKey: ['templates'],
     queryFn: async () => {
-      const data = await get(`/api/templates/${templateId || ''}`, user);
+      const data = await get<GetListTemplatesResponse>('/api/templates/', user);
 
-      if (!templateId) return data.templates;
-
-      return data;
+      return data.templates;
     },
   });
 
@@ -79,8 +99,13 @@ export const useGetTemplates = (user: User | null, templateId?: string) =>
 export const useGetUsers = (user: User | null) =>
   useQuery({
     queryKey: ['users'],
-    queryFn: () => get('/api/users', user),
+    queryFn: () => get<ExpressUser[]>('/api/users', user),
   });
+
+interface GetInvitesResponse extends RoleInvite {
+  url: string;
+  qrCode: string;
+}
 
 /**
  * useGetInvites hook returns a query for fetching invites.
@@ -93,7 +118,10 @@ export const useGetInvites = (user: User | null, notebookId: string) =>
   useQuery({
     queryKey: ['invites', notebookId],
     queryFn: async () => {
-      const invites = await get(`/api/notebooks/${notebookId}/invites`, user);
+      const invites = await get<GetInvitesResponse[]>(
+        `/api/notebooks/${notebookId}/invites`,
+        user
+      );
 
       for (const invite of invites) {
         invite.url = `${import.meta.env.VITE_API_URL}/register/${invite._id}`;
@@ -113,5 +141,9 @@ export const useGetInvites = (user: User | null, notebookId: string) =>
 export const useGetRecords = (user: User | null, projectId: string) =>
   useQuery({
     queryKey: ['records', projectId],
-    queryFn: () => get(`/api/notebooks/${projectId}/records/`, user),
+    queryFn: () =>
+      get<{records: RecordMetadata[]}>(
+        `/api/notebooks/${projectId}/records/`,
+        user
+      ),
   });

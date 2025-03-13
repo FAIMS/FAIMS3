@@ -4,7 +4,7 @@ import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
-import {useGetProjects} from '@/hooks/get-hooks';
+import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 
 /**
@@ -19,7 +19,7 @@ import {Route} from '@/routes/_protected/projects/$projectId';
 const ProjectActions = (): JSX.Element => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
-  const {data} = useGetProjects(user, projectId);
+  const {data} = useGetProject(user, projectId);
 
   return (
     <div className="flex flex-col gap-2 justify-between">

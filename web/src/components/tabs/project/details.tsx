@@ -3,7 +3,7 @@ import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
-import {useGetProject} from '@/hooks/get-hooks';
+import {useGetProject} from '@/hooks/queries';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},

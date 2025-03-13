@@ -2,7 +2,7 @@ import {useAuth} from '@/context/auth-provider';
 import {getColumns} from '@/components/tables/users';
 import {DataTable} from '@/components/data-table/data-table';
 import {createFileRoute} from '@tanstack/react-router';
-import {useGetUsers} from '@/hooks/get-hooks';
+import {useGetUsers} from '@/hooks/queries';
 import {useState} from 'react';
 import {GeneratePasswordReset} from '@/components/dialogs/generate-password-reset';
 
