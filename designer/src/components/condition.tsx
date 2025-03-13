@@ -447,15 +447,11 @@ const BooleanConditionControl = (props: ConditionProps) => {
     updateCondition({...condition, operator: value});
   };
 
-  const updateCondition = (condition: ConditionType | null) => {
-    setCondition(condition);
-    if (
-      condition &&
-      props.onChange &&
-      condition.operator &&
-      condition.conditions
-    ) {
-      props.onChange(condition);
+  const updateCondition = (cond: ConditionType | null) => {
+    const newCond = cond === null ? EMPTY_FIELD_CONDITION : cond;
+    setCondition(newCond);
+    if (newCond && props.onChange) {
+      props.onChange(newCond);
     }
   };
 
@@ -469,7 +465,8 @@ const BooleanConditionControl = (props: ConditionProps) => {
               return i !== index;
             }
           );
-          if (newConditions.length === 0) updateCondition(null);
+          if (newConditions.length === 0)
+            updateCondition(EMPTY_FIELD_CONDITION);
           else updateCondition({...condition, conditions: newConditions});
         } else {
           const newConditions = condition.conditions.map(
@@ -482,7 +479,7 @@ const BooleanConditionControl = (props: ConditionProps) => {
         }
       } else if (condition) {
         if (value) updateCondition({...condition, conditions: [value]});
-        else updateCondition(null);
+        else updateCondition(EMPTY_FIELD_CONDITION);
       }
     };
   };
@@ -490,7 +487,7 @@ const BooleanConditionControl = (props: ConditionProps) => {
   const addCondition = () => {
     if (condition) {
       const existing = condition.conditions || [];
-      // construct a condition with an new empty field condition
+      // construct a condition with a new empty field condition
       const newCondition = {
         ...condition,
         conditions: [...existing, EMPTY_FIELD_CONDITION],
@@ -500,9 +497,7 @@ const BooleanConditionControl = (props: ConditionProps) => {
   };
 
   const deleteCondition = () => {
-    if (props.onChange) {
-      props.onChange(null);
-    }
+    updateCondition(EMPTY_FIELD_CONDITION);
   };
 
   if (condition)
