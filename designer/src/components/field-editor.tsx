@@ -69,6 +69,12 @@ type FieldEditorProps = {
   moveFieldCallback: (targetViewId: string) => void;
 };
 
+type ConflictError = {
+  title: string;
+  message: string;
+  conflicts: string[];
+};
+
 export const FieldEditor = ({
   fieldName,
   viewId,
@@ -113,6 +119,10 @@ export const FieldEditor = ({
 
   const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
   const [conditionsAffected, setConditionsAffected] = useState<string[]>([]);
+
+  const [conflictError, setConflictError] = useState<ConflictError | null>(
+    null
+  );
 
   const deleteField = (evt: React.SyntheticEvent) => {
     evt.stopPropagation();
@@ -189,6 +199,7 @@ export const FieldEditor = ({
   };
 
   const handleCloseMoveDialog = () => {
+    setConflictError(null);
     setOpenMoveDialog(false);
     setSelectedFormId(null); // reset selectedFormId when dialog is closed
     setTargetViewId(''); // reset section value when dialog is closed
@@ -196,6 +207,22 @@ export const FieldEditor = ({
 
   const moveFieldToSection = () => {
     if (targetViewId) {
+      const usage = findFieldCondtionUsage(fieldName, allFields, allFviews);
+      const targetSectionLabel = allFviews[targetViewId]?.label || '';
+      const conflicts = usage.filter(u =>
+        u.includes(`Section: ${targetSectionLabel}`)
+      );
+
+      if (conflicts.length > 0) {
+        setConflictError({
+          title: `Cannot move field "${label}" to "${targetSectionLabel}"`,
+          message:
+            'This section has conditions that already depend on this field. To proceed, first remove or update these conditions in the target section.',
+          conflicts,
+        });
+        return;
+      }
+
       dispatch({
         type: 'ui-specification/fieldMovedToSection',
         payload: {
@@ -441,6 +468,18 @@ export const FieldEditor = ({
           Move Question
         </DialogTitle>
         <DialogContent>
+          {conflictError && (
+            <Alert severity="error" sx={{mb: 2}}>
+              <Typography variant="body2" sx={{mb: 1}}>
+                {conflictError.message}
+              </Typography>
+              <ul style={{marginTop: 8, paddingLeft: 20}}>
+                {conflictError.conflicts.map((ref, idx) => (
+                  <li key={idx}>{ref}</li>
+                ))}
+              </ul>
+            </Alert>
+          )}
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
@@ -455,6 +494,7 @@ export const FieldEditor = ({
                 onChange={(_event, newValue) => {
                   setSelectedFormId(newValue ? newValue.id : null);
                   setTargetViewId(''); // reset section when form changes
+                  setConflictError(null);
                 }}
                 options={formOptions}
                 getOptionLabel={option => option.label}
@@ -474,6 +514,7 @@ export const FieldEditor = ({
                 value={selectedFormId ? sectionValue : null}
                 onChange={(_event, newValue) => {
                   setTargetViewId(newValue ? newValue.id : '');
+                  setConflictError(null);
                 }}
                 options={sectionOptions}
                 getOptionLabel={option => option.label}
@@ -531,7 +572,7 @@ export const FieldEditor = ({
           <Grid item xs={12} sx={{marginBottom: 3.5}}>
             <Alert severity="warning">
               The following fields/sections have visibility conditions that
-              depend on this field having a specific option avaliable:
+              depend on this field having a specific option available:
               <ul style={{marginTop: '8px', paddingLeft: '20px'}}>
                 {invalidRefs.map((msg, idx) => (
                   <li key={idx}>{msg}</li>
