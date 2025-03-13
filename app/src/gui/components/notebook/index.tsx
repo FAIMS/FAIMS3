@@ -24,16 +24,16 @@ import CircularLoading from '../ui/circular_loading';
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
   | 'my_records'
-  | 'other_records'
   | 'drafts'
+  | 'other_records'
   | 'details'
   | 'settings'
   | 'map';
 type TabIndex = 0 | 1 | 2 | 3 | 4 | 5;
 const TAB_TO_INDEX = new Map<TabIndexLabel, TabIndex>([
   ['my_records', 0],
-  ['other_records', 1],
-  ['drafts', 2],
+  ['drafts', 1],
+  ['other_records', 2],
   ['details', 3],
   ['settings', 4],
   ['map', 5],
@@ -259,20 +259,22 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 value={0}
                 {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
               />
-              {(tabIndex === 1 || records.otherRecords.length > 0) && (
+              {(tabIndex === 1 || (drafts.data?.length ?? 0) > 0) && (
                 <Tab
                   value={1}
-                  label={`Other ${recordLabel}s (${records.otherRecords.length})`}
-                  {...a11yProps(1, `${NOTEBOOK_NAME}-otherrecords`)}
+                  label={`Drafts (${drafts.data?.length ?? 0})`}
+                  {...a11yProps(1, `${NOTEBOOK_NAME}-drafts`)}
                 />
               )}
-              {(tabIndex === 2 || (drafts.data?.length ?? 0) > 0) && (
+
+              {(tabIndex === 2 || records.otherRecords.length > 0) && (
                 <Tab
                   value={2}
-                  label={`Drafts (${drafts.data?.length ?? 0})`}
-                  {...a11yProps(2, `${NOTEBOOK_NAME}-drafts`)}
+                  label={`Other ${recordLabel}s (${records.otherRecords.length})`}
+                  {...a11yProps(2, `${NOTEBOOK_NAME}-otherrecords`)}
                 />
               )}
+
               <Tab value={3} label="Details" {...a11yProps(3, NOTEBOOK_NAME)} />
               <Tab
                 value={4}
@@ -300,10 +302,25 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           />
         </TabPanel>
         {
+          // Drafts
+        }
+
+        <TabPanel value={tabIndex} index={1} id={'record-drafts'}>
+          <DraftsTable
+            project_id={project.projectId}
+            serverId={project.serverId}
+            maxRows={25}
+            rows={drafts.data ?? []}
+            loading={drafts.isLoading}
+            viewsets={viewsets}
+            handleRefresh={forceDraftRefresh}
+          />
+        </TabPanel>
+        {
           // Other records
         }
 
-        <TabPanel value={tabIndex} index={1} id={'records-all'}>
+        <TabPanel value={tabIndex} index={2} id={'records-all'}>
           <RecordsTable
             project={project}
             maxRows={25}
@@ -313,20 +330,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             handleQueryFunction={setQuery}
             handleRefresh={forceRecordRefresh}
             recordLabel={recordLabel}
-          />
-        </TabPanel>
-        {
-          // Drafts
-        }
-        <TabPanel value={tabIndex} index={2} id={'record-drafts'}>
-          <DraftsTable
-            project_id={project.projectId}
-            serverId={project.serverId}
-            maxRows={25}
-            rows={drafts.data ?? []}
-            loading={drafts.isLoading}
-            viewsets={viewsets}
-            handleRefresh={forceDraftRefresh}
           />
         </TabPanel>
 
