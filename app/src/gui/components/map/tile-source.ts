@@ -304,7 +304,8 @@ class TileStoreBase {
     const averageSize = 100; // kb
 
     const tileSet = new Set<string>();
-    const startZoom = Math.floor(minZoom - 1);
+    // start at zoom 10, two less than our default zoom level for showing maps
+    const startZoom = 10;
     for (let zoom = startZoom; zoom <= maxZoom; zoom += 1) {
       tileGrid?.forEachTileCoord(
         extent,
@@ -350,7 +351,7 @@ class TileStoreBase {
     const tileSet: StoredTileSet = {
       setName,
       extent,
-      minZoom: Math.floor(minZoom - 1),
+      minZoom: 10,
       maxZoom,
       size: 0,
       expectedTileCount: 0,
