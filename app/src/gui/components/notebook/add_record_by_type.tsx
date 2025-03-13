@@ -85,7 +85,7 @@ export default function AddRecordButtons({
           sx={{
             maxHeight: '400px',
             justifyContent: mq_above_sm ? 'flex-start' : 'center',
-            gap: mq_above_sm? '8px' : '0px'
+            gap: mq_above_sm ? '8px' : '0px',
           }}
         >
           {/*If the list of views hasn't loaded yet*/}
