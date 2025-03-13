@@ -286,7 +286,7 @@ export const FormEditor = ({
     for (const [sectionId, section] of Object.entries(views)) {
       if (section.fields.includes(fieldName)) {
         // Find which form contains this section
-        for (const [formId, form] of Object.entries(viewsets)) {
+        for (const [, form] of Object.entries(viewsets)) {
           if (form.views.includes(sectionId)) {
             return `Form '${form.label}', Section '${section.label}'`;
           }
