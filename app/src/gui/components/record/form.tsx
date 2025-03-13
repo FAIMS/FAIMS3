@@ -822,6 +822,13 @@ class RecordForm extends React.Component<any, RecordFormState> {
       },
       () => {
         this.checkAllSectionsVisited(); // Check if all sections are visited
+
+        if (
+          this.state.visitedSteps.size === this.state.views.length &&
+          this.formikRef?.current
+        ) {
+          this.formikRef.current.validateForm();
+        }
       }
     );
   }
@@ -1404,9 +1411,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   publishButtonBehaviour === 'always' ||
                   (publishButtonBehaviour === 'visited' &&
                     allSectionsVisited) ||
-                  (publishButtonBehaviour === 'noErrors' &&
-                    allSectionsVisited &&
-                    !hasErrors);
+                  (publishButtonBehaviour === 'noErrors' && !hasErrors);
 
                 // Recompute derived values if something has changed
                 const {values, setValues} = formProps;
