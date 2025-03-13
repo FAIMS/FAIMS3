@@ -49,6 +49,7 @@
     "@tanstack/router-devtools": "^1.87.9",
     "@tanstack/zod-adapter": "^1.106.0",
     "class-variance-authority": "^0.7.1",
+    "@faims3/data-model": "*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "qrcode": "^1.5.4",

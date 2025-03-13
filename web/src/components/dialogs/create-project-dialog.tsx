@@ -9,7 +9,7 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateProjectForm} from '../forms/create-project-form';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 export const CreateProjectDialog = () => {
   const [open, setOpen] = useState(false);
