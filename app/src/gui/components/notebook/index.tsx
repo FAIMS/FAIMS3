@@ -1,13 +1,5 @@
 import styled from '@emotion/styled';
-import {
-  AppBar,
-  Box,
-  Button,
-  Paper,
-  Tab,
-  Tabs,
-  TabScrollButton,
-} from '@mui/material';
+import {AppBar, Box, Paper, Tab, Tabs, TabScrollButton} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
@@ -31,7 +23,6 @@ import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
-import {RefreshSharp} from '@mui/icons-material';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
