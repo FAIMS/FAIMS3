@@ -659,7 +659,7 @@ export async function listRecordMetadata({
  * @param dataDb The data DB containing the AVPs etc
  * @param hridFieldMap The hrid field map if provided to avoid recomputation
  *
- * @returns 
+ * @returns
  */
 export async function hydrateIndividualRecord({
   record,

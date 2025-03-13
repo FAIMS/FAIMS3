@@ -29,7 +29,6 @@ import {
   RecordReference,
 } from '../types';
 
-
 export async function getAllRecordsOfType(
   project_id: ProjectID,
   type: FAIMSTypeName
