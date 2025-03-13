@@ -32,7 +32,7 @@ import {
   upsertFAIMSData,
 } from '@faims3/data-model';
 import {Alert, Box, Divider, Typography} from '@mui/material';
-import {Form, Formik} from 'formik';
+import {Form, Formik, FormikProps} from 'formik';
 import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
@@ -173,6 +173,7 @@ type RecordFormState = {
 
 class RecordForm extends React.Component<any, RecordFormState> {
   draftState: RecordDraftState | null = null;
+  private formikRef = React.createRef<FormikProps<any>>();
 
   // List of timeouts that unmount must cancel
   timeouts: (typeof setTimeout)[] = [];
@@ -1335,6 +1336,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
         <Box>
           <div>
             <Formik
+              innerRef={this.formikRef}
               initialValues={initialValues}
               // We are manually running the validate function now - if you
               // leave this here this schema validation will take precedence
