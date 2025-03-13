@@ -256,6 +256,8 @@ export const OptionsEditor = ({
   const showExpandedCheckListControl = showExpandedChecklist ?? false;
   const [newOption, setNewOption] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [deleteDialogRefs, setDeleteDialogRefs] = useState<string[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingOption, setEditingOption] = useState<{
     value: string;
     index: number;
@@ -438,14 +440,30 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Removes an option from the list
+   * Removes an option from the list.
+   * If the option is used in any condition, show a warning dialog instead.
    */
   const removeOption = (option: {label: string; value: string}) => {
-    const newOptions = options.filter(o => o.value !== option.value);
-    const newExclusiveOptions = exclusiveOptions.filter(
-      eo => eo !== option.value
+    // Check if this option is referenced in any condition.
+    const references = findOptionReferences(
+      allFields,
+      allFviews,
+      fieldName,
+      option.value
     );
-    updateField(newOptions, newExclusiveOptions);
+
+    if (references.length > 0) {
+      // Option is in use: open the warning dialog.
+      setDeleteDialogRefs(references);
+      setIsDeleteDialogOpen(true);
+    } else {
+      // Option is not used: proceed with deletion.
+      const newOptions = options.filter(o => o.value !== option.value);
+      const newExclusiveOptions = exclusiveOptions.filter(
+        eo => eo !== option.value
+      );
+      updateField(newOptions, newExclusiveOptions);
+    }
   };
 
   /**
@@ -789,6 +807,32 @@ export const OptionsEditor = ({
             <Button onClick={handleEditSubmit} color="primary">
               Save
             </Button>
+          </DialogActions>
+        </Dialog>
+        {/* Delete Option Warning Dialog */}
+        <Dialog
+          open={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          TransitionProps={{
+            onExited: () => {
+              setDeleteDialogRefs([]);
+            },
+          }}
+        >
+          <DialogTitle>Cannot Delete Option</DialogTitle>
+          <DialogContent>
+            <Alert severity="warning">
+              This option is used in the following conditions:
+              <ul>
+                {deleteDialogRefs.map((ref, idx) => (
+                  <li key={idx}>{ref}</li>
+                ))}
+              </ul>
+              Please remove all dependencies on this option before deleting it.
+            </Alert>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsDeleteDialogOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
       </Paper>

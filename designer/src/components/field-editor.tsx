@@ -400,33 +400,32 @@ export const FieldEditor = ({
         <Dialog
           open={deleteWarningOpen}
           onClose={() => setDeleteWarningOpen(false)}
+          TransitionProps={{
+            onExited: () => {
+              setConditionsAffected([]);
+            },
+          }}
         >
-          <DialogTitle>Can Not Delete Field</DialogTitle>
+          <DialogTitle>Cannot Delete Field</DialogTitle>
           <DialogContent>
-            <p>
-              This field is referenced in the following{' '}
-              {conditionsAffected.length === 1 ? 'condition' : 'conditions'}:
-            </p>
-            <ul>
-              {conditionsAffected.map((condition, index) => (
-                <li key={index}>{condition}</li>
-              ))}
-            </ul>
-            <p>
-              Please remove this field from{' '}
-              {conditionsAffected.length === 1 ? 'this' : 'these'} condition
-              condition{conditionsAffected.length === 1 ? '' : 's'} before
-              deleting this field.
-            </p>
+            <Alert severity="warning">
+              This field is referenced in the following conditions:
+              <ul>
+                {conditionsAffected.map((condition, index) => (
+                  <li key={index}>{condition}</li>
+                ))}
+              </ul>
+              Please remove all dependencies on this field before deleting it.
+            </Alert>
           </DialogContent>
           <DialogActions>
             <Button
-              onClick={e => {
-                e.stopPropagation();
+              onClick={event => {
+                event.stopPropagation();
                 setDeleteWarningOpen(false);
               }}
             >
-              Dismiss
+              Close
             </Button>
           </DialogActions>
         </Dialog>
