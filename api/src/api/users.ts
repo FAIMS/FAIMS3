@@ -22,9 +22,11 @@ import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 import {
   addOtherRoleToUser,
+  addProjectRoleToUser,
   getUserFromEmailOrUsername,
   getUsers,
   removeOtherRoleFromUser,
+  removeProjectRoleFromUser,
   removeUser,
   saveUser,
   userIsClusterAdmin,
@@ -66,13 +68,50 @@ api.post(
         'Username cannot be found in user database.'
       );
     }
+
     if (req.body.addrole) {
       addOtherRoleToUser(user, req.body.role);
     } else {
       removeOtherRoleFromUser(user, req.body.role);
     }
+
     await saveUser(user);
     res.status(200).send();
+  }
+);
+
+// Update a users project role
+api.put(
+  '/:id/projects/:project/roles',
+  requireAuthenticationAPI,
+  processRequest({
+    params: z.object({id: z.string(), project: z.string()}),
+    body: z.object({action: z.string(), role: z.string()}),
+  }),
+  async (req, res) => {
+    if (!userIsClusterAdmin(req.user)) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorised to update user details.'
+      );
+    }
+
+    const {
+      params: {id, project},
+      body: {action, role},
+    } = req;
+
+    const user = await getUserFromEmailOrUsername(id);
+    if (!user) {
+      throw new Exceptions.ItemNotFoundException(
+        'Username cannot be found in user database.'
+      );
+    }
+
+    if (action === 'add') addProjectRoleToUser(user, project, role);
+    if (action === 'remove') removeProjectRoleFromUser(user, project, role);
+
+    await saveUser(user);
+    return res.status(200).send();
   }
 );
 
