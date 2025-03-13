@@ -280,6 +280,51 @@ registerCompiler('contains-one-of', (expression: ConditionalExpression) => {
 });
 
 /**
+ * This condition checks that the list does NOT contain any of the specified values.
+ * This effectively acts as a NOT-OR condition for multi-select fields.
+ * If an error occurs or other edge case is encountered, returns true to reflect 'not containing'.
+ */
+registerCompiler(
+  'does-not-contain-one-of',
+  (expression: ConditionalExpression) => {
+    return (values: RecordValues) => {
+      if (expression.field && expression.field in values) {
+        try {
+          const valuePresent = values[expression.field]! as
+            | string[]
+            | undefined
+            | null;
+          const targets = expression.value as string[] | undefined | null;
+
+          // Ensure targets is a valid array of strings
+          if (!targets || !Array.isArray(targets) || !isStringArray(targets)) {
+            return true; // Default to true, as if it doesn’t contain any invalid target
+          }
+
+          // Ensure the value from the field is a valid array
+          if (!valuePresent || !Array.isArray(valuePresent)) {
+            return true; // If the list is undefined or empty, return true (it does NOT contain any of the targets)
+          }
+
+          // Check if none of the target values exist in the field's array
+          return !targets.some(target =>
+            valuePresent
+              .map(v => sanitizeComparisonInput(v))
+              .includes(sanitizeComparisonInput(target))
+          );
+        } catch (e) {
+          console.error(
+            "Exception during 'does-not-contain-one-of' evaluation:",
+            e
+          );
+          return true; // Default to true if an error occurs
+        }
+      } else return false;
+    };
+  }
+);
+
+/**
  * This condition checks that the list does not contain the targeted entry.
  * Chooses to be error tolerant to only match on the exact case. If an error
  * occurs or other edge case, returns true to reflect 'not' containing.

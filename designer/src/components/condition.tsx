@@ -69,6 +69,7 @@ const allOperators = new Map([
     'List does not contain any value matching this regex',
   ],
   ['contains-one-of', 'List contains one of these values'],
+  ['does-not-contain-one-of', 'List does not contain any of these values'],
 ]);
 
 const getFieldLabel = (f: FieldType) => {
@@ -826,7 +827,11 @@ export const FieldConditionControl = (props: ConditionProps) => {
     ? (() => {
         const cName = targetFieldDef['component-name'];
         if (cName === 'MultiSelect')
-          return ['contains-one-of', 'does-not-contain'];
+          return [
+            'contains-one-of',
+            'does-not-contain',
+            'does-not-contain-one-of',
+          ];
         if (cName === 'Checkbox') return ['equal'];
         if (isPredefinedOptions(targetFieldDef)) return ['equal', 'not-equal'];
         return ['equal', 'not-equal', 'greater', 'less', 'contains', 'regex'];
