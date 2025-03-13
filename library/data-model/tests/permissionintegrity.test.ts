@@ -9,7 +9,7 @@ import {
   permissionActions,
   actionPermissions,
   rolePermissions,
-} from '../src/permissionModel/index';
+} from '../src/permission/index';
 
 /**
  * Test suite for validating the permission model consistency
