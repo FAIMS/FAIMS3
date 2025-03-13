@@ -22,12 +22,10 @@ function RouteComponent() {
 
   const navigate = useNavigate();
 
-  console.log(data);
-
   return (
     <DataTable
       columns={columns}
-      data={data}
+      data={data || []}
       loading={isPending}
       onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
       button={<CreateProjectDialog />}

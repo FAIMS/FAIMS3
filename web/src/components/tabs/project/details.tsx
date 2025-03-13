@@ -3,7 +3,7 @@ import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
-import {useGetProjects} from '@/hooks/get-hooks';
+import {useGetProject} from '@/hooks/get-hooks';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -11,7 +11,7 @@ const detailsFields = [
   {field: 'project_lead', label: 'Created by'},
   {field: 'lead_institution', label: 'Team'},
   {field: 'notebook_version', label: 'Version'},
-];
+] as const;
 
 /**
  * ProjectDetails component renders a list of details for a project.
@@ -23,7 +23,7 @@ const detailsFields = [
 const ProjectDetails = ({projectId}: {projectId: string}) => {
   const {user} = useAuth();
 
-  const {data, isPending} = useGetProjects(user, projectId);
+  const {data, isPending} = useGetProject(user, projectId);
 
   return (
     <Card>
@@ -34,7 +34,9 @@ const ProjectDetails = ({projectId}: {projectId: string}) => {
             {isPending ? (
               <Skeleton />
             ) : (
-              <ListDescription>{data.metadata[field]}</ListDescription>
+              <ListDescription>
+                {data?.metadata[field] as string}
+              </ListDescription>
             )}
           </ListItem>
         ))}

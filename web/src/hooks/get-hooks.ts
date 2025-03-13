@@ -1,6 +1,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {User} from '@/context/auth-provider';
 import QRCode from 'qrcode';
+import {GetNotebookListResponse, GetNotebookResponse} from '@faims3/data-model';
 
 /**
  * get function is a utility function for making GET requests to the API.
@@ -9,8 +10,8 @@ import QRCode from 'qrcode';
  * @param {User | null} user - The user object.
  * @returns {Promise<any>} A promise that resolves to the response data.
  */
-export const get = async (path: string, user: User | null) => {
-  if (!user) return {error: 'Not authenticated'};
+export const get = async <T = any>(path: string, user: User | null) => {
+  if (!user) throw new Error('Not authenticated');
 
   const response = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
     method: 'GET',
@@ -20,10 +21,24 @@ export const get = async (path: string, user: User | null) => {
     },
   });
 
-  if (!response.ok) return {error: response.statusText};
+  if (!response.ok) throw new Error(response.statusText);
 
-  return await response.json();
+  return (await response.json()) as T;
 };
+
+/**
+ * useGetProject hook returns a query for fetching a project.
+ *
+ * @param {User} user - The user object.
+ * @param {string} projectId - The ID of the project.
+ * @returns {Query} A query for fetching a project.
+ */
+export const useGetProject = (user: User | null, projectId: string) =>
+  useQuery({
+    queryKey: ['projects', projectId],
+    queryFn: () =>
+      get<GetNotebookResponse>(`/api/notebooks/${projectId || ''}`, user),
+  });
 
 /**
  * useGetProjects hook returns a query for fetching projects.
@@ -31,10 +46,10 @@ export const get = async (path: string, user: User | null) => {
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching projects.
  */
-export const useGetProjects = (user: User | null, projectId?: string) =>
+export const useGetProjects = (user: User | null) =>
   useQuery({
-    queryKey: ['projects', projectId],
-    queryFn: () => get(`/api/notebooks/${projectId || ''}`, user),
+    queryKey: ['projects'],
+    queryFn: () => get<GetNotebookListResponse>('/api/notebooks/', user),
   });
 
 /**
