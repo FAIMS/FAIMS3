@@ -3,7 +3,7 @@
 import {convertToCouchDBString} from '../utils';
 
 // Index constants
-export const INDEX_DOCUMENT_NAME = 'index';
+const INDEX_DOCUMENT_NAME = 'index';
 export const MIGRATIONS_BY_DB_TYPE_INDEX = INDEX_DOCUMENT_NAME + '/by_dbType';
 export const MIGRATIONS_BY_DB_NAME_INDEX = INDEX_DOCUMENT_NAME + '/by_dbName';
 export const MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX =
