@@ -60,6 +60,11 @@ import {useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {findOptionReferences, updateConditionReferences} from '../condition';
+import {
+  fieldUpdated,
+  sectionConditionChanged,
+} from '../../state/uiSpec-reducer';
 
 /**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.
@@ -233,6 +238,13 @@ export const OptionsEditor = ({
   const field = useAppSelector(
     state => state.notebook['ui-specification'].fields[fieldName]
   );
+  const allFields = useAppSelector(
+    state => state.notebook['ui-specification'].fields
+  );
+  const allFviews = useAppSelector(
+    state => state.notebook['ui-specification'].fviews
+  );
+
   const dispatch = useAppDispatch();
 
   // Configure drag-and-drop sensors - just pointer sensor is fine
@@ -244,13 +256,21 @@ export const OptionsEditor = ({
   const showExpandedCheckListControl = showExpandedChecklist ?? false;
   const [newOption, setNewOption] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [deleteDialogRefs, setDeleteDialogRefs] = useState<string[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingOption, setEditingOption] = useState<{
     value: string;
     index: number;
   } | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [lastEditedOption, setLastEditedOption] = useState<string | null>(null);
 
-  // Get options and exclusive options from field state
+  // State for showing the alert inside the Edit Option dialog if the option is used in a condition
+  const [renameDialogState, setRenameDialogState] = useState<{
+    references: string[];
+    updateConditions: boolean;
+  } | null>(null);
+
   const options = field['component-parameters'].ElementProps?.options || [];
   const exclusiveOptions =
     field['component-parameters'].ElementProps?.exclusiveOptions || [];
@@ -269,8 +289,8 @@ export const OptionsEditor = ({
       return 'Option text cannot be empty';
     }
 
-    const duplicateExists = options.some((element, index: number) => {
-      if (currentIndex !== undefined && index === currentIndex) return false;
+    const duplicateExists = options.some((element, idx: number) => {
+      if (currentIndex !== undefined && idx === currentIndex) return false;
       return element.label.toLowerCase() === text.toLowerCase();
     });
 
@@ -307,6 +327,52 @@ export const OptionsEditor = ({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},
     });
+  };
+
+  /**
+   * Used when user chooses to auto-update references in conditions
+   */
+  const updateConditions = (oldValue: string, newValue: string) => {
+    // Field-level conditions
+    for (const fId in allFields) {
+      const fieldDef = allFields[fId];
+      if (!fieldDef.condition) continue;
+
+      const updatedCondition = updateConditionReferences(
+        fieldDef.condition,
+        fieldName,
+        oldValue,
+        newValue
+      );
+
+      if (updatedCondition !== fieldDef.condition) {
+        dispatch(
+          fieldUpdated({
+            fieldName: fId,
+            newField: {...fieldDef, condition: updatedCondition},
+          })
+        );
+      }
+    }
+
+    // Section-level conditions
+    for (const vId in allFviews) {
+      const sectionDef = allFviews[vId];
+      if (!sectionDef.condition) continue;
+
+      const updatedCondition = updateConditionReferences(
+        sectionDef.condition,
+        fieldName,
+        oldValue,
+        newValue
+      );
+
+      if (updatedCondition !== sectionDef.condition) {
+        dispatch(
+          sectionConditionChanged({viewId: vId, condition: updatedCondition})
+        );
+      }
+    }
   };
 
   /**
@@ -374,40 +440,104 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Removes an option from the list
+   * Removes an option from the list.
+   * If the option is used in any condition, show a warning dialog instead.
    */
   const removeOption = (option: {label: string; value: string}) => {
-    const newOptions = options.filter(o => o.value !== option.value);
-    const newExclusiveOptions = exclusiveOptions.filter(
-      eo => eo !== option.value
+    // Check if this option is referenced in any condition.
+    const references = findOptionReferences(
+      allFields,
+      allFviews,
+      fieldName,
+      option.value
     );
-    updateField(newOptions, newExclusiveOptions);
+
+    if (references.length > 0) {
+      // Option is in use: open the warning dialog.
+      setDeleteDialogRefs(references);
+      setIsDeleteDialogOpen(true);
+    } else {
+      // Option is not used: proceed with deletion.
+      const newOptions = options.filter(o => o.value !== option.value);
+      const newExclusiveOptions = exclusiveOptions.filter(
+        eo => eo !== option.value
+      );
+      updateField(newOptions, newExclusiveOptions);
+    }
   };
 
   /**
-   * Handles editing option submission
+   * Open the dialog to edit an existing option
+   */
+  const handleOpenEditDialog = (value: string, index: number) => {
+    setEditingOption({value, index});
+    setEditValue(value);
+    setLastEditedOption(value);
+
+    // Check if this option is referenced in conditions
+    const references = findOptionReferences(
+      allFields,
+      allFviews,
+      fieldName,
+      value
+    );
+    if (references.length > 0) {
+      setRenameDialogState({references, updateConditions: true});
+    } else {
+      setRenameDialogState(null);
+    }
+  };
+
+  /**
+   * Actually rename the option in the Redux store (does not alter conditions)
+   */
+  const doRenameOption = (newValue: string, index: number) => {
+    const newOptions = [...options];
+    newOptions[index] = {label: newValue, value: newValue};
+
+    const newField: FieldType = {
+      ...field,
+      'component-parameters': {
+        ...field['component-parameters'],
+        ElementProps: {
+          ...field['component-parameters'].ElementProps,
+          options: newOptions,
+        },
+      },
+    };
+
+    dispatch(fieldUpdated({fieldName, newField}));
+  };
+
+  /**
+   * Finalizes the edit, optionally updates conditions
    */
   const handleEditSubmit = () => {
     if (!editingOption) return;
 
-    const error = validateOptionText(editValue, editingOption.index);
+    const newValue = editValue.trim();
+    if (!newValue || editingOption.value === newValue) {
+      setEditingOption(null);
+      return;
+    }
+
+    // Validate before renaming
+    const error = validateOptionText(newValue, editingOption.index);
     if (error) {
       setErrorMessage(error);
       return;
     }
 
-    // Update option and maintain exclusive status
-    const oldValue = options[editingOption.index].value;
-    const newOptions = [...options];
-    newOptions[editingOption.index] = {label: editValue, value: editValue};
+    // Rename in Redux
+    doRenameOption(newValue, editingOption.index);
 
-    const updatedExclusiveOptions = exclusiveOptions.map(eo =>
-      eo === oldValue ? editValue : eo
-    );
+    // If chosen, also update references in conditions
+    if (renameDialogState?.updateConditions) {
+      updateConditions(editingOption.value, newValue);
+    }
 
-    updateField(newOptions, updatedExclusiveOptions);
+    // Close dialog
     setEditingOption(null);
-    setErrorMessage('');
   };
 
   /**
@@ -415,7 +545,8 @@ export const OptionsEditor = ({
    */
   const toggleShowExpanded = () => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    const newValue = !isShowExpandedList;
+    const newValue =
+      !field['component-parameters'].ElementProps?.expandedChecklist;
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
       expandedChecklist: newValue,
@@ -487,7 +618,7 @@ export const OptionsEditor = ({
               </Alert>
             )}
 
-            {/* Expanded checklist toggle */}
+            {/* Expanded checklist toggle (restored usage of isShowExpandedList/showExpandedCheckListControl) */}
             {showExpandedCheckListControl && (
               <FormControlLabel
                 control={
@@ -498,14 +629,12 @@ export const OptionsEditor = ({
                   />
                 }
                 label={
-                  <>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <p>Display multi-select as an expanded checklist?</p>
-                      <Tooltip title="This option changes the multi-select from a dropdown menu, to a pre-expanded checklist of items. This takes up more space on the user's screen, but requires less clicks to interact with.">
-                        <InfoIcon color="action" fontSize="small" />
-                      </Tooltip>
-                    </Stack>
-                  </>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <p>Display multi-select as an expanded checklist?</p>
+                    <Tooltip title="This option changes the multi-select from a dropdown menu, to a pre-expanded checklist of items. This takes up more space on the user's screen, but requires less clicks to interact with.">
+                      <InfoIcon color="action" fontSize="small" />
+                    </Tooltip>
+                  </Stack>
                 }
                 sx={{mb: 2}}
               />
@@ -603,11 +732,7 @@ export const OptionsEditor = ({
                           showExclusiveOptions={showExclusiveOptions}
                           exclusiveOptions={exclusiveOptions}
                           onExclusiveToggle={handleExclusiveToggle}
-                          onEdit={(value, index) => {
-                            setEditingOption({value, index});
-                            setEditValue(value);
-                            setErrorMessage('');
-                          }}
+                          onEdit={(val, idx) => handleOpenEditDialog(val, idx)}
                           onRemove={removeOption}
                           onMove={moveOption}
                           totalItems={options.length}
@@ -624,9 +749,12 @@ export const OptionsEditor = ({
         {/* Edit option dialog */}
         <Dialog
           open={!!editingOption}
-          onClose={() => {
-            setEditingOption(null);
-            setErrorMessage('');
+          onClose={() => setEditingOption(null)}
+          TransitionProps={{
+            onExited: () => {
+              setRenameDialogState(null);
+              setLastEditedOption(null);
+            },
           }}
         >
           <DialogTitle>Edit Option</DialogTitle>
@@ -644,19 +772,67 @@ export const OptionsEditor = ({
                 {errorMessage}
               </Alert>
             )}
+
+            {renameDialogState && (
+              <Alert severity="warning" sx={{mt: 2}}>
+                <Typography variant="body2" sx={{mb: 1}}>
+                  The option "<strong>{lastEditedOption}</strong>" is used in:
+                </Typography>
+                <ul>
+                  {renameDialogState.references.map((r, idx) => (
+                    <li key={idx}>{r}</li>
+                  ))}
+                </ul>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={renameDialogState.updateConditions}
+                      onChange={e =>
+                        setRenameDialogState(prev =>
+                          prev
+                            ? {...prev, updateConditions: e.target.checked}
+                            : null
+                        )
+                      }
+                    />
+                  }
+                  label="Automatically update conditions to use the new option name"
+                  sx={{mt: 1}}
+                />
+              </Alert>
+            )}
           </DialogContent>
           <DialogActions>
-            <Button
-              onClick={() => {
-                setEditingOption(null);
-                setErrorMessage('');
-              }}
-            >
-              Cancel
-            </Button>
+            <Button onClick={() => setEditingOption(null)}>Cancel</Button>
             <Button onClick={handleEditSubmit} color="primary">
               Save
             </Button>
+          </DialogActions>
+        </Dialog>
+        {/* Delete Option Warning Dialog */}
+        <Dialog
+          open={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          TransitionProps={{
+            onExited: () => {
+              setDeleteDialogRefs([]);
+            },
+          }}
+        >
+          <DialogTitle>Cannot Delete Option</DialogTitle>
+          <DialogContent>
+            <Alert severity="warning">
+              This option is used in the following conditions:
+              <ul>
+                {deleteDialogRefs.map((ref, idx) => (
+                  <li key={idx}>{ref}</li>
+                ))}
+              </ul>
+              Please remove all dependencies on this option before deleting it.
+            </Alert>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setIsDeleteDialogOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
       </Paper>
