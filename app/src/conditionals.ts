@@ -285,7 +285,7 @@ registerCompiler('contains-one-of', (expression: ConditionalExpression) => {
  * If an error occurs or other edge case is encountered, returns true to reflect 'not containing'.
  */
 registerCompiler(
-  'does-not-contain-one-of',
+  'does-not-contain-any-of',
   (expression: ConditionalExpression) => {
     return (values: RecordValues) => {
       if (expression.field && expression.field in values) {
@@ -314,10 +314,95 @@ registerCompiler(
           );
         } catch (e) {
           console.error(
-            "Exception during 'does-not-contain-one-of' evaluation:",
+            "Exception during 'does-not-contain-any-of' evaluation:",
             e
           );
           return true; // Default to true if an error occurs
+        }
+      } else return false;
+    };
+  }
+);
+
+/**
+ * This condition checks if the list contains *all* of the specified values.
+ * This effectively acts as an AND condition for multi-select fields.
+ * If an error occurs or another edge case is encountered, returns false.
+ */
+registerCompiler('contains-all-of', (expression: ConditionalExpression) => {
+  return (values: RecordValues) => {
+    if (expression.field && expression.field in values) {
+      try {
+        const valuePresent = values[expression.field] as
+          | string[]
+          | undefined
+          | null;
+        const targets = expression.value as string[] | undefined | null;
+
+        // Ensure targets is a valid array of strings
+        if (!targets || !Array.isArray(targets) || !isStringArray(targets)) {
+          return false;
+        }
+
+        // Ensure the value from the field is a valid array
+        if (!valuePresent || !Array.isArray(valuePresent)) {
+          return false;
+        }
+
+        // Check if all target values exist in the field's array
+        return targets.every(target =>
+          valuePresent
+            .map(v => sanitizeComparisonInput(v))
+            .includes(sanitizeComparisonInput(target))
+        );
+      } catch (e) {
+        console.error("Exception during 'contains-all-of' evaluation:", e);
+        return false;
+      }
+    } else return false;
+  };
+});
+
+/**
+ * This condition checks if the list does *not* contain *all* of the specified values.
+ * This effectively acts as a NOT-AND condition for multi-select fields.
+ * If an error occurs or another edge case is encountered, returns true.
+ */
+
+registerCompiler(
+  'does-not-contain-all-of',
+  (expression: ConditionalExpression) => {
+    return (values: RecordValues) => {
+      if (expression.field && expression.field in values) {
+        try {
+          const valuePresent = values[expression.field] as
+            | string[]
+            | undefined
+            | null;
+          const targets = expression.value as string[] | undefined | null;
+
+          // Ensure targets is a valid array of strings
+          if (!targets || !Array.isArray(targets) || !isStringArray(targets)) {
+            return true;
+          }
+
+          // Ensure the value from the field is a valid array
+          if (!valuePresent || !Array.isArray(valuePresent)) {
+            return true;
+          }
+
+          // Check if NOT all target values exist in the field's array
+          return !targets.every(target =>
+            valuePresent
+              .map(v => sanitizeComparisonInput(v))
+              .includes(sanitizeComparisonInput(target))
+          );
+        } catch (e) {
+          console.error(
+            "Exception during 'does-not-contain-all-of' evaluation:",
+            e
+          );
+          return true;
         }
       } else return false;
     };
