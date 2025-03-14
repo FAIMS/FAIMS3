@@ -1,11 +1,11 @@
-import {isAuthorized} from '../src/permissionModel/functions';
+import {isAuthorized} from '../src/permission/functions';
 import {
   canPerformAction,
   drillRolePermissions,
   hasSuitablePermission,
   roleGrantsAction,
-} from '../src/permissionModel/helpers';
-import {Action, Permission, Role} from '../src/permissionModel/model';
+} from '../src/permission/helpers';
+import {Action, Permission, Role} from '../src/permission/model';
 import {
   decodeAndValidateToken,
   DecodedToken,
@@ -13,7 +13,7 @@ import {
   encodeToken,
   ENCODING_SEPARATOR,
   TokenStructure,
-} from '../src/permissionModel/tokenEncoding';
+} from '../src/permission/tokenEncoding';
 
 beforeEach(() => {
   jest.restoreAllMocks();
@@ -244,9 +244,9 @@ describe('Authorization Functions', () => {
     it('handles circular role references without infinite recursion', () => {
       // Create a mock of rolePermissions with a circular reference for testing
       const originalRolePermissions =
-        require('../src/permissionModel/model').rolePermissions;
-      jest.mock('../src/permissionModel/model', () => {
-        const original = jest.requireActual('../src/permissionModel/model');
+        require('../src/permission/model').rolePermissions;
+      jest.mock('../src/permission/model', () => {
+        const original = jest.requireActual('../src/permission/model');
         return {
           ...original,
           rolePermissions: {
@@ -264,8 +264,8 @@ describe('Authorization Functions', () => {
       const permissions = drillRolePermissions({role: Role.PROJECT_GUEST});
 
       // Restore the original
-      jest.unmock('../src/permissionModel/model');
-      require('../src/permissionModel/model').rolePermissions =
+      jest.unmock('../src/permission/model');
+      require('../src/permission/model').rolePermissions =
         originalRolePermissions;
 
       // Basic verification that we got some permissions
@@ -461,7 +461,7 @@ describe('isAuthorized', () => {
     it('prioritizes checking global roles first for authorization', () => {
       // Create a spy on roleGrantsAction to verify call order
       const roleGrantsActionSpy = jest.spyOn(
-        require('../src/permissionModel/helpers'),
+        require('../src/permission/helpers'),
         'roleGrantsAction'
       );
 

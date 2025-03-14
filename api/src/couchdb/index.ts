@@ -38,6 +38,7 @@ import {
   ProjectObject,
   TemplateDetails,
   couchInitialiser,
+  initInvitesDB,
 } from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
@@ -222,7 +223,7 @@ export const getTemplatesDb = (): PouchDB.Database<TemplateDetails> => {
   return _templatesDb;
 };
 
-export const getInvitesDB = (): PouchDB.Database | undefined => {
+export const getInvitesDB = (): PouchDB.Database => {
   if (!_invitesDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + INVITE_DB_NAME;
@@ -442,15 +443,12 @@ export const initialiseDbAndKeys = async ({
   // Projects
   const projectsDB = localGetProjectsDb();
 
+  // Invites
+  const invitesDB = getInvitesDB();
+
   // Templates
-  let templatesDb: PouchDB.Database;
-  try {
-    templatesDb = getTemplatesDb();
-  } catch {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while instantiating the templates DB. Aborting operation.'
-    );
-  }
+  const templatesDb = getTemplatesDb();
+
   // Users
   const peopleDb = getUsersDB();
 
@@ -527,6 +525,20 @@ export const initialiseDbAndKeys = async ({
   } catch (e) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while initialising the people database!...' + e
+    );
+  }
+
+
+  // Invites DB
+  try {
+    await couchInitialiser({
+      db: invitesDB,
+      content: initInvitesDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the invites database!...' + e
     );
   }
 

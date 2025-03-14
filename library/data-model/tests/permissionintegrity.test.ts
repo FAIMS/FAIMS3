@@ -129,7 +129,6 @@ describe('Permission Model Validation', () => {
       // Check that every permission is granted by at least one role
       Object.values(Permission).forEach(permission => {
         if (typeof permission === 'string') {
-          console.log(permission);
           expect(allGrantedPermissions.has(permission)).toBe(true);
         }
       });

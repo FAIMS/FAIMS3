@@ -31,7 +31,7 @@ import {expect} from 'chai';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {getNotebooks, getProjectUIModel} from '../src/couchdb/notebooks';
 import {getUserFromEmailOrUsername} from '../src/couchdb/users';
-import {generateTokenContentsForUser} from '../src/utils';
+import {mockTokenContentsForUser} from '../src/utils';
 import {
   callbackObject,
   cleanDataDBS,
@@ -79,7 +79,7 @@ describe('Backup and restore', () => {
       expect(count).to.equal(17);
 
       // throw in a test of getRecordsWithRegex while we're here
-      const tokenContents = generateTokenContentsForUser(user);
+      const tokenContents = mockTokenContentsForUser(user);
       const records = await getRecordsWithRegex({
         dataDb,
         regex: '.*',

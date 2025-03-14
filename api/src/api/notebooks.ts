@@ -69,7 +69,7 @@ import {
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
-import {generateTokenContentsForUser} from '../utils';
+import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -253,7 +253,7 @@ api.get(
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.UnauthorizedException();
     }
-    const tokenContents = generateTokenContentsForUser(req.user);
+    const tokenContents = mockTokenContentsForUser(req.user);
     const {id: projectId} = req.params;
     const uiSpecification = (await getProjectUIModel(
       req.params.id

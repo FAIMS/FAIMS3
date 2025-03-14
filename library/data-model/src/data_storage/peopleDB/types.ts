@@ -1,3 +1,92 @@
-/**
- * TODO - define all documents for the people DB here
+/*
+ * Copyright 2021, 2022 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: src/datamodel/users.ts
+ * Description:
+ *   Data models related to users.
  */
+
+import {NonUniqueProjectID, Resource, Role} from '../../';
+
+/*
+ * This is used to pass around a user profile from an arbitrary service where
+ * the details of the profile are *not* needed.
+ */
+export type UserServiceProfileLocked = unknown;
+export type ServiceID = string;
+export type UserServiceProfiles = {
+  [ServiceID: string]: UserServiceProfileLocked;
+};
+export type CouchDBUsername = string;
+export type CouchDBUserRole = string;
+export type CouchDBUserRoles = CouchDBUserRole[];
+export type Email = string;
+export type ConductorRole = string;
+export type AllProjectRoles = {[NonUniqueProjectID: string]: ConductorRole[]};
+export type OtherRoles = ConductorRole[];
+
+// This is the v1.1 or prior user model - these represent entries in the people
+// DB
+export interface UserV0Fields {
+  user_id: string;
+  name: string;
+  emails: Email[];
+  // CouchDB accessible roles array either <role> or <projectId>||<projectRole>
+  roles: string[];
+  // This is the explicitly granted roles for each project: projectId -> projectRole[]
+  project_roles: AllProjectRoles;
+  // These are global roles
+  other_roles: OtherRoles;
+  // This maps the profile (e.g. local) -> info about that profile
+  profiles: UserServiceProfiles;
+  // This is deprecated - never used
+  owned: NonUniqueProjectID[];
+  // This property is not defined/null in the existing records (flag to determine if migrated)
+  userSchemaVersion: undefined | null;
+}
+export type UserV0Document = PouchDB.Core.ExistingDocument<UserV0Fields>;
+
+export type ResourceRoleMap = {
+  [resource in Resource]: {resourceId: string; role: Role} | undefined;
+};
+
+export interface PeopleDBFields {
+  // Unique user ID - same as _id in all cases thus far
+  user_id: string;
+
+  // Full name
+  name: string;
+
+  // Emails associated with this profile
+  emails: Email[];
+
+  // A list of global scope roles (these roles apply globally if global role,
+  // and to all resources if it's a resource role)
+  globalRoles: Role[];
+
+  // A list of explicitly granted resource scoped roles e.g. {Resource.PROJECT :
+  // {resourceId: '1234', role: 'survey-manager'}}
+  resourceRoles: ResourceRoleMap;
+
+  // This links profile information to profiles
+  profiles: UserServiceProfiles;
+
+  // This is always 1 to indicate this version of the user schema - assists in
+  // migrations
+  userSchemaVersion: '1';
+}
+
+export type PeopleDBDocument = PouchDB.Core.ExistingDocument<PeopleDBFields>;
+export type PeopleDB = PouchDB.Database<PeopleDBFields>;

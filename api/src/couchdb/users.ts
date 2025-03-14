@@ -101,7 +101,6 @@ export async function createUser(
         roles: [],
         project_roles: {} as unknown as AllProjectRoles,
         other_roles: [],
-        owned: [],
         profiles: {},
       },
       '',

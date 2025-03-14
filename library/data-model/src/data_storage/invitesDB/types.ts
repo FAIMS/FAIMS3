@@ -13,9 +13,14 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: index.ts
+ * Filename: src/datamodel/users.ts
  * Description:
- *   TODO
+ *   Data models related to users.
  */
 
-export {}; // Is there anything we should be exporting?
+export type InvitesDBFields = {
+  project_id: string;
+  role: string;
+};
+export type InvitesDBDocument = PouchDB.Core.ExistingDocument<InvitesDBFields>;
+export type InvitesDB = PouchDB.Database<InvitesDBFields>;
