@@ -1465,7 +1465,7 @@ describe('Check form component', () => {
       {timeout: 3000}
     );
 
-    const closeBtn = screen.getByTestId('publish-close-record');
+    const closeBtn = screen.getByTestId('finish-close-record');
 
     expect(closeBtn).toBeTruthy();
 
