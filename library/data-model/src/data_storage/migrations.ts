@@ -1,4 +1,3 @@
-import {AuthDatabase} from './authDB';
 import {
   MigrationLog,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
@@ -7,15 +6,17 @@ import {
   MigrationsDBFields,
 } from './migrationsDB';
 
-export type DATABASE_TYPE =
-  | 'auth'
-  | 'data'
-  | 'directory'
-  | 'invites'
-  | 'metadata'
-  | 'people'
-  | 'projects'
-  | 'templates';
+export const DATABASE_TYPES = [
+  'auth',
+  'data',
+  'directory',
+  'invites',
+  'metadata',
+  'people',
+  'projects',
+  'templates',
+] as const;
+export type DATABASE_TYPE = (typeof DATABASE_TYPES)[number];
 
 export const DB_TARGET_VERSIONS: {
   [key in DATABASE_TYPE]: {defaultVersion: number; targetVersion: number};
