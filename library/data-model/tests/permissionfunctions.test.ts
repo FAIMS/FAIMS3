@@ -7,12 +7,13 @@ import {
 } from '../src/permission/helpers';
 import {Action, Permission, Role} from '../src/permission/model';
 import {
+  COUCHDB_PERMISSIONS_PATH,
   decodeAndValidateToken,
-  DecodedToken,
+  DecodedTokenPermissions,
   decodePerResourcePermission,
+  EncodedTokenPermissions,
   encodeToken,
   ENCODING_SEPARATOR,
-  TokenStructure,
 } from '../src/permission/tokenEncoding';
 
 beforeEach(() => {
@@ -58,14 +59,11 @@ describe('Token Encoding and Decoding', () => {
   });
 
   describe('encodeToken', () => {
-    it('correctly encodes a DecodedToken into TokenStructure', () => {
-      const decodedToken: DecodedToken = {
+    it('correctly encodes a DecodedToken into EncodedTokenPermissions', () => {
+      const decodedToken: DecodedTokenPermissions = {
         resourceRoles: [
           {resourceId: 'project123', role: Role.PROJECT_ADMIN},
           {resourceId: 'project456', role: Role.PROJECT_CONTRIBUTOR},
-        ],
-        resourcePermissions: [
-          {resourceId: 'project789', permission: Permission.PROJECT_VIEW},
         ],
         globalRoles: [Role.GENERAL_USER],
       };
@@ -78,22 +76,17 @@ describe('Token Encoding and Decoding', () => {
       expect(encoded.resourceRoles).toContain(
         `project456${ENCODING_SEPARATOR}${Role.PROJECT_CONTRIBUTOR}`
       );
-      expect(encoded.resourcePermissions).toContain(
-        `project789${ENCODING_SEPARATOR}${Permission.PROJECT_VIEW}`
-      );
       expect(encoded.globalRoles).toContain(Role.GENERAL_USER);
     });
   });
 
   describe('decodeAndValidateToken', () => {
-    it('correctly decodes a valid TokenStructure', () => {
-      const tokenStructure: TokenStructure = {
+    it('correctly decodes a valid EncodedTokenPermissions', () => {
+      const tokenStructure: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `project123${ENCODING_SEPARATOR}${Role.PROJECT_ADMIN}`,
           `project456${ENCODING_SEPARATOR}${Role.PROJECT_CONTRIBUTOR}`,
-        ],
-        resourcePermissions: [
-          `project789${ENCODING_SEPARATOR}${Permission.PROJECT_VIEW}`,
         ],
         globalRoles: [Role.GENERAL_USER],
       };
@@ -104,18 +97,15 @@ describe('Token Encoding and Decoding', () => {
         {resourceId: 'project123', role: Role.PROJECT_ADMIN},
         {resourceId: 'project456', role: Role.PROJECT_CONTRIBUTOR},
       ]);
-      expect(decoded.resourcePermissions).toEqual([
-        {resourceId: 'project789', permission: Permission.PROJECT_VIEW},
-      ]);
       expect(decoded.globalRoles).toEqual([Role.GENERAL_USER]);
     });
 
     it('throws error when token structure contains invalid resource role encoding', () => {
-      const tokenStructure: TokenStructure = {
+      const tokenStructure: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `invalid_encoding`, // Missing separator
         ],
-        resourcePermissions: [],
         globalRoles: [],
       };
 
@@ -125,11 +115,18 @@ describe('Token Encoding and Decoding', () => {
     });
 
     it('throws error when token structure contains invalid resource permission encoding', () => {
-      const tokenStructure: TokenStructure = {
-        resourceRoles: [],
-        resourcePermissions: [
-          `project123${ENCODING_SEPARATOR}INVALID_PERMISSION`, // Invalid permission
-        ],
+      let tokenStructure: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
+        resourceRoles: ['invalid-role'],
+        globalRoles: [],
+      };
+
+      expect(() => {
+        decodeAndValidateToken(tokenStructure);
+      }).toThrow();
+      tokenStructure = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
+        resourceRoles: ['projectId123' + ENCODING_SEPARATOR + 'invalid_role'],
         globalRoles: [],
       };
 
@@ -139,9 +136,9 @@ describe('Token Encoding and Decoding', () => {
     });
 
     it('throws error when token structure contains invalid global role', () => {
-      const tokenStructure: TokenStructure = {
+      const tokenStructure: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
-        resourcePermissions: [],
         globalRoles: ['INVALID_ROLE'], // Invalid role
       };
 
@@ -154,16 +151,10 @@ describe('Token Encoding and Decoding', () => {
   describe('token round-trip conversion', () => {
     it('maintains identical data through encode-decode cycle', () => {
       // Start with a decoded token
-      const originalDecoded: DecodedToken = {
+      const originalDecoded: DecodedTokenPermissions = {
         resourceRoles: [
           {resourceId: 'project123', role: Role.PROJECT_ADMIN},
           {resourceId: 'template456', role: Role.PROJECT_MANAGER},
-        ],
-        resourcePermissions: [
-          {
-            resourceId: 'project789',
-            permission: Permission.PROJECT_DATA_READ_ALL,
-          },
         ],
         globalRoles: [Role.GENERAL_USER, Role.GENERAL_CREATOR],
       };
@@ -342,9 +333,9 @@ describe('Authorization Functions', () => {
 describe('isAuthorized', () => {
   describe('Non-resource specific actions', () => {
     it('returns true when a global role grants a non-resource specific action', () => {
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
-        resourcePermissions: [],
         globalRoles: [Role.GENERAL_CREATOR],
       };
 
@@ -353,9 +344,9 @@ describe('isAuthorized', () => {
     });
 
     it('returns false when no global role grants a non-resource specific action', () => {
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
-        resourcePermissions: [],
         globalRoles: [Role.GENERAL_USER],
       };
 
@@ -364,12 +355,10 @@ describe('isAuthorized', () => {
     });
 
     it('ignores resource roles and permissions for non-resource specific actions', () => {
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `template123${ENCODING_SEPARATOR}${Role.PROJECT_ADMIN}`,
-        ],
-        resourcePermissions: [
-          `template456${ENCODING_SEPARATOR}${Permission.TEMPLATE_CREATE}`,
         ],
         globalRoles: [],
       };
@@ -380,9 +369,9 @@ describe('isAuthorized', () => {
     });
 
     it('returns false when resourceId is provided for non-resource specific action', () => {
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
-        resourcePermissions: [],
         globalRoles: [Role.GENERAL_CREATOR],
       };
 
@@ -395,9 +384,9 @@ describe('isAuthorized', () => {
 
   describe('Resource-specific actions', () => {
     it('returns false when no resourceId is provided for a resource-specific action', () => {
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
-        resourcePermissions: [],
         globalRoles: [Role.GENERAL_ADMIN], // Has all permissions
       };
 
@@ -406,9 +395,9 @@ describe('isAuthorized', () => {
     });
 
     it('returns true when a global role grants a resource-specific action for any resource', () => {
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
-        resourcePermissions: [],
         globalRoles: [Role.GENERAL_ADMIN], // Has all permissions
       };
 
@@ -419,35 +408,15 @@ describe('isAuthorized', () => {
     });
 
     it('returns true when a resource-specific role grants an action for that specific resource', () => {
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `project123${ENCODING_SEPARATOR}${Role.PROJECT_MANAGER}`,
         ],
-        resourcePermissions: [],
         globalRoles: [],
       };
 
       // PROJECT_MANAGER role for project123 should grant UPDATE_PROJECT_DETAILS for project123
-      expect(
-        isAuthorized(token, Action.UPDATE_PROJECT_DETAILS, 'project123')
-      ).toBe(true);
-
-      // But not for a different project
-      expect(
-        isAuthorized(token, Action.UPDATE_PROJECT_DETAILS, 'project456')
-      ).toBe(false);
-    });
-
-    it('returns true when a resource-specific permission directly grants an action', () => {
-      const token: TokenStructure = {
-        resourceRoles: [],
-        resourcePermissions: [
-          `project123${ENCODING_SEPARATOR}${Permission.PROJECT_MANAGE}`,
-        ],
-        globalRoles: [],
-      };
-
-      // PROJECT_MANAGE permission for project123 grants UPDATE_PROJECT_DETAILS
       expect(
         isAuthorized(token, Action.UPDATE_PROJECT_DETAILS, 'project123')
       ).toBe(true);
@@ -465,11 +434,9 @@ describe('isAuthorized', () => {
         'roleGrantsAction'
       );
 
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [`project123${ENCODING_SEPARATOR}${Role.PROJECT_ADMIN}`],
-        resourcePermissions: [
-          `project123${ENCODING_SEPARATOR}${Permission.PROJECT_ADMIN}`,
-        ],
         globalRoles: [Role.GENERAL_ADMIN],
       };
 
@@ -490,13 +457,11 @@ describe('isAuthorized', () => {
 
   describe('Complex authorization scenarios', () => {
     it('handles a mix of global roles, resource roles, and resource permissions', () => {
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `project123${ENCODING_SEPARATOR}${Role.PROJECT_CONTRIBUTOR}`,
           `project456${ENCODING_SEPARATOR}${Role.PROJECT_ADMIN}`,
-        ],
-        resourcePermissions: [
-          `project789${ENCODING_SEPARATOR}${Permission.PROJECT_DATA_READ_ALL}`,
         ],
         globalRoles: [Role.GENERAL_USER],
       };
@@ -519,11 +484,6 @@ describe('isAuthorized', () => {
         true
       );
 
-      // From resource permission PROJECT_DATA_READ_ALL
-      expect(
-        isAuthorized(token, Action.READ_ALL_PROJECT_RECORDS, 'project789')
-      ).toBe(true);
-
       // No access to unrelated resources
       expect(
         isAuthorized(token, Action.UPDATE_PROJECT_DETAILS, 'project999')
@@ -531,11 +491,11 @@ describe('isAuthorized', () => {
     });
 
     it('properly detects inheritance through role hierarchy', () => {
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `project123${ENCODING_SEPARATOR}${Role.PROJECT_MANAGER}`,
         ],
-        resourcePermissions: [],
         globalRoles: [],
       };
 
@@ -563,9 +523,9 @@ describe('isAuthorized', () => {
     });
 
     it('global GENERAL_ADMIN role grants access to any resource-specific action', () => {
-      const token: TokenStructure = {
+      const token: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
-        resourcePermissions: [],
         globalRoles: [Role.GENERAL_ADMIN],
       };
 
@@ -586,9 +546,9 @@ describe('isAuthorized', () => {
     });
 
     it('correctly handles edge cases with empty permissions and roles', () => {
-      const emptyToken: TokenStructure = {
+      const emptyToken: EncodedTokenPermissions = {
+        [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
-        resourcePermissions: [],
         globalRoles: [],
       };
 

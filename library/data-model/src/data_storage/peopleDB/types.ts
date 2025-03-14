@@ -59,7 +59,7 @@ export interface UserV0Fields {
 export type UserV0Document = PouchDB.Core.ExistingDocument<UserV0Fields>;
 
 export type ResourceRoleMap = {
-  [resource in Resource]: {resourceId: string; role: Role} | undefined;
+  [resource in Resource]: {resourceId: string; role: Role}[] | undefined;
 };
 
 export interface PeopleDBFields {

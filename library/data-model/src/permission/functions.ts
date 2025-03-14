@@ -1,13 +1,13 @@
 import {canPerformAction, roleGrantsAction} from './helpers';
 import {Action, actionDetails} from './model';
-import {decodeAndValidateToken, TokenStructure} from './tokenEncoding';
+import {decodeAndValidateToken, EncodedTokenPermissions} from './tokenEncoding';
 
 /**
  * Determines if a token authorizes an action on a resource
  * Handles both resource-specific permissions and global permissions
  */
 export function isAuthorized(
-  token: TokenStructure,
+  token: EncodedTokenPermissions,
   action: Action,
   resourceId?: string
 ): boolean {
@@ -46,22 +46,6 @@ export function isAuthorized(
       if (resourceRole.resourceId === resourceId) {
         // If this role grants the action - proceed!
         if (roleGrantsAction({roles: [resourceRole.role], action})) {
-          return true;
-        }
-      }
-    }
-
-    // c) per resource permissions granting this action
-    for (const resourcePermission of decodedToken.resourcePermissions) {
-      // Only consider if the resource IDs match
-      if (resourcePermission.resourceId === resourceId) {
-        // If this role grants the action - proceed!
-        if (
-          canPerformAction({
-            permissions: [resourcePermission.permission],
-            action,
-          })
-        ) {
           return true;
         }
       }
