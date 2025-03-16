@@ -35,7 +35,7 @@
     "load-notebooks": "npm run load-notebooks --workspace=api",
     "load-templates": "npm run load-templates --workspace=api",
     "generate-local-keys": "./api/keymanagement/makeInstanceKeys.sh",
-    "build-web" :"turbo build --filter web",
+    "build-web": "turbo build --filter web",
     "lint": "turbo lint",
     "clean": "turbo clean",
     "build": "turbo build"
@@ -59,6 +59,7 @@
     "@typescript-eslint/parser": "^5.62.0",
     "esbuild": "^0.25.0",
     "eslint": "^8.57.0",
-    "gts": "^5.3.1"
+    "gts": "^5.3.1",
+    "redux-undo": "^1.1.0"
   }
 }

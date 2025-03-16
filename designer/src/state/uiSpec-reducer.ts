@@ -16,6 +16,8 @@ import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import {NotebookUISpec, initialState, FieldType} from './initial';
 import {getFieldSpec} from '../fields';
 import {ConditionType} from '../components/condition';
+// eslint-disable-next-line n/no-extraneous-import
+import undoable from 'redux-undo';
 
 /**
  * Slugify a string, replacing special characters with less special ones
@@ -549,6 +551,30 @@ export const uiSpecificationReducer = createSlice({
   },
 });
 
+// Mapping of action types to user-friendly undo labels
+const actionLabels: Record<string, string> = {
+  fieldAdded: 'Undo add field',
+  fieldDeleted: 'Undo delete field',
+  fieldUpdated: 'Undo update field',
+  fieldDuplicated: 'Undo duplicate field',
+  sectionAdded: 'Undo add section',
+  sectionDeleted: 'Undo delete section',
+  sectionRenamed: 'Undo rename section',
+  viewSetAdded: 'Undo add form',
+  viewSetDeleted: 'Undo delete form',
+  viewSetRenamed: 'Undo rename form',
+};
+
+// Higher order reducer that automatically attaches undoLabel metadata
+const autoLabelReducer = (reducer: any) => {
+  return (state: any, action: any) => {
+    if (!action.meta && actionLabels[action.type]) {
+      action = {...action, meta: {undoLabel: actionLabels[action.type]}};
+    }
+    return reducer(state, action);
+  };
+};
+
 export const {
   loaded,
   fieldUpdated,
@@ -574,4 +600,9 @@ export const {
   viewSetSummaryFieldsUpdated,
 } = uiSpecificationReducer.actions;
 
-export default uiSpecificationReducer.reducer;
+export default undoable(autoLabelReducer(uiSpecificationReducer.reducer), {
+  filter: action => Object.keys(actionLabels).includes(action.type),
+  debug: true,
+  undoType: 'UNDO_ACTION',
+  redoType: 'REDO_ACTION',
+});
