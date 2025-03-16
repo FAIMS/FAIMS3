@@ -118,8 +118,12 @@ api.get(
   '/',
   requireAuthenticationAPI,
   async (req: any, res: Response<Express.User[]>) => {
-    if (!req.user || !userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('You are not logged in.');
+    }
+
+    if (!userIsClusterAdmin(req.user)) {
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to get users.'
       );
     }
@@ -133,8 +137,12 @@ api.get(
   '/roles',
   requireAuthenticationAPI,
   async (req: any, res: Response<string[]>) => {
-    if (!req.user || !userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('You are not logged in.');
+    }
+
+    if (!userIsClusterAdmin(req.user)) {
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to get roles.'
       );
     }
