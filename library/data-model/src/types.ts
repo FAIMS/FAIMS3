@@ -396,6 +396,8 @@ export type DraftMetadataList = {
   [key: string]: DraftMetadata;
 };
 
+export type DataDbType = PouchDB.Database<ProjectDataObject>;
+
 // end of types from datamodel/drafts.ts --------------------------------
 
 // types from datamodel/geo.ts --------------------------------
@@ -550,9 +552,12 @@ export interface RecordMetadata {
   deleted: boolean;
   hrid: string;
   type: FAIMSTypeName;
+  avps: AttributeValuePairIDMap;
   relationship?: Relationship;
   data?: {[key: string]: any};
 }
+
+export type UnhydratedRecord = Omit<RecordMetadata, 'data' | 'hrid'>;
 
 export type RecordMetadataList = {
   [key: string]: RecordMetadata;

@@ -40,15 +40,16 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
+import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {
   createNotebook,
   deleteNotebook,
   generateFilenameForAttachment,
+  getEncodedNotebookUISpec,
   getNotebookMetadata,
   getNotebooks,
-  getEncodedNotebookUISpec,
   getProjectUIModel,
   getRolesForNotebook,
   streamNotebookFilesAsZip,
@@ -252,17 +253,20 @@ api.get(
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.UnauthorizedException();
     }
-    const tokenContent = generateTokenContentsForUser(req.user);
+    const tokenContents = generateTokenContentsForUser(req.user);
+    const {id: projectId} = req.params;
     const uiSpecification = (await getProjectUIModel(
       req.params.id
     )) as ProjectUIModel;
-    const records = await getRecordsWithRegex(
-      tokenContent,
-      req.params.id,
-      '.*',
-      true,
-      uiSpecification
-    );
+    const dataDb = await getDataDb(projectId);
+    const records = await getRecordsWithRegex({
+      dataDb,
+      filterDeleted: true,
+      projectId,
+      regex: '.*',
+      tokenContents,
+      uiSpecification,
+    });
     if (records) {
       const filenames: string[] = [];
       // Process any file fields to give the file name in the zip download
