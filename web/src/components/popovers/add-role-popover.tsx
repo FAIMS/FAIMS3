@@ -4,6 +4,7 @@ import {useAuth} from '@/context/auth-provider';
 import {RoleCard} from '../ui/role-card';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
+import {Button} from '../ui/button';
 
 /**
  * A popover that allows the user to add a role to a user.
@@ -25,9 +26,9 @@ export const AddRolePopover = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger>
-        <div className="invisible text-primary group p-0.5 border cursor-pointer relative bg-background rounded-full w-fit hover:bg-muted/90 transition-colors [tr:hover_&]:visible">
-          <Plus size={12} />
-        </div>
+        <Button variant="outline" className="font-normal">
+          Add Role
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="flex gap-1 p-2 w-fit text-sm" align="start">
         {roles.map(role => (
