@@ -21,24 +21,23 @@
 
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-security-helper'));
 
+import {registerClient} from '@faims3/data-model';
 import {
   CONDUCTOR_INTERNAL_PORT,
   CONDUCTOR_PUBLIC_URL,
   COUCHDB_INTERNAL_URL,
 } from './buildconfig';
-
-import {app} from './routes';
-
-import {registerClient} from '@faims3/data-model';
-import {getDataDb, getMetadataDb} from './couchdb';
+import {getDataDb} from './couchdb';
 import {validateDatabases} from './couchdb/notebooks';
+import {app} from './routes';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
   getDataDB: getDataDb,
-  getProjectDB: getMetadataDb,
-  shouldDisplayRecord: () => true,
+  shouldDisplayRecord: async () => true,
 });
 
 process.on('unhandledRejection', error => {
@@ -46,8 +45,6 @@ process.on('unhandledRejection', error => {
   console.error(error); // This prints error with stack included (as for normal errors)
   // don't re-throw the error since we don't want to crash the server
 });
-
-PouchDB.plugin(PouchDBFind);
 
 // on startup, run a validation of the databases that can perform
 // any required migrations

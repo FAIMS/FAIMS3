@@ -154,8 +154,6 @@ export const APINotebookListSchema = z.object({
   template_id: z.string().optional(),
   status: z.string().optional(),
   project_id: z.string(),
-  listing_id: z.string(),
-  non_unique_project_id: z.string(),
   metadata: z.record(z.unknown()).optional().nullable(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
@@ -398,6 +396,8 @@ export type DraftMetadataList = {
   [key: string]: DraftMetadata;
 };
 
+export type DataDbType = PouchDB.Database<ProjectDataObject>;
+
 // end of types from datamodel/drafts.ts --------------------------------
 
 // types from datamodel/geo.ts --------------------------------
@@ -506,15 +506,11 @@ export interface ElementOption {
 // end of types from datamodel/typeSystems.ts --------------------------------
 
 // types from datamodel/ui.ts --------------------------------
-
-export interface ListingInformation {
-  id: ListingID;
+export interface PublicServerInfo {
+  id: string;
   name: string;
-  description: string;
   conductor_url: string;
-}
-
-export interface ListingsObject extends ListingInformation {
+  description: string;
   prefix: string;
 }
 
@@ -527,7 +523,6 @@ export interface ProjectInformation {
   status?: string;
   is_activated: boolean;
   listing_id: ListingID;
-  non_unique_project_id: NonUniqueProjectID;
   // Was the project created from a template?
   template_id?: string;
 }
@@ -557,9 +552,12 @@ export interface RecordMetadata {
   deleted: boolean;
   hrid: string;
   type: FAIMSTypeName;
+  avps: AttributeValuePairIDMap;
   relationship?: Relationship;
   data?: {[key: string]: any};
 }
+
+export type UnhydratedRecord = Omit<RecordMetadata, 'data' | 'hrid'>;
 
 export type RecordMetadataList = {
   [key: string]: RecordMetadata;

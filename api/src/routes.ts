@@ -39,7 +39,7 @@ import {createInvite, getInvitesForNotebook} from './couchdb/invites';
 import {
   countRecordsInNotebook,
   getNotebookMetadata,
-  getNotebookUISpec,
+  getEncodedNotebookUISpec,
   getNotebooks,
   getRolesForNotebook,
 } from './couchdb/notebooks';
@@ -59,7 +59,7 @@ import {
 import {validateProjectDatabase} from './couchdb/devtools';
 import {
   databaseValidityReport,
-  initialiseDatabases,
+  initialiseDbAndKeys,
   verifyCouchDBConnection,
 } from './couchdb';
 
@@ -113,7 +113,7 @@ app.get('/', async (req, res) => {
 app.post('/fallback-initialise', async (req, res) => {
   if (!databaseValidityReport.valid) {
     console.log('running initialise');
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
     const vv = await verifyCouchDBConnection();
     console.log('updated valid', databaseValidityReport, vv);
   }
@@ -194,7 +194,7 @@ app.get(
     const user = req.user as Express.User; // requireAuthentication ensures user
     const project_id = req.params.notebook_id;
     const notebook = await getNotebookMetadata(project_id);
-    const uiSpec = await getNotebookUISpec(project_id);
+    const uiSpec = await getEncodedNotebookUISpec(project_id);
     const invitesQR: any[] = [];
     if (notebook && uiSpec) {
       const isAdmin = userHasPermission(user, project_id, 'modify');

@@ -33,11 +33,14 @@ import {
   upsertFAIMSData,
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
+import {compiledSpecService} from '../../../../context/slices/helpers/compiledSpecService';
+import {selectProjectById} from '../../../../context/slices/projectSlice';
+import {useAppSelector} from '../../../../context/store';
 import {logError} from '../../../../logging';
-import {getUiSpecForProject} from '../../../../uiSpecification';
 import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
 import {ParentLinkProps, RecordLinkProps} from './types';
+import {localGetDataDb} from '../../../..';
 
 /**
  * Generate an object containing information to be stored in
@@ -48,7 +51,8 @@ import {ParentLinkProps, RecordLinkProps} from './types';
  */
 export async function generateLocationState(
   parentLink: LinkedRelation,
-  project_id: string
+  project_id: string,
+  serverId: string
 ) {
   const parent_record = {
     project_id: project_id,
@@ -62,6 +66,7 @@ export async function generateLocationState(
       field_id: parentLink.field_id,
       parent: latest_record?.relationship?.parent,
       parent_link: ROUTES.getRecordRoute(
+        serverId,
         project_id,
         parentLink.record_id,
         revision_id
@@ -224,16 +229,17 @@ export async function getRecordInformation(child_record: RecordReference) {
   if (child_record.project_id === undefined)
     return {latest_record, revision_id};
   try {
-    revision_id = await getFirstRecordHead(
-      child_record.project_id,
-      child_record.record_id
-    );
-    latest_record = await getFullRecordData(
-      child_record.project_id,
-      child_record.record_id,
-      revision_id,
-      false
-    );
+    revision_id = await getFirstRecordHead({
+      dataDb: localGetDataDb(child_record.project_id),
+      recordId: child_record.record_id,
+    });
+    latest_record = await getFullRecordData({
+      dataDb: localGetDataDb(child_record.project_id),
+      projectId: child_record.project_id,
+      recordId: child_record.record_id,
+      revisionId: revision_id,
+      isDeleted: false,
+    });
   } catch (error) {
     logError(error);
     throw Error(`Unable to find record with id: ${child_record.project_id}`);
@@ -335,7 +341,8 @@ export async function getRelatedRecords(
   project_id: ProjectID,
   values: {[field_name: string]: any},
   field_name: string,
-  multiple: boolean
+  multiple: boolean,
+  uiSpecification: ProjectUIModel
 ) {
   const fieldValue = values[field_name];
 
@@ -371,12 +378,14 @@ export async function getRelatedRecords(
   });
 
   const record_ids = links.map((link: any) => link.record_id);
-  const records = await getMetadataForSomeRecords(
-    token,
-    project_id,
-    record_ids,
-    true
-  );
+  const records = await getMetadataForSomeRecords({
+    dataDb: localGetDataDb(project_id),
+    filterDeleted: true,
+    projectId: project_id,
+    recordIds: record_ids,
+    tokenContents: token,
+    uiSpecification,
+  });
   return records;
 }
 
@@ -436,7 +445,8 @@ async function get_field_RelatedFields(
   form_type: string,
   hrid: string,
   relation_type: string,
-  current_revision_id: string
+  current_revision_id: string,
+  serverId: string
 ): Promise<Array<RecordLinkProps>> {
   for (const index in fields) {
     const field = fields[index]['field'];
@@ -483,6 +493,7 @@ async function get_field_RelatedFields(
             latest_record?.updated
           ),
           ROUTES.getRecordRoute(
+            serverId,
             child_record.project_id,
             child_record.record_id,
             revision_id
@@ -497,6 +508,7 @@ async function get_field_RelatedFields(
           field,
           field_name,
           ROUTES.getRecordRoute(
+            serverId,
             child_record?.project_id,
             record_id,
             current_revision_id
@@ -522,7 +534,8 @@ export async function addLinkedRecord(
   record_id: string,
   form_type: string,
   child_hrid: string,
-  current_revision_id: string
+  current_revision_id: string,
+  serverId: string
 ): Promise<Array<RecordLinkProps>> {
   let parent_links: Array<LinkedRelation> = [];
   //add linked from parent
@@ -591,6 +604,7 @@ export async function addLinkedRecord(
         latest_record?.deleted === true
           ? ''
           : ROUTES.getRecordRoute(
+              serverId,
               child_record.project_id,
               child_record.record_id,
               current_revision_id
@@ -607,6 +621,7 @@ export async function addLinkedRecord(
         latest_record?.deleted === true
           ? ''
           : ROUTES.getRecordRoute(
+              serverId,
               child_record.project_id,
               parent_link.record_id,
               revision_id
@@ -676,10 +691,12 @@ export async function getParentPersistenceData({
   uiSpecification,
   projectId,
   parent,
+  serverId,
 }: {
   uiSpecification: ProjectUIModel;
   projectId: string;
   parent: Relationship | null;
+  serverId: string;
 }): Promise<ParentLinkProps[]> {
   let parentRecords: ParentLinkProps[] = [];
   if (parent !== null && parent.parent !== undefined) {
@@ -733,6 +750,7 @@ export async function getParentPersistenceData({
           field_id: parent.parent.field_id,
           field_label: parent.parent.field_id,
           route: ROUTES.getRecordRoute(
+            serverId,
             projectId,
             parent.parent.record_id,
             revision_id
@@ -753,7 +771,8 @@ export async function getDetailRelatedInformation(
   project_id: string,
   parent: Relationship | null,
   record_id: string,
-  current_revision_id: string
+  current_revision_id: string,
+  serverId: string
 ): Promise<RecordLinkProps[]> {
   let record_to_field_links: RecordLinkProps[] = [];
   // get fields that are related field
@@ -777,7 +796,8 @@ export async function getDetailRelatedInformation(
       form_type,
       hrid,
       'Child',
-      current_revision_id
+      current_revision_id,
+      serverId
     );
     //get field linked records
     record_to_field_links = await get_field_RelatedFields(
@@ -788,7 +808,8 @@ export async function getDetailRelatedInformation(
       form_type,
       hrid,
       'Linked',
-      current_revision_id
+      current_revision_id,
+      serverId
     );
     // get parent linked information
     record_to_field_links = await addLinkedRecord(
@@ -799,7 +820,8 @@ export async function getDetailRelatedInformation(
       record_id,
       form_type,
       hrid,
-      current_revision_id
+      current_revision_id,
+      serverId
     );
   }
   //get information for parent
@@ -857,7 +879,10 @@ export async function removeRecordLink(
       new_doc['relationship'] = relation;
       new_doc['updated'] = now;
       new_doc['deleted'] = latest_record.deleted;
-      await upsertFAIMSData(child_record.project_id, new_doc);
+      await upsertFAIMSData({
+        dataDb: localGetDataDb(child_record.project_id),
+        record: new_doc,
+      });
     }
 
     // now update the child record, removing the relation info from the
@@ -891,8 +916,10 @@ export async function addRecordLink({
   parent: LinkedRelation;
   relationType: string;
 }): Promise<RecordMetadata | null> {
-  // get uncompiled ui spec - useful for hrid generation
-  const uiSpecification = await getUiSpecForProject(projectId, false);
+  const uiSpecId = useAppSelector(state =>
+    selectProjectById(state, projectId)
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   let child_record_meta = null;
   try {
@@ -900,12 +927,13 @@ export async function addRecordLink({
     const {latest_record} = await getRecordInformation(childRecord);
 
     // Use the data and spec to get the HRID
-    const childRecordHrid = latest_record?.data
-      ? (getHridFromValuesAndSpec({
-          values: latest_record?.data,
-          uiSpecification: uiSpecification,
-        }) ?? latest_record.record_id)
-      : (latest_record?.record_id ?? '');
+    const childRecordHrid =
+      latest_record?.data && uiSpec
+        ? (getHridFromValuesAndSpec({
+            values: latest_record?.data,
+            uiSpecification: uiSpec,
+          }) ?? latest_record.record_id)
+        : (latest_record?.record_id ?? '');
 
     // Find the relation object (if any) and then either add or
     // remove the parent/link as appropriate
@@ -931,7 +959,10 @@ export async function addRecordLink({
       new_doc['relationship'] = relation;
       new_doc['updated'] = now;
       new_doc['deleted'] = latest_record.deleted;
-      await upsertFAIMSData(childRecord.project_id, new_doc);
+      await upsertFAIMSData({
+        dataDb: localGetDataDb(childRecord.project_id),
+        record: new_doc,
+      });
     }
     // here we are trusting that Record has enough of the fields of
     // RecordMetadata for the purposes of the caller until such time as we
@@ -1248,7 +1279,10 @@ async function conflict_update_child_record(
         new_doc['updated'] = now;
         new_doc['relationship'] = new_relation;
         try {
-          await upsertFAIMSData(project_id, new_doc);
+          await upsertFAIMSData({
+            dataDb: localGetDataDb(project_id),
+            record: new_doc,
+          });
         } catch (error) {
           logError(error);
         }
@@ -1329,12 +1363,13 @@ export async function remove_deleted_parent(
   try {
     if (revision_id === undefined || revision_id === null || revision_id === '')
       return result;
-    const latest_record = await getFullRecordData(
-      project_id,
-      current_record_id,
-      revision_id,
-      false
-    );
+    const latest_record = await getFullRecordData({
+      dataDb: localGetDataDb(project_id),
+      projectId: project_id,
+      recordId: current_record_id,
+      revisionId: revision_id,
+      isDeleted: false,
+    });
 
     if (latest_record !== null) {
       let new_relation = latest_record.relationship ?? {};
@@ -1367,7 +1402,10 @@ export async function remove_deleted_parent(
           record_id,
           field_id
         );
-        result['new_revision_id'] = await upsertFAIMSData(project_id, new_doc);
+        result['new_revision_id'] = await upsertFAIMSData({
+          dataDb: localGetDataDb(project_id),
+          record: new_doc,
+        });
         return result;
       } catch (error) {
         logError(error);

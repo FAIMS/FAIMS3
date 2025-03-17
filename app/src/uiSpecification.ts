@@ -18,76 +18,12 @@
  *   TODO
  */
 
-import {
-  EncodedProjectUIModel,
-  FAIMSTypeName,
-  ProjectID,
-  ProjectUIModel,
-  UI_SPECIFICATION_NAME,
-} from '@faims3/data-model';
+import {FAIMSTypeName, ProjectUIModel} from '@faims3/data-model';
 import {
   compileExpression,
   compileIsLogic,
   getDependantFields,
 } from './conditionals';
-import {getMetadataDbForProject} from './sync';
-
-export async function getUiSpecForProject(
-  project_id: ProjectID,
-  compile = true
-): Promise<ProjectUIModel> {
-  try {
-    const metadataDb = await getMetadataDbForProject(project_id);
-    const encodedUiInfo: EncodedProjectUIModel = await metadataDb.get(
-      UI_SPECIFICATION_NAME
-    );
-    const uiSpec = {
-      _id: encodedUiInfo._id,
-      _rev: encodedUiInfo._rev,
-      fields: encodedUiInfo.fields,
-      views: encodedUiInfo.fviews,
-      viewsets: encodedUiInfo.viewsets,
-      visible_types: encodedUiInfo.visible_types,
-    };
-    if (compile) {
-      compileUiSpecConditionals(uiSpec);
-    }
-    return uiSpec;
-  } catch (err) {
-    console.warn('failed to find ui specification for', project_id, err);
-    throw Error(`Could not find ui specification for ${project_id}`);
-  }
-}
-
-export async function setUiSpecForProject(
-  project_id: ProjectID,
-  uiInfo: ProjectUIModel
-) {
-  const metadataDb = await getMetadataDbForProject(project_id);
-  const encUIInfo: EncodedProjectUIModel = {
-    _id: UI_SPECIFICATION_NAME,
-    fields: uiInfo.fields,
-    fviews: uiInfo.views,
-    viewsets: uiInfo.viewsets,
-    visible_types: uiInfo.visible_types,
-  };
-  try {
-    const existing_encUIInfo = await metadataDb.get(encUIInfo._id);
-    encUIInfo._rev = existing_encUIInfo._rev;
-  } catch (err: any) {
-    // Probably no existing UI info
-    if (err?.status !== 404) {
-      console.debug('Failed to set UI specification for', project_id, err);
-    }
-  }
-
-  try {
-    return await metadataDb.put(encUIInfo);
-  } catch (err) {
-    console.warn('failed to set ui specification', err);
-    throw Error('failed to set ui specification');
-  }
-}
 
 // compile all conditional expressions in this UiSpec and store the
 // compiled versions as a property `conditionFn` on the field or view
@@ -254,27 +190,16 @@ export function getReturnedTypesForViewSet(
   const fields = getFieldsForViewSet(uiSpecification, viewsetId);
   const types: {[field_name: string]: FAIMSTypeName} = {};
   for (const field_name in fields) {
-    types[field_name] = fields[field_name]['type-returned'];
+    if (fields[field_name]) {
+      types[field_name] = fields[field_name]['type-returned'];
+    } else {
+      console.warn(
+        'UI Spec had an undefined field with name: ',
+        field_name,
+        '. Ignoring...'
+      );
+      continue;
+    }
   }
   return types;
-}
-
-export async function dumpMetadataDBContents(
-  projectId: ProjectID
-): Promise<object[]> {
-  const metadataDb = await getMetadataDbForProject(projectId);
-  try {
-    const dbContents = await metadataDb.allDocs({
-      include_docs: true,
-      attachments: true,
-    });
-    const docs = [];
-    for (const o of dbContents.rows) {
-      docs.push(o.doc as object);
-    }
-    return docs;
-  } catch (err) {
-    console.warn('failed to dump meta db for', projectId, err);
-    throw Error(`failed to dump meta db for ${projectId}`);
-  }
 }

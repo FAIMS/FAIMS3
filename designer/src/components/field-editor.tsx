@@ -22,6 +22,7 @@ import LockRounded from '@mui/icons-material/LockRounded';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import DuplicateIcon from '@mui/icons-material/ContentCopy';
 
 import {
   Accordion,
@@ -58,6 +59,7 @@ import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
 import {useState, useMemo} from 'react';
 import {FieldProtectionMenu} from './field-protection-menu';
+import {findFieldCondtionUsage} from './condition';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -84,16 +86,42 @@ export const FieldEditor = ({
   const viewsets = useAppSelector(
     state => state.notebook['ui-specification'].viewsets
   );
-  const views = useAppSelector(
+
+  const allFields = useAppSelector(
+    state => state.notebook['ui-specification'].fields
+  );
+  const allFviews = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
+
   const dispatch = useAppDispatch();
 
   const [openMoveDialog, setOpenMoveDialog] = useState(false);
   const [targetViewId, setTargetViewId] = useState('');
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
+  const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
+  const [duplicateTitle, setDuplicateTitle] = useState('');
 
   const fieldComponent = field['component-name'];
+
+  const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
+  const [conditionsAffected, setConditionsAffected] = useState<string[]>([]);
+
+  const deleteField = (evt: React.SyntheticEvent) => {
+    evt.stopPropagation();
+
+    const usage = findFieldCondtionUsage(fieldName, allFields, allFviews);
+
+    if (usage.length > 0) {
+      setConditionsAffected(usage);
+      setDeleteWarningOpen(true);
+    } else {
+      dispatch({
+        type: 'ui-specification/fieldDeleted',
+        payload: {fieldName, viewId},
+      });
+    }
+  };
   const protection = field['component-parameters'].protection || 'none';
   const isHidden = field['component-parameters'].hidden || false;
   const isRequired = field['component-parameters']?.required || false;
@@ -126,6 +154,7 @@ export const FieldEditor = ({
       field['component-parameters'].name
     );
   };
+
   const label = getFieldLabel();
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
@@ -144,17 +173,35 @@ export const FieldEditor = ({
     });
   };
 
-  const deleteField = (event: React.SyntheticEvent) => {
-    event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/fieldDeleted',
-      payload: {fieldName, viewId},
-    });
-  };
-
   const addFieldBelow = (event: React.SyntheticEvent) => {
     event.stopPropagation();
     addFieldCallback(fieldName);
+  };
+
+  const handleOpenDuplicateDialog = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+    const currentLabel = getFieldLabel();
+    setDuplicateTitle(currentLabel + ' Copy');
+    setOpenDuplicateDialog(true);
+  };
+
+  const handleCloseDuplicateDialog = () => {
+    setOpenDuplicateDialog(false);
+    setDuplicateTitle('');
+  };
+
+  const duplicateField = () => {
+    if (duplicateTitle.trim()) {
+      dispatch({
+        type: 'ui-specification/fieldDuplicated',
+        payload: {
+          originalFieldName: fieldName,
+          newFieldName: duplicateTitle.trim(),
+          viewId,
+        },
+      });
+      handleCloseDuplicateDialog();
+    }
   };
 
   const toggleProtection = (
@@ -228,9 +275,9 @@ export const FieldEditor = ({
   const sectionValue = useMemo(
     () =>
       targetViewId
-        ? {id: targetViewId, label: views[targetViewId].label}
+        ? {id: targetViewId, label: allFviews[targetViewId].label}
         : null,
-    [targetViewId, views]
+    [targetViewId, allFviews]
   );
 
   // memoize the section options
@@ -241,10 +288,10 @@ export const FieldEditor = ({
             .filter(sectionId => sectionId !== viewId)
             .map(sectionId => ({
               id: sectionId,
-              label: views[sectionId].label,
+              label: allFviews[sectionId].label,
             }))
         : [],
-    [selectedFormId, viewsets, viewId, views]
+    [selectedFormId, viewsets, viewId, allFviews]
   );
 
   return (
@@ -296,6 +343,8 @@ export const FieldEditor = ({
               >
                 {label}
               </Typography>
+
+              {/* Chips Below Title (Tighter Spacing) */}
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Chip
                   label={fieldComponent}
@@ -334,138 +383,93 @@ export const FieldEditor = ({
             </Stack>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Stack
-              direction="row"
-              justifyContent={{sm: 'right', xs: 'left'}}
-              spacing={1}
-            >
-              {isHidden ? (
-                <Tooltip
-                  title={
-                    protection === 'protected'
-                      ? 'Fully protected fields cannot be hidden'
-                      : isRequired
-                        ? 'Required fields cannot be hidden'
-                        : 'Unhide Field'
-                  }
+            <Stack direction="row" justifyContent={{sm: 'right', xs: 'left'}}>
+              <Tooltip title="Delete Field">
+                <IconButton
+                  onClick={deleteField}
+                  aria-label="delete"
+                  size="small"
                 >
-                  <span>
-                    <IconButton
-                      onClick={toggleHiddenState}
-                      aria-label="unhide field"
-                      size="small"
-                      disabled={protection === 'protected' || isRequired}
-                    >
-                      <VisibilityIcon />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              ) : (
-                <>
-                  <Tooltip
-                    title={
-                      protection === 'protected'
-                        ? 'Fully protected fields cannot be hidden'
-                        : isRequired
-                          ? 'Required fields cannot be hidden'
-                          : 'Hide Field'
-                    }
-                  >
-                    <span>
-                      <IconButton
-                        onClick={toggleHiddenState}
-                        aria-label="hide field"
-                        size="small"
-                        disabled={protection === 'protected' || isRequired}
-                      >
-                        <VisibilityOffIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip
-                    title={
-                      isDerivedFromSet &&
-                      (protection === 'protected' ||
-                        protection === 'allow-hiding')
-                        ? 'This protected field cannot be deleted in a derived template.'
-                        : 'Delete Field'
-                    }
-                  >
-                    <span>
-                      <IconButton
-                        onClick={deleteField}
-                        aria-label="delete"
-                        size="small"
-                        disabled={
-                          isDerivedFromSet &&
-                          (protection === 'protected' ||
-                            protection === 'allow-hiding')
-                        }
-                      >
-                        <DeleteRoundedIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title="Move Field">
-                    <IconButton
-                      onClick={() => setOpenMoveDialog(true)}
-                      aria-label="move"
-                      size="small"
-                    >
-                      <MoveRoundedIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Add Field Below">
-                    <IconButton
-                      onClick={addFieldBelow}
-                      aria-label="add field"
-                      size="small"
-                    >
-                      <PlaylistAddIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Move up">
-                    <IconButton
-                      onClick={moveFieldUp}
-                      aria-label="up"
-                      size="small"
-                    >
-                      <ArrowDropUpRoundedIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Move down">
-                    <IconButton
-                      onClick={moveFieldDown}
-                      aria-label="down"
-                      size="small"
-                    >
-                      <ArrowDropDownRoundedIcon />
-                    </IconButton>
-                  </Tooltip>
-                  {!isDerivedFromSet && (
-                    <Tooltip title="Field Protection...">
-                      <IconButton
-                        onClick={handleMenuOpen}
-                        aria-label="Field Protection"
-                        size="small"
-                      >
-                        <MoreVertIcon />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  <FieldProtectionMenu
-                    anchorEl={anchorEl}
-                    menuOpen={menuOpen}
-                    onClose={handleMenuClose}
-                    protection={protection}
-                    onToggleProtection={toggleProtection}
-                    required={isRequired}
-                  />
-                </>
-              )}
+                  <DeleteRoundedIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Move Field">
+                <IconButton
+                  onClick={() => setOpenMoveDialog(true)}
+                  aria-label="move"
+                  size="small"
+                >
+                  <MoveRoundedIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Add Field Below">
+                <IconButton
+                  onClick={addFieldBelow}
+                  aria-label="add field"
+                  size="small"
+                >
+                  <PlaylistAddIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Duplicate Field">
+                <IconButton
+                  onClick={handleOpenDuplicateDialog}
+                  aria-label="duplicate"
+                  size="small"
+                >
+                  <DuplicateIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Move up">
+                <IconButton onClick={moveFieldUp} aria-label="up" size="small">
+                  <ArrowDropUpRoundedIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Move down">
+                <IconButton
+                  onClick={moveFieldDown}
+                  aria-label="down"
+                  size="small"
+                >
+                  <ArrowDropDownRoundedIcon />
+                </IconButton>
+              </Tooltip>
             </Stack>
           </Grid>
         </Grid>
+        <Dialog
+          open={deleteWarningOpen}
+          onClose={() => setDeleteWarningOpen(false)}
+        >
+          <DialogTitle>Can Not Delete Field</DialogTitle>
+          <DialogContent>
+            <p>
+              This field is referenced in the following{' '}
+              {conditionsAffected.length === 1 ? 'condition' : 'conditions'}:
+            </p>
+            <ul>
+              {conditionsAffected.map((condition, index) => (
+                <li key={index}>{condition}</li>
+              ))}
+            </ul>
+            <p>
+              Please remove this field from{' '}
+              {conditionsAffected.length === 1 ? 'this' : 'these'} condition
+              condition{conditionsAffected.length === 1 ? '' : 's'} before
+              deleting this field.
+            </p>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={e => {
+                e.stopPropagation();
+                setDeleteWarningOpen(false);
+              }}
+            >
+              Dismiss
+            </Button>
+          </DialogActions>
+        </Dialog>
       </AccordionSummary>
 
       <Dialog
@@ -528,6 +532,37 @@ export const FieldEditor = ({
             disabled={!selectedFormId || !targetViewId}
           >
             Move
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openDuplicateDialog}
+        onClose={handleCloseDuplicateDialog}
+        aria-labelledby="duplicate-dialog-title"
+        maxWidth="sm"
+        onClick={e => e.stopPropagation()}
+      >
+        <DialogTitle id="duplicate-dialog-title" textAlign="center">
+          Duplicate Field
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{mb: 2}}>
+            Enter a title for the duplicated field.
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            value={duplicateTitle}
+            onChange={e => setDuplicateTitle(e.target.value)}
+            label="Field Title"
+            variant="outlined"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDuplicateDialog}>Cancel</Button>
+          <Button onClick={duplicateField} disabled={!duplicateTitle.trim()}>
+            Duplicate
           </Button>
         </DialogActions>
       </Dialog>

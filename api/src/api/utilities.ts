@@ -18,7 +18,7 @@
  */
 
 import {
-  ListingsObject,
+  PublicServerInfo,
   PostRefreshTokenInputSchema,
   PostRefreshTokenResponse,
 } from '@faims3/data-model';
@@ -31,9 +31,9 @@ import {
   CONDUCTOR_SHORT_CODE_PREFIX,
   DEVELOPER_MODE,
 } from '../buildconfig';
-import {initialiseDatabases} from '../couchdb';
+import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
-import {getProjects} from '../couchdb/notebooks';
+import {getUserProjects} from '../couchdb/notebooks';
 import {userIsClusterAdmin} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {
@@ -67,7 +67,7 @@ api.get('/hello/', requireAuthenticationAPI, (_req: any, res: any) => {
  *   if databases exist, this is a no-op
  */
 api.post('/initialise/', async (req, res) => {
-  initialiseDatabases({force: false});
+  initialiseDbAndKeys({force: false});
   res.json({success: true});
 });
 
@@ -80,7 +80,7 @@ api.post(
   requireAuthenticationAPI,
   requireClusterAdmin,
   async (req, res) => {
-    initialiseDatabases({force: true});
+    initialiseDbAndKeys({force: true});
     res.json({success: true});
   }
 );
@@ -89,13 +89,14 @@ api.post(
  * Handle info requests, basic identifying information for this server
  */
 api.get('/info', async (req, res) => {
-  res.json({
+  const response: PublicServerInfo = {
     id: slugify(CONDUCTOR_INSTANCE_NAME),
     name: CONDUCTOR_INSTANCE_NAME,
     conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
     prefix: CONDUCTOR_SHORT_CODE_PREFIX,
-  } as ListingsObject);
+  };
+  res.json(response);
 });
 
 api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
@@ -103,7 +104,7 @@ api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
   if (!req.user) {
     throw new Exceptions.UnauthorizedException();
   }
-  const projects = await getProjects(req.user);
+  const projects = await getUserProjects(req.user);
   res.json(projects);
 });
 

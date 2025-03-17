@@ -32,9 +32,10 @@ import {
   upsertFAIMSData,
 } from '@faims3/data-model';
 import {Alert, Box, Divider, Typography} from '@mui/material';
-import {Form, Formik} from 'formik';
+import {Form, Formik, FormikProps} from 'formik';
 import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
+import {localGetDataDb} from '../../..';
 import * as ROUTES from '../../../constants/routes';
 import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
 import {
@@ -78,9 +79,11 @@ import {
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
+import {c} from 'vitest/dist/reporters-5f784f42';
 
 type RecordFormProps = {
   navigate: NavigateFunction;
+  serverId: string;
   project_id: ProjectID;
   record_id: RecordID;
   // Might be given in the URL:
@@ -171,6 +174,7 @@ type RecordFormState = {
 
 class RecordForm extends React.Component<any, RecordFormState> {
   draftState: RecordDraftState | null = null;
+  private formikRef = React.createRef<FormikProps<any>>();
 
   // List of timeouts that unmount must cancel
   timeouts: (typeof setTimeout)[] = [];
@@ -364,11 +368,12 @@ class RecordForm extends React.Component<any, RecordFormState> {
     if (this.props.type === undefined) {
       if (revision_id !== undefined) {
         // get the record so we can see the type
-        const latest_record = await getFullRecordData(
-          this.props.project_id,
-          this.props.record_id,
-          revision_id
-        );
+        const latest_record = await getFullRecordData({
+          dataDb: localGetDataDb(this.props.project_id),
+          projectId: this.props.project_id,
+          recordId: this.props.record_id,
+          revisionId: revision_id,
+        });
 
         if (latest_record === null) {
           this.props.handleSetDraftError(
@@ -440,10 +445,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
     if (revision_id === undefined) {
       try {
         // for new draft but saved record, get the revision instead of using undefined
-        const first_revision_id = await getFirstRecordHead(
-          this.props.project_id,
-          this.props.record_id
-        );
+        const first_revision_id = await getFirstRecordHead({
+          dataDb: localGetDataDb(this.props.project_id),
+          recordId: this.props.record_id,
+        });
         revision_id = first_revision_id;
       } catch (error) {
         // here if there was no existing record with this id above
@@ -499,6 +504,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
         initialValues: {
           _id: this.props.record_id!,
           _project_id: this.props.project_id,
+          _server_id: this.props.serverId,
         },
       });
     }
@@ -546,11 +552,12 @@ class RecordForm extends React.Component<any, RecordFormState> {
        * (in order high priority to last resort): draft storage, database, ui schema
        */
       const fromdb = revision_id
-        ? ((await getFullRecordData(
-            this.props.project_id,
-            this.props.record_id,
-            revision_id
-          )) ?? undefined)
+        ? ((await getFullRecordData({
+            dataDb: localGetDataDb(this.props.project_id),
+            projectId: this.props.project_id,
+            recordId: this.props.record_id,
+            revisionId: revision_id,
+          })) ?? undefined)
         : undefined;
 
       // data and annotations or nothing
@@ -577,6 +584,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
       const initialValues: {[key: string]: any} = {
         _id: this.props.record_id!,
         _project_id: this.props.project_id,
+        _server_id: this.props.serverId,
         _current_revision_id: revision_id,
       };
       const annotations: {[key: string]: any} = {};
@@ -783,29 +791,64 @@ class RecordForm extends React.Component<any, RecordFormState> {
     return new_values;
   }
 
+  checkAllSectionsVisited() {
+    const allSections =
+      this.props.ui_specification.viewsets[this.getViewsetName()].views;
+
+    const allVisited = allSections.every((section: string) =>
+      this.state.visitedSteps.has(section)
+    );
+  }
+
+  /**
+   * Handles navigation between form sections (steps).
+   *
+   * Tracks visited sections and updates the active step.
+   * When all sections are visited, forces Formik to revalidate the form
+   * to ensure the "Publish" button is shown correctly.
+   *
+   * This function supports the `publishButtonBehaviour` setting, which controls
+   * when the publish button should be displayed:
+   *
+   * - `'always'`: The publish button is always visible.
+   * - `'visited'`: The publish button is shown only after all sections are visited.
+   * - `'noErrors'`: The publish button is shown only after all the errors/required fields of the form as addressed.
+   */
   onChangeStepper(view_name: string, activeStepIndex: number) {
-    this.setState(prevState => {
-      const {activeStep} = prevState;
+    this.setState(
+      prevState => {
+        const {activeStep} = prevState;
 
-      const wasVisitedBefore = prevState.visitedSteps.has(view_name);
+        const wasVisitedBefore = prevState.visitedSteps.has(view_name);
 
-      // add to visitedSteps if it has not been visited before
-      const updatedVisitedSteps = new Set(prevState.visitedSteps);
-      updatedVisitedSteps.add(view_name);
+        // add to visitedSteps if it has not been visited before
+        const updatedVisitedSteps = new Set(prevState.visitedSteps);
+        updatedVisitedSteps.add(view_name);
 
-      const isFirstStep = activeStepIndex === 0;
+        const isFirstStep = activeStepIndex === 0;
 
-      const isRevisiting =
-        wasVisitedBefore || (isFirstStep && activeStep !== activeStepIndex);
+        const isRevisiting =
+          wasVisitedBefore || (isFirstStep && activeStep !== activeStepIndex);
 
-      return {
-        ...prevState,
-        view_cached: view_name,
-        activeStep: activeStepIndex,
-        visitedSteps: updatedVisitedSteps,
-        isRevisiting,
-      };
-    });
+        return {
+          ...prevState,
+          view_cached: view_name,
+          activeStep: activeStepIndex,
+          visitedSteps: updatedVisitedSteps,
+          isRevisiting,
+        };
+      },
+      () => {
+        this.checkAllSectionsVisited(); // Check if all sections are visited
+
+        if (
+          this.state.visitedSteps.size === this.state.views.length &&
+          this.formikRef?.current
+        ) {
+          this.formikRef.current.validateForm();
+        }
+      }
+    );
   }
 
   onChangeTab(event: React.ChangeEvent<{}>, newValue: string) {
@@ -904,8 +947,12 @@ class RecordForm extends React.Component<any, RecordFormState> {
       deleted: false,
       ...contextInfo,
     };
+
     return (
-      upsertFAIMSData(this.props.project_id, doc)
+      upsertFAIMSData({
+        dataDb: localGetDataDb(this.props.project_id),
+        record: doc,
+      })
         .then(revision_id => {
           // update the component state with the new revision id and notify the parent
           try {
@@ -963,7 +1010,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
                 // publish and close
                 if (is_close === 'close') {
                   this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + this.props.project_id
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
+                      this.props.project_id
                   ); //update for save and close button
                   window.scrollTo(0, 0);
                   return hrid;
@@ -973,6 +1023,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   setSubmitting(false);
                   this.props.navigate(
                     ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached
@@ -984,7 +1036,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
                 // or we're dealing with a child record
                 if (is_close === 'close') {
                   this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + state_parent.parent_link,
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
+                      state_parent.parent_link,
                     {state: state_parent}
                   );
                   window.scrollTo(0, 0);
@@ -995,6 +1050,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   setSubmitting(false);
                   this.props.navigate(
                     ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached,
@@ -1006,15 +1063,16 @@ class RecordForm extends React.Component<any, RecordFormState> {
                     record_id: new_record_id,
                     project_id: this.props.project_id,
                   };
-                  getFirstRecordHead(
-                    this.props.project_id,
-                    locationState.parent_record_id
-                  ).then(revision_id =>
-                    getFullRecordData(
-                      this.props.project_id,
-                      locationState.parent_record_id,
-                      revision_id
-                    ).then(latest_record => {
+                  getFirstRecordHead({
+                    dataDb: localGetDataDb(this.props.project_id),
+                    recordId: locationState.parent_record_id,
+                  }).then(revision_id =>
+                    getFullRecordData({
+                      dataDb: localGetDataDb(this.props.project_id),
+                      projectId: this.props.project_id,
+                      recordId: locationState.parent_record_id,
+                      revisionId: revision_id,
+                    }).then(latest_record => {
                       const new_doc = latest_record;
                       if (new_doc !== null) {
                         if (
@@ -1031,11 +1089,15 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             ...new_doc['data'][field_id],
                             new_child_record,
                           ];
-                        upsertFAIMSData(this.props.project_id, new_doc)
+                        upsertFAIMSData({
+                          dataDb: localGetDataDb(this.props.project_id),
+                          record: new_doc,
+                        })
                           .then(new_revision_id => {
                             const location_state: any = locationState;
                             location_state['parent_link'] =
                               ROUTES.getRecordRoute(
+                                this.props.serverId,
                                 this.props.project_id,
                                 (
                                   location_state.parent_record_id || ''
@@ -1045,6 +1107,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             location_state['child_record_id'] = new_record_id;
                             this.props.navigate(
                               ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                                this.props.serverId +
+                                '/' +
                                 this.props.project_id +
                                 ROUTES.RECORD_CREATE +
                                 this.state.type_cached,
@@ -1061,6 +1125,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         );
                         this.props.navigate(
                           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            this.props.serverId +
+                            '/' +
                             this.props.project_id +
                             ROUTES.RECORD_CREATE +
                             this.state.type_cached,
@@ -1085,7 +1151,10 @@ class RecordForm extends React.Component<any, RecordFormState> {
               ) {
                 if (is_close === 'close') {
                   this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + this.props.project_id
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
+                      this.props.project_id
                   );
                   window.scrollTo(0, 0);
                   return hrid;
@@ -1094,6 +1163,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                   setSubmitting(false);
                   this.props.navigate(
                     ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                      this.props.serverId +
+                      '/' +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached
@@ -1103,7 +1174,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
               } else {
                 generateLocationState(
                   relationship.parent,
-                  this.props.project_id
+                  this.props.project_id,
+                  this.props.serverId
                 )
                   .then(locationState => {
                     if (is_close === 'close') {
@@ -1140,12 +1212,16 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             ...new_doc['data'][field_id],
                             new_child_record,
                           ];
-                        upsertFAIMSData(this.props.project_id, new_doc)
+                        upsertFAIMSData({
+                          dataDb: localGetDataDb(this.props.project_id),
+                          record: new_doc,
+                        })
                           .then(new_revision_id => {
                             const location_state: any =
                               locationState.location_state;
                             location_state['parent_link'] =
                               ROUTES.getRecordRoute(
+                                this.props.serverId,
                                 this.props.project_id,
                                 (
                                   location_state.parent_record_id || ''
@@ -1155,6 +1231,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                             location_state['child_record_id'] = new_record_id;
                             this.props.navigate(
                               ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                                this.props.serverId +
+                                '/' +
                                 this.props.project_id +
                                 ROUTES.RECORD_CREATE +
                                 this.state.type_cached,
@@ -1171,6 +1249,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         );
                         this.props.navigate(
                           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                            this.props.serverId +
+                            '/' +
                             this.props.project_id +
                             ROUTES.RECORD_CREATE +
                             this.state.type_cached,
@@ -1277,11 +1357,22 @@ class RecordForm extends React.Component<any, RecordFormState> {
         viewsetName
       );
       const description = this.requireDescription(viewName);
+      const views = getViewsMatchingCondition(
+        this.props.ui_specification,
+        initialValues,
+        [],
+        viewsetName,
+        {}
+      );
+
+      // Track visited sections and errors
+      const allSectionsVisited = this.state.visitedSteps.size === views.length;
 
       return (
         <Box>
           <div>
             <Formik
+              innerRef={this.formikRef}
               initialValues={initialValues}
               // We are manually running the validate function now - if you
               // leave this here this schema validation will take precedence
@@ -1340,6 +1431,17 @@ class RecordForm extends React.Component<any, RecordFormState> {
               }}
             >
               {formProps => {
+                const hasErrors = Object.keys(formProps.errors).length > 0;
+                const publishButtonBehaviour =
+                  this.props.ui_specification.viewsets[this.getViewsetName()]
+                    ?.publishButtonBehaviour || 'always';
+
+                const showPublishButton =
+                  publishButtonBehaviour === 'always' ||
+                  (publishButtonBehaviour === 'visited' &&
+                    allSectionsVisited) ||
+                  (publishButtonBehaviour === 'noErrors' && !hasErrors);
+
                 // Recompute derived values if something has changed
                 const {values, setValues} = formProps;
                 // Compare current values with last processed values
@@ -1488,6 +1590,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        showPublishButton={showPublishButton}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
@@ -1585,6 +1688,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        showPublishButton={showPublishButton}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {

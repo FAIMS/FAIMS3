@@ -43,7 +43,7 @@ import {
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import React, {useEffect, useState} from 'react';
-import {addAlert} from '../../../../context/slices/syncSlice';
+import {addAlert} from '../../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {theme} from '../../../themes';
@@ -60,6 +60,7 @@ import ConflictLinkBar from './conflictLinkBar';
 import ConflictPanel from './conflictpanel';
 import ConflictToolBar from './conflicttoolbar';
 import RecordTabBar from './recordTab';
+import {localGetDataDb} from '../../../..';
 
 type ConflictFormProps = {
   project_id: ProjectID;
@@ -72,6 +73,7 @@ type ConflictFormProps = {
   setissavedconflict: any; // this is parameter that allow user can reload the conflict headers
   isSyncing: string;
   not_xs?: boolean;
+  serverId: string;
 };
 type isclicklist = {[key: string]: boolean};
 type iscolourList = {[key: string]: string};
@@ -136,6 +138,7 @@ export default function ConflictForm(props: ConflictFormProps) {
     type,
     conflicts,
     setissavedconflict,
+    serverId,
     isSyncing,
   } = props;
   //this are tabs for form sections
@@ -267,11 +270,12 @@ export default function ConflictForm(props: ConflictFormProps) {
       setconflict(null);
       setIsloading(true);
       // setUserMergeResult({...mergeresult, parents: revisionlist}); // update the value when conflist revision changes
-      const result = await getMergeInformationForHead(
-        project_id,
-        record_id,
-        revisionvalue
-      );
+      const result = await getMergeInformationForHead({
+        dataDb: localGetDataDb(project_id),
+        recordId: record_id,
+        projectId: project_id,
+        revisionId: revisionvalue,
+      });
       await updateconflictvalue(setconflict, result, compareconflict, {
         ...mergeresult,
         parents: revisionlist,
@@ -307,7 +311,8 @@ export default function ConflictForm(props: ConflictFormProps) {
           record_id,
           type,
           record_id,
-          revisionvalue
+          revisionvalue,
+          serverId
         );
         setLinks(newLinks);
         const newMergedLinks: RecordLinkProps[] = await addLinkedRecord(
@@ -318,7 +323,8 @@ export default function ConflictForm(props: ConflictFormProps) {
           record_id,
           type,
           record_id,
-          revisionvalue
+          revisionvalue,
+          serverId
         );
         setMergedLinks(newMergedLinks);
       }
@@ -354,7 +360,8 @@ export default function ConflictForm(props: ConflictFormProps) {
             record_id,
             conflictA.type,
             record_id,
-            revisionlist[0]
+            revisionlist[0],
+            serverId
           );
           setLinksA(newLinks);
         }

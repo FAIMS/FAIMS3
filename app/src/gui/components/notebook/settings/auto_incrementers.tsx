@@ -1,13 +1,13 @@
-import React, {useEffect, useState} from 'react';
-import {Box, Grid, Typography, Paper, Button} from '@mui/material';
-import {ProjectInformation, ProjectUIModel} from '@faims3/data-model';
+import {AutoIncrementReference, ProjectUIModel} from '@faims3/data-model';
+import {Box, Button, Grid, Paper, Typography} from '@mui/material';
+import {useEffect, useState} from 'react';
+import {Project} from '../../../../context/slices/projectSlice';
 import {getAutoincrementReferencesForProject} from '../../../../local-data/autoincrement';
-import {AutoIncrementReference} from '@faims3/data-model';
-import {AutoIncrementEditForm} from '../../autoincrement/edit-form';
 import {logError} from '../../../../logging';
+import {AutoIncrementEditForm} from '../../autoincrement/edit-form';
 
 interface AutoIncrementerSettingsListProps {
-  project_info: ProjectInformation;
+  project: Project;
   uiSpec: ProjectUIModel;
 }
 
@@ -17,12 +17,12 @@ export default function AutoIncrementerSettingsList(
   const [open, setOpen] = useState(false);
   const [references, setReferences] = useState([] as AutoIncrementReference[]);
   useEffect(() => {
-    getAutoincrementReferencesForProject(props.project_info.project_id)
+    getAutoincrementReferencesForProject(props.project.projectId)
       .then(refs => {
         setReferences(refs);
       })
       .catch(error => logError(error));
-  }, [props.project_info.project_id]);
+  }, [props.project.projectId]);
 
   return (
     <>
@@ -54,7 +54,7 @@ export default function AutoIncrementerSettingsList(
               >
                 <Box mt={1}>
                   <AutoIncrementEditForm
-                    project_id={props.project_info.project_id}
+                    project_id={props.project.projectId}
                     form_id={ai.form_id}
                     field_id={ai.field_id}
                     label={label}

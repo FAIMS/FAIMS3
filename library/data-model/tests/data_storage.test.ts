@@ -98,6 +98,7 @@ describe('round-trip reading and writing to db', () => {
         fail('Failed to clean dbs');
       }
 
+      const dataDb = await getDataDB(project_id);
       const fullType = namespace + '::' + name;
 
       const record_id = generateFAIMSDataID();
@@ -118,9 +119,14 @@ describe('round-trip reading and writing to db', () => {
         deleted: false,
       };
 
-      return upsertFAIMSData(project_id, doc)
+      return upsertFAIMSData({dataDb, record: doc})
         .then(revision_id => {
-          return getFullRecordData(project_id, record_id, revision_id);
+          return getFullRecordData({
+            dataDb,
+            projectId: project_id,
+            recordId: record_id,
+            revisionId: revision_id,
+          });
         })
         .then(result => {
           expect(recordsEqual(result, doc)).toBe(true);
@@ -159,6 +165,7 @@ test('updating an existing record with extended data', async () => {
   };
   const userID = 'user';
   const time = new Date();
+  const dataDb = await getDataDB(project_id);
 
   const doc: Record = {
     project_id: project_id,
@@ -176,9 +183,14 @@ test('updating an existing record with extended data', async () => {
     deleted: false,
   };
 
-  return upsertFAIMSData(project_id, doc)
+  return upsertFAIMSData({dataDb: dataDb, record: doc})
     .then(revision_id => {
-      return getFullRecordData(project_id, record_id, revision_id);
+      return getFullRecordData({
+        dataDb,
+        projectId: project_id,
+        recordId: record_id,
+        revisionId: revision_id,
+      });
     })
     .then(result => {
       if (result) {
@@ -186,9 +198,14 @@ test('updating an existing record with extended data', async () => {
         // now we change the data and update
         result.data = new_data;
         result.field_types = new_field_types;
-        return upsertFAIMSData(project_id, result)
+        return upsertFAIMSData({dataDb, record: result})
           .then(new_revision_id => {
-            return getFullRecordData(project_id, record_id, new_revision_id);
+            return getFullRecordData({
+              dataDb,
+              projectId: project_id,
+              recordId: record_id,
+              revisionId: new_revision_id,
+            });
           })
           .then(result => {
             if (result) {
@@ -248,18 +265,30 @@ describe('CRUD for data', () => {
       // new_doc is the same with updated data
       const new_doc = {...doc, data: {field_name: new_data}};
 
-      return upsertFAIMSData(project_id, doc)
+      const dataDb = await getDataDB(project_id);
+
+      return upsertFAIMSData({dataDb, record: doc})
         .then(revision_id => {
-          return getFullRecordData(project_id, record_id, revision_id);
+          return getFullRecordData({
+            dataDb,
+            projectId: project_id,
+            recordId: record_id,
+            revisionId: revision_id,
+          });
         })
         .then(result => {
           expect(recordsEqual(result, doc)).toBe(true);
         })
         .then(() => {
-          return getFirstRecordHead(project_id, record_id);
+          return getFirstRecordHead({dataDb, recordId: record_id});
         })
         .then(revision_id => {
-          return getFullRecordData(project_id, record_id, revision_id);
+          return getFullRecordData({
+            projectId: project_id,
+            dataDb,
+            recordId: record_id,
+            revisionId: revision_id,
+          });
         })
         .then(result => {
           if (result === null) {
@@ -267,10 +296,15 @@ describe('CRUD for data', () => {
           }
           // modify a property in the record data and update
           result.data = new_doc.data;
-          return upsertFAIMSData(project_id, result);
+          return upsertFAIMSData({dataDb, record: result});
         })
         .then(revision_id => {
-          return getFullRecordData(project_id, record_id, revision_id);
+          return getFullRecordData({
+            dataDb,
+            projectId: project_id,
+            recordId: record_id,
+            revisionId: revision_id,
+          });
         })
         .then(result => {
           // result should be the same as new_doc
@@ -278,20 +312,38 @@ describe('CRUD for data', () => {
         })
         .then(_result => {
           // test deleting, it should go away and then we bring it back again
-          return deleteFAIMSDataForID(project_id, record_id, userID);
+          return deleteFAIMSDataForID({
+            dataDb,
+            recordId: record_id,
+            userId: userID,
+          });
         })
         .then(revision_id => {
-          return getFullRecordData(project_id, record_id, revision_id);
+          return getFullRecordData({
+            dataDb,
+            projectId: project_id,
+            recordId: record_id,
+            revisionId: revision_id,
+          });
         })
         .then(result => {
           // it's gone!
           expect(result).toBe(null);
         })
         .then(_result => {
-          return undeleteFAIMSDataForID(project_id, record_id, userID);
+          return undeleteFAIMSDataForID({
+            dataDb,
+            recordId: record_id,
+            userId: userID,
+          });
         })
         .then(revision_id => {
-          return getFullRecordData(project_id, record_id, revision_id);
+          return getFullRecordData({
+            projectId: project_id,
+            recordId: record_id,
+            revisionId: revision_id,
+            dataDb,
+          });
         })
         .then(result => {
           // and it's back!
@@ -320,11 +372,13 @@ describe('listing revisions', () => {
 
     const fullType = namespace + '::' + name;
 
+    const dataDb = await getDataDB(project_id);
+
     let record_id: string;
     createRecord(project_id, fullType, {name: data, age: 42})
       .then(result => {
         record_id = result;
-        return listFAIMSProjectRevisions(project_id);
+        return listFAIMSProjectRevisions({dataDb});
       })
       .then(result => {
         expect(result[record_id]).not.toBe(undefined);
@@ -345,9 +399,15 @@ describe('record iterator', () => {
       await cleanDataDBS();
 
       const project_id = 'test' + n;
-      await createNRecords(project_id, viewID, n);
+      const uiSpec = await createNRecords(project_id, viewID, n);
+      const dataDb = await getDataDB(project_id);
 
-      const iterator = await notebookRecordIterator(project_id, viewID);
+      const iterator = await notebookRecordIterator({
+        dataDb,
+        projectId: project_id,
+        viewID: viewID,
+        uiSpecification: uiSpec,
+      });
 
       let {record, done} = await iterator.next();
       let sumOfAges = 0;
@@ -361,7 +421,7 @@ describe('record iterator', () => {
       // expect the sum of the first n integers from 0 to n-1
       expect(sumOfAges).toBe(Math.abs((n * (n - 1)) / 2));
     }
-  }, 10000);
+  }, 15000);
 });
 
 describe('record retrieval', () => {
@@ -370,13 +430,19 @@ describe('record retrieval', () => {
     const project_id = 'test';
 
     await cleanDataDBS();
-    await createNRecords(project_id, viewID, 10);
+    const uiSpec = await createNRecords(project_id, viewID, 10);
 
-    const db = await getDataDB(project_id);
-    if (db) {
+    const dataDb = await getDataDB(project_id);
+
+    if (dataDb) {
       // use the underlying get all records rather than the token filtered version for now
       const records = Object.values(
-        await getAllRecordsWithRegex(project_id, '.*')
+        await getAllRecordsWithRegex({
+          projectId: project_id,
+          regex: '.*',
+          uiSpecification: uiSpec,
+          dataDb,
+        })
       );
       expect(records.length).toBe(10);
       // check a few properties
@@ -390,13 +456,18 @@ describe('record retrieval', () => {
   test('get all record metadata', async () => {
     const viewID = 'Test';
     const project_id = 'test';
-
     await cleanDataDBS();
-    await createNRecords(project_id, viewID, 10);
+    const uiSpec = await createNRecords(project_id, viewID, 10);
 
     const db = await getDataDB(project_id);
     if (db) {
-      const records = Object.values(await listRecordMetadata(project_id));
+      const records = Object.values(
+        await listRecordMetadata({
+          projectId: project_id,
+          uiSpecification: uiSpec,
+          dataDb: db,
+        })
+      );
       expect(records.length).toBe(10);
       // // check a few properties
       expect(records[0].created_by).toBe('user');
@@ -411,16 +482,27 @@ describe('record retrieval', () => {
     const project_id = 'test';
 
     await cleanDataDBS();
-    await createNRecords(project_id, viewID, 10);
+    const uiSpec = await createNRecords(project_id, viewID, 10);
 
     const db = await getDataDB(project_id);
     if (db) {
-      const all_records = Object.values(await listRecordMetadata(project_id));
+      const all_records = Object.values(
+        await listRecordMetadata({
+          dataDb: db,
+          projectId: project_id,
+          uiSpecification: uiSpec,
+        })
+      );
       const record_ids = all_records.map((r: RecordMetadata) => r.record_id);
 
       // get a filtered selection of records
       const records = Object.values(
-        await listRecordMetadata(project_id, record_ids.slice(5))
+        await listRecordMetadata({
+          dataDb: db,
+          projectId: project_id,
+          recordIds: record_ids.slice(5),
+          uiSpecification: uiSpec,
+        })
       );
       expect(records.length).toBe(5);
       // // check a few properties

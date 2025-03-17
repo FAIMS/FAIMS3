@@ -46,13 +46,16 @@ export const CREATE_NEW_SURVEY = '/create-new-survey';
 export const USER_ACTIVE_TESTR = '/test';
 
 export function getRecordRoute(
+  serverId: string,
   project_id: ProjectID,
   record_id: RecordID,
   revision_id: RevisionID
 ) {
-  if (!!project_id && !!record_id && !!revision_id) {
+  if (!!serverId && !!project_id && !!record_id && !!revision_id) {
     return (
       INDIVIDUAL_NOTEBOOK_ROUTE +
+      serverId +
+      '/' +
       project_id +
       RECORD_EXISTING +
       record_id +
@@ -67,6 +70,7 @@ export function getRecordRoute(
 
 // this function is to get route for draft-- depend on edit draft or created draft??? TODO need to check created draft route
 export function getDraftRoute(
+  serverId: string,
   project_id: ProjectID,
   draft_id: string,
   existing: null | {record_id: RecordID; revision_id: RevisionID},
@@ -76,6 +80,8 @@ export function getDraftRoute(
   if (existing !== null)
     return (
       INDIVIDUAL_NOTEBOOK_ROUTE +
+      serverId +
+      '/' +
       project_id +
       RECORD_EXISTING +
       // existing+
@@ -88,6 +94,8 @@ export function getDraftRoute(
   else {
     return (
       INDIVIDUAL_NOTEBOOK_ROUTE +
+      serverId +
+      '/' +
       project_id +
       RECORD_CREATE +
       type_name +

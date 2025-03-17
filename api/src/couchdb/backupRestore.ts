@@ -17,13 +17,9 @@
  * Description:
  *    Functions to backup and restore databases
  */
+import {safeWriteDocument} from '@faims3/data-model';
 import {open} from 'node:fs/promises';
-import {getProjectsDB} from '.';
-import {
-  addDesignDocsForNotebook,
-  getDataDB,
-  getProjectDB,
-} from '@faims3/data-model';
+import {initialiseDataDb, initialiseMetadataDb, localGetProjectsDb} from '.';
 
 /**
  * restoreFromBackup - restore databases from a JSONL backup file
@@ -48,17 +44,21 @@ export const restoreFromBackup = async (filename: string) => {
           // name will be eg. 'projects_default', where 'default' is the
           // conductor instance id
           // we'll put all projects into our projectsDB
-          db = await getProjectsDB();
+          db = localGetProjectsDb();
         } else if (dbName.startsWith('metadata')) {
           const projectName = dbName.split('||')[1];
-          db = await getProjectDB(projectName);
+          // TODO: set up permissions for the databases
+          db = await initialiseMetadataDb({
+            projectId: projectName,
+            force: true,
+          });
         } else if (dbName.startsWith('data')) {
           const projectName = dbName.split('||')[1];
-          db = await getDataDB(projectName);
-          if (db) {
-            addDesignDocsForNotebook(db);
-            // TODO: set up permissions for the databases
-          }
+          // TODO: set up permissions for the databases
+          db = await initialiseDataDb({
+            projectId: projectName,
+            force: true,
+          });
         } else {
           // don't try to restore anything we don't know about
           db = undefined;
@@ -72,13 +72,16 @@ export const restoreFromBackup = async (filename: string) => {
         // careful and check whether this _rev is present in the db already
         delete doc.doc._rev;
         try {
-          await db.put(doc.doc);
+          // Safe write
+          await safeWriteDocument<any>({db, data: doc.doc, writeOnClash: true});
         } catch (error) {
           console.log('Error restoring document', doc.id);
         }
       }
-    } catch {
-      console.error(`error parsing JSON on line ${line_number}`);
+    } catch (e: any) {
+      console.error(
+        `error parsing JSON on line ${line_number} ${JSON.stringify(e, undefined, 2)} ${e.stack}`
+      );
       return;
     }
     line_number += 1;

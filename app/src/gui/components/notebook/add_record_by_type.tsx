@@ -1,30 +1,29 @@
-import {
-  getRecordsWithRegex,
-  ProjectUIModel,
-  RecordMetadata,
-} from '@faims3/data-model';
+import {getRecordsWithRegex, RecordMetadata} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {Navigate, Link as RouterLink} from 'react-router-dom';
+import {localGetDataDb} from '../../..';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
+import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
-import {getMetadataValue} from '../../../sync/metadata';
-import {ProjectExtended} from '../../../types/project';
-import {getUiSpecForProject} from '../../../uiSpecification';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {Refresh} from '@mui/icons-material';
 
 type AddRecordButtonsProps = {
-  project: ProjectExtended;
+  project: Project;
   recordLabel: string;
+  refreshList: () => void;
 };
 
 export default function AddRecordButtons({
-  project: {_id, project_id},
+  project: {projectId, serverId, uiSpecificationId, metadata},
+  refreshList,
   recordLabel,
 }: AddRecordButtonsProps) {
   const theme = useTheme();
@@ -32,48 +31,46 @@ export default function AddRecordButtons({
   const activeUser = useAppSelector(selectActiveUser)!;
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
-  const [uiSpec, setUiSpec] = useState<ProjectUIModel | undefined>(undefined);
-  const [showQRButton, setShowQRButton] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
   >(undefined);
-
-  getMetadataValue(project_id, 'showQRCodeButton').then(value => {
-    setShowQRButton(value === true || value === 'true');
-  });
-
-  useEffect(() => {
-    getUiSpecForProject(project_id).then(u => setUiSpec(u));
-  }, [project_id]);
-
+  const showQRButton = metadata['showQRCodeButton'] === true;
   const buttonLabel = `Add new ${recordLabel}`;
+  const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
 
-  if (uiSpec === undefined) {
+  if (uiSpecification === undefined) {
     return <CircularProgress thickness={2} size={12} />;
   }
-  const viewsets = uiSpec.viewsets;
-  const visible_types = uiSpec.visible_types;
+  const viewsets = uiSpecification.viewsets;
+  const visible_types = uiSpecification.visible_types;
 
   const handleScanResult = (value: string) => {
     // find a record with this field value
 
     // TODO validate that this is always defined!
-    getRecordsWithRegex(activeUser.parsedToken, _id, value, true).then(
-      records => {
-        // navigate to it
-        // what should happen if there are more than one?
-        for (const key in records) {
-          setSelectedRecord(records[key]);
-        }
+    // TODO WHY IS THERE TWO IDs - this is most likely broken
+    getRecordsWithRegex({
+      dataDb: localGetDataDb(projectId),
+      filterDeleted: true,
+      projectId,
+      regex: value,
+      tokenContents: activeUser.parsedToken,
+      uiSpecification,
+    }).then(records => {
+      // navigate to it
+      // what should happen if there are more than one?
+      for (const key in records) {
+        setSelectedRecord(records[key]);
       }
-    );
+    });
   };
   if (selectedRecord) {
     /*  if we have selected a record (via QR scanning) then redirect to it here */
     return (
       <Navigate
         to={ROUTES.getRecordRoute(
-          project_id || 'dummy',
+          serverId,
+          projectId || 'dummy',
           (selectedRecord.record_id || '').toString(),
           (selectedRecord.revision_id || '').toString()
         )}
@@ -88,12 +85,13 @@ export default function AddRecordButtons({
           sx={{
             maxHeight: '400px',
             justifyContent: mq_above_sm ? 'flex-start' : 'center',
+            gap: mq_above_sm ? '8px' : '0px',
           }}
         >
           {/*If the list of views hasn't loaded yet*/}
           {/*we can still show this button, except it will*/}
           {/*redirect to the Record creation without known type*/}
-          {uiSpec?.visible_types.length === 1 ? (
+          {uiSpecification?.visible_types.length === 1 ? (
             <Button
               variant="contained"
               color="primary"
@@ -112,7 +110,9 @@ export default function AddRecordButtons({
               key="newRecord"
               to={
                 ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                project_id +
+                serverId +
+                '/' +
+                projectId +
                 ROUTES.RECORD_CREATE +
                 visible_types
               }
@@ -127,7 +127,9 @@ export default function AddRecordButtons({
                     component={RouterLink}
                     to={
                       ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      project_id +
+                      serverId +
+                      '/' +
+                      projectId +
                       ROUTES.RECORD_CREATE +
                       viewset_name
                     }
@@ -161,6 +163,20 @@ export default function AddRecordButtons({
           ) : (
             <span />
           )}
+
+          <Button
+            variant="outlined"
+            sx={{
+              mb: 1,
+              mt: 1,
+              fontWeight: 'bold',
+            }}
+            startIcon={<Refresh />}
+            key="refreshList"
+            onClick={refreshList}
+          >
+            Refresh records
+          </Button>
         </ButtonGroup>
       </Box>
     );

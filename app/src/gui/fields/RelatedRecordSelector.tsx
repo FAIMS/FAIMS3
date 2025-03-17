@@ -42,6 +42,9 @@ import {
 } from '../components/record/relationships/RelatedInformation';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {DataGridFieldLinksComponent} from '../components/record/relationships/field_level_links/datagrid';
+import {selectAllProjects} from '../../context/slices/projectSlice';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {localGetDataDb} from '../..';
 
 function get_default_relation_label(
   multiple: boolean,
@@ -133,8 +136,17 @@ interface RelatedRecordSelectorProps extends FieldProps {
 export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const activeToken = useAppSelector(selectActiveToken)!.parsedToken;
   const project_id = props.form.values['_project_id'] as string;
+  const serverId = props.form.values['_server_id'] as string;
   const record_id = props.form.values['_id'];
   const field_name = props.field.name;
+  const uiSpecId = useAppSelector(selectAllProjects).find(
+    p => p.projectId === project_id
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+
+  if (!uiSpec) {
+    return <p>Error... could not find ui specification.</p>;
+  }
 
   const [relatedRecords, setRelatedRecords] = React.useState<RecordReference[]>(
     []
@@ -193,14 +205,16 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
         // or just no existing value
         if (!multiple && !props.form.values[field_name]) setIs_enabled(true);
 
-        const all_records = await getPossibleRelatedRecords(
-          project_id,
-          props.related_type,
-          props.relation_type,
-          record_id,
-          field_name,
-          relationshipPair
-        );
+        const all_records = await getPossibleRelatedRecords({
+          dataDb: localGetDataDb(project_id),
+          relationType: props.relation_type,
+          projectId: project_id,
+          uiSpecification: uiSpec,
+          recordId: record_id,
+          type: props.related_type,
+          fieldId: field_name,
+          relationLinkedVocabPair: relationshipPair,
+        });
         const records = excludes_related_record(
           multiple,
           props.form.values[field_name],
@@ -214,7 +228,8 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           project_id,
           props.form.values,
           field_name,
-          multiple
+          multiple,
+          uiSpec
         );
 
         setRecordsInformation(records_info);
@@ -237,7 +252,8 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           project_id,
           props.form.values,
           field_name,
-          multiple
+          multiple,
+          uiSpec
         );
         setRecordsInformation(records_info);
       }
@@ -462,9 +478,12 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
             is_enabled={is_enabled}
             project_id={project_id}
             relation_type={type}
+            serverId={serverId}
             add_related_child={add_related_child}
             pathname={
               ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+              serverId +
+              '/' +
               project_id +
               ROUTES.RECORD_CREATE +
               props.related_type
@@ -502,6 +521,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           {!!recordsInformation && recordsInformation.length > 0 ? (
             <DataGridFieldLinksComponent
               project_id={project_id}
+              serverId={serverId}
               links={recordsInformation}
               record_id={record_id}
               record_hrid={props.form.values['_id']}

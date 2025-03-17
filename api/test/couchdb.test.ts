@@ -19,14 +19,19 @@
  */
 import PouchDB from 'pouchdb';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
 
-import {getDirectoryDB, initialiseDatabases} from '../src/couchdb';
+import {
+  getDirectoryDB,
+  getMetadataDb,
+  initialiseDbAndKeys,
+} from '../src/couchdb';
 import {
   createNotebook,
   getNotebookMetadata,
   getNotebooks,
-  getNotebookUISpec,
+  getEncodedNotebookUISpec,
   getRolesForNotebook,
   updateNotebook,
   validateNotebookID,
@@ -41,7 +46,7 @@ import {
   userHasPermission,
 } from '../src/couchdb/users';
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
-import {EncodedProjectUIModel, getProjectDB} from '@faims3/data-model';
+import {EncodedProjectUIModel} from '@faims3/data-model';
 import {expect} from 'chai';
 import {resetDatabases} from './mocks';
 import {fail} from 'assert';
@@ -73,18 +78,22 @@ describe('notebook api', () => {
   });
 
   it('check initialise', async () => {
-    await initialiseDatabases({});
+    console.log('Running initialise');
+    await initialiseDbAndKeys({});
 
+    console.log('Getting directory DB');
     const directoryDB = getDirectoryDB();
     expect(directoryDB).not.to.equal(undefined);
     if (directoryDB) {
+      console.log('Getting document in DB');
       const default_document = (await directoryDB.get('default')) as any;
       expect(default_document.name).to.equal(CONDUCTOR_INSTANCE_NAME);
 
-      const permissions_document = (await directoryDB.get(
-        '_design/permissions'
-      )) as any;
-      expect(permissions_document['_id']).to.equal('_design/permissions');
+      // This actually doesn't exist anymore as this record is redundant now
+      //const permissions_document = (await directoryDB.get(
+      //  '_design/permissions'
+      //)) as any;
+      //expect(permissions_document['_id']).to.equal('_design/permissions');
     }
   });
 
@@ -130,7 +139,7 @@ describe('notebook api', () => {
   });
 
   it('can create a notebook', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
     const user = await getUserFromEmailOrUsername('admin');
 
     const jsonText = fs.readFileSync(
@@ -153,21 +162,21 @@ describe('notebook api', () => {
 
       const notebooks = await getNotebooks(user);
       expect(notebooks.length).to.equal(1);
-      const db = await getProjectDB(projectID);
+      const db = await getMetadataDb(projectID);
       if (db) {
         try {
           const autoInc = (await db.get('local-autoincrementers')) as any;
           expect(autoInc.references.length).to.equal(2);
           expect(autoInc.references[0].form_id).to.equal('FORM1SECTION1');
         } catch (err) {
-          fail('could not get autoincrementers');
+          fail('could not get autoincrementers' + err);
         }
       }
     }
   });
 
   it('getNotebookMetadata', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -209,7 +218,7 @@ describe('notebook api', () => {
   });
 
   it('getNotebookUISpec', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -221,7 +230,7 @@ describe('notebook api', () => {
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const retrieved = await getNotebookUISpec(projectID);
+      const retrieved = await getEncodedNotebookUISpec(projectID);
 
       expect(retrieved).not.to.be.null;
       if (retrieved) {
@@ -232,7 +241,7 @@ describe('notebook api', () => {
   });
 
   it('get notebook roles', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -254,7 +263,7 @@ describe('notebook api', () => {
   });
 
   it('updateNotebook', async () => {
-    await initialiseDatabases({});
+    await initialiseDbAndKeys({});
     const user = await getUserFromEmailOrUsername('admin');
 
     const jsonText = fs.readFileSync(
@@ -319,24 +328,21 @@ describe('notebook api', () => {
 
       const notebooks = await getNotebooks(user);
       expect(notebooks.length).to.equal(1);
-      const db = await getProjectDB(projectID);
-      if (db) {
-        const newUISpec = await getNotebookUISpec(projectID);
-        if (newUISpec) {
-          expect(newUISpec['fviews']['FORM1SECTION1']['label']).to.equal(
-            'Updated Label'
-          );
-        }
-        const newMetadata = await getNotebookMetadata(projectID);
-        if (newMetadata) {
-          expect(newMetadata['name']).to.equal('Updated Test Notebook');
-          expect(newMetadata['project_lead']).to.equal('Bob Bobalooba');
-        }
-        const metaDB = await getProjectDB(projectID);
-        if (metaDB) {
-          const autoInc = (await metaDB.get('local-autoincrementers')) as any;
-          expect(autoInc.references.length).to.equal(3);
-        }
+      const newUISpec = await getEncodedNotebookUISpec(projectID);
+      if (newUISpec) {
+        expect(newUISpec['fviews']['FORM1SECTION1']['label']).to.equal(
+          'Updated Label'
+        );
+      }
+      const newMetadata = await getNotebookMetadata(projectID);
+      if (newMetadata) {
+        expect(newMetadata['name']).to.equal('Updated Test Notebook');
+        expect(newMetadata['project_lead']).to.equal('Bob Bobalooba');
+      }
+      const metaDB = await getMetadataDb(projectID);
+      if (metaDB) {
+        const autoInc = (await metaDB.get('local-autoincrementers')) as any;
+        expect(autoInc.references.length).to.equal(3);
       }
     }
   });
