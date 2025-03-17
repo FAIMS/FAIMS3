@@ -114,6 +114,46 @@ export async function safeWriteDocument<T extends {}>({
 }
 
 /**
+ * Will only write a document if it doesn't exist - safely checks the error code
+ * from PUT.
+ * @param db The database to write new document into
+ * @param data The document to replace
+ */
+export async function writeNewDocument<T extends {}>({
+  db,
+  data,
+}: {
+  db: PouchDB.Database<T>;
+  data: PouchDB.Core.Document<T>;
+}): Promise<{wrote: boolean; existing?: PouchDB.Core.ExistingDocument<T>}> {
+  try {
+    // Try to get the existing document
+    let existingDoc: PouchDB.Core.ExistingDocument<T> | undefined;
+    try {
+      existingDoc = await db.get(data._id);
+    } catch (err: any) {
+      // If the document doesn't exist, PouchDB will throw a 404 error
+      if (err.status !== 404) {
+        throw err;
+      }
+      existingDoc = undefined;
+    }
+
+    if (!existingDoc) {
+      // Put the document (create only since it's new)
+      await db.put(data);
+      return {wrote: true, existing: undefined};
+    } else {
+      // Already exists - return it
+      return {wrote: false, existing: existingDoc};
+    }
+  } catch (error) {
+    console.error(`Error creating new document ${data._id}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Method to apply initialisation content to a database.
  *
  * @param db PouchDB.Database to initialise

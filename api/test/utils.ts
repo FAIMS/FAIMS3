@@ -26,7 +26,7 @@ import {NOTEBOOK_CREATOR_GROUP_NAME} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
 import {addLocalPasswordForUser} from '../src/auth_providers/local';
-import {createAuthKey} from '../src/authkeys/create';
+import {generateJwtFromUser} from '../src/authkeys/create';
 import {KEY_SERVICE} from '../src/buildconfig';
 import {
   addOtherRoleToUser,
@@ -74,7 +74,7 @@ export const beforeApiTests = async () => {
   const adminUser = possibleAdminUser!;
 
   // Create the admin token
-  adminToken = await createAuthKey(adminUser!, signingKey);
+  adminToken = await generateJwtFromUser({user: adminUser!, signingKey});
 
   // create the local user
   const [possibleLocalUser] = await createUser('', localUserName);
@@ -86,7 +86,7 @@ export const beforeApiTests = async () => {
   // save user and create password
   await saveUser(localUser);
   await addLocalPasswordForUser(localUser, localUserPassword); // saves the user
-  localUserToken = await createAuthKey(localUser, signingKey);
+  localUserToken = await generateJwtFromUser({user: localUser, signingKey});
 
   // create the nb user
   const [possibleNbUser] = await createUser('', notebookUserName);
@@ -100,7 +100,7 @@ export const beforeApiTests = async () => {
   await saveUser(nbUser);
   addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
   await addLocalPasswordForUser(nbUser, notebookPassword);
-  notebookUserToken = await createAuthKey(nbUser, signingKey);
+  notebookUserToken = await generateJwtFromUser({user: nbUser, signingKey});
 };
 
 /**

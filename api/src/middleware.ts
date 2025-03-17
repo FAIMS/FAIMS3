@@ -22,6 +22,8 @@
 import Express from 'express';
 import {validateToken} from './authkeys/read';
 import {userHasPermission, userIsClusterAdmin} from './couchdb/users';
+import {Action, isAuthorized, Resource} from '@faims3/data-model';
+import * as Exceptions from './exceptions';
 
 /**
  * Extracts the Bearer token from the Authorization header of an Express
@@ -93,6 +95,46 @@ export async function requireAuthenticationAPI(
     next();
   }
 }
+
+/*
+ * Similar but for use in the API, just return an unuthorised repsonse
+ * should check for an Authentication header...see passport-http-bearer
+ */
+export const isAllowedToMiddleware = async ({
+  action,
+  resourceId,
+}: {
+  action: Action;
+  resourceId?: string;
+}) => {
+  return (
+    req: Express.Request,
+    res: Express.Response,
+    next: Express.NextFunction
+  ) => {
+    const user = req.user;
+    if (!user) {
+      res.status(401).json({error: 'authentication required'});
+      return;
+    }
+    const isAllowed = isAuthorized({
+      decodedToken: {
+        globalRoles: user.globalRoles,
+        resourceRoles: user.resourceRoles,
+      },
+      action,
+      resourceId,
+    });
+
+    if (isAllowed) {
+      next();
+    } else {
+      throw new Exceptions.UnauthorizedException(
+        `You are not authorized to perform this action.`
+      );
+    }
+  };
+};
 
 /**
  * Opportunistically parses the user and populates req.user from DB if JWT is

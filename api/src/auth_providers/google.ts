@@ -109,10 +109,9 @@ async function oauth_register(
     let errorMsg = '';
     const invite = await getInvite(req.session.invite);
     if (invite) {
-      [user, errorMsg] = await createUser(emails[0], emails[0]);
+      [user, errorMsg] = await createUser(emails[0], emails[0], profile.displayName);
 
       if (user) {
-        user.name = profile.displayName;
         user.profiles['google'] = profile;
         addEmailsToUser(user, emails);
         // accepting the invite will add roles and save the user record

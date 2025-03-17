@@ -73,6 +73,16 @@ export enum Action {
   EDIT_ADMIN_PROJECT_INVITE = 'EDIT_ADMIN_PROJECT_INVITE',
   DELETE_ADMIN_PROJECT_INVITE = 'DELETE_ADMIN_PROJECT_INVITE',
 
+  // Manage user roles directly
+  ADD_ADMIN_TO_PROJECT = 'ADD_ADMIN_TO_PROJECT',
+  REMOVE_ADMIN_FROM_PROJECT = 'REMOVE_ADMIN_FROM_PROJECT',
+  ADD_MANAGER_TO_PROJECT = 'ADD_MANAGER_TO_PROJECT',
+  REMOVE_MANAGER_FROM_PROJECT = 'REMOVE_MANAGER_FROM_PROJECT',
+  ADD_CONTRIBUTOR_TO_PROJECT = 'ADD_CONTRIBUTOR_TO_PROJECT',
+  REMOVE_CONTRIBUTOR_FROM_PROJECT = 'REMOVE_CONTRIBUTOR_FROM_PROJECT',
+  ADD_GUEST_TO_PROJECT = 'ADD_GUEST_TO_PROJECT',
+  REMOVE_GUEST_FROM_PROJECT = 'REMOVE_GUEST_FROM_PROJECT',
+
   // ============================================================
   // TEMPLATE ACTIONS
   // ============================================================
@@ -290,6 +300,55 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.DELETE_ADMIN_PROJECT_INVITE]: {
     name: 'Delete Admin Project Invite',
     description: 'Remove an existing admin invitation to a project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.ADD_ADMIN_TO_PROJECT]: {
+    name: 'Add Admin to Project',
+    description: 'Grant a user administrator privileges for a specific project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.REMOVE_ADMIN_FROM_PROJECT]: {
+    name: 'Remove Admin from Project',
+    description:
+      'Revoke administrator privileges from a user for a specific project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.ADD_MANAGER_TO_PROJECT]: {
+    name: 'Add Manager to Project',
+    description: 'Grant a user manager privileges for a specific project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.REMOVE_MANAGER_FROM_PROJECT]: {
+    name: 'Remove Manager from Project',
+    description: 'Revoke manager privileges from a user for a specific project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.ADD_CONTRIBUTOR_TO_PROJECT]: {
+    name: 'Add Contributor to Project',
+    description: 'Grant a user contributor access to a specific project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.REMOVE_CONTRIBUTOR_FROM_PROJECT]: {
+    name: 'Remove Contributor from Project',
+    description: 'Revoke contributor access from a user for a specific project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.ADD_GUEST_TO_PROJECT]: {
+    name: 'Add Guest to Project',
+    description: 'Grant a user guest access to a specific project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.REMOVE_GUEST_FROM_PROJECT]: {
+    name: 'Remove Guest from Project',
+    description: 'Revoke guest access from a user for a specific project',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -512,6 +571,14 @@ export const permissionActions: Record<
       Action.CREATE_MANAGER_PROJECT_INVITE,
       Action.EDIT_MANAGER_PROJECT_INVITE,
       Action.DELETE_MANAGER_PROJECT_INVITE,
+
+      // guest, contributor, manager remove add
+      Action.ADD_GUEST_TO_PROJECT,
+      Action.REMOVE_GUEST_FROM_PROJECT,
+      Action.ADD_CONTRIBUTOR_TO_PROJECT,
+      Action.REMOVE_CONTRIBUTOR_FROM_PROJECT,
+      Action.ADD_MANAGER_TO_PROJECT,
+      Action.REMOVE_MANAGER_FROM_PROJECT,
     ],
   },
   [Permission.PROJECT_ADMIN]: {
@@ -521,6 +588,10 @@ export const permissionActions: Record<
       Action.EDIT_ADMIN_PROJECT_INVITE,
       Action.DELETE_ADMIN_PROJECT_INVITE,
       Action.DELETE_PROJECT,
+
+      // admin remove/add
+      Action.ADD_ADMIN_TO_PROJECT,
+      Action.REMOVE_ADMIN_FROM_PROJECT,
     ],
   },
 
@@ -633,6 +704,8 @@ export interface RoleDetails {
   name: string;
   description: string;
   scope: RoleScope;
+  // If resource scoped - can specify this here
+  resource?: Resource;
 }
 
 // Map each role to its details
@@ -663,24 +736,51 @@ export const roleDetails: Record<Role, RoleDetails> = {
     description:
       'Full control over a specific project, including deletion and admin user management',
     scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.PROJECT,
   },
   [Role.PROJECT_MANAGER]: {
     name: 'Project Manager',
     description:
       'Can manage project settings, invitations and all data within a project',
     scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.PROJECT,
   },
   [Role.PROJECT_CONTRIBUTOR]: {
     name: 'Project Contributor',
     description: 'Can view all data within a project and contribute their own',
     scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.PROJECT,
   },
   [Role.PROJECT_GUEST]: {
     name: 'Project Guest',
     description: 'Can view only their own contributions to a project',
     scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.PROJECT,
   },
 };
+
+// Maps resources into a list of role details + Role enum so you can ask the
+// question 'what roles are available for this type of resource'
+export const resourceRoles: Record<Resource, (RoleDetails & {role: Role})[]> =
+  Object.entries(roleDetails).reduce(
+    (acc, [role, details]) => {
+      // Only process roles mapped specifically to resources
+      if (details.resource) {
+        // Initialize the array if this is the first role for this resource
+        if (!acc[details.resource]) {
+          acc[details.resource] = [];
+        }
+
+        // Add the role details with the role enum value included
+        acc[details.resource].push({
+          ...details,
+          role: role as unknown as Role,
+        });
+      }
+      return acc;
+    },
+    {} as Record<Resource, (RoleDetails & {role: Role})[]>
+  );
 
 // Map roles to the permissions they grant - roles can also grant child role(s)
 export const rolePermissions: Record<

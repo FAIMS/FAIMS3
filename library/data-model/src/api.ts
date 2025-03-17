@@ -8,6 +8,7 @@ import {
   TemplateEditableDetailsSchema,
   UiSpecificationSchema,
 } from './types';
+import {Role} from './permission';
 
 // ==================
 // WIP USERS
@@ -169,8 +170,8 @@ export type PutUpdateNotebookResponse = z.infer<
 export const PostAddNotebookUserInputSchema = z.object({
   // The username to add to the notebook roles
   username: z.string(),
-  // The role to add (must be valid in project metadata)
-  role: z.string(),
+  // The role to add
+  role: z.nativeEnum(Role),
   // Addrole:= true means add, false means remove
   addrole: z.boolean(),
 });

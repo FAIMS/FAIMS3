@@ -1,4 +1,4 @@
-import {isAuthorized} from '../src/permission/functions';
+import {isTokenAuthorized} from '../src/permission/functions';
 import {
   canPerformAction,
   drillRolePermissions,
@@ -10,8 +10,8 @@ import {
   COUCHDB_PERMISSIONS_PATH,
   decodeAndValidateToken,
   DecodedTokenPermissions,
-  decodePerResourcePermission,
-  EncodedTokenPermissions,
+  decodePerResourceStatement,
+  TokenPermissions,
   encodeToken,
   ENCODING_SEPARATOR,
 } from '../src/permission/tokenEncoding';
@@ -25,33 +25,33 @@ describe('Token Encoding and Decoding', () => {
   describe('decodePerResourcePermission', () => {
     it('correctly decodes a valid per-resource permission string', () => {
       const input = `project123${ENCODING_SEPARATOR}${Permission.PROJECT_VIEW}`;
-      const result = decodePerResourcePermission({input});
+      const result = decodePerResourceStatement({input});
 
       expect(result.resourceId).toBe('project123');
-      expect(result.permissionString).toBe(Permission.PROJECT_VIEW);
+      expect(result.claimString).toBe(Permission.PROJECT_VIEW);
     });
 
     it('throws error when encoding format is invalid', () => {
       // No separator
       expect(() => {
-        decodePerResourcePermission({input: 'project123PROJECT_VIEW'});
+        decodePerResourceStatement({input: 'project123PROJECT_VIEW'});
       }).toThrow();
 
       // Empty resourceId
       expect(() => {
-        decodePerResourcePermission({
+        decodePerResourceStatement({
           input: `${ENCODING_SEPARATOR}${Permission.PROJECT_VIEW}`,
         });
       }).toThrow();
 
       // Empty permission
       expect(() => {
-        decodePerResourcePermission({input: `project123${ENCODING_SEPARATOR}`});
+        decodePerResourceStatement({input: `project123${ENCODING_SEPARATOR}`});
       }).toThrow();
 
       // Too many separators
       expect(() => {
-        decodePerResourcePermission({
+        decodePerResourceStatement({
           input: `project123${ENCODING_SEPARATOR}${Permission.PROJECT_VIEW}${ENCODING_SEPARATOR}extra`,
         });
       }).toThrow();
@@ -82,7 +82,7 @@ describe('Token Encoding and Decoding', () => {
 
   describe('decodeAndValidateToken', () => {
     it('correctly decodes a valid EncodedTokenPermissions', () => {
-      const tokenStructure: EncodedTokenPermissions = {
+      const tokenStructure: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `project123${ENCODING_SEPARATOR}${Role.PROJECT_ADMIN}`,
@@ -101,7 +101,7 @@ describe('Token Encoding and Decoding', () => {
     });
 
     it('throws error when token structure contains invalid resource role encoding', () => {
-      const tokenStructure: EncodedTokenPermissions = {
+      const tokenStructure: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `invalid_encoding`, // Missing separator
@@ -115,7 +115,7 @@ describe('Token Encoding and Decoding', () => {
     });
 
     it('throws error when token structure contains invalid resource permission encoding', () => {
-      let tokenStructure: EncodedTokenPermissions = {
+      let tokenStructure: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: ['invalid-role'],
         globalRoles: [],
@@ -136,7 +136,7 @@ describe('Token Encoding and Decoding', () => {
     });
 
     it('throws error when token structure contains invalid global role', () => {
-      const tokenStructure: EncodedTokenPermissions = {
+      const tokenStructure: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
         globalRoles: ['INVALID_ROLE'], // Invalid role
@@ -333,29 +333,33 @@ describe('Authorization Functions', () => {
 describe('isAuthorized', () => {
   describe('Non-resource specific actions', () => {
     it('returns true when a global role grants a non-resource specific action', () => {
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
         globalRoles: [Role.GENERAL_CREATOR],
       };
 
       // CREATE_TEMPLATE is a non-resource specific action granted by GENERAL_CREATOR
-      expect(isAuthorized(token, Action.CREATE_TEMPLATE)).toBe(true);
+      expect(
+        isTokenAuthorized({token: token, action: Action.CREATE_TEMPLATE})
+      ).toBe(true);
     });
 
     it('returns false when no global role grants a non-resource specific action', () => {
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
         globalRoles: [Role.GENERAL_USER],
       };
 
       // GENERAL_USER doesn't grant CREATE_TEMPLATE
-      expect(isAuthorized(token, Action.CREATE_TEMPLATE)).toBe(false);
+      expect(
+        isTokenAuthorized({token: token, action: Action.CREATE_TEMPLATE})
+      ).toBe(false);
     });
 
     it('ignores resource roles and permissions for non-resource specific actions', () => {
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `template123${ENCODING_SEPARATOR}${Role.PROJECT_ADMIN}`,
@@ -365,37 +369,45 @@ describe('isAuthorized', () => {
 
       // Even with resource-specific permissions that would normally grant the action,
       // non-resource specific actions require global roles
-      expect(isAuthorized(token, Action.CREATE_TEMPLATE)).toBe(false);
+      expect(
+        isTokenAuthorized({token: token, action: Action.CREATE_TEMPLATE})
+      ).toBe(false);
     });
 
     it('returns false when resourceId is provided for non-resource specific action', () => {
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
         globalRoles: [Role.GENERAL_CREATOR],
       };
 
       // CREATE_TEMPLATE should not require a resourceId, providing one should be ignored
-      expect(isAuthorized(token, Action.CREATE_TEMPLATE, 'template123')).toBe(
-        true
-      );
+      expect(
+        isTokenAuthorized({
+          token: token,
+          action: Action.CREATE_TEMPLATE,
+          resourceId: 'template123',
+        })
+      ).toBe(true);
     });
   });
 
   describe('Resource-specific actions', () => {
     it('returns false when no resourceId is provided for a resource-specific action', () => {
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
         globalRoles: [Role.GENERAL_ADMIN], // Has all permissions
       };
 
       // UPDATE_PROJECT_DETAILS requires a resourceId
-      expect(isAuthorized(token, Action.UPDATE_PROJECT_DETAILS)).toBe(false);
+      expect(
+        isTokenAuthorized({token: token, action: Action.UPDATE_PROJECT_DETAILS})
+      ).toBe(false);
     });
 
     it('returns true when a global role grants a resource-specific action for any resource', () => {
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
         globalRoles: [Role.GENERAL_ADMIN], // Has all permissions
@@ -403,12 +415,16 @@ describe('isAuthorized', () => {
 
       // GENERAL_ADMIN should be able to update any project
       expect(
-        isAuthorized(token, Action.UPDATE_PROJECT_DETAILS, 'project123')
+        isTokenAuthorized({
+          token: token,
+          action: Action.UPDATE_PROJECT_DETAILS,
+          resourceId: 'project123',
+        })
       ).toBe(true);
     });
 
     it('returns true when a resource-specific role grants an action for that specific resource', () => {
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `project123${ENCODING_SEPARATOR}${Role.PROJECT_MANAGER}`,
@@ -418,12 +434,20 @@ describe('isAuthorized', () => {
 
       // PROJECT_MANAGER role for project123 should grant UPDATE_PROJECT_DETAILS for project123
       expect(
-        isAuthorized(token, Action.UPDATE_PROJECT_DETAILS, 'project123')
+        isTokenAuthorized({
+          token: token,
+          action: Action.UPDATE_PROJECT_DETAILS,
+          resourceId: 'project123',
+        })
       ).toBe(true);
 
       // But not for a different project
       expect(
-        isAuthorized(token, Action.UPDATE_PROJECT_DETAILS, 'project456')
+        isTokenAuthorized({
+          token: token,
+          action: Action.UPDATE_PROJECT_DETAILS,
+          resourceId: 'project456',
+        })
       ).toBe(false);
     });
 
@@ -434,13 +458,17 @@ describe('isAuthorized', () => {
         'roleGrantsAction'
       );
 
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [`project123${ENCODING_SEPARATOR}${Role.PROJECT_ADMIN}`],
         globalRoles: [Role.GENERAL_ADMIN],
       };
 
-      isAuthorized(token, Action.DELETE_PROJECT, 'project123');
+      isTokenAuthorized({
+        token: token,
+        action: Action.DELETE_PROJECT,
+        resourceId: 'project123',
+      });
 
       // First call should check global roles
       expect(roleGrantsActionSpy).toHaveBeenCalledWith({
@@ -457,7 +485,7 @@ describe('isAuthorized', () => {
 
   describe('Complex authorization scenarios', () => {
     it('handles a mix of global roles, resource roles, and resource permissions', () => {
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `project123${ENCODING_SEPARATOR}${Role.PROJECT_CONTRIBUTOR}`,
@@ -468,30 +496,50 @@ describe('isAuthorized', () => {
 
       // From global GENERAL_USER
       expect(
-        isAuthorized(token, Action.READ_PROJECT_METADATA, 'anyProject')
+        isTokenAuthorized({
+          token: token,
+          action: Action.READ_PROJECT_METADATA,
+          resourceId: 'anyProject',
+        })
       ).toBe(true);
 
       // From resource role PROJECT_CONTRIBUTOR
       expect(
-        isAuthorized(token, Action.READ_ALL_PROJECT_RECORDS, 'project123')
+        isTokenAuthorized({
+          token: token,
+          action: Action.READ_ALL_PROJECT_RECORDS,
+          resourceId: 'project123',
+        })
       ).toBe(true);
-      expect(isAuthorized(token, Action.DELETE_PROJECT, 'project123')).toBe(
-        false
-      );
+      expect(
+        isTokenAuthorized({
+          token: token,
+          action: Action.DELETE_PROJECT,
+          resourceId: 'project123',
+        })
+      ).toBe(false);
 
       // From resource role PROJECT_ADMIN
-      expect(isAuthorized(token, Action.DELETE_PROJECT, 'project456')).toBe(
-        true
-      );
+      expect(
+        isTokenAuthorized({
+          token: token,
+          action: Action.DELETE_PROJECT,
+          resourceId: 'project456',
+        })
+      ).toBe(true);
 
       // No access to unrelated resources
       expect(
-        isAuthorized(token, Action.UPDATE_PROJECT_DETAILS, 'project999')
+        isTokenAuthorized({
+          token: token,
+          action: Action.UPDATE_PROJECT_DETAILS,
+          resourceId: 'project999',
+        })
       ).toBe(false);
     });
 
     it('properly detects inheritance through role hierarchy', () => {
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [
           `project123${ENCODING_SEPARATOR}${Role.PROJECT_MANAGER}`,
@@ -503,59 +551,97 @@ describe('isAuthorized', () => {
 
       // Direct from PROJECT_MANAGER
       expect(
-        isAuthorized(token, Action.UPDATE_PROJECT_DETAILS, 'project123')
+        isTokenAuthorized({
+          token: token,
+          action: Action.UPDATE_PROJECT_DETAILS,
+          resourceId: 'project123',
+        })
       ).toBe(true);
 
       // From PROJECT_CONTRIBUTOR (inherited)
       expect(
-        isAuthorized(token, Action.READ_ALL_PROJECT_RECORDS, 'project123')
+        isTokenAuthorized({
+          token: token,
+          action: Action.READ_ALL_PROJECT_RECORDS,
+          resourceId: 'project123',
+        })
       ).toBe(true);
 
       // From PROJECT_GUEST (inherited through PROJECT_CONTRIBUTOR)
       expect(
-        isAuthorized(token, Action.CREATE_PROJECT_RECORD, 'project123')
+        isTokenAuthorized({
+          token: token,
+          action: Action.CREATE_PROJECT_RECORD,
+          resourceId: 'project123',
+        })
       ).toBe(true);
 
       // Not granted at any level
-      expect(isAuthorized(token, Action.DELETE_PROJECT, 'project123')).toBe(
-        false
-      );
+      expect(
+        isTokenAuthorized({
+          token: token,
+          action: Action.DELETE_PROJECT,
+          resourceId: 'project123',
+        })
+      ).toBe(false);
     });
 
     it('global GENERAL_ADMIN role grants access to any resource-specific action', () => {
-      const token: EncodedTokenPermissions = {
+      const token: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
         globalRoles: [Role.GENERAL_ADMIN],
       };
 
       // Check various resource-specific actions across different resource types
-      expect(isAuthorized(token, Action.DELETE_PROJECT, 'project123')).toBe(
-        true
-      );
       expect(
-        isAuthorized(token, Action.UPDATE_TEMPLATE_CONTENT, 'template456')
+        isTokenAuthorized({
+          token: token,
+          action: Action.DELETE_PROJECT,
+          resourceId: 'project123',
+        })
       ).toBe(true);
-      expect(isAuthorized(token, Action.RESET_USER_PASSWORD, 'user789')).toBe(
-        true
-      );
+      expect(
+        isTokenAuthorized({
+          token: token,
+          action: Action.UPDATE_TEMPLATE_CONTENT,
+          resourceId: 'template456',
+        })
+      ).toBe(true);
+      expect(
+        isTokenAuthorized({
+          token: token,
+          action: Action.RESET_USER_PASSWORD,
+          resourceId: 'user789',
+        })
+      ).toBe(true);
 
       // And non-resource specific actions
-      expect(isAuthorized(token, Action.CREATE_PROJECT)).toBe(true);
-      expect(isAuthorized(token, Action.INITIALISE_SYSTEM_API)).toBe(true);
+      expect(
+        isTokenAuthorized({token: token, action: Action.CREATE_PROJECT})
+      ).toBe(true);
+      expect(
+        isTokenAuthorized({token: token, action: Action.INITIALISE_SYSTEM_API})
+      ).toBe(true);
     });
 
     it('correctly handles edge cases with empty permissions and roles', () => {
-      const emptyToken: EncodedTokenPermissions = {
+      const emptyToken: TokenPermissions = {
         [COUCHDB_PERMISSIONS_PATH]: [],
         resourceRoles: [],
         globalRoles: [],
       };
 
       // Should deny everything with empty token
-      expect(isAuthorized(emptyToken, Action.CREATE_PROJECT)).toBe(false);
       expect(
-        isAuthorized(emptyToken, Action.READ_PROJECT_METADATA, 'project123')
+        isTokenAuthorized({token: emptyToken, action: Action.CREATE_PROJECT})
+      ).toBe(false);
+      expect(
+        isTokenAuthorized({
+          token: emptyToken,
+          action: Action.READ_PROJECT_METADATA,
+          resourceId: 'project123',
+        })
       ).toBe(false);
     });
   });

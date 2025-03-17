@@ -20,26 +20,47 @@
  */
 
 import {
+  Action,
   CLUSTER_ADMIN_GROUP_NAME,
+  encodeClaim,
+  isAuthorized,
   NonUniqueProjectID,
   NOTEBOOK_CREATOR_GROUP_NAME,
   NotebookAuthSummary,
+  PeopleDBFields,
   ProjectID,
+  Role,
 } from '@faims3/data-model';
 import {ProjectRole} from '@faims3/data-model/build/src/types';
 import {getUsersDB} from '.';
 import {addLocalPasswordForUser} from '../auth_providers/local';
-import {
-  AllProjectRoles,
-  ConductorRole,
-  CouchDBUsername,
-  CouchDBUserRoles,
-  OtherRoles,
-} from '../datamodel/users';
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
 import {registerLocalUser} from '../auth_providers/local';
 import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
+
+export const generateInitialUser = ({
+  email,
+  username,
+  name,
+}: {
+  email: string;
+  username: string;
+  name: string;
+}): Express.User => {
+  return {
+    _id: username,
+    user_id: username,
+    name,
+    emails: [email.toLowerCase()],
+    // General user is given by default
+    globalRoles: [Role.GENERAL_USER],
+    // Profiles are injected later
+    profiles: {},
+    // Resource roles are empty to start with
+    resourceRoles: {},
+  };
+};
 
 export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
   // register a local admin user with the same password as couchdb if there
@@ -73,42 +94,25 @@ export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
  */
 export async function createUser(
   email: string,
-  username: string
+  username: string,
+  name: string
 ): Promise<[Express.User | null, string]> {
   if (!email && !username) {
     return [null, 'At least one of username and email is required'];
   }
-
-  const users_db = getUsersDB();
-  if (users_db) {
-    if (email && (await getUserFromEmail(email))) {
-      return [null, `User with email '${email}' already exists`];
-    }
-    if (username && (await getUserFromUsername(username))) {
-      return [null, `User with username '${username}' already exists`];
-    }
-    if (!username) {
-      username = email.toLowerCase();
-    }
-
-    // make a new user record
-    return [
-      {
-        _id: username,
-        user_id: username,
-        name: '',
-        emails: email ? [email.toLowerCase()] : [],
-        roles: [],
-        project_roles: {} as unknown as AllProjectRoles,
-        other_roles: [],
-        profiles: {},
-      },
-      '',
-    ];
-  } else {
-    console.log('Failed to connect to user db');
-    throw Error('Failed to connect to user database');
+  if (email && (await getUserFromEmail(email))) {
+    return [null, `User with email '${email}' already exists`];
   }
+  if (username && (await getUserFromUsername(username))) {
+    return [null, `User with username '${username}' already exists`];
+  }
+  if (!username) {
+    username = email.toLowerCase();
+  }
+
+  // make a new user record
+  const initialUser = generateInitialUser({email, username, name});
+  return [initialUser, ''];
 }
 
 /**
@@ -122,12 +126,6 @@ export async function updateUserPassword(
   userId: string,
   newPassword: string
 ): Promise<void> {
-  const userDb = getUsersDB();
-  if (!userDb) {
-    console.log('Failed to connect to user db');
-    throw Error('Failed to connect to user database');
-  }
-
   const possibleUser = await getUserFromEmailOrUsername(userId);
 
   if (!possibleUser) {
@@ -159,19 +157,27 @@ export async function getUsers(): Promise<Express.User[]> {
 
 /**
  * Fetches users with a specific permission for a project.
+ *
+ * This checks for users who specifically have been granted roles for this resource.
+ *
  * TODO optimise this by filtering in DB
- * @param project_id - The ID of the project/notebook.
- * @param role - The permission to check (e.g., 'read').
+ * @param projectId - The ID of the project/notebook.
+ * @param role - The role to check
  * @returns An array of users with the specified permission.
  */
-async function getUsersWithPermission(
-  project_id: ProjectID,
-  role: ProjectPermission
+async function getUsersWithRole(
+  projectId: ProjectID,
+  role: Role
 ): Promise<Express.User[]> {
   // Get all users
   const users = await getUsers();
   // Filter for relevant permission
-  return users.filter(user => userHasPermission(user, project_id, role));
+  return users.filter(user =>
+    Object.values(user.resourceRoles.PROJECT ?? {}).some(
+      resourceRole =>
+        resourceRole.resourceId === projectId && resourceRole.role === role
+    )
+  );
 }
 
 export async function getUserInfoForNotebook(
@@ -179,7 +185,7 @@ export async function getUserInfoForNotebook(
 ): Promise<NotebookAuthSummary> {
   const [roles, users] = await Promise.all([
     getRolesForNotebook(project_id),
-    getUsersWithPermission(project_id, 'read'),
+    getUsersWithRole(project_id, 'read'),
   ]);
 
   const userList: NotebookAuthSummary = {

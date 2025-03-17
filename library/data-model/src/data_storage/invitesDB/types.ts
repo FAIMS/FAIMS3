@@ -22,5 +22,6 @@ export type InvitesDBFields = {
   project_id: string;
   role: string;
 };
-export type InvitesDBDocument = PouchDB.Core.ExistingDocument<InvitesDBFields>;
+export type ExistingInvitesDBDocument = PouchDB.Core.ExistingDocument<InvitesDBFields>;
+export type NewInvitesDBDocument = PouchDB.Core.Document<InvitesDBFields>;
 export type InvitesDB = PouchDB.Database<InvitesDBFields>;

@@ -31,7 +31,7 @@ import {
 import {expect} from 'chai';
 import fs from 'fs';
 import request from 'supertest';
-import {createAuthKey} from '../src/authkeys/create';
+import {generateJwtFromUser} from '../src/authkeys/create';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
@@ -461,7 +461,7 @@ describe('API tests', () => {
       const bobby = await getUserFromEmailOrUsername(localUserName);
       if (bobby) {
         const signingKey = await KEY_SERVICE.getSigningKey();
-        const bobbyToken = await createAuthKey(bobby, signingKey);
+        const bobbyToken = await generateJwtFromUser({bobby, signingKey});
 
         // invalid user name
         console.log('bobby token');

@@ -1,7 +1,7 @@
-import {z} from 'zod';
-import {Permission, Role, roleDetails, RoleScope} from './model';
+import {string, z} from 'zod';
 import {PeopleDBDocument} from '../data_storage';
 import {drillRolePermissions} from './helpers';
+import {Role} from './model';
 
 // ==============
 // TOKEN ENCODING
@@ -12,13 +12,13 @@ export const ENCODING_SEPARATOR = '||';
 // This is configurable, but it's fine to use the default
 export const COUCHDB_PERMISSIONS_PATH = '_couchdb.roles';
 
-export const decodePerResourcePermission = ({
+export const decodePerResourceStatement = ({
   input,
 }: {
   input: string;
 }): {
   resourceId: string;
-  permissionString: string;
+  claimString: string;
 } => {
   const splitResult = input.split(ENCODING_SEPARATOR);
   if (
@@ -27,20 +27,20 @@ export const decodePerResourcePermission = ({
     splitResult[1].length === 0
   ) {
     throw Error(
-      'Invalid decoding of encoded resource specific role. After splitting on ' +
+      'Invalid decoding of encoded resource specific role/permission. After splitting on ' +
         ENCODING_SEPARATOR +
         ' there was not two distinct remaining sections of non zero length.'
     );
   }
-  return {resourceId: splitResult[0], permissionString: splitResult[1]};
+  return {resourceId: splitResult[0], claimString: splitResult[1]};
 };
 
 // =======================================
-// Zod schemas for raw token structure
+// Zod schemas for encoded token structure
 // =======================================
 
 // Input schema for the raw TokenStructure
-const rawTokenSchema = z.object({
+const tokenPermissionsSchema = z.object({
   // Encoded resource permissions OR global permissions available to couch
   // functions. Here we include ONLY permissions - not roles - as we want couch
   // to not have to dispatch roles -> permissions
@@ -53,7 +53,17 @@ const rawTokenSchema = z.object({
   // NOT visible in couch
   globalRoles: z.array(z.string()),
 });
-export type EncodedTokenPermissions = z.infer<typeof rawTokenSchema>;
+export type TokenPermissions = z.infer<typeof tokenPermissionsSchema>;
+
+const tokenPayloadSchema = z
+  .object({
+    // The name of the user - this is the full display name
+    name: z.string(),
+    // The server which generated this token - this is the URL
+    server: z.string(),
+  })
+  .merge(tokenPermissionsSchema);
+export type TokenPayload = z.infer<typeof tokenPayloadSchema>;
 
 // =======================================
 // Zod schemas for decoded token structure
@@ -66,7 +76,7 @@ const decodedResourceRoleSchema = z.object({
 });
 export type ResourceRole = z.infer<typeof decodedResourceRoleSchema>;
 
-// Schema for a general role
+// Schema for a global role
 const globalRoleSchema = z.nativeEnum(Role);
 
 // Complete decoded token structure
@@ -84,21 +94,21 @@ export type DecodedTokenPermissions = z.infer<typeof decodedTokenSchema>;
  * @returns A validated DecodedToken with properly parsed roles and permissions
  */
 export function decodeAndValidateToken(
-  encodedToken: EncodedTokenPermissions
+  encodedToken: TokenPermissions
 ): DecodedTokenPermissions {
   // First validate the raw token structure
-  const validatedRawToken = rawTokenSchema.parse(encodedToken);
+  const validatedRawToken = tokenPermissionsSchema.parse(encodedToken);
 
   // Transform and decode resource roles
   const resourceRoles = validatedRawToken.resourceRoles.map(encodedRole => {
     try {
-      const {resourceId, permissionString} = decodePerResourcePermission({
+      const {resourceId, claimString: roleString} = decodePerResourceStatement({
         input: encodedRole,
       });
 
       return {
         resourceId,
-        role: permissionString,
+        role: roleString,
       };
     } catch (error: any) {
       throw new Error(
@@ -121,19 +131,34 @@ export function decodeAndValidateToken(
 }
 
 /**
+ * Encodes a permission claim into a token - including separator if needed for
+ * resource scoped role/permission
+ * @returns string encoding
+ */
+export const encodeClaim = ({
+  resourceId,
+  claim,
+}: {
+  resourceId?: string;
+  claim: string;
+}): string => {
+  return `${resourceId ?? ''}${resourceId ? ENCODING_SEPARATOR : ''}${claim}`;
+};
+
+/**
  * Encodes a decoded token back into the raw TokenStructure format
  * @param decodedToken The decoded token
  * @returns The encoded TokenStructure
  */
 export function encodeToken(
   decodedToken: DecodedTokenPermissions
-): EncodedTokenPermissions {
+): TokenPermissions {
   // Validate the decoded token first
   decodedTokenSchema.parse(decodedToken);
 
   // Encode resource roles
-  const resourceRoles = decodedToken.resourceRoles.map(
-    ({resourceId, role}) => `${resourceId}${ENCODING_SEPARATOR}${role}`
+  const resourceRoles = decodedToken.resourceRoles.map(({resourceId, role}) =>
+    encodeClaim({resourceId, claim: role})
   );
 
   // Encode resource permissions - collect them all
@@ -146,7 +171,7 @@ export function encodeToken(
       role,
     });
     allPermissions.concat(
-      permissions.map(p => `${resourceId}${ENCODING_SEPARATOR}${p}`)
+      permissions.map(p => encodeClaim({resourceId, claim: p}))
     );
   });
   decodedToken.globalRoles.forEach(role => {
@@ -180,7 +205,7 @@ export function encodeToken(
 export function couchUserToTokenPermissions({
   globalRoles,
   resourceRoles,
-}: PeopleDBDocument): EncodedTokenPermissions {
+}: PeopleDBDocument): TokenPermissions {
   // Flatten the resource mapped roles into a big list
   let allResourceRoles: ResourceRole[] = [];
   for (const specificResourceRoles of Object.values(resourceRoles)) {

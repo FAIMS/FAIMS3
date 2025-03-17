@@ -1,20 +1,52 @@
-import {canPerformAction, roleGrantsAction} from './helpers';
+import {roleGrantsAction} from './helpers';
 import {Action, actionDetails} from './model';
-import {decodeAndValidateToken, EncodedTokenPermissions} from './tokenEncoding';
+import {
+  decodeAndValidateToken,
+  DecodedTokenPermissions,
+  TokenPermissions,
+} from './tokenEncoding';
 
 /**
  * Determines if a token authorizes an action on a resource
  * Handles both resource-specific permissions and global permissions
  */
-export function isAuthorized(
-  token: EncodedTokenPermissions,
-  action: Action,
-  resourceId?: string
-): boolean {
+export function isTokenAuthorized({
+  token,
+  action,
+  resourceId,
+}: {
+  token: TokenPermissions;
+  action: Action;
+  resourceId?: string;
+}): boolean {
   try {
     // Firstly - decode and validate token
     const decodedToken = decodeAndValidateToken(token);
+    return isAuthorized({decodedToken, action, resourceId});
+  } catch (error: any) {
+    // Log the error for debugging/auditing
+    console.error(
+      `Authorization failed due to token validation error: ${error.message ?? 'Unknown'}.`
+    );
+    // Always fail closed (deny access) when there's an error
+    return false;
+  }
+}
 
+/**
+ * Determines if a token authorizes an action on a resource
+ * Handles both resource-specific permissions and global permissions
+ */
+export function isAuthorized({
+  decodedToken,
+  action,
+  resourceId,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  action: Action;
+  resourceId?: string;
+}): boolean {
+  try {
     // Check if this action needs a resource id
     const actionInfo = actionDetails[action];
 

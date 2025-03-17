@@ -23,7 +23,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
-import {createAuthKey} from '../src/authkeys/create';
+import {generateJwtFromUser} from '../src/authkeys/create';
 import {validateToken} from '../src/authkeys/read';
 import {addOtherRoleToUser, createUser, saveUser} from '../src/couchdb/users';
 import {expect} from 'chai';
@@ -46,7 +46,7 @@ describe('roundtrip creating and reading token', () => {
       }
       await saveUser(user);
 
-      return createAuthKey(user, signing_key)
+      return generateJwtFromUser({user, signingKey: signing_key})
         .then(token => {
           return validateToken(token);
         })

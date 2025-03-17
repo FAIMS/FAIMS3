@@ -18,7 +18,7 @@
  *   Data models related to users.
  */
 
-import {NonUniqueProjectID, Resource, Role} from '../../';
+import {NonUniqueProjectID, Resource, ResourceRole, Role} from '../../';
 
 /*
  * This is used to pass around a user profile from an arbitrary service where
@@ -53,13 +53,11 @@ export interface UserV0Fields {
   profiles: UserServiceProfiles;
   // This is deprecated - never used
   owned: NonUniqueProjectID[];
-  // This property is not defined/null in the existing records (flag to determine if migrated)
-  userSchemaVersion: undefined | null;
 }
 export type UserV0Document = PouchDB.Core.ExistingDocument<UserV0Fields>;
 
 export type ResourceRoleMap = {
-  [resource in Resource]: {resourceId: string; role: Role}[] | undefined;
+  [resource in Resource]?: {resourceId: string; role: Role}[] | undefined;
 };
 
 export interface PeopleDBFields {
@@ -78,15 +76,12 @@ export interface PeopleDBFields {
 
   // A list of explicitly granted resource scoped roles e.g. {Resource.PROJECT :
   // {resourceId: '1234', role: 'survey-manager'}}
-  resourceRoles: ResourceRoleMap;
+  resourceRoles: ResourceRole[];
 
   // This links profile information to profiles
   profiles: UserServiceProfiles;
-
-  // This is always 1 to indicate this version of the user schema - assists in
-  // migrations
-  userSchemaVersion: '1';
 }
 
-export type PeopleDBDocument = PouchDB.Core.ExistingDocument<PeopleDBFields>;
+export type PeopleDBDocument = PouchDB.Core.Document<PeopleDBFields>;
+export type ExistingPeopleDBDocument = PouchDB.Core.ExistingDocument<PeopleDBFields>;
 export type PeopleDB = PouchDB.Database<PeopleDBFields>;

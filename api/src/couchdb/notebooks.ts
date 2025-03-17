@@ -30,6 +30,8 @@ import {
   notebookRecordIterator,
   ProjectID,
   ProjectObject,
+  Resource,
+  resourceRoles,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
@@ -935,36 +937,8 @@ export const generateFilenameForAttachment = (
  * @param metadata If the project metadata is known, no need to fetch it again
  * @returns A list of roles for this notebook including at least admin and user
  */
-export const getRolesForNotebook = async (
-  project_id: ProjectID,
-  // If metadata is already known, pass it in here
-  metadata: ProjectMetadata | undefined = undefined
-): Promise<string[]> => {
-  // Either use provided metadata or fetch it
-  let meta: ProjectMetadata;
-  if (metadata) {
-    meta = metadata;
-  } else {
-    // Gets the metadata for the notebook
-    const possibleMetadata = await getNotebookMetadata(project_id);
-    if (!possibleMetadata) {
-      throw new Exceptions.InternalSystemError(
-        'Failed to retrieve roles from the metadata DB for the given project ID.'
-      );
-    }
-    meta = possibleMetadata;
-  }
-
-  // Include all of these roles
-  const roles = meta.accesses || [];
-  // But also add admin and user if not included
-  if (roles.indexOf('admin') < 0) {
-    roles.push('admin');
-  }
-  if (roles.indexOf('user') < 0) {
-    roles.push('user');
-  }
-  return roles;
+export const getRolesForNotebook = () => {
+  return resourceRoles[Resource.PROJECT];
 };
 
 export async function countRecordsInNotebook(

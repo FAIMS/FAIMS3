@@ -19,6 +19,7 @@
  */
 
 import {
+  Action,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
   EncodedProjectUIModel,
@@ -68,7 +69,7 @@ import {
   userIsClusterAdmin,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {requireAuthenticationAPI} from '../middleware';
+import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
@@ -405,10 +406,7 @@ api.post(
 
     // check that this is a legitimate role for this notebook - pass in the
     // metadata to avoid refetching it
-    const notebookRoles = await getRolesForNotebook(
-      notebookMetadata.project_id,
-      notebookMetadata
-    );
+    const notebookRoles = getRolesForNotebook();
 
     // Check for invalid role
     if (!notebookRoles.includes(role)) {
