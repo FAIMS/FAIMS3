@@ -30,6 +30,8 @@ import {
   ConditionType,
 } from '../condition';
 
+import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
+
 type Props = {
   fieldName: string;
   children?: React.ReactNode;
@@ -288,41 +290,45 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                 label="Display in parent record"
               />
             </Grid>
-            <Grid item xs={12} sm={3}>
-              <div style={{display: 'flex', alignItems: 'center'}}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.protection}
-                      onChange={e =>
-                        updateProperty('protection', e.target.checked)
+            {VITE_TEMPLATE_PROTECTIONS && (
+              <>
+                <Grid item xs={12} sm={3}>
+                  <div style={{display: 'flex', alignItems: 'center'}}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={state.protection}
+                          onChange={e =>
+                            updateProperty('protection', e.target.checked)
+                          }
+                        />
                       }
+                      label="Protection"
                     />
-                  }
-                  label="Protection"
-                />
-                <Tooltip title="Enable protection to allow optional field hiding.">
-                  <InfoIcon fontSize="small" style={{marginLeft: 4}} />
-                </Tooltip>
-              </div>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              {state.protection ? (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.allowHiding}
-                      onChange={e =>
-                        updateProperty('allowHiding', e.target.checked)
+                    <Tooltip title="Enable protection to allow optional field hiding.">
+                      <InfoIcon fontSize="small" style={{marginLeft: 4}} />
+                    </Tooltip>
+                  </div>
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  {state.protection ? (
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={state.allowHiding}
+                          onChange={e =>
+                            updateProperty('allowHiding', e.target.checked)
+                          }
+                        />
                       }
+                      label="Allow Hiding"
                     />
-                  }
-                  label="Allow Hiding"
-                />
-              ) : (
-                <div />
-              )}
-            </Grid>
+                  ) : (
+                    <div />
+                  )}
+                </Grid>
+              </>
+            )}
           </Grid>
         </Card>
       </Grid>
