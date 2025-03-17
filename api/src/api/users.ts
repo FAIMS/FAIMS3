@@ -24,7 +24,7 @@ import {
   addOtherRoleToUser,
   getUserFromEmailOrUsername,
   getUsers,
-  removeOtherRoleFromUser,
+  removeGlobalRoleFromUser,
   saveUser,
   userIsClusterAdmin,
 } from '../couchdb/users';
@@ -65,7 +65,7 @@ api.post(
     if (req.body.addrole) {
       addOtherRoleToUser(user, req.body.role);
     } else {
-      removeOtherRoleFromUser(user, req.body.role);
+      removeGlobalRoleFromUser(user, req.body.role);
     }
     await saveUser(user);
     res.status(200).send();

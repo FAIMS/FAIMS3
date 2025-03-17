@@ -39,6 +39,9 @@ import {
   TemplateDetails,
   couchInitialiser,
   initInvitesDB,
+  PeopleDB,
+  PeopleDBFields,
+  InvitesDB,
 } from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
@@ -63,8 +66,8 @@ let _directoryDB: PouchDB.Database | undefined;
 let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
 let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
 let _authDB: AuthDatabase | undefined;
-let _usersDB: PouchDB.Database<Express.User> | undefined;
-let _invitesDB: PouchDB.Database | undefined;
+let _usersDB: PeopleDB | undefined;
+let _invitesDB: InvitesDB | undefined;
 
 const pouchOptions = () => {
   const options: PouchDB.Configuration.RemoteDatabaseConfiguration = {};
@@ -177,12 +180,12 @@ export const getAuthDB = (): AuthDatabase => {
   return _authDB;
 };
 
-export const getUsersDB = (): PouchDB.Database<Express.User> => {
+export const getUsersDB = (): PeopleDB => {
   if (!_usersDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PEOPLE_DB_NAME;
     try {
-      _usersDB = new PouchDB<Express.User>(dbName, pouch_options);
+      _usersDB = new PouchDB<PeopleDBFields>(dbName, pouch_options);
     } catch {
       throw new Exceptions.InternalSystemError(
         'Error occurred while getting users database.'
@@ -527,7 +530,6 @@ export const initialiseDbAndKeys = async ({
       'An error occurred while initialising the people database!...' + e
     );
   }
-
 
   // Invites DB
   try {

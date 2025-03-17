@@ -1,8 +1,11 @@
-import {roleGrantsAction} from './helpers';
-import {Action, actionDetails} from './model';
+import {rangeRight} from 'lodash';
+import {resourceRolesEqual, roleGrantsAction} from './helpers';
+import {Action, actionDetails, Role} from './model';
 import {
   decodeAndValidateToken,
   DecodedTokenPermissions,
+  encodeClaim,
+  ResourceRole,
   TokenPermissions,
 } from './tokenEncoding';
 
@@ -93,4 +96,103 @@ export function isAuthorized({
     // Always fail closed (deny access) when there's an error
     return false;
   }
+}
+
+export function hasResourceRole({
+  resourceRoles,
+  needs,
+  resourceId,
+}: {
+  resourceRoles: ResourceRole[];
+  needs: Role;
+  resourceId: string;
+}) {
+  return resourceRoles.some(r =>
+    resourceRolesEqual(r, {resourceId, role: needs})
+  );
+}
+
+// Maps a add/remove role -> action needed to do that
+export function projectRoleToAction({
+  add,
+  role,
+}: {
+  add: boolean;
+  role: Role;
+}): Action {
+  // Trying to add a role is a specific action for each role level
+  let actionNeeded = undefined;
+  if (role === Role.PROJECT_ADMIN) {
+    if (add) {
+      actionNeeded = Action.ADD_ADMIN_TO_PROJECT;
+    } else {
+      actionNeeded = Action.REMOVE_ADMIN_FROM_PROJECT;
+    }
+  } else if (role === Role.PROJECT_MANAGER) {
+    if (add) {
+      actionNeeded = Action.ADD_MANAGER_TO_PROJECT;
+    } else {
+      actionNeeded = Action.REMOVE_MANAGER_FROM_PROJECT;
+    }
+  } else if (role === Role.PROJECT_CONTRIBUTOR) {
+    if (add) {
+      actionNeeded = Action.ADD_CONTRIBUTOR_TO_PROJECT;
+    } else {
+      actionNeeded = Action.REMOVE_CONTRIBUTOR_FROM_PROJECT;
+    }
+  } else if (role === Role.PROJECT_GUEST) {
+    if (add) {
+      actionNeeded = Action.ADD_GUEST_TO_PROJECT;
+    } else {
+      actionNeeded = Action.REMOVE_GUEST_FROM_PROJECT;
+    }
+  }
+
+  if (!actionNeeded) {
+    throw Error('Could not find suitable action for this role change!');
+  }
+
+  return actionNeeded;
+}
+// Maps a create invite -> action needed to do that
+export function projectInviteToAction({
+  action,
+  role,
+}: {
+  action: 'create' | 'delete';
+  role: Role;
+}): Action {
+  // Trying to add a role is a specific action for each role level
+  let actionNeeded = undefined;
+  if (role === Role.PROJECT_ADMIN) {
+    if (action === 'create') {
+      actionNeeded = Action.CREATE_ADMIN_PROJECT_INVITE;
+    } else {
+      actionNeeded = Action.DELETE_ADMIN_PROJECT_INVITE;
+    }
+  } else if (role === Role.PROJECT_MANAGER) {
+    if (action === 'create') {
+      actionNeeded = Action.CREATE_MANAGER_PROJECT_INVITE;
+    } else {
+      actionNeeded = Action.DELETE_MANAGER_PROJECT_INVITE;
+    }
+  } else if (role === Role.PROJECT_CONTRIBUTOR) {
+    if (action === 'create') {
+      actionNeeded = Action.CREATE_CONTRIBUTOR_PROJECT_INVITE;
+    } else {
+      actionNeeded = Action.DELETE_CONTRIBUTOR_PROJECT_INVITE;
+    }
+  } else if (role === Role.PROJECT_GUEST) {
+    if (action === 'create') {
+      actionNeeded = Action.CREATE_GUEST_PROJECT_INVITE;
+    } else {
+      actionNeeded = Action.DELETE_GUEST_PROJECT_INVITE;
+    }
+  }
+
+  if (!actionNeeded) {
+    throw Error('Could not find suitable action for this role change!');
+  }
+
+  return actionNeeded;
 }

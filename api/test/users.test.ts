@@ -33,8 +33,8 @@ import {
   addProjectRoleToUser,
   addOtherRoleToUser,
   createUser,
-  removeOtherRoleFromUser,
-  removeProjectRoleFromUser,
+  removeGlobalRoleFromUser,
+  removeResourceRoleFromUser,
   saveUser,
   userHasPermission,
   getUserInfoForNotebook,
@@ -163,13 +163,13 @@ describe('user creation', () => {
       expect(newUser.roles).to.include('important-project||team');
 
       // remove one
-      removeProjectRoleFromUser(newUser, 'important-project', 'admin');
+      removeResourceRoleFromUser(newUser, 'important-project', 'admin');
       expect(newUser.project_roles['important-project']).not.to.include(
         'admin'
       );
       expect(newUser.project_roles['important-project']).to.include('team');
 
-      removeOtherRoleFromUser(newUser, 'cluster-admin');
+      removeGlobalRoleFromUser(newUser, 'cluster-admin');
       expect(newUser.other_roles.length).to.equal(1);
       expect(newUser.other_roles).to.include('chief-bobalooba');
       expect(newUser.other_roles).not.to.include('cluster-admin');
@@ -181,9 +181,9 @@ describe('user creation', () => {
       expect(newUser.roles).to.include('important-project||team');
 
       // remove roles that aren't there should be harmless
-      removeProjectRoleFromUser(newUser, 'important-project', 'not-there');
+      removeResourceRoleFromUser(newUser, 'important-project', 'not-there');
       expect(newUser.project_roles['important-project'].length).to.equal(1);
-      removeOtherRoleFromUser(newUser, 'non-existant');
+      removeGlobalRoleFromUser(newUser, 'non-existant');
       expect(newUser.other_roles.length).to.equal(1);
       expect(newUser.other_roles).to.include('chief-bobalooba');
     }
@@ -206,7 +206,7 @@ describe('user creation', () => {
       expect(userHasPermission(user, project_id, 'read')).to.be.true;
       expect(userHasPermission(user, project_id, 'modify')).to.be.true;
 
-      removeOtherRoleFromUser(user, CLUSTER_ADMIN_GROUP_NAME);
+      removeGlobalRoleFromUser(user, CLUSTER_ADMIN_GROUP_NAME);
 
       // test permissions for user role
       addProjectRoleToUser(user, project_id, 'user');

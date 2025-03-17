@@ -55,8 +55,12 @@ export enum Action {
   // Data export
   EXPORT_PROJECT_DATA = 'EXPORT_PROJECT_DATA',
 
+  GENERATE_RANDOM_PROJECT_RECORDS = 'GENERATE_RANDOM_PROJECT_RECORDS',
+
   // Invitations and sharing - note there is create, edit and delete for each
   // role level
+  VIEW_PROJECT_INVITES = 'VIEW_PROJECT_INVITES',
+
   CREATE_GUEST_PROJECT_INVITE = 'CREATE_GUEST_PROJECT_INVITE',
   EDIT_GUEST_PROJECT_INVITE = 'EDIT_GUEST_PROJECT_INVITE',
   DELETE_GUEST_PROJECT_INVITE = 'DELETE_GUEST_PROJECT_INVITE',
@@ -74,6 +78,7 @@ export enum Action {
   DELETE_ADMIN_PROJECT_INVITE = 'DELETE_ADMIN_PROJECT_INVITE',
 
   // Manage user roles directly
+  VIEW_PROJECT_USERS = 'VIEW_PROJECT_USERS',
   ADD_ADMIN_TO_PROJECT = 'ADD_ADMIN_TO_PROJECT',
   REMOVE_ADMIN_FROM_PROJECT = 'REMOVE_ADMIN_FROM_PROJECT',
   ADD_MANAGER_TO_PROJECT = 'ADD_MANAGER_TO_PROJECT',
@@ -165,6 +170,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
+  [Action.GENERATE_RANDOM_PROJECT_RECORDS]: {
+    name: 'Generate random records for a project',
+    description: 'Generates a collection of random debugging records',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
   [Action.READ_MY_PROJECT_RECORDS]: {
     name: 'Read My Project Records',
     description:
@@ -228,6 +239,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.EXPORT_PROJECT_DATA]: {
     name: 'Export Project Data',
     description: 'Download or export all data associated with a project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.VIEW_PROJECT_INVITES]: {
+    name: 'View Project invitiations',
+    description: 'View the list of existing invitations and their details',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -349,6 +366,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.REMOVE_GUEST_FROM_PROJECT]: {
     name: 'Remove Guest from Project',
     description: 'Revoke guest access from a user for a specific project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.VIEW_PROJECT_USERS]: {
+    name: 'View Project Users',
+    description:
+      'Allows visibility of project users and their roles in the project',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -562,6 +586,7 @@ export const permissionActions: Record<
       Action.UPDATE_PROJECT_UISPEC,
       Action.CHANGE_PROJECT_STATUS,
       Action.EXPORT_PROJECT_DATA,
+      Action.VIEW_PROJECT_INVITES,
       Action.CREATE_GUEST_PROJECT_INVITE,
       Action.EDIT_GUEST_PROJECT_INVITE,
       Action.DELETE_GUEST_PROJECT_INVITE,
@@ -571,6 +596,7 @@ export const permissionActions: Record<
       Action.CREATE_MANAGER_PROJECT_INVITE,
       Action.EDIT_MANAGER_PROJECT_INVITE,
       Action.DELETE_MANAGER_PROJECT_INVITE,
+      Action.VIEW_PROJECT_USERS,
 
       // guest, contributor, manager remove add
       Action.ADD_GUEST_TO_PROJECT,
@@ -592,6 +618,9 @@ export const permissionActions: Record<
       // admin remove/add
       Action.ADD_ADMIN_TO_PROJECT,
       Action.REMOVE_ADMIN_FROM_PROJECT,
+
+      // Debugging
+      Action.GENERATE_RANDOM_PROJECT_RECORDS,
     ],
   },
 

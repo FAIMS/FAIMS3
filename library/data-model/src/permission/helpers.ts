@@ -1,3 +1,4 @@
+import {ResourceRole} from '..';
 import {
   Action,
   actionPermissions,
@@ -138,3 +139,6 @@ export function roleGrantsAction({
   }
   return false;
 }
+
+export const resourceRolesEqual = (a: ResourceRole, b: ResourceRole): boolean =>
+  a.resourceId === b.resourceId && a.role === b.role;

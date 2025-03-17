@@ -41,7 +41,7 @@ import {
   addProjectRoleToUser,
   createUser,
   getUserFromEmailOrUsername,
-  removeProjectRoleFromUser,
+  removeResourceRoleFromUser,
   saveUser,
   userHasPermission,
 } from '../src/couchdb/users';
@@ -111,7 +111,7 @@ describe('notebook api', () => {
       // and this should still be true
       expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(true);
 
-      removeProjectRoleFromUser(bobalooba, nb1, 'user');
+      removeResourceRoleFromUser(bobalooba, nb1, 'user');
       expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(false);
       // but still...
       expect(userHasPermission(bobalooba, nb2, 'modify')).to.equal(true);

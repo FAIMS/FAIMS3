@@ -21,8 +21,14 @@
 
 import Express from 'express';
 import {validateToken} from './authkeys/read';
-import {userHasPermission, userIsClusterAdmin} from './couchdb/users';
-import {Action, isAuthorized, Resource} from '@faims3/data-model';
+import {
+  Action,
+  isAuthorized,
+  Resource,
+  Role,
+  userCanDo,
+  userHasGlobalRole,
+} from '@faims3/data-model';
 import * as Exceptions from './exceptions';
 
 /**
@@ -96,16 +102,12 @@ export async function requireAuthenticationAPI(
   }
 }
 
-/*
- * Similar but for use in the API, just return an unuthorised repsonse
- * should check for an Authentication header...see passport-http-bearer
- */
-export const isAllowedToMiddleware = async ({
+export const isAllowedToMiddleware = ({
   action,
-  resourceId,
+  getResourceId,
 }: {
   action: Action;
-  resourceId?: string;
+  getResourceId?: (req: Express.Request) => string | undefined;
 }) => {
   return (
     req: Express.Request,
@@ -114,9 +116,11 @@ export const isAllowedToMiddleware = async ({
   ) => {
     const user = req.user;
     if (!user) {
-      res.status(401).json({error: 'authentication required'});
-      return;
+      throw new Exceptions.UnauthorizedException('Authentication required.');
     }
+
+    const resourceId = getResourceId ? getResourceId(req) : undefined;
+
     const isAllowed = isAuthorized({
       decodedToken: {
         globalRoles: user.globalRoles,
@@ -135,7 +139,6 @@ export const isAllowedToMiddleware = async ({
     }
   };
 };
-
 /**
  * Opportunistically parses the user and populates req.user from DB if JWT is
  * valid. If not, then passes through with no-op.
@@ -188,7 +191,13 @@ export function requireNotebookMembership(
 ) {
   if (req.user) {
     const project_id = req.params.notebook_id;
-    if (userHasPermission(req.user, project_id, 'read')) {
+    if (
+      userCanDo({
+        user: req.user,
+        resourceId: project_id,
+        action: Action.READ_PROJECT_METADATA,
+      })
+    ) {
       next();
     } else {
       res.status(404).end();
@@ -204,7 +213,7 @@ export function requireClusterAdmin(
   next: Express.NextFunction
 ) {
   if (req.user) {
-    if (userIsClusterAdmin(req.user)) {
+    if (userHasGlobalRole({role: Role.GENERAL_ADMIN, user: req.user})) {
       next();
     } else {
       res.status(401).end();
