@@ -19,9 +19,7 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import LockRounded from '@mui/icons-material/LockRounded';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+
 import DuplicateIcon from '@mui/icons-material/ContentCopy';
 
 import {
@@ -58,7 +56,6 @@ import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
 import {useState, useMemo} from 'react';
-import {FieldProtectionMenu} from './field-protection-menu';
 import {findFieldCondtionUsage} from './condition';
 
 type FieldEditorProps = {
@@ -124,7 +121,6 @@ export const FieldEditor = ({
   };
   const protection = field['component-parameters'].protection || 'none';
   const isHidden = field['component-parameters'].hidden || false;
-  const isRequired = field['component-parameters']?.required || false;
 
   const notebookMetadata = useAppSelector(state => state.notebook.metadata);
 
@@ -133,18 +129,6 @@ export const FieldEditor = ({
   const disableEditing =
     isDerivedFromSet &&
     (protection === 'protected' || protection === 'allow-hiding');
-
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const menuOpen = Boolean(anchorEl);
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
 
   const getFieldLabel = () => {
     return (
@@ -202,25 +186,6 @@ export const FieldEditor = ({
       });
       handleCloseDuplicateDialog();
     }
-  };
-
-  const toggleProtection = (
-    event: React.ChangeEvent<HTMLInputElement>,
-    newProtection: 'protected' | 'none' | 'allow-hiding'
-  ) => {
-    event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/toggleFieldProtection',
-      payload: {fieldName, protection: newProtection},
-    });
-  };
-
-  const toggleHiddenState = (event: React.SyntheticEvent) => {
-    event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/toggleFieldHidden',
-      payload: {fieldName, hidden: !isHidden},
-    });
   };
 
   const protectionMessage = !isDerivedFromSet
