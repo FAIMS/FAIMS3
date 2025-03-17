@@ -75,6 +75,7 @@ interface FormButtonGroupProps {
 
   visitedSteps: Set<string>;
   isRecordSubmitted: boolean;
+  showPublishButton?: boolean;
 }
 
 /**
@@ -151,6 +152,7 @@ export default function FormButtonGroup({
   views,
   ui_specification,
   layout,
+  showPublishButton = true,
 }: FormButtonGroupProps) {
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
 
@@ -169,25 +171,29 @@ export default function FormButtonGroup({
       <Grid container spacing={2}>
         <Grid item xs={10.5}>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
-            <FormSubmitButton
-              color="primary"
-              data-testid="publish-close-record"
-              disabled={disabled}
-              formProps={formProps}
-              text={`Publish and close ${record_type}`}
-              is_close="close"
-              handleFormSubmit={handleFormSubmit}
-              is_final_view={is_final_view}
-            />
-            <FormSubmitButton
-              color="secondary"
-              disabled={disabled}
-              formProps={formProps}
-              text={`Publish and new ${record_type}`}
-              is_close="new"
-              handleFormSubmit={handleFormSubmit}
-              is_final_view={is_final_view}
-            />
+            {showPublishButton && (
+              <>
+                <FormSubmitButton
+                  color="primary"
+                  data-testid="finish-close-record"
+                  disabled={disabled}
+                  formProps={formProps}
+                  text={`Finish and close ${record_type}`}
+                  is_close="close"
+                  handleFormSubmit={handleFormSubmit}
+                  is_final_view={is_final_view}
+                />
+                <FormSubmitButton
+                  color="secondary"
+                  disabled={disabled}
+                  formProps={formProps}
+                  text={`Finish and new ${record_type}`}
+                  is_close="new"
+                  handleFormSubmit={handleFormSubmit}
+                  is_final_view={is_final_view}
+                />
+              </>
+            )}
           </Box>
         </Grid>
         <Grid

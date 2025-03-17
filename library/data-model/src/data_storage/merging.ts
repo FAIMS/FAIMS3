@@ -24,6 +24,7 @@ import {getDataDB} from '../index';
 
 import {
   AttributeValuePairIDMap,
+  DataDbType,
   InitialMergeDetails,
   InitialMergeRevisionDetailsMap,
   LinkedRelation,
@@ -38,11 +39,13 @@ import {
 import {
   generateFAIMSRevisionID,
   generateFAIMSAttributeValuePairID,
-  getRecord,
   getRevision,
   getRevisions,
   getAttributeValuePairs,
   updateHeads,
+  getRecord,
+  mergeRecordConflicts,
+  buildDocumentMap,
 } from './internals';
 import {logError} from '../logging';
 
@@ -115,25 +118,35 @@ async function getAutomergeCreator(project_id: ProjectID): Promise<string> {
   return 'automerge' + (project_id as string);
 }
 
-async function getCachedRevision(
-  project_id: ProjectID,
-  revision_cache: RevisionCache,
-  revision_id: RevisionID
-): Promise<Revision> {
-  let revision = revision_cache[revision_id];
+async function getCachedRevision({
+  dataDb,
+  revisionCache,
+  revisionId,
+}: {
+  dataDb: DataDbType;
+  revisionCache: RevisionCache;
+  revisionId: RevisionID;
+}): Promise<Revision> {
+  let revision = revisionCache[revisionId];
   if (revision === undefined) {
-    revision = await getRevision(project_id, revision_id);
-    revision_cache[revision_id] = revision;
+    revision = await getRevision({dataDb, revisionId});
+    revisionCache[revisionId] = revision;
   }
   return revision;
 }
 
-async function getBaseRevision(
-  project_id: ProjectID,
-  revision_cache: RevisionCache,
-  them: Revision,
-  us: Revision
-): Promise<Revision> {
+async function getBaseRevision({
+  revisionCache,
+  us,
+  them,
+  dataDb,
+}: {
+  dataDb: DataDbType;
+  projectId: ProjectID;
+  revisionCache: RevisionCache;
+  them: Revision;
+  us: Revision;
+}): Promise<Revision> {
   const revisions_seen = new Set();
   // We're going to start with us
   const to_check = [them];
@@ -149,12 +162,12 @@ async function getBaseRevision(
     }
     revisions_seen.add(current_revision._id);
     console.debug('Seen', revisions_seen);
-    for (const parent_id of current_revision.parents) {
-      const parent = await getCachedRevision(
-        project_id,
-        revision_cache,
-        parent_id
-      );
+    for (const parentId of current_revision.parents) {
+      const parent = await getCachedRevision({
+        dataDb,
+        revisionCache,
+        revisionId: parentId,
+      });
       to_check.push(parent);
     }
     current_revision = to_check.shift();
@@ -186,41 +199,72 @@ function canFastForward(base: Revision, them: Revision, us: Revision): boolean {
   return false;
 }
 
-async function doFastForward(
-  project_id: ProjectID,
-  merge_result: MergeResult,
-  base: Revision,
-  them: Revision,
-  us: Revision
-): Promise<MergeResult> {
+async function doFastForward({
+  mergeResult,
+  base,
+  them,
+  us,
+  dataDb,
+}: {
+  mergeResult: MergeResult;
+  base: Revision;
+  them: Revision;
+  us: Revision;
+  dataDb: DataDbType;
+}): Promise<MergeResult> {
   if (base._id === them._id) {
-    merge_result.set_fast_forward(us._id);
-    await updateHeads(project_id, us.record_id, [them._id, base._id], us._id);
+    mergeResult.set_fast_forward(us._id);
+    await updateHeads({
+      dataDb,
+      recordId: us.record_id,
+      baseRevisionId: [them._id, base._id],
+      newRevisionId: us._id,
+    });
   }
   if (base._id === us._id) {
-    merge_result.set_fast_forward(them._id);
-    await updateHeads(project_id, them.record_id, [us._id, base._id], them._id);
+    mergeResult.set_fast_forward(them._id);
+    await updateHeads({
+      dataDb,
+      recordId: them.record_id,
+      baseRevisionId: [us._id, base._id],
+      newRevisionId: them._id,
+    });
   }
-  return merge_result;
+  return mergeResult;
 }
 
-async function do3WayMerge(
-  project_id: ProjectID,
-  revision_cache: RevisionCache,
-  them_id: RevisionID,
-  us_id: RevisionID
-): Promise<MergeResult> {
-  console.debug(`merging ${us_id} and ${them_id}`);
-  const dataDB = await getDataDB(project_id);
+async function do3WayMerge({
+  dataDb,
+  revisionCache,
+  themId,
+  usId,
+  projectId,
+}: {
+  projectId: string;
+  dataDb: DataDbType;
+  revisionCache: RevisionCache;
+  themId: RevisionID;
+  usId: RevisionID;
+}): Promise<MergeResult> {
+  console.debug(`merging ${usId} and ${themId}`);
   const avp_map: AttributeValuePairIDMap = {};
-  const merge_result = new MergeResult();
-  const them = await getCachedRevision(project_id, revision_cache, them_id);
-  const us = await getCachedRevision(project_id, revision_cache, us_id);
-
-  const base = await getBaseRevision(project_id, revision_cache, them, us);
+  const mergeResult = new MergeResult();
+  const them = await getCachedRevision({
+    dataDb,
+    revisionCache: revisionCache,
+    revisionId: themId,
+  });
+  const us = await getCachedRevision({dataDb, revisionCache, revisionId: usId});
+  const base = await getBaseRevision({
+    dataDb,
+    revisionCache,
+    them,
+    projectId,
+    us,
+  });
   console.debug('Base revision:', base);
   if (canFastForward(base, them, us)) {
-    return await doFastForward(project_id, merge_result, base, them, us);
+    return await doFastForward({dataDb, mergeResult, base, them, us});
   }
 
   if (them.type !== us.type) {
@@ -231,7 +275,7 @@ async function do3WayMerge(
   const them_deleted = them.deleted ?? false;
   const us_deleted = us.deleted ?? false;
   if (them_deleted !== us_deleted) {
-    merge_result.set_no_merge();
+    mergeResult.set_no_merge();
   }
 
   let parent: LinkedRelation | undefined = undefined;
@@ -244,7 +288,7 @@ async function do3WayMerge(
     } else if (us_parent === base_parent) {
       parent = them_parent;
     } else {
-      merge_result.set_no_merge();
+      mergeResult.set_no_merge();
     }
   } else {
     parent = us_parent;
@@ -260,7 +304,7 @@ async function do3WayMerge(
     } else if (us_linked === base_linked) {
       linked = them_linked;
     } else {
-      merge_result.set_no_merge();
+      mergeResult.set_no_merge();
     }
   } else {
     linked = us_linked;
@@ -284,31 +328,31 @@ async function do3WayMerge(
     if (their_avp_id === our_avp_id) {
       // The avp is the same on both heads, the trivial case
       avp_map[attr] = our_avp_id;
-      merge_result.set_trivial();
+      mergeResult.set_trivial();
     } else {
       // We're going to need to do a merge
       if (their_avp_id === base_avp_id) {
         // We're the ones with the change
         avp_map[attr] = our_avp_id;
-        merge_result.set_merge_us();
+        mergeResult.set_merge_us();
       } else if (our_avp_id === base_avp_id) {
         // They're the ones with the change
         avp_map[attr] = their_avp_id;
-        merge_result.set_merge_them();
+        mergeResult.set_merge_them();
       } else {
         // Both us and them have changed the field, we can't automerge
-        merge_result.set_no_merge();
+        mergeResult.set_no_merge();
       }
     }
   }
 
-  if (merge_result.is_successful()) {
+  if (mergeResult.is_successful()) {
     const new_revision_id = generateFAIMSRevisionID();
     const creation_time = new Date();
-    const creator = await getAutomergeCreator(project_id);
-    const parents = [us_id, them_id].sort();
+    const creator = await getAutomergeCreator(projectId);
+    const parents = [usId, themId].sort();
 
-    merge_result.add_new_revision(new_revision_id);
+    mergeResult.add_new_revision(new_revision_id);
 
     const new_revision: Revision = {
       _id: new_revision_id,
@@ -327,45 +371,64 @@ async function do3WayMerge(
         linked: linked,
       },
     };
-    await dataDB.put(new_revision);
-    await updateHeads(project_id, us.record_id, parents, new_revision_id);
+    await dataDb.put(new_revision);
+    await updateHeads({
+      dataDb,
+      recordId: us.record_id,
+      baseRevisionId: parents,
+      newRevisionId: new_revision_id,
+    });
   }
-  return merge_result;
+  return mergeResult;
 }
 
-export async function mergeHeads(
-  project_id: ProjectID,
-  record_id: RecordID,
-  initial_cache_size = 100
-): Promise<boolean> {
+export async function mergeHeads({
+  projectId,
+  recordId,
+  cacheSize = 100,
+  dataDb,
+}: {
+  projectId: ProjectID;
+  recordId: RecordID;
+  cacheSize?: number;
+  dataDb: DataDbType;
+}): Promise<boolean> {
   let fully_merged: boolean | undefined = undefined;
-  console.debug('Getting record', project_id, record_id);
-  const record = await getRecord(project_id, record_id, true);
-  const revision_ids_to_seed_cache = record.revisions.slice(
-    0,
-    initial_cache_size
-  );
+  console.debug('Getting record', projectId, recordId);
+  // Get the record and merge it
+  const record = await getRecord({dataDb, recordId});
+  if (!record) {
+    throw new Error(
+      `Cannot merge heads for non-existent record with ID ${recordId}`
+    );
+  }
+  mergeRecordConflicts({dataDb, record});
+  const revision_ids_to_seed_cache = record.revisions.slice(0, cacheSize);
   console.debug(
     'Getting initial revisions',
-    project_id,
-    record_id,
+    projectId,
+    recordId,
     revision_ids_to_seed_cache
   );
-  const revision_cache: RevisionCache = (await getRevisions(
-    project_id,
-    revision_ids_to_seed_cache
-  )) as RevisionCache;
+  const revision_cache: RevisionCache = buildDocumentMap({
+    docs: await getRevisions({
+      dataDb,
+      revisionIds: revision_ids_to_seed_cache,
+    }),
+  }) as RevisionCache;
   const working_heads = record.heads.concat(); // make a clean copy
-  console.debug('Getting initial head revisions', project_id, record_id);
+  console.debug('Getting initial head revisions', projectId, recordId);
 
-  const initial_head_revisions = await getRevisions(project_id, working_heads);
+  const initial_head_revisions = buildDocumentMap({
+    docs: await getRevisions({dataDb, revisionIds: working_heads}),
+  });
   for (const rev_id in working_heads) {
     revision_cache[rev_id] = initial_head_revisions[rev_id];
   }
 
   // we've now set up our environment to start doing pairwise merging of the
   // heads
-  console.debug('Starting merge', project_id, record_id);
+  console.debug('Starting merge', projectId, recordId);
   while (working_heads.length > 1) {
     let us_id = working_heads.shift();
     if (us_id === undefined) {
@@ -376,12 +439,13 @@ export async function mergeHeads(
 
     const to_merge_heads = working_heads.concat();
     for (const them_index in to_merge_heads) {
-      const pairwise_merge_result: MergeResult = await do3WayMerge(
-        project_id,
-        revision_cache,
-        to_merge_heads[them_index],
-        us_id
-      );
+      const pairwise_merge_result: MergeResult = await do3WayMerge({
+        dataDb,
+        projectId,
+        revisionCache: revision_cache,
+        usId: us_id,
+        themId: to_merge_heads[them_index],
+      });
       if (pairwise_merge_result.is_successful()) {
         working_heads.splice(Number(them_index), 1);
         us_id = pairwise_merge_result.get_new_revision_id() as RevisionID;
@@ -395,24 +459,24 @@ export async function mergeHeads(
   if (fully_merged === undefined) {
     fully_merged = true;
   }
-  console.debug('Finished merge', project_id, record_id);
+  console.debug('Finished merge', projectId, recordId);
   return fully_merged;
 }
 
-// TODO: Work out preferred sort order
-function sortRevisionsForInitialMerge(revisions: RevisionMap): RevisionMap {
-  return revisions;
-}
-
-async function getMergeInformationForRevision(
-  project_id: ProjectID,
-  revision: Revision
-): Promise<RecordMergeInformation> {
+async function getMergeInformationForRevision({
+  projectId,
+  revision,
+  dataDb,
+}: {
+  projectId: ProjectID;
+  revision: Revision;
+  dataDb: DataDbType;
+}): Promise<RecordMergeInformation> {
   const avp_ids = Object.values(revision.avps);
-  const avps = await getAttributeValuePairs(project_id, avp_ids);
+  const avps = await getAttributeValuePairs({avpIds: avp_ids, dataDb});
 
   const record_info: RecordMergeInformation = {
-    project_id: project_id,
+    project_id: projectId,
     record_id: revision.record_id,
     revision_id: revision._id,
     type: revision.type,
@@ -437,17 +501,22 @@ async function getMergeInformationForRevision(
   return record_info;
 }
 
-async function findInitialMergeDetails(
-  project_id: ProjectID,
-  record_id: RecordID,
-  revisions: RevisionMap
-): Promise<InitialMergeHeadDetails | null> {
+async function findInitialMergeDetails({
+  projectId,
+  revisions,
+  dataDb,
+}: {
+  projectId: ProjectID;
+  revisions: RevisionMap;
+  dataDb: DataDbType;
+}): Promise<InitialMergeHeadDetails | null> {
   for (const rev_id in revisions) {
     try {
-      const full_record = await getMergeInformationForRevision(
-        project_id,
-        revisions[rev_id]
-      );
+      const full_record = await getMergeInformationForRevision({
+        dataDb,
+        projectId,
+        revision: revisions[rev_id],
+      });
       return {
         initial_head: rev_id,
         initial_head_data: full_record,
@@ -477,52 +546,78 @@ function getInitialMergeRevisionDetails(
   return rev_details_map;
 }
 
-export async function getInitialMergeDetails(
-  project_id: ProjectID,
-  record_id: RecordID
-): Promise<InitialMergeDetails | null> {
-  const record = await getRecord(project_id, record_id);
-  const available_revisions = await getRevisions(project_id, record.heads);
-  const sorted_revisions = sortRevisionsForInitialMerge(available_revisions);
-  const initial_head_details = await findInitialMergeDetails(
-    project_id,
-    record_id,
-    sorted_revisions
-  );
+export async function getInitialMergeDetails({
+  recordId,
+  projectId,
+  dataDb,
+}: {
+  projectId: ProjectID;
+  recordId: RecordID;
+  dataDb: DataDbType;
+}): Promise<InitialMergeDetails | null> {
+  const record = await getRecord({dataDb, recordId});
+  if (!record) {
+    throw new Error(`Cannot get merge details for missing record ${recordId}`);
+  }
+  const available_revisions = buildDocumentMap({
+    docs: await getRevisions({
+      dataDb,
+      revisionIds: record.heads,
+    }),
+  });
+  const initial_head_details = await findInitialMergeDetails({
+    dataDb,
+    projectId,
+    revisions: available_revisions,
+  });
   if (initial_head_details === null) {
     return null;
   }
   return {
     initial_head: initial_head_details.initial_head,
     initial_head_data: initial_head_details.initial_head_data,
-    available_heads: getInitialMergeRevisionDetails(sorted_revisions),
+    available_heads: getInitialMergeRevisionDetails(available_revisions),
   };
 }
 
-export async function findConflictingFields(
-  project_id: ProjectID,
-  record_id: RecordID,
-  revision_id: RevisionID
-): Promise<string[]> {
-  const record = await getRecord(project_id, record_id);
-  const conflicting_fields: Set<string> = new Set();
-
-  let revs_to_get: RevisionID[];
-  if (record.heads.includes(revision_id)) {
-    revs_to_get = record.heads;
-  } else {
-    revs_to_get = [revision_id, ...record.heads];
-    logError(
-      `Not using a head to find conflicting fields: ${project_id}, ${record_id}, ${revision_id}`
+export async function findConflictingFields({
+  projectId,
+  recordId,
+  revisionId,
+  dataDb,
+}: {
+  projectId: ProjectID;
+  recordId: RecordID;
+  revisionId: RevisionID;
+  dataDb: DataDbType;
+}): Promise<string[]> {
+  const record = await getRecord({dataDb, recordId});
+  if (!record) {
+    throw new Error(
+      `Cannot get conflicting fields for missing record ${recordId}`
     );
   }
 
-  const revisions = await getRevisions(project_id, revs_to_get);
+  const conflicting_fields: Set<string> = new Set();
 
-  const initial_revision = revisions[revision_id];
+  let revs_to_get: RevisionID[];
+  if (record.heads.includes(revisionId)) {
+    revs_to_get = record.heads;
+  } else {
+    revs_to_get = [revisionId, ...record.heads];
+    logError(
+      `Not using a head to find conflicting fields: ${projectId}, ${recordId}, ${revisionId}`
+    );
+  }
+
+  const revisions = buildDocumentMap({
+    docs: await getRevisions({dataDb, revisionIds: revs_to_get}),
+  });
+
+  const initial_revision = revisions[revisionId];
 
   for (const revision_id_to_compare of record.heads) {
-    if (revision_id_to_compare === revision_id) {
+    if (revision_id_to_compare === revisionId) {
       continue;
     }
     const rev_to_compare = revisions[revision_id_to_compare];
@@ -536,24 +631,33 @@ export async function findConflictingFields(
   return Array.from(conflicting_fields);
 }
 
-export async function getMergeInformationForHead(
-  project_id: ProjectID,
-  record_id: RecordID,
-  revision_id: RevisionID
-): Promise<RecordMergeInformation | null> {
+export async function getMergeInformationForHead({
+  projectId,
+  recordId,
+  revisionId,
+  dataDb,
+}: {
+  projectId: ProjectID;
+  recordId: RecordID;
+  revisionId: RevisionID;
+  dataDb: DataDbType;
+}): Promise<RecordMergeInformation | null> {
   try {
-    const record = await getRecord(project_id, record_id);
-    if (!record.heads.includes(revision_id)) {
-      logError(
-        `Not using a head to find conflicting fields: ${project_id}, ${record_id}, ${revision_id}`
+    const record = await getRecord({dataDb, recordId});
+    if (!record) {
+      throw new Error(
+        `Cannot get merge information for missing record ${recordId}`
       );
     }
-    const revision = await getRevision(project_id, revision_id);
-    return await getMergeInformationForRevision(project_id, revision);
+    if (!record.heads.includes(revisionId)) {
+      logError(
+        `Not using a head to find conflicting fields: ${projectId}, ${recordId}, ${revisionId}`
+      );
+    }
+    const revision = await getRevision({dataDb, revisionId});
+    return await getMergeInformationForRevision({projectId, dataDb, revision});
   } catch (err) {
-    logError(
-      `Failed to get merge information for ${project_id} ${revision_id}`
-    );
+    logError(`Failed to get merge information for ${projectId} ${revisionId}`);
     logError(err);
     return null;
   }
@@ -619,7 +723,12 @@ export async function saveUserMergeResult(merge_result: UserMergeResult) {
   };
   await dataDB.put(new_revision);
 
-  await updateHeads(project_id, record_id, parents, revision_id);
+  await updateHeads({
+    dataDb: dataDB,
+    recordId: record_id,
+    baseRevisionId: parents,
+    newRevisionId: revision_id,
+  });
 
   return true;
 }
