@@ -21,7 +21,7 @@ export function RoleCard({
   return (
     <div
       className={cn(
-        'group relative cursor-default bg-muted text-muted-foreground px-2 py-1 rounded-md w-fit hover:bg-muted/90 transition-colors',
+        'relative cursor-default bg-muted text-muted-foreground px-2 py-1 rounded-md w-fit hover:bg-muted/90 transition-colors',
         onClick && 'cursor-pointer',
         className
       )}
@@ -30,7 +30,7 @@ export function RoleCard({
       {children}
       {onRemove && (
         <button
-          className="absolute -top-2 p-0.5 hover:bg-muted border text-primary rounded-full bg-background -right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute -top-2 p-0.5 hover:bg-muted border text-primary rounded-full bg-background -right-2"
           onClick={onRemove}
           aria-label="Remove"
         >

@@ -1,4 +1,3 @@
-import {Plus} from 'lucide-react';
 import {Popover, PopoverContent, PopoverTrigger} from '../ui/popover';
 import {useAuth} from '@/context/auth-provider';
 import {RoleCard} from '../ui/role-card';
