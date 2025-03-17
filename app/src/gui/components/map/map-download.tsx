@@ -13,9 +13,8 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: overview_map.tsx
  * Description:
- *   Display an overview map of the records in the notebook.
+ *  A component supporting downloading of offline maps
  */
 
 import {Alert, Button, FormGroup, Grid, Paper, TextField} from '@mui/material';

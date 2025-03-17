@@ -22,7 +22,7 @@ import {Box, Grid} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
-import GeoJSON from 'ol/format/GeoJSON';
+import GeoJSON, {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform} from 'ol/proj';
@@ -37,8 +37,37 @@ const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
 
 /**
- * A Map component for all our mapping needs.
+ * canShowMapNear - can we show a map near this location?
  *
+ * Return true if we are online or if we have a cached map that includes
+ * the center location.
+ */
+export const canShowMapNear = async (
+  features: GeoJSONFeatureCollection | undefined
+) => {
+  console.log('canShowMapNear', features);
+  if (navigator.onLine) return true;
+
+  if (features) {
+    const geoJson = new GeoJSON();
+    const parsedFeatures = geoJson.readFeatures(features, {
+      dataProjection: 'EPSG:4326',
+      featureProjection: defaultMapProjection,
+    });
+
+    // now work out if we have a stored map
+    const tileStore = new VectorTileStore();
+    return await tileStore.mapCacheIncludes(parsedFeatures);
+  } else {
+    return false;
+  }
+};
+
+/**
+ * A Map component for all our mapping needs.
+ * Props:
+ *   parentSetMap - callback from the parent component, called with the map element once it has been created.
+ *   center: optional, the map center. If not supplied we try to get the current location or back off to Sydney.
  */
 export interface MapComponentProps {
   parentSetMap: (map: Map) => void;
@@ -67,12 +96,6 @@ export const MapComponent = (props: MapComponentProps) => {
       return [position.coords.longitude, position.coords.latitude];
     },
   });
-
-  // useEffect(() => {
-  //   const fn = async () => {
-  //     await Tile.initDB();
-  //   fn();
-  // }, []);
 
   /**
    * Create the OpenLayers map element

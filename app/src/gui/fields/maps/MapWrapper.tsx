@@ -115,7 +115,6 @@ function MapWrapper(props: MapProps) {
 
       // add features to map if we're passed any in
       if (props.features && props.features.type) {
-        console.log('map has features', props.features);
         const parsedFeatures = geoJson.readFeatures(props.features, {
           dataProjection: 'EPSG:4326',
           featureProjection: theMap.getView().getProjection(),

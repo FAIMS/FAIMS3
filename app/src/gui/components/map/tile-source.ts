@@ -18,8 +18,8 @@
  * tiles locally.
  */
 
-import {Extent} from 'ol/extent';
-import {FeatureLike} from 'ol/Feature';
+import {containsCoordinate, containsExtent, Extent} from 'ol/extent';
+import Feature, {FeatureLike} from 'ol/Feature';
 import MVT from 'ol/format/MVT';
 import TileLayer from 'ol/layer/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile';
@@ -34,6 +34,8 @@ import {applyStyle} from 'ol-mapbox-style';
 import {getMapStylesheet} from './styles';
 import Tile from 'ol/Tile';
 import {IDBObjectStore} from './IDBObjectStore';
+import {useIsOnline} from '../../../utils/customHooks';
+import {Geometry} from 'ol/geom';
 
 // Table of map tile sources for raster and vector tiles
 // based on configuration settings we select which of these to use
@@ -222,11 +224,9 @@ class TileStoreBase {
     if (url) {
       if (this.tileStore.tileDB) {
         const image = await this.tileStore.tileDB.get([url]);
-        if (image) console.log('cache hit', url);
         if (image) return image.data;
       }
       if (navigator.onLine) {
-        console.log('cache miss', url);
         const response = await fetch(url);
         return await response.blob();
       }
@@ -422,6 +422,53 @@ class TileStoreBase {
       }
     }
   }
+
+  /**
+   * mapCacheIncludes - check whether our cache has maps to show a set of features
+   *
+   * @param features An array of features
+   * @returns True if all features are contained within at least one tileSet extent
+   */
+  async mapCacheIncludes(features: Feature<Geometry>[]): Promise<boolean> {
+    // If no features provided, return true (nothing to check)
+    if (features.length === 0) {
+      return true;
+    }
+
+    // Get all available tile sets once
+    const tileSets = await this.tileStore.tileSetDB.getAll();
+    if (!tileSets || tileSets.length === 0) {
+      // No tile sets available, so features can't be included
+      return false;
+    }
+
+    // Check each feature
+    for (const feature of features) {
+      const featureExtent = feature.getGeometry()?.getExtent();
+
+      // If we can't determine the extent, skip this feature
+      if (!featureExtent) {
+        continue;
+      }
+
+      // Check if this feature is contained in any tile set
+      let featureFound = false;
+      for (const tileSet of tileSets) {
+        if (containsExtent(tileSet.extent, featureExtent)) {
+          featureFound = true;
+          break; // No need to check other tile sets once we find one
+        }
+      }
+
+      // If this feature isn't in any tile set, return false immediately
+      if (!featureFound) {
+        return false;
+      }
+    }
+
+    // If we got here, all features were found in at least one tile set
+    return true;
+  }
 }
 
 export class ImageTileStore extends TileStoreBase {
@@ -513,26 +560,21 @@ export class VectorTileStore extends TileStoreBase {
       source: this.source,
       background: 'hsl(40, 26%, 93%)',
     });
-    console.log('calling applyStyle', getMapStylesheet(MAP_STYLE));
     applyStyle(this.tileLayer, getMapStylesheet(MAP_STYLE), {
       transformRequest: this.transformRequest.bind(this),
     });
   }
 
   async transformRequest(url: string) {
-    // TODO: cache these requests...
     const fullURL = url.replace('{key}', MAP_SOURCE_KEY);
-    console.log('transformRequest', fullURL);
     const blob = await this.getTileBlob(fullURL);
     if (blob) {
-      console.log('storing blob for', fullURL);
       this.storeTileRecord(fullURL, blob, 'cache');
       const response = new Response(blob);
       // need to very explicity set the url which is supposed to be read only
       Object.defineProperty(response, 'url', {value: fullURL});
       return response;
     } else {
-      console.log('no blob for', fullURL);
       return fullURL;
     }
   }
