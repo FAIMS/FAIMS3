@@ -33,6 +33,7 @@ import {MAP_SOURCE, MAP_SOURCE_KEY, MAP_STYLE} from '../../../buildconfig';
 import {applyStyle} from 'ol-mapbox-style';
 import {getMapStylesheet} from './styles';
 import Tile from 'ol/Tile';
+import {IDBObjectStore} from './IDBObjectStore';
 
 // Table of map tile sources for raster and vector tiles
 // based on configuration settings we select which of these to use
@@ -49,12 +50,21 @@ const TILE_URL_MAP: {[key: string]: {[key: string]: string}} = {
   },
 };
 
+// Types stored in the map tile database
+// StoredTile is the raw tile cache, basically a URL and the blob
+// returned when we request it.  The sets property records which
+// tile-sets this belongs to so that when we're deleting sets
+// we don't remove this stored tile if it belongs to another one as well
 interface StoredTile {
   url: string;
   data: Blob;
   sets: string[];
 }
 
+// StoreTileSet is a collection of stored tiles. We record the extent and the min/max
+// zoom levels.  The size is calculated after download and cached for future reporting.
+// the expected tile count is stored to be able to show the progress loading bar
+// tileKeys references the individual StoredTile records.
 export interface StoredTileSet {
   setName: string;
   extent: number[];
@@ -66,161 +76,89 @@ export interface StoredTileSet {
   tileKeys: IDBValidKey[];
 }
 
-type KeyType = string | string[] | null | undefined;
-class IDB<Type> {
-  keyPath: KeyType;
-  db: any;
-  dbName: string;
-
-  constructor(db: any, dbName: string, keyPath: KeyType) {
-    this.keyPath = keyPath;
-    this.db = db;
-    this.dbName = dbName;
-  }
-
-  // Create the object store for this database, called in
-  // onupgradeneeded for the database
-  createObjectStore() {
-    if (!this.db.objectStoreNames.contains(this.dbName)) {
-      this.db.createObjectStore(this.dbName, {
-        keyPath: this.keyPath,
-      });
-    }
-  }
-
-  async get(query: IDBKeyRange | IDBValidKey): Promise<Type | undefined> {
-    return new Promise<Type | undefined>((resolve, reject) => {
-      if (!this.db) {
-        return;
-      }
-      const transaction = this.db.transaction(this.dbName, 'readonly');
-      const store = transaction.objectStore(this.dbName);
-      const request = store.get(query);
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async getAll(): Promise<Type[] | undefined> {
-    return new Promise<Type[] | undefined>((resolve, reject) => {
-      if (!this.db) {
-        return;
-      }
-      const transaction = this.db.transaction(this.dbName, 'readonly');
-      const store = transaction.objectStore(this.dbName);
-      const request = store.getAll();
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async put(object: Type) {
-    return new Promise<IDBValidKey | undefined>((resolve, reject) => {
-      if (!this.db) {
-        return;
-      }
-      const transaction = this.db.transaction(this.dbName, 'readwrite');
-      const store = transaction.objectStore(this.dbName);
-      const request = store.put(object);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async delete(key: IDBValidKey) {
-    return new Promise<void>((resolve, reject) => {
-      if (!this.db) {
-        return;
-      }
-      const transaction = this.db.transaction(this.dbName, 'readwrite');
-      const store = transaction.objectStore(this.dbName);
-      const request = store.delete(key);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async clear() {
-    if (this.db) {
-      return new Promise<void>((resolve, reject) => {
-        const transaction = this.db.transaction(this.dbName, 'readwrite');
-        const store = transaction.objectStore(this.dbName);
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error);
-        store.clear();
-      });
-    }
-  }
-}
-
-// TileStore - a singleton class holding the tile database references
-export class TileStore {
-  static #instance: TileStore;
+// MapTileDatabase - a singleton class holding the tile database references
+// manages creation of the IndexedDB database and object stores.  Used by TileStoreBase
+// to access the stored tiles and tile-sets.
+// We initialise this at the start of the app lifecycle to be sure that it will
+// be available by the time the user arrives on a map page.
+export class MapTileDatabase {
+  static #instance: MapTileDatabase;
   // The database is a static member of this class, there is only
   // one connection to the DB in the app
   static DB_NAME = 'tiles_db';
   static db: IDBDatabase;
   // references to the individual object stores within the database
-  tileDB!: IDB<StoredTile>;
-  tileSetDB!: IDB<StoredTileSet>;
+  tileDB!: IDBObjectStore<StoredTile>;
+  tileSetDB!: IDBObjectStore<StoredTileSet>;
 
   constructor() {
     this.initDB();
   }
 
-  static getInstance(): TileStore {
-    if (!TileStore.#instance) {
-      TileStore.#instance = new TileStore();
+  static getInstance(): MapTileDatabase {
+    if (!MapTileDatabase.#instance) {
+      MapTileDatabase.#instance = new MapTileDatabase();
     }
-    return TileStore.#instance;
+    return MapTileDatabase.#instance;
   }
 
+  // Initialise the database and the two object stores that we'll rely on
+  // called from the constructor but could also be awaited by a client if
+  // they wanted to ensure that the db is ready
   initDB(): Promise<void> {
     return new Promise((resolve, reject) => {
       // incrementing the version number will allow update to the schema
       const DB_VERSION = 1;
-      const request = indexedDB.open(TileStore.DB_NAME, DB_VERSION);
+      const request = indexedDB.open(MapTileDatabase.DB_NAME, DB_VERSION);
       request.onerror = () => reject(request.error);
+      // fired on every run, call makeDatabases to initialise this object
       request.onsuccess = () => {
-        TileStore.db = request.result;
-        if (!this.tileDB) {
-          console.log('creating tile store');
-          this.tileDB = new IDB<StoredTile>(TileStore.db, 'tiles', ['url']);
-        }
-        if (!this.tileSetDB)
-          this.tileSetDB = new IDB<StoredTileSet>(TileStore.db, 'tileSets', [
-            'setName',
-          ]);
+        this.makeDatabases(request.result);
         resolve();
       };
+      // event fired after the initial creation of the database, here we
+      // create the object stores. Note we also call makeDatabases because this
+      // method runs before onsuccess above but only when DB_NAME doesn't exist
       request.onupgradeneeded = (event: any) => {
         if (event.target) {
           const db = event.target.result;
-          if (!db.objectStoreNames.contains('tiles')) {
-            db.createObjectStore('tiles', {
-              keyPath: ['url'],
-            });
-          }
-          if (!db.objectStoreNames.contains('tileSets')) {
-            db.createObjectStore('tileSets', {
-              keyPath: ['setName'],
-            });
-          }
+          this.makeDatabases(db);
+          if (this.tileDB) this.tileDB.createObjectStore();
+          if (this.tileSetDB) this.tileSetDB.createObjectStore();
         }
       };
     });
   }
+
+  // Make the individual databases (object stores) that will store the individual
+  // tile/tileSet records
+  makeDatabases(db: IDBDatabase) {
+    MapTileDatabase.db = db;
+    if (!this.tileDB) {
+      console.log('creating tile store');
+      this.tileDB = new IDBObjectStore<StoredTile>(db, 'tiles', ['url']);
+    }
+    if (!this.tileSetDB)
+      this.tileSetDB = new IDBObjectStore<StoredTileSet>(db, 'tileSets', [
+        'setName',
+      ]);
+  }
 }
 
+/**
+ * class TileStoreBase
+ *  Base functionality for the tile cache that implements downloading and storing
+ *  map tiles, checking the tile store before hitting the network, and downloading
+ *  and storing tiles in bulk for a given region.
+ *
+ * Used by VectorTileStore and ImageTileStore to implement two kinds of map
+ * tile sources.
+ */
 class TileStoreBase {
-  tileStore: TileStore;
+  tileStore: MapTileDatabase;
 
   constructor() {
-    this.tileStore = TileStore.getInstance();
+    this.tileStore = MapTileDatabase.getInstance();
   }
 
   /**
@@ -238,10 +176,22 @@ class TileStoreBase {
     return {tileKey, size};
   }
 
-  getTileURL(): string | undefined {
+  /**
+   * Get the URL template we should use for tiles
+   * Will be implemented by the derived class.
+   *
+   * @returns the configured tile URL template
+   */
+  getTileURLTemplate(): string | undefined {
     return undefined;
   }
 
+  /**
+   * Get the URL given a set of tile coordinates
+   *
+   * @param {z, x, y} tile coordinates
+   * @returns The URL for this tile
+   */
   getURLForTile({
     z,
     x,
@@ -251,7 +201,7 @@ class TileStoreBase {
     x: number;
     y: number;
   }): string | undefined {
-    const urlTemplate = this.getTileURL();
+    const urlTemplate = this.getTileURLTemplate();
     if (urlTemplate) {
       return urlTemplate
         .replace('{z}', z.toString())
@@ -261,6 +211,13 @@ class TileStoreBase {
     }
   }
 
+  /**
+   * Get the blob for a given tile URL, try the cache first or try to download
+   * if we are online.
+   *
+   * @param url Tile URL
+   * @returns A blob from the cache or the network or `undefined` if we can't find it
+   */
   async getTileBlob(url: string | undefined): Promise<Blob | undefined> {
     if (url) {
       if (this.tileStore.tileDB) {
@@ -273,22 +230,25 @@ class TileStoreBase {
         const response = await fetch(url);
         return await response.blob();
       }
-    } else {
-      console.log('no url', url);
     }
     // fallback, we can't get the tile - offline or no url
-    console.log('fallback', navigator.onLine, this.tileStore.tileDB, url);
     return undefined;
   }
 
-  // get the tile grid, will be overridden by subclasses but
-  // here git the generic OSM grid
+  /**
+   * Get the tile grid, will be overridden by subclasses but
+   * here git the generic OSM grid
+   *
+   * @return the tile grid
+   */
   getTileGrid() {
     const osm = new OSM();
     return osm.getTileGrid();
   }
 
-  /* estimateSizeForRegion
+  /**
+   * estimateSizeForRegion
+   *
    * Estimates the size of a region in MB.
    * @param {Extent} extent The extent of the region to estimate the size of.
    * @param {number} minZoom The minimum zoom level to estimate the size of.
@@ -477,7 +437,7 @@ export class ImageTileStore extends TileStoreBase {
     this.tileLayer = new TileLayer({source: this.source});
   }
 
-  getTileURL(): string | undefined {
+  getTileURLTemplate(): string | undefined {
     return TILE_URL_MAP[MAP_SOURCE]['image'];
   }
 
@@ -543,7 +503,7 @@ export class VectorTileStore extends TileStoreBase {
     super();
     this.source = new VectorTileSource({
       attributions: ATTRIBUTION,
-      url: this.getTileURL(),
+      url: this.getTileURLTemplate(),
       format: new MVT(),
       maxZoom: 14,
       tileLoadFunction: this.tileLoader.bind(this),
@@ -577,7 +537,11 @@ export class VectorTileStore extends TileStoreBase {
     }
   }
 
-  getTileURL(): string | undefined {
+  /**
+   * Get the URL template we should use for tiles
+   * @returns the configured tile URL template
+   */
+  getTileURLTemplate(): string | undefined {
     return TILE_URL_MAP[MAP_SOURCE]['vector'];
   }
 

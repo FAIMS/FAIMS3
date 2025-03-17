@@ -41,14 +41,24 @@ export const MapDownloadComponent = () => {
 
   const tileStore = useMemo(() => new VectorTileStore(), []);
 
+  // Call updateTileSets on startup and arrange for it to be called
+  // whenever there is an update to offline maps (new tiles downloaded)
   useEffect(() => {
     const fn = async () => {
       // this is happening too early, the database isn't there yet...
       await updateTileSets();
     };
     fn();
+
+    // when something happens, get the new tileSets
+    addEventListener('offline-map-download', updateTileSets);
+    // clean up when we go
+    return () => {
+      removeEventListener('offline-map-download', updateTileSets);
+    };
   }, []);
 
+  // Set up an event handler on map movement
   useEffect(() => {
     if (map) {
       // invalidate calculation if the map moves and keep track of zoom level
@@ -60,13 +70,13 @@ export const MapDownloadComponent = () => {
     }
   }, [map]);
 
-  // Update the list of tilesets for display, called on init and when we remove
-  // a tileset
+  // Update the list of tile-sets for display
   const updateTileSets = async () => {
     const sets = await tileStore.getTileSets();
     if (sets) setTileSets(sets);
   };
 
+  // Estimate the size of the current region for display
   const handleCacheMapExtent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
@@ -86,6 +96,7 @@ export const MapDownloadComponent = () => {
     }
   };
 
+  // Start the actual download of map tiles
   const confirmCacheMapExtent = async () => {
     if (map) {
       const extent = map.getView().calculateExtent();
@@ -97,10 +108,7 @@ export const MapDownloadComponent = () => {
           TILE_MAX_ZOOM,
           downloadSetName
         );
-        // when something happens, get the new tileSets
-        addEventListener('offline-map-download', updateTileSets);
         tileStore.downloadTileSet(downloadSetName);
-        updateTileSets();
       } catch (e: any) {
         console.error(e);
         setMessage(e.message);
@@ -127,7 +135,11 @@ export const MapDownloadComponent = () => {
       }}
     >
       <Grid item xs={12}>
-        <p>Download the current region for offline use.</p>
+        <p>
+          Download the current region for offline use. Note that download size
+          estimates are approximate for metro areas, rural areas may be much
+          smaller.
+        </p>
         <FormGroup row>
           <TextField
             label="Name for Downloaded Map"

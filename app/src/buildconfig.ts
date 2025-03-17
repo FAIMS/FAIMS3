@@ -19,6 +19,7 @@
  *   which server to use and whether to include test data
  */
 
+import {MapStylesheetNameType} from './gui/components/map/styles';
 import {BUILD_VERSION, BUILD_VERSION_DEFAULT} from './version';
 
 // need to define a local logError here since logging.tsx imports this file
@@ -390,7 +391,7 @@ function get_map_key(): string {
   return map_key || '';
 }
 
-function get_map_style(): string {
+function get_map_style(): MapStylesheetNameType {
   const map_style = import.meta.env.VITE_MAP_STYLE;
   return map_style || 'basic';
 }
@@ -398,7 +399,6 @@ function get_map_style(): string {
 function offline_maps(): boolean {
   const offline_maps = import.meta.env.VITE_OFFLINE_MAPS === 'true';
   const map_source = get_map_source();
-  console.log('OFFLINE_MAPS', offline_maps);
   // OSM does not allow bulk downloads so we can't enable offline maps
   return (offline_maps && map_source !== 'osm') || false;
 }

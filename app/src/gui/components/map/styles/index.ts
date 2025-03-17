@@ -10,8 +10,12 @@ import tonerStyle from './toner-style.json';
 // you to load standard styles and edit them, then export the style json file.
 // Styles are described here: https://openmaptiles.org/styles/ but the only way I can
 // see to download them is via Maputnik.
-
-export const getMapStylesheet = (style: any) => {
+export type MapStylesheetNameType =
+  | 'basic'
+  | 'openstreetmap'
+  | 'osm-bright'
+  | 'toner';
+export const getMapStylesheet = (style: MapStylesheetNameType) => {
   switch (style) {
     case 'basic':
       return basicStyle;
