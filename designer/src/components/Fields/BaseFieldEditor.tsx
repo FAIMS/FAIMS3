@@ -19,7 +19,10 @@ import {
   TextField,
   Card,
   Alert,
+  Tooltip,
+  Typography,
 } from '@mui/material';
+import InfoIcon from '@mui/icons-material/Info';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {
@@ -33,7 +36,6 @@ type Props = {
   children?: React.ReactNode;
 };
 
-// gets rid of the type error in updateFieldFromState func
 type StateType = {
   label?: string;
   helperText: string;
@@ -45,6 +47,8 @@ type StateType = {
   uncertainty: boolean;
   uncertaintyLabel: string;
   condition?: ConditionType | null;
+  protection: boolean;
+  allowHiding: boolean;
 };
 
 export const BaseFieldEditor = ({fieldName, children}: Props) => {
@@ -53,8 +57,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   );
   const dispatch = useAppDispatch();
 
-  // These are needed because there is no consistency in how
-  // the field label is stored in the notebook
+  // Derive the field label from possible alternatives
   const getFieldLabel = () => {
     return (
       field['component-parameters']?.label || field['component-parameters'].name
@@ -74,17 +77,23 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
 
   const cParams = field['component-parameters'];
 
-  const state = {
+  const protectionSetting = cParams.protection || 'none';
+  const protectionEnabled = protectionSetting !== 'none';
+  const allowHidingEnabled = protectionSetting === 'allow-hiding';
+
+  const state: StateType = {
     label: getFieldLabel(),
     helperText: cParams.helperText || '',
     required: cParams.required || false,
-    annotation: field.meta ? field.meta.annotation?.include : false,
-    annotationLabel: field.meta ? field.meta.annotation?.label || '' : '',
-    uncertainty: field.meta ? field.meta.uncertainty.include || false : false,
-    uncertaintyLabel: field.meta ? field.meta.uncertainty.label || '' : '',
+    annotation: field.meta?.annotation?.include || false,
+    annotationLabel: field.meta?.annotation?.label || '',
+    uncertainty: field.meta?.uncertainty?.include || false,
+    uncertaintyLabel: field.meta?.uncertainty?.label || '',
     condition: field.condition,
     persistent: field.persistent || false,
     displayParent: field.displayParent || false,
+    protection: protectionEnabled,
+    allowHiding: allowHidingEnabled,
   };
 
   const updateFieldFromState = (newState: StateType) => {
@@ -92,6 +101,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
     if (newState.label) setFieldLabel(newField, newState.label);
     newField['component-parameters'].helperText = newState.helperText;
     newField['component-parameters'].required = newState.required;
+
     if (newField.meta) {
       newField.meta.annotation = {
         include: newState.annotation,
@@ -102,14 +112,18 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
         label: newState.uncertaintyLabel || '',
       };
     }
-    if (newState.condition) newField.condition = newState.condition;
-    else newField.condition = null;
 
-    if (newState.persistent) newField.persistent = newState.persistent;
-    else newField.persistent = false;
+    if (newState.protection) {
+      newField['component-parameters'].protection = newState.allowHiding
+        ? 'allow-hiding'
+        : 'protected';
+    } else {
+      newField['component-parameters'].protection = 'none';
+    }
 
-    if (newState.displayParent) newField.displayParent = newState.displayParent;
-    else newField.displayParent = false;
+    newField.condition = newState.condition || null;
+    newField.persistent = newState.persistent || false;
+    newField.displayParent = newState.displayParent || false;
 
     updateField(fieldName, newField);
   };
@@ -120,175 +134,194 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
-    if (condition) {
-      const newState: StateType = {...state, condition: condition};
-      updateFieldFromState(newState);
-    } else {
-      const newState: StateType = {...state, condition: null};
-      updateFieldFromState(newState);
-    }
+    const newState: StateType = {...state, condition};
+    updateFieldFromState(newState);
   };
 
   return (
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <Card variant="outlined">
-          <Grid container p={2} rowSpacing={3}>
-            <Grid item sm={6} xs={12}>
-              <TextField
-                name="label"
-                variant="outlined"
-                label="Label"
-                value={state.label}
-                onChange={e => updateProperty('label', e.target.value)}
-                helperText="Enter a label for the field."
-              />
-            </Grid>
+    <Card variant="outlined" sx={{p: 2}}>
+      <Grid container spacing={2}>
+        {/* Row 1: Label & Helper Text (50/50) */}
+        <Grid item xs={12} md={6}>
+          <TextField
+            fullWidth
+            label="Label"
+            value={state.label}
+            onChange={e => updateProperty('label', e.target.value)}
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField
+            fullWidth
+            label="Helper Text"
+            value={state.helperText}
+            multiline
+            rows={2}
+            onChange={e => updateProperty('helperText', e.target.value)}
+          />
+        </Grid>
 
-            <Grid item sm={6} xs={12}>
-              <TextField
-                name="helperText"
-                variant="outlined"
-                label="Helper Text"
-                fullWidth
-                multiline={true}
-                rows={4}
-                value={state.helperText}
-                helperText="Help text shown along with the field (like this text)."
-                onChange={e => updateProperty('helperText', e.target.value)}
-              />
-            </Grid>
+        {/* Optional Children */}
+        {children && (
+          <Grid item xs={12}>
+            {children}
           </Grid>
-        </Card>
-      </Grid>
+        )}
 
-      {children}
-
-      <Grid item xs={12}>
-        <Card variant="outlined">
-          <Grid container p={2} columnSpacing={1} rowSpacing={1}>
-            <Grid item xs={12} sm={3}>
-              <FormControlLabel
-                required
-                control={
-                  <Checkbox
-                    checked={state.required}
-                    onChange={e => updateProperty('required', e.target.checked)}
-                  />
-                }
-                label="Required"
+        {/* Row 2: Four equal columns for small items:
+            Required, Annotation, Uncertainty, Condition */}
+        <Grid item xs={12} sm={3}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={state.required}
+                onChange={e => updateProperty('required', e.target.checked)}
               />
-            </Grid>
-
-            <Grid item xs={12} sm={3} container direction="column" pr={1}>
-              <FormControlLabel
-                required
-                control={
-                  <Checkbox
-                    checked={state.annotation}
-                    onChange={e =>
-                      updateProperty('annotation', e.target.checked)
-                    }
-                  />
-                }
-                label="Enable Annotation"
+            }
+            label="Required"
+          />
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={state.annotation}
+                onChange={e => updateProperty('annotation', e.target.checked)}
               />
+            }
+            label="Annotation"
+          />
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={state.uncertainty}
+                onChange={e => updateProperty('uncertainty', e.target.checked)}
+              />
+            }
+            label="Uncertainty"
+          />
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <ConditionModal
+            label={state.condition ? 'Update Condition' : 'Add Condition'}
+            initial={state.condition}
+            onChange={conditionChanged}
+            field={fieldName}
+          />
+        </Grid>
 
-              {state.annotation && (
+        {/* Row 3: If annotation or uncertainty are true,
+            show their labels side by side (50/50).
+            Otherwise placeholders to keep layout even. */}
+        {
+          <Grid item container spacing={2}>
+            <Grid item xs={12} md={6}>
+              {state.annotation ? (
                 <TextField
-                  name="label"
-                  variant="outlined"
-                  label="Label"
+                  fullWidth
+                  label="Annotation Label"
                   value={state.annotationLabel}
                   onChange={e =>
                     updateProperty('annotationLabel', e.target.value)
                   }
-                  helperText="Enter a label."
-                  sx={{mt: 1.5}}
                 />
+              ) : (
+                // Empty placeholder to preserve spacing
+                <div />
               )}
             </Grid>
-
-            <Grid item xs={12} sm={3} container direction="column">
-              <FormControlLabel
-                required
-                control={
-                  <Checkbox
-                    checked={state.uncertainty}
-                    onChange={e =>
-                      updateProperty('uncertainty', e.target.checked)
-                    }
-                  />
-                }
-                label="Enable Uncertainty"
-              />
-
-              {state.uncertainty && (
+            <Grid item xs={12} md={6}>
+              {state.uncertainty ? (
                 <TextField
-                  name="label"
-                  variant="outlined"
-                  label="Label"
+                  fullWidth
+                  label="Uncertainty Label"
                   value={state.uncertaintyLabel}
                   onChange={e =>
                     updateProperty('uncertaintyLabel', e.target.value)
                   }
-                  helperText="Enter a label."
-                  sx={{mt: 1.5}}
                 />
+              ) : (
+                // Empty placeholder
+                <div />
               )}
             </Grid>
+          </Grid>
+        }
 
-            <Grid item xs={12} sm={3}>
-              <ConditionModal
-                label={state.condition ? 'Update Condition' : 'Add Condition'}
-                initial={state.condition}
-                onChange={conditionChanged}
-                field={fieldName}
+        {/* Row 4: If condition is set, show alert in a full-width column */}
+        <Grid item xs={12}>
+          {state.condition && (
+            <Alert severity="info">
+              <strong>Field Condition:</strong> Show this field if &nbsp;
+              <ConditionTranslation condition={state.condition} />
+            </Alert>
+          )}
+        </Grid>
+
+        {/* Row 5: Four equal columns for:
+            Persistent, Display Parent, Protection, Allow Hiding (if protection). */}
+        <Grid item xs={12} sm={3}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={state.persistent}
+                onChange={e => updateProperty('persistent', e.target.checked)}
               />
-            </Grid>
-          </Grid>
-
-          <Grid>
-            {state.condition ? (
-              <Alert severity="info">
-                <strong>Field Condition:</strong> Show this field if&nbsp;
-                <ConditionTranslation condition={state.condition} />
-              </Alert>
-            ) : (
-              <></>
-            )}
-          </Grid>
-
-          <Grid container p={2} columnSpacing={1} rowSpacing={1}>
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={state.persistent}
-                    onChange={e =>
-                      updateProperty('persistent', e.target.checked)
-                    }
-                  />
+            }
+            label="Copy value to new records"
+          />
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={state.displayParent}
+                onChange={e =>
+                  updateProperty('displayParent', e.target.checked)
                 }
-                label="Copy this field value to new records of this type"
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={state.displayParent}
-                    onChange={e =>
-                      updateProperty('displayParent', e.target.checked)
-                    }
-                  />
-                }
-                label="Display this field in any parent record"
-              />
-            </Grid>
-          </Grid>
-        </Card>
+            }
+            label="Display in parent record"
+          />
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={state.protection}
+                  onChange={e => updateProperty('protection', e.target.checked)}
+                />
+              }
+              label="Protection"
+            />
+            <Tooltip title="Enable protection to allow optional field hiding.">
+              <InfoIcon fontSize="small" style={{marginLeft: 4}} />
+            </Tooltip>
+          </div>
+        </Grid>
+        {/* Column 4: Show 'Allow Hiding' if protection is enabled,
+            else a placeholder to keep spacing even */}
+        <Grid item xs={12} sm={3}>
+          {state.protection ? (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={state.allowHiding}
+                  onChange={e =>
+                    updateProperty('allowHiding', e.target.checked)
+                  }
+                />
+              }
+              label="Allow Hiding"
+            />
+          ) : (
+            <div />
+          )}
+        </Grid>
       </Grid>
-    </Grid>
+    </Card>
   );
 };
