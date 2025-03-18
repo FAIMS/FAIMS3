@@ -1,4 +1,4 @@
-import {LocationState, RecordReference} from '@faims3/data-model';
+import {RecordReference, RevisionID} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {
@@ -23,6 +23,7 @@ import {addAlert} from '../../../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../../../context/store';
 import {logError} from '../../../../../logging';
 import {CreateRecordLinkProps} from '../types';
+import {LocationState} from '../RelatedInformation';
 
 export function AddNewRecordButton(props: {
   is_enabled: boolean;
@@ -39,19 +40,22 @@ export function AddNewRecordButton(props: {
   const history = useNavigate();
   const handleSubmit = () => {
     setSubmitting(true);
+    // here we make a new record id for the child and populate the form with the
+    // relation information
     const new_child_id = props.save_new_record();
     if (props.handleSubmit !== undefined) {
       props
         .handleSubmit()
-        .then((result: string) => {
+        .then((revisionID: RevisionID) => {
           const newState = props.state;
           newState['parent_link'] = ROUTES.getRecordRoute(
             props.serverId,
             props.project_id,
             (props.state.parent_record_id || '').toString(),
-            (result || '').toString()
+            (revisionID || '').toString()
           ).replace(INDIVIDUAL_NOTEBOOK_ROUTE, '');
           newState['child_record_id'] = new_child_id;
+          // wait for 300ms and then jump to the new pathname with the new state
           setTimeout(() => {
             // reset local state of component
             setSubmitting(false);

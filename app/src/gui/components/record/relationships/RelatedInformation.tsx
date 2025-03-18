@@ -22,13 +22,13 @@ import {
   getFullRecordData,
   getMetadataForSomeRecords,
   LinkedRelation,
-  LocationState,
   ProjectID,
   ProjectUIModel,
   RecordID,
   RecordMetadata,
   RecordReference,
   Relationship,
+  RevisionID,
   TokenContents,
   upsertFAIMSData,
 } from '@faims3/data-model';
@@ -41,6 +41,21 @@ import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
 import {ParentLinkProps, RecordLinkProps} from './types';
 import {localGetDataDb} from '../../../..';
+
+export type LocationState = {
+  parent_record_id?: string; // parent or linked record id, set from parent or linked record
+  field_id?: string; // parent or linked field id, set from parent or linked record
+  type?: string; // type of relationship: Child or Linked
+  parent_link?: string; // link of parent/linked record, so when child/link record saved, this is the redirect link
+  parent?: any; // parent to save upper level information for nest related, for example, grandparent
+  record_id?: RecordID; // child/linked record ID, set in child/linked record, should be pass back to parent
+  hrid?: string; // child/linked record HRID, this is the value displayed in field, set in child/linked record, should be pass back to parent
+  revision_id?: RevisionID;
+  relation_type_vocabPair?: string[] | null; //pass the parent information to child
+  child_record_id?: RecordID; //child/linked record ID created from parent
+  parent_hrid?: string;
+};
+
 
 /**
  * Generate an object containing information to be stored in
@@ -82,14 +97,14 @@ export async function generateLocationState(
 
 /**
  * getParentLinkInfo - get information about whether a new record is a child of some parent record
- * @param hrid - the HRID or revision_id of a record
+ * @param revision_id - the HRID or revision_id of a record
  * @param relationState - stored relation state
  * @param record_id - the id of the record
  * @returns {state_parent, is_direct} - `is_direct` is true if the record is a child record, false if
  *          not.  `state_parent` contains details about the parent record or `{}` if none.
  */
 export function getParentLinkInfo(
-  hrid: string,
+  revision_id: string,
   relationState: any,
   record_id: string
 ) {
@@ -103,7 +118,7 @@ export function getParentLinkInfo(
   state_parent = {
     field_id: relationState.field_id,
     record_id: record_id,
-    hrid: hrid,
+    revision_id: revision_id,
     parent: relationState.parent,
     parent_link: relationState.parent_link,
     parent_record_id: relationState.parent_record_id,
@@ -122,7 +137,7 @@ export function getParentLinkInfo(
       state_parent = {
         field_id: relationState.parent.field_id,
         record_id: record_id,
-        hrid: hrid,
+        revision_id: revision_id,
         parent: relationState.parent.parent,
         parent_link: relationState.parent.parent_link,
         parent_record_id: relationState.parent.parent_record_id,
@@ -223,7 +238,7 @@ const linkExists = (
   return is_linked;
 };
 
-export async function getRecordInformation(child_record: RecordReference) {
+async function getRecordInformation(child_record: RecordReference) {
   let latest_record = null;
   let revision_id = '';
   if (child_record.project_id === undefined)
@@ -242,7 +257,7 @@ export async function getRecordInformation(child_record: RecordReference) {
     });
   } catch (error) {
     logError(error);
-    throw Error(`Unable to find record with id: ${child_record.project_id}`);
+    throw Error(`Unable to find record with id: ${child_record.record_id}`);
   }
   return {latest_record, revision_id};
 }
@@ -344,7 +359,7 @@ export async function getRelatedRecords(
   multiple: boolean,
   uiSpecification: ProjectUIModel
 ) {
-  const fieldValue = values[field_name];
+  let fieldValue = values[field_name];
 
   // Handle undefined/null cases
   if (fieldValue === null) {
@@ -354,17 +369,21 @@ export async function getRelatedRecords(
   // Type check based on multiple flag
   if (multiple) {
     if (!Array.isArray(fieldValue)) {
-      throw new Error(
-        `Field ${field_name} must be an array when multiple is true, got ${typeof fieldValue}`
-      );
+      // we can fix this one, just make it an array and don't complain
+      // error is probably in the UIspec with a bad initial value
+      if (fieldValue === '') values[field_name] = [];
+      else values[field_name] = [fieldValue];
     }
   } else {
     if (Array.isArray(fieldValue)) {
-      throw new Error(
-        `Field ${field_name} must be a single value when multiple is false, got array`
-      );
+      // fix this by taking the first value, less likely to happen unless the 
+      // UISpec has changed
+      if (fieldValue.length > 0) values[field_name] = fieldValue[0];
+      else values[field_name] = '';
     }
   }
+  // pick up any change above
+  fieldValue = values[field_name];
 
   // Convert to array for processing
   const links = multiple ? fieldValue : [fieldValue];
@@ -774,6 +793,7 @@ export async function getDetailRelatedInformation(
   current_revision_id: string,
   serverId: string
 ): Promise<RecordLinkProps[]> {
+
   let record_to_field_links: RecordLinkProps[] = [];
   // get fields that are related field
   const {fields_child, fields_linked} = get_related_valued_fields(
