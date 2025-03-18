@@ -778,10 +778,21 @@ class RecordForm extends React.Component<any, RecordFormState> {
     return '';
   }
 
+  /**
+   * Filter out internal fields from the values object before saving
+   * @param values form values
+   * @returns filtered form values
+   */
   filterValues(values: object) {
+    const internalFields = [
+      '_id',
+      '_project_id',
+      '_current_revision_id',
+      '_server_id',
+    ];
     const new_values: any = {};
     for (const [k, v] of Object.entries(values)) {
-      if (k !== '_id' && k !== '_project_id' && k !== '_current_revision_id') {
+      if (!internalFields.includes(k)) {
         new_values[k] = v;
         if (k[0] === '_') {
           logError(`Including possibly bad key ${k} in record`);
