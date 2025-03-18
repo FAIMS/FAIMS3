@@ -36,6 +36,7 @@ export type VerifyCallback = (
 // See https://stackoverflow.com/questions/65772869/how-do-i-type-hint-the-user-argument-when-calling-passport-serializeuser-in-type
 declare global {
   namespace Express {
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
     interface User extends ExpressUser {}
   }
 }
