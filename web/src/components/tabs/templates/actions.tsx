@@ -19,7 +19,7 @@ import {Route} from '@/routes/_protected/templates/$templateId';
 const TemplateActions = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-  const {data} = useGetTemplates(user, templateId);
+  const {data, isLoading} = useGetTemplates(user, templateId);
   const archived = data?.metadata.project_status === 'archived';
 
   return (
@@ -33,7 +33,7 @@ const TemplateActions = () => {
             </ListDescription>
           </ListItem>
           <ListItem>
-            <Button variant="outline">
+            <Button variant="outline" disabled={isLoading}>
               <a
                 href={`data:text/json;charset=utf-8,${encodeURIComponent(
                   JSON.stringify({
