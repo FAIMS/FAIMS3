@@ -521,11 +521,6 @@ describe('template API tests', () => {
       });
   });
 
-  it('check name field is stripped of white space', async () => {
-    // Create a sample template
-    const {template} = await createSampleTemplate(app, {});
-  });
-
   // Auth checks
   // ===========
   it('list templates not authorised', async () => {
