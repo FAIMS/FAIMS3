@@ -21,7 +21,7 @@ import {
   Alert,
   Tooltip,
 } from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {
@@ -303,10 +303,13 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                           }
                         />
                       }
-                      label="Protection"
+                      label="Protected Field"
                     />
-                    <Tooltip title="Enable protection to allow optional field hiding.">
-                      <InfoIcon fontSize="small" style={{marginLeft: 4}} />
+                    <Tooltip title="Enable protection to prevent users of this template (or derived templates) from editing or deleting this field.">
+                      <InfoOutlinedIcon
+                        fontSize="small"
+                        style={{marginLeft: 0, color: '#757575'}}
+                      />
                     </Tooltip>
                   </div>
                 </Grid>
