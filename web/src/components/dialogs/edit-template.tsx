@@ -68,8 +68,8 @@ export const EditTemplateDialog = () => {
                   <a
                     href={`data:text/json;charset=utf-8,${encodeURIComponent(
                       JSON.stringify({
-                        metadata: data.metadata,
-                        'ui-specification': data['ui-specification'],
+                        metadata: data?.metadata,
+                        'ui-specification': data?.['ui-specification'],
                       })
                     )}`}
                     download={`${templateId}.json`}
