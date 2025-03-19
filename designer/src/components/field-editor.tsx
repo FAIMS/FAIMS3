@@ -19,6 +19,8 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import LockRounded from '@mui/icons-material/LockRounded';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 import DuplicateIcon from '@mui/icons-material/ContentCopy';
 
@@ -121,6 +123,7 @@ export const FieldEditor = ({
   };
   const protection = field['component-parameters'].protection || 'none';
   const isHidden = field['component-parameters'].hidden || false;
+  const isRequired = field['component-parameters']?.required || false;
 
   const notebookMetadata = useAppSelector(state => state.notebook.metadata);
 
@@ -259,6 +262,14 @@ export const FieldEditor = ({
     [selectedFormId, viewsets, viewId, allFviews]
   );
 
+  const toggleHiddenState = (event: React.SyntheticEvent) => {
+    event.stopPropagation();
+    dispatch({
+      type: 'ui-specification/toggleFieldHidden',
+      payload: {fieldName, hidden: !isHidden},
+    });
+  };
+
   return (
     <Accordion
       key={fieldName}
@@ -385,6 +396,51 @@ export const FieldEditor = ({
                   <DuplicateIcon />
                 </IconButton>
               </Tooltip>
+              {isHidden ? (
+                <Tooltip
+                  title={
+                    protection === 'protected'
+                      ? 'Fully protected fields cannot be hidden'
+                      : isRequired
+                        ? 'Required fields cannot be hidden'
+                        : 'Unhide Field'
+                  }
+                >
+                  <span>
+                    <IconButton
+                      onClick={toggleHiddenState}
+                      aria-label="unhide field"
+                      size="small"
+                      disabled={protection === 'protected' || isRequired}
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              ) : (
+                <>
+                  <Tooltip
+                    title={
+                      protection === 'protected'
+                        ? 'Fully protected fields cannot be hidden'
+                        : isRequired
+                          ? 'Required fields cannot be hidden'
+                          : 'Hide Field'
+                    }
+                  >
+                    <span>
+                      <IconButton
+                        onClick={toggleHiddenState}
+                        aria-label="hide field"
+                        size="small"
+                        disabled={protection === 'protected' || isRequired}
+                      >
+                        <VisibilityOffIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </>
+              )}
               <Tooltip title="Move up">
                 <IconButton onClick={moveFieldUp} aria-label="up" size="small">
                   <ArrowDropUpRoundedIcon />
