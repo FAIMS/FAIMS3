@@ -188,9 +188,12 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         )}
       </Stack>
 
-      <Typography variant="h6" mt={2}>
-        Visible Fields
-      </Typography>
+      <Stack spacing={0} mt={2} mb={2}>
+        <Typography variant="h6">Visible Fields</Typography>
+        <Typography variant="body2" color="textSecondary">
+          Visible fields will appear in the survey.
+        </Typography>
+      </Stack>
       {visibleFields.map((fieldName: string) => (
         <FieldEditor
           key={fieldName}
@@ -200,9 +203,9 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           expanded={isExpanded[fieldName] ?? false}
           addFieldCallback={addFieldAfterCallback}
           handleExpandChange={handleExpandChange(fieldName)}
-            moveFieldCallback={(targetViewId: string) =>
-              moveFieldCallback(targetViewId)
-            }
+          moveFieldCallback={(targetViewId: string) =>
+            moveFieldCallback(targetViewId)
+          }
         />
       ))}
 
