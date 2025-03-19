@@ -323,6 +323,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
    */
   const save_new_record = () => {
     const new_record_id = generateFAIMSDataID();
+    console.log('%cnew record id: ', 'background-color: red', new_record_id);
     const new_child_record = {
       record_id: new_record_id,
       project_id: project_id,

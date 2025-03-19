@@ -56,7 +56,6 @@ export type LocationState = {
   parent_hrid?: string;
 };
 
-
 /**
  * Generate an object containing information to be stored in
  *   `location.state` to persist between page views.
@@ -100,22 +99,20 @@ export async function generateLocationState(
  * @param revision_id - the HRID or revision_id of a record
  * @param relationState - stored relation state
  * @param record_id - the id of the record
- * @returns {state_parent, is_direct} - `is_direct` is true if the record is a child record, false if
- *          not.  `state_parent` contains details about the parent record or `{}` if none.
+ * @returns {LocationState} details about the parent record or `{}` if none.
  */
 export function getParentLinkInfo(
   revision_id: string,
   relationState: any,
   record_id: string
 ) {
-  let is_direct = false;
-  let state_parent: LocationState = {};
+  // If no relation state, return empty parent info
+  if (!relationState) {
+    return null;
+  }
 
-  if (relationState === undefined || relationState === null)
-    return {state_parent, is_direct};
-  if (relationState.field_id !== undefined) is_direct = true;
-
-  state_parent = {
+  // Initialize parent state with basic information
+  let state_parent: LocationState = {
     field_id: relationState.field_id,
     record_id: record_id,
     revision_id: revision_id,
@@ -125,35 +122,67 @@ export function getParentLinkInfo(
     type: relationState.type,
     relation_type_vocabPair: relationState.relation_type_vocabPair,
   };
-  //check if the parent exists in the relationState record
+
+  // Handle nested parent relationships
   if (
-    relationState.parent !== undefined &&
-    relationState.parent.field_id !== undefined
+    relationState.parent?.field_id &&
+    record_id === relationState.parent_record_id &&
+    relationState.parent.parent
   ) {
-    if (
-      record_id === relationState.parent_record_id &&
-      relationState.parent.parent !== undefined
-    ) {
-      state_parent = {
-        field_id: relationState.parent.field_id,
-        record_id: record_id,
-        revision_id: revision_id,
-        parent: relationState.parent.parent,
-        parent_link: relationState.parent.parent_link,
-        parent_record_id: relationState.parent.parent_record_id,
-        type: relationState.parent.type,
-        relation_type_vocabPair: relationState.parent.relation_type_vocabPair,
-      };
-    }
+    state_parent = {
+      field_id: relationState.parent.field_id,
+      record_id: record_id,
+      revision_id: revision_id,
+      parent: relationState.parent.parent,
+      parent_link: relationState.parent.parent_link,
+      parent_record_id: relationState.parent.parent_record_id,
+      type: relationState.parent.type,
+      relation_type_vocabPair: relationState.parent.relation_type_vocabPair,
+    };
   }
-  //id the record has same ID as parent and has no parent, then the record is the parent record
-  if (state_parent.parent_record_id === state_parent.record_id)
-    if (
-      state_parent.parent === undefined ||
-      state_parent.parent.parent_record_id === undefined
-    )
-      is_direct = false;
-  return {state_parent, is_direct};
+
+  return state_parent;
+}
+
+/**
+ * recordLinkIsDirect - get information about whether a new record is a child of some parent record
+ * @param revision_id - the HRID or revision_id of a record
+ * @param relationState - stored relation state
+ * @param record_id - the id of the record
+ * @returns true if the record record_id is a child record, false if not.
+ */
+export function recordIsChildRecord(
+  revision_id: string,
+  relationState: any,
+  record_id: string
+): boolean {
+  // If no relation state exists, it can't be direct
+  if (!relationState) return false;
+
+  // If there's a field_id in the relationState, it's a direct relation
+  if (relationState.field_id) {
+    // But we need to check if this is actually a parent record
+    // If the record is the parent record itself, it's not direct
+    if (relationState.parent_record_id === record_id) {
+      // Only if this record has no parent of its own, it's not direct
+      if (!relationState.parent?.parent_record_id) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Check if this is a nested parent-child relationship
+  // If the parent exists in relationState and this record is the parent
+  if (
+    relationState.parent?.field_id &&
+    record_id === relationState.parent_record_id
+  ) {
+    // If the parent has its own parent, this is a direct relation
+    return !!relationState.parent.parent;
+  }
+
+  return false;
 }
 
 /**
@@ -256,8 +285,10 @@ async function getRecordInformation(child_record: RecordReference) {
       isDeleted: false,
     });
   } catch (error) {
-    logError(error);
-    throw Error(`Unable to find record with id: ${child_record.record_id}`);
+    // don't throw an error in this case.  There is a common case where the
+    // record is a newly created child record that is not yet in the database.
+    // Return null values so the caller can handle it appropriately.
+    return {latest_record: null, revision_id: null};
   }
   return {latest_record, revision_id};
 }
@@ -376,7 +407,7 @@ export async function getRelatedRecords(
     }
   } else {
     if (Array.isArray(fieldValue)) {
-      // fix this by taking the first value, less likely to happen unless the 
+      // fix this by taking the first value, less likely to happen unless the
       // UISpec has changed
       if (fieldValue.length > 0) values[field_name] = fieldValue[0];
       else values[field_name] = '';
@@ -793,7 +824,6 @@ export async function getDetailRelatedInformation(
   current_revision_id: string,
   serverId: string
 ): Promise<RecordLinkProps[]> {
-
   let record_to_field_links: RecordLinkProps[] = [];
   // get fields that are related field
   const {fields_child, fields_linked} = get_related_valued_fields(

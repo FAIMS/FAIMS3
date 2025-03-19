@@ -438,6 +438,7 @@ class RecordDraftState {
         // Resolve any promises waiting for data
         const data_listeners = this.data_listeners;
         this.data_listeners = [];
+        console.log('resolving data listeners');
         data_listeners.forEach(f =>
           f[0].call(this, [result.fields, result.annotations])
         );
@@ -446,6 +447,7 @@ class RecordDraftState {
         // Reject any promises waiting for data
         const data_listeners = this.data_listeners;
         this.data_listeners = [];
+        console.log('rejecting data listeners');
         data_listeners.forEach(f => f[1].call(this, err));
       }
     } else {
@@ -491,6 +493,7 @@ class RecordDraftState {
     } else if (this.fetch_error !== null) {
       throw this.fetch_error;
     } else {
+      console.log('waiting for data', this.data_listeners);
       return new Promise((resolve, reject) => {
         this.data_listeners.push([resolve, reject]);
       });
