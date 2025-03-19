@@ -75,23 +75,28 @@ export async function generateLocationState(
   };
   const {latest_record, revision_id} =
     await getRecordInformation(parent_record);
-  return {
-    location_state: {
-      field_id: parentLink.field_id,
-      parent: latest_record?.relationship?.parent,
-      parent_link: ROUTES.getRecordRoute(
-        serverId,
-        project_id,
-        parentLink.record_id,
-        revision_id
-      ),
-      parent_record_id: parentLink.record_id,
-      type: 'Child',
-      // relation_type_vocabPair: relationship.parent.relation_type_vocabPair,
-    },
-    latest_record: latest_record,
-    revision_id: revision_id,
-  };
+  if (revision_id) {
+    return {
+      location_state: {
+        field_id: parentLink.field_id,
+        parent: latest_record?.relationship?.parent,
+        parent_link: ROUTES.getRecordRoute(
+          serverId,
+          project_id,
+          parentLink.record_id,
+          revision_id
+        ),
+        parent_record_id: parentLink.record_id,
+        type: 'Child',
+        // relation_type_vocabPair: relationship.parent.relation_type_vocabPair,
+      },
+      latest_record: latest_record,
+      revision_id: revision_id,
+    };
+  } else {
+    // with no revision_id we can't work out where we are so just return empty results
+    return {location_state: {}, latest_record: null, revision_id: null};
+  }
 }
 
 /**
@@ -612,7 +617,7 @@ export async function addLinkedRecord(
       record_id: parent_link.record_id,
       record_label: parent_link.record_id,
     });
-    if (revision_id !== undefined) {
+    if (revision_id) {
       const child_record = {
         project_id: project_id,
         record_id: record_id,
