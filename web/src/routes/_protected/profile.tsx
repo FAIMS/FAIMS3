@@ -14,6 +14,12 @@ const userFields: {field: keyof User['user']; label: string}[] = [
   {field: 'name', label: 'Name'},
 ];
 
+/**
+ * RouteComponent component renders the user's profile page.
+ * It displays a card with the user's profile information and a button to copy the bearer token.
+ * The bearer token can be used to authenticate in scripts that use the API.
+ * @returns {JSX.Element} The rendered RouteComponent component.
+ */
 function RouteComponent() {
   const {user} = useAuth();
 
