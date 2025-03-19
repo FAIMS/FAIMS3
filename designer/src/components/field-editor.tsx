@@ -24,6 +24,8 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 import DuplicateIcon from '@mui/icons-material/ContentCopy';
 
+import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
+
 import {
   Accordion,
   AccordionDetails,
@@ -121,7 +123,11 @@ export const FieldEditor = ({
       });
     }
   };
-  const protection = field['component-parameters'].protection || 'none';
+  const protection =
+    VITE_TEMPLATE_PROTECTIONS && field['component-parameters'].protection
+      ? field['component-parameters'].protection
+      : 'none';
+
   const isHidden = field['component-parameters'].hidden || false;
   const isRequired = field['component-parameters']?.required || false;
 
@@ -192,7 +198,7 @@ export const FieldEditor = ({
   };
 
   const protectionMessage = !isDerivedFromSet
-    ? 'Protected Field. Users that import this template will not be able to modify or delete it.'
+    ? 'Protected Field. Users that derive this template will not be able to modify or delete it.'
     : protection === 'protected'
       ? 'This field is protected. You may not modify or delete it.'
       : `This field is protected. You may not modify or delete it. ${
