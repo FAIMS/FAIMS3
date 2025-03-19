@@ -88,7 +88,6 @@ const createSampleTemplate = async (
     request(app)
       .post(`${TEMPLATE_API_BASE}`)
       .send({
-        template_name: options.templateName ?? 'exampletemplate',
         ...nb,
         ...(options.payloadExtras ?? {}),
       } as PostCreateTemplateInput),
@@ -306,7 +305,6 @@ describe('template API tests', () => {
     // update some details and check properties
 
     // change the template name and add a metadata field
-    template.template_name = 'updated name';
     template.metadata.updated_field = 'updated-value';
 
     // update the existing template
@@ -319,7 +317,6 @@ describe('template API tests', () => {
       // Check the new properties
       expect(newTemplate.version).to.equal(2);
       expect(newTemplate.metadata.updated_field).to.equal('updated-value');
-      expect(newTemplate.template_name).to.equal('updated name');
     });
 
     // get the template and check the same
@@ -327,7 +324,6 @@ describe('template API tests', () => {
       // Check the new properties
       expect(newTemplate.version).to.equal(2);
       expect(newTemplate.metadata.updated_field).to.equal('updated-value');
-      expect(newTemplate.template_name).to.equal('updated name');
     });
   });
 
@@ -408,7 +404,6 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
         .send({
           metadata: {},
-          template_name: 'faketemplate',
           'ui-specification': {},
         } as PutUpdateTemplateInput)
     )
@@ -433,7 +428,6 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
         .send({
           metadata: {},
-          template_name: 'faketemplate',
           'ui-specification': {},
         } as PutUpdateTemplateInput)
     )
@@ -511,7 +505,6 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
         .send({
           // missing! metadata: {},
-          template_name: 'faketemplate',
           'ui-specification': {},
         } as PutUpdateTemplateInput)
     )
@@ -530,10 +523,7 @@ describe('template API tests', () => {
 
   it('check name field is stripped of white space', async () => {
     // Create a sample template
-    const {template} = await createSampleTemplate(app, {
-      templateName: ' name with whitespace    ',
-    });
-    expect(template.template_name).to.equal('name with whitespace');
+    const {template} = await createSampleTemplate(app, {});
   });
 
   it('invalid input due to insufficient field length', async () => {
@@ -544,7 +534,6 @@ describe('template API tests', () => {
         .send({
           metadata: {},
           // must be > 5 long
-          template_name: '123',
           'ui-specification': {},
         } as PutUpdateTemplateInput)
     )
@@ -557,7 +546,6 @@ describe('template API tests', () => {
         const err = res.body[0];
         expect(err).to.have.property('type');
         expect(err.type).to.equal('Body');
-        expect(JSON.stringify(err.errors)).to.include('template_name');
       });
   });
 
@@ -578,7 +566,6 @@ describe('template API tests', () => {
       .put(`${TEMPLATE_API_BASE}/12345`)
       .send({
         metadata: {},
-        template_name: '12345',
         'ui-specification': {},
       } as PutUpdateTemplateInput)
       .set('Content-Type', 'application/json')
@@ -588,7 +575,6 @@ describe('template API tests', () => {
     return await request(app)
       .post(`${TEMPLATE_API_BASE}`)
       .send({
-        template_name: 'exampletemplate',
         metadata: {},
         'ui-specification': {},
       } as PostCreateTemplateInput)
@@ -617,7 +603,6 @@ describe('template API tests', () => {
       request(app)
         .post(`${TEMPLATE_API_BASE}`)
         .send({
-          template_name: 'exampletemplate',
           metadata: {},
           'ui-specification': {},
         } as PostCreateTemplateInput),
@@ -632,7 +617,6 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/12345`)
         .send({
           metadata: {},
-          template_name: '12345',
           'ui-specification': {},
         } as PutUpdateTemplateInput),
       localUserToken
