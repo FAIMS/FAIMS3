@@ -133,7 +133,8 @@ export const FieldEditor = ({
 
   const notebookMetadata = useAppSelector(state => state.notebook.metadata);
 
-  const isDerivedFromSet = Boolean(notebookMetadata['derived-from']);
+  const isDerivedFromSet =
+    VITE_TEMPLATE_PROTECTIONS && Boolean(notebookMetadata['derived-from']);
 
   const disableEditing =
     isDerivedFromSet &&
