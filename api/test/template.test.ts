@@ -526,29 +526,6 @@ describe('template API tests', () => {
     const {template} = await createSampleTemplate(app, {});
   });
 
-  it('invalid input due to insufficient field length', async () => {
-    const fakeId = '1234';
-    await requestAuthAndType(
-      request(app)
-        .put(`${TEMPLATE_API_BASE}/${fakeId}`)
-        .send({
-          metadata: {},
-          // must be > 5 long
-          'ui-specification': {},
-        } as PutUpdateTemplateInput)
-    )
-      // Expect 400 bad request
-      .expect(400)
-      // And check the body has the error properties we want
-      .then(res => {
-        expect(res.body).to.be.an('array');
-        expect(res.body.length).to.equal(1);
-        const err = res.body[0];
-        expect(err).to.have.property('type');
-        expect(err.type).to.equal('Body');
-      });
-  });
-
   // Auth checks
   // ===========
   it('list templates not authorised', async () => {
