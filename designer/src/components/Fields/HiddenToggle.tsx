@@ -26,7 +26,7 @@ import {FieldType} from '../../state/initial';
 export const HiddenFieldEditor = ({fieldName}: {fieldName: string}) => {
   // Get field state from Redux store
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 

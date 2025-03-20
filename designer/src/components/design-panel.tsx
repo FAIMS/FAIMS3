@@ -28,11 +28,11 @@ export const DesignPanel = () => {
   const {pathname} = useLocation();
 
   const viewSets = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets,
+    state => state.notebook['ui-specification'].present.viewsets,
     shallowEqual
   );
   const visibleTypes: string[] = useAppSelector(
-    state => state.notebook['ui-specification'].visible_types
+    state => state.notebook['ui-specification'].present.visible_types
   );
   const dispatch = useAppDispatch();
 

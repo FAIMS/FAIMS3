@@ -9,7 +9,7 @@ type PropType = {
 
 export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 

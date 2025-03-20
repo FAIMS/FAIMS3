@@ -14,7 +14,7 @@
 
 import {Middleware, combineReducers, configureStore} from '@reduxjs/toolkit';
 import metadataReducer from './metadata-reducer';
-import uiSpecificationReducer from './uiSpec-reducer';
+import {undoableUISpecificationReducer} from './uiSpec-reducer';
 import modifiedStatusReducer from './modifiedStatus-reducer';
 import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
 import {AppState, Notebook} from './initial';
@@ -34,7 +34,7 @@ export const store: ToolkitStore<AppState> = configureStore({
   reducer: {
     notebook: combineReducers<Notebook>({
       metadata: metadataReducer,
-      'ui-specification': uiSpecificationReducer,
+      'ui-specification': undoableUISpecificationReducer,
     }),
     modified: modifiedStatusReducer,
   },

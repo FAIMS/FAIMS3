@@ -73,13 +73,13 @@ export const FormEditor = ({
   const sectionParam = searchParams.get('section');
 
   const visibleTypes = useAppSelector(
-    state => state.notebook['ui-specification'].visible_types
+    state => state.notebook['ui-specification'].present.visible_types
   );
   const viewsets = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets
+    state => state.notebook['ui-specification'].present.viewsets
   );
   const viewSet = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets[viewSetId],
+    state => state.notebook['ui-specification'].present.viewsets[viewSetId],
     (left, right) => {
       return shallowEqual(left, right);
     }
@@ -88,10 +88,10 @@ export const FormEditor = ({
   console.log('FormEditor', {viewSetId, sections});
 
   const views = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
+    state => state.notebook['ui-specification'].present.fviews
   );
   const fields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
   const dispatch = useAppDispatch();
 

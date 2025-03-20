@@ -77,10 +77,10 @@ export const SectionEditor = ({
   moveFieldCallback,
 }: Props) => {
   const fView = useAppSelector(
-    state => state.notebook['ui-specification'].fviews[viewId]
+    state => state.notebook['ui-specification'].present.fviews[viewId]
   );
   const viewSets = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets
+    state => state.notebook['ui-specification'].present.viewsets
   );
   const dispatch = useAppDispatch();
 

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {PayloadAction, createSlice} from '@reduxjs/toolkit';
-import {NotebookUISpec, initialState, FieldType} from './initial';
+import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
 import {ConditionType} from '../components/condition';
 // eslint-disable-next-line n/no-extraneous-import
@@ -44,9 +44,18 @@ export const slugify = (str: string) => {
   return str;
 };
 
+// ----------------------------------------------------------------------------
+// We'll take the "present" portion of the store’s UI-spec state
+// as the plain NotebookUISpec. That way, inside this slice, we can do state.fields,
+// state.fviews, etc. Then, externally, we’ll wrap with `undoable`.
+// ----------------------------------------------------------------------------
+const uiSpecInitialState: NotebookUISpec =
+  initialState.notebook['ui-specification'].present;
+
+// Create the slice that knows only about a "NotebookUISpec" state shape
 export const uiSpecificationReducer = createSlice({
   name: 'ui-specification',
-  initialState: initialState.notebook['ui-specification'],
+  initialState: uiSpecInitialState,
   reducers: {
     loaded: (_state, action: PayloadAction<NotebookUISpec>) => {
       return action.payload;
@@ -600,9 +609,14 @@ export const {
   viewSetSummaryFieldsUpdated,
 } = uiSpecificationReducer.actions;
 
-export default undoable(autoLabelReducer(uiSpecificationReducer.reducer), {
-  filter: action => Object.keys(actionLabels).includes(action.type),
-  debug: true,
-  undoType: 'UNDO_ACTION',
-  redoType: 'REDO_ACTION',
-});
+// Wrap the slice’s reducer in `undoable` so the final export has the shape
+// StateWithHistory<NotebookUISpec> in the store.
+export const undoableUISpecificationReducer = undoable(
+  autoLabelReducer(uiSpecificationReducer.reducer),
+  {
+    filter: action => Object.keys(actionLabels).includes(action.type),
+    debug: true,
+    undoType: 'UNDO_ACTION',
+    redoType: 'REDO_ACTION',
+  }
+);
