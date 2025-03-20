@@ -15,7 +15,6 @@
 // eslint-disable-next-line n/no-extraneous-import
 import {StateWithHistory} from 'redux-undo';
 import {ConditionType} from '../components/condition';
-import {undoableUISpecificationReducer} from './uiSpec-reducer';
 
 export type NotebookMetadata = PropertyMap;
 

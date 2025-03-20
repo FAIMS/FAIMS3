@@ -608,15 +608,3 @@ export const {
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
 } = uiSpecificationReducer.actions;
-
-// Wrap the slice’s reducer in `undoable` so the final export has the shape
-// StateWithHistory<NotebookUISpec> in the store.
-export const undoableUISpecificationReducer = undoable(
-  autoLabelReducer(uiSpecificationReducer.reducer),
-  {
-    filter: action => Object.keys(actionLabels).includes(action.type),
-    debug: true,
-    undoType: 'UNDO_ACTION',
-    redoType: 'REDO_ACTION',
-  }
-);

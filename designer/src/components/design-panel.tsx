@@ -18,6 +18,8 @@ import AddIcon from '@mui/icons-material/Add';
 
 import {TabContext} from '@mui/lab';
 import {useState} from 'react';
+// eslint-disable-next-line n/no-extraneous-import
+import {ActionCreators} from 'redux-undo';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {shallowEqual} from 'react-redux';
@@ -179,29 +181,50 @@ export const DesignPanel = () => {
     }
   };
 
-  return (
-    <TabContext value={tabIndex}>
-      <Alert severity="info" sx={{marginBottom: 2}}>
-        Define the user interface for your notebook here. Add one or more forms
-        to collect data from users. Each form can have one or more sections.
-        Each section has one or more form fields.
-      </Alert>
+  function handleUndo(): void {
+    dispatch(ActionCreators.undo());
+  }
 
-      <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-        <Tabs
-          value={tabIndex}
-          onChange={handleTabChange}
-          aria-label="form tabs"
-          variant="scrollable"
-          scrollButtons={false}
-          indicatorColor={
-            tabIndex >= `${visibleTypes.length}` && tabIndex < `${maxKeys}`
-              ? 'secondary'
-              : 'primary'
-          }
-        >
-          {visibleTypes.map((form: string, index: number) => {
-            return (
+  function handleRedo(): void {
+    dispatch(ActionCreators.redo());
+  }
+
+  const canUndo = true;
+  const canRedo = true;
+
+  return (
+    <>
+      <Box
+        sx={{display: 'flex', justifyContent: 'space-between', marginBottom: 2}}
+      >
+        <Button variant="outlined" onClick={handleUndo} disabled={!canUndo}>
+          Undo
+        </Button>
+        <Button variant="outlined" onClick={handleRedo} disabled={!canRedo}>
+          Redo
+        </Button>
+      </Box>
+      <TabContext value={tabIndex}>
+        <Alert severity="info" sx={{marginBottom: 2}}>
+          Define the user interface for your notebook here. Add one or more
+          forms to collect data from users. Each form can have one or more
+          sections. Each section has one or more form fields.
+        </Alert>
+
+        <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+          <Tabs
+            value={tabIndex}
+            onChange={handleTabChange}
+            aria-label="form tabs"
+            variant="scrollable"
+            scrollButtons={false}
+            indicatorColor={
+              tabIndex >= `${visibleTypes.length}` && tabIndex < `${maxKeys}`
+                ? 'secondary'
+                : 'primary'
+            }
+          >
+            {visibleTypes.map((form: string, index: number) => (
               <Tab
                 component={Link}
                 to={`${index}`}
@@ -228,73 +251,71 @@ export const DesignPanel = () => {
                   },
                 }}
               />
-            );
-          })}
-          {untickedForms.map((form: string, index: number) => {
-            const startIndex: number = index + visibleTypes.length;
-            return (
-              <Tab
-                component={Link}
-                to={`${startIndex}`}
-                key={startIndex}
-                value={`${startIndex}`}
-                label={`Form: ${viewSets[form].label}`}
-                sx={{
-                  '&.MuiTab-root': {
-                    backgroundColor: '#F9FAFB',
-                    border: '0.75px solid #E18200',
-                    borderBottom: 'none',
-                    borderTopLeftRadius: '10px',
-                    borderTopRightRadius: '10px',
-                    marginX: '0.25em',
-                  },
-                  '&.Mui-selected': {
-                    color: '#E18200',
-                    border: '1px solid #E18200',
-                    backgroundColor: '#FFF4E5',
-                  },
-                  '&:hover': {
-                    color: '#E18200',
-                    opacity: 1,
-                    backgroundColor: '#FFF4E5',
-                  },
-                }}
-              />
-            );
-          })}
-          <Tab
-            component={Link}
-            to={maxKeys.toString()}
-            key={maxKeys}
-            value={maxKeys.toString()}
-            icon={<AddIcon />}
-            sx={{
-              '&.MuiTab-root': {
-                backgroundColor: '#F9FAFB',
-                border: '0.75px solid #669911',
-                borderBottom: 'none',
-                borderTopLeftRadius: '10px',
-                borderTopRightRadius: '10px',
-                marginLeft: '0.5em',
-              },
-              '&.Mui-selected': {
-                color: '#669911',
-                border: '1px solid #669911',
-                backgroundColor: '#F5FCE8',
-              },
-              '&:hover': {
-                color: '#669911',
-                opacity: 1,
-                backgroundColor: '#F5FCE8',
-              },
-            }}
-          />
-        </Tabs>
-      </Box>
+            ))}
+            {untickedForms.map((form: string, index: number) => {
+              const startIndex: number = index + visibleTypes.length;
+              return (
+                <Tab
+                  component={Link}
+                  to={`${startIndex}`}
+                  key={startIndex}
+                  value={`${startIndex}`}
+                  label={`Form: ${viewSets[form].label}`}
+                  sx={{
+                    '&.MuiTab-root': {
+                      backgroundColor: '#F9FAFB',
+                      border: '0.75px solid #E18200',
+                      borderBottom: 'none',
+                      borderTopLeftRadius: '10px',
+                      borderTopRightRadius: '10px',
+                      marginX: '0.25em',
+                    },
+                    '&.Mui-selected': {
+                      color: '#E18200',
+                      border: '1px solid #E18200',
+                      backgroundColor: '#FFF4E5',
+                    },
+                    '&:hover': {
+                      color: '#E18200',
+                      opacity: 1,
+                      backgroundColor: '#FFF4E5',
+                    },
+                  }}
+                />
+              );
+            })}
+            <Tab
+              component={Link}
+              to={maxKeys.toString()}
+              key={maxKeys}
+              value={maxKeys.toString()}
+              icon={<AddIcon />}
+              sx={{
+                '&.MuiTab-root': {
+                  backgroundColor: '#F9FAFB',
+                  border: '0.75px solid #669911',
+                  borderBottom: 'none',
+                  borderTopLeftRadius: '10px',
+                  borderTopRightRadius: '10px',
+                  marginLeft: '0.5em',
+                },
+                '&.Mui-selected': {
+                  color: '#669911',
+                  border: '1px solid #669911',
+                  backgroundColor: '#F5FCE8',
+                },
+                '&:hover': {
+                  color: '#669911',
+                  opacity: 1,
+                  backgroundColor: '#F5FCE8',
+                },
+              }}
+            />
+          </Tabs>
+        </Box>
 
-      <Routes>
-        {visibleTypes.map((form: string, index: number) => {
-          return (
+        <Routes>
+          {visibleTypes.map((form: string, index: number) => (
             <Route
               key={index}
               path={`${index}`}
@@ -310,71 +331,75 @@ export const DesignPanel = () => {
                 />
               }
             />
-          );
-        })}
+          ))}
 
-        {untickedForms.map((form: string, index: number) => {
-          const startIndex: number = index + visibleTypes.length;
-          return (
-            <Route
-              key={startIndex}
-              path={`${startIndex}`}
-              element={
-                <FormEditor
-                  viewSetId={form}
-                  moveCallback={moveForm}
-                  moveButtonsDisabled={true}
-                  handleChangeCallback={handleCheckboxTabChange}
-                  handleDeleteCallback={handleDeleteFormTabChange}
-                  handleSectionMoveCallback={handleSectionMove}
-                  handleFieldMoveCallback={handleFieldMove}
-                />
-              }
-            />
-          );
-        })}
-
-        <Route
-          path={maxKeys.toString()}
-          element={
-            <Grid container spacing={2} pt={3}>
-              <Grid item xs={12} sm={6}>
-                <form
-                  onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                    e.preventDefault();
-                    addNewForm();
-                  }}
-                >
-                  <TextField
-                    fullWidth
-                    required
-                    label="Form Name"
-                    helperText="Enter a name for the form."
-                    name="formName"
-                    data-testid="formName"
-                    value={newFormName}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      setNewFormName(event.target.value);
-                    }}
+          {untickedForms.map((form: string, index: number) => {
+            const startIndex: number = index + visibleTypes.length;
+            return (
+              <Route
+                key={startIndex}
+                path={`${startIndex}`}
+                element={
+                  <FormEditor
+                    viewSetId={form}
+                    moveCallback={moveForm}
+                    moveButtonsDisabled={true}
+                    handleChangeCallback={handleCheckboxTabChange}
+                    handleDeleteCallback={handleDeleteFormTabChange}
+                    handleSectionMoveCallback={handleSectionMove}
+                    handleFieldMoveCallback={handleFieldMove}
                   />
-                </form>
+                }
+              />
+            );
+          })}
+
+          <Route
+            path={maxKeys.toString()}
+            element={
+              <Grid container spacing={2} pt={3}>
+                <Grid item xs={12} sm={6}>
+                  <form
+                    onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                      e.preventDefault();
+                      addNewForm();
+                    }}
+                  >
+                    <TextField
+                      fullWidth
+                      required
+                      label="Form Name"
+                      helperText="Enter a name for the form."
+                      name="formName"
+                      data-testid="formName"
+                      value={newFormName}
+                      onChange={(
+                        event: React.ChangeEvent<HTMLInputElement>
+                      ) => {
+                        setNewFormName(event.target.value);
+                      }}
+                    />
+                  </form>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={addNewForm}
+                  >
+                    Add New Form
+                  </Button>
+                </Grid>
+                <Grid item xs={12}>
+                  {alertMessage && (
+                    <Alert severity="error">{alertMessage}</Alert>
+                  )}
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={addNewForm}
-                >
-                  Add New Form
-                </Button>
-              </Grid>
-              <Grid item xs={12}>
-                {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
-              </Grid>
-            </Grid>
-          }
-        />
-      </Routes>
-    </TabContext>
+            }
+          />
+        </Routes>
+      </TabContext>
+    </>
   );
 };
