@@ -501,6 +501,31 @@ api.post(
   }
 );
 
+if (DEVELOPER_MODE) {
+  api.post(
+    '/:notebook_id/generate',
+    requireAuthenticationAPI,
+    processRequest({
+      body: PostRandomRecordsInputSchema,
+      params: z.object({notebook_id: z.string()}),
+    }),
+    async (req, res: Response<PostRandomRecordsResponse>) => {
+      if (!userIsClusterAdmin(req.user)) {
+        // Not authorised
+        throw new Exceptions.UnauthorizedException(
+          'Not authorised to generate random records.'
+        );
+      }
+
+      const record_ids = await createManyRandomRecords(
+        req.params.notebook_id,
+        req.body.count
+      );
+      res.json({record_ids});
+    }
+  );
+}
+
 // DELETE a user from a notebook
 api.delete(
   '/:notebook_id/users/:user_id',
@@ -537,28 +562,3 @@ api.delete(
     res.status(200).end();
   }
 );
-
-if (DEVELOPER_MODE) {
-  api.post(
-    '/:notebook_id/generate',
-    requireAuthenticationAPI,
-    processRequest({
-      body: PostRandomRecordsInputSchema,
-      params: z.object({notebook_id: z.string()}),
-    }),
-    async (req, res: Response<PostRandomRecordsResponse>) => {
-      if (!userIsClusterAdmin(req.user)) {
-        // Not authorised
-        throw new Exceptions.UnauthorizedException(
-          'Not authorised to generate random records.'
-        );
-      }
-
-      const record_ids = await createManyRandomRecords(
-        req.params.notebook_id,
-        req.body.count
-      );
-      res.json({record_ids});
-    }
-  );
-}
