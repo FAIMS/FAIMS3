@@ -34,7 +34,10 @@ const ExportProjectForm = () => {
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
   const onSubmit = async ({form}: {form: string}) => {
-    window.open(`${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}.csv`, '_blank');
+    window.open(
+      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}.csv`,
+      '_blank'
+    );
     return undefined;
   };
 
