@@ -1,13 +1,8 @@
 import {z} from 'zod';
 import {Form} from '../form';
-import {downloadFile} from '@/lib/utils';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/get-hooks';
-
-interface ExportProjectFormProps {
-  type: 'csv' | 'zip';
-}
 
 /**
  * ExportProjectForm component renders a form for downloading a project's data.
@@ -16,7 +11,7 @@ interface ExportProjectFormProps {
  * @param {'csv' | 'zip'} type - The type of file to download.
  * @returns {JSX.Element} The rendered ExportProjectForm component.
  */
-const ExportProjectForm = ({type}: ExportProjectFormProps) => {
+const ExportProjectForm = () => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
   const {data} = useGetProjects(user, projectId);
@@ -41,7 +36,7 @@ const ExportProjectForm = ({type}: ExportProjectFormProps) => {
    */
   const onSubmit = async ({form}: {form: string}) => {
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}.${type}`,
+      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}/export-url`,
       {
         method: 'GET',
         headers: {
@@ -52,9 +47,10 @@ const ExportProjectForm = ({type}: ExportProjectFormProps) => {
     );
 
     if (!response.ok)
-      return {type: 'submit', message: 'Error downloading File.'};
+      return {type: 'submit', message: 'Error getting export URL.'};
 
-    downloadFile(await response.blob(), `${projectId}_${form}.${type}`);
+    const {url} = await response.json();
+    window.open(url, '_blank');
   };
 
   return <Form fields={fields} onSubmit={onSubmit} />;

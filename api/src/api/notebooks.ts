@@ -562,3 +562,23 @@ api.delete(
     res.status(200).end();
   }
 );
+
+// Get the URL for exporting notebook data
+api.get(
+  '/:id/:viewId/export-url',
+  processRequest({
+    params: z.object({
+      id: z.string(),
+      viewId: z.string(),
+    }),
+  }),
+  requireAuthenticationAPI,
+  async (req, res: Response<{url: string}>) => {
+    if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const {id: projectId, viewId} = req.params;
+    const url = `${req.protocol}://${req.get('host')}/api/notebooks/${projectId}/${viewId}.csv`;
+    res.json({url});
+  }
+);
