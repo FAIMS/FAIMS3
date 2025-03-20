@@ -501,31 +501,6 @@ api.post(
   }
 );
 
-if (DEVELOPER_MODE) {
-  api.post(
-    '/:notebook_id/generate',
-    requireAuthenticationAPI,
-    processRequest({
-      body: PostRandomRecordsInputSchema,
-      params: z.object({notebook_id: z.string()}),
-    }),
-    async (req, res: Response<PostRandomRecordsResponse>) => {
-      if (!userIsClusterAdmin(req.user)) {
-        // Not authorised
-        throw new Exceptions.UnauthorizedException(
-          'Not authorised to generate random records.'
-        );
-      }
-
-      const record_ids = await createManyRandomRecords(
-        req.params.notebook_id,
-        req.body.count
-      );
-      res.json({record_ids});
-    }
-  );
-}
-
 // DELETE a user from a notebook
 api.delete(
   '/:notebook_id/users/:user_id',
@@ -563,22 +538,27 @@ api.delete(
   }
 );
 
-// Get the URL for exporting notebook data
-api.get(
-  '/:id/:viewId/export-url',
-  processRequest({
-    params: z.object({
-      id: z.string(),
-      viewId: z.string(),
+if (DEVELOPER_MODE) {
+  api.post(
+    '/:notebook_id/generate',
+    requireAuthenticationAPI,
+    processRequest({
+      body: PostRandomRecordsInputSchema,
+      params: z.object({notebook_id: z.string()}),
     }),
-  }),
-  requireAuthenticationAPI,
-  async (req, res: Response<{url: string}>) => {
-    if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
-      throw new Exceptions.UnauthorizedException();
+    async (req, res: Response<PostRandomRecordsResponse>) => {
+      if (!userIsClusterAdmin(req.user)) {
+        // Not authorised
+        throw new Exceptions.UnauthorizedException(
+          'Not authorised to generate random records.'
+        );
+      }
+
+      const record_ids = await createManyRandomRecords(
+        req.params.notebook_id,
+        req.body.count
+      );
+      res.json({record_ids});
     }
-    const {id: projectId, viewId} = req.params;
-    const url = `${req.protocol}://${req.get('host')}/api/notebooks/${projectId}/${viewId}.csv`;
-    res.json({url});
-  }
-);
+  );
+}

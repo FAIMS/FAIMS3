@@ -8,7 +8,6 @@ import {useGetProjects} from '@/hooks/get-hooks';
  * ExportProjectForm component renders a form for downloading a project's data.
  * It provides a button to download the project's data.
  *
- * @param {'csv' | 'zip'} type - The type of file to download.
  * @returns {JSX.Element} The rendered ExportProjectForm component.
  */
 const ExportProjectForm = () => {
@@ -35,22 +34,8 @@ const ExportProjectForm = () => {
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
   const onSubmit = async ({form}: {form: string}) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}/export-url`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user!.token}`,
-        },
-      }
-    );
-
-    if (!response.ok)
-      return {type: 'submit', message: 'Error getting export URL.'};
-
-    const {url} = await response.json();
-    window.open(url, '_blank');
+    window.open(`${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}.csv`, '_blank');
+    return undefined;
   };
 
   return <Form fields={fields} onSubmit={onSubmit} />;
