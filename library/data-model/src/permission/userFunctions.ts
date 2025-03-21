@@ -125,7 +125,6 @@ export function userResourceRoles({
  * @param user - User object to modify
  * @param role - Role to add
  * @param resourceId - ID of the resource for the role
- * @returns Updated user object with the new role
  */
 export function addResourceRole({
   user,
@@ -135,7 +134,7 @@ export function addResourceRole({
   user: PeopleDBFields;
   role: Role;
   resourceId: string;
-}): PeopleDBFields {
+}) {
   // Check if the user already has this role for this resource
   const hasRole = userHasResourceRole({
     user,
@@ -145,7 +144,7 @@ export function addResourceRole({
 
   // If the user already has this role, return the unchanged user object
   if (hasRole) {
-    return user;
+    return;
   }
 
   // Create a new resource role
@@ -154,11 +153,7 @@ export function addResourceRole({
     role,
   };
 
-  // Return a new user object with the added resource role
-  return {
-    ...user,
-    resourceRoles: [...user.resourceRoles, newResourceRole],
-  };
+  user.resourceRoles = [...user.resourceRoles, newResourceRole];
 }
 
 /**
@@ -166,7 +161,6 @@ export function addResourceRole({
  * @param user - User object to modify
  * @param role - Role to remove
  * @param resourceId - ID of the resource for the role
- * @returns Updated user object without the specified role
  */
 export function removeResourceRole({
   user,
@@ -176,7 +170,7 @@ export function removeResourceRole({
   user: PeopleDBFields;
   role: Role;
   resourceId: string;
-}): PeopleDBFields {
+}) {
   // Create the resource role object to remove
   const roleToRemove: ResourceRole = {
     resourceId,
@@ -189,17 +183,13 @@ export function removeResourceRole({
   );
 
   // Return a new user object with the updated resource roles
-  return {
-    ...user,
-    resourceRoles: updatedResourceRoles,
-  };
+  user.resourceRoles = updatedResourceRoles;
 }
 
 /**
  * Adds a global role to a user
  * @param user - User object to modify
  * @param role - Global role to add
- * @returns Updated user object with the new global role
  */
 export function addGlobalRole({
   user,
@@ -207,25 +197,20 @@ export function addGlobalRole({
 }: {
   user: PeopleDBFields;
   role: Role;
-}): PeopleDBFields {
+}) {
   // Check if the user already has this global role
   if (userHasGlobalRole({user, role})) {
     // If so, return the unchanged user object
-    return user;
+    return;
   }
 
-  // Otherwise, return a new user object with the added global role
-  return {
-    ...user,
-    globalRoles: [...user.globalRoles, role],
-  };
+  user.globalRoles = [...user.globalRoles, role];
 }
 
 /**
  * Removes a global role from a user
  * @param user - User object to modify
  * @param role - Global role to remove
- * @returns Updated user object without the specified global role
  */
 export function removeGlobalRole({
   user,
@@ -233,24 +218,19 @@ export function removeGlobalRole({
 }: {
   user: PeopleDBFields;
   role: Role;
-}): PeopleDBFields {
+}) {
   // Filter out the role we want to remove
   const updatedGlobalRoles = user.globalRoles.filter(
     globalRole => globalRole !== role
   );
 
-  // Return a new user object with the updated global roles
-  return {
-    ...user,
-    globalRoles: updatedGlobalRoles,
-  };
+  user.globalRoles = updatedGlobalRoles;
 }
 
 /**
  * Add emails to a user's emails array if they don't already exist
  * @param user - User object to modify
  * @param emails - Emails to add
- * @returns Updated user object with the new emails added
  */
 export function addEmails({
   user,
@@ -258,18 +238,15 @@ export function addEmails({
 }: {
   user: PeopleDBFields;
   emails: string[];
-}): PeopleDBFields {
+}) {
   // Filter out emails that already exist in the user's emails array
   const newEmails = emails.filter(email => !user.emails.includes(email));
 
   // If no new emails to add, return user unchanged
   if (newEmails.length === 0) {
-    return user;
+    return;
   }
 
   // Return updated user with new emails added
-  return {
-    ...user,
-    emails: [...user.emails, ...newEmails],
-  };
+  user.emails = [...user.emails, ...newEmails];
 }

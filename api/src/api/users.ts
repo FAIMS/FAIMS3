@@ -55,7 +55,7 @@ api.post(
   }),
   async ({body: {role, addrole: addRole}, params: {id}}, res) => {
     // Get the current user from DB
-    const user = await getUserFromEmailOrUsername(id);
+    let user = await getUserFromEmailOrUsername(id);
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
         'Username cannot be found in user database.'

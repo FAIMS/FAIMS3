@@ -19,7 +19,7 @@
  */
 
 import {z} from 'zod';
-import { Role } from './permission';
+import {DecodedTokenPermissions, Role} from './permission';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -61,10 +61,12 @@ export type FAIMSTypeName = string;
 
 export type Annotations = {annotation: string; uncertainty: boolean};
 
-export interface TokenContents {
-  username: string;
-  roles: string[];
+export interface TokenContents extends DecodedTokenPermissions {
+  // First/last name
   name?: string;
+  // Username (i.e. email)
+  username: string;
+  // Server generating
   server: string;
   // This is required now - all tokens must have an expiry
   exp: number;

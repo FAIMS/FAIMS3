@@ -36,7 +36,8 @@ export const slugify = (str: string) => {
  */
 export const mockTokenContentsForUser = (user: Express.User): TokenContents => {
   return {
-    roles: user.roles,
+    globalRoles: user.globalRoles,
+    resourceRoles: user.resourceRoles,
     server: slugify(CONDUCTOR_INSTANCE_NAME),
     username: user.user_id,
     // Five minutes from now

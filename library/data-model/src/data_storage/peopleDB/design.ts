@@ -1,6 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 
+import {convertToCouchDBString} from '../utils';
+
 /**
  * Design document for indexing people
  */

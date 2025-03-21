@@ -25,24 +25,24 @@ PouchDB.plugin(PouchDBFind);
 
 import {generateJwtFromUser} from '../src/authkeys/create';
 import {validateToken} from '../src/authkeys/read';
-import {addOtherRoleToUser, createUser, saveUser} from '../src/couchdb/users';
+import {createUser, saveUser} from '../src/couchdb/users';
 import {expect} from 'chai';
 import {KEY_SERVICE} from '../src/buildconfig';
+import {addGlobalRole, Role} from '@faims3/data-model';
 
 describe('roundtrip creating and reading token', () => {
   it('create and read token', async () => {
     const username = 'bobalooba';
     const name = 'Bob Bobalooba';
-    const roles = ['admin', 'user'];
+    const roles: Role[] = [Role.GENERAL_ADMIN, Role.GENERAL_USER];
     const signing_key = await KEY_SERVICE.getSigningKey();
 
     // need to make a user with these details
-    const [user, err] = await createUser(username, '');
+    const [user, err] = await createUser(username, '', name);
 
     if (user) {
-      user.name = name;
       for (let i = 0; i < roles.length; i++) {
-        addOtherRoleToUser(user, roles[i]);
+        addGlobalRole({user, role: roles[i]});
       }
       await saveUser(user);
 
@@ -54,7 +54,8 @@ describe('roundtrip creating and reading token', () => {
           expect(valid_user).not.to.be.undefined;
           if (valid_user) {
             expect(valid_user.user_id).to.equal(user.user_id);
-            expect(valid_user.roles).to.deep.equal(user.roles);
+            expect(valid_user.globalRoles).to.deep.equal(user.globalRoles);
+            expect(valid_user.resourceRoles).to.deep.equal(user.resourceRoles);
             expect(valid_user.name).to.equal(user.name);
           }
         });
