@@ -46,6 +46,9 @@ import {
   DATABASE_TYPE,
   DATABASE_TYPES,
   DatabaseType,
+  migrateDbs,
+  MigrationsDB,
+  initMigrationsDB,
 } from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
@@ -64,6 +67,7 @@ const PROJECTS_DB_NAME = 'projects';
 const TEMPLATES_DB_NAME = 'templates';
 const AUTH_DB_NAME = 'auth';
 const PEOPLE_DB_NAME = 'people';
+const MIGRATIONS_DB_NAME = 'migrations';
 const INVITE_DB_NAME = 'invites';
 
 let _directoryDB: PouchDB.Database | undefined;
@@ -72,6 +76,7 @@ let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
 let _authDB: AuthDatabase | undefined;
 let _usersDB: PeopleDB | undefined;
 let _invitesDB: InvitesDB | undefined;
+let _migrationsDB: MigrationsDB | undefined;
 
 const pouchOptions = () => {
   const options: PouchDB.Configuration.RemoteDatabaseConfiguration = {};
@@ -228,6 +233,21 @@ export const getTemplatesDb = (): PouchDB.Database<TemplateDetails> => {
     }
   }
   return _templatesDb;
+};
+
+export const getMigrationDb = (): MigrationsDB => {
+  if (!_migrationsDB) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + MIGRATIONS_DB_NAME;
+    try {
+      _migrationsDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting migrations database.'
+      );
+    }
+  }
+  return _migrationsDB;
 };
 
 export const getInvitesDB = (): PouchDB.Database => {
@@ -459,6 +479,9 @@ export const initialiseDbAndKeys = async ({
   // Users
   const peopleDb = getUsersDB();
 
+  // Migrations DB
+  const migrationsDb = getMigrationDb();
+
   // Now for each, generate their initialisation documents and apply
 
   // Auth DB
@@ -548,6 +571,19 @@ export const initialiseDbAndKeys = async ({
     );
   }
 
+  // Migrations DB
+  try {
+    await couchInitialiser({
+      db: migrationsDb,
+      content: initMigrationsDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the migrations database!...' + e
+    );
+  }
+
   // For users, we also establish an admin user, if not already present
   await registerAdminUser(peopleDb);
 
@@ -581,6 +617,7 @@ export const initialiseDbAndKeys = async ({
 };
 
 /**
+ * Initialises and then migrates all databases!
  */
 export const initialiseAndMigrateDBs = async ({
   force = false,
@@ -589,11 +626,52 @@ export const initialiseAndMigrateDBs = async ({
 }) => {
   await initialiseDbAndKeys({force});
 
-  const dbs: {dbType: DATABASE_TYPE; dbName: string; db: PouchDB.Database}[] =
-    [];
+  let dbs: {dbType: DATABASE_TYPE; dbName: string; db: PouchDB.Database}[] = [
+    {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
+    {
+      db: getDirectoryDB(),
+      dbType: DatabaseType.DIRECTORY,
+      dbName: DIRECTORY_DB_NAME,
+    },
+    {db: getInvitesDB(), dbType: DatabaseType.INVITES, dbName: INVITE_DB_NAME},
+    {db: getUsersDB(), dbType: DatabaseType.PEOPLE, dbName: PEOPLE_DB_NAME},
+    {
+      db: localGetProjectsDb(),
+      dbType: DatabaseType.PROJECTS,
+      dbName: PROJECTS_DB_NAME,
+    },
+    {
+      db: getTemplatesDb(),
+      dbType: DatabaseType.TEMPLATES,
+      dbName: TEMPLATES_DB_NAME,
+    },
+  ];
 
-  dbs.concat([
-    {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
-    {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
-  ]);
+  // Migrate these first
+  const migrationsDb = getMigrationDb();
+  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+
+  // Now migrate all data/metadata DBs
+  const projects = await getAllProjectsDirectory();
+  dbs = [];
+
+  for (const project of projects) {
+    // Project ID
+    const projectId = project._id;
+    const dataDb = (await getDataDB(projectId)) as PouchDB.Database;
+    const metadataDb = (await getMetadataDb(projectId)) as PouchDB.Database;
+    dbs.concat([
+      {
+        db: dataDb,
+        dbType: DatabaseType.DATA,
+        dbName: dataDb.name,
+      },
+      {
+        db: metadataDb,
+        dbType: DatabaseType.METADATA,
+        dbName: metadataDb.name,
+      },
+    ]);
+  }
+  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
 };

@@ -479,7 +479,7 @@ api.post(
   isAllowedToMiddleware({
     action: Action.DELETE_PROJECT,
     getResourceId(req) {
-      return req.params.notebook_id;
+      return req.params.notebookId;
     },
   }),
   processRequest({params: z.object({notebookId: z.string()})}),

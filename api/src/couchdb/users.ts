@@ -151,14 +151,10 @@ export async function updateUserPassword(
 export async function getUsers(): Promise<Express.User[]> {
   // Get the users database
   const users_db = getUsersDB();
-  if (users_db) {
-    // Fetch all user records from the database and get doc
-    return (await users_db.allDocs({include_docs: true})).rows.map(r => r.doc!);
-  } else {
-    throw new Exceptions.InternalSystemError(
-      'Could not find users database and therefore cannot return list of users. Contact system administrator.'
-    );
-  }
+  // Fetch all user records from the database and get doc
+  return (await users_db.allDocs({include_docs: true})).rows
+    .map(r => r.doc!)
+    .filter(d => !d._id.startsWith('_'));
 }
 
 /**
