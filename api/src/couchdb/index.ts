@@ -42,6 +42,10 @@ import {
   PeopleDB,
   PeopleDBFields,
   InvitesDB,
+  getDataDB,
+  DATABASE_TYPE,
+  DATABASE_TYPES,
+  DatabaseType,
 } from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
@@ -574,4 +578,22 @@ export const initialiseDbAndKeys = async ({
     );
     throw error;
   }
+};
+
+/**
+ */
+export const initialiseAndMigrateDBs = async ({
+  force = false,
+}: {
+  force?: boolean;
+}) => {
+  await initialiseDbAndKeys({force});
+
+  const dbs: {dbType: DATABASE_TYPE; dbName: string; db: PouchDB.Database}[] =
+    [];
+
+  dbs.concat([
+    {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
+    {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
+  ]);
 };

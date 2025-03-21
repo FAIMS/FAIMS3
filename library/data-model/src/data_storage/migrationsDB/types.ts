@@ -1,4 +1,4 @@
-import {DATABASE_TYPE} from '../migrations';
+import {DATABASE_TYPE, DatabaseType} from '../migrations';
 
 export type MigrationLog = {
   // from and to version ID
@@ -23,7 +23,7 @@ export type MigrationLog = {
 
 export type MigrationsDBFields = {
   // Which type of database is this referring to
-  dbType: DATABASE_TYPE;
+  dbType: DatabaseType;
   // The fully qualified db name (i.e. uniquely specifies the actual database
   // within this couch instance)
   dbName: string;

@@ -5,6 +5,7 @@ import {
   DATABASE_TYPES,
   DB_MIGRATIONS,
   DB_TARGET_VERSIONS,
+  DatabaseType,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
   MigrationFunc,
   MigrationFuncReturn,
@@ -28,7 +29,7 @@ PouchDB.plugin(PouchDBMemoryAdapter);
  */
 type MigrationTestCase = {
   name: string;
-  dbType: DATABASE_TYPE;
+  dbType: DatabaseType;
   from: number;
   to: number;
   inputDoc: PouchDB.Core.ExistingDocument<any>;
@@ -43,7 +44,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
   // This needs to be updated when the actual migration is implemented
   {
     name: 'peopleV1toV2Migration - basic migration',
-    dbType: 'people',
+    dbType: DatabaseType.PEOPLE,
     from: 1,
     to: 2,
     inputDoc: {},
@@ -206,7 +207,7 @@ describe('Migration System Tests', () => {
       const mockMigrationDoc = {
         _id: 'migration-doc-id',
         _rev: '1-abc',
-        dbType: 'people' as DATABASE_TYPE,
+        dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
         version: 1,
         status: 'healthy' as 'healthy',
@@ -216,7 +217,7 @@ describe('Migration System Tests', () => {
       // Should identify the migration from v1 to v2
       const migrations = identifyMigrations({migrationDoc: mockMigrationDoc});
       expect(migrations.length).toBe(1);
-      expect(migrations[0].dbType).toBe('people');
+      expect(migrations[0].dbType).toBe(DatabaseType.PEOPLE);
       expect(migrations[0].from).toBe(1);
       expect(migrations[0].to).toBe(2);
 
@@ -229,7 +230,7 @@ describe('Migration System Tests', () => {
       const mockMigrationDoc = {
         _id: 'migration-doc-id',
         _rev: '1-abc',
-        dbType: 'people' as DATABASE_TYPE,
+        dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
         version: 3, // Higher than target (2)
         status: 'healthy' as 'healthy',
@@ -246,7 +247,7 @@ describe('Migration System Tests', () => {
       const mockMigrationDoc = {
         _id: 'migration-doc-id',
         _rev: '1-abc',
-        dbType: 'people' as DATABASE_TYPE,
+        dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
         version: 1,
         status: 'healthy' as 'healthy',
@@ -254,15 +255,15 @@ describe('Migration System Tests', () => {
       };
 
       // Temporarily modify DB_TARGET_VERSIONS for this test
-      const originalTargetVersion = DB_TARGET_VERSIONS['people'].targetVersion;
-      DB_TARGET_VERSIONS['people'].targetVersion = 3;
+      const originalTargetVersion = DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
+      DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = 3;
 
       expect(() =>
         identifyMigrations({migrationDoc: mockMigrationDoc})
       ).toThrow();
 
       // Restore original target version
-      DB_TARGET_VERSIONS['people'].targetVersion = originalTargetVersion;
+      DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = originalTargetVersion;
     });
   });
 
@@ -520,7 +521,7 @@ describe('Migration System Tests', () => {
       await migrateDbs({
         dbs: [
           {
-            dbType: 'people',
+            dbType: DatabaseType.PEOPLE,
             dbName: 'test-people-db',
             db: testPeopleDb as PouchDB.Database,
           },
@@ -533,7 +534,7 @@ describe('Migration System Tests', () => {
       const migrationDocs = await testMigrationDb.query(
         MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
         {
-          key: ['people', 'test-people-db'],
+          key: [DatabaseType.PEOPLE, 'test-people-db'],
           include_docs: true,
         }
       );
@@ -563,7 +564,7 @@ describe('Migration System Tests', () => {
     it('should handle existing database with migration document', async () => {
       // Create an existing migration document
       const existingMigrationDoc: MigrationsDBFields = {
-        dbType: 'people',
+        dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
         version: 1, // Needs upgrade to v2
         status: 'healthy',
@@ -604,7 +605,7 @@ describe('Migration System Tests', () => {
       await migrateDbs({
         dbs: [
           {
-            dbType: 'people',
+            dbType: DatabaseType.PEOPLE,
             dbName: 'test-people-db',
             db: testPeopleDb as PouchDB.Database,
           },
@@ -617,7 +618,7 @@ describe('Migration System Tests', () => {
       const migrationDocs = await testMigrationDb.query(
         MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
         {
-          key: ['people', 'test-people-db'],
+          key: [DatabaseType.PEOPLE, 'test-people-db'],
           include_docs: true,
         }
       );
@@ -636,7 +637,7 @@ describe('Migration System Tests', () => {
     it('should skip migration if database is already up to date', async () => {
       // Create an existing migration document that's already at target version
       const upToDateMigrationDoc: MigrationsDBFields = {
-        dbType: 'people',
+        dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
         version: 2, // Already at target version
         status: 'healthy',
@@ -674,7 +675,7 @@ describe('Migration System Tests', () => {
       await migrateDbs({
         dbs: [
           {
-            dbType: 'people',
+            dbType: DatabaseType.PEOPLE,
             dbName: 'test-people-db',
             db: testPeopleDb as PouchDB.Database,
           },
@@ -686,7 +687,7 @@ describe('Migration System Tests', () => {
       const migrationDocs = await testMigrationDb.query(
         MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
         {
-          key: ['people', 'test-people-db'],
+          key: [DatabaseType.PEOPLE, 'test-people-db'],
           include_docs: true,
         }
       );
@@ -704,7 +705,7 @@ describe('Migration System Tests', () => {
     it('should handle migration failures and update migration log', async () => {
       // Create an existing migration document
       const existingMigrationDoc: MigrationsDBFields = {
-        dbType: 'people',
+        dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
         version: 1, // Needs upgrade to v2
         status: 'healthy',
@@ -739,7 +740,7 @@ describe('Migration System Tests', () => {
       await migrateDbs({
         dbs: [
           {
-            dbType: 'people',
+            dbType: DatabaseType.PEOPLE,
             dbName: 'test-people-db',
             db: testPeopleDb as PouchDB.Database,
           },
@@ -751,7 +752,7 @@ describe('Migration System Tests', () => {
       const migrationDocs = await testMigrationDb.query(
         MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
         {
-          key: ['people', 'test-people-db'],
+          key: [DatabaseType.PEOPLE, 'test-people-db'],
           include_docs: true,
         }
       );
@@ -790,12 +791,12 @@ describe('Migration System Tests', () => {
         await migrateDbs({
           dbs: [
             {
-              dbType: 'people',
+              dbType: DatabaseType.PEOPLE,
               dbName: 'test-people-db',
               db: testPeopleDb as PouchDB.Database,
             },
             {
-              dbType: 'projects',
+              dbType: DatabaseType.PROJECTS,
               dbName: 'test-projects-db',
               db: testProjectsDb as PouchDB.Database,
             },
@@ -808,7 +809,7 @@ describe('Migration System Tests', () => {
           await testMigrationDb.query<MigrationsDBFields>(
             MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
             {
-              key: ['people', 'test-people-db'],
+              key: [DatabaseType.PEOPLE, 'test-people-db'],
               include_docs: true,
             }
           );
@@ -820,7 +821,7 @@ describe('Migration System Tests', () => {
           await testMigrationDb.query<MigrationsDBFields>(
             MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
             {
-              key: ['projects', 'test-projects-db'],
+              key: [DatabaseType.PROJECTS, 'test-projects-db'],
               include_docs: true,
             }
           );

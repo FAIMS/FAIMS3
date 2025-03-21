@@ -6,31 +6,41 @@ import {
   MigrationsDBFields,
 } from './migrationsDB';
 
+export enum DatabaseType {
+  AUTH = 'AUTH',
+  DATA = 'DATA',
+  DIRECTORY = 'DIRECTORY',
+  INVITES = 'INVITES',
+  METADATA = 'METADATA',
+  PEOPLE = 'PEOPLE',
+  PROJECTS = 'PROJECTS',
+  TEMPLATES = 'TEMPLATES',
+}
 export const DATABASE_TYPES = [
-  'auth',
-  'data',
-  'directory',
-  'invites',
-  'metadata',
-  'people',
-  'projects',
-  'templates',
+  DatabaseType.AUTH,
+  DatabaseType.DATA,
+  DatabaseType.DIRECTORY,
+  DatabaseType.INVITES,
+  DatabaseType.METADATA,
+  DatabaseType.PEOPLE,
+  DatabaseType.PROJECTS,
+  DatabaseType.TEMPLATES,
 ] as const;
 export type DATABASE_TYPE = (typeof DATABASE_TYPES)[number];
 
 export const DB_TARGET_VERSIONS: {
   [key in DATABASE_TYPE]: {defaultVersion: number; targetVersion: number};
 } = {
-  ['auth']: {defaultVersion: 1, targetVersion: 1},
-  ['data']: {defaultVersion: 1, targetVersion: 1},
-  ['directory']: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   // invites v2
-  ['invites']: {defaultVersion: 1, targetVersion: 2},
-  ['metadata']: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 2},
+  [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
   // people v2
-  ['people']: {defaultVersion: 1, targetVersion: 2},
-  ['projects']: {defaultVersion: 1, targetVersion: 1},
-  ['templates']: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 2},
+  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 1},
 };
 
 export type MigrationFuncReturn = {
@@ -57,14 +67,14 @@ type MigrationDetails = {
 };
 export const DB_MIGRATIONS: MigrationDetails[] = [
   {
-    dbType: 'people',
+    dbType: DatabaseType.PEOPLE,
     from: 1,
     to: 2,
     description: 'Updates the people database to use new permissions models',
     migrationFunction: peopleV1toV2Migration,
   },
   {
-    dbType: 'invites',
+    dbType: DatabaseType.INVITES,
     from: 1,
     to: 2,
     description:
@@ -337,7 +347,7 @@ export async function migrateDbs({
   migrationDb,
   userId = 'system',
 }: {
-  dbs: {dbType: DATABASE_TYPE; dbName: string; db: PouchDB.Database}[];
+  dbs: {dbType: DatabaseType; dbName: string; db: PouchDB.Database}[];
   migrationDb: MigrationsDB;
   userId?: string;
 }): Promise<void> {
