@@ -48,7 +48,7 @@ import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
   createNotebook,
   getNotebookMetadata,
-  getNotebooks,
+  getUserProjectsDetailed,
 } from '../src/couchdb/notebooks';
 import {
   getUserFromEmailOrUsername,
@@ -290,7 +290,7 @@ describe('API tests', () => {
         uiSpec,
         metadata
       );
-      let notebooks = await getNotebooks(adminUser);
+      let notebooks = await getUserProjectsDetailed(adminUser);
       const dataDb = await getDataDB(project_id!);
       expect(notebooks).to.have.lengthOf(1);
       expect(project_id).not.to.be.undefined;
@@ -299,7 +299,7 @@ describe('API tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json')
         .expect(200);
-      notebooks = await getNotebooks(adminUser);
+      notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.be.empty;
 
       // Because of how mocks work with db list, we need to manually remove the
@@ -487,7 +487,7 @@ describe('API tests', () => {
 
     const adminUser = await getUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const notebooks = await getNotebooks(adminUser);
+      const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
@@ -505,7 +505,7 @@ describe('API tests', () => {
 
     const adminUser = await getUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const notebooks = await getNotebooks(adminUser);
+      const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
@@ -537,7 +537,7 @@ describe('API tests', () => {
 
     const adminUser = await getUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const notebooks = await getNotebooks(adminUser);
+      const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)

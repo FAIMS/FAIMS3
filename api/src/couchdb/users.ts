@@ -21,8 +21,11 @@
 import {
   addGlobalRole,
   CouchDBUsername,
+  NotebookAuthSummary,
+  PeopleDBFields,
   Role,
   safeWriteDocument,
+  userHasResourceRole,
 } from '@faims3/data-model';
 import {getUsersDB} from '.';
 import {
@@ -31,6 +34,8 @@ import {
 } from '../auth_providers/local';
 import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
+import {getRolesForNotebook} from './notebooks';
+import {FileWatcherEventKind} from 'typescript';
 
 /**
  * Builds a minimum spec user object - need to add profiles
@@ -157,6 +162,29 @@ export async function getUsers(): Promise<Express.User[]> {
 }
 
 /**
+ * Return all users from the users database, if it does not exist, throws error.
+ * TODO wherever possible dumping the whole db will not be ideal as scales.
+ * @returns all users as Express.User[]
+ */
+export async function getUsersForResource({
+  resourceId,
+}: {
+  resourceId: string;
+}): Promise<Express.User[]> {
+  // Get the users database
+  const users_db = getUsersDB();
+  // Fetch all user records from the database and get doc
+  return (
+    await users_db.query<PeopleDBFields>('indexes/byResource', {
+      key: resourceId,
+    })
+  ).rows.reduce((filtered, option) => {
+    if (option.doc) filtered.push(option.doc);
+    return filtered;
+  }, [] as Express.User[]);
+}
+
+/**
  * getUserFromEmailOrUsername - find a user based on an identifier that could be either an email or username
  * @param identifier - either an email address or username
  * @returns The Express.User record denoted by the identifier or null if it doesn't exist
@@ -223,4 +251,35 @@ async function getUserFromUsername(
  */
 export async function saveUser(user: Express.User): Promise<void> {
   safeWriteDocument({db: getUsersDB(), data: user, writeOnClash: true});
+}
+
+export async function getUserInfoForProject({
+  projectId,
+}: {
+  projectId: string;
+}): Promise<NotebookAuthSummary> {
+  const roleDetails = getRolesForNotebook();
+  const roles = roleDetails.map(r => r.role);
+
+  // TODO filter this better?
+  const allUsers = await getUsers();
+
+  const userList: NotebookAuthSummary = {
+    // What roles does the notebook have
+    roles,
+    users: allUsers.map(user => ({
+      name: user.name,
+      username: user.user_id,
+      roles: roles.map(role => ({
+        name: role,
+        value: userHasResourceRole({
+          user,
+          resourceId: projectId,
+          resourceRole: role,
+        }),
+      })),
+    })),
+  };
+
+  return userList;
 }

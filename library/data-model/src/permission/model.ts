@@ -18,6 +18,9 @@ export enum Action {
   // PROJECT ACTIONS
   // ============================================================
 
+  // View list of projects
+  LIST_PROJECTS = 'LIST_PROJECTS',
+
   // Create a new project
   CREATE_PROJECT = 'CREATE_PROJECT',
 
@@ -92,6 +95,9 @@ export enum Action {
   // TEMPLATE ACTIONS
   // ============================================================
 
+  // View templates
+  VIEW_TEMPLATES = 'VIEW_TEMPLATES',
+
   // Create a new template
   CREATE_TEMPLATE = 'CREATE_TEMPLATE',
 
@@ -111,6 +117,10 @@ export enum Action {
   // USER ACTIONS
   // ============================================================
 
+  // View the list of users
+  VIEW_USER_LIST = 'VIEW_USER_LIST',
+  // View the list of users
+  ADD_OR_REMOVE_GLOBAL_USER_ROLE = 'ADD_OR_REMOVE_GLOBAL_USER_ROLE',
   // Generate a password reset link
   RESET_USER_PASSWORD = 'RESET_USER_PASSWORD',
   // Delete a user
@@ -124,6 +134,8 @@ export enum Action {
 
   // API initialise action e.g. db migrations, initialisation, keys
   INITIALISE_SYSTEM_API = 'INITIALISE_SYSTEM_API',
+  VALIDATE_DBS = 'VALIDATE_DBS',
+  RESTORE_FROM_BACKUP = 'RESTORE_FROM_BACKUP',
 }
 
 /**
@@ -143,6 +155,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
   // ============================================================
   // PROJECT ACTIONS
   // ============================================================
+  [Action.LIST_PROJECTS]: {
+    name: 'List Projects',
+    description: 'Lists all high level details about projects in the system',
+    resourceSpecific: false,
+    resource: Resource.PROJECT,
+  },
   [Action.CREATE_PROJECT]: {
     name: 'Create Project',
     description: 'Create a new project in the system',
@@ -380,6 +398,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
   // ============================================================
   // TEMPLATE ACTIONS
   // ============================================================
+  [Action.VIEW_TEMPLATES]: {
+    name: 'View templates',
+    description: 'View all templates in the system',
+    resourceSpecific: false,
+    resource: Resource.TEMPLATE,
+  },
   [Action.CREATE_TEMPLATE]: {
     name: 'Create Template',
     description: 'Create a new template in the system',
@@ -414,6 +438,18 @@ export const actionDetails: Record<Action, ActionDetails> = {
   // ============================================================
   // USER ACTIONS
   // ============================================================
+  [Action.VIEW_USER_LIST]: {
+    name: 'View user list',
+    description: 'List the users of the system',
+    resourceSpecific: false,
+    resource: Resource.USER,
+  },
+  [Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE]: {
+    name: 'Manage global user roles',
+    description: 'Add or remove global user roles from a user',
+    resourceSpecific: true,
+    resource: Resource.USER,
+  },
   [Action.RESET_USER_PASSWORD]: {
     name: 'Reset User Password',
     description: 'Generate a password reset link for a user',
@@ -434,6 +470,18 @@ export const actionDetails: Record<Action, ActionDetails> = {
     name: 'Initialize System API',
     description:
       'Perform system initialization tasks like database migrations and key setup',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.RESTORE_FROM_BACKUP]: {
+    name: 'Restore data from backup',
+    description: 'System restore operation to restore DBs from backup',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.VALIDATE_DBS]: {
+    name: 'Validate system databases',
+    description: 'Perform the DB validation process',
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },
@@ -474,6 +522,7 @@ export const resourceToActions: Record<Resource, Action[]> = Object.values(
 export enum Permission {
   // PROJECT GENERAL
   // ===============
+  PROJECT_LIST = 'PROJECT_LIST',
   PROJECT_CREATE = 'PROJECT_CREATE',
 
   // PROJECT SPECIFIC
@@ -503,6 +552,8 @@ export enum Permission {
 
   // TEMPLATE GENERAL
   // ================
+  TEMPLATE_VIEW = 'TEMPLATE_VIEW',
+
   TEMPLATE_CREATE = 'TEMPLATE_CREATE',
 
   // TEMPLATE SPECIFIC
@@ -543,6 +594,10 @@ export const permissionActions: Record<
 > = {
   // PROJECTS
   // ========
+  [Permission.PROJECT_LIST]: {
+    resource: Resource.PROJECT,
+    actions: [Action.LIST_PROJECTS],
+  },
   [Permission.PROJECT_CREATE]: {
     resource: Resource.PROJECT,
     actions: [Action.CREATE_PROJECT],
@@ -626,6 +681,10 @@ export const permissionActions: Record<
 
   // TEMPLATES
   // ========
+  [Permission.TEMPLATE_VIEW]: {
+    resource: Resource.TEMPLATE,
+    actions: [Action.VIEW_TEMPLATES],
+  },
   [Permission.TEMPLATE_CREATE]: {
     resource: Resource.TEMPLATE,
     actions: [Action.CREATE_TEMPLATE],
@@ -647,14 +706,24 @@ export const permissionActions: Record<
   // ========
   [Permission.USER_MANAGE]: {
     resource: Resource.USER,
-    actions: [Action.RESET_USER_PASSWORD, Action.DELETE_USER],
+    actions: [
+      Action.RESET_USER_PASSWORD,
+      // This is being granted globally
+      Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
+      Action.DELETE_USER,
+      Action.VIEW_USER_LIST,
+    ],
   },
 
   // SYSTEM
   // ========
   [Permission.SYSTEM_MANAGE]: {
     resource: Resource.SYSTEM,
-    actions: [Action.INITIALISE_SYSTEM_API],
+    actions: [
+      Action.INITIALISE_SYSTEM_API,
+      Action.RESTORE_FROM_BACKUP,
+      Action.VALIDATE_DBS,
+    ],
   },
 };
 
@@ -842,10 +911,10 @@ export const rolePermissions: Record<
     alsoGrants: [],
   },
 
-  // GENERAL ROLES
+  // GLOBAL ROLES
   // =============
   [Role.GENERAL_USER]: {
-    permissions: [Permission.PROJECT_VIEW],
+    permissions: [Permission.PROJECT_VIEW, Permission.PROJECT_LIST],
     alsoGrants: [],
   },
   [Role.GENERAL_ADMIN]: {
@@ -855,6 +924,7 @@ export const rolePermissions: Record<
   [Role.GENERAL_CREATOR]: {
     permissions: [
       Permission.PROJECT_CREATE,
+      Permission.TEMPLATE_VIEW,
       Permission.TEMPLATE_CREATE,
       Permission.TEMPLATE_EDIT,
       Permission.TEMPLATE_DELETE,

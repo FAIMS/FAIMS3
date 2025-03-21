@@ -57,7 +57,7 @@ import {
   generateFilenameForAttachment,
   getEncodedNotebookUISpec,
   getNotebookMetadata,
-  getNotebooks,
+  getUserProjectsDetailed,
   getProjectUIModel,
   getRolesForNotebook,
   streamNotebookFilesAsZip,
@@ -87,7 +87,7 @@ api.get(
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const notebooks = await getNotebooks(req.user);
+    const notebooks = await getUserProjectsDetailed(req.user);
     res.json(notebooks);
   }
 );

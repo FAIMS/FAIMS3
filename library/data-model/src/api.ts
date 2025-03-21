@@ -1,5 +1,4 @@
 import {z} from 'zod';
-import {ADMIN_GROUP_NAMES_SCHEMA} from './auth';
 import {
   APINotebookGetSchema,
   APINotebookListSchema,
@@ -17,7 +16,7 @@ import {Role} from './permission';
 // Post update a user UpdateUser input
 export const PostUpdateUserInputSchema = z.object({
   addrole: z.boolean(),
-  role: ADMIN_GROUP_NAMES_SCHEMA,
+  role: z.nativeEnum(Role),
 });
 export type PostUpdateUserInput = z.infer<typeof PostUpdateUserInputSchema>;
 

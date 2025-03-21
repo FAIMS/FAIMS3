@@ -52,7 +52,7 @@ import {
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {getAllProjects, getNotebookMetadata} from './notebooks';
+import {getAllProjectsDirectory, getNotebookMetadata} from './notebooks';
 import {registerAdminUser} from './users';
 
 const DIRECTORY_DB_NAME = 'directory';
@@ -549,7 +549,7 @@ export const initialiseDbAndKeys = async ({
 
   // For each project, ensure the metadata and data DBs are also
   // initialised/synced
-  const projects = await getAllProjects();
+  const projects = await getAllProjectsDirectory();
 
   for (const project of projects) {
     // Project ID

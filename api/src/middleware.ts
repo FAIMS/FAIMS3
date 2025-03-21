@@ -206,19 +206,3 @@ export function requireNotebookMembership(
     res.redirect('/auth/');
   }
 }
-
-export function requireClusterAdmin(
-  req: Express.Request,
-  res: Express.Response,
-  next: Express.NextFunction
-) {
-  if (req.user) {
-    if (userHasGlobalRole({role: Role.GENERAL_ADMIN, user: req.user})) {
-      next();
-    } else {
-      res.status(401).end();
-    }
-  } else {
-    res.redirect('/auth/');
-  }
-}

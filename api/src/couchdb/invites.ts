@@ -19,12 +19,12 @@
  */
 
 import {
-  ConductorRole,
   ExistingInvitesDBDocument,
   InvitesDBFields,
   NewInvitesDBDocument,
   NonUniqueProjectID,
   ProjectID,
+  Role,
   writeNewDocument,
 } from '@faims3/data-model';
 import {getInvitesDB} from '.';
@@ -33,25 +33,27 @@ import {CONDUCTOR_SHORT_CODE_PREFIX} from '../buildconfig';
 /**
  * Create an invite for this project and role if there isn't already
  * one.  If it already exists, return it.
- * @param project_id Project identifier
+ * @param projectId Project identifier
  * @param role Project role
  * @returns A RoleInvite object
  */
 export async function createInvite(
-  project_id: NonUniqueProjectID,
-  role: ConductorRole
-) {
-  // if there is already an invite for this role,
-  // just return that
-  const allInvites = await getInvitesForNotebook(project_id);
-  const existing = allInvites.filter(
-    i => i.project_id === project_id && i.role === role
-  );
+  projectId: NonUniqueProjectID,
+  role: Role
+): Promise<NewInvitesDBDocument> {
+  const existing = (
+    await getInvitesDB().query<InvitesDBFields>('indexes/byProjectAndRole', {
+      key: [projectId, role],
+      include_docs: true,
+    })
+  ).rows
+    .map(r => r.doc)
+    .filter(d => !!d);
 
   if (existing.length === 0) {
     // make a new one
     const invite: InvitesDBFields = {
-      project_id: project_id,
+      projectId: projectId,
       role: role,
     };
     return await writeNewInvite(invite);

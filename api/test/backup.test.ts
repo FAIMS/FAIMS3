@@ -29,7 +29,10 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
-import {getNotebooks, getProjectUIModel} from '../src/couchdb/notebooks';
+import {
+  getUserProjectsDetailed,
+  getProjectUIModel,
+} from '../src/couchdb/notebooks';
 import {getUserFromEmailOrUsername} from '../src/couchdb/users';
 import {mockTokenContentsForUser} from '../src/utils';
 import {
@@ -55,7 +58,7 @@ describe('Backup and restore', () => {
     const user = await getUserFromEmailOrUsername('admin');
     expect(user).not.to.be.undefined;
     if (user) {
-      const notebooks = await getNotebooks(user);
+      const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(2);
       expect(notebooks[0].name).to.equal('Campus Survey Demo');
 

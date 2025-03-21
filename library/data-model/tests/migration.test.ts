@@ -7,6 +7,7 @@ import {
   DB_TARGET_VERSIONS,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
   MigrationFunc,
+  MigrationFuncReturn,
   MigrationsDB,
   MigrationsDBDocument,
   MigrationsDBFields,
@@ -32,10 +33,7 @@ type MigrationTestCase = {
   to: number;
   inputDoc: PouchDB.Core.ExistingDocument<any>;
   expectedOutputDoc: PouchDB.Core.ExistingDocument<any>;
-  expectedResult: {
-    writeNeeded: boolean;
-    updatedRecord?: PouchDB.Core.ExistingDocument<any>;
-  };
+  expectedResult: MigrationFuncReturn;
 };
 
 /**
@@ -50,10 +48,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
     to: 2,
     inputDoc: {},
     expectedOutputDoc: {},
-    expectedResult: {
-      writeNeeded: true,
-      updatedRecord: {},
-    },
+    expectedResult: {action: 'none'},
   },
 ];
 
@@ -124,9 +119,9 @@ describe('Migration System Tests', () => {
         const result = migration!.migrationFunction(testCase.inputDoc);
 
         // Check that the result matches expected
-        expect(result.writeNeeded).toBe(testCase.expectedResult.writeNeeded);
+        expect(result.action).toBe(testCase.expectedResult.action);
 
-        if (result.writeNeeded && result.updatedRecord) {
+        if (result.action === 'update' && result.updatedRecord) {
           // Preserve _id and _rev for comparison
           const updatedWithMetadata = {
             ...result.updatedRecord,
@@ -299,7 +294,7 @@ describe('Migration System Tests', () => {
       const migrationFunc: MigrationFunc = doc => {
         if (doc._id === 'doc1' || doc._id === 'doc3') {
           return {
-            writeNeeded: true,
+            action: 'update',
             updatedRecord: {
               ...doc,
               data: doc._id === 'doc1' ? 'new data' : 'updated data',
@@ -307,7 +302,7 @@ describe('Migration System Tests', () => {
             },
           };
         } else {
-          return {writeNeeded: false};
+          return {action: 'none'};
         }
       };
 
@@ -351,11 +346,11 @@ describe('Migration System Tests', () => {
       const migrationFunc: MigrationFunc = doc => {
         if (doc._id.startsWith('batch-doc-')) {
           return {
-            writeNeeded: true,
+            action: 'update',
             updatedRecord: {...doc, processed: true},
           };
         }
-        return {writeNeeded: false};
+        return {action: 'none'};
       };
 
       // Perform the migration
@@ -383,7 +378,7 @@ describe('Migration System Tests', () => {
           throw new Error('Test error for problem document');
         }
         return {
-          writeNeeded: true,
+          action: 'update',
           updatedRecord: {...doc, migrated: true},
         };
       };
@@ -408,7 +403,7 @@ describe('Migration System Tests', () => {
       await brokenDb.destroy(); // This makes the DB unusable
 
       // Try to perform migration on broken DB
-      const migrationFunc: MigrationFunc = () => ({writeNeeded: false});
+      const migrationFunc: MigrationFunc = () => ({action: 'none'});
 
       const result = await performMigration({db: brokenDb, migrationFunc});
 
@@ -416,6 +411,49 @@ describe('Migration System Tests', () => {
       expect(result.issues.length).toBeGreaterThan(0);
       expect(result.processedCount).toBe(0);
       expect(result.writtenCount).toBe(0);
+    });
+
+    it('should handle delete action correctly', async () => {
+      // Add a document that will be deleted
+      await testDb.put({_id: 'doc-to-delete', data: 'will be removed'});
+
+      // Create a migration function that deletes specific documents
+      const migrationFunc: MigrationFunc = doc => {
+        if (doc._id === 'doc-to-delete') {
+          return {action: 'delete'};
+        } else if (doc._id === 'doc1') {
+          return {
+            action: 'update',
+            updatedRecord: {...doc, data: 'updated data'},
+          };
+        } else {
+          return {action: 'none'};
+        }
+      };
+
+      // Perform the migration
+      const result = await performMigration({db: testDb, migrationFunc});
+
+      // Check statistics
+      expect(result.processedCount).toBe(4); // All docs including the new one
+      expect(result.writtenCount).toBe(1); // Only doc1 was updated
+      expect(result.deletedCount).toBe(1); // Only doc-to-delete was deleted
+      expect(result.issues).toEqual([]);
+
+      // Verify the document was actually deleted
+      try {
+        await testDb.get('doc-to-delete');
+        fail('Document should have been deleted');
+      } catch (error: any) {
+        expect(error.name).toBe('not_found');
+      }
+
+      // Verify other documents were handled correctly
+      const doc1 = await testDb.get<any>('doc1');
+      expect(doc1.data).toBe('updated data');
+
+      const doc2 = await testDb.get<any>('doc2');
+      expect(doc2.data).toBe('unchanged');
     });
   });
 
@@ -464,7 +502,7 @@ describe('Migration System Tests', () => {
       const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
       DB_MIGRATIONS[0].migrationFunction = record => {
         return {
-          writeNeeded: true,
+          action: 'update',
           updatedRecord: {
             ...record,
             // Convert old permissions to new model
@@ -548,7 +586,7 @@ describe('Migration System Tests', () => {
       const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
       DB_MIGRATIONS[0].migrationFunction = record => {
         return {
-          writeNeeded: true,
+          action: 'update',
           updatedRecord: {
             ...record,
             // Convert old permissions to new model
@@ -692,7 +730,7 @@ describe('Migration System Tests', () => {
           throw new Error('Test migration error');
         }
         return {
-          writeNeeded: true,
+          action: 'update',
           updatedRecord: {...record, migrated: true},
         };
       };
@@ -743,7 +781,7 @@ describe('Migration System Tests', () => {
         const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
         DB_MIGRATIONS[0].migrationFunction = record => {
           return {
-            writeNeeded: true,
+            action: 'update',
             updatedRecord: {...record, migrated: true},
           };
         };

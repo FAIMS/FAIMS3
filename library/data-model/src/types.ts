@@ -19,6 +19,7 @@
  */
 
 import {z} from 'zod';
+import { Role } from './permission';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -148,7 +149,7 @@ export interface ProjectObject {
 // This is returned from the list project endpoints
 export const APINotebookListSchema = z.object({
   name: z.string(),
-  is_admin: z.boolean().optional(),
+  is_admin: z.boolean(),
   last_updated: z.string().optional(),
   created: z.string().optional(),
   template_id: z.string().optional(),
@@ -776,7 +777,7 @@ export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
 // Information about users and roles for a notebook
 export const NotebookAuthSummarySchema = z.object({
   // What roles does the notebook have
-  roles: z.array(z.string()),
+  roles: z.array(z.nativeEnum(Role)),
   // users permissions for this notebook
   users: z.array(
     z.object({
@@ -784,7 +785,7 @@ export const NotebookAuthSummarySchema = z.object({
       username: z.string(),
       roles: z.array(
         z.object({
-          name: z.string(),
+          name: z.nativeEnum(Role),
           value: z.boolean(),
         })
       ),

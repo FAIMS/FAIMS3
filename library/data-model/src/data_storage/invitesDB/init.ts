@@ -1,4 +1,4 @@
-import {InitialisationContent} from '..';
+import {InitialisationContent, invitesDesignDocuments} from '..';
 import {InvitesDBSecurityDocument} from './security';
 
 export type InvitesDBInitialisationConfig = {};
@@ -7,7 +7,8 @@ export function initInvitesDB(
   config: InvitesDBInitialisationConfig
 ): InitialisationContent {
   return {
-    designDocuments: [],
+    // some common indexes
+    designDocuments: [invitesDesignDocuments.designDoc],
     securityDocument: InvitesDBSecurityDocument,
   };
 }

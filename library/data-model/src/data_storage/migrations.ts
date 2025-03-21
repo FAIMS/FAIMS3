@@ -24,7 +24,8 @@ export const DB_TARGET_VERSIONS: {
   ['auth']: {defaultVersion: 1, targetVersion: 1},
   ['data']: {defaultVersion: 1, targetVersion: 1},
   ['directory']: {defaultVersion: 1, targetVersion: 1},
-  ['invites']: {defaultVersion: 1, targetVersion: 1},
+  // invites v2
+  ['invites']: {defaultVersion: 1, targetVersion: 2},
   ['metadata']: {defaultVersion: 1, targetVersion: 1},
   // people v2
   ['people']: {defaultVersion: 1, targetVersion: 2},
@@ -32,20 +33,20 @@ export const DB_TARGET_VERSIONS: {
   ['templates']: {defaultVersion: 1, targetVersion: 1},
 };
 
-export type MigrationFunc = (record: PouchDB.Core.ExistingDocument<any>) => {
-  writeNeeded: boolean;
+export type MigrationFuncReturn = {
+  action: 'none' | 'update' | 'delete';
   updatedRecord?: PouchDB.Core.ExistingDocument<any>;
 };
+export type MigrationFuncRecordInput = PouchDB.Core.ExistingDocument<any>;
 
-const peopleV1toV2Migration = (
-  record: PouchDB.Core.ExistingDocument<any>
-): {
-  writeNeeded: boolean;
-  updatedRecord?: PouchDB.Core.ExistingDocument<any>;
-} => {
-  // TODO
-  return {writeNeeded: true, updatedRecord: {}};
-};
+export type MigrationFunc = (
+  record: MigrationFuncRecordInput
+) => MigrationFuncReturn;
+
+// TODO
+const peopleV1toV2Migration: MigrationFunc = doc => ({action: 'none'});
+// TODO
+const invitesV1toV2Migration: MigrationFunc = doc => ({action: 'none'});
 
 type MigrationDetails = {
   dbType: DATABASE_TYPE;
@@ -61,6 +62,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     to: 2,
     description: 'Updates the people database to use new permissions models',
     migrationFunction: peopleV1toV2Migration,
+  },
+  {
+    dbType: 'invites',
+    from: 1,
+    to: 2,
+    description:
+      "Refactors the invites database to use a typed Role enum for new permissions system, removes records it can't understand",
+    migrationFunction: invitesV1toV2Migration,
   },
 ];
 
@@ -213,10 +222,16 @@ export async function performMigration({
 }: {
   db: PouchDB.Database;
   migrationFunc: MigrationFunc;
-}): Promise<{issues: string[]; processedCount: number; writtenCount: number}> {
+}): Promise<{
+  issues: string[];
+  processedCount: number;
+  writtenCount: number;
+  deletedCount: number;
+}> {
   const issues: string[] = [];
   const processedIds = new Set<string>(); // Track IDs of processed documents
   let writtenCount = 0; // Track number of documents that were actually updated
+  let deletedCount = 0; // Track number of documents that were deleted
   const batchSize = 100; // Number of documents to process in each batch
   let startKey = null;
   let hasMoreDocs = true;
@@ -259,7 +274,7 @@ export async function performMigration({
           const result = migrationFunc(doc);
 
           // If the migration indicates a write is needed, update the document
-          if (result.writeNeeded && result.updatedRecord) {
+          if (result.action === 'update' && result.updatedRecord) {
             // Preserve the original _id and _rev
             const updatedRecord = {
               ...result.updatedRecord,
@@ -270,6 +285,13 @@ export async function performMigration({
             // Put the updated document back to the database
             await db.put(updatedRecord);
             writtenCount++;
+          }
+
+          // If the migration indicates a write is needed, update the document
+          if (result.action === 'delete') {
+            // Put the updated document back to the database deleted
+            await db.remove(doc);
+            deletedCount++;
           }
         } catch (error) {
           // Capture any issues with this specific document
@@ -291,6 +313,7 @@ export async function performMigration({
     issues,
     processedCount: processedIds.size,
     writtenCount,
+    deletedCount,
   };
 }
 

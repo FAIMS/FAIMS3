@@ -25,13 +25,18 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(SecurityPlugin);
 
 import {
+  Action,
   APINotebookList,
   EncodedProjectUIModel,
+  logError,
   notebookRecordIterator,
   ProjectID,
   ProjectObject,
   Resource,
   resourceRoles,
+  Role,
+  userCanDo,
+  userHasResourceRole,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
@@ -61,13 +66,12 @@ import {
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
 import {slugify} from '../utils';
-import {userHasPermission} from './users';
 
 /**
  * getAllProjects - get the internal project documents that reference
  * the project databases that the front end will connnect to
  */
-export const getAllProjects = async (): Promise<ProjectObject[]> => {
+export const getAllProjectsDirectory = async (): Promise<ProjectObject[]> => {
   const projectsDb = localGetProjectsDb();
   const projects: ProjectObject[] = [];
   const res = await projectsDb.allDocs({
@@ -93,56 +97,76 @@ export const getAllProjects = async (): Promise<ProjectObject[]> => {
  * the project databases that the front end will connnect to
  * @param user - only return projects visible to this user
  */
-export const getUserProjects = async (
+export const getUserProjectsDirectory = async (
   user: Express.User
 ): Promise<ProjectObject[]> => {
-  return (await getAllProjects()).filter(p =>
-    userHasPermission(user, p._id, 'read')
+  return (await getAllProjectsDirectory()).filter(p =>
+    userCanDo({
+      user,
+      action: Action.READ_PROJECT_METADATA,
+      resourceId: p.project_id,
+    })
   );
 };
 
 /**
  * getNotebooks -- return an array of notebooks from the database
- * @oaram user - only return notebooks that this user can see
+ * @param user - only return notebooks that this user can see
  * @returns an array of ProjectObject objects
  */
-export const getNotebooks = async (
+export const getUserProjectsDetailed = async (
   user: Express.User
 ): Promise<APINotebookList[]> => {
-  // Respond with notebook list model
-  const output: APINotebookList[] = [];
-  // DB records are project objects
-  const projects: ProjectObject[] = [];
-  const projects_db = localGetProjectsDb();
-  if (projects_db) {
-    // We want to type hint that this will include all values
-    const res = await projects_db.allDocs<ProjectObject>({
-      include_docs: true,
-    });
-    res.rows.forEach(e => {
-      if (e.doc !== undefined && !e.id.startsWith('_')) {
-        projects.push(e.doc);
-      }
-    });
+  // Get projects DB
+  const projectsDb = localGetProjectsDb();
 
-    for (const project of projects) {
-      const projectId = project._id;
-      const projectMeta = await getNotebookMetadata(projectId);
-      if (userHasPermission(user, projectId, 'read')) {
-        output.push({
-          name: project.name,
-          is_admin: userHasPermission(user, projectId, 'modify'),
-          last_updated: project.last_updated,
-          created: project.created,
-          template_id: project.template_id,
-          status: project.status,
+  // Get all projects and filter for user access
+  const allDocs = await projectsDb.allDocs<ProjectObject>({
+    include_docs: true,
+  });
+
+  const userProjects = allDocs.rows
+    .map(r => r.doc)
+    .filter(d => d !== undefined && !d._id.startsWith('_'))
+    .filter(p =>
+      userCanDo({
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: p!.project_id,
+        user,
+      })
+    );
+
+  // Process all projects in parallel using Promise.all
+  const output = await Promise.all(
+    userProjects.map(async project => {
+      try {
+        const projectId = project!._id;
+        const projectMeta = await getNotebookMetadata(projectId);
+
+        return {
+          name: project!.name,
+          is_admin: userHasResourceRole({
+            user,
+            resourceId: projectId,
+            resourceRole: Role.PROJECT_ADMIN,
+          }),
+          last_updated: project!.last_updated,
+          created: project!.created,
+          template_id: project!.template_id,
+          status: project!.status,
           project_id: projectId,
           metadata: projectMeta,
-        });
+        };
+      } catch (e) {
+        console.error('Error occurred during detailed notebook listing');
+        logError(e);
+        return undefined;
       }
-    }
-  }
-  return output;
+    })
+  );
+
+  // Filter out null values from projects that user couldn't read
+  return output.filter(item => item !== undefined);
 };
 
 /**
@@ -212,7 +236,7 @@ export const validateDatabases = async () => {
       return report;
     }
 
-    const projects = await getAllProjects();
+    const projects = await getAllProjectsDirectory();
 
     for (const project of projects) {
       const projectId = project._id;

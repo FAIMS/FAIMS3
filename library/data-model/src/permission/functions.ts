@@ -154,6 +154,7 @@ export function projectRoleToAction({
 
   return actionNeeded;
 }
+
 // Maps a create invite -> action needed to do that
 export function projectInviteToAction({
   action,

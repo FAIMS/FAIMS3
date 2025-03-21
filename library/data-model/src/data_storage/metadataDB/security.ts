@@ -2,7 +2,7 @@
  * This module exports the security document to be used for the auth database.
  */
 
-import {CLUSTER_ADMIN_GROUP_NAME} from '../../auth';
+import {Role} from '../../permission';
 import {buildCouchRoleFromProjectId, SecurityDocument} from '../utils';
 
 export const MetadataDBSecurityDocument = ({
@@ -13,10 +13,10 @@ export const MetadataDBSecurityDocument = ({
   roles: string[];
 }): SecurityDocument => {
   return {
-    // Cluster admins have admin ownership
+    // admins have admin ownership
     admins: {
       names: [],
-      roles: [CLUSTER_ADMIN_GROUP_NAME],
+      roles: [Role.GENERAL_ADMIN],
     },
     // Otherwise project scoped roles
     members: {

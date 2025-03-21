@@ -20,13 +20,13 @@
 
 import {Strategy, VerifyCallback} from 'passport-google-oauth20';
 
+import {addEmails} from '@faims3/data-model';
 import {GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET} from '../buildconfig';
 import {getInvite} from '../couchdb/invites';
 import {
-  addEmailsToUser,
-  saveUser,
-  getUserFromEmailOrUsername,
   createUser,
+  getUserFromEmailOrUsername,
+  saveUser,
 } from '../couchdb/users';
 import {acceptInvite} from '../registration';
 
@@ -109,11 +109,15 @@ async function oauth_register(
     let errorMsg = '';
     const invite = await getInvite(req.session.invite);
     if (invite) {
-      [user, errorMsg] = await createUser(emails[0], emails[0], profile.displayName);
+      [user, errorMsg] = await createUser(
+        emails[0],
+        emails[0],
+        profile.displayName
+      );
 
       if (user) {
         user.profiles['google'] = profile;
-        addEmailsToUser(user, emails);
+        addEmails({user, emails});
         // accepting the invite will add roles and save the user record
         await acceptInvite(user, invite);
         done(null, user, profile);

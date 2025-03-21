@@ -18,10 +18,22 @@
  *   Data models related to users.
  */
 
-export type InvitesDBFields = {
+import {Role} from '../../permission';
+
+export type V1InviteDBFields = {
+  // The project it refers to
   project_id: string;
+  // Role (as untyped string - could be admin, team, user etc)
   role: string;
 };
-export type ExistingInvitesDBDocument = PouchDB.Core.ExistingDocument<InvitesDBFields>;
+
+export type InvitesDBFields = {
+  // The project it refers to
+  projectId: string;
+  // Role
+  role: Role;
+};
+export type ExistingInvitesDBDocument =
+  PouchDB.Core.ExistingDocument<InvitesDBFields>;
 export type NewInvitesDBDocument = PouchDB.Core.Document<InvitesDBFields>;
 export type InvitesDB = PouchDB.Database<InvitesDBFields>;

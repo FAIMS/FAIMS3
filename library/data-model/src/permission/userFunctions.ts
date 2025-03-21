@@ -245,3 +245,31 @@ export function removeGlobalRole({
     globalRoles: updatedGlobalRoles,
   };
 }
+
+/**
+ * Add emails to a user's emails array if they don't already exist
+ * @param user - User object to modify
+ * @param emails - Emails to add
+ * @returns Updated user object with the new emails added
+ */
+export function addEmails({
+  user,
+  emails,
+}: {
+  user: PeopleDBFields;
+  emails: string[];
+}): PeopleDBFields {
+  // Filter out emails that already exist in the user's emails array
+  const newEmails = emails.filter(email => !user.emails.includes(email));
+
+  // If no new emails to add, return user unchanged
+  if (newEmails.length === 0) {
+    return user;
+  }
+
+  // Return updated user with new emails added
+  return {
+    ...user,
+    emails: [...user.emails, ...newEmails],
+  };
+}

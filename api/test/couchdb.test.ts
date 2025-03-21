@@ -30,7 +30,7 @@ import {
 import {
   createNotebook,
   getNotebookMetadata,
-  getNotebooks,
+  getUserProjectsDetailed,
   getEncodedNotebookUISpec,
   getRolesForNotebook,
   updateNotebook,
@@ -131,7 +131,7 @@ describe('notebook api', () => {
       addProjectRoleToUser(bobalooba, nb2, 'user');
       await saveUser(bobalooba);
 
-      const notebooks = await getNotebooks(bobalooba);
+      const notebooks = await getUserProjectsDetailed(bobalooba);
       expect(notebooks.length).to.equal(2);
     } else {
       throw new Error('could not make test notebooks');
@@ -160,7 +160,7 @@ describe('notebook api', () => {
     if (projectID && user) {
       expect(projectID.substring(13)).to.equal('-test-notebook');
 
-      const notebooks = await getNotebooks(user);
+      const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
       const db = await getMetadataDb(projectID);
       if (db) {
@@ -326,7 +326,7 @@ describe('notebook api', () => {
 
       expect(projectID.substring(13)).to.equal('-test-notebook');
 
-      const notebooks = await getNotebooks(user);
+      const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
       const newUISpec = await getEncodedNotebookUISpec(projectID);
       if (newUISpec) {
