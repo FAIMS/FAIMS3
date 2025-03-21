@@ -221,11 +221,13 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
       subheading={props.helperText}
       required={props.required}
     >
-      {isExpandedChecklist ? (
-        <ExpandedChecklist {...commonProps} />
-      ) : (
-        <MuiMultiSelect {...commonProps} />
-      )}
+      <Box sx={{mt: 2}}>
+        {isExpandedChecklist ? (
+          <ExpandedChecklist {...commonProps} />
+        ) : (
+          <MuiMultiSelect {...commonProps} />
+        )}
+      </Box>
     </FieldWrapper>
   );
 };

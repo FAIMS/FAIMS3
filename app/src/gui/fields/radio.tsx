@@ -27,6 +27,7 @@ import {
   FormLabelProps,
   FormHelperTextProps,
   FormControlLabelProps,
+  Box,
 } from '@mui/material';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
 import FieldWrapper from './fieldWrapper';
@@ -83,6 +84,7 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
         required={this.props.required}
       >
         <FormControl
+          sx={{mb: 4}}
           error={Boolean(
             radioGroupProps.form.errors[radioGroupProps.field.name]
           )}
@@ -95,10 +97,36 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
               <FormControlLabel
                 key={option.key || option.value}
                 value={option.value}
-                control={<MuiRadio {...option.RadioProps} />}
-                label={option.label}
+                control={
+                  <MuiRadio
+                    {...option.RadioProps}
+                    sx={{
+                      alignSelf: 'flex-start',
+                      paddingTop: '4px',
+                    }}
+                  />
+                }
+                label={
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'contents',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      lineHeight: '1.3',
+                      verticalAlign: 'top',
+                    }}
+                  >
+                    {option.label}
+                  </Box>
+                }
                 {...option.FormControlProps}
                 disabled={this.props.disabled ?? false}
+                sx={{
+                  display: 'flow',
+                  alignItems: 'anchor-center', // Align text and radio circle at the top
+                  // gap: '12px', // Adds spacing between radio and text
+                }}
               />
             ))}
           </MuiRadioGroup>
