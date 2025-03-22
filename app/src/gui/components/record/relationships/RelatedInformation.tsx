@@ -40,6 +40,7 @@ import {logError} from '../../../../logging';
 import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
 import {ParentLinkProps, RecordLinkProps} from './types';
+import {localGetDataDb} from '../../../..';
 
 /**
  * Generate an object containing information to be stored in
@@ -228,16 +229,17 @@ export async function getRecordInformation(child_record: RecordReference) {
   if (child_record.project_id === undefined)
     return {latest_record, revision_id};
   try {
-    revision_id = await getFirstRecordHead(
-      child_record.project_id,
-      child_record.record_id
-    );
-    latest_record = await getFullRecordData(
-      child_record.project_id,
-      child_record.record_id,
-      revision_id,
-      false
-    );
+    revision_id = await getFirstRecordHead({
+      dataDb: localGetDataDb(child_record.project_id),
+      recordId: child_record.record_id,
+    });
+    latest_record = await getFullRecordData({
+      dataDb: localGetDataDb(child_record.project_id),
+      projectId: child_record.project_id,
+      recordId: child_record.record_id,
+      revisionId: revision_id,
+      isDeleted: false,
+    });
   } catch (error) {
     logError(error);
     throw Error(`Unable to find record with id: ${child_record.project_id}`);
@@ -376,13 +378,14 @@ export async function getRelatedRecords(
   });
 
   const record_ids = links.map((link: any) => link.record_id);
-  const records = await getMetadataForSomeRecords(
-    token,
-    project_id,
-    record_ids,
-    true,
-    uiSpecification
-  );
+  const records = await getMetadataForSomeRecords({
+    dataDb: localGetDataDb(project_id),
+    filterDeleted: true,
+    projectId: project_id,
+    recordIds: record_ids,
+    tokenContents: token,
+    uiSpecification,
+  });
   return records;
 }
 
@@ -876,7 +879,10 @@ export async function removeRecordLink(
       new_doc['relationship'] = relation;
       new_doc['updated'] = now;
       new_doc['deleted'] = latest_record.deleted;
-      await upsertFAIMSData(child_record.project_id, new_doc);
+      await upsertFAIMSData({
+        dataDb: localGetDataDb(child_record.project_id),
+        record: new_doc,
+      });
     }
 
     // now update the child record, removing the relation info from the
@@ -953,7 +959,10 @@ export async function addRecordLink({
       new_doc['relationship'] = relation;
       new_doc['updated'] = now;
       new_doc['deleted'] = latest_record.deleted;
-      await upsertFAIMSData(childRecord.project_id, new_doc);
+      await upsertFAIMSData({
+        dataDb: localGetDataDb(childRecord.project_id),
+        record: new_doc,
+      });
     }
     // here we are trusting that Record has enough of the fields of
     // RecordMetadata for the purposes of the caller until such time as we
@@ -1270,7 +1279,10 @@ async function conflict_update_child_record(
         new_doc['updated'] = now;
         new_doc['relationship'] = new_relation;
         try {
-          await upsertFAIMSData(project_id, new_doc);
+          await upsertFAIMSData({
+            dataDb: localGetDataDb(project_id),
+            record: new_doc,
+          });
         } catch (error) {
           logError(error);
         }
@@ -1351,12 +1363,13 @@ export async function remove_deleted_parent(
   try {
     if (revision_id === undefined || revision_id === null || revision_id === '')
       return result;
-    const latest_record = await getFullRecordData(
-      project_id,
-      current_record_id,
-      revision_id,
-      false
-    );
+    const latest_record = await getFullRecordData({
+      dataDb: localGetDataDb(project_id),
+      projectId: project_id,
+      recordId: current_record_id,
+      revisionId: revision_id,
+      isDeleted: false,
+    });
 
     if (latest_record !== null) {
       let new_relation = latest_record.relationship ?? {};
@@ -1389,7 +1402,10 @@ export async function remove_deleted_parent(
           record_id,
           field_id
         );
-        result['new_revision_id'] = await upsertFAIMSData(project_id, new_doc);
+        result['new_revision_id'] = await upsertFAIMSData({
+          dataDb: localGetDataDb(project_id),
+          record: new_doc,
+        });
         return result;
       } catch (error) {
         logError(error);

@@ -1,4 +1,6 @@
 import {
+  couchInitialiser,
+  initDataDB,
   NonUniqueProjectID,
   PossibleConnectionInfo,
   ProjectDataObject,
@@ -504,14 +506,21 @@ const projectsSlice = createSlice({
      *
      * This involves
      *
-     * - creating local pouch DB which stores the data synced from the remote (and new records)
-     * - creating the remote pouch DB which is a connection point to the remote data-database
-     * - creating the sync object which performs the synchronisation between the two databases
+     * - creating local pouch DB which stores the data synced from the remote
+     *   (and new records)
+     * - creating the remote pouch DB which is a connection point to the remote
+     *   data-database
+     * - creating the sync object which performs the synchronisation between the
+     *   two databases
      * - registering the above non-serialisable objects into databaseService
      * - marking the project as activated and updating store state
      *
+     * NOTE the activeProjects async thunk should be used over this - hence it
+     * is not exported. It combines activating and then setting up the design
+     * documents.
+     *
      */
-    activateProject: (
+    activateProjectSync: (
       state,
       action: PayloadAction<ProjectIdentity & DatabaseAuth>
     ) => {
@@ -1589,6 +1598,42 @@ export const updateDatabaseCredentials = createAsyncThunk<
 });
 
 /**
+ * Activates a project by combining the non side-effecting establishment of the
+ * DB and the subsequent inclusion of design documents.
+ */
+export const activateProject = createAsyncThunk<
+  void,
+  ProjectIdentity & DatabaseAuth
+>('projects/activateProject', async (payload, {dispatch, getState}) => {
+  // First, activate the project, then add the design docs (synchronous)
+  dispatch(activateProjectSync(payload));
+
+  // Now get the DB
+  const localDbId = (getState() as RootState).projects.servers[payload.serverId]
+    ?.projects[payload.projectId]?.database?.localDbId;
+  if (!localDbId) {
+    console.warn(
+      'Failed to establish design documents for local database! DB ID was not present after activation.'
+    );
+    return;
+  }
+  const localDb = databaseService.getLocalDatabase(localDbId);
+  if (!localDb) {
+    console.warn(
+      'Failed to establish design documents for local database! DB was not present in service after activation.'
+    );
+    return;
+  }
+
+  // Perform async initialization outside of reducer
+  await couchInitialiser({
+    db: localDb,
+    config: {forceWrite: true, applyPermissions: false},
+    content: initDataDB({projectId: payload.projectId, roles: []}),
+  });
+});
+
+/**
  * Initialises servers from the specified conductor URLs.
  * Creates the server if it doesn't exist, otherwise updates details.
  */
@@ -1830,7 +1875,9 @@ export const initialiseAllProjects = createAsyncThunk<void>(
  *
  * Does not make any change to store state. Hence, it is not a reducer.
  */
-export const rebuildDbs = (state: Readonly<ProjectsState>): void => {
+export const rebuildDbs = async (
+  state: Readonly<ProjectsState>
+): Promise<void> => {
   // For all DBs in the project, create local, sync and remote as configured
   for (const server of Object.values(state.servers)) {
     for (const project of Object.values(server.projects)) {
@@ -1844,6 +1891,12 @@ export const rebuildDbs = (state: Readonly<ProjectsState>): void => {
           // First - build the local DB
           const localDb = createLocalPouchDatabase<ProjectDataObject>({
             id: dbInfo.localDbId,
+          });
+          // Setup design documents and permissions for local data DB
+          await couchInitialiser({
+            content: initDataDB({projectId: project.projectId, roles: []}),
+            db: localDb,
+            config: {applyPermissions: false, forceWrite: true},
           });
           databaseService.registerLocalDatabase(dbInfo.localDbId, localDb, {
             tolerant: true,
@@ -2021,8 +2074,11 @@ export function createSyncStateHandlers(
   };
 }
 
+// Private reducers
+const {activateProjectSync} = projectsSlice.actions;
+
+// Public reducers
 export const {
-  activateProject,
   addProject,
   addServer,
   startSyncingAttachments,

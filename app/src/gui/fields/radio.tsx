@@ -67,15 +67,24 @@ interface Props {
 
 export class RadioGroup extends React.Component<RadioGroupProps & Props> {
   /**
-   * Handles changes in the selected radio button.
-   * @param {React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>} e - The change event.
+   * Handles changes in the selected radio button, allowing users to toggle selection.
+   * If a selected radio button is clicked again, it gets deselected (value is cleared).
+   *
+   * @param {React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>} e - The change event triggered by user interaction.
    */
   handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    this.props.form.setFieldValue(this.props.field.name, e.target.value, true);
+    const {field, form} = this.props;
+    const selectedValue = e.target.value;
+
+    const newValue = field.value === selectedValue ? null : selectedValue;
+    form.setFieldValue(field.name, newValue, true);
+
+    form.setTouched({...form.touched, [field.name]: true});
   }
 
   render() {
-    const {ElementProps, label, helperText, ...radioGroupProps} = this.props;
+    const {field, form, ElementProps, label, helperText, ...radioGroupProps} =
+      this.props;
 
     return (
       <FieldWrapper
@@ -83,14 +92,10 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
         subheading={helperText}
         required={this.props.required}
       >
-        <FormControl
-          sx={{mb: 4}}
-          error={Boolean(
-            radioGroupProps.form.errors[radioGroupProps.field.name]
-          )}
-        >
+        <FormControl sx={{mb: 4}} error={Boolean(form.errors?.[field.name])}>
           <MuiRadioGroup
-            {...fieldToRadioGroup(radioGroupProps)}
+            {...fieldToRadioGroup({field, form, ...radioGroupProps})}
+            value={field.value || ''}
             onChange={e => this.handleChange(e)}
           >
             {ElementProps.options.map(option => (
