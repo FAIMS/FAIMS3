@@ -125,7 +125,7 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                 disabled={this.props.disabled ?? false}
                 sx={{
                   alignItems: 'flex-start',
-                  marginY: 0.5,
+                  marginBottom: 1,
                   '& .MuiFormControlLabel-label': {
                     display: 'block',
                     marginTop: '5px',

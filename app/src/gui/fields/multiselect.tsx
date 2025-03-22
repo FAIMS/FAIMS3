@@ -166,12 +166,30 @@ export const MuiMultiSelect = ({
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
   return (
-    <FormControl sx={{width: '100%'}}>
+    <FormControl
+      sx={{
+        width: '100%',
+        mt: 2,
+        '& .MuiSelect-select': {
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          padding: '12px',
+        },
+      }}
+    >
       <Select
         multiple
         onChange={handleChange}
         value={value}
         renderValue={selected => selected.join(', ')}
+        MenuProps={{
+          PaperProps: {
+            style: {
+              maxHeight: 300,
+              marginTop: 8,
+            },
+          },
+        }}
       >
         {options.map(option => (
           <MenuItem
@@ -221,7 +239,7 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
       subheading={props.helperText}
       required={props.required}
     >
-      <Box sx={{mt: 2}}>
+      <Box sx={{mt: 3, mb: 2}}>
         {isExpandedChecklist ? (
           <ExpandedChecklist {...commonProps} />
         ) : (
