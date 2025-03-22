@@ -102,7 +102,7 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                     {...option.RadioProps}
                     sx={{
                       alignSelf: 'flex-start',
-                      paddingTop: '4px',
+                      paddingTop: '6px',
                     }}
                   />
                 }
@@ -113,8 +113,9 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                       display: 'contents',
                       whiteSpace: 'normal',
                       wordBreak: 'break-word',
-                      lineHeight: '1.3',
-                      verticalAlign: 'top',
+                      lineHeight: '1.5',
+                      paddingTop: '2px',
+                      paddingLeft: '0px',
                     }}
                   >
                     {option.label}
@@ -123,9 +124,12 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                 {...option.FormControlProps}
                 disabled={this.props.disabled ?? false}
                 sx={{
-                  display: 'flow',
-                  alignItems: 'anchor-center', // Align text and radio circle at the top
-                  // gap: '12px', // Adds spacing between radio and text
+                  alignItems: 'flex-start',
+                  marginY: 0.5,
+                  '& .MuiFormControlLabel-label': {
+                    display: 'block',
+                    marginTop: '5px',
+                  },
                 }}
               />
             ))}
