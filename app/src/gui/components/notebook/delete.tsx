@@ -44,6 +44,7 @@ import {
   deleteDraftsForRecord,
 } from '../../../sync/draft-storage';
 import {theme} from '../../themes';
+import {localGetDataDb} from '../../..';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
@@ -66,12 +67,12 @@ async function deleteFromDB(
   if (draft_id !== null) {
     await deleteStagedData(draft_id, null);
   } else {
-    await setRecordAsDeleted(
-      project_id,
-      record_id,
-      revision_id as RevisionID,
-      userid
-    );
+    await setRecordAsDeleted({
+      dataDb: localGetDataDb(project_id),
+      recordId: record_id,
+      baseRevisionId: revision_id as RevisionID,
+      userId: userid,
+    });
     await deleteDraftsForRecord(project_id, record_id);
   }
   callback();

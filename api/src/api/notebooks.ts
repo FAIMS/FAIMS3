@@ -40,15 +40,16 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
+import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {
   createNotebook,
   deleteNotebook,
   generateFilenameForAttachment,
+  getEncodedNotebookUISpec,
   getNotebookMetadata,
   getNotebooks,
-  getEncodedNotebookUISpec,
   getProjectUIModel,
   getRolesForNotebook,
   streamNotebookFilesAsZip,
@@ -252,17 +253,20 @@ api.get(
     if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
       throw new Exceptions.UnauthorizedException();
     }
-    const tokenContent = generateTokenContentsForUser(req.user);
+    const tokenContents = generateTokenContentsForUser(req.user);
+    const {id: projectId} = req.params;
     const uiSpecification = (await getProjectUIModel(
       req.params.id
     )) as ProjectUIModel;
-    const records = await getRecordsWithRegex(
-      tokenContent,
-      req.params.id,
-      '.*',
-      true,
-      uiSpecification
-    );
+    const dataDb = await getDataDb(projectId);
+    const records = await getRecordsWithRegex({
+      dataDb,
+      filterDeleted: true,
+      projectId,
+      regex: '.*',
+      tokenContents,
+      uiSpecification,
+    });
     if (records) {
       const filenames: string[] = [];
       // Process any file fields to give the file name in the zip download
@@ -521,3 +525,40 @@ if (DEVELOPER_MODE) {
     }
   );
 }
+
+// DELETE a user from a notebook
+api.delete(
+  '/:notebook_id/users/:user_id',
+  processRequest({
+    params: z.object({notebook_id: z.string(), user_id: z.string()}),
+  }),
+  requireAuthenticationAPI,
+  async (req, res: Response<PutUpdateNotebookResponse>) => {
+    if (!userHasPermission(req.user, req.params.notebook_id, 'modify')) {
+      throw new Exceptions.UnauthorizedException(
+        'You do not have permission to remove this user from this notebook.'
+      );
+    }
+
+    const user = await getUserFromEmailOrUsername(req.params.user_id);
+
+    if (!user) {
+      throw new Exceptions.ItemNotFoundException(
+        'The username provided cannot be found in the user database.'
+      );
+    }
+
+    if (user.project_roles[req.params.notebook_id].includes('admin')) {
+      throw new Exceptions.UnauthorizedException(
+        'You cannot remove an admin user from this notebook.'
+      );
+    }
+
+    for (const role of user.project_roles[req.params.notebook_id]) {
+      await removeProjectRoleFromUser(user, req.params.notebook_id, role);
+    }
+
+    await saveUser(user);
+    res.status(200).end();
+  }
+);

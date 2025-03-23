@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
 import {List, ListDescription, ListItem} from '../ui/list';
-import {Route} from '@/routes/projects/$projectId';
+import {Route} from '@/routes/_protected/projects/$projectId';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/get-hooks';
 import {useState} from 'react';
