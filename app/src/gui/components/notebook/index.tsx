@@ -20,6 +20,7 @@ import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import CircularLoading from '../ui/circular_loading';
+import { getVisibleTypes } from '../../../uiSpecification';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -198,15 +199,14 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         uiSpecification.visible_types[0]
       : 'Record';
 
-  const visibleTypes = uiSpecification.visible_types ?? [];
+      const visibleTypes = getVisibleTypes(uiSpecification);
 
-  const visibleMyRecords = records.myRecords.filter(record =>
-    visibleTypes.includes(record.type)
-  );
-
-  const visibleOtherRecords = records.otherRecords.filter(record =>
-    visibleTypes.includes(record.type)
-  );
+      const visibleMyRecords = records.myRecords.filter(r =>
+        visibleTypes.includes(r.type)
+      );
+      const visibleOtherRecords = records.otherRecords.filter(r =>
+        visibleTypes.includes(r.type)
+      );
 
   return (
     <Box>
@@ -269,10 +269,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 value={0}
                 {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
               />
-              {(tabIndex === 1 || records.otherRecords.length > 0) && (
+              {(tabIndex === 1 || visibleOtherRecords.length > 0) && (
                 <Tab
                   value={1}
-                  label={`Other ${recordLabel}s (${visibleOtherRecords.length})`}
+                  label={`Other ${recordLabel}s (${records.otherRecords.length})`}
                   {...a11yProps(1, `${NOTEBOOK_NAME}-otherrecords`)}
                 />
               )}
