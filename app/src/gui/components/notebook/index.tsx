@@ -198,6 +198,16 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         uiSpecification.visible_types[0]
       : 'Record';
 
+  const visibleTypes = uiSpecification.visible_types ?? [];
+
+  const visibleMyRecords = records.myRecords.filter(record =>
+    visibleTypes.includes(record.type)
+  );
+
+  const visibleOtherRecords = records.otherRecords.filter(record =>
+    visibleTypes.includes(record.type)
+  );
+
   return (
     <Box>
       <Box>
@@ -255,14 +265,14 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               allowScrollButtonsMobile={true}
             >
               <Tab
-                label={`My ${recordLabel}s (${records.myRecords.length})`}
+                label={`My ${recordLabel}s (${visibleMyRecords.length})`}
                 value={0}
                 {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
               />
               {(tabIndex === 1 || records.otherRecords.length > 0) && (
                 <Tab
                   value={1}
-                  label={`Other ${recordLabel}s (${records.otherRecords.length})`}
+                  label={`Other ${recordLabel}s (${visibleOtherRecords.length})`}
                   {...a11yProps(1, `${NOTEBOOK_NAME}-otherrecords`)}
                 />
               )}
