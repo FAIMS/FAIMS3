@@ -23,12 +23,25 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {Box, Grid, Link, Paper, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
-import React from 'react';
+import {
+  DataGrid,
+  GridCellParams,
+  GridColDef,
+  GridEventListener,
+} from '@mui/x-data-grid';
+import React, {useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
+import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
+import {
+  getSummaryFieldInformation,
+  getVisibleTypes,
+} from '../../../uiSpecification';
+import {prettifyFieldName} from '../../../utils/formUtilities';
+import getLocalDate from '../../fields/LocalDate';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 type DraftsRecordProps = {
   project_id: ProjectID;
@@ -40,8 +53,28 @@ type DraftsRecordProps = {
   handleRefresh: () => void;
 };
 
+function getDisplayDataFromDraft(
+  field: string,
+  data: {[key: string]: any}
+): string | undefined {
+  const value = data[field];
+  console.log('value in drafts', value);
+
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'object') return JSON.stringify(value);
+  return value.toString();
+}
+
 export function DraftsTable(props: DraftsRecordProps) {
-  const {project_id, serverId, maxRows, rows, loading} = props;
+  const {
+    project_id,
+    serverId,
+    maxRows,
+    rows,
+    loading,
+    viewsets,
+    handleRefresh,
+  } = props;
   const theme = useTheme();
   const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
@@ -49,6 +82,13 @@ export function DraftsTable(props: DraftsRecordProps) {
   const mobileView: boolean = not_xs;
   const defaultMaxRowsMobile = 10;
   const isMobile = !useMediaQuery(theme.breakpoints.up('sm'));
+
+  const uiSpecId = rows?.[0]?.ui_spec_id || project_id;
+  const uiSpec = compiledSpecService.getSpec(uiSpecId);
+  const visibleTypes = useMemo(
+    () => (uiSpec ? getVisibleTypes(uiSpec) : []),
+    [uiSpec]
+  );
 
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     history(
@@ -72,120 +112,120 @@ export function DraftsTable(props: DraftsRecordProps) {
           params.row.type)
       : params.row.type;
   }
-  const columns: any[] = !mobileView
-    ? [
-        {
-          field: 'hrid',
-          headerName: 'Field ID',
-          description: 'Human Readable Record ID',
-          type: 'string',
-          flex: 1,
-          renderCell: (params: GridCellParams) => (
-            <Typography fontWeight="bold">{params.row.hrid}</Typography>
-          ),
-        },
-        // {
-        //   field: 'created',
-        //   headerName: 'Created',
-        //   type: 'dateTime',
-        //   width: 200,
-        //   renderCell: (params: GridCellParams) => (
-        //     <Typography>
-        //       {params.row.created
-        //         ? new Date(params.row.created).toLocaleString()
-        //         : '-'}
-        //     </Typography>
-        //   ),
-        // },
-        // {
-        //   field: 'created_by',
-        //   headerName: 'Created By',
-        //   type: 'string',
-        //   width: 150,
-        //   renderCell: (params: GridCellParams) => (
-        //     <Typography>{params.row.created_by || '-'}</Typography>
-        //   ),
-        // },
-        // {
-        //   field: 'updated',
-        //   headerName: 'Last Updated',
-        //   type: 'dateTime',
-        //   width: 200,
-        //   renderCell: (params: GridCellParams) => (
-        //     <Typography>
-        //       {params.row.updated
-        //         ? new Date(params.row.updated).toLocaleString()
-        //         : '-'}
-        //     </Typography>
-        //   ),
-        // },
-        // {
-        //   field: 'updated_by',
-        //   headerName: 'Last Updated By',
-        //   type: 'string',
-        //   width: 150,
-        //   renderCell: (params: GridCellParams) => (
-        //     <Typography>{params.row.updated_by || '-'}</Typography>
-        //   ),
-        // },
-        {
-          field: 'delete',
-          headerName: 'Actions',
-          type: 'actions',
-          renderCell: (params: GridCellParams) => (
-            <RecordDelete
-              project_id={project_id}
-              serverId={serverId}
-              record_id={params.row.record_id}
-              revision_id={params.row.revision_id}
-              draft_id={params.row._id}
-              show_label={false}
-              handleRefresh={props.handleRefresh}
-            />
-          ),
-        },
-      ]
-    : [
-        {
-          field: 'summary',
-          headerName: 'Details',
-          type: 'string',
-          flex: 1,
-          renderCell: (params: GridCellParams) => (
-            <Box sx={{width: '100%', my: 1}}>
-              <Typography fontWeight="bold">
-                Field ID: {params.row.hrid}
-              </Typography>
-              {/* <Typography color="textSecondary">
-                Created: {params.row.created || '-'}
-              </Typography>
-              <Typography color="textSecondary">
-                Created By: {params.row.created_by || '-'}
-              </Typography>
-              <Typography color="textSecondary">
-                Last Updated: {params.row.updated || '-'}
-              </Typography> */}
-            </Box>
-          ),
-        },
-        {
-          field: 'delete',
-          headerName: 'Actions',
-          type: 'actions',
-          renderCell: (params: GridCellParams) => (
-            <RecordDelete
-              project_id={project_id}
-              serverId={serverId}
-              record_id={params.row.record_id}
-              revision_id={params.row.revision_id}
-              draft_id={params.row._id}
-              show_label={false}
-              handleRefresh={props.handleRefresh}
-            />
-          ),
-        },
-      ];
+  const summaryFields = useMemo(() => {
+    if (!uiSpec || visibleTypes.length !== 1) return [];
+    return getSummaryFieldInformation(uiSpec, visibleTypes[0]).fieldNames;
+  }, [uiSpec, visibleTypes]);
 
+  const getKindLabel = (type: string) =>
+    viewsets && type && viewsets[type]?.label ? viewsets[type].label : type;
+
+  const columns: GridColDef[] = [
+    ...(summaryFields.length > 0
+      ? summaryFields.map(field => ({
+          field,
+          headerName: prettifyFieldName(field),
+          type: 'string',
+          flex: 1,
+          renderCell: (params: GridCellParams) => (
+            <Typography>
+              {getDisplayDataFromDraft(field, params.row.data || {}) || '-'}
+            </Typography>
+          ),
+        }))
+      : [
+          {
+            field: 'hrid',
+            headerName: 'HRID/UUID',
+            type: 'string',
+            flex: 1,
+            renderCell: (params: GridCellParams) => (
+              <Typography fontWeight="bold">{params.row.hrid}</Typography>
+            ),
+          },
+        ]),
+
+    {
+      field: 'created',
+      headerName: 'Created',
+      type: 'dateTime',
+      flex: 1,
+      renderCell: (params: GridCellParams) => (
+        <Typography>
+          {params.row.created
+            ? getLocalDate(params.row.created).replace('T', ' ')
+            : '-'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'updated',
+      headerName: 'Last Updated',
+      type: 'dateTime',
+      flex: 1,
+      renderCell: (params: GridCellParams) => (
+        <Typography>
+          {params.row.updated
+            ? getLocalDate(params.row.updated).replace('T', ' ')
+            : '-'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'created_by',
+      headerName: 'Created By',
+      type: 'string',
+      flex: 1,
+      renderCell: (params: GridCellParams) => (
+        <Typography>{params.row.created_by || '-'}</Typography>
+      ),
+    },
+    {
+      field: 'updated_by',
+      headerName: 'Last Updated By',
+      type: 'string',
+      flex: 1,
+      renderCell: (params: GridCellParams) => (
+        <Typography>{params.row.updated_by || '-'}</Typography>
+      ),
+    },
+    {
+      field: 'type',
+      headerName: 'Type',
+      flex: 1,
+      renderCell: (params: GridCellParams) => (
+        <Typography>{getKindLabel(params.row.type)}</Typography>
+      ),
+    },
+    {
+      field: 'conflicts',
+      headerName: 'Conflicts',
+      flex: 0.5,
+      renderCell: (params: GridCellParams) =>
+        params.row.conflicts ? (
+          <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
+        ) : (
+          '-'
+        ),
+    },
+    {
+      field: 'delete',
+      headerName: 'Actions',
+      type: 'actions',
+      flex: 0.3,
+      renderCell: (params: GridCellParams) => (
+        <RecordDelete
+          project_id={project_id}
+          serverId={serverId}
+          record_id={params.row.record_id}
+          revision_id={params.row.revision_id}
+          draft_id={params.row._id}
+          show_label={false}
+          handleRefresh={handleRefresh}
+        />
+      ),
+    },
+  ];
   return (
     <React.Fragment>
       <Box component={Paper} elevation={0}>
