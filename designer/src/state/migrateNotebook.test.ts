@@ -33,7 +33,7 @@ describe('Migrate Notebook Tests', () => {
 
   test('update labels', () => {
     const migrated = migrateNotebook(sampleNotebook);
-    const fields = migrated['ui-specification'].fields;
+    const fields = migrated['ui-specification'].present.fields;
     expect(fields['Type']['component-parameters'].label).toBe('Type');
     expect(fields['Type']['component-parameters'].InputLabelProps).toBe(
       undefined
@@ -63,7 +63,7 @@ describe('Migrate Notebook Tests', () => {
 
   test('update annotation format', () => {
     const migrated = migrateNotebook(sampleNotebook);
-    const fields = migrated['ui-specification'].fields;
+    const fields = migrated['ui-specification'].present.fields;
     expect(fields['Type']?.meta?.annotation).toHaveProperty('label');
     expect(fields['Type']?.meta?.annotation).toHaveProperty('include');
     expect(fields['Type']?.meta).not.toHaveProperty('annotation_label');
@@ -71,7 +71,7 @@ describe('Migrate Notebook Tests', () => {
 
   test('update helperText', () => {
     const migrated = migrateNotebook(sampleNotebook);
-    const fields = migrated['ui-specification'].fields;
+    const fields = migrated['ui-specification'].present.fields;
 
     expect(fields['Sample-Photograph']['component-parameters'].helperText).toBe(
       'Take a photo'
@@ -87,7 +87,7 @@ describe('Migrate Notebook Tests', () => {
 
   test('fix photo validation', () => {
     const migrated = migrateNotebook(sampleNotebook);
-    const fields = migrated['ui-specification'].fields;
+    const fields = migrated['ui-specification'].present.fields;
     const validationSchema = fields['Sample-Photograph'].validationSchema;
 
     if (validationSchema) {
@@ -99,14 +99,14 @@ describe('Migrate Notebook Tests', () => {
 
   test('fix auto incrementer initial value', () => {
     const migrated = migrateNotebook(sampleNotebook);
-    const fields = migrated['ui-specification'].fields;
+    const fields = migrated['ui-specification'].present.fields;
     const targetField = fields['Field-ID'];
     expect(targetField.initialValue).toBe('');
   });
 
   test('update form descriptions', () => {
     const migrated = migrateNotebook(sampleNotebook);
-    const fviews = migrated['ui-specification'].fviews;
+    const fviews = migrated['ui-specification'].present.fviews;
 
     expect(fviews['Primary-New-Section'].description).toBe('This description.');
     expect(fviews['Primary-Next-Section'].description).toBe(
@@ -118,7 +118,7 @@ describe('Migrate Notebook Tests', () => {
 
   test('not losing properties', () => {
     const migrated = migrateNotebook(sampleNotebook);
-    const fields = migrated['ui-specification'].fields;
+    const fields = migrated['ui-specification'].present.fields;
     Object.getOwnPropertyNames(fields).forEach((fieldName: string) => {
       expect(Object.getOwnPropertyNames(fields)).toContain(fieldName);
     });
