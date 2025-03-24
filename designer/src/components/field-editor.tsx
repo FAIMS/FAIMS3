@@ -88,8 +88,6 @@ export const FieldEditor = ({
     state => state.notebook['ui-specification'].present.fviews
   );
 
-  const past = useAppSelector(state => state.notebook['ui-specification'].past);
-
   const dispatch = useAppDispatch();
 
   const [openMoveDialog, setOpenMoveDialog] = useState(false);

@@ -71,7 +71,7 @@ export const DesignPanel = () => {
   const canRedo = undoableState.future.length > 0;
 
   const handleToastClose = (
-    event?: React.SyntheticEvent | Event,
+    _event?: React.SyntheticEvent | Event,
     reason?: string
   ) => {
     if (reason === 'clickaway') {
