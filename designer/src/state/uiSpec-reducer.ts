@@ -574,16 +574,6 @@ const actionLabels: Record<string, string> = {
   viewSetRenamed: 'Undo rename form',
 };
 
-// Higher order reducer that automatically attaches undoLabel metadata
-const autoLabelReducer = (reducer: any) => {
-  return (state: any, action: any) => {
-    if (!action.meta && actionLabels[action.type]) {
-      action = {...action, meta: {undoLabel: actionLabels[action.type]}};
-    }
-    return reducer(state, action);
-  };
-};
-
 export const {
   loaded,
   fieldUpdated,

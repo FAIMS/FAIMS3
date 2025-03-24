@@ -63,6 +63,13 @@ export const DesignPanel = () => {
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // Use redux-undo state to determine if there is something to undo/redo
+  const undoableState = useAppSelector(
+    state => state.notebook['ui-specification']
+  );
+  const canUndo = undoableState.past.length > 0;
+  const canRedo = undoableState.future.length > 0;
+
   const handleToastClose = (
     event?: React.SyntheticEvent | Event,
     reason?: string
@@ -207,39 +214,49 @@ export const DesignPanel = () => {
   };
 
   function handleUndo(): void {
+    if (!canUndo) {
+      setToastMessage('Nothing to undo');
+      setToastOpen(true);
+      return;
+    }
     dispatch(ActionCreators.undo());
     setToastMessage('Undo performed');
     setToastOpen(true);
   }
 
   function handleRedo(): void {
+    if (!canRedo) {
+      setToastMessage('Nothing to redo');
+      setToastOpen(true);
+      return;
+    }
     dispatch(ActionCreators.redo());
     setToastMessage('Redo performed');
     setToastOpen(true);
   }
 
-  const canUndo = true;
-  const canRedo = true;
-
   // Keyboard shortcuts for undo/redo
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // macOS uses metaKey (⌘) and Windows/Linux use ctrlKey
-    if (
-      (event.ctrlKey || event.metaKey) &&
-      !event.shiftKey &&
-      event.key.toLowerCase() === 'z'
-    ) {
-      event.preventDefault();
-      handleUndo();
-    } else if (
-      (event.ctrlKey || event.metaKey) &&
-      (event.key.toLowerCase() === 'y' ||
-        (event.shiftKey && event.key.toLowerCase() === 'z'))
-    ) {
-      event.preventDefault();
-      handleRedo();
-    }
-  }, []);
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      // macOS uses metaKey (⌘) and Windows/Linux use ctrlKey
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === 'z'
+      ) {
+        event.preventDefault();
+        handleUndo();
+      } else if (
+        (event.ctrlKey || event.metaKey) &&
+        (event.key.toLowerCase() === 'y' ||
+          (event.shiftKey && event.key.toLowerCase() === 'z'))
+      ) {
+        event.preventDefault();
+        handleRedo();
+      }
+    },
+    [canUndo, canRedo]
+  );
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
