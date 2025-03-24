@@ -940,7 +940,7 @@ export function RecordsTable(props: RecordsTableProps) {
           toolbar: {handleQueryFunction: props.handleQueryFunction},
         }}
         initialState={{
-          sorting: {sortModel: [{field: 'created', sort: 'desc'}]},
+          sorting: {sortModel: [{field: 'updated', sort: 'desc'}]},
           pagination: {paginationModel: {pageSize: pageSize(maxRows)}},
         }}
         sx={styles.grid}
