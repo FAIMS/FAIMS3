@@ -44,15 +44,9 @@ export const slugify = (str: string) => {
   return str;
 };
 
-// ----------------------------------------------------------------------------
-// We'll take the "present" portion of the store’s UI-spec state
-// as the plain NotebookUISpec. That way, inside this slice, we can do state.fields,
-// state.fviews, etc. Then, externally, we’ll wrap with `undoable`.
-// ----------------------------------------------------------------------------
 const uiSpecInitialState: NotebookUISpec =
   initialState.notebook['ui-specification'].present;
 
-// Create the slice that knows only about a "NotebookUISpec" state shape
 export const uiSpecificationReducer = createSlice({
   name: 'ui-specification',
   initialState: uiSpecInitialState,
@@ -559,20 +553,6 @@ export const uiSpecificationReducer = createSlice({
     },
   },
 });
-
-// Mapping of action types to user-friendly undo labels
-const actionLabels: Record<string, string> = {
-  fieldAdded: 'Undo add field',
-  fieldDeleted: 'Undo delete field',
-  fieldUpdated: 'Undo update field',
-  fieldDuplicated: 'Undo duplicate field',
-  sectionAdded: 'Undo add section',
-  sectionDeleted: 'Undo delete section',
-  sectionRenamed: 'Undo rename section',
-  viewSetAdded: 'Undo add form',
-  viewSetDeleted: 'Undo delete form',
-  viewSetRenamed: 'Undo rename form',
-};
 
 export const {
   loaded,

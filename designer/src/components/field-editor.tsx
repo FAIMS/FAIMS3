@@ -54,8 +54,6 @@ import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
 import {useState, useMemo} from 'react';
 import {findFieldCondtionUsage} from './condition';
-import {createHash} from 'crypto';
-import {get} from 'lodash';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -118,15 +116,6 @@ export const FieldEditor = ({
         type: 'ui-specification/fieldDeleted',
         payload: {fieldName, viewId},
       });
-
-      // getPastHashesString is an async function, so we need to use a promise to wait for it to resolve
-
-      const printPastHashesString = async () => {
-        const string = await getPastHashesString();
-        console.log(string);
-      };
-
-      printPastHashesString();
     }
   };
 
@@ -192,31 +181,6 @@ export const FieldEditor = ({
     setOpenMoveDialog(false);
     setSelectedFormId(null); // reset selectedFormId when dialog is closed
     setTargetViewId(''); // reset section value when dialog is closed
-  };
-
-  const hashObject = async (obj: any): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(JSON.stringify(obj));
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hashBuffer))
-      .map(byte => byte.toString(16).padStart(2, '0'))
-      .join(''); // Convert hash to hex string
-  };
-
-  // Function to return a single string containing all past state hashes
-  const getPastHashesString = async (): Promise<string> => {
-    const pastStates = past;
-    if (!pastStates || pastStates.length === 0) {
-      return 'No past states recorded.';
-    }
-
-    const hashes = await Promise.all(
-      pastStates.map(
-        async (state, index) => `State ${index}: ${await hashObject(state)}`
-      )
-    );
-
-    return hashes.join(' | ');
   };
 
   const moveFieldToSection = () => {
