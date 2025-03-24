@@ -12,12 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Alert, Box, Button, Grid, Tab, Tabs, TextField} from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Grid,
+  Tab,
+  Tabs,
+  TextField,
+  Snackbar,
+} from '@mui/material';
 
 import AddIcon from '@mui/icons-material/Add';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
 
 import {TabContext} from '@mui/lab';
-import {useState} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 // eslint-disable-next-line n/no-extraneous-import
 import {ActionCreators} from 'redux-undo';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
@@ -47,6 +58,20 @@ export const DesignPanel = () => {
   );
 
   const maxKeys = Object.keys(viewSets).length;
+
+  // State for toast notifications
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const handleToastClose = (
+    event?: React.SyntheticEvent | Event,
+    reason?: string
+  ) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setToastOpen(false);
+  };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue.toString());
@@ -183,27 +208,75 @@ export const DesignPanel = () => {
 
   function handleUndo(): void {
     dispatch(ActionCreators.undo());
+    setToastMessage('Undo performed');
+    setToastOpen(true);
   }
 
   function handleRedo(): void {
     dispatch(ActionCreators.redo());
+    setToastMessage('Redo performed');
+    setToastOpen(true);
   }
 
   const canUndo = true;
   const canRedo = true;
 
+  // Keyboard shortcuts for undo/redo
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // macOS uses metaKey (⌘) and Windows/Linux use ctrlKey
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      !event.shiftKey &&
+      event.key.toLowerCase() === 'z'
+    ) {
+      event.preventDefault();
+      handleUndo();
+    } else if (
+      (event.ctrlKey || event.metaKey) &&
+      (event.key.toLowerCase() === 'y' ||
+        (event.shiftKey && event.key.toLowerCase() === 'z'))
+    ) {
+      event.preventDefault();
+      handleRedo();
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   return (
     <>
-      <Box
-        sx={{display: 'flex', justifyContent: 'space-between', marginBottom: 2}}
-      >
-        <Button variant="outlined" onClick={handleUndo} disabled={!canUndo}>
+      <Box sx={{display: 'flex', justifyContent: 'flex-end', marginBottom: 2}}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<UndoIcon />}
+          onClick={handleUndo}
+          disabled={!canUndo}
+          sx={{marginRight: 2}}
+        >
           Undo
         </Button>
-        <Button variant="outlined" onClick={handleRedo} disabled={!canRedo}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<RedoIcon />}
+          onClick={handleRedo}
+          disabled={!canRedo}
+        >
           Redo
         </Button>
       </Box>
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={3000}
+        onClose={handleToastClose}
+        message={toastMessage}
+      />
       <TabContext value={tabIndex}>
         <Alert severity="info" sx={{marginBottom: 2}}>
           Define the user interface for your notebook here. Add one or more
