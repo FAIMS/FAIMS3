@@ -17,7 +17,6 @@ import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
 import {ConditionType} from '../components/condition';
 // eslint-disable-next-line n/no-extraneous-import
-import undoable from 'redux-undo';
 
 /**
  * Slugify a string, replacing special characters with less special ones
