@@ -23,6 +23,14 @@ import undoable, {includeAction} from 'redux-undo';
 import {uiSpecificationReducer} from './uiSpec-reducer';
 
 const persistedState = loadState();
+if (
+  persistedState &&
+  persistedState.notebook &&
+  persistedState.notebook['ui-specification']
+) {
+  persistedState.notebook['ui-specification'].past = [];
+  persistedState.notebook['ui-specification'].future = [];
+}
 
 const loggerMiddleware: Middleware<object, AppState> =
   storeAPI => next => action => {
