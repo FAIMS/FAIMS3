@@ -238,7 +238,6 @@ export const DesignPanel = () => {
   // Keyboard shortcuts for undo/redo
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      // macOS uses metaKey (⌘) and Windows/Linux use ctrlKey
       if (
         (event.ctrlKey || event.metaKey) &&
         !event.shiftKey &&
