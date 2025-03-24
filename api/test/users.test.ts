@@ -119,7 +119,7 @@ describe('user creation', () => {
     }
 
     const [newUserM, errorM] = await createUser({name: 'name'});
-    expect(errorM).to.equal('At least one of username and email is required');
+    expect(errorM).to.equal('At least one of username or email is required');
     expect(newUserM).to.be.null;
   });
 
@@ -139,7 +139,8 @@ describe('user creation', () => {
       addGlobalRole({user: newUser, role: Role.GENERAL_CREATOR});
 
       // check that global roles have been updated
-      expect(newUser.globalRoles.length).to.equal(2);
+      expect(newUser.globalRoles.length).to.equal(3);
+      expect(newUser.globalRoles).to.include(Role.GENERAL_USER);
       expect(newUser.globalRoles).to.include(Role.GENERAL_ADMIN);
       expect(newUser.globalRoles).to.include(Role.GENERAL_CREATOR);
 
@@ -151,7 +152,8 @@ describe('user creation', () => {
       });
 
       // verify global roles remain unchanged
-      expect(newUser.globalRoles.length).to.equal(2);
+      expect(newUser.globalRoles.length).to.equal(3);
+      expect(newUser.globalRoles).to.include(Role.GENERAL_USER);
       expect(newUser.globalRoles).to.include(Role.GENERAL_ADMIN);
       expect(newUser.globalRoles).to.include(Role.GENERAL_CREATOR);
 

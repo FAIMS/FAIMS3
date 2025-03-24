@@ -85,12 +85,13 @@ export async function safeWriteDocument<T extends {}>({
   // Try to get the existing document
   let existingDoc;
   try {
-    existingDoc = await db.get(data._id);
+    existingDoc = await db.get<T>(data._id);
   } catch (err: any) {
     // If the document doesn't exist, PouchDB will throw a 404 error
     if (err.status !== 404) {
       throw err;
     }
+    existingDoc = undefined;
   }
 
   if (existingDoc && !writeOnClash) {
@@ -104,6 +105,8 @@ export async function safeWriteDocument<T extends {}>({
 
   // Put the document (create or update)
   const response = await db.put(upsertData);
+
+
 
   return response;
 }

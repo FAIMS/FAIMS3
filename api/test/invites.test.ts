@@ -24,17 +24,17 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 import {EncodedProjectUIModel, Role} from '@faims3/data-model';
-import {createNotebook} from '../src/couchdb/notebooks';
+import {assert, expect} from 'chai';
+import request from 'supertest';
 import {
   createInvite,
   deleteInvite,
   getInvite,
   getInvitesForNotebook,
 } from '../src/couchdb/invites';
-import {initialiseDbAndKeys} from '../src/couchdb';
-import request from 'supertest';
+import {createNotebook} from '../src/couchdb/notebooks';
 import {app} from '../src/routes';
-import {expect, assert} from 'chai';
+import {beforeApiTests} from './utils';
 
 const uispec: EncodedProjectUIModel = {
   _id: '',
@@ -46,7 +46,7 @@ const uispec: EncodedProjectUIModel = {
 
 describe('Invites', () => {
   beforeEach(async () => {
-    await initialiseDbAndKeys({});
+    await beforeApiTests();
   });
 
   it('create invite', async () => {
@@ -96,6 +96,10 @@ describe('Invites', () => {
 });
 
 describe('Registration', () => {
+  beforeEach(async () => {
+    await beforeApiTests();
+  });
+
   it('redirects with a token on registration', async () => {
     const payload = {
       email: 'bob@here.com',

@@ -232,16 +232,12 @@ async function getUserFromUsername(
   username: CouchDBUsername
 ): Promise<Express.User | null> {
   const users_db = getUsersDB();
-  if (users_db) {
-    try {
-      const user = (await users_db.get(username)) as Express.User;
-      return user;
-      //return (await users_db.get(username)) as Express.User;
-    } catch (err) {
-      return null;
-    }
-  } else {
-    throw Error('Failed to connect to user database');
+  try {
+    const user = (await users_db.get(username)) as Express.User;
+    return user;
+    //return (await users_db.get(username)) as Express.User;
+  } catch (err) {
+    return null;
   }
 }
 
@@ -250,7 +246,7 @@ async function getUserFromUsername(
  * @param user An Express.User record to be written to the database
  */
 export async function saveUser(user: Express.User): Promise<void> {
-  safeWriteDocument({db: getUsersDB(), data: user, writeOnClash: true});
+  await safeWriteDocument({db: getUsersDB(), data: user, writeOnClash: true});
 }
 
 export async function getUserInfoForProject({
