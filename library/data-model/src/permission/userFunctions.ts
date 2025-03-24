@@ -4,8 +4,8 @@
  */
 
 import {PeopleDBFields} from '../data_storage';
-import {Action, Role} from './model';
-import {resourceRolesEqual} from './helpers';
+import {Action, Resource, Role, roleDetails, RoleScope} from './model';
+import {drillRoles, resourceRolesEqual} from './helpers';
 import {roleGrantsAction} from './helpers';
 import {ResourceRole} from './tokenEncoding';
 
@@ -14,10 +14,10 @@ import {ResourceRole} from './tokenEncoding';
 // ======
 
 /**
- * Checks if a user has a specific global role
+ * Checks if a user has a specific global role, considering role inheritance
  * @param user - User object to check
  * @param role - Role to check for
- * @returns True if the user has the specified global role
+ * @returns True if the user has the specified global role or any role that grants it
  */
 export function userHasGlobalRole({
   user,
@@ -26,16 +26,26 @@ export function userHasGlobalRole({
   user: PeopleDBFields;
   role: Role;
 }): boolean {
-  // Check if the role exists in the user's global roles array
-  return user.globalRoles.includes(role);
+  // Check each of the user's global roles
+  for (const userRole of user.globalRoles) {
+    // Get all roles granted by this user role (including the role itself)
+    const grantedRoles = drillRoles({role: userRole});
+    // If the target role is in the granted roles, return true
+    if (grantedRoles.includes(role)) {
+      return true;
+    }
+  }
+
+  // If we get here, none of the user's roles grant the target role
+  return false;
 }
 
 /**
- * Checks if a user has a specific role for a specific resource
+ * Checks if a user has a specific role for a specific resource, considering role inheritance
  * @param user - User object to check
  * @param resourceRole - Role to check for
  * @param resourceId - ID of the resource to check
- * @returns True if the user has the specified role for the specified resource
+ * @returns True if the user has the specified role or any role that grants it for the specified resource
  */
 export function userHasResourceRole({
   user,
@@ -46,18 +56,30 @@ export function userHasResourceRole({
   resourceRole: Role;
   resourceId: string;
 }): boolean {
-  // Create the resource role object to check for
-  const roleToCheck: ResourceRole = {
-    resourceId,
-    role: resourceRole,
-  };
+  // First check if any global role grants this resource role
+  if (userHasGlobalRole({user, role: resourceRole})) {
+    return true;
+  }
 
-  // Check if any resource role matches the specified resource and role
-  return user.resourceRoles.some(userRole =>
-    resourceRolesEqual(userRole, roleToCheck)
-  );
+  // Check each of the user's resource roles for this specific resource
+  for (const userResourceRole of user.resourceRoles) {
+    // Skip roles for different resources
+    if (userResourceRole.resourceId !== resourceId) {
+      continue;
+    }
+
+    // Get all roles granted by this user resource role
+    const grantedRoles = drillRoles({role: userResourceRole.role});
+
+    // If the target role is in the granted roles, return true
+    if (grantedRoles.includes(resourceRole)) {
+      return true;
+    }
+  }
+
+  // If we get here, none of the user's roles grant the target role for this resource
+  return false;
 }
-
 /**
  * Determines if a user can perform a specific action, optionally on a specific resource
  * @param user - User object to check
@@ -97,23 +119,61 @@ export function userCanDo({
 }
 
 /**
- * Gets all resource roles a user has for a specific resource
+ * Gets all resource roles a user has for a specific resource, including roles
+ * granted through inheritance
  * @param user - User object to check
  * @param resourceId - ID of the resource to check roles for
+ * @param resource - Specify the resource type so that global roles can be
+ * properly handled
  * @returns Array of Role enums that the user has for the specified resource
  */
 export function userResourceRoles({
   user,
   resourceId,
+  resource,
 }: {
   user: PeopleDBFields;
   resourceId: string;
+  resource: Resource;
 }): Role[] {
-  // Filter for roles that match the provided resource ID
-  // Then map to just the role enum values
-  return user.resourceRoles
+  // Set to track all granted roles without duplicates
+  const allRolesSet = new Set<Role>();
+  
+  // Process explicitly granted resource roles
+  const explicitlyGranted = user.resourceRoles
     .filter(resourceRole => resourceRole.resourceId === resourceId)
     .map(resourceRole => resourceRole.role);
+    
+  // Add each explicitly granted role and all roles it grants
+  for (const role of explicitlyGranted) {
+    drillRoles({role}).forEach(grantedRole => allRolesSet.add(grantedRole));
+  }
+  
+  // Process global roles that apply to this resource type
+  const applicableGlobalRoles = user.globalRoles.filter(r => {
+    const details = roleDetails[r];
+    return (
+      (details.scope === RoleScope.RESOURCE_SPECIFIC && details.resource === resource) ||
+      // Include roles that might grant applicable resource-specific roles
+      details.scope === RoleScope.GLOBAL
+    );
+  });
+  
+  // Add each applicable global role and all roles it grants
+  for (const role of applicableGlobalRoles) {
+    drillRoles({role})
+      .filter(grantedRole => {
+        // Only include resource-specific roles for this resource type
+        const details = roleDetails[grantedRole];
+        return (
+          details.scope === RoleScope.RESOURCE_SPECIFIC && 
+          details.resource === resource
+        );
+      })
+      .forEach(grantedRole => allRolesSet.add(grantedRole));
+  }
+  
+  return Array.from(allRolesSet);
 }
 
 // =======

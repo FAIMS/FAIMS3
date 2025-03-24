@@ -43,6 +43,7 @@ import {
   addResourceRole,
   removeGlobalRole,
   removeResourceRole,
+  Resource,
   Role,
   userCanDo,
   userHasResourceRole,
@@ -162,6 +163,7 @@ describe('user creation', () => {
       // Get all roles for the resource
       const projectRoles = userResourceRoles({
         user: newUser,
+        resource: Resource.PROJECT,
         resourceId: 'important-project',
       });
       expect(projectRoles).to.include(Role.PROJECT_ADMIN);
@@ -194,6 +196,7 @@ describe('user creation', () => {
       // Get updated roles for the resource
       const updatedProjectRoles = userResourceRoles({
         user: newUser,
+        resource: Resource.PROJECT,
         resourceId: 'important-project',
       });
       expect(updatedProjectRoles).to.include(Role.PROJECT_ADMIN);

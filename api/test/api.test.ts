@@ -377,6 +377,8 @@ describe('API tests', () => {
         expect(response.body.roles).to.deep.equal(
           resourceRoles.PROJECT.map(r => r.role)
         );
+        // only includes users who have at least one resource role on this
+        // notebook
         expect(response.body.users.length).to.equal(1);
       });
   });

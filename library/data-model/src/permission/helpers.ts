@@ -142,3 +142,65 @@ export function roleGrantsAction({
 
 export const resourceRolesEqual = (a: ResourceRole, b: ResourceRole): boolean =>
   a.resourceId === b.resourceId && a.role === b.role;
+
+// Cache for roles drill-down to avoid expensive recursion
+const roleDrillCache = new Map<Role, Role[]>();
+
+/**
+ * Given a role, drills into all roles that it grants. This includes both
+ * direct roles and those granted through inheritance via alsoGrants
+ * @param role The role to analyze
+ * @returns Array of all roles granted by this role (including itself)
+ */
+export function drillRoles({role}: {role: Role}): Role[] {
+  // Check cache first
+  if (roleDrillCache.has(role)) {
+    return roleDrillCache.get(role)!;
+  }
+
+  // Set to track unique roles (avoid duplicates)
+  const roleSet = new Set<Role>();
+
+  // Always include the original role
+  roleSet.add(role);
+
+  // Helper function to recursively collect roles
+  function collectRolesFromRole(
+    currentRole: Role,
+    visitedRoles: Set<Role> = new Set()
+  ): void {
+    // Prevent infinite recursion from circular role references
+    if (visitedRoles.has(currentRole)) {
+      return;
+    }
+
+    // Mark this role as visited
+    visitedRoles.add(currentRole);
+
+    // Skip if the role doesn't exist in our mapping
+    if (!(currentRole in rolePermissions)) {
+      return;
+    }
+
+    const {alsoGrants} = rolePermissions[currentRole];
+
+    // Recursively collect roles from inherited roles
+    if (alsoGrants) {
+      alsoGrants.forEach(grantedRole => {
+        roleSet.add(grantedRole);
+        collectRolesFromRole(grantedRole, visitedRoles);
+      });
+    }
+  }
+
+  // Start the collection process
+  collectRolesFromRole(role);
+
+  // Convert set back to array
+  const roles = Array.from(roleSet);
+
+  // Cache the result
+  roleDrillCache.set(role, roles);
+
+  return roles;
+}

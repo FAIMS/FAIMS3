@@ -40,6 +40,7 @@ import {
   PutUpdateNotebookInputSchema,
   PutUpdateNotebookResponse,
   removeResourceRole,
+  Resource,
   Role,
   userCanDo,
   userResourceRoles,
@@ -389,14 +390,20 @@ api.get(
     const allRoles = getRolesForNotebook().map(r => r.role);
     res.json({
       roles: allRoles,
-      users: users.map(u => {
-        const has = userResourceRoles({user: u, resourceId: req.params.id});
-        return {
-          name: u.name,
-          username: u.user_id,
-          roles: allRoles.map(r => ({value: r in has, name: r})),
-        };
-      }),
+      users: users
+        .map(u => {
+          const has = userResourceRoles({
+            resource: Resource.PROJECT,
+            user: u,
+            resourceId: req.params.id,
+          });
+          return {
+            name: u.name,
+            username: u.user_id,
+            roles: allRoles.map(r => ({value: has.includes(r), name: r})),
+          };
+        })
+        .filter(d => d.roles.filter(r => r.value).length > 0),
     });
   }
 );
