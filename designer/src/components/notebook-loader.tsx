@@ -117,6 +117,7 @@ export const NotebookLoader = () => {
           type: 'ui-specification/loaded',
           payload: updatedNotebook['ui-specification'],
         });
+        dispatch({type: 'CLEAR_HISTORY'});
         dispatch({type: 'modifiedStatus/resetFlag', payload: false});
 
         return true;

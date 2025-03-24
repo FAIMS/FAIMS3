@@ -19,7 +19,7 @@ import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
 import {AppState, Notebook} from './initial';
 import {loadState, saveState} from './localStorage';
 import {throttle} from 'lodash';
-import undoable from 'redux-undo';
+import undoable, {includeAction} from 'redux-undo';
 import {uiSpecificationReducer} from './uiSpec-reducer';
 
 const persistedState = loadState();
@@ -35,7 +35,23 @@ export const store: ToolkitStore<AppState> = configureStore({
   reducer: {
     notebook: combineReducers<Notebook>({
       metadata: metadataReducer,
-      'ui-specification': undoable(uiSpecificationReducer.reducer),
+      'ui-specification': undoable(uiSpecificationReducer.reducer, {
+        limit: 50,
+        filter: includeAction([
+          'ui-specification/fieldAdded',
+          'ui-specification/fieldDeleted',
+          'ui-specification/fieldUpdated',
+          'ui-specification/fieldDuplicated',
+          'ui-specification/sectionAdded',
+          'ui-specification/sectionDeleted',
+          'ui-specification/sectionRenamed',
+          'ui-specification/viewSetAdded',
+          'ui-specification/viewSetDeleted',
+          'ui-specification/viewSetRenamed',
+        ]),
+        clearHistoryType: 'CLEAR_HISTORY',
+        initTypes: [],
+      }),
     }),
     modified: modifiedStatusReducer,
   },

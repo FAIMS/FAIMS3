@@ -220,7 +220,7 @@ export const DesignPanel = () => {
       return;
     }
     dispatch(ActionCreators.undo());
-    setToastMessage('Undo performed');
+    setToastMessage('Undo complete');
     setToastOpen(true);
   }
 
@@ -231,7 +231,7 @@ export const DesignPanel = () => {
       return;
     }
     dispatch(ActionCreators.redo());
-    setToastMessage('Redo performed');
+    setToastMessage('Redo complete');
     setToastOpen(true);
   }
 
