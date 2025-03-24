@@ -134,7 +134,6 @@ export type PossibleConnectionInfo =
 export interface ProjectObject {
   _id: NonUniqueProjectID;
   name: string;
-  project_id: string;
   description?: string;
   // Was the project created from a template?
   template_id?: string;

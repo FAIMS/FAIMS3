@@ -74,14 +74,15 @@ import {slugify} from '../utils';
 export const getAllProjectsDirectory = async (): Promise<ProjectObject[]> => {
   const projectsDb = localGetProjectsDb();
   const projects: ProjectObject[] = [];
-  const res = await projectsDb.allDocs({
+  const res = await projectsDb.allDocs<ProjectObject>({
     include_docs: true,
   });
   res.rows.forEach(e => {
     if (e.doc !== undefined && !e.id.startsWith('_')) {
-      const doc = e.doc as any;
-      delete doc._rev;
-      const project = doc as unknown as ProjectObject;
+      const doc = e.doc;
+      const project = {...doc, _rev: undefined};
+      // delete rev so that we don't include in the result
+      delete project._rev;
       // add database connection details
       if (project.metadata_db)
         project.metadata_db.base_url = COUCHDB_PUBLIC_URL;
@@ -104,7 +105,7 @@ export const getUserProjectsDirectory = async (
     userCanDo({
       user,
       action: Action.READ_PROJECT_METADATA,
-      resourceId: p.project_id,
+      resourceId: p._id,
     })
   );
 };
@@ -131,7 +132,7 @@ export const getUserProjectsDetailed = async (
     .filter(p =>
       userCanDo({
         action: Action.READ_PROJECT_METADATA,
-        resourceId: p!.project_id,
+        resourceId: p!._id,
         user,
       })
     );
@@ -278,8 +279,8 @@ export const createNotebook = async (
   const dataDBName = `data-${projectId}`;
   const projectDoc = {
     _id: projectId,
-    template_id: template_id,
     name: projectName.trim(),
+    template_id: template_id,
     metadata_db: {
       db_name: metaDBName,
     },
@@ -287,7 +288,7 @@ export const createNotebook = async (
       db_name: dataDBName,
     },
     status: 'published',
-  } as ProjectObject;
+  } satisfies ProjectObject;
 
   try {
     // first add an entry to the projects db about this project

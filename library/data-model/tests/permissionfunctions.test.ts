@@ -498,8 +498,7 @@ describe('isAuthorized', () => {
       expect(
         isTokenAuthorized({
           token: token,
-          action: Action.READ_PROJECT_METADATA,
-          resourceId: 'anyProject',
+          action: Action.LIST_PROJECTS,
         })
       ).toBe(true);
 

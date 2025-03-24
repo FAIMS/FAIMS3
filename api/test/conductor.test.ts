@@ -198,7 +198,7 @@ describe('Pages', () => {
       .get(`/notebooks/${project_id}/users`)
       .expect(200)
       .then(response => {
-        expect(response.text).to.include('admin');
+        expect(response.text).to.include('PROJECT_ADMIN');
       });
   });
 
