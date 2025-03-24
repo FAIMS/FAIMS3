@@ -73,7 +73,7 @@ describe('notebook api', () => {
     await resetDatabases();
     const adminUser = await getUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const [user, error] = await createUser('', username, username);
+      const [user, error] = await createUser({username, name: username});
       if (user) {
         await saveUser(user);
         bobalooba = user;

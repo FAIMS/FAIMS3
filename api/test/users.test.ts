@@ -65,11 +65,10 @@ describe('user creation', () => {
   it('create user - good', async () => {
     const email = 'BOB@Here.com';
     const username = 'bobalooba';
-    const [newUserUsername, errorUsername] = await createUser(
-      '',
+    const [newUserUsername, errorUsername] = await createUser({
       username,
-      username
-    );
+      name: username,
+    });
     expect(errorUsername).to.equal('');
     if (newUserUsername) {
       expect(newUserUsername.user_id).to.equal(username);
@@ -78,7 +77,7 @@ describe('user creation', () => {
       assert.fail('user is null after createUser with valid username');
     }
 
-    const [newUserEmail, errorEmail] = await createUser(email, '', email);
+    const [newUserEmail, errorEmail] = await createUser({email, name: email});
     expect(errorEmail).to.equal('');
     if (newUserEmail) {
       expect(newUserEmail.user_id).not.to.equal('');
@@ -92,32 +91,34 @@ describe('user creation', () => {
     const email = 'BOBBY@here.com';
     const username = 'bobalooba';
 
-    const [newUser, errorFirst] = await createUser(email, '', email);
+    const [newUser, errorFirst] = await createUser({email, name: email});
     expect(errorFirst).to.equal('');
     if (newUser) {
       await saveUser(newUser);
       // now make another user with the same email
-      const [anotherUser, errorSecond] = await createUser(email, '', email);
+      const [anotherUser, errorSecond] = await createUser({email, name: email});
       expect(errorSecond).to.equal(`User with email '${email}' already exists`);
       expect(anotherUser).to.be.null;
     }
-    const [newUserU, errorFirstU] = await createUser('', username, username);
+    const [newUserU, errorFirstU] = await createUser({
+      username,
+      name: username,
+    });
     expect(errorFirstU).to.equal('');
     if (newUserU) {
       await saveUser(newUserU);
       // now make another user with the same email
-      const [anotherUserU, errorSecondU] = await createUser(
-        '',
+      const [anotherUserU, errorSecondU] = await createUser({
         username,
-        username
-      );
+        name: username,
+      });
       expect(errorSecondU).to.equal(
         `User with username '${username}' already exists`
       );
       expect(anotherUserU).to.be.null;
     }
 
-    const [newUserM, errorM] = await createUser('', '', 'name');
+    const [newUserM, errorM] = await createUser({name: 'name'});
     expect(errorM).to.equal('At least one of username and email is required');
     expect(newUserM).to.be.null;
   });
@@ -126,7 +127,11 @@ describe('user creation', () => {
     const email = 'BOBBY@here.com';
     const username = 'bobalooba';
 
-    const [newUser, error] = await createUser(email, username, username);
+    const [newUser, error] = await createUser({
+      email,
+      username,
+      name: username,
+    });
     expect(error).to.equal('');
     if (newUser !== null) {
       // add some global roles using Role enum
@@ -273,7 +278,7 @@ describe('user creation', () => {
     const email = 'BOBBY@here.com';
     const username = 'bobalooba';
     const project_id = 'myProject';
-    const [user, error] = await createUser(email, username, username);
+    const [user, error] = await createUser({email, username, name: username});
     expect(error).to.equal('');
     if (user) {
       // Use userCanDo with proper Action enums instead of the old userHasPermission
@@ -386,7 +391,7 @@ describe('user creation', () => {
   it('add local password', async () => {
     const username = 'bobalooba';
     const password = 'verysecret';
-    const [user, error] = await createUser('', username, username);
+    const [user, error] = await createUser({username, name: username});
     expect(error).to.equal('');
     if (user) {
       await addLocalPasswordForUser(user, password);
@@ -433,7 +438,7 @@ describe('user creation', () => {
     const username = 'bobalooba';
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [user, error] = await createUser('', username, username);
+    const [user, error] = await createUser({username, name: username});
     if (user && project_id) {
       addResourceRole({
         user,

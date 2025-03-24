@@ -35,7 +35,6 @@ import {
 import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
-import {FileWatcherEventKind} from 'typescript';
 
 /**
  * Builds a minimum spec user object - need to add profiles
@@ -46,7 +45,7 @@ export const generateInitialUser = ({
   username,
   name,
 }: {
-  email: string;
+  email?: string;
   username: string;
   name: string;
 }): Express.User => {
@@ -54,7 +53,7 @@ export const generateInitialUser = ({
     _id: username,
     user_id: username,
     name,
-    emails: [email.toLowerCase()],
+    emails: !!email ? [email.toLowerCase()] : [],
     // General user is given by default
     globalRoles: [Role.GENERAL_USER],
     // Resource roles are empty to start with
@@ -94,17 +93,22 @@ export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
 /**
  * createUser - create a new user record ensuring that the username or password
  *   - at least one of these needs to be supplied but the other can be empty
- * @param email - email address
- * @param username - username
+ * @param email? - email address
+ * @param username? - username
+ * @param name? - full name
  * @returns a new Express.User object ready to be saved in the DB
  */
-export async function createUser(
-  email: string,
-  username: string,
-  name: string
-): Promise<[Express.User | null, string]> {
+export async function createUser({
+  email,
+  username,
+  name,
+}: {
+  email?: string;
+  username?: string;
+  name: string;
+}): Promise<[Express.User | null, string]> {
   if (!email && !username) {
-    return [null, 'At least one of username and email is required'];
+    return [null, 'At least one of username or email is required'];
   }
   if (email && (await getUserFromEmail(email))) {
     return [null, `User with email '${email}' already exists`];
@@ -113,11 +117,11 @@ export async function createUser(
     return [null, `User with username '${username}' already exists`];
   }
   if (!username) {
-    username = email.toLowerCase();
+    username = email!.toLowerCase();
   }
 
   // make a new user record
-  const initialUser = generateInitialUser({email, username, name});
+  const initialUser = generateInitialUser({email: email, username, name});
   return [initialUser, ''];
 }
 

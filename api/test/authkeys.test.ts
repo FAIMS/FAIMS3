@@ -38,7 +38,7 @@ describe('roundtrip creating and reading token', () => {
     const signing_key = await KEY_SERVICE.getSigningKey();
 
     // need to make a user with these details
-    const [user, err] = await createUser(username, '', name);
+    const [user, err] = await createUser({username, name});
 
     if (user) {
       for (let i = 0; i < roles.length; i++) {

@@ -915,7 +915,7 @@ export const rolePermissions: Record<
   // GLOBAL ROLES
   // =============
   [Role.GENERAL_USER]: {
-    permissions: [Permission.PROJECT_LIST],
+    permissions: [Permission.PROJECT_LIST, Permission.TEMPLATE_VIEW],
     alsoGrants: [],
   },
   [Role.GENERAL_ADMIN]: {
@@ -925,7 +925,6 @@ export const rolePermissions: Record<
   [Role.GENERAL_CREATOR]: {
     permissions: [
       Permission.PROJECT_CREATE,
-      Permission.TEMPLATE_VIEW,
       Permission.TEMPLATE_CREATE,
       Permission.TEMPLATE_EDIT,
       Permission.TEMPLATE_DELETE,

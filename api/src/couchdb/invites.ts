@@ -140,12 +140,12 @@ export async function getInvite(
 }
 
 export async function getInvitesForNotebook(
-  project_id: ProjectID
+  projectId: ProjectID
 ): Promise<ExistingInvitesDBDocument[]> {
   const invite_db = getInvitesDB();
   if (invite_db) {
     const result = await invite_db.find({
-      selector: {project_id: {$eq: project_id}},
+      selector: {projectId: {$eq: projectId}},
     });
     return result.docs as ExistingInvitesDBDocument[];
   } else {

@@ -80,7 +80,7 @@ export const registerLocalUser = async (
   name: string,
   password: string
 ): Promise<[Express.User | null, string]> => {
-  const [user, error] = await createUser(email, username, name);
+  const [user, error] = await createUser({email, username, name});
   if (user) {
     addLocalPasswordForUser(user, password);
   }

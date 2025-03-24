@@ -76,11 +76,10 @@ export const beforeApiTests = async () => {
   adminToken = await generateJwtFromUser({user: adminUser!, signingKey});
 
   // create the local user
-  const [possibleLocalUser] = await createUser(
-    '',
-    localUserName,
-    localUserName
-  );
+  const [possibleLocalUser] = await createUser({
+    username: localUserName,
+    name: localUserName,
+  });
   // If this is null then the createUser function is not working
   expect(possibleLocalUser, 'Local user was null from create function.').to.not
     .be.null;
@@ -92,11 +91,10 @@ export const beforeApiTests = async () => {
   localUserToken = await generateJwtFromUser({user: localUser, signingKey});
 
   // create the nb user
-  const [possibleNbUser] = await createUser(
-    '',
-    notebookUserName,
-    notebookUserName
-  );
+  const [possibleNbUser] = await createUser({
+    username: notebookUserName,
+    name: notebookUserName,
+  });
 
   // If this is null then the createUser function is not working
   expect(possibleNbUser, 'Notebook user was null from create user function.').to

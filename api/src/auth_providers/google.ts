@@ -110,9 +110,9 @@ async function oauth_register(
     const invite = await getInvite(req.session.invite);
     if (invite) {
       [user, errorMsg] = await createUser(
-        emails[0],
-        emails[0],
-        profile.displayName
+        {email : emails[0],
+        username: emails[0],
+        name: profile.displayName}
       );
 
       if (user) {

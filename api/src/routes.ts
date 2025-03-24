@@ -132,6 +132,7 @@ app.post('/fallback-initialise', async (req, res) => {
   res.redirect('/');
 });
 
+// TODO add action for invite specifically
 app.get(
   '/notebooks/:id/invite/',
   requireAuthentication,
