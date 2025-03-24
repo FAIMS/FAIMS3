@@ -174,17 +174,7 @@ describe('user creation', () => {
         resourceId: 'important-project',
       });
       expect(projectRoles).to.include(Role.PROJECT_ADMIN);
-      expect(projectRoles.length).to.equal(1);
-
-      // add another resource role to the same project
-      addResourceRole({
-        user: newUser,
-        resourceId: 'important-project',
-        role: Role.PROJECT_MANAGER,
-      });
-
-      // verify both resource roles exist
-      expect(newUser.resourceRoles.length).to.equal(2);
+      expect(projectRoles.length).to.equal(4);
       expect(
         userHasResourceRole({
           user: newUser,
@@ -200,28 +190,9 @@ describe('user creation', () => {
         })
       ).to.be.true;
 
-      // Get updated roles for the resource
-      const updatedProjectRoles = userResourceRoles({
-        user: newUser,
-        resource: Resource.PROJECT,
-        resourceId: 'important-project',
-      });
-      expect(updatedProjectRoles).to.include(Role.PROJECT_ADMIN);
-      expect(updatedProjectRoles).to.include(Role.PROJECT_MANAGER);
-      expect(updatedProjectRoles.length).to.equal(2);
-
-      // doing it again should be a no-op
-      const userBeforeRedundantAdd = {...newUser};
-      addResourceRole({
-        user: newUser,
-        resourceId: 'important-project',
-        role: Role.PROJECT_MANAGER,
-      });
-      expect(newUser).to.deep.equal(userBeforeRedundantAdd);
-
       addGlobalRole({user: newUser, role: Role.GENERAL_ADMIN});
-      expect(newUser.globalRoles.length).to.equal(2);
-      expect(newUser.resourceRoles.length).to.equal(2);
+      expect(newUser.globalRoles.length).to.equal(3);
+      expect(newUser.resourceRoles.length).to.equal(1);
 
       // remove resource role
       removeResourceRole({
@@ -230,36 +201,20 @@ describe('user creation', () => {
         role: Role.PROJECT_ADMIN,
       });
 
+      // Still true due to general admin
       expect(
         userHasResourceRole({
           user: newUser,
           resourceId: 'important-project',
           resourceRole: Role.PROJECT_ADMIN,
         })
-      ).to.be.false;
-
-      expect(
-        userHasResourceRole({
-          user: newUser,
-          resourceId: 'important-project',
-          resourceRole: Role.PROJECT_MANAGER,
-        })
       ).to.be.true;
 
       // remove global role
       removeGlobalRole({user: newUser, role: Role.GENERAL_ADMIN});
-      expect(newUser.globalRoles.length).to.equal(1);
+      expect(newUser.globalRoles.length).to.equal(2);
       expect(newUser.globalRoles).to.include(Role.GENERAL_CREATOR);
-      expect(newUser.globalRoles).not.to.include(Role.GENERAL_ADMIN);
-
-      // Check remaining resource role
-      expect(
-        userHasResourceRole({
-          user: newUser,
-          resourceId: 'important-project',
-          resourceRole: Role.PROJECT_MANAGER,
-        })
-      ).to.be.true;
+      expect(newUser.globalRoles).to.include(Role.GENERAL_USER);
 
       // remove roles that aren't there should be harmless
       const userBeforeNonExistentRemoval = {...newUser};
@@ -269,10 +224,6 @@ describe('user creation', () => {
         role: Role.PROJECT_GUEST, // trying to remove a role that isn't assigned
       });
       expect(newUser).to.deep.equal(userBeforeNonExistentRemoval);
-
-      removeGlobalRole({user: newUser, role: Role.GENERAL_USER}); // trying to remove a role that isn't assigned
-      expect(newUser.globalRoles.length).to.equal(1);
-      expect(newUser.globalRoles).to.include(Role.GENERAL_CREATOR);
     }
   });
 

@@ -22,14 +22,16 @@ import {ResourceRole} from './tokenEncoding';
 export function userHasGlobalRole({
   user,
   role,
+  drill = true,
 }: {
   user: PeopleDBFields;
   role: Role;
+  drill?: boolean;
 }): boolean {
   // Check each of the user's global roles
   for (const userRole of user.globalRoles) {
     // Get all roles granted by this user role (including the role itself)
-    const grantedRoles = drillRoles({role: userRole});
+    const grantedRoles = drill ? drillRoles({role: userRole}) : [userRole];
     // If the target role is in the granted roles, return true
     if (grantedRoles.includes(role)) {
       return true;
@@ -51,13 +53,15 @@ export function userHasResourceRole({
   user,
   resourceRole,
   resourceId,
+  drill = true,
 }: {
   user: PeopleDBFields;
   resourceRole: Role;
   resourceId: string;
+  drill?: boolean;
 }): boolean {
   // First check if any global role grants this resource role
-  if (userHasGlobalRole({user, role: resourceRole})) {
+  if (userHasGlobalRole({user, role: resourceRole, drill})) {
     return true;
   }
 
@@ -69,7 +73,9 @@ export function userHasResourceRole({
     }
 
     // Get all roles granted by this user resource role
-    const grantedRoles = drillRoles({role: userResourceRole.role});
+    const grantedRoles = drill
+      ? drillRoles({role: userResourceRole.role})
+      : [userResourceRole.role];
 
     // If the target role is in the granted roles, return true
     if (grantedRoles.includes(resourceRole)) {
@@ -138,27 +144,28 @@ export function userResourceRoles({
 }): Role[] {
   // Set to track all granted roles without duplicates
   const allRolesSet = new Set<Role>();
-  
+
   // Process explicitly granted resource roles
   const explicitlyGranted = user.resourceRoles
     .filter(resourceRole => resourceRole.resourceId === resourceId)
     .map(resourceRole => resourceRole.role);
-    
+
   // Add each explicitly granted role and all roles it grants
   for (const role of explicitlyGranted) {
     drillRoles({role}).forEach(grantedRole => allRolesSet.add(grantedRole));
   }
-  
+
   // Process global roles that apply to this resource type
   const applicableGlobalRoles = user.globalRoles.filter(r => {
     const details = roleDetails[r];
     return (
-      (details.scope === RoleScope.RESOURCE_SPECIFIC && details.resource === resource) ||
+      (details.scope === RoleScope.RESOURCE_SPECIFIC &&
+        details.resource === resource) ||
       // Include roles that might grant applicable resource-specific roles
       details.scope === RoleScope.GLOBAL
     );
   });
-  
+
   // Add each applicable global role and all roles it grants
   for (const role of applicableGlobalRoles) {
     drillRoles({role})
@@ -166,13 +173,13 @@ export function userResourceRoles({
         // Only include resource-specific roles for this resource type
         const details = roleDetails[grantedRole];
         return (
-          details.scope === RoleScope.RESOURCE_SPECIFIC && 
+          details.scope === RoleScope.RESOURCE_SPECIFIC &&
           details.resource === resource
         );
       })
       .forEach(grantedRole => allRolesSet.add(grantedRole));
   }
-  
+
   return Array.from(allRolesSet);
 }
 
@@ -200,6 +207,7 @@ export function addResourceRole({
     user,
     resourceRole: role,
     resourceId,
+    drill: false,
   });
 
   // If the user already has this role, return the unchanged user object
@@ -259,7 +267,7 @@ export function addGlobalRole({
   role: Role;
 }) {
   // Check if the user already has this global role
-  if (userHasGlobalRole({user, role})) {
+  if (userHasGlobalRole({user, role, drill: false})) {
     // If so, return the unchanged user object
     return;
   }
