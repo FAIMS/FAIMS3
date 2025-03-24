@@ -1,19 +1,18 @@
 import {z} from 'zod';
 import {Form} from '../form';
-import {downloadFile} from '@/lib/utils';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/get-hooks';
 
 interface ExportProjectFormProps {
-  type: 'csv' | 'zip';
+  type: 'csv' | 'json' | 'xlsx';
 }
 
 /**
  * ExportProjectForm component renders a form for downloading a project's data.
  * It provides a button to download the project's data.
  *
- * @param {'csv' | 'zip'} type - The type of file to download.
+ * @param {'csv' | 'json' | 'xlsx'} type - The type of file to download.
  * @returns {JSX.Element} The rendered ExportProjectForm component.
  */
 const ExportProjectForm = ({type}: ExportProjectFormProps) => {
@@ -40,21 +39,42 @@ const ExportProjectForm = ({type}: ExportProjectFormProps) => {
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
   const onSubmit = async ({form}: {form: string}) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}.${type}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user!.token}`,
-        },
-      }
-    );
+    if (type === 'json') {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user!.token}`,
+          },
+        }
+      );
 
-    if (!response.ok)
-      return {type: 'submit', message: 'Error downloading File.'};
+      if (!response.ok)
+        return {type: 'submit', message: 'Error getting JSON data.'};
 
-    downloadFile(await response.blob(), `${projectId}_${form}.${type}`);
+      const {records} = await response.json();
+      const filteredRecords = records.filter(
+        (record: any) => record.type === form
+      );
+
+      const blob = new Blob([JSON.stringify(filteredRecords, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${projectId}_${form}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      const url = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}.${type}`;
+      window.open(url, '_blank');
+    }
+    return undefined;
   };
 
   return <Form fields={fields} onSubmit={onSubmit} />;

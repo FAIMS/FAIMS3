@@ -54,6 +54,7 @@ import {
   getRolesForNotebook,
   streamNotebookFilesAsZip,
   streamNotebookRecordsAsCSV,
+  streamNotebookRecordsAsXLSX,
   updateNotebook,
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
@@ -352,6 +353,34 @@ api.get(
       );
       res.setHeader('Content-Type', 'application/zip');
       streamNotebookFilesAsZip(req.params.id, req.params.viewID, res);
+    } else {
+      throw new Exceptions.ItemNotFoundException(
+        `Form with id ${req.params.viewID} not found in notebook`
+      );
+    }
+  }
+);
+
+// export current versions of all records in this notebook as xlsx
+api.get(
+  '/:id/:viewID.xlsx',
+  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
+  requireAuthenticationAPI,
+  async (req, res) => {
+    if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
+      throw new Exceptions.ItemNotFoundException('Notebook not found');
+    }
+    // get the label for this form for the filename header
+    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+    if (uiSpec && req.params.viewID in uiSpec.viewsets) {
+      const label = uiSpec.viewsets[req.params.viewID].label;
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${label}.xlsx"`
+      );
+      streamNotebookRecordsAsXLSX(req.params.id, req.params.viewID, res);
     } else {
       throw new Exceptions.ItemNotFoundException(
         `Form with id ${req.params.viewID} not found in notebook`
