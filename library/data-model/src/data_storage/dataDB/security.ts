@@ -2,15 +2,13 @@
  * This module exports the security document to be used for the auth database.
  */
 
-import {Role} from '../../permission';
-import {buildCouchRoleFromProjectId, SecurityDocument} from '../utils';
+import {Action, necessaryActionToCouchRoleList, Role} from '../../permission';
+import {SecurityDocument} from '../utils';
 
 export const DataDBSecurityDocument = ({
   projectId,
-  roles,
 }: {
   projectId: string;
-  roles: string[];
 }): SecurityDocument => {
   return {
     // General admins have complete access
@@ -20,7 +18,10 @@ export const DataDBSecurityDocument = ({
     },
     members: {
       names: [],
-      roles: roles.map(role => buildCouchRoleFromProjectId({projectId, role})),
+      roles: necessaryActionToCouchRoleList({
+        action: Action.READ_MY_PROJECT_RECORDS,
+        resourceId: projectId,
+      }),
     },
   };
 };

@@ -14,6 +14,7 @@ import {
   TokenPermissions,
   encodeToken,
   ENCODING_SEPARATOR,
+  necessaryActionToCouchRoleList,
 } from '../src/permission/tokenEncoding';
 
 beforeEach(() => {
@@ -642,6 +643,22 @@ describe('isAuthorized', () => {
           resourceId: 'project123',
         })
       ).toBe(false);
+    });
+
+    it('encodes couchdb roles appropriately', () => {
+      let action = Action.READ_MY_PROJECT_RECORDS;
+      let resourceId = '1234';
+      let result = necessaryActionToCouchRoleList({action, resourceId});
+      expect(result.sort()).toEqual(
+        [
+          `${resourceId}||${Permission.PROJECT_DATA_ADD}`,
+          `${resourceId}||${Permission.PROJECT_DATA_READ_MINE}`,
+          `${resourceId}||${Permission.PROJECT_DATA_READ_ALL}`,
+          `${Permission.PROJECT_DATA_ADD}`,
+          `${Permission.PROJECT_DATA_READ_MINE}`,
+          `${Permission.PROJECT_DATA_READ_ALL}`,
+        ].sort()
+      );
     });
   });
 });

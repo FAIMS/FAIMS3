@@ -385,7 +385,7 @@ export const initialiseMetadataDb = async ({
   try {
     await couchInitialiser({
       db: metaDb,
-      content: initMetadataDB({projectId, roles}),
+      content: initMetadataDB({projectId}),
       config: {applyPermissions: !isTesting, forceWrite: force},
     });
   } catch (e) {
@@ -427,7 +427,7 @@ export const initialiseDataDb = async ({
   try {
     await couchInitialiser({
       db: dataDb,
-      content: initDataDB({projectId, roles}),
+      content: initDataDB({projectId}),
       config: {applyPermissions: !isTesting, forceWrite: force},
     });
   } catch (e) {

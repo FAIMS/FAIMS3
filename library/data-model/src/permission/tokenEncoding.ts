@@ -1,7 +1,7 @@
 import {string, z} from 'zod';
 import {PeopleDBDocument} from '../data_storage';
 import {drillRolePermissions} from './helpers';
-import {Role} from './model';
+import {Action, actionPermissions, Role} from './model';
 
 // ==============
 // TOKEN ENCODING
@@ -148,6 +148,9 @@ export const encodeClaim = ({
 
 /**
  * Encodes a decoded token back into the raw TokenStructure format
+ *
+ * This drills into resource roles to encode all permissions they provide into resourceId||permission
+ *
  * @param decodedToken The decoded token
  * @returns The encoded TokenStructure
  */
@@ -179,7 +182,6 @@ export function encodeToken(
     const permissions = drillRolePermissions({
       role,
     });
-    // These are not encoded since they are global
     allPermissions.concat(permissions);
   });
 
@@ -215,4 +217,33 @@ export function couchUserToTokenPermissions({
     }
   }
   return encodeToken({globalRoles, resourceRoles: allResourceRoles});
+}
+
+/**
+ * From a given ACTION, reverse looks up permissions which grant that action,
+ * and then encodes both the resource specific version i.e. <resource Id> ||
+ * <permission> and the global version <permission> implying that either is
+ * suitable
+ * @returns list of roles to be used in couch db security documents
+ */
+export function necessaryActionToCouchRoleList({
+  action,
+  resourceId,
+}: {
+  action: Action;
+  resourceId: string;
+}): string[] {
+  let roles: string[] = [];
+  // lookup permissions from action
+  actionPermissions[action].forEach(p => {
+    // push encoded and non-encoded claim (global)
+    roles.push(
+      encodeClaim({
+        resourceId,
+        claim: p,
+      })
+    );
+    roles.push(p);
+  });
+  return roles;
 }

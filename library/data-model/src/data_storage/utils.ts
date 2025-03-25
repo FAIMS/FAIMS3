@@ -48,20 +48,6 @@ export type InitialisationContent<Document extends {} = any> = {
   defaultDocument?: Document;
 };
 
-/**
- * Builds a role name for use in the couch DB security document from the project
- * ID + role name
- * @returns Role
- */
-export const buildCouchRoleFromProjectId = ({
-  projectId,
-  role,
-}: {
-  projectId: string;
-  role: string;
-}): string => {
-  return `${projectId}||${role}`;
-};
 
 /**
  * Gets a record, updates the _rev, then puts or gracefully returns if

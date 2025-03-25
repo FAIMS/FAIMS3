@@ -101,6 +101,7 @@ api.get('/info', async (req, res) => {
 
 api.get(
   '/directory/',
+  requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_PROJECTS}),
   async (req, res) => {
     // get the directory of notebooks on this server
