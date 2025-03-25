@@ -45,7 +45,6 @@ const MIN_ZOOM = 12;
 export const canShowMapNear = async (
   features: GeoJSONFeatureCollection | undefined
 ) => {
-  console.log('canShowMapNear', features);
   if (navigator.onLine) return true;
 
   if (features) {

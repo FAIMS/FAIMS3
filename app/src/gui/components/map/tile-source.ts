@@ -172,7 +172,9 @@ class TileStoreBase {
    * @returns the key of the tile in the database
    */
   async storeTileRecord(url: string, data: Blob, set: string) {
-    const tile = {url, data, sets: [set]};
+    // don't want the map key in the stored URL
+    const cleanURL = url.replace(MAP_SOURCE_KEY, '');
+    const tile = {url: cleanURL, data, sets: [set]};
     const existingTile = await this.tileStore.tileDB.get(url);
     if (existingTile) {
       tile.sets = [...existingTile.sets, set];
@@ -227,7 +229,9 @@ class TileStoreBase {
   async getTileBlob(url: string | undefined): Promise<Blob | undefined> {
     if (url) {
       if (this.tileStore.tileDB) {
-        const image = await this.tileStore.tileDB.get([url]);
+        // we don't want the map key in the tileDB
+        const cleanURL = url.replace(MAP_SOURCE_KEY, '');
+        const image = await this.tileStore.tileDB.get([cleanURL]);
         if (image) return image.data;
       }
       if (navigator.onLine) {
@@ -296,17 +300,17 @@ class TileStoreBase {
     const worldExtent = tileGrid?.getExtent();
     const setName = '_baseline';
 
-    if (worldExtent) {
+    if (worldExtent && this.tileStore.tileSetDB) {
       const existingTileSet = await this.tileStore.tileSetDB.get([setName]);
       if (!existingTileSet) {
-        const tileset = this.createTileSet(
+        const tileSet = await this.createTileSet(
           worldExtent,
+          setName,
           0,
-          BASELINE_ZOOM,
-          '_baseline'
+          BASELINE_ZOOM
         );
         this.downloadTileSet(setName);
-        return tileset;
+        return tileSet;
       }
     }
   }
@@ -316,8 +320,15 @@ class TileStoreBase {
    *
    * @param extent The extent of the region to get tiles for
    * @param setName The name of the set to store the tiles in
+   * @param minZoom The minimum zoom level to get tiles for
+   * @param maxZoom The maximum zoom level to get tiles for
    */
-  async createTileSet(extent: Extent, setName: string) {
+  async createTileSet(
+    extent: Extent,
+    setName: string,
+    minZoom = START_ZOOM,
+    maxZoom = MAX_ZOOM
+  ) {
     const existingTileSet = await this.tileStore.tileSetDB.get([setName]);
     if (existingTileSet) {
       throw new Error(
@@ -328,8 +339,8 @@ class TileStoreBase {
     const tileSet: StoredTileSet = {
       setName,
       extent,
-      minZoom: START_ZOOM,
-      maxZoom: MAX_ZOOM,
+      minZoom,
+      maxZoom,
       size: 0,
       expectedTileCount: 0,
       created: new Date(),
@@ -581,16 +592,31 @@ export class VectorTileStore extends TileStoreBase {
       source: this.source,
       background: 'hsl(40, 26%, 93%)',
     });
+    this.preCacheSprites();
     applyStyle(this.tileLayer, getMapStylesheet(MAP_STYLE), {
       transformRequest: this.transformRequest.bind(this),
     });
+  }
+
+  // Some URLs are used in map styling, we want to make sure we have them
+  // for offline use.  Would be nice to extract these from the style
+  // object but I can't see how to do that. For now we'll just hard
+  // code them here.
+  async preCacheSprites() {
+    const spriteURLs = [
+      'https://openmaptiles.github.io/maptiler-basic-gl-style/sprite@2x.json',
+      'https://openmaptiles.github.io/maptiler-basic-gl-style/sprite.json',
+    ];
+    for (const spriteURL of spriteURLs) {
+      await this.transformRequest(spriteURL);
+    }
   }
 
   async transformRequest(url: string) {
     const fullURL = url.replace('{key}', MAP_SOURCE_KEY);
     const blob = await this.getTileBlob(fullURL);
     if (blob) {
-      this.storeTileRecord(fullURL, blob, 'cache');
+      this.storeTileRecord(fullURL, blob, '_cache');
       const response = new Response(blob);
       // need to very explicity set the url which is supposed to be read only
       Object.defineProperty(response, 'url', {value: fullURL});
