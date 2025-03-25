@@ -166,7 +166,7 @@ export function encodeToken(
   );
 
   // Encode resource permissions - collect them all
-  const allPermissions: string[] = [];
+  let allPermissions: string[] = [];
 
   // For each resource specific role, drill down into all permissions, and add
   // to the all permissions list per resource
@@ -174,7 +174,7 @@ export function encodeToken(
     const permissions = drillRolePermissions({
       role,
     });
-    allPermissions.concat(
+    allPermissions = allPermissions.concat(
       permissions.map(p => encodeClaim({resourceId, claim: p}))
     );
   });
@@ -182,7 +182,7 @@ export function encodeToken(
     const permissions = drillRolePermissions({
       role,
     });
-    allPermissions.concat(permissions);
+    allPermissions = allPermissions.concat(permissions);
   });
 
   // General roles don't need special encoding

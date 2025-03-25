@@ -147,7 +147,7 @@ app.get(
     if (notebook) {
       res.render('invite', {
         notebook: notebook,
-        roles: await getRolesForNotebook(),
+        roles: getRolesForNotebook().map(r => r.role),
       });
     } else {
       res.status(404).end();
