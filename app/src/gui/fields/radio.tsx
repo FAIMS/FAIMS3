@@ -27,6 +27,7 @@ import {
   FormLabelProps,
   FormHelperTextProps,
   FormControlLabelProps,
+  Box,
 } from '@mui/material';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
 import FieldWrapper from './fieldWrapper';
@@ -91,7 +92,7 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
         subheading={helperText}
         required={this.props.required}
       >
-        <FormControl error={Boolean(form.errors?.[field.name])}>
+        <FormControl sx={{mb: 4}} error={Boolean(form.errors?.[field.name])}>
           <MuiRadioGroup
             {...fieldToRadioGroup({field, form, ...radioGroupProps})}
             value={field.value || ''}
@@ -104,19 +105,37 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                 control={
                   <MuiRadio
                     {...option.RadioProps}
-                    checked={field.value === option.value}
-                    onClick={() => {
-                      if (field.value === option.value) {
-                        this.handleChange({
-                          target: {value: ''},
-                        } as React.ChangeEvent<HTMLInputElement>);
-                      }
+                    sx={{
+                      alignSelf: 'flex-start',
+                      paddingTop: '6px',
                     }}
                   />
                 }
-                label={option.label}
+                label={
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'contents',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      lineHeight: '1.5',
+                      paddingTop: '2px',
+                      paddingLeft: '0px',
+                    }}
+                  >
+                    {option.label}
+                  </Box>
+                }
                 {...option.FormControlProps}
                 disabled={this.props.disabled ?? false}
+                sx={{
+                  alignItems: 'flex-start',
+                  marginBottom: 1,
+                  '& .MuiFormControlLabel-label': {
+                    display: 'block',
+                    marginTop: '5px',
+                  },
+                }}
               />
             ))}
           </MuiRadioGroup>
