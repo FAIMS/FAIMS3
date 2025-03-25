@@ -23,9 +23,6 @@ import {useEffect, useMemo, useState} from 'react';
 import {MapComponent} from './map-component';
 import {StoredTileSet, VectorTileStore} from './tile-source';
 
-const TILE_MAX_ZOOM = 14; // for vector tiles...need a better way to handle this
-const MIN_ZOOM = 12;
-
 /**
  * Map download component presents the UI for downloading offline maps.
  *
@@ -33,12 +30,14 @@ const MIN_ZOOM = 12;
 export const MapDownloadComponent = () => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [cacheSize, setCacheSize] = useState('');
-  const [zoomLevel, setZoomLevel] = useState(MIN_ZOOM); // Default zoom level
   const [downloadSetName, setDownloadSetName] = useState('Default');
   const [message, setMessage] = useState('');
   const [tileSets, setTileSets] = useState<StoredTileSet[]>([]);
 
   const tileStore = useMemo(() => new VectorTileStore(), []);
+
+  // ensure we have a baseline tile set for this map
+  tileStore.createBaselineTileSet();
 
   // Call updateTileSets on startup and arrange for it to be called
   // whenever there is an update to offline maps (new tiles downloaded)
@@ -63,8 +62,6 @@ export const MapDownloadComponent = () => {
       // invalidate calculation if the map moves and keep track of zoom level
       map.on('movestart', () => {
         setCacheSize('');
-        const zoom = map.getView().getZoom();
-        if (zoom) setZoomLevel(zoom);
       });
     }
   }, [map]);
@@ -80,18 +77,16 @@ export const MapDownloadComponent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
       let sizeStr = '';
-      tileStore
-        .estimateSizeForRegion(extent, zoomLevel, TILE_MAX_ZOOM)
-        .then(size => {
-          if (size > 1024 * 1024) {
-            sizeStr = (size / 1024 / 1024).toFixed(2) + ' TB';
-          } else if (size > 1024) {
-            sizeStr = (size / 1024).toFixed(2) + ' GB';
-          } else {
-            sizeStr = size + ' MB';
-          }
-          setCacheSize(sizeStr);
-        });
+      tileStore.estimateSizeForRegion(extent).then(size => {
+        if (size > 1024 * 1024) {
+          sizeStr = (size / 1024 / 1024).toFixed(2) + ' TB';
+        } else if (size > 1024) {
+          sizeStr = (size / 1024).toFixed(2) + ' GB';
+        } else {
+          sizeStr = size + ' MB';
+        }
+        setCacheSize(sizeStr);
+      });
     }
   };
 
@@ -101,12 +96,7 @@ export const MapDownloadComponent = () => {
       const extent = map.getView().calculateExtent();
       setMessage('');
       try {
-        await tileStore.createTileSet(
-          extent,
-          zoomLevel,
-          TILE_MAX_ZOOM,
-          downloadSetName
-        );
+        await tileStore.createTileSet(extent, downloadSetName);
         tileStore.downloadTileSet(downloadSetName);
       } catch (e: any) {
         console.error(e);

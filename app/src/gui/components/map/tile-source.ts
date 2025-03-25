@@ -18,24 +18,28 @@
  * tiles locally.
  */
 
-import {containsCoordinate, containsExtent, Extent} from 'ol/extent';
+import {applyStyle} from 'ol-mapbox-style';
+import {containsExtent, Extent} from 'ol/extent';
 import Feature, {FeatureLike} from 'ol/Feature';
 import MVT from 'ol/format/MVT';
+import {Geometry} from 'ol/geom';
 import TileLayer from 'ol/layer/Tile';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import {LoaderOptions} from 'ol/source/DataTile';
 import ImageTileSource from 'ol/source/ImageTile';
 import OSM, {ATTRIBUTION} from 'ol/source/OSM';
 import VectorTileSource from 'ol/source/VectorTile';
+import Tile from 'ol/Tile';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
 import {MAP_SOURCE, MAP_SOURCE_KEY, MAP_STYLE} from '../../../buildconfig';
-import {applyStyle} from 'ol-mapbox-style';
-import {getMapStylesheet} from './styles';
-import Tile from 'ol/Tile';
 import {IDBObjectStore} from './IDBObjectStore';
-import {useIsOnline} from '../../../utils/customHooks';
-import {Geometry} from 'ol/geom';
+import {getMapStylesheet} from './styles';
+
+// When downloading maps we start at this zoom level
+const START_ZOOM = 2;
+// the highest zoom level we will download
+const MAX_ZOOM = 14;
 
 // Table of map tile sources for raster and vector tiles
 // based on configuration settings we select which of these to use
@@ -251,22 +255,15 @@ class TileStoreBase {
    *
    * Estimates the size of a region in MB.
    * @param {Extent} extent The extent of the region to estimate the size of.
-   * @param {number} minZoom The minimum zoom level to estimate the size of.
-   * @param {number} maxZoom The maximum zoom level to estimate the size of.
    * @return {Promise<number>} The estimated size of the region in MB.
    */
-  async estimateSizeForRegion(
-    extent: Extent,
-    minZoom: number,
-    maxZoom: number
-  ) {
+  async estimateSizeForRegion(extent: Extent) {
     const tileGrid = this.getTileGrid();
     const averageSize = 100; // kb
 
     const tileSet = new Set<string>();
-    // start at zoom 10, two less than our default zoom level for showing maps
-    const startZoom = 10;
-    for (let zoom = startZoom; zoom <= maxZoom; zoom += 1) {
+    const startZoom = START_ZOOM;
+    for (let zoom = startZoom; zoom <= MAX_ZOOM; zoom += 1) {
       tileGrid?.forEachTileCoord(
         extent,
         Math.ceil(zoom),
@@ -288,19 +285,39 @@ class TileStoreBase {
   }
 
   /**
+   * createBaselineTileSet
+   *
+   * Create a baseline tileset containing tiles from zoom level 0 to N for the whole planet.
+   *
+   */
+  async createBaselineTileSet() {
+    const BASELINE_ZOOM = 2;
+    const tileGrid = this.getTileGrid();
+    const worldExtent = tileGrid?.getExtent();
+    const setName = '_baseline';
+
+    if (worldExtent) {
+      const existingTileSet = await this.tileStore.tileSetDB.get([setName]);
+      if (!existingTileSet) {
+        const tileset = this.createTileSet(
+          worldExtent,
+          0,
+          BASELINE_ZOOM,
+          '_baseline'
+        );
+        this.downloadTileSet(setName);
+        return tileset;
+      }
+    }
+  }
+
+  /**
    * createTileSet - create a tile set that will be used to cache tiles
    *
    * @param extent The extent of the region to get tiles for
-   * @param minZoom Minimum zoom level to download
-   * @param maxZoom Maximum zoom level to download
    * @param setName The name of the set to store the tiles in
    */
-  async createTileSet(
-    extent: Extent,
-    minZoom: number,
-    maxZoom: number,
-    setName: string
-  ) {
+  async createTileSet(extent: Extent, setName: string) {
     const existingTileSet = await this.tileStore.tileSetDB.get([setName]);
     if (existingTileSet) {
       throw new Error(
@@ -311,8 +328,8 @@ class TileStoreBase {
     const tileSet: StoredTileSet = {
       setName,
       extent,
-      minZoom: 10,
-      maxZoom,
+      minZoom: START_ZOOM,
+      maxZoom: MAX_ZOOM,
       size: 0,
       expectedTileCount: 0,
       created: new Date(),
@@ -454,6 +471,10 @@ class TileStoreBase {
       // Check if this feature is contained in any tile set
       let featureFound = false;
       for (const tileSet of tileSets) {
+        if (tileSet.setName.startsWith('_')) {
+          // Skip system tileSets
+          continue;
+        }
         if (containsExtent(tileSet.extent, featureExtent)) {
           featureFound = true;
           break; // No need to check other tile sets once we find one
@@ -575,6 +596,7 @@ export class VectorTileStore extends TileStoreBase {
       Object.defineProperty(response, 'url', {value: fullURL});
       return response;
     } else {
+      console.log('transformRequest fail', fullURL);
       return fullURL;
     }
   }
