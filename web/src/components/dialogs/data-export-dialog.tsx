@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
 import ExportProjectForm from '../forms/export-project-form';
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 
 /**
  * DataExportDialog component renders a dialog for exporting a project's data.
@@ -24,10 +25,25 @@ export const DataExportDialog = () => (
       <DialogHeader>
         <DialogTitle>Data Export</DialogTitle>
         <DialogDescription>
-          Export all responses for this project to a CSV file.
+          Export all responses for this project to your preferred format.
         </DialogDescription>
       </DialogHeader>
-      <ExportProjectForm type="csv" />
+      <Tabs defaultValue="csv" className="w-full">
+        <TabsList className="flex gap-2 w-fit">
+          <TabsTrigger value="csv">CSV</TabsTrigger>
+          <TabsTrigger value="json">JSON</TabsTrigger>
+          <TabsTrigger value="xlsx">XLSX</TabsTrigger>
+        </TabsList>
+        <TabsContent value="csv">
+          <ExportProjectForm type="csv" />
+        </TabsContent>
+        <TabsContent value="json">
+          <ExportProjectForm type="json" />
+        </TabsContent>
+        <TabsContent value="xlsx">
+          <ExportProjectForm type="xlsx" />
+        </TabsContent>
+      </Tabs>
     </DialogContent>
   </Dialog>
 );

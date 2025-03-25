@@ -60,6 +60,7 @@ import {
 import {Stringifier, stringify} from 'csv-stringify';
 import {slugify} from '../utils';
 import {userHasPermission} from './users';
+import ExcelJS from 'exceljs';
 
 /**
  * getAllProjects - get the internal project documents that reference
@@ -989,3 +990,82 @@ export async function countRecordsInNotebook(
 
 setAttachmentLoaderForType('faims-attachment::Files', file_attachments_to_data);
 setAttachmentDumperForType('faims-attachment::Files', file_data_to_attachments);
+
+export const streamNotebookRecordsAsXLSX = async (
+  projectId: ProjectID,
+  viewID: string,
+  res: NodeJS.WritableStream
+) => {
+  const dataDb = await getDataDb(projectId);
+  const uiSpecification = await getProjectUIModel(projectId);
+  const iterator = await notebookRecordIterator({
+    dataDb,
+    projectId,
+    uiSpecification,
+    viewID,
+  });
+  const fields = await getNotebookFieldTypes(projectId, viewID);
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Records');
+
+  // Define columns
+  const columns = [
+    'identifier',
+    'record_id',
+    'revision_id',
+    'type',
+    'created_by',
+    'created',
+    'updated_by',
+    'updated',
+  ];
+  Object.keys(fields).forEach((key: string) => {
+    columns.push(key);
+  });
+
+  // Add headers
+  worksheet.addRow(columns);
+
+  let {record, done} = await iterator.next();
+  const filenames: string[] = [];
+  while (!done) {
+    if (record) {
+      const hrid = record.hrid || record.record_id;
+      const row = [
+        hrid,
+        record.record_id,
+        record.revision_id,
+        record.type,
+        record.created_by,
+        record.created.toISOString(),
+        record.updated_by,
+        record.updated.toISOString(),
+      ];
+      const outputData = convertDataForOutput(
+        fields,
+        record.data,
+        hrid,
+        filenames
+      );
+      Object.keys(outputData).forEach((property: string) => {
+        row.push(outputData[property]);
+      });
+      worksheet.addRow(row);
+    }
+    const next = await iterator.next();
+    record = next.record;
+    done = next.done;
+  }
+
+  // Auto-fit columns
+  worksheet.columns.forEach((column: Partial<ExcelJS.Column>) => {
+    if (column) {
+      column.width = 15;
+    }
+  });
+
+  // Write to response stream
+  await workbook.xlsx.write(res as unknown as Stream);
+  res.end();
+};
