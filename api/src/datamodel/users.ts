@@ -61,11 +61,3 @@ export type PouchUser = {
   profiles: UserServiceProfiles;
   owned: NonUniqueProjectID[];
 };
-
-export interface RoleInvite {
-  _id: string;
-  _rev?: string;
-  _deleted?: boolean;
-  project_id: NonUniqueProjectID;
-  role: ConductorRole;
-}

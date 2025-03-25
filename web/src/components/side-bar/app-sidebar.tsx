@@ -8,7 +8,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {useGetProjects, useGetTemplates} from '@/hooks/get-hooks';
+import {useGetProjects, useGetTemplates} from '@/hooks/queries';
 import {Link, useLocation} from '@tanstack/react-router';
 import {LayoutTemplate, LetterText, Users} from 'lucide-react';
 import * as React from 'react';
@@ -49,7 +49,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               icon: LayoutTemplate,
               isActive: pathname.startsWith('/templates'),
               items:
-                templates?.length > 0
+                templates && templates?.length > 0
                   ? templates.map(({_id, template_name}: any) => ({
                       id: _id,
                       title: template_name,
@@ -63,7 +63,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               icon: LetterText,
               isActive: pathname.startsWith('/templates'),
               items:
-                projects?.length > 0
+                projects && projects.length > 0
                   ? projects.map(({name, project_id}: any) => ({
                       id: project_id,
                       title: name,

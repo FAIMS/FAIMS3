@@ -79,7 +79,6 @@ import {
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
-import {c} from 'vitest/dist/reporters-5f784f42';
 
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -795,7 +794,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
     const allSections =
       this.props.ui_specification.viewsets[this.getViewsetName()].views;
 
-    const allVisited = allSections.every((section: string) =>
+    allSections.every((section: string) =>
       this.state.visitedSteps.has(section)
     );
   }

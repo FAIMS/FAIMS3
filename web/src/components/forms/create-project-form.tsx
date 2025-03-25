@@ -2,7 +2,7 @@ import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
-import {useGetTemplates} from '@/hooks/get-hooks';
+import {useGetTemplates} from '@/hooks/queries';
 import {Divider} from '../ui/word-divider';
 import {
   createProjectFromFile,

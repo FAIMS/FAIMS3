@@ -12,7 +12,7 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useState} from 'react';
 import {useAuth} from '@/context/auth-provider';
 import {Route} from '@/routes/_protected/templates/$templateId';
-import {useGetTemplates} from '@/hooks/get-hooks';
+import {useGetTemplate} from '@/hooks/queries';
 import {
   Tooltip,
   TooltipContent,
@@ -27,7 +27,7 @@ import {
 export const ProjectFromTemplateDialog = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-  const {data} = useGetTemplates(user, templateId);
+  const {data} = useGetTemplate(user, templateId);
   const [open, setOpen] = useState(false);
   const archived = data?.metadata.project_status === 'archived';
 

@@ -7,7 +7,7 @@ import {
 } from './ui/breadcrumb';
 import {useAuth} from '@/context/auth-provider';
 import {Fragment} from 'react';
-import {useGetProjects, useGetTemplates} from '@/hooks/get-hooks';
+import {useGetProject, useGetTemplate} from '@/hooks/queries';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {Skeleton} from './ui/skeleton';
 
@@ -27,8 +27,8 @@ export default function Breadcrumbs() {
   const {user} = useAuth();
   const {data, isLoading} =
     pathname.at(0) === 'projects'
-      ? useGetProjects(user, pathname.at(1))
-      : useGetTemplates(user, pathname.at(1));
+      ? useGetProject(user, pathname.at(1) || '')
+      : useGetTemplate(user, pathname.at(1) || '');
 
   return (
     <Breadcrumb>

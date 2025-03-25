@@ -2,7 +2,7 @@ import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectInvite} from '@/components/dialogs/create-project-invite';
 import {columns} from '@/components/tables/project-invites';
 import {useAuth} from '@/context/auth-provider';
-import {useGetInvites} from '@/hooks/get-hooks';
+import {useGetInvites} from '@/hooks/queries';
 
 /**
  * ProjectInvites component renders a table of invites for a project.
