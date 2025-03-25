@@ -1,7 +1,7 @@
 import {Plus} from 'lucide-react';
-import {Popover, PopoverContent, PopoverTrigger} from '../ui/popover';
+import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
 import {useAuth} from '@/context/auth-provider';
-import {RoleCard} from '../ui/role-card';
+import {RoleCard} from '@/components/ui/role-card';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Route} from '@/routes/_protected/projects/$projectId';
@@ -53,12 +53,15 @@ export const AddRolePopover = ({
                 );
 
                 if (!response.ok) {
-                  console.log('Error adding role', response);
+                  console.error('Error adding role', response);
+                  setOpen(false);
+                  return;
                 }
 
                 queryClient.invalidateQueries({
                   queryKey: ['project-users', projectId],
                 });
+
                 setOpen(false);
               } catch (error) {
                 console.log('Error adding role', error);

@@ -56,7 +56,7 @@ api.post(
   async (req, res) => {
     // Cluster admins only
     if (!userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not authorised to update user details.'
       );
     }
@@ -76,7 +76,9 @@ api.post(
     }
 
     await saveUser(user);
-    res.status(200).send();
+    res.status(200).json({
+      message: `User role ${req.body.addrole ? 'added' : 'removed'} successfully`,
+    });
   }
 );
 
@@ -90,7 +92,7 @@ api.put(
   }),
   async (req, res) => {
     if (!userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not authorised to update user details.'
       );
     }
@@ -111,7 +113,9 @@ api.put(
     if (action === 'remove') removeProjectRoleFromUser(user, project, role);
 
     await saveUser(user);
-    return res.status(200).send();
+    return res.status(200).json({
+      message: `Project role ${action === 'add' ? 'added to' : 'removed from'} user successfully`,
+    });
   }
 );
 
@@ -151,7 +155,7 @@ api.get(
   requireAuthenticationAPI,
   async (req: any, res: Response<Express.User[]>) => {
     if (!req.user || !userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to get users.'
       );
     }
@@ -169,7 +173,7 @@ api.delete(
   }),
   async ({params: {id}, user}, res) => {
     if (!userIsClusterAdmin(user))
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'Only cluster admins can remove users.'
       );
 
@@ -183,7 +187,7 @@ api.delete(
       );
 
     if (userIsClusterAdmin(userToRemove))
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to remove cluster admins.'
       );
 
@@ -192,6 +196,8 @@ api.delete(
     } catch (e) {
       throw new Exceptions.InternalSystemError('Error removing user');
     }
-    res.status(200).send();
+    res.status(200).json({
+      message: 'User removed successfully',
+    });
   }
 );
