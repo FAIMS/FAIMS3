@@ -373,7 +373,11 @@ function MapWrapper(props: MapProps) {
 
         {/* <div ref={refCallback} style={styles.mapContainer} /> */}
         <Grid container spacing={2} sx={{height: '100%'}}>
-          <MapComponent parentSetMap={setMap} center={props.center} />
+          <MapComponent
+            parentSetMap={setMap}
+            center={props.center}
+            zoom={props.zoom}
+         />
         </Grid>
       </Dialog>
 

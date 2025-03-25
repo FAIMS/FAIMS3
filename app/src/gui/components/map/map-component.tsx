@@ -72,11 +72,12 @@ export const canShowMapNear = async (
 export interface MapComponentProps {
   parentSetMap: (map: Map) => void;
   center?: [number, number];
+  zoom?: number;
 }
 
 export const MapComponent = (props: MapComponentProps) => {
   const [map, setMap] = useState<Map | undefined>(undefined);
-  const [zoomLevel, setZoomLevel] = useState(MIN_ZOOM); // Default zoom level
+  const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
 
   const tileStore = useMemo(() => new VectorTileStore(), []);
@@ -117,7 +118,6 @@ export const MapComponent = (props: MapComponentProps) => {
     });
 
     // create a center control
-    // Add this in the createMap function after creating theMap
     theMap.getView().on('change:resolution', () => {
       const z = theMap.getView().getZoom();
       if (z) setZoomLevel(z);
