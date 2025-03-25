@@ -44,6 +44,7 @@ import CreateLinkComponent from '../components/record/relationships/create_links
 import {DataGridFieldLinksComponent} from '../components/record/relationships/field_level_links/datagrid';
 import {selectAllProjects} from '../../context/slices/projectSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {localGetDataDb} from '../..';
 
 function get_default_relation_label(
   multiple: boolean,
@@ -204,15 +205,16 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
         // or just no existing value
         if (!multiple && !props.form.values[field_name]) setIs_enabled(true);
 
-        const all_records = await getPossibleRelatedRecords(
-          project_id,
-          props.related_type,
-          props.relation_type,
-          record_id,
-          field_name,
-          relationshipPair,
-          uiSpec
-        );
+        const all_records = await getPossibleRelatedRecords({
+          dataDb: localGetDataDb(project_id),
+          relationType: props.relation_type,
+          projectId: project_id,
+          uiSpecification: uiSpec,
+          recordId: record_id,
+          type: props.related_type,
+          fieldId: field_name,
+          relationLinkedVocabPair: relationshipPair,
+        });
         const records = excludes_related_record(
           multiple,
           props.form.values[field_name],

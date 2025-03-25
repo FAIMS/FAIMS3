@@ -11,7 +11,7 @@ import {CreateProjectFromTemplateForm} from '../forms/create-project-from-templa
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useState} from 'react';
 import {useAuth} from '@/context/auth-provider';
-import {Route} from '@/routes/templates/$templateId';
+import {Route} from '@/routes/_protected/templates/$templateId';
 import {useGetTemplates} from '@/hooks/get-hooks';
 import {
   Tooltip,

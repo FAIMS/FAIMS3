@@ -1,6 +1,6 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import RoleCard from '../ui/role-card';
+import {RoleCard} from '../ui/role-card';
 
 export type Column = any;
 

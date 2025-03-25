@@ -41,12 +41,12 @@ import Workspace from './gui/pages/workspace';
 // will be resolved in material-ui v5
 
 import {NotificationProvider} from './context/popup';
+import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
 import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
-import {InitialiseGate, StateProvider} from './context/store';
 import {MapDownloadComponent} from './gui/components/map/map-download';
 import {OFFLINE_MAPS} from './buildconfig';
 
@@ -58,7 +58,7 @@ import {OFFLINE_MAPS} from './buildconfig';
 //   token: boolean;
 // };
 
-// Setup react query
+// Setup react query (prefer to use context provider but can import for legacy class components)
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

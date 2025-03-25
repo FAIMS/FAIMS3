@@ -39,7 +39,7 @@ export async function initialize() {
   // Get current state/dispatch const state = store.getState();
 
   // Rebuild all of the databases (synchronously)
-  rebuildDbs(store.getState().projects);
+  await rebuildDbs(store.getState().projects);
 
   // Compile all ui specs (synchronously)
   compileSpecs(store.getState().projects);
