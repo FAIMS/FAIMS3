@@ -82,33 +82,26 @@ export async function safeWriteDocument<T extends {}>({
   data: PouchDB.Core.Document<T>;
   writeOnClash?: boolean;
 }) {
-  // Try to get the existing document
-  let existingDoc;
+  // Try and put directly - if no clash or _rev already provided, all good
   try {
-    existingDoc = await db.get<T>(data._id);
+    await db.put(data);
   } catch (err: any) {
-    // If the document doesn't exist, PouchDB will throw a 404 error
-    if (err.status !== 404) {
-      throw err;
+    // if 409 - that's conflict - get record then try again
+    if (err.status === 409) {
+      if (writeOnClash) {
+        try {
+          const existingRecord = await db.get<T>(data._id);
+          // Update _rev and otherwise put the original record
+          await db.put({...data, _rev: existingRecord._rev});
+        } catch (err) {
+          throw Error('Failed to update record in conflict. Error: ' + err);
+        }
+      }
+    } else {
+      // Something else happened - unsure and throw
+      throw Error('Failed to update record - non 409 error' + err);
     }
-    existingDoc = undefined;
   }
-
-  if (existingDoc && !writeOnClash) {
-    // We don't overwrite an existing doc if writeOnClash is not true
-    return existingDoc;
-  }
-
-  // If the document exists, include its revision (which is overridden to be
-  // latest ensuring it is upserted)
-  const upsertData = {...data, _rev: existingDoc?._rev};
-
-  // Put the document (create or update)
-  const response = await db.put(upsertData);
-
-
-
-  return response;
 }
 
 /**

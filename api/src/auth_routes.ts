@@ -326,39 +326,17 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         return;
       }
 
+      // Check the invite TODO Validate usages/expiry etc
       const invite = await getInvite(req.session.invite);
 
       if (!invite) {
         res.status(400);
         req.flash('error', {registration: 'No valid invite for registration.'});
         res.redirect('/');
-      } else if (password === repeat) {
-        const [user, error] = await registerLocalUser(
-          username,
-          email,
-          name,
-          password
-        );
-        if (user) {
-          await acceptInvite(user, invite);
-          req.flash('message', 'Registration successful. Please login below.');
-          req.login(user, (err: any) => {
-            if (err) {
-              return next(err);
-            }
-            return redirect_with_token(res, user, redirect);
-          });
-        } else {
-          req.flash('error', {registration: error});
-          req.flash('username', username);
-          req.flash('email', email);
-          req.flash('name', name);
-          res.status(400);
-          res.redirect(
-            '/register/' + req.session.invite + `?redirect=${redirect}`
-          );
-        }
-      } else {
+        return;
+      }
+
+      if (password !== repeat) {
         req.flash('error', {repeat: {msg: "Password and repeat don't match."}});
         req.flash('username', username);
         req.flash('email', email);
@@ -367,7 +345,36 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         res.redirect(
           '/register/' + req.session.invite + `?redirect=${redirect}`
         );
+        return;
       }
+
+      const [user, error] = await registerLocalUser(
+        username,
+        email,
+        name,
+        password
+      );
+
+      if (!user) {
+        req.flash('error', {registration: error});
+        req.flash('username', username);
+        req.flash('email', email);
+        req.flash('name', name);
+        res.status(400);
+        res.redirect(
+          '/register/' + req.session.invite + `?redirect=${redirect}`
+        );
+        return;
+      }
+
+      await acceptInvite(user, invite);
+      req.flash('message', 'Registration successful. Please login below.');
+      req.login(user, (err: any) => {
+        if (err) {
+          return next(err);
+        }
+        return redirect_with_token(res, user, redirect);
+      });
     }
   );
 
