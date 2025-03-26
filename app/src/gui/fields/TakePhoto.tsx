@@ -19,6 +19,8 @@
 
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
+import {Exif} from '@capacitor-community/exif';
+import {Geolocation} from '@capacitor/geolocation';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -375,9 +377,10 @@ export const TakePhoto: React.FC<
   const [noPermission, setNoPermission] = React.useState<boolean>(false);
   const navigate = useNavigate();
 
-  // Handles photo capture with permission checks
+  // Handles photo capture with permission checks and EXIF geolocation for mobile
   const takePhoto = async () => {
     if (Capacitor.getPlatform() === 'web') {
+      // For web do not set EXIF geolocation as it is not supported
       const permission = await navigator.permissions.query({
         name: 'camera' as PermissionName,
       });
@@ -385,33 +388,77 @@ export const TakePhoto: React.FC<
         setNoPermission(true);
         return;
       }
+      try {
+        const photoResult = await Camera.getPhoto({
+          quality: 90,
+          allowEditing: false,
+          resultType: CameraResultType.Base64,
+          correctOrientation: true,
+          promptLabelHeader: 'Take or select a photo',
+        });
+        const image = await base64ImageToBlob(photoResult);
+        const newImages =
+          props.field.value !== null
+            ? props.field.value.concat(image)
+            : [image];
+        props.form.setFieldValue(props.field.name, newImages, true);
+      } catch (err: any) {
+        logError(err);
+        props.form.setFieldError(props.field.name, err.message);
+      }
     } else {
+      // For native platforms, use URI and set EXIF geolocation data
       const permissions = await Camera.requestPermissions({
         permissions: ['camera'],
       });
-
       if (permissions.camera === 'denied') {
         setNoPermission(true);
         return;
       }
-    }
+      try {
+        const photoResult = await Camera.getPhoto({
+          quality: 90,
+          allowEditing: false,
+          resultType: CameraResultType.Uri,
+          correctOrientation: true,
+          promptLabelHeader: 'Take or select a photo',
+        });
 
-    try {
-      const photoResult = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: CameraResultType.Base64,
-        correctOrientation: true,
-        promptLabelHeader: 'Take or select a photo',
-      });
+        // Attempt to get the current geolocation
+        let position;
+        try {
+          position = await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          });
+        } catch (e) {
+          console.error('Failed to get geolocation: ', e);
+          position = null;
+        }
+        if (position) {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          await Exif.setCoordinates({
+            pathToImage: photoResult.path ?? '',
+            lat: lat,
+            lng: lng,
+          });
+        }
 
-      const image = await base64ImageToBlob(photoResult);
-      const newImages =
-        props.field.value !== null ? props.field.value.concat(image) : [image];
-      props.form.setFieldValue(props.field.name, newImages, true);
-    } catch (err: any) {
-      logError(err);
-      props.form.setFieldError(props.field.name, err.message);
+        // Fetch the updated image (with EXIF data) as a Blob using its webPath
+        if (!photoResult.webPath) {
+          throw new Error('Photo webPath is undefined');
+        }
+        const response = await fetch(photoResult.webPath);
+        const blob = await response.blob();
+        const newImages =
+          props.field.value !== null ? props.field.value.concat(blob) : [blob];
+        props.form.setFieldValue(props.field.name, newImages, true);
+      } catch (err: any) {
+        logError(err);
+        props.form.setFieldError(props.field.name, err.message);
+      }
     }
   };
 

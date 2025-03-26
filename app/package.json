@@ -55,7 +55,7 @@
     "@capacitor/app-launcher": "^6.0.0",
     "@capacitor/browser": "^6.0.0",
     "@capacitor/camera": "^6.0.0",
-    "@capacitor/core": "^6.0.0",
+    "@capacitor/core": "^6.2.0",
     "@capacitor/device": "^6.0.0",
     "@capacitor/filesystem": "^6.0.0",
     "@capacitor/geolocation": "^6.0.0",
@@ -148,7 +148,7 @@
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^6.0.0",
+    "@capacitor/cli": "^6.2.0",
     "@swc/core": "^1.7.10",
     "@testing-library/jest-dom": "6.4.6",
     "@vitest/coverage-v8": "^0.34.4",
