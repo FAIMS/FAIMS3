@@ -1,10 +1,17 @@
-import {Plus} from 'lucide-react';
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
 import {useAuth} from '@/context/auth-provider';
 import {RoleCard} from '@/components/ui/role-card';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Route} from '@/routes/_protected/projects/$projectId';
+import {toast} from 'sonner';
+import {Button} from '../ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 
 /**
  * A popover that allows the user to add a role to a user.
@@ -24,12 +31,29 @@ export const AddRolePopover = ({
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  if (roles.length === 0) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button variant="outline" className="font-normal h-7" disabled>
+              add
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>No more roles available to add</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger>
-        <div className="invisible text-primary group p-0.5 border cursor-pointer relative bg-background rounded-full w-fit hover:bg-muted/90 transition-colors [tr:hover_&]:visible">
-          <Plus size={12} />
-        </div>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="font-normal h-7">
+          add
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="flex gap-1 p-2 w-fit text-sm" align="start">
         {roles.map(role => (
@@ -52,11 +76,7 @@ export const AddRolePopover = ({
                   }
                 );
 
-                if (!response.ok) {
-                  console.error('Error adding role', response);
-                  setOpen(false);
-                  return;
-                }
+                if (!response.ok) throw new Error(response.statusText);
 
                 queryClient.invalidateQueries({
                   queryKey: ['project-users', projectId],
@@ -64,7 +84,7 @@ export const AddRolePopover = ({
 
                 setOpen(false);
               } catch (error) {
-                console.log('Error adding role', error);
+                toast.error(`Failed to add role: ${error}`);
               }
             }}
           >

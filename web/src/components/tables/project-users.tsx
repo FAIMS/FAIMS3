@@ -36,17 +36,17 @@ export const columns: ColumnDef<any>[] = [
     ),
     cell: ({row}: any) => (
       <div className="flex flex-wrap gap-1">
-        {row.getValue('project-roles').map((role: string) => (
-          <ProjectRoleCard key={role} userId={row.original.user_id} role={role}>
-            {role}
-          </ProjectRoleCard>
-        ))}
         <AddRolePopover
           roles={['user', 'team', 'moderator', 'admin'].filter(
             role => row.getValue('project-roles').indexOf(role) === -1
           )}
           userId={row.original.user_id}
         />
+        {row.getValue('project-roles').map((role: string) => (
+          <ProjectRoleCard key={role} userId={row.original.user_id} role={role}>
+            {role}
+          </ProjectRoleCard>
+        ))}
       </div>
     ),
   },
