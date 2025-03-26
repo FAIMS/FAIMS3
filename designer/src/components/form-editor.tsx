@@ -48,6 +48,8 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import FormSettingsPanel from './form-settings';
 import {SectionEditor} from './section-editor';
 import {useLocation} from 'react-router-dom';
+import {findFormExternalUsage} from './condition';
+import {DeletionWarningDialog} from './deletion-warning-dialog';
 
 type Props = {
   viewSetId: string;
@@ -110,6 +112,9 @@ export const FormEditor = ({
   const [initialIndex, setInitialIndex] = useState(
     visibleTypes.indexOf(viewSetId)
   );
+
+  const [showConditionAlert, setShowConditionAlert] = useState(false);
+  const [conditionReferences, setConditionReferences] = useState<string[]>([]);
 
   // Refs for the scroll container and section steps.
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -243,41 +248,55 @@ export const FormEditor = ({
   };
 
   const deleteConfirmation = () => {
-    setOpen(true);
-    setPreventDeleteDialog(false);
-    setDeleteAlertTitle('Are you sure you want to delete this form?');
-    setDeleteAlertMessage('All fields in the form will also be deleted.');
+    const conditionRefs = findFormExternalUsage(
+      viewSetId,
+      viewsets,
+      views,
+      fields
+    );
+
+    const relatedRefs: string[] = [];
+    const fieldValues = Object.values(fields);
+
+    fieldValues.forEach(fieldValue => {
+      if (fieldValue['component-parameters'].related_type === viewSetId) {
+        const relatedFieldName = fieldValue['component-parameters'].name;
+        const sectionRef = findRelatedFieldLocation(relatedFieldName);
+        relatedRefs.push(
+          `Field '${relatedFieldName}' is linked in ${sectionRef}`
+        );
+      }
+    });
+
+    const allReferences = [...conditionRefs, ...relatedRefs];
+
+    if (allReferences.length > 0) {
+      setConditionReferences(allReferences);
+      setShowConditionAlert(true);
+    } else {
+      setOpen(true);
+      setPreventDeleteDialog(false);
+      setDeleteAlertTitle('Are you sure you want to delete this form?');
+      setDeleteAlertMessage('All fields in the form will also be deleted.');
+    }
   };
 
-  const findRelatedFieldLocation = (fieldName: string | undefined) => {
-    // making fviews iterable
-    const fviewsEntries = Object.entries(views);
-    fviewsEntries.forEach((_viewId, idx) => {
-      // iterating over every section's fields array to find fieldName
-      fviewsEntries[idx][1].fields.forEach(field => {
-        if (field === fieldName) {
-          // extracting which section fieldName belongs to
-          const sectionToFind = fviewsEntries[idx][0];
-          // making viewsets iterable
-          const viewsetsEntries = Object.entries(viewsets);
-          viewsetsEntries.forEach((_viewSetId, idx) => {
-            // iterating over every form's views array to find the section
-            viewsetsEntries[idx][1].views.forEach(view => {
-              if (view === sectionToFind) {
-                // we made it! now extract the form and section labels
-                const formLabel: string = viewsetsEntries[idx][1].label;
-                const sectionLabel: string = fviewsEntries[idx][1].label;
-                // setting the dialog text here
-                setDeleteAlertTitle('Form cannot be deleted.');
-                setDeleteAlertMessage(
-                  `Please update the field '${fieldName}', found in form ${formLabel} section ${sectionLabel}, to remove the reference to allow this form to be deleted.`
-                );
-              }
-            });
-          });
+  const findRelatedFieldLocation = (fieldName: string | undefined): string => {
+    if (!fieldName) return '';
+
+    // Iterate over all sections
+    for (const [sectionId, section] of Object.entries(views)) {
+      if (section.fields.includes(fieldName)) {
+        // Find which form contains this section
+        for (const [, form] of Object.entries(viewsets)) {
+          if (form.views.includes(sectionId)) {
+            return `Form '${form.label}', Section '${section.label}'`;
+          }
         }
-      });
-    });
+      }
+    }
+
+    return 'Unknown location'; // Fallback if something went wrong
   };
 
   const preventFormDelete = () => {
@@ -397,6 +416,12 @@ export const FormEditor = ({
               </DialogActions>
             )}
           </Dialog>
+          <DeletionWarningDialog
+            open={showConditionAlert}
+            title="Form cannot be deleted due to active references"
+            references={conditionReferences}
+            onClose={() => setShowConditionAlert(false)}
+          />
         </Grid>
 
         <Grid item xs={12} sm={2.825}>

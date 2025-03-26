@@ -39,8 +39,14 @@ import {
 
 import {useState, useMemo} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {ConditionModal, ConditionTranslation, ConditionType} from './condition';
+import {
+  ConditionModal,
+  ConditionTranslation,
+  ConditionType,
+  findSectionExternalUsage,
+} from './condition';
 import {FieldList} from './field-list';
+import {DeletionWarningDialog} from './deletion-warning-dialog';
 
 type Props = {
   viewSetId: string;
@@ -82,6 +88,13 @@ export const SectionEditor = ({
   const viewSets = useAppSelector(
     state => state.notebook['ui-specification'].viewsets
   );
+  const allFviews = useAppSelector(
+    state => state.notebook['ui-specification'].fviews
+  );
+  const allFields = useAppSelector(
+    state => state.notebook['ui-specification'].fields
+  );
+
   const dispatch = useAppDispatch();
 
   console.log('SectionEditor', {viewId, viewSet, fView});
@@ -93,6 +106,8 @@ export const SectionEditor = ({
   const [addMode, setAddMode] = useState(false);
   const [newSectionName, setNewSectionName] = useState('New Section');
   const [addAlertMessage, setAddAlertMessage] = useState('');
+  const [showConditionAlert, setShowConditionAlert] = useState(false);
+  const [conditionReferences, setConditionReferences] = useState<string[]>([]);
 
   const handleCloseDeleteDialog = () => {
     setOpenDeleteDialog(false);
@@ -103,9 +118,28 @@ export const SectionEditor = ({
     setTargetViewSetId('');
   };
 
+  const deleteConfirmation = () => {
+    // check if other sections/fields are referencing the fields in this section
+    const references = findSectionExternalUsage(viewId, allFviews, allFields);
+
+    if (references.length > 0) {
+      // show our references alert if not empty
+      setConditionReferences(references);
+      setShowConditionAlert(true);
+    } else {
+      // otherwise, open old "Are you sure?" dialog
+      setOpenDeleteDialog(true);
+    }
+  };
+
   const deleteSection = () => {
     deleteCallback(viewSetId, viewId);
     handleCloseDeleteDialog();
+  };
+
+  // close condition reference dialog
+  const handleCloseConditionAlert = () => {
+    setShowConditionAlert(false);
   };
 
   // memoize the form value
@@ -193,7 +227,7 @@ export const SectionEditor = ({
             color="error"
             size="small"
             startIcon={<DeleteRoundedIcon />}
-            onClick={() => setOpenDeleteDialog(true)}
+            onClick={deleteConfirmation}
           >
             Delete section
           </Button>
@@ -211,6 +245,12 @@ export const SectionEditor = ({
               <Button onClick={handleCloseDeleteDialog}>No</Button>
             </DialogActions>
           </Dialog>
+          <DeletionWarningDialog
+            open={showConditionAlert}
+            title="Cannot delete this section"
+            references={conditionReferences}
+            onClose={handleCloseConditionAlert}
+          />
         </Grid>
 
         <Grid item xs={12} sm={1.9}>
