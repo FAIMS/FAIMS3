@@ -44,10 +44,13 @@ function RouteComponent() {
           </ListDescription>
           <Button
             variant="outline"
-            onClick={() => {
-              navigator.clipboard.writeText(user?.token || '');
-
-              toast('Bearer token copied to clipboard successfully! 🎉');
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(user?.token || '');
+                toast('Bearer token copied to clipboard successfully! 🎉');
+              } catch (error) {
+                toast.error('Failed to copy bearer token to clipboard');
+              }
             }}
           >
             Copy Bearer Token to Clipboard
