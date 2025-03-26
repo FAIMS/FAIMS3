@@ -250,7 +250,6 @@ export const validateDatabases = async () => {
       await initialiseDataDb({
         projectId,
         force: true,
-        roles: metadata.accesses,
       });
     }
     return report;
@@ -306,7 +305,6 @@ export const createNotebook = async (
   const metaDB = await initialiseMetadataDb({
     projectId,
     force: true,
-    roles: metadata.accesses,
   });
 
   // derive autoincrementers from uispec
@@ -325,7 +323,6 @@ export const createNotebook = async (
   await initialiseDataDb({
     projectId,
     force: true,
-    roles: metadata.accesses,
   });
 
   return projectId;
@@ -347,12 +344,10 @@ export const updateNotebook = async (
   const metaDB = await initialiseMetadataDb({
     projectId,
     force: true,
-    roles: metadata.accesses,
   });
   await initialiseMetadataDb({
     projectId,
     force: true,
-    roles: metadata.accesses,
   });
 
   // derive autoincrementers from uispec

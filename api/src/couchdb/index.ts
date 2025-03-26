@@ -361,11 +361,9 @@ export const localGetDataDb = async (
  */
 export const initialiseMetadataDb = async ({
   projectId,
-  roles = ['admin', 'user', 'team'],
   force = false,
 }: {
   projectId: string;
-  roles?: string[];
   force?: boolean;
 }): Promise<PouchDB.Database<ProjectMetaObject>> => {
   // Are we in a testing environment?
@@ -373,14 +371,6 @@ export const initialiseMetadataDb = async ({
 
   // Get the metadata DB
   const metaDb = await getMetadataDb(projectId);
-
-  // get roles from the notebook, ensure that 'user' and 'admin' are included
-  if (roles.indexOf('user') < 0) {
-    roles.push('user');
-  }
-  if (roles.indexOf('admin') < 0) {
-    roles.push('admin');
-  }
 
   try {
     await couchInitialiser({
@@ -403,11 +393,9 @@ export const initialiseMetadataDb = async ({
  */
 export const initialiseDataDb = async ({
   projectId,
-  roles = ['admin', 'user', 'team'],
   force = false,
 }: {
   projectId: string;
-  roles?: string[];
   force?: boolean;
 }): Promise<PouchDB.Database<ProjectDataObject>> => {
   // Are we in a testing environment?
@@ -415,14 +403,6 @@ export const initialiseDataDb = async ({
 
   // Get the metadata DB
   const dataDb = await localGetDataDb(projectId);
-
-  // get roles from the notebook, ensure that 'user' and 'admin' are included
-  if (roles.indexOf('user') < 0) {
-    roles.push('user');
-  }
-  if (roles.indexOf('admin') < 0) {
-    roles.push('admin');
-  }
 
   try {
     await couchInitialiser({
@@ -595,13 +575,9 @@ export const initialiseDbAndKeys = async ({
     // Project ID
     const projectId = project._id;
 
-    // Try and get the metadata (which has roles in it)
-    const roles = ((await getNotebookMetadata(projectId)) ?? undefined)
-      ?.accesses as string[] | undefined;
-
     // Now initialise the DBs (potentially updating security documents etc)
-    await initialiseMetadataDb({projectId, roles, force});
-    await initialiseDataDb({projectId, roles, force});
+    await initialiseMetadataDb({projectId, force});
+    await initialiseDataDb({projectId, force});
   }
 
   // Setup keys

@@ -39,10 +39,35 @@ export const permissionsDocument = (projectId: string) => ({
         };
       }
 
+      // Never allow 'changing' authors - noting this will only catch rec -
+      // since this is the only document we ever actually update
+      if (
+        oldDoc &&
+        oldDoc.created_by &&
+        newDoc &&
+        newDoc.created_by &&
+        oldDoc.craeted_by !== newDoc.created_by
+      ) {
+        throw {
+          unauthorized: 'You cannot change the author of an existing record!',
+        };
+      }
+
       // This is replaced with actual projectId
       const projectId = 'PROJECT_ID_PLACEHOLDER';
-      const isDeleting = !oldDoc._deleted && newDoc._deleted;
-      const isMine = oldDoc.created_by && oldDoc.created_by === userCtx.name;
+
+      // Check both _deleted and deleted flags in both documents NOTE this
+      // doesn't actually work atm because deletion is just a change of deleted
+      // to the latest rev (which is a new object!)
+      const isDeleting =
+        oldDoc &&
+        !(oldDoc._deleted || oldDoc.deleted) &&
+        (newDoc._deleted || newDoc.deleted);
+
+      // if old doc - refer to that to avoid ability to override created by - otherwise use new doc
+      const isMine = oldDoc
+        ? oldDoc.created_by && oldDoc.created_by === userCtx.name
+        : newDoc.created_by && newDoc.created_by === userCtx.name;
 
       // User context roles is the _couchdb.roles which are
       // <projectId>||<permission> or <permission>

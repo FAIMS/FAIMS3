@@ -80,7 +80,7 @@ api.post(
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.INITIALISE_SYSTEM_API}),
   async (req, res) => {
-    initialiseDbAndKeys({force: true});
+    await initialiseDbAndKeys({force: true});
     res.json({success: true});
   }
 );
