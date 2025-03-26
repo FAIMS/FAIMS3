@@ -7,7 +7,7 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTemplates} from '@/hooks/get-hooks';
-import {Route} from '@/routes/templates/$templateId';
+import {Route} from '@/routes/_protected/templates/$templateId';
 
 /**
  * TemplateActions component renders action cards for creating a project from a template,
@@ -19,7 +19,7 @@ import {Route} from '@/routes/templates/$templateId';
 const TemplateActions = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-  const {data} = useGetTemplates(user, templateId);
+  const {data, isLoading} = useGetTemplates(user, templateId);
   const archived = data?.metadata.project_status === 'archived';
 
   return (
@@ -33,12 +33,12 @@ const TemplateActions = () => {
             </ListDescription>
           </ListItem>
           <ListItem>
-            <Button variant="outline">
+            <Button variant="outline" disabled={isLoading}>
               <a
                 href={`data:text/json;charset=utf-8,${encodeURIComponent(
                   JSON.stringify({
-                    metadata: data.metadata,
-                    'ui-specification': data['ui-specification'],
+                    metadata: data?.metadata,
+                    'ui-specification': data?.['ui-specification'],
                   })
                 )}`}
                 download={`${templateId}.json`}

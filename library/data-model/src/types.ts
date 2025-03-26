@@ -396,6 +396,8 @@ export type DraftMetadataList = {
   [key: string]: DraftMetadata;
 };
 
+export type DataDbType = PouchDB.Database<ProjectDataObject>;
+
 // end of types from datamodel/drafts.ts --------------------------------
 
 // types from datamodel/geo.ts --------------------------------
@@ -550,9 +552,12 @@ export interface RecordMetadata {
   deleted: boolean;
   hrid: string;
   type: FAIMSTypeName;
+  avps: AttributeValuePairIDMap;
   relationship?: Relationship;
   data?: {[key: string]: any};
 }
+
+export type UnhydratedRecord = Omit<RecordMetadata, 'data' | 'hrid'>;
 
 export type RecordMetadataList = {
   [key: string]: RecordMetadata;
@@ -794,11 +799,6 @@ export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;
 
 // The editable properties for a template
 export const TemplateEditableDetailsSchema = z.object({
-  // What is the display name of the template?
-  template_name: z
-    .string()
-    .trim()
-    .min(5, 'Please provide a template name of at least 5 character length.'),
   // The UI specification for this template
   'ui-specification': UiSpecificationSchema,
   // The metadata from the designer - copied into new notebooks

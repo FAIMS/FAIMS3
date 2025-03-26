@@ -28,6 +28,7 @@ import {
 } from '@faims3/data-model';
 import {ProjectRole} from '@faims3/data-model/build/src/types';
 import {getUsersDB} from '.';
+import {addLocalPasswordForUser} from '../auth_providers/local';
 import {
   AllProjectRoles,
   ConductorRole,
@@ -37,7 +38,31 @@ import {
 } from '../datamodel/users';
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
-import {addLocalPasswordForUser} from '../auth_providers/local';
+import {registerLocalUser} from '../auth_providers/local';
+import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
+
+export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
+  // register a local admin user with the same password as couchdb if there
+  // isn't already one there
+  if (db && LOCAL_COUCHDB_AUTH) {
+    const adminUser = await getUserFromEmailOrUsername('admin');
+    if (adminUser) {
+      return;
+    }
+    const [user, error] = await registerLocalUser(
+      'admin',
+      '', // no email address
+      'Admin User',
+      LOCAL_COUCHDB_AUTH.password
+    );
+    if (user) {
+      addOtherRoleToUser(user, CLUSTER_ADMIN_GROUP_NAME);
+      saveUser(user);
+    } else {
+      console.error(error);
+    }
+  }
+};
 
 /**
  * createUser - create a new user record ensuring that the username or password
@@ -390,19 +415,13 @@ export function removeProjectRoleFromUser(
   project_id: NonUniqueProjectID,
   role: ConductorRole
 ): void {
-  // get the roles for the given project
-  const relevantProjectRoles = user.project_roles[project_id];
+  user.project_roles[project_id] = user.project_roles[project_id].filter(
+    projectRole => projectRole !== role
+  );
 
-  // If there are no roles, no need to remove anything
-  if (!relevantProjectRoles) {
-    console.debug('User has no roles in project', user, project_id, role);
-    return;
-  }
+  if (user.project_roles[project_id].length === 0)
+    delete user.project_roles[project_id];
 
-  // Remove the role by filtering it out of existing list
-  user.project_roles[project_id] = relevantProjectRoles.filter(r => r !== role);
-
-  // update the roles property based on this
   user.roles = compactRoles(user.project_roles, user.other_roles);
 }
 
@@ -547,4 +566,18 @@ export function userIsClusterAdmin(user: Express.User | undefined | null) {
   }
 
   return false;
+}
+
+/**
+ * Remove a user from the database
+ * @param user - the user to remove
+ */
+export function removeUser(user: Express.User) {
+  const users_db = getUsersDB();
+
+  if (!users_db) throw new Error('Failed to connect to user database');
+
+  if (!user._id || !user._rev) throw new Error('User not found');
+
+  users_db.remove({_id: user._id, _rev: user._rev});
 }

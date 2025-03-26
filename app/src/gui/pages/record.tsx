@@ -81,6 +81,7 @@ import BackButton from '../components/ui/BackButton';
 import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
+import {localGetDataDb} from '../..';
 
 export default function Record() {
   /**
@@ -149,19 +150,23 @@ export default function Record() {
   const [_, setBreadcrumbs] = useState<{link?: string; title: string}[]>([]);
   const [progress, setProgress] = useState<number>(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
+  const dataDb = localGetDataDb(projectId);
 
   useEffect(() => {
     const getIni = async () => {
       setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
-      listFAIMSRecordRevisions(projectId!, recordId!)
+      listFAIMSRecordRevisions({
+        dataDb,
+        recordId: recordId!,
+      })
         .then(all_revisions => {
           setRevisions(all_revisions);
         })
         .catch(logError);
       getHRIDforRecordID({
-        project_id: projectId!,
-        record_id: recordId!,
+        dataDb,
+        recordId: recordId!,
         uiSpecification: uiSpec,
       }).then(hrid => {
         setHrid(hrid);
@@ -189,7 +194,11 @@ export default function Record() {
   // below function is to get conflicts headers when loading record or after user save the conflict resolve button
   useEffect(() => {
     const getconflicts = async () => {
-      getInitialMergeDetails(projectId!, recordId!)
+      getInitialMergeDetails({
+        dataDb,
+        projectId: projectId!,
+        recordId: recordId!,
+      })
         .then(result => {
           setConflicts(result);
           if (result !== null && result['available_heads'] !== undefined) {
@@ -210,7 +219,12 @@ export default function Record() {
         if (selectrevision !== null) {
           setUpdatedRevisionId(selectrevision); //set revision_id what is in the form, so it can be same
           setConflictfields(
-            await findConflictingFields(projectId!, recordId!, selectrevision)
+            await findConflictingFields({
+              dataDb,
+              projectId: projectId!,
+              recordId: recordId!,
+              revisionId: revisionId!,
+            })
           );
         }
       } catch (error) {
@@ -223,11 +237,12 @@ export default function Record() {
   useEffect(() => {
     const getType = async () => {
       try {
-        const latest_record = await getFullRecordData(
-          projectId!,
-          recordId!,
-          updatedRevisionId!
-        );
+        const latest_record = await getFullRecordData({
+          dataDb,
+          projectId: projectId!,
+          recordId: recordId!,
+          revisionId: updatedRevisionId!,
+        });
 
         if (latest_record !== null) {
           setType(latest_record.type);
@@ -249,12 +264,13 @@ export default function Record() {
     const getrelated_Info = async () => {
       try {
         if (uiSpec !== null && type !== null) {
-          const latest_record = await getFullRecordData(
-            projectId!,
-            recordId!,
-            updatedRevisionId!,
-            false
-          );
+          const latest_record = await getFullRecordData({
+            dataDb,
+            projectId: projectId!,
+            recordId: recordId!,
+            revisionId: updatedRevisionId!,
+            isDeleted: false,
+          });
           if (latest_record !== null) {
             //add checking for deleted record, so it can be direct to notebook page
             if (latest_record.deleted === true) {

@@ -30,7 +30,7 @@ export const initials = (name: string) =>
  * @returns {string} The capitalized version of the string.
  */
 export const capitalize = (name: string) =>
-  name.charAt(0).toUpperCase() + name.slice(1);
+  name ? name.charAt(0).toUpperCase() + name.slice(1) : '';
 
 /**
  * schemaFields function returns an array of field names from a Zod schema.
