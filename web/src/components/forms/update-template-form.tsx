@@ -3,6 +3,7 @@ import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {NOTEBOOK_NAME} from '@/constants';
+import {Route} from '@/routes/_protected/templates/$templateId';
 
 export const fields = [
   {
@@ -24,6 +25,7 @@ interface UpdateTemplateFormProps {
  */
 export function UpdateTemplateForm({setDialogOpen}: UpdateTemplateFormProps) {
   const {user} = useAuth();
+  const {templateId} = Route.useParams();
 
   const onSubmit = async ({file}: {file: File}) => {
     if (!user) return {type: 'submit', message: 'User not authenticated'};
@@ -32,12 +34,8 @@ export function UpdateTemplateForm({setDialogOpen}: UpdateTemplateFormProps) {
 
     if (!jsonString) return {type: 'submit', message: 'Error reading file'};
 
-    const {_id} = JSON.parse(jsonString);
-
-    if (!_id) return {type: 'submit', message: 'Error parsing file'};
-
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/templates/${_id}`,
+      `${import.meta.env.VITE_API_URL}/api/templates/${templateId}`,
       {
         method: 'PUT',
         headers: {

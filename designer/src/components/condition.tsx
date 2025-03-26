@@ -68,6 +68,10 @@ const allOperators = new Map([
     'does-not-contain-regex',
     'List does not contain any value matching this regex',
   ],
+  ['contains-one-of', 'List contains one of these values'],
+  ['does-not-contain-any-of', 'List does not contain any of these values'],
+  ['contains-all-of', 'List contains all of these values'],
+  ['does-not-contain-all-of', 'List does not contain all of these values'],
 ]);
 
 const getFieldLabel = (f: FieldType) => {
@@ -141,6 +145,313 @@ export const findFieldCondtionUsage = (
 
   return affected;
 };
+
+/**
+ * findSectionExternalUsage:
+ * Checks if any other section references the fields belonging to `targetSectionId`.
+ * If so, returns references for display (like "Section: X references your fields").
+ *
+ * @param targetSectionId The ID of the section you plan to delete.
+ * @param allFviews All sections
+ * @param allFields All fields
+ * @returns Array of strings describing external references
+ */
+export function findSectionExternalUsage(
+  targetSectionId: string,
+  allFviews: Record<
+    string,
+    {label: string; condition?: ConditionType; fields: string[]}
+  >,
+  allFields: Record<string, any>
+): string[] {
+  const references: string[] = [];
+
+  // 1. gather all fields that belong to the target section
+  const targetFields = allFviews[targetSectionId]?.fields || [];
+
+  // 2. For each section in fviews
+  for (const [sectionId, sectionDef] of Object.entries(allFviews)) {
+    // If it's the same section, skip. Self-contained references are okay if you're deleting the whole section
+    if (sectionId === targetSectionId) continue;
+
+    // 2a. check section-level condition
+    const sectionCond = sectionDef.condition;
+    if (
+      sectionCond &&
+      targetFields.some(f => isFieldUsedInCondition(sectionCond, f))
+    ) {
+      references.push(`Section: ${sectionDef.label}`);
+    }
+
+    // 2b. check each field in that section
+    for (const fieldName of sectionDef.fields) {
+      const fieldCond = allFields[fieldName]?.condition;
+      if (
+        fieldCond &&
+        targetFields.some(f => isFieldUsedInCondition(fieldCond, f))
+      ) {
+        const label =
+          allFields[fieldName]?.['component-parameters']?.label || fieldName;
+        references.push(`Field: ${label} (section: ${sectionDef.label})`);
+      }
+    }
+  }
+
+  return references;
+}
+
+/**
+ * findFormExternalUsage:
+ * Similar logic to findSectionExternalUsage, treats the entire form (across all its sections) as the target,
+ * Then we see if other forms' conditions reference any of this form's fields.
+ *
+ * @param targetFormId The ID of the form you plan to delete
+ * @param viewsets All forms
+ * @param allFviews All sections
+ * @param allFields All fields
+ * @returns Array of strings describing references from outside forms
+ */
+export function findFormExternalUsage(
+  targetFormId: string,
+  viewsets: Record<string, {label: string; views: string[]}>,
+  allFviews: Record<
+    string,
+    {label: string; condition?: ConditionType; fields: string[]}
+  >,
+  allFields: Record<string, any>
+): string[] {
+  const references: string[] = [];
+
+  const targetFormDef = viewsets[targetFormId];
+  if (!targetFormDef) return references;
+
+  // 1. gather all fields across all sections in the target form
+  const targetFields: string[] = [];
+  for (const sectionId of targetFormDef.views) {
+    targetFields.push(...(allFviews[sectionId]?.fields || []));
+  }
+
+  // 2. For each form in viewsets
+  for (const [formId, formDef] of Object.entries(viewsets)) {
+    if (formId === targetFormId) continue; // skip same form
+
+    // 2a. for each section in that form
+    for (const secId of formDef.views) {
+      const secDef = allFviews[secId];
+      if (!secDef) continue;
+      // check section-level condition
+      if (
+        secDef.condition &&
+        targetFields.some(f => isFieldUsedInCondition(secDef.condition, f))
+      ) {
+        references.push(`Section: ${secDef.label} (Form: ${formDef.label})`);
+      }
+
+      // check each field
+      for (const fieldName of secDef.fields) {
+        const fieldCond = allFields[fieldName]?.condition;
+        if (
+          fieldCond &&
+          targetFields.some(f => isFieldUsedInCondition(fieldCond, f))
+        ) {
+          const label =
+            allFields[fieldName]?.['component-parameters']?.label || fieldName;
+          references.push(
+            `Field: ${label} (Form: ${formDef.label}, Section: ${secDef.label})`
+          );
+        }
+      }
+    }
+  }
+
+  return references;
+}
+
+/**
+ * Finds fields and sections that have visibility conditions relying on this field
+ * and that expect a specific value that no longer exists.
+ *
+ * @param targetFieldName The name of the field being checked
+ * @param targetField The field's definition
+ * @param allFields All fields in the form
+ * @param allFviews All sections in the form
+ * @returns An array of messages identifying conditions with missing expected values
+ */
+export function findInvalidConditionReferences(
+  targetFieldName: string,
+  targetField: FieldType,
+  allFields: Record<string, FieldType>,
+  allFviews: Record<string, {label: string; condition?: ConditionType}>
+): string[] {
+  const invalidConditions: string[] = [];
+
+  // Only need to check fields with predefined choices
+  if (
+    !['Select', 'RadioGroup', 'MultiSelect'].includes(
+      targetField['component-name']
+    )
+  ) {
+    return invalidConditions;
+  }
+
+  const validOptions: string[] =
+    targetField['component-parameters'].ElementProps?.options?.map(
+      (opt: any) => opt.value
+    ) || [];
+
+  // Check if a condition is using a value that no longer exists
+  const getInvalidExpectedValue = (condition: ConditionType): string[] => {
+    if (condition.operator === 'and' || condition.operator === 'or') {
+      return condition.conditions
+        ? condition.conditions.flatMap(getInvalidExpectedValue)
+        : [];
+    }
+
+    if (condition.field !== targetFieldName) {
+      return [];
+    }
+
+    if (Array.isArray(condition.value)) {
+      const missingValues = condition.value.filter(
+        val => !validOptions.includes(val)
+      );
+      return missingValues.length > 0
+        ? [`expects '${missingValues.join(', ')}'`]
+        : [];
+    }
+
+    return validOptions.includes(String(condition.value))
+      ? []
+      : [`expects '${String(condition.value)}'`];
+  };
+
+  // Check field conditions
+  for (const [fId, fieldDef] of Object.entries(allFields)) {
+    const cond = fieldDef.condition;
+    if (cond && isFieldUsedInCondition(cond, targetFieldName)) {
+      const invalidVals = getInvalidExpectedValue(cond);
+      if (invalidVals.length > 0) {
+        const label = fieldDef['component-parameters']?.label ?? fId;
+        invalidVals.forEach(invalidVal => {
+          invalidConditions.push(`Field: ${label} (${invalidVal})`);
+        });
+      }
+    }
+  }
+
+  // Check section conditions
+  for (const [, fviewDef] of Object.entries(allFviews)) {
+    const cond = fviewDef.condition;
+    if (cond && isFieldUsedInCondition(cond, targetFieldName)) {
+      const invalidVals = getInvalidExpectedValue(cond);
+      if (invalidVals.length > 0) {
+        invalidVals.forEach(invalidVal => {
+          invalidConditions.push(`Section: ${fviewDef.label} (${invalidVal})`);
+        });
+      }
+    }
+  }
+
+  return invalidConditions;
+}
+
+/**
+ * Finds all conditions that reference the old option value in a specific field.
+ */
+export function findOptionReferences(
+  allFields: Record<string, FieldType>,
+  allFviews: Record<string, {label: string; condition?: ConditionType}>,
+  fieldName: string,
+  oldValue: string
+): string[] {
+  const references: string[] = [];
+
+  // Check field conditions
+  for (const fieldId in allFields) {
+    const fieldCondition = allFields[fieldId].condition;
+    if (
+      fieldCondition &&
+      doesConditionContainValue(fieldCondition, fieldName, oldValue)
+    ) {
+      const label = allFields[fieldId]['component-parameters'].label ?? fieldId;
+      references.push(`Field: ${label}`);
+    }
+  }
+
+  // Check section conditions
+  for (const sectionId in allFviews) {
+    const sectionCondition = allFviews[sectionId].condition;
+    if (
+      sectionCondition &&
+      doesConditionContainValue(sectionCondition, fieldName, oldValue)
+    ) {
+      references.push(`Section: ${allFviews[sectionId].label}`);
+    }
+  }
+
+  return references;
+}
+
+/**
+ * Checks if a condition contains a specific value for a given field.
+ */
+function doesConditionContainValue(
+  condition: ConditionType,
+  fieldName: string,
+  oldValue: string
+): boolean {
+  const {operator, field, value, conditions} = condition;
+
+  if ((operator === 'and' || operator === 'or') && conditions) {
+    return conditions.some(c =>
+      doesConditionContainValue(c, fieldName, oldValue)
+    );
+  }
+
+  if (field === fieldName) {
+    if (Array.isArray(value)) {
+      return value.includes(oldValue);
+    } else {
+      return value === oldValue;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Updates all references of oldValue to newValue in a condition.
+ */
+export function updateConditionReferences(
+  condition: ConditionType,
+  fieldName: string,
+  oldValue: string,
+  newValue: string
+): ConditionType {
+  const {operator, field, value, conditions} = condition;
+
+  if ((operator === 'and' || operator === 'or') && conditions) {
+    return {
+      ...condition,
+      conditions: conditions.map(c =>
+        updateConditionReferences(c, fieldName, oldValue, newValue)
+      ),
+    };
+  }
+
+  if (field === fieldName) {
+    if (Array.isArray(value)) {
+      return {
+        ...condition,
+        value: value.map(v => (v === oldValue ? newValue : v)),
+      };
+    } else if (value === oldValue) {
+      return {...condition, value: newValue};
+    }
+  }
+
+  return condition;
+}
 
 export const ConditionModal = (props: ConditionProps & {label: string}) => {
   const [open, setOpen] = useState(false);
@@ -260,15 +571,11 @@ const BooleanConditionControl = (props: ConditionProps) => {
     updateCondition({...condition, operator: value});
   };
 
-  const updateCondition = (condition: ConditionType | null) => {
-    setCondition(condition);
-    if (
-      condition &&
-      props.onChange &&
-      condition.operator &&
-      condition.conditions
-    ) {
-      props.onChange(condition);
+  const updateCondition = (cond: ConditionType | null) => {
+    const newCond = cond === null ? EMPTY_FIELD_CONDITION : cond;
+    setCondition(newCond);
+    if (newCond && props.onChange) {
+      props.onChange(newCond);
     }
   };
 
@@ -282,7 +589,8 @@ const BooleanConditionControl = (props: ConditionProps) => {
               return i !== index;
             }
           );
-          if (newConditions.length === 0) updateCondition(null);
+          if (newConditions.length === 0)
+            updateCondition(EMPTY_FIELD_CONDITION);
           else updateCondition({...condition, conditions: newConditions});
         } else {
           const newConditions = condition.conditions.map(
@@ -295,7 +603,7 @@ const BooleanConditionControl = (props: ConditionProps) => {
         }
       } else if (condition) {
         if (value) updateCondition({...condition, conditions: [value]});
-        else updateCondition(null);
+        else updateCondition(EMPTY_FIELD_CONDITION);
       }
     };
   };
@@ -303,7 +611,7 @@ const BooleanConditionControl = (props: ConditionProps) => {
   const addCondition = () => {
     if (condition) {
       const existing = condition.conditions || [];
-      // construct a condition with an new empty field condition
+      // construct a condition with a new empty field condition
       const newCondition = {
         ...condition,
         conditions: [...existing, EMPTY_FIELD_CONDITION],
@@ -313,9 +621,7 @@ const BooleanConditionControl = (props: ConditionProps) => {
   };
 
   const deleteCondition = () => {
-    if (props.onChange) {
-      props.onChange(null);
-    }
+    updateCondition(EMPTY_FIELD_CONDITION);
   };
 
   if (condition)
@@ -370,12 +676,12 @@ const BooleanConditionControl = (props: ConditionProps) => {
   else return <div></div>;
 };
 
-const FieldConditionControl = (props: ConditionProps) => {
+export const FieldConditionControl = (props: ConditionProps) => {
   const initialValue = useMemo(
     () =>
       props.initial || {
         field: '',
-        operator: '',
+        operator: 'equal',
         value: '',
       },
     [props]
@@ -399,8 +705,43 @@ const FieldConditionControl = (props: ConditionProps) => {
     selectFields = selectFields.filter(f => view.fields.indexOf(f) < 0);
   }
 
+  const targetFieldDef = condition.field ? allFields[condition.field] : null;
+
+  /* Checks if a field has predefined options */
+  const isPredefinedOptions = (fieldDef: FieldType | null): boolean => {
+    if (!fieldDef) return false;
+    return ['Select', 'RadioGroup', 'MultiSelect', 'Checkbox'].includes(
+      fieldDef['component-name']
+    );
+  };
+
   const updateField = (value: string) => {
-    updateCondition({...condition, field: value});
+    const newFieldDef = allFields[value] ?? null;
+    if (newFieldDef && newFieldDef['component-name'] === 'Checkbox') {
+      updateCondition({
+        field: value,
+        operator: 'equal',
+        value: true,
+      });
+    } else {
+      const isPredefinedOptionsField =
+        newFieldDef && isPredefinedOptions(newFieldDef);
+
+      let firstOption = '';
+      if (isPredefinedOptionsField) {
+        const options =
+          newFieldDef?.['component-parameters']?.ElementProps?.options ?? [];
+        if (options.length > 0) {
+          firstOption = options[0].value;
+        }
+      }
+
+      updateCondition({
+        field: value,
+        operator: isPredefinedOptionsField ? 'equal' : condition.operator,
+        value: firstOption,
+      });
+    }
   };
 
   const updateOperator = (value: string) => {
@@ -417,17 +758,183 @@ const FieldConditionControl = (props: ConditionProps) => {
       props.onChange &&
       condition.field &&
       condition.operator &&
-      condition.value
+      condition.value !== undefined
     ) {
       props.onChange(condition);
     }
   };
 
-  const addCondition = () => {
+  const getFieldLabel = (f: FieldType) =>
+    f?.['component-parameters']?.InputLabelProps?.label ||
+    f?.['component-parameters']?.name ||
+    '<unlabeled>';
+
+  const renderValueEditor = (fieldDef: FieldType) => {
+    const cName = fieldDef['component-name'];
+    const params = fieldDef['component-parameters'] || {};
+    const possibleOptions = params.ElementProps?.options || [];
+
+    if (
+      cName !== 'Select' &&
+      cName !== 'RadioGroup' &&
+      cName !== 'MultiSelect' &&
+      cName !== 'Checkbox'
+    ) {
+      return (
+        <TextField
+          variant="outlined"
+          label="Value"
+          value={condition.value ?? ''}
+          onChange={e => updateValue(e.target.value)}
+          sx={{minWidth: 200}}
+        />
+      );
+    }
+
+    switch (cName) {
+      case 'Select':
+      case 'RadioGroup': {
+        const isValidOption = possibleOptions.some(
+          (opt: any) => opt.value === condition.value
+        );
+        return (
+          <FormControl sx={{minWidth: 200}} error={!isValidOption}>
+            <InputLabel>Value</InputLabel>
+            <Select
+              label="Value"
+              value={isValidOption ? condition.value : (condition.value ?? '')}
+              onChange={e => updateValue(e.target.value)}
+            >
+              {possibleOptions.map((opt: any) => (
+                <MenuItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {!isValidOption && (
+              <div style={{color: 'red', fontSize: '12px'}}>
+                Invalid value: "{String(condition.value)}"
+              </div>
+            )}
+          </FormControl>
+        );
+      }
+      case 'MultiSelect': {
+        const selectedValues = Array.isArray(condition.value)
+          ? condition.value
+          : [];
+        const areAllValid = selectedValues.every(v =>
+          possibleOptions.some((opt: any) => opt.value === v)
+        );
+        return (
+          <FormControl sx={{minWidth: 200}} error={!areAllValid}>
+            <InputLabel>Value</InputLabel>
+            <Select
+              multiple
+              label="Value"
+              value={selectedValues}
+              onChange={e => updateValue(e.target.value)}
+            >
+              {possibleOptions.map((opt: any) => (
+                <MenuItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {selectedValues.some(
+              v => !possibleOptions.some((opt: any) => opt.value === v)
+            ) && (
+              <div style={{color: 'red', fontSize: '12px'}}>
+                Invalid values: "
+                {selectedValues
+                  .filter(
+                    v => !possibleOptions.some((opt: any) => opt.value === v)
+                  )
+                  .join(', ')}
+                "
+              </div>
+            )}
+          </FormControl>
+        );
+      }
+      case 'Checkbox': {
+        let booleanValue = condition.value;
+        if (typeof booleanValue !== 'boolean') {
+          booleanValue = true;
+        }
+        return (
+          <FormControl sx={{minWidth: 200}}>
+            <InputLabel>Value</InputLabel>
+            <Select
+              label="Value"
+              value={booleanValue ? 'true' : 'false'}
+              onChange={e => updateValue(e.target.value === 'true')}
+            >
+              <MenuItem value="true">Checked</MenuItem>
+              <MenuItem value="false">Not Checked</MenuItem>
+            </Select>
+          </FormControl>
+        );
+      }
+      default: {
+        if (possibleOptions.length === 0) {
+          return (
+            <TextField
+              variant="outlined"
+              label="Value"
+              value={condition.value ?? ''}
+              onChange={e => updateValue(e.target.value)}
+              sx={{minWidth: 200}}
+            />
+          );
+        } else {
+          const isValidOption = possibleOptions.some(
+            (opt: any) => opt.value === condition.value
+          );
+          return (
+            <TextField
+              variant="outlined"
+              label="Value"
+              value={condition.value ?? ''}
+              onChange={e => updateValue(e.target.value)}
+              sx={{minWidth: 200}}
+              error={!isValidOption}
+              helperText={
+                !isValidOption ? `Invalid value: "${condition.value}"` : ''
+              }
+            />
+          );
+        }
+      }
+    }
+  };
+
+  const isValueValidForField = (): boolean => {
+    if (!targetFieldDef) return true;
+    const cName = targetFieldDef['component-name'];
+    const params = targetFieldDef['component-parameters'] || {};
+    const possibleOptions = params.ElementProps?.options || [];
+
+    if (cName === 'Select' || cName === 'RadioGroup') {
+      return possibleOptions.some((o: any) => o.value === condition.value);
+    }
+    if (cName === 'MultiSelect') {
+      if (!Array.isArray(condition.value)) return false;
+      return (condition.value as any[]).every((val: any) =>
+        possibleOptions.some((o: any) => o.value === val)
+      );
+    }
+    if (cName === 'Checkbox') {
+      return condition.value === true || condition.value === false;
+    }
+    return true;
+  };
+
+  const handleSplitCondition = () => {
     if (props.onChange) {
       props.onChange({
         operator: 'and',
-        conditions: [condition, EMPTY_FIELD_CONDITION],
+        conditions: [condition, {field: '', operator: 'equal', value: ''}],
       });
     }
   };
@@ -438,32 +945,50 @@ const FieldConditionControl = (props: ConditionProps) => {
     }
   };
 
+  const valueMismatch = !isValueValidForField();
+  const allowedOperators = targetFieldDef
+    ? (() => {
+        const cName = targetFieldDef['component-name'];
+        if (cName === 'MultiSelect')
+          return [
+            'contains-one-of',
+            'does-not-contain-any-of',
+            'contains-all-of',
+            'does-not-contain-all-of',
+          ];
+        if (cName === 'Checkbox') return ['equal'];
+        if (isPredefinedOptions(targetFieldDef)) return ['equal', 'not-equal'];
+        return ['equal', 'not-equal', 'greater', 'less', 'contains', 'regex'];
+      })()
+    : [];
+
   return (
     <Grid container>
       <Stack
         direction="row"
         spacing={2}
         divider={<Divider orientation="vertical" flexItem />}
-        justifyContent="space-evenly"
       >
-        <FormControl sx={{minWidth: 200}} data-testid="field-input">
-          <InputLabel id="field">Field</InputLabel>
+        <FormControl sx={{minWidth: 200}}>
+          <InputLabel>Field</InputLabel>
           <Select
             labelId="field"
-            label="Field Name"
+            label="Field"
             onChange={e => updateField(e.target.value)}
-            value={condition.field}
+            value={condition.field ?? ''}
           >
-            {selectFields.map(fieldId => {
-              return (
-                <MenuItem key={fieldId} value={fieldId}>
-                  {getFieldLabel(allFields[fieldId])}
-                </MenuItem>
-              );
-            })}
+            {selectFields.map(fieldId => (
+              <MenuItem key={fieldId} value={fieldId}>
+                {getFieldLabel(allFields[fieldId])}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
-        <FormControl sx={{minWidth: 200}} data-testid="operator-input">
+        <FormControl
+          sx={{minWidth: 200}}
+          data-testid="operator-input"
+          disabled={allowedOperators.length === 1}
+        >
           <InputLabel id="operator">Operator</InputLabel>
           <Select
             labelId="operator"
@@ -471,27 +996,24 @@ const FieldConditionControl = (props: ConditionProps) => {
             onChange={e => updateOperator(e.target.value)}
             value={condition.operator}
           >
-            {[...allOperators.keys()].map((op: string) => {
-              return (
-                <MenuItem key={op} value={op}>
-                  {allOperators.get(op)}
-                </MenuItem>
-              );
-            })}
+            {allowedOperators.map(op => (
+              <MenuItem key={op} value={op}>
+                {op}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
-        <FormControl sx={{minWidth: 200}} data-testid="value-input">
-          <TextField
-            variant="outlined"
-            label="Value"
-            value={condition.value}
-            onChange={e => updateValue(e.target.value)}
-          />
-        </FormControl>
+
+        {targetFieldDef ? (
+          renderValueEditor(targetFieldDef)
+        ) : (
+          <TextField label="Value" sx={{minWidth: 200}} />
+        )}
+
         <Tooltip describeChild title="Make this an 'and' or 'or' condition">
           <IconButton
             color="primary"
-            onClick={addCondition}
+            onClick={handleSplitCondition}
             data-testid="split-button"
           >
             <SplitscreenIcon />
@@ -507,6 +1029,7 @@ const FieldConditionControl = (props: ConditionProps) => {
           </IconButton>
         </Tooltip>
       </Stack>
+      {valueMismatch && <div style={{color: 'red'}}>Invalid value!</div>}
     </Grid>
   );
 };
