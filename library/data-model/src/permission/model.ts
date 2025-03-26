@@ -887,22 +887,6 @@ export const rolePermissions: Record<
 > = {
   // PROJECT ROLES
   // =============
-  [Role.PROJECT_ADMIN]: {
-    permissions: [Permission.PROJECT_ADMIN],
-    alsoGrants: [Role.PROJECT_MANAGER],
-  },
-  [Role.PROJECT_MANAGER]: {
-    permissions: [
-      Permission.PROJECT_DATA_EDIT_ALL,
-      Permission.PROJECT_DATA_DELETE_ALL,
-      Permission.PROJECT_MANAGE,
-    ],
-    alsoGrants: [Role.PROJECT_CONTRIBUTOR],
-  },
-  [Role.PROJECT_CONTRIBUTOR]: {
-    permissions: [Permission.PROJECT_DATA_READ_ALL],
-    alsoGrants: [Role.PROJECT_GUEST],
-  },
   [Role.PROJECT_GUEST]: {
     permissions: [
       Permission.PROJECT_DATA_ADD,
@@ -910,6 +894,22 @@ export const rolePermissions: Record<
       Permission.PROJECT_VIEW,
     ],
     alsoGrants: [],
+  },
+  [Role.PROJECT_CONTRIBUTOR]: {
+    permissions: [
+      Permission.PROJECT_DATA_READ_ALL,
+      Permission.PROJECT_DATA_EDIT_ALL,
+      Permission.PROJECT_DATA_DELETE_ALL,
+    ],
+    alsoGrants: [Role.PROJECT_GUEST],
+  },
+  [Role.PROJECT_MANAGER]: {
+    permissions: [Permission.PROJECT_MANAGE],
+    alsoGrants: [Role.PROJECT_CONTRIBUTOR],
+  },
+  [Role.PROJECT_ADMIN]: {
+    permissions: [Permission.PROJECT_ADMIN],
+    alsoGrants: [Role.PROJECT_MANAGER],
   },
 
   // GLOBAL ROLES

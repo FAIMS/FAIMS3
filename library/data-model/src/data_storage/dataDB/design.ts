@@ -46,7 +46,7 @@ export const permissionsDocument = (projectId: string) => ({
         oldDoc.created_by &&
         newDoc &&
         newDoc.created_by &&
-        oldDoc.craeted_by !== newDoc.created_by
+        oldDoc.created_by !== newDoc.created_by
       ) {
         throw {
           unauthorized: 'You cannot change the author of an existing record!',
