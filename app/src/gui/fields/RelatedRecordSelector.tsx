@@ -279,10 +279,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     parent_hrid: thisRecordHRID,
     field_id: props.field.name, // the field identifier
     type: type, //type of this relation
-    parent_link: location.pathname.replace(
-      ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE,
-      ''
-    ), // current form link
+    parent_link: location.pathname,
     parent: {},
     relation_type_vocabPair: relationshipPair, //pass the value of vocalPair
   };

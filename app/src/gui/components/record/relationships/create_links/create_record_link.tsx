@@ -53,7 +53,7 @@ export function AddNewRecordButton(props: {
             props.project_id,
             (props.state.parent_record_id || '').toString(),
             (revisionID || '').toString()
-          ).replace(INDIVIDUAL_NOTEBOOK_ROUTE, '');
+          );
           newState['child_record_id'] = new_child_id;
           // wait for 300ms and then jump to the new pathname with the new state
           setTimeout(() => {

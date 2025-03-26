@@ -37,7 +37,6 @@ import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
 import {localGetDataDb} from '../../..';
 import * as ROUTES from '../../../constants/routes';
-import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
 import {
   NotificationContext,
   NotificationContextType,
@@ -76,12 +75,11 @@ import {
   generateLocationState,
   generateRelationship,
   getParentLinkInfo,
-  recordIsChildRecord,
   LocationState,
+  recordIsChildRecord,
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
-import {get} from 'lodash';
 
 type RecordFormProps = {
   navigate: NavigateFunction;
@@ -168,6 +166,9 @@ type RecordIdentifiers = {
   record_id: string;
   revision_id: string;
 };
+
+// options for the close action on a form
+export type FormCloseOptions = 'continue' | 'close' | 'new';
 
 /*
   Callers of RecordForm
@@ -537,7 +538,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
             logError(
               `Error in formChanged, data not saved, child_record_id is not record_id ${this.props.record_id} != ${location.state.child_record_id}`
             );
-          } else this.save(this.state.initialValues, 'continue', () => {});
+          } else
+            this.save({
+              values: this.state.initialValues,
+              closeOption: 'continue',
+            });
         }
       }
     } catch (err: any) {
@@ -589,7 +594,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
           this.props.project_id,
           this.state.type_cached
         );
-
 
       const initialValues: {[key: string]: any} = {
         _id: this.props.record_id!,
@@ -887,22 +891,28 @@ class RecordForm extends React.Component<any, RecordFormState> {
       });
     }
   }
-  // before save:
-  // for link/create new record
-  // save child and parent information into record
-  // function save:
-  // - save doc/record
-  // - save persistence data
-  // - get new revision id, and set new revision id if user click save and continue
-  // - clear the draft
-  // after save: direct user to different path
-  // - - publish and continue: setSubmitting re-enabled, so user can save form for the new revision id
-  // - - publish and close: - close the current record and return to project list
-  //                     - close the current record and back to parent record if record created from parent or if record has parent
-  // - - publish and new:  - close the current record and create new record when current record has no parent relationship
-  //                    - when current record has parent: close current record, add new record into parent record, open the new record with parent
 
-  save(values: object, is_close: string, setSubmitting: any) {
+  /**
+   * save a record and navigate to the next location
+   *  - continue: setSubmitting re-enabled, so user can save form for the new revision id
+   *  - close: - close the current record and return to project list
+   *           - close the current record and back to parent record if record created from parent or if record has parent
+   *  - new:   - close the current record and create new record when current record has no parent relationship
+   *           - when current record has parent: close current record, add new record into parent record, open the new record with parent
+   *
+   * @param values: an object containing the values from the form to be saved as a new or updated record
+   * @param closeOption: the action to perform after save 'continue', 'close', 'new'
+   * @param setSubmitting: function to update the submitting state of the form
+   */
+  save({
+    values,
+    closeOption,
+    setSubmitting = () => {},
+  }: {
+    values: object;
+    closeOption: FormCloseOptions;
+    setSubmitting?: (s: boolean) => void;
+  }): Promise<RevisionID | void | undefined> {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
     //save state into persistent data
@@ -985,28 +995,28 @@ class RecordForm extends React.Component<any, RecordFormState> {
             logError(error);
           }
           // we need both the revision id and the record id below
-          return {
+          const result: RecordIdentifiers = {
             revision_id,
             record_id: this.props.record_id,
-          } as RecordIdentifiers;
+          };
+          return result;
         })
         // generate a success alert
-        .then((ids: RecordIdentifiers) => {
-          const message = 'Record successfully saved';
-          (this.context as NotificationContextType).showSuccess(message);
-          return ids;
-        })
-        // Clear the current draft area (Possibly after redirecting back to project page)
         .then(async (ids: RecordIdentifiers) => {
+          (this.context as NotificationContextType).showSuccess(
+            'Record successfully saved'
+          );
+          // Clear the current draft state
           this.draftState && (await this.draftState.clear());
           return ids;
         })
         // handle the next step after saving, redirect to the parent, a new record or the record list
         .then((ids: RecordIdentifiers) => {
-          if (is_close === 'continue') {
+          if (closeOption === 'continue') {
             setSubmitting(false);
             return ids.revision_id;
-          } else return this.redirectAfterSave(ids, is_close, setSubmitting);
+          } else
+            return this.redirectAfterSave({ids, closeOption, setSubmitting});
         })
         // Could not save record error
         // TODO: this is actually very serious and we should work out how
@@ -1064,18 +1074,22 @@ class RecordForm extends React.Component<any, RecordFormState> {
   /**
    * Handle redirect after a record is saved
    * - navigates to the appropriate place based on the user selection
-   *   in is_close, passing the right context as needed.
+   *   in closeOption, passing the right context as needed.
    *
    * @param ids - record and revision ids
-   * @param is_close - close or new
+   * @param closeOption - close or new
    * @param setSubmitting - function to set the submitting state
    * @returns revision id of the recently saved child record
    */
-  redirectAfterSave(
-    ids: RecordIdentifiers,
-    is_close: string,
-    setSubmitting: any
-  ) {
+  redirectAfterSave({
+    ids,
+    closeOption,
+    setSubmitting = () => {},
+  }: {
+    ids: RecordIdentifiers;
+    closeOption: FormCloseOptions;
+    setSubmitting?: (s: boolean) => void;
+  }) {
     const relationState = this.props.location?.state;
     // first case is if we have a parent record, there should be
     // some location state passed in
@@ -1087,8 +1101,8 @@ class RecordForm extends React.Component<any, RecordFormState> {
           this.props.record_id
         )
       )
-        return this.navigateAfterSaveChild(ids, is_close, setSubmitting);
-      else return this.simpleFinishOrNew(ids, is_close, setSubmitting);
+        return this.navigateAfterSaveChild({ids, closeOption, setSubmitting});
+      else return this.simpleFinishOrNew({ids, closeOption, setSubmitting});
     } else {
       // here we don't have location state passed in, check the current state
       // to see if we have recorded a relationship
@@ -1100,7 +1114,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
         relationship.parent === undefined ||
         relationship.parent === null
       ) {
-        return this.simpleFinishOrNew(ids, is_close, setSubmitting);
+        return this.simpleFinishOrNew({
+          ids,
+          closeOption,
+          setSubmitting,
+        });
       } else {
         generateLocationState(
           relationship.parent,
@@ -1108,12 +1126,12 @@ class RecordForm extends React.Component<any, RecordFormState> {
           this.props.serverId
         )
           .then(locationState => {
-            return this.navigateAfterSaveChild(
+            return this.navigateAfterSaveChild({
               ids,
-              is_close,
+              closeOption,
               setSubmitting,
-              locationState.location_state
-            );
+              relationData: locationState.location_state,
+            });
           })
           .catch(error => logError(error));
       }
@@ -1125,21 +1143,25 @@ class RecordForm extends React.Component<any, RecordFormState> {
    * a new record creation page
    *
    * @param ids - record and revision ids
-   * @param is_close - close or new
+   * @param closeOption - close or new
    * @param setSubmitting - function to set the submitting state
    * @returns revision id of the recently saved child record
    */
-  simpleFinishOrNew(
-    ids: RecordIdentifiers,
-    is_close: string,
-    setSubmitting: any
-  ) {
+  simpleFinishOrNew({
+    ids,
+    closeOption,
+    setSubmitting = () => {},
+  }: {
+    ids: RecordIdentifiers;
+    closeOption: FormCloseOptions;
+    setSubmitting?: (s: boolean) => void;
+  }) {
     // publish and close
-    if (is_close === 'close') {
+    if (closeOption === 'close') {
       this.navigateTo(this.getRoute('project'));
       return ids.revision_id;
       // publish and new record
-    } else if (is_close === 'new') {
+    } else if (closeOption === 'new') {
       //not child record
       setSubmitting(false);
       this.navigateTo(
@@ -1155,16 +1177,21 @@ class RecordForm extends React.Component<any, RecordFormState> {
    * modify the parent record's relationship if we're making another child record
    *
    * @param ids - record and revision ids
-   * @param is_close - close or new
+   * @param closeOption - close or new
    * @param setSubmitting - function to set the submitting state
    * @returns revision id of the recently saved child record
    */
-  navigateAfterSaveChild(
-    ids: RecordIdentifiers,
-    is_close: string,
-    setSubmitting: any,
-    relationData?: LocationState | null
-  ) {
+  navigateAfterSaveChild({
+    ids,
+    closeOption,
+    setSubmitting = () => {},
+    relationData = null,
+  }: {
+    ids: RecordIdentifiers;
+    closeOption: FormCloseOptions;
+    setSubmitting?: (s: boolean) => void;
+    relationData?: LocationState | null;
+  }) {
     // Use provided relationData or get from props.location.state
     const state_parent = relationData
       ? getParentLinkInfo(ids.revision_id, relationData, this.props.record_id)
@@ -1182,7 +1209,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
     // but just to be safe we'll handle there being no parent cleanly
     if (state_parent === null) return ids.revision_id;
 
-    if (is_close === 'close') {
+    if (closeOption === 'close') {
       // redirect back to the parent record or the project page if we don't have a link
       if (state_parent.parent_link)
         this.navigateTo(state_parent.parent_link, state_parent);
@@ -1190,7 +1217,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
 
       // finally return the revision id
       return ids.revision_id;
-    } else if (is_close === 'new') {
+    } else if (closeOption === 'new') {
       setSubmitting(false);
       const field_id = locationState.field_id;
       const new_record_id = generateFAIMSDataID();
@@ -1434,7 +1461,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
               }}
               onSubmit={(values, {setSubmitting}) => {
                 setSubmitting(true);
-                return this.save(values, 'continue', setSubmitting);
+                return this.save({
+                  values,
+                  closeOption: 'continue',
+                  setSubmitting,
+                });
               }}
             >
               {formProps => {
@@ -1556,11 +1587,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
                           <UGCReport
                             handleUGCReport={(value: string) => {
                               this.setState({ugc_comment: value});
-                              this.save(
-                                formProps.values,
-                                'continue',
-                                formProps.setSubmitting
-                              );
+                              this.save({
+                                values: formProps.values,
+                                closeOption: 'continue',
+                                setSubmitting: formProps.setSubmitting,
+                              });
                             }}
                           />
                         </Box>
@@ -1598,14 +1629,14 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         ui_specification={ui_specification}
                         views={views}
                         showPublishButton={showPublishButton}
-                        handleFormSubmit={(is_close: string) => {
+                        handleFormSubmit={(closeOption: FormCloseOptions) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
-                            this.save(
-                              formProps.values,
-                              is_close,
-                              formProps.setSubmitting
-                            );
+                            this.save({
+                              values: formProps.values,
+                              closeOption,
+                              setSubmitting: formProps.setSubmitting,
+                            });
                           }, 500);
                         }}
                         layout={layout}
@@ -1617,11 +1648,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
                           <UGCReport
                             handleUGCReport={(value: string) => {
                               this.setState({ugc_comment: value});
-                              this.save(
-                                formProps.values,
-                                'continue',
-                                formProps.setSubmitting
-                              );
+                              this.save({
+                                values: formProps.values,
+                                closeOption: 'continue',
+                                setSubmitting: formProps.setSubmitting,
+                              });
                             }}
                           />
                         </Box>
@@ -1696,14 +1727,14 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         ui_specification={ui_specification}
                         views={views}
                         showPublishButton={showPublishButton}
-                        handleFormSubmit={(is_close: string) => {
+                        handleFormSubmit={(closeOption: FormCloseOptions) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
-                            this.save(
-                              formProps.values,
-                              is_close,
-                              formProps.setSubmitting
-                            );
+                            this.save({
+                              values: formProps.values,
+                              closeOption,
+                              setSubmitting: formProps.setSubmitting,
+                            });
                           }, 500);
                         }}
                         layout={layout}
@@ -1714,11 +1745,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
                           <UGCReport
                             handleUGCReport={(value: string) => {
                               this.setState({ugc_comment: value});
-                              this.save(
-                                formProps.values,
-                                'continue',
-                                formProps.setSubmitting
-                              );
+                              this.save({
+                                values: formProps.values,
+                                closeOption: 'continue',
+                                setSubmitting: formProps.setSubmitting,
+                              });
                             }}
                           />
                         </Box>
