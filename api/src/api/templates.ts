@@ -187,7 +187,7 @@ api.post(
     params: z.object({id: z.string()}),
   }),
   requireAuthenticationAPI,
-  async (req, res: Response<PutUpdateTemplateResponse>) => {
+  async (req, res: Response<{message: string}>) => {
     // pull out template Id
     const templateId = req.params.id;
 
@@ -209,7 +209,9 @@ api.post(
     await deleteExistingTemplate(templateId);
 
     // Indicate successful deletion and send
-    res.sendStatus(200);
+    res.status(200).json({
+      message: 'Template deleted successfully',
+    });
   }
 );
 
@@ -227,7 +229,7 @@ api.put(
       user,
       body: {archive},
     }: {params: {id: string}; user?: Express.User; body: {archive: boolean}},
-    res: Response<PutUpdateTemplateResponse>
+    res: Response<{message: string}>
   ) => {
     if (!user || !userCanDoWithTemplate(user, id, 'update'))
       throw new Exceptions.UnauthorizedException(
@@ -235,6 +237,8 @@ api.put(
       );
 
     await archiveTemplate(id, archive);
-    res.sendStatus(200);
+    res.status(200).json({
+      message: `Template ${archive ? 'archived' : 'unarchived'} successfully`,
+    });
   }
 );

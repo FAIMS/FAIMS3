@@ -22,9 +22,11 @@ import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 import {
   addOtherRoleToUser,
+  addProjectRoleToUser,
   getUserFromEmailOrUsername,
   getUsers,
   removeOtherRoleFromUser,
+  removeProjectRoleFromUser,
   removeUser,
   saveUser,
   userIsClusterAdmin,
@@ -54,7 +56,7 @@ api.post(
   async (req, res) => {
     // Cluster admins only
     if (!userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not authorised to update user details.'
       );
     }
@@ -66,13 +68,54 @@ api.post(
         'Username cannot be found in user database.'
       );
     }
+
     if (req.body.addrole) {
       addOtherRoleToUser(user, req.body.role);
     } else {
       removeOtherRoleFromUser(user, req.body.role);
     }
+
     await saveUser(user);
-    res.status(200).send();
+    res.status(200).json({
+      message: `User role ${req.body.addrole ? 'added' : 'removed'} successfully`,
+    });
+  }
+);
+
+// Update a users project role
+api.put(
+  '/:id/projects/:project/roles',
+  requireAuthenticationAPI,
+  processRequest({
+    params: z.object({id: z.string(), project: z.string()}),
+    body: z.object({action: z.string(), role: z.string()}),
+  }),
+  async (req, res) => {
+    if (!userIsClusterAdmin(req.user)) {
+      throw new Exceptions.ForbiddenException(
+        'You are not authorised to update user details.'
+      );
+    }
+
+    const {
+      params: {id, project},
+      body: {action, role},
+    } = req;
+
+    const user = await getUserFromEmailOrUsername(id);
+    if (!user) {
+      throw new Exceptions.ItemNotFoundException(
+        'Username cannot be found in user database.'
+      );
+    }
+
+    if (action === 'add') addProjectRoleToUser(user, project, role);
+    if (action === 'remove') removeProjectRoleFromUser(user, project, role);
+
+    await saveUser(user);
+    return res.status(200).json({
+      message: `Project role ${action === 'add' ? 'added to' : 'removed from'} user successfully`,
+    });
   }
 );
 
@@ -112,7 +155,7 @@ api.get(
   requireAuthenticationAPI,
   async (req: any, res: Response<Express.User[]>) => {
     if (!req.user || !userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to get users.'
       );
     }
@@ -130,7 +173,7 @@ api.delete(
   }),
   async ({params: {id}, user}, res) => {
     if (!userIsClusterAdmin(user))
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'Only cluster admins can remove users.'
       );
 
@@ -144,7 +187,7 @@ api.delete(
       );
 
     if (userIsClusterAdmin(userToRemove))
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to remove cluster admins.'
       );
 
@@ -153,6 +196,8 @@ api.delete(
     } catch (e) {
       throw new Exceptions.InternalSystemError('Error removing user');
     }
-    res.status(200).send();
+    res.status(200).json({
+      message: 'User removed successfully',
+    });
   }
 );

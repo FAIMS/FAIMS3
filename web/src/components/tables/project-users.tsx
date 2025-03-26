@@ -1,9 +1,10 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
 import {RoleCard} from '../ui/role-card';
+import {AddRolePopover} from '../popovers/add-role-popover';
+import {ProjectRoleCard} from '../project-role-card';
+import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -35,8 +36,16 @@ export const columns: ColumnDef<any>[] = [
     ),
     cell: ({row}: any) => (
       <div className="flex flex-wrap gap-1">
+        <AddRolePopover
+          roles={['user', 'team', 'moderator', 'admin'].filter(
+            role => row.getValue('project-roles').indexOf(role) === -1
+          )}
+          userId={row.original.user_id}
+        />
         {row.getValue('project-roles').map((role: string) => (
-          <RoleCard key={role}>{role}</RoleCard>
+          <ProjectRoleCard key={role} userId={row.original.user_id} role={role}>
+            {role}
+          </ProjectRoleCard>
         ))}
       </div>
     ),
