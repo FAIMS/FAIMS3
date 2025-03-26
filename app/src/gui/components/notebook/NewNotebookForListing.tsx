@@ -256,7 +256,7 @@ const NewNotebookForListing: React.FC<NewNotebookForListingProps> = props => {
             {templates.data && templates.data.templates.length > 0 ? (
               templates.data.templates.map(template => (
                 <MenuItem key={template._id} value={template._id}>
-                  {template.template_name}
+                  {template.metadata.name}
                 </MenuItem>
               ))
             ) : (
