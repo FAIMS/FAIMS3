@@ -12,6 +12,8 @@ import {
   MigrationsDB,
   MigrationsDBDocument,
   MigrationsDBFields,
+  UserV1Document,
+  UserV2Document,
   buildDefaultMigrationDoc,
   couchInitialiser,
   identifyMigrations,
@@ -20,6 +22,9 @@ import {
   migrateDbs,
   performMigration,
 } from '../src/data_storage';
+import {Role} from '../src';
+import {areDocsEqual} from './utils';
+import {update} from 'lodash';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -35,21 +40,70 @@ type MigrationTestCase = {
   inputDoc: PouchDB.Core.ExistingDocument<any>;
   expectedOutputDoc: PouchDB.Core.ExistingDocument<any>;
   expectedResult: MigrationFuncReturn;
+  equalityFunction?: (
+    inputDoc: PouchDB.Core.ExistingDocument<any>,
+    expectedOutputDoc: PouchDB.Core.ExistingDocument<any>
+  ) => boolean;
 };
 
 /**
  * Collection of test cases for all migration functions
  */
 const MIGRATION_TEST_CASES: MigrationTestCase[] = [
-  // This needs to be updated when the actual migration is implemented
   {
     name: 'peopleV1toV2Migration - basic migration',
     dbType: DatabaseType.PEOPLE,
     from: 1,
     to: 2,
-    inputDoc: {},
-    expectedOutputDoc: {},
-    expectedResult: {action: 'none'},
+    inputDoc: {
+      _id: 'abcd123456',
+      _rev: '46-48fbd6a01b20cba7669b390cc9b774fb',
+      user_id: 'abcd123456',
+      name: 'George Costanza',
+      emails: ['george.costanza@gmail.com'],
+      roles: [
+        'survey1||admin',
+        'survey2||user',
+        'cluster-admin',
+        'notebook-creator',
+      ],
+      project_roles: {
+        survey1: ['admin'],
+        survey2: ['admin', 'user'],
+      },
+      other_roles: ['cluster-admin', 'notebook-creator'],
+      owned: [],
+      profiles: {
+        local: {
+          password: '1234',
+          salt: '123456',
+        },
+      },
+    } satisfies UserV1Document,
+    expectedOutputDoc: {
+      _id: 'abcd123456',
+      _rev: '46-48fbd6a01b20cba7669b390cc9b774fb',
+      user_id: 'abcd123456',
+      name: 'George Costanza',
+      emails: ['george.costanza@gmail.com'],
+      resourceRoles: [
+        {resourceId: 'survey1', role: Role.PROJECT_ADMIN},
+        {resourceId: 'survey2', role: Role.PROJECT_CONTRIBUTOR},
+      ],
+      globalRoles: [
+        Role.GENERAL_ADMIN,
+        Role.GENERAL_CREATOR,
+        Role.GENERAL_USER,
+      ],
+      profiles: {
+        local: {
+          password: '1234',
+          salt: '123456',
+        },
+      },
+    } satisfies UserV2Document,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
   },
 ];
 
@@ -131,7 +185,16 @@ describe('Migration System Tests', () => {
           };
 
           // Deep equality check
-          expect(updatedWithMetadata).toEqual(testCase.expectedOutputDoc);
+          if (testCase.equalityFunction) {
+            expect(
+              testCase.equalityFunction(
+                updatedWithMetadata,
+                testCase.expectedOutputDoc
+              )
+            );
+          } else {
+            expect(updatedWithMetadata).toEqual(testCase.expectedOutputDoc);
+          }
         }
       });
     });
@@ -255,7 +318,8 @@ describe('Migration System Tests', () => {
       };
 
       // Temporarily modify DB_TARGET_VERSIONS for this test
-      const originalTargetVersion = DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
+      const originalTargetVersion =
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
       DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = 3;
 
       expect(() =>
@@ -263,7 +327,8 @@ describe('Migration System Tests', () => {
       ).toThrow();
 
       // Restore original target version
-      DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = originalTargetVersion;
+      DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion =
+        originalTargetVersion;
     });
   });
 

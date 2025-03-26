@@ -496,6 +496,7 @@ export interface ProjectUIViews {
     is_logic?: {[key: string]: string[]}; //add for branching logic
     condition?: ConditionalExpression; // new conditional logic
     conditionFn?: (v: RecordValues) => boolean; // compiled conditional function
+    description?: string;
   };
 }
 

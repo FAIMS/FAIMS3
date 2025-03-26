@@ -1,3 +1,4 @@
+import {ResourceRole, Role} from '../permission';
 import {
   MigrationLog,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
@@ -5,6 +6,7 @@ import {
   MigrationsDBDocument,
   MigrationsDBFields,
 } from './migrationsDB';
+import {UserV1Document, UserV2Document} from './peopleDB';
 
 export enum DatabaseType {
   AUTH = 'AUTH',
@@ -54,7 +56,61 @@ export type MigrationFunc = (
 ) => MigrationFuncReturn;
 
 // TODO
-const peopleV1toV2Migration: MigrationFunc = doc => ({action: 'none'});
+const peopleV1toV2Migration: MigrationFunc = doc => {
+  // Take input as v1 then output as v2
+  const inputDoc = doc as unknown as UserV1Document;
+
+  // Need to convert existing roles -> resource and global roles
+  let globalRoles: Role[] = [];
+  let resourceRoles: ResourceRole[] = [];
+
+  // All users are general users
+  globalRoles.push(Role.GENERAL_USER);
+
+  for (const deprecatedRole of inputDoc.other_roles) {
+    // these are old global roles
+    if (deprecatedRole === 'cluster-admin') {
+      globalRoles.push(Role.GENERAL_ADMIN);
+    }
+    if (deprecatedRole === 'notebook-creator') {
+      globalRoles.push(Role.GENERAL_CREATOR);
+    }
+  }
+
+  for (const [projectId, projectRoles] of Object.entries(
+    inputDoc.project_roles
+  )) {
+    for (const projectRole of projectRoles) {
+      if (projectRole === 'admin') {
+        resourceRoles.push({role: Role.PROJECT_ADMIN, resourceId: projectId});
+      } else if (['moderator', 'team', 'user'].includes(projectRole)) {
+        resourceRoles.push({
+          role: Role.PROJECT_CONTRIBUTOR,
+          resourceId: projectId,
+        });
+      } else {
+        console.warn(
+          'The project role ' +
+            projectRole +
+            ' could not be mapped to a new role - ignoring...'
+        );
+      }
+    }
+  }
+
+  const outputDoc: UserV2Document = {
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    emails: inputDoc.emails,
+    name: inputDoc.name,
+    user_id: inputDoc.user_id,
+    profiles: inputDoc.profiles,
+    globalRoles,
+    resourceRoles,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
 // TODO
 const invitesV1toV2Migration: MigrationFunc = doc => ({action: 'none'});
 

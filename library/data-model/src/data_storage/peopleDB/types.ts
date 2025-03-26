@@ -39,7 +39,7 @@ export type OtherRoles = ConductorRole[];
 
 // This is the v1.1 or prior user model - these represent entries in the people
 // DB
-export interface UserV0Fields {
+export interface UserV1Fields {
   user_id: string;
   name: string;
   emails: Email[];
@@ -54,7 +54,7 @@ export interface UserV0Fields {
   // This is deprecated - never used
   owned: NonUniqueProjectID[];
 }
-export type UserV0Document = PouchDB.Core.ExistingDocument<UserV0Fields>;
+export type UserV1Document = PouchDB.Core.ExistingDocument<UserV1Fields>;
 
 export type ResourceRoleMap = {
   [resource in Resource]?: {resourceId: string; role: Role}[] | undefined;
@@ -81,7 +81,8 @@ export interface PeopleDBFields {
   // This links profile information to profiles
   profiles: UserServiceProfiles;
 }
-
+export type UserV2Document = PouchDB.Core.ExistingDocument<PeopleDBFields>;
 export type PeopleDBDocument = PouchDB.Core.Document<PeopleDBFields>;
-export type ExistingPeopleDBDocument = PouchDB.Core.ExistingDocument<PeopleDBFields>;
+export type ExistingPeopleDBDocument =
+  PouchDB.Core.ExistingDocument<PeopleDBFields>;
 export type PeopleDB = PouchDB.Database<PeopleDBFields>;

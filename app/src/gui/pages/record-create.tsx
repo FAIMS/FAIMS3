@@ -155,6 +155,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const {type_name, project, draft_id, record_id, serverId} = props;
   const project_id = project.projectId;
   const navigate = useNavigate();
+  const location = useLocation();
   const [isDraftSaving, setIsDraftSaving] = useState(false);
   const [draftLastSaved, setDraftLastSaved] = useState<Date | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
@@ -164,7 +165,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const [parentLinks, setParentLinks] = useState<ParentLinkProps[]>([]);
   const [is_link_ready, setIs_link_ready] = useState(false);
   const [progress, setProgress] = useState(0);
-  const buttonRef = useRef<HTMLDivElement | null>(null);
 
   const uiSpecId = useAppSelector(state =>
     selectProjectById(state, project_id)
@@ -252,7 +252,8 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               mq_above_md={mq_above_md}
               navigate={navigate}
               setProgress={setProgress}
-              buttonRef={buttonRef}
+              location={location}
+              disabled={false}
             />
           </Box>
         </Box>

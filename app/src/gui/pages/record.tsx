@@ -19,6 +19,7 @@
  */
 
 import {
+  Action,
   InitialMergeDetails,
   ProjectID,
   RecordID,
@@ -28,6 +29,7 @@ import {
   getFullRecordData,
   getHRIDforRecordID,
   getInitialMergeDetails,
+  isAuthorized,
   listFAIMSRecordRevisions,
 } from '@faims3/data-model';
 import TabContext from '@mui/lab/TabContext';
@@ -82,6 +84,7 @@ import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
 import {localGetDataDb} from '../..';
+import {useIsAuthorisedTo} from '../../utils/customHooks';
 
 export default function Record() {
   /**
