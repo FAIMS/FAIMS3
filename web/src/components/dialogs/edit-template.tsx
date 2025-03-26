@@ -29,7 +29,7 @@ import {
 export const EditTemplateDialog = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-  const {data} = useGetTemplates(user, templateId);
+  const {data, isLoading} = useGetTemplates(user, templateId);
   const [open, setOpen] = useState(false);
 
   return (
@@ -64,12 +64,12 @@ export const EditTemplateDialog = () => {
                 <ListDescription>
                   1. Download the template file.
                 </ListDescription>
-                <Button variant="outline">
+                <Button variant="outline" disabled={isLoading}>
                   <a
                     href={`data:text/json;charset=utf-8,${encodeURIComponent(
                       JSON.stringify({
-                        metadata: data.metadata,
-                        'ui-specification': data['ui-specification'],
+                        metadata: data?.metadata,
+                        'ui-specification': data?.['ui-specification'],
                       })
                     )}`}
                     download={`${templateId}.json`}
