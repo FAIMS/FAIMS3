@@ -172,11 +172,12 @@ export async function getUsersForResource({
   resourceId: string;
 }): Promise<Express.User[]> {
   // Get the users database
-  const users_db = getUsersDB();
+  const usersDb = getUsersDB();
   // Fetch all user records from the database and get doc
   return (
-    await users_db.query<PeopleDBFields>('indexes/byResource', {
+    await usersDb.query<PeopleDBFields>('indexes/byResource', {
       key: resourceId,
+      include_docs: true,
     })
   ).rows.reduce((filtered, option) => {
     if (option.doc) filtered.push(option.doc);

@@ -46,8 +46,13 @@ const designDoc = {
     byResource: {
       map: convertToCouchDBString(doc => {
         if (doc.resourceRoles) {
+          // only emit once per resource Id !
+          const emitted = [];
           for (const {resourceId} of doc.resourceRoles) {
-            emit(resourceId, 1);
+            if (emitted.indexOf(resourceId) === -1) {
+              emit(resourceId, 1);
+              emitted.push(resourceId);
+            }
           }
         }
       }),

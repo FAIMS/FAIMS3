@@ -20,17 +20,18 @@
  */
 import {
   Action,
-  NonUniqueProjectID,
   projectInviteToAction,
   Resource,
   Role,
   roleDetails,
+  RoleScope,
   userCanDo,
   userHasGlobalRole,
   userHasResourceRole,
 } from '@faims3/data-model';
-import {body, validationResult} from 'express-validator';
 import QRCode from 'qrcode';
+import {z} from 'zod';
+import {processRequest} from 'zod-express-middleware';
 import {add_auth_providers} from './auth_providers';
 import {add_auth_routes} from './auth_routes';
 import {generateUserToken} from './authkeys/create';
@@ -66,8 +67,6 @@ import {
   requireAuthentication,
   requireNotebookMembership,
 } from './middleware';
-import {processRequest} from 'zod-express-middleware';
-import {z} from 'zod';
 
 export {app};
 
@@ -362,10 +361,27 @@ app.get(
     const projectId = req.params.id;
     const user = req.user!;
     const notebook = await getNotebookMetadata(projectId);
-    const userList = await getUsersForResource({resourceId: projectId});
+    const relevantRoles = getRolesForNotebook().map(r => r.role);
+    const userList = (await getUsersForResource({resourceId: projectId})).map(
+      user => {
+        let roles: {name: Role; value: boolean}[] = [];
+        for (const r of relevantRoles) {
+          roles.push({
+            value: userHasResourceRole({
+              resourceRole: r,
+              user,
+              resourceId: projectId,
+              drill: false,
+            }),
+            name: r,
+          });
+        }
+        return {...user, roles};
+      }
+    );
 
     res.render('users', {
-      roles: getRolesForNotebook().map(r => r.role),
+      roles: relevantRoles,
       users: userList,
       notebook: notebook,
       cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
@@ -386,23 +402,27 @@ app.get(
     const userList = await getUsers();
     const user = req.user!;
     const id = user._id;
+    const globalRoles = Object.entries(roleDetails)
+      .filter(([, v]) => v.scope === RoleScope.GLOBAL)
+      .map(([k]) => k as Role);
 
     const userListFiltered = userList
       .filter(user => user._id !== id)
       .map(user => {
+        let roles: Partial<Record<Role, boolean>> = {};
+        for (const r of globalRoles) {
+          roles[r] = userHasGlobalRole({role: r, user});
+        }
         return {
           username: user._id,
           name: user.name,
-          cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
-          can_create_notebooks: userHasGlobalRole({
-            role: Role.GENERAL_CREATOR,
-            user,
-          }),
+          ...roles,
         };
       });
 
     res.render('cluster-users', {
       users: userListFiltered,
+      roles: globalRoles,
       cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
       can_create_notebooks: userHasGlobalRole({
         role: Role.GENERAL_CREATOR,
