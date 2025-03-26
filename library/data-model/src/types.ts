@@ -799,11 +799,6 @@ export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;
 
 // The editable properties for a template
 export const TemplateEditableDetailsSchema = z.object({
-  // What is the display name of the template?
-  template_name: z
-    .string()
-    .trim()
-    .min(5, 'Please provide a template name of at least 5 character length.'),
   // The UI specification for this template
   'ui-specification': UiSpecificationSchema,
   // The metadata from the designer - copied into new notebooks
