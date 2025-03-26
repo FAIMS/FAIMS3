@@ -45,10 +45,10 @@ type Props = {
 
 export const RelatedRecordEditor = ({fieldName}: Props) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const viewsets = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets
+    state => state.notebook['ui-specification'].present.viewsets
   );
   const dispatch = useAppDispatch();
 

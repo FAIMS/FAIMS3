@@ -13,9 +13,10 @@
 // limitations under the License.
 
 import {PayloadAction, createSlice} from '@reduxjs/toolkit';
-import {NotebookUISpec, initialState, FieldType} from './initial';
+import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
 import {ConditionType} from '../components/condition';
+// eslint-disable-next-line n/no-extraneous-import
 
 /**
  * Slugify a string, replacing special characters with less special ones
@@ -42,9 +43,12 @@ export const slugify = (str: string) => {
   return str;
 };
 
+const uiSpecInitialState: NotebookUISpec =
+  initialState.notebook['ui-specification'].present;
+
 export const uiSpecificationReducer = createSlice({
   name: 'ui-specification',
-  initialState: initialState.notebook['ui-specification'],
+  initialState: uiSpecInitialState,
   reducers: {
     loaded: (_state, action: PayloadAction<NotebookUISpec>) => {
       return action.payload;
@@ -573,5 +577,3 @@ export const {
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
 } = uiSpecificationReducer.actions;
-
-export default uiSpecificationReducer.reducer;

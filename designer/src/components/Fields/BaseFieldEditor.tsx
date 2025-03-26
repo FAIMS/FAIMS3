@@ -49,7 +49,7 @@ type StateType = {
 
 export const BaseFieldEditor = ({fieldName, children}: Props) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 

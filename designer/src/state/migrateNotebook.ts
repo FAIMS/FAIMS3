@@ -94,8 +94,8 @@ export const validateNotebook = (n: unknown) => {
 const updateFieldLabels = (notebook: Notebook) => {
   const fields: {[key: string]: FieldType} = {};
 
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
+  for (const fieldName in notebook['ui-specification'].present.fields) {
+    const field = notebook['ui-specification'].present.fields[fieldName];
 
     // clean up all the different ways that label could be stored
     const params = field['component-parameters'];
@@ -117,7 +117,7 @@ const updateFieldLabels = (notebook: Notebook) => {
       'component-parameters': params,
     };
   }
-  notebook['ui-specification'].fields = fields;
+  notebook['ui-specification'].present.fields = fields;
 };
 
 type LabelInclude = {
@@ -142,8 +142,8 @@ type OldMetaType = {
 const updateAnnotationFormat = (notebook: Notebook) => {
   const fields: {[key: string]: FieldType} = {};
 
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
+  for (const fieldName in notebook['ui-specification'].present.fields) {
+    const field = notebook['ui-specification'].present.fields[fieldName];
     const meta = field.meta as OldMetaType;
     if (typeof meta?.annotation === 'boolean') {
       field.meta = {
@@ -160,7 +160,7 @@ const updateAnnotationFormat = (notebook: Notebook) => {
     fields[fieldName] = field;
   }
 
-  notebook['ui-specification'].fields = fields;
+  notebook['ui-specification'].present.fields = fields;
 };
 
 /**
@@ -171,8 +171,8 @@ const updateAnnotationFormat = (notebook: Notebook) => {
 const updateHelperText = (notebook: Notebook) => {
   const fields: {[key: string]: FieldType} = {};
 
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
+  for (const fieldName in notebook['ui-specification'].present.fields) {
+    const field = notebook['ui-specification'].present.fields[fieldName];
 
     const params = field['component-parameters'];
     const originalValue = params?.helperText;
@@ -188,7 +188,7 @@ const updateHelperText = (notebook: Notebook) => {
     fields[fieldName] = field;
   }
 
-  notebook['ui-specification'].fields = fields;
+  notebook['ui-specification'].present.fields = fields;
 };
 
 /**
@@ -209,7 +209,7 @@ type SectionType = {
  */
 const updateFormSectionMeta = (notebook: Notebook) => {
   const sections = notebook.metadata?.sections as SectionType;
-  const fviews = notebook['ui-specification'].fviews;
+  const fviews = notebook['ui-specification'].present.fviews;
   const prefix = 'sectiondescription';
 
   if (sections) {
@@ -233,8 +233,8 @@ const fixPhotoValidation = (notebook: Notebook) => {
 
   const fields: {[key: string]: FieldType} = {};
 
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
+  for (const fieldName in notebook['ui-specification'].present.fields) {
+    const field = notebook['ui-specification'].present.fields[fieldName];
 
     if (field['component-name'] === 'TakePhoto') {
       if (field.validationSchema?.length === 2)
@@ -244,7 +244,7 @@ const fixPhotoValidation = (notebook: Notebook) => {
     fields[fieldName] = field;
   }
 
-  notebook['ui-specification'].fields = fields;
+  notebook['ui-specification'].present.fields = fields;
 };
 
 /**
@@ -257,8 +257,8 @@ const fixPhotoValidation = (notebook: Notebook) => {
 const fixAutoIncrementerInitialValue = (notebook: Notebook) => {
   const fields: {[key: string]: FieldType} = {};
 
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
+  for (const fieldName in notebook['ui-specification'].present.fields) {
+    const field = notebook['ui-specification'].present.fields[fieldName];
 
     if (field['component-name'] === 'BasicAutoIncrementer') {
       if (field.initialValue === null) field.initialValue = '';
@@ -267,7 +267,7 @@ const fixAutoIncrementerInitialValue = (notebook: Notebook) => {
     fields[fieldName] = field;
   }
 
-  notebook['ui-specification'].fields = fields;
+  notebook['ui-specification'].present.fields = fields;
 };
 
 /**
@@ -278,10 +278,12 @@ const fixOldHridPrefix = (notebook: Notebook) => {
   const fieldToViewset: {[key: string]: string} = {};
 
   // Build map of fields to their containing viewsets
-  for (const viewsetId of Object.keys(notebook['ui-specification'].viewsets)) {
-    const viewset = notebook['ui-specification'].viewsets[viewsetId];
+  for (const viewsetId of Object.keys(
+    notebook['ui-specification'].present.viewsets
+  )) {
+    const viewset = notebook['ui-specification'].present.viewsets[viewsetId];
     for (const viewId of viewset.views) {
-      const view = notebook['ui-specification'].fviews[viewId];
+      const view = notebook['ui-specification'].present.fviews[viewId];
       for (const fieldName of view.fields) {
         fieldToViewset[fieldName] = viewsetId;
       }
@@ -289,10 +291,14 @@ const fixOldHridPrefix = (notebook: Notebook) => {
   }
 
   // Process fields, moving HRID fields to viewset settings
-  for (const fieldName of Object.keys(notebook['ui-specification'].fields)) {
+  for (const fieldName of Object.keys(
+    notebook['ui-specification'].present.fields
+  )) {
     // Always strip off the hrid true property - this is no longer present
     const params =
-      notebook['ui-specification'].fields[fieldName]['component-parameters'];
+      notebook['ui-specification'].present.fields[fieldName][
+        'component-parameters'
+      ];
     if (params && 'hrid' in params) {
       delete params.hrid;
     }
@@ -300,7 +306,7 @@ const fixOldHridPrefix = (notebook: Notebook) => {
     if (fieldName.startsWith('hrid')) {
       const viewsetName = fieldToViewset[fieldName];
       if (viewsetName) {
-        notebook['ui-specification'].viewsets[viewsetName].hridField =
+        notebook['ui-specification'].present.viewsets[viewsetName].hridField =
           fieldName;
       }
     }
