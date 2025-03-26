@@ -52,9 +52,15 @@ api.post(
     body: PostUpdateUserInputSchema,
   }),
   async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to update user details.'
+      );
+    }
+
     // Cluster admins only
     if (!userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not authorised to update user details.'
       );
     }
@@ -68,7 +74,7 @@ api.post(
     }
 
     if (req.params.id === req.user?.user_id) {
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to update your own roles.'
       );
     }
@@ -160,7 +166,7 @@ api.delete(
   }),
   async ({params: {id}, user}, res) => {
     if (!userIsClusterAdmin(user))
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'Only cluster admins can remove users.'
       );
 
@@ -174,7 +180,7 @@ api.delete(
       );
 
     if (userIsClusterAdmin(userToRemove))
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to remove cluster admins.'
       );
 

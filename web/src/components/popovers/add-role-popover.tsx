@@ -4,6 +4,13 @@ import {RoleCard} from '../ui/role-card';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Button} from '../ui/button';
+import {toast} from 'sonner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 
 /**
  * A popover that allows the user to add a role to a user.
@@ -22,11 +29,28 @@ export const AddRolePopover = ({
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  if (roles.length === 0) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button variant="outline" className="font-normal h-7" disabled>
+              add
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>No more roles available to add</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger>
-        <Button variant="outline" className="font-normal">
-          Add Role
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="font-normal h-7">
+          add
         </Button>
       </PopoverTrigger>
       <PopoverContent className="flex gap-1 p-2 w-fit text-sm" align="start">
@@ -50,14 +74,18 @@ export const AddRolePopover = ({
                   }
                 );
 
-                if (!response.ok) {
-                  console.log('Error adding role', response);
-                }
+                if (!response.ok) throw new Error(response.statusText);
 
                 queryClient.invalidateQueries({queryKey: ['users']});
+
                 setOpen(false);
               } catch (error) {
-                console.log('Error adding role', error);
+                toast.error('Failed to add role', {
+                  description:
+                    error instanceof Error
+                      ? error.message
+                      : 'Unknown error occurred',
+                });
               }
             }}
           >

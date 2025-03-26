@@ -38,6 +38,12 @@ export const getColumns = ({
         },
       }: any) => (
         <div className="flex flex-wrap gap-1 items-center">
+          <AddRolePopover
+            roles={all_roles.filter(
+              (role: string) => !other_roles.includes(role)
+            )}
+            userId={userId}
+          />
           {other_roles.map((role: string) => (
             <RoleCard
               key={role}
@@ -75,15 +81,6 @@ export const getColumns = ({
               {role}
             </RoleCard>
           ))}
-          {all_roles.filter((role: string) => !other_roles.includes(role))
-            .length > 0 && (
-            <AddRolePopover
-              roles={all_roles.filter(
-                (role: string) => !other_roles.includes(role)
-              )}
-              userId={userId}
-            />
-          )}
         </div>
       ),
     },
