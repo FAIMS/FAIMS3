@@ -126,8 +126,6 @@ export enum Action {
   // Delete a user
   DELETE_USER = 'DELETE_USER',
 
-  // TODO managing user roles? E.g. remove role, add role
-
   // ============================================================
   // SYSTEM ACTIONS
   // ============================================================
@@ -504,266 +502,12 @@ export const resourceToActions: Record<Resource, Action[]> = Object.values(
 );
 
 // =====================================
-// PERMISSIONS
-// =====================================
-
-// These are the set of permissions which apply on a per-resource basis.
-
-// The token will only be 'expanded' to include resource specific permissions
-// explicitly encoded so that couch can determine permissions (with no other
-// context), otherwise resource specific roles will be used, which in
-// combination with the data model, can provide equivalent description of
-// permissions.
-
-// The reason to include this is that not all clients know enough about the user
-// to determine which projects/resources they have access to. For example, the
-// project data is protected on a per project basis, so the token needs to not
-// only have "data read" but also "data read for X project".
-export enum Permission {
-  // PROJECT GENERAL
-  // ===============
-  PROJECT_LIST = 'PROJECT_LIST',
-  PROJECT_CREATE = 'PROJECT_CREATE',
-
-  // PROJECT SPECIFIC
-  // ================
-
-  // View basic details about project
-  PROJECT_VIEW = 'PROJECT_VIEW',
-
-  // Add and basic manage my data
-  PROJECT_DATA_ADD = 'PROJECT_DATA_ADD',
-
-  // Data reading levels (NOTE this is only client side implemented in couch)
-  PROJECT_DATA_READ_MINE = 'PROJECT_DATA_READ_MINE',
-  PROJECT_DATA_READ_ALL = 'PROJECT_DATA_READ_ALL',
-
-  // Data editing levels (NOTE this is uniformly implemented)
-  PROJECT_DATA_EDIT_ALL = 'PROJECT_DATA_EDIT_ALL',
-
-  // Deletion
-  PROJECT_DATA_DELETE_ALL = 'PROJECT_DATA_DELETE_ALL',
-
-  // Manage the project
-  PROJECT_MANAGE = 'PROJECT_MANAGE',
-
-  // Administer the project
-  PROJECT_ADMIN = 'PROJECT_ADMIN',
-
-  // TEMPLATE GENERAL
-  // ================
-  TEMPLATE_VIEW = 'TEMPLATE_VIEW',
-
-  TEMPLATE_CREATE = 'TEMPLATE_CREATE',
-
-  // TEMPLATE SPECIFIC
-  // =================
-
-  // Right now we merge all editing rights into one permission
-  TEMPLATE_EDIT = 'TEMPLATE_EDIT',
-
-  // Deletion is a special permission
-  TEMPLATE_DELETE = 'TEMPLATE_DELETE',
-
-  // USER GENERAL
-  // ================
-
-  // Right now this is on a general basis
-  USER_MANAGE = 'USER_MANAGE',
-
-  // USER SPECIFIC
-  // ================
-  // None currently
-
-  // SYSTEM GENERAL
-  // ================
-
-  // Right now this is on a general basis
-  SYSTEM_MANAGE = 'SYSTEM_MANAGE',
-
-  // SYSTEM SPECIFIC
-  // ================
-  // None currently
-}
-
-// Map permissions to the actions they allow on resources, along with
-// heirarchical permissions
-export const permissionActions: Record<
-  Permission,
-  {resource: Resource; actions: Action[]}
-> = {
-  // PROJECTS
-  // ========
-  [Permission.PROJECT_LIST]: {
-    resource: Resource.PROJECT,
-    actions: [Action.LIST_PROJECTS],
-  },
-  [Permission.PROJECT_CREATE]: {
-    resource: Resource.PROJECT,
-    actions: [Action.CREATE_PROJECT],
-  },
-  [Permission.PROJECT_VIEW]: {
-    resource: Resource.PROJECT,
-    actions: [Action.READ_PROJECT_METADATA],
-  },
-  [Permission.PROJECT_DATA_ADD]: {
-    resource: Resource.PROJECT,
-    actions: [
-      Action.CREATE_PROJECT_RECORD,
-      Action.EDIT_MY_PROJECT_RECORDS,
-      Action.DELETE_MY_PROJECT_RECORDS,
-      Action.READ_MY_PROJECT_RECORDS,
-    ],
-  },
-  [Permission.PROJECT_DATA_READ_MINE]: {
-    resource: Resource.PROJECT,
-    actions: [Action.READ_MY_PROJECT_RECORDS],
-  },
-  [Permission.PROJECT_DATA_READ_ALL]: {
-    resource: Resource.PROJECT,
-    actions: [Action.READ_MY_PROJECT_RECORDS, Action.READ_ALL_PROJECT_RECORDS],
-  },
-  [Permission.PROJECT_DATA_EDIT_ALL]: {
-    resource: Resource.PROJECT,
-    actions: [Action.EDIT_MY_PROJECT_RECORDS, Action.EDIT_ALL_PROJECT_RECORDS],
-  },
-  [Permission.PROJECT_DATA_DELETE_ALL]: {
-    resource: Resource.PROJECT,
-    actions: [
-      Action.DELETE_MY_PROJECT_RECORDS,
-      Action.DELETE_ALL_PROJECT_RECORDS,
-    ],
-  },
-  [Permission.PROJECT_MANAGE]: {
-    resource: Resource.PROJECT,
-    actions: [
-      Action.UPDATE_PROJECT_DETAILS,
-      Action.UPDATE_PROJECT_UISPEC,
-      Action.CHANGE_PROJECT_STATUS,
-      Action.EXPORT_PROJECT_DATA,
-      Action.VIEW_PROJECT_INVITES,
-      Action.CREATE_GUEST_PROJECT_INVITE,
-      Action.EDIT_GUEST_PROJECT_INVITE,
-      Action.DELETE_GUEST_PROJECT_INVITE,
-      Action.CREATE_CONTRIBUTOR_PROJECT_INVITE,
-      Action.EDIT_CONTRIBUTOR_PROJECT_INVITE,
-      Action.DELETE_CONTRIBUTOR_PROJECT_INVITE,
-      Action.CREATE_MANAGER_PROJECT_INVITE,
-      Action.EDIT_MANAGER_PROJECT_INVITE,
-      Action.DELETE_MANAGER_PROJECT_INVITE,
-      Action.VIEW_PROJECT_USERS,
-
-      // guest, contributor, manager remove add
-      Action.ADD_GUEST_TO_PROJECT,
-      Action.REMOVE_GUEST_FROM_PROJECT,
-      Action.ADD_CONTRIBUTOR_TO_PROJECT,
-      Action.REMOVE_CONTRIBUTOR_FROM_PROJECT,
-      Action.ADD_MANAGER_TO_PROJECT,
-      Action.REMOVE_MANAGER_FROM_PROJECT,
-    ],
-  },
-  [Permission.PROJECT_ADMIN]: {
-    resource: Resource.PROJECT,
-    actions: [
-      Action.CREATE_ADMIN_PROJECT_INVITE,
-      Action.EDIT_ADMIN_PROJECT_INVITE,
-      Action.DELETE_ADMIN_PROJECT_INVITE,
-      Action.DELETE_PROJECT,
-
-      // admin remove/add
-      Action.ADD_ADMIN_TO_PROJECT,
-      Action.REMOVE_ADMIN_FROM_PROJECT,
-
-      // Debugging
-      Action.GENERATE_RANDOM_PROJECT_RECORDS,
-    ],
-  },
-
-  // TEMPLATES
-  // ========
-  [Permission.TEMPLATE_VIEW]: {
-    resource: Resource.TEMPLATE,
-    actions: [Action.VIEW_TEMPLATES],
-  },
-  [Permission.TEMPLATE_CREATE]: {
-    resource: Resource.TEMPLATE,
-    actions: [Action.CREATE_TEMPLATE],
-  },
-  [Permission.TEMPLATE_EDIT]: {
-    resource: Resource.TEMPLATE,
-    actions: [
-      Action.UPDATE_TEMPLATE_CONTENT,
-      Action.UPDATE_TEMPLATE_DETAILS,
-      Action.CHANGE_TEMPLATE_STATUS,
-    ],
-  },
-  [Permission.TEMPLATE_DELETE]: {
-    resource: Resource.TEMPLATE,
-    actions: [Action.DELETE_TEMPLATE],
-  },
-
-  // USER
-  // ========
-  [Permission.USER_MANAGE]: {
-    resource: Resource.USER,
-    actions: [
-      Action.RESET_USER_PASSWORD,
-      // This is being granted globally
-      Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
-      Action.DELETE_USER,
-      Action.VIEW_USER_LIST,
-    ],
-  },
-
-  // SYSTEM
-  // ========
-  [Permission.SYSTEM_MANAGE]: {
-    resource: Resource.SYSTEM,
-    actions: [
-      Action.INITIALISE_SYSTEM_API,
-      Action.RESTORE_FROM_BACKUP,
-      Action.VALIDATE_DBS,
-    ],
-  },
-};
-
-/**
- * Maps each action to the permissions that grant it
- * This is automatically derived from the permissionActions map
- */
-export const actionPermissions: Record<Action, Permission[]> = (() => {
-  // Initialize an empty mapping for all actions
-  const mapping = Object.values(Action).reduce(
-    (acc, action) => {
-      if (typeof action === 'string') {
-        acc[action] = [];
-      }
-      return acc;
-    },
-    {} as Record<Action, Permission[]>
-  );
-
-  // Populate the mapping by iterating through permissionActions
-  Object.entries(permissionActions).forEach(([permissionKey, {actions}]) => {
-    const permission = permissionKey as Permission;
-
-    // Add this permission to each action it grants
-    actions.forEach(action => {
-      mapping[action].push(permission);
-    });
-  });
-
-  return mapping;
-})();
-
-// =====================================
 // ROLES
 // =====================================
 
-// Roles grant collections of permissions. These could be permissions for a
-// given resource, or general permissions.
+// Roles grant collections of actions
 export enum Role {
-  // GLOBAl ROLES
+  // GLOBAL ROLES
   // ================
   GENERAL_USER = 'GENERAL_USER',
   GENERAL_ADMIN = 'GENERAL_ADMIN',
@@ -775,18 +519,6 @@ export enum Role {
   PROJECT_CONTRIBUTOR = 'PROJECT_CONTRIBUTOR',
   PROJECT_MANAGER = 'PROJECT_MANAGER',
   PROJECT_ADMIN = 'PROJECT_ADMIN',
-
-  // TEMPLATE ROLES
-  // ================
-  // None - globally managed
-
-  // USER ROLES
-  // ================
-  // None - globally managed
-
-  // SYSTEM ROLES
-  // ================
-  // None - globally managed
 }
 
 // Define role scope for clarity
@@ -880,55 +612,142 @@ export const resourceRoles: Record<Resource, (RoleDetails & {role: Role})[]> =
     {} as Record<Resource, (RoleDetails & {role: Role})[]>
   );
 
-// Map roles to the permissions they grant - roles can also grant child role(s)
-export const rolePermissions: Record<
+// Map roles directly to the actions they grant
+export const roleActions: Record<
   Role,
-  {permissions: Permission[]; alsoGrants?: Role[]}
+  {actions: Action[]; inheritedRoles?: Role[]}
 > = {
   // PROJECT ROLES
-  // =============
   [Role.PROJECT_GUEST]: {
-    permissions: [
-      Permission.PROJECT_DATA_ADD,
-      Permission.PROJECT_DATA_READ_MINE,
-      Permission.PROJECT_VIEW,
+    actions: [
+      Action.READ_PROJECT_METADATA,
+      Action.CREATE_PROJECT_RECORD,
+      Action.READ_MY_PROJECT_RECORDS,
+      Action.EDIT_MY_PROJECT_RECORDS,
+      Action.DELETE_MY_PROJECT_RECORDS,
     ],
-    alsoGrants: [],
   },
   [Role.PROJECT_CONTRIBUTOR]: {
-    permissions: [
-      Permission.PROJECT_DATA_READ_ALL,
-      Permission.PROJECT_DATA_EDIT_ALL,
-      Permission.PROJECT_DATA_DELETE_ALL,
+    actions: [
+      Action.READ_ALL_PROJECT_RECORDS,
+      Action.EDIT_ALL_PROJECT_RECORDS,
+      Action.DELETE_ALL_PROJECT_RECORDS,
     ],
-    alsoGrants: [Role.PROJECT_GUEST],
+    inheritedRoles: [Role.PROJECT_GUEST],
   },
   [Role.PROJECT_MANAGER]: {
-    permissions: [Permission.PROJECT_MANAGE],
-    alsoGrants: [Role.PROJECT_CONTRIBUTOR],
+    actions: [
+      Action.UPDATE_PROJECT_DETAILS,
+      Action.UPDATE_PROJECT_UISPEC,
+      Action.CHANGE_PROJECT_STATUS,
+      Action.EXPORT_PROJECT_DATA,
+      Action.VIEW_PROJECT_INVITES,
+      Action.CREATE_GUEST_PROJECT_INVITE,
+      Action.EDIT_GUEST_PROJECT_INVITE,
+      Action.DELETE_GUEST_PROJECT_INVITE,
+      Action.CREATE_CONTRIBUTOR_PROJECT_INVITE,
+      Action.EDIT_CONTRIBUTOR_PROJECT_INVITE,
+      Action.DELETE_CONTRIBUTOR_PROJECT_INVITE,
+      Action.CREATE_MANAGER_PROJECT_INVITE,
+      Action.EDIT_MANAGER_PROJECT_INVITE,
+      Action.DELETE_MANAGER_PROJECT_INVITE,
+      Action.VIEW_PROJECT_USERS,
+      Action.ADD_GUEST_TO_PROJECT,
+      Action.REMOVE_GUEST_FROM_PROJECT,
+      Action.ADD_CONTRIBUTOR_TO_PROJECT,
+      Action.REMOVE_CONTRIBUTOR_FROM_PROJECT,
+      Action.ADD_MANAGER_TO_PROJECT,
+      Action.REMOVE_MANAGER_FROM_PROJECT,
+    ],
+    inheritedRoles: [Role.PROJECT_CONTRIBUTOR],
   },
   [Role.PROJECT_ADMIN]: {
-    permissions: [Permission.PROJECT_ADMIN],
-    alsoGrants: [Role.PROJECT_MANAGER],
+    actions: [
+      Action.CREATE_ADMIN_PROJECT_INVITE,
+      Action.EDIT_ADMIN_PROJECT_INVITE,
+      Action.DELETE_ADMIN_PROJECT_INVITE,
+      Action.DELETE_PROJECT,
+      Action.ADD_ADMIN_TO_PROJECT,
+      Action.REMOVE_ADMIN_FROM_PROJECT,
+      Action.GENERATE_RANDOM_PROJECT_RECORDS,
+    ],
+    inheritedRoles: [Role.PROJECT_MANAGER],
   },
 
   // GLOBAL ROLES
-  // =============
   [Role.GENERAL_USER]: {
-    permissions: [Permission.PROJECT_LIST, Permission.TEMPLATE_VIEW],
-    alsoGrants: [],
-  },
-  [Role.GENERAL_ADMIN]: {
-    permissions: [Permission.USER_MANAGE, Permission.SYSTEM_MANAGE],
-    alsoGrants: [Role.GENERAL_CREATOR, Role.PROJECT_ADMIN],
+    actions: [Action.LIST_PROJECTS, Action.VIEW_TEMPLATES],
   },
   [Role.GENERAL_CREATOR]: {
-    permissions: [
-      Permission.PROJECT_CREATE,
-      Permission.TEMPLATE_CREATE,
-      Permission.TEMPLATE_EDIT,
-      Permission.TEMPLATE_DELETE,
+    actions: [
+      Action.CREATE_PROJECT,
+      Action.CREATE_TEMPLATE,
+      Action.UPDATE_TEMPLATE_CONTENT,
+      Action.UPDATE_TEMPLATE_DETAILS,
+      Action.CHANGE_TEMPLATE_STATUS,
+      Action.DELETE_TEMPLATE,
     ],
-    alsoGrants: [],
+  },
+  [Role.GENERAL_ADMIN]: {
+    actions: [
+      Action.VIEW_USER_LIST,
+      Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
+      Action.RESET_USER_PASSWORD,
+      Action.DELETE_USER,
+      Action.INITIALISE_SYSTEM_API,
+      Action.RESTORE_FROM_BACKUP,
+      Action.VALIDATE_DBS,
+    ],
+    inheritedRoles: [Role.GENERAL_CREATOR, Role.PROJECT_ADMIN],
   },
 };
+
+/**
+ * Utility function to get all actions for a role, including those from inherited roles
+ */
+export function getAllActionsForRole(role: Role): Action[] {
+  const roleConfig = roleActions[role];
+  const actions = [...roleConfig.actions];
+
+  // Add actions from inherited roles
+  if (roleConfig.inheritedRoles) {
+    for (const inheritedRole of roleConfig.inheritedRoles) {
+      actions.push(...getAllActionsForRole(inheritedRole));
+    }
+  }
+
+  // Remove duplicates
+  return [...new Set(actions)];
+}
+
+/**
+ * Maps each action to the roles that grant it
+ * This is automatically derived from the roleActions map
+ */
+export const actionRoles: Record<Action, Role[]> = (() => {
+  // Initialize an empty mapping for all actions
+  const mapping = Object.values(Action).reduce(
+    (acc, action) => {
+      if (typeof action === 'string') {
+        acc[action] = [];
+      }
+      return acc;
+    },
+    {} as Record<Action, Role[]>
+  );
+
+  // For each role, determine all of its actions (including inherited ones)
+  // and add this role to each action's list
+  Object.entries(roleActions).forEach(([roleKey, _]) => {
+    const role = roleKey as Role;
+    const allActions = getAllActionsForRole(role);
+
+    allActions.forEach(action => {
+      if (!mapping[action].includes(role)) {
+        mapping[action].push(role);
+      }
+    });
+  });
+
+  return mapping;
+})();

@@ -1,17 +1,15 @@
-import {rangeRight} from 'lodash';
 import {resourceRolesEqual, roleGrantsAction} from './helpers';
 import {Action, actionDetails, Role} from './model';
 import {
   decodeAndValidateToken,
   DecodedTokenPermissions,
-  encodeClaim,
   ResourceRole,
   TokenPermissions,
 } from './tokenEncoding';
 
 /**
  * Determines if a token authorizes an action on a resource
- * Handles both resource-specific permissions and global permissions
+ * Handles both resource-specific actions and global actions
  */
 export function isTokenAuthorized({
   token,
@@ -38,7 +36,7 @@ export function isTokenAuthorized({
 
 /**
  * Determines if a token authorizes an action on a resource
- * Handles both resource-specific permissions and global permissions
+ * Handles both resource-specific actions and global actions
  */
 export function isAuthorized({
   decodedToken,
@@ -58,24 +56,23 @@ export function isAuthorized({
       return false;
     }
 
-    // If this is a non resource specific action, then resource permissions and
-    // resource roles are irrelevant - just check general roles. If none provide it, abort.
+    // If this is a non resource specific action, then resource roles
+    // are irrelevant - just check global roles. If none provided, abort.
     if (!actionInfo.resourceSpecific) {
       // Check if any role grants this action in the global scope
       return roleGrantsAction({roles: decodedToken.globalRoles, action});
     }
 
     // So this is a resource specific action - this can be granted through
-    // a) global roles which grant a permission granting this action
-    // b) per resource roles which grant a permission granting this action
-    // c) per resource permissions granting this action
+    // a) global roles which grant this action
+    // b) per resource roles which grant this action
 
-    // a) global roles which grant a permission granting this action
+    // a) global roles which grant this action
     if (roleGrantsAction({roles: decodedToken.globalRoles, action})) {
       return true;
     }
 
-    // b) per resource roles which grant a permission granting this action
+    // b) per resource roles which grant this action
     for (const resourceRole of decodedToken.resourceRoles) {
       // Only consider if the resource IDs match
       if (resourceRole.resourceId === resourceId) {
@@ -91,13 +88,20 @@ export function isAuthorized({
   } catch (error: any) {
     // Log the error for debugging/auditing
     console.error(
-      `Authorization failed due to token validation error: ${error.message ?? 'Unknown'}.`
+      `Authorization failed due to processing error: ${error.message ?? 'Unknown'}.`
     );
     // Always fail closed (deny access) when there's an error
     return false;
   }
 }
 
+/**
+ * Checks if a user has a specific resource role
+ * @param resourceRoles The user's resource roles
+ * @param needs The role being checked for
+ * @param resourceId The specific resource ID
+ * @returns True if the user has the specified role for the resource
+ */
 export function hasResourceRole({
   resourceRoles,
   needs,
@@ -106,13 +110,18 @@ export function hasResourceRole({
   resourceRoles: ResourceRole[];
   needs: Role;
   resourceId: string;
-}) {
+}): boolean {
   return resourceRoles.some(r =>
     resourceRolesEqual(r, {resourceId, role: needs})
   );
 }
 
-// Maps a add/remove role -> action needed to do that
+/**
+ * Maps a add/remove role operation to the corresponding action needed
+ * @param add Whether this is an add operation (true) or remove operation (false)
+ * @param role The role being added or removed
+ * @returns The action needed to perform this operation
+ */
 export function projectRoleToAction({
   add,
   role,
@@ -155,7 +164,12 @@ export function projectRoleToAction({
   return actionNeeded;
 }
 
-// Maps a create invite -> action needed to do that
+/**
+ * Maps a create/delete invite operation to the corresponding action needed
+ * @param action Whether this is a create or delete operation
+ * @param role The role level for the invitation
+ * @returns The action needed to perform this operation
+ */
 export function projectInviteToAction({
   action,
   role,

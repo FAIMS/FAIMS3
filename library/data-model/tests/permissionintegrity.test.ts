@@ -1,14 +1,13 @@
 import {
   Resource,
   Action,
-  Permission,
   Role,
   actionDetails,
   roleDetails,
   resourceToActions,
-  permissionActions,
-  actionPermissions,
-  rolePermissions,
+  roleActions,
+  actionRoles,
+  getAllActionsForRole
 } from '../src/permission/index';
 
 /**
@@ -45,14 +44,14 @@ describe('Permission Model Validation', () => {
   });
 
   /**
-   * Test that all actions have at least one permission granting them
+   * Test that all actions have at least one role granting them
    */
-  describe('b) Action-Permission relationships', () => {
-    it('should have at least one permission granting each action', () => {
+  describe('b) Action-Role relationships', () => {
+    it('should have at least one role granting each action', () => {
       Object.values(Action).forEach(action => {
         if (typeof action === 'string') {
-          const permissionsGrantingAction = actionPermissions[action];
-          expect(permissionsGrantingAction.length).toBeGreaterThan(0);
+          const rolesGrantingAction = actionRoles[action];
+          expect(rolesGrantingAction.length).toBeGreaterThan(0);
         }
       });
     });
@@ -113,32 +112,33 @@ describe('Permission Model Validation', () => {
   });
 
   /**
-   * Test that all permissions are granted by at least one role
+   * Test that all actions are granted by at least one role
    */
-  describe('e) Permission-Role relationships', () => {
-    it('should have at least one role granting each permission', () => {
-      const allGrantedPermissions = new Set<Permission>();
+  describe('e) Action-Role relationships', () => {
+    it('should have at least one role granting each action', () => {
+      const allGrantedActions = new Set<Action>();
 
-      // Collect all permissions granted by all roles
-      Object.values(rolePermissions).forEach(({permissions}) => {
-        permissions.forEach(permission => {
-          allGrantedPermissions.add(permission);
+      // Collect all actions granted by all roles (including inherited)
+      Object.entries(roleActions).forEach(([roleKey, config]) => {
+        const role = roleKey as Role;
+        getAllActionsForRole(role).forEach(action => {
+          allGrantedActions.add(action);
         });
       });
 
-      // Check that every permission is granted by at least one role
-      Object.values(Permission).forEach(permission => {
-        if (typeof permission === 'string') {
-          expect(allGrantedPermissions.has(permission)).toBe(true);
+      // Check that every action is granted by at least one role
+      Object.values(Action).forEach(action => {
+        if (typeof action === 'string') {
+          expect(allGrantedActions.has(action)).toBe(true);
         }
       });
     });
   });
 
   /**
-   * Test that all roles are described and there are no duplicate actions within permissions
+   * Test that all roles are described
    */
-  describe('g) Role descriptions and permission action uniqueness', () => {
+  describe('g) Role descriptions and action uniqueness', () => {
     it('should have all roles described in roleDetails', () => {
       Object.values(Role).forEach(role => {
         if (typeof role === 'string') {
@@ -147,10 +147,10 @@ describe('Permission Model Validation', () => {
       });
     });
 
-    it('should not have duplicate actions within a single permission', () => {
-      Object.values(Permission).forEach(permission => {
-        if (typeof permission === 'string') {
-          const {actions} = permissionActions[permission];
+    it('should not have duplicate actions within a single role', () => {
+      Object.values(Role).forEach(role => {
+        if (typeof role === 'string') {
+          const {actions} = roleActions[role];
           const uniqueActions = new Set(actions);
           expect(uniqueActions.size).toBe(actions.length);
         }
@@ -159,43 +159,23 @@ describe('Permission Model Validation', () => {
   });
 
   /**
-   * Test that permissions do not allow actions for resources they are not a part of
+   * Test that roles do not allow actions for resources they should not have access to
    */
-  describe('h) Permission-Resource consistency', () => {
-    it('should only allow actions for the correct resource', () => {
-      Object.entries(permissionActions).forEach(
-        ([permissionKey, {resource, actions}]) => {
-          // For each action granted by this permission
-          actions.forEach(action => {
-            // The action should be for the same resource as the permission
+  describe('h) Role-Resource consistency', () => {
+    it('should only allow actions for the correct resource type for resource-specific roles', () => {
+      Object.entries(roleDetails).forEach(([roleKey, details]) => {
+        // Only check resource-specific roles
+        if (details.resource) {
+          const role = roleKey as Role;
+          const roleResource = details.resource;
+          
+          // Get all direct actions this role grants
+          const directActions = roleActions[role].actions;
+          
+          // Each action should be for the same resource type
+          directActions.forEach(action => {
             const actionResource = actionDetails[action].resource;
-            expect(actionResource).toBe(resource);
-          });
-        }
-      );
-    });
-  });
-
-  /**
-   * Test that the actionPermissions reverse map is correct
-   */
-  describe('i) Action to Permission reverse map validation', () => {
-    it('should have a consistent action to permissions mapping', () => {
-      // For each action
-      Object.values(Action).forEach(action => {
-        if (typeof action === 'string') {
-          // Calculate the permissions that should grant this action
-          const expectedPermissions = Object.entries(permissionActions)
-            .filter(([_, {actions}]) => actions.includes(action))
-            .map(([permission]) => permission as Permission);
-
-          // Compare with the actionPermissions map
-          const actualPermissions = actionPermissions[action];
-          expect(actualPermissions.length).toBe(expectedPermissions.length);
-
-          // Check that every expected permission is in the actual permissions list
-          expectedPermissions.forEach(permission => {
-            expect(actualPermissions).toContain(permission);
+            expect(actionResource).toBe(roleResource);
           });
         }
       });
@@ -203,32 +183,59 @@ describe('Permission Model Validation', () => {
   });
 
   /**
-   * Test that the rolePermissions does not have circular references in alsoGrants
+   * Test that the actionRoles reverse map is correct
+   */
+  describe('i) Action to Role reverse map validation', () => {
+    it('should have a consistent action to roles mapping', () => {
+      // For each action
+      Object.values(Action).forEach(action => {
+        if (typeof action === 'string') {
+          // Calculate the roles that should grant this action (directly)
+          const expectedRoles = Object.entries(roleActions)
+            .filter(([_, {actions}]) => actions.includes(action))
+            .map(([role]) => role as Role);
+
+          // Get the actual roles that directly grant this action
+          const actualRoles = actionRoles[action].filter(role => 
+            roleActions[role].actions.includes(action)
+          );
+          
+          // Check that every expected role is in the actual roles list
+          expectedRoles.forEach(role => {
+            expect(actualRoles).toContain(role);
+          });
+        }
+      });
+    });
+  });
+
+  /**
+   * Test that the roleActions does not have circular references in inheritedRoles
    */
   describe('j) Role hierarchy circular reference check', () => {
     it('should not have circular references in role hierarchy', () => {
       // For each role
-      Object.entries(rolePermissions).forEach(([roleKey, {alsoGrants}]) => {
+      Object.entries(roleActions).forEach(([roleKey, {inheritedRoles}]) => {
         const role = roleKey as Role;
-        if (alsoGrants && alsoGrants.length > 0) {
-          // Check for direct circular references (role grants itself)
-          expect(alsoGrants).not.toContain(role);
+        if (inheritedRoles && inheritedRoles.length > 0) {
+          // Check for direct circular references (role inherits itself)
+          expect(inheritedRoles).not.toContain(role);
 
           // Check for indirect circular references
           const visited = new Set<Role>([role]);
           const checkCircular = (currentRole: Role): boolean => {
-            const currentGrants = rolePermissions[currentRole].alsoGrants || [];
+            const currentInherits = roleActions[currentRole].inheritedRoles || [];
 
-            for (const grantedRole of currentGrants) {
-              if (visited.has(grantedRole)) {
+            for (const inheritedRole of currentInherits) {
+              if (visited.has(inheritedRole)) {
                 return true; // Found a circular reference
               }
 
-              visited.add(grantedRole);
-              if (checkCircular(grantedRole)) {
+              visited.add(inheritedRole);
+              if (checkCircular(inheritedRole)) {
                 return true;
               }
-              visited.delete(grantedRole); // Backtrack
+              visited.delete(inheritedRole); // Backtrack
             }
 
             return false; // No circular reference found
@@ -259,13 +266,6 @@ describe('Permission Model Validation', () => {
       const uniqueActionValues = new Set(actionValues);
       expect(uniqueActionValues.size).toBe(actionValues.length);
 
-      // Check for Permission enum
-      const permissionValues = Object.values(Permission).filter(
-        v => typeof v === 'string'
-      );
-      const uniquePermissionValues = new Set(permissionValues);
-      expect(uniquePermissionValues.size).toBe(permissionValues.length);
-
       // Check for Role enum
       const roleValues = Object.values(Role).filter(v => typeof v === 'string');
       const uniqueRoleValues = new Set(roleValues);
@@ -278,19 +278,21 @@ describe('Permission Model Validation', () => {
       });
     });
 
-    it('should have all permission actions mapped to valid actions', () => {
-      Object.values(permissionActions).forEach(({actions}) => {
+    it('should have all role actions mapped to valid actions', () => {
+      Object.values(roleActions).forEach(({actions}) => {
         actions.forEach(action => {
           expect(actionDetails[action]).toBeDefined();
         });
       });
     });
 
-    it('should have all role permissions mapped to valid permissions', () => {
-      Object.values(rolePermissions).forEach(({permissions}) => {
-        permissions.forEach(permission => {
-          expect(permissionActions[permission]).toBeDefined();
-        });
+    it('should have all role inheritances mapped to valid roles', () => {
+      Object.values(roleActions).forEach(({inheritedRoles}) => {
+        if (inheritedRoles) {
+          inheritedRoles.forEach(role => {
+            expect(roleDetails[role]).toBeDefined();
+          });
+        }
       });
     });
   });

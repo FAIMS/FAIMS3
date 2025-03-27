@@ -1,24 +1,34 @@
-import {DATABASE_TYPE, DatabaseType} from '../migrations';
+import {DatabaseType} from '../migrations';
 
 export type MigrationLog = {
   // from and to version ID
   from: number;
   to: number;
-
   // Any notes about this migration?
   notes?: string;
-
   // MS timestamp started at
   startedAtTimestampMs: number;
   // MS timestamp completed at
   completedAtTimestampMs: number;
-
   // User ID of the token who launched this
   launchedBy: string;
-
   // Status and issues
   status: 'success' | 'failure';
   issues?: string[];
+  // Detailed information about documents that had issues during migration
+  documentsWithIssues?: {
+    id: string;
+    error: any;
+    document: any;
+  }[];
+  // Complete error details for migration-level errors
+  errorDetails?: {
+    message: string;
+    stack?: string;
+    name?: string;
+    code?: string;
+    [key: string]: any;
+  };
 };
 
 export type MigrationsDBFields = {

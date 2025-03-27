@@ -1,12 +1,11 @@
 /**
  * Set of helper functions to check/interact with the user object
- * (PeopleDBFields) in relation to permissions.
+ * (PeopleDBFields) in relation to roles and actions.
  */
 
 import {PeopleDBFields} from '../data_storage';
 import {Action, Resource, Role, roleDetails, RoleScope} from './model';
-import {drillRoles, resourceRolesEqual} from './helpers';
-import {roleGrantsAction} from './helpers';
+import {drillRoles, roleGrantsAction} from './helpers';
 import {ResourceRole} from './tokenEncoding';
 
 // ======
@@ -86,6 +85,7 @@ export function userHasResourceRole({
   // If we get here, none of the user's roles grant the target role for this resource
   return false;
 }
+
 /**
  * Determines if a user can perform a specific action, optionally on a specific resource
  * @param user - User object to check
@@ -317,4 +317,11 @@ export function addEmails({
 
   // Return updated user with new emails added
   user.emails = [...user.emails, ...newEmails];
+}
+
+/**
+ * Helper function for comparing resource roles
+ */
+export function resourceRolesEqual(a: ResourceRole, b: ResourceRole): boolean {
+  return a.resourceId === b.resourceId && a.role === b.role;
 }

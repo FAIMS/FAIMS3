@@ -55,7 +55,6 @@ export type MigrationFunc = (
   record: MigrationFuncRecordInput
 ) => MigrationFuncReturn;
 
-// TODO
 const peopleV1toV2Migration: MigrationFunc = doc => {
   // Take input as v1 then output as v2
   const inputDoc = doc as unknown as UserV1Document;
@@ -362,7 +361,7 @@ export async function performMigration({
         } catch (error) {
           // Capture any issues with this specific document
           issues.push(
-            `Error migrating document ${doc._id}: ${error instanceof Error ? error.message : String(error)}`
+            `Error migrating document ${doc._id}: ${error instanceof Error ? error.message : String(error)}.`
           );
         }
       }
@@ -491,6 +490,11 @@ export async function migrateDbs({
           migrationFunc: migrationDetail.migrationFunction,
         });
 
+        // Log stats about this migration step
+        console.log(
+          `Migration step completed. Processed ${result.processedCount} documents, updated ${result.writtenCount} documents.`
+        );
+
         // Check for issues during migration
         if (result.issues.length > 0) {
           // Add these issues to the migration log
@@ -501,22 +505,20 @@ export async function migrateDbs({
 
           // If we have issues, mark the migration as failed
           migrationLogEntry.status = 'failure';
+
+          // Don't continue running subsequent migrations if there were issues!
+          break;
+        } else {
+          // Update the current version
+          currentVersion = migrationDetail.to;
         }
-
-        // Log stats about this migration step
-        console.log(
-          `Migration step completed. Processed ${result.processedCount} documents, updated ${result.writtenCount} documents.`
-        );
-
-        // Update the current version
-        currentVersion = migrationDetail.to;
       }
 
       // Complete the migration log entry
       migrationLogEntry.completedAtTimestampMs = Date.now();
 
-      // Update the migration document
-      migrationDoc.version = DB_TARGET_VERSIONS[dbType].targetVersion;
+      // Update the migration document (only to successful spot)
+      migrationDoc.version = currentVersion;
       migrationDoc.status =
         migrationLogEntry.status === 'success' ? 'healthy' : 'not-healthy';
       migrationDoc.migrationLog = [

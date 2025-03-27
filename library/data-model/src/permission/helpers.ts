@@ -1,154 +1,37 @@
 import {ResourceRole} from '..';
 import {
   Action,
-  actionPermissions,
-  Permission,
   Role,
-  rolePermissions,
+  roleActions,
+  getAllActionsForRole,
+  actionRoles,
 } from './model';
 
 /**
- * Helper function to check if an action can be performed based on granted permissions
- * @param permissions Array of permissions that have been granted
+ * Helper function to check if an action can be performed based on assigned roles
+ * @param roles Array of roles that have been assigned
  * @param action The action to check
  * @returns Boolean indicating if the action is allowed
  */
 export function canPerformAction({
-  permissions,
-  action,
-}: {
-  permissions: Permission[];
-  action: Action;
-}): boolean {
-  // Get permissions that allow this action
-  const sufficientPermissions = actionPermissions[action];
-  // Check if any of the granted permissions allow this action
-  return sufficientPermissions.some(permission =>
-    permissions.includes(permission)
-  );
-}
-
-// Cache the role drill
-const rolePermissionsCache = new Map<Role, Permission[]>();
-
-/**
- * Given a role, drills into all permissions that it grants. This includes both
- * direct permissions and those granted through inherited roles
- * @param role The role to analyze
- * @returns Array of all permissions granted by this role
- */
-export function drillRolePermissions({role}: {role: Role}): Permission[] {
-  // Check cache first
-  if (rolePermissionsCache.has(role)) {
-    return rolePermissionsCache.get(role)!;
-  }
-  // Set to track unique permissions (avoid duplicates)
-  const permissionSet = new Set<Permission>();
-  // Helper function to recursively collect permissions from roles
-  function collectPermissionsFromRole(
-    currentRole: Role,
-    visitedRoles: Set<Role> = new Set()
-  ): void {
-    // Prevent infinite recursion from circular role references
-    if (visitedRoles.has(currentRole)) {
-      return;
-    }
-    // Mark this role as visited
-    visitedRoles.add(currentRole);
-    // Skip if the role doesn't exist in our mapping
-    if (!(currentRole in rolePermissions)) {
-      return;
-    }
-    const {permissions, alsoGrants} = rolePermissions[currentRole];
-    // Add direct permissions from this role
-    permissions.forEach(permission => {
-      permissionSet.add(permission);
-    });
-    // Recursively collect permissions from inherited roles
-    if (alsoGrants) {
-      alsoGrants.forEach(role => {
-        // Only follow global role grants when collecting global permissions
-        collectPermissionsFromRole(role, visitedRoles);
-      });
-    }
-  }
-  // Start the collection process
-  collectPermissionsFromRole(role);
-
-  // Convert set back to array
-  const permissions = Array.from(permissionSet);
-
-  // Cache the result
-  rolePermissionsCache.set(role, permissions);
-
-  return permissions;
-}
-
-// Clear cache if needed
-export function clearRolePermissionsCache(): void {
-  rolePermissionsCache.clear();
-}
-
-/**
- * Checks if any of the permissions in the 'has' array match any permissions
- * in the 'sufficient' array
- * @param sufficient Array of permissions that would be sufficient to grant access
- * @param has Array of permissions that the user/role has
- * @returns Boolean indicating if there's at least one matching permission
- */
-export function hasSuitablePermission({
-  sufficient,
-  has,
-}: {
-  sufficient: Permission[];
-  has: Permission[];
-}): boolean {
-  return has.some(p => sufficient.includes(p));
-}
-
-/**
- * Given a role - determines if this role grants the action.
- *
- * If the role is global in scope, then this refers to all resources.
- *
- * If the role is resource specific, then this refers to the resource for which
- * this role was assigned.
- *
- * @param roles Array of roles to check
- * @param action The action to verify against the roles
- * @returns True iff granted
- */
-export function roleGrantsAction({
   roles,
   action,
 }: {
   roles: Role[];
   action: Action;
 }): boolean {
-  const suitablePermissions = actionPermissions[action];
-  for (const role of roles) {
-    // Find what permissions this role grants
-    if (
-      hasSuitablePermission({
-        has: drillRolePermissions({role}),
-        sufficient: suitablePermissions,
-      })
-    ) {
-      return true;
-    }
-  }
-  return false;
+  // Get roles that allow this action
+  const sufficientRoles = actionRoles[action];
+  // Check if any of the assigned roles allow this action
+  return sufficientRoles.some(role => roles.includes(role));
 }
 
-export const resourceRolesEqual = (a: ResourceRole, b: ResourceRole): boolean =>
-  a.resourceId === b.resourceId && a.role === b.role;
-
-// Cache for roles drill-down to avoid expensive recursion
+// Cache for drilled-down roles
 const roleDrillCache = new Map<Role, Role[]>();
 
 /**
  * Given a role, drills into all roles that it grants. This includes both
- * direct roles and those granted through inheritance via alsoGrants
+ * direct roles and those granted through inheritance
  * @param role The role to analyze
  * @returns Array of all roles granted by this role (including itself)
  */
@@ -178,15 +61,15 @@ export function drillRoles({role}: {role: Role}): Role[] {
     visitedRoles.add(currentRole);
 
     // Skip if the role doesn't exist in our mapping
-    if (!(currentRole in rolePermissions)) {
+    if (!(currentRole in roleActions)) {
       return;
     }
 
-    const {alsoGrants} = rolePermissions[currentRole];
+    const {inheritedRoles} = roleActions[currentRole];
 
     // Recursively collect roles from inherited roles
-    if (alsoGrants) {
-      alsoGrants.forEach(grantedRole => {
+    if (inheritedRoles) {
+      inheritedRoles.forEach(grantedRole => {
         roleSet.add(grantedRole);
         collectRolesFromRole(grantedRole, visitedRoles);
       });
@@ -203,4 +86,74 @@ export function drillRoles({role}: {role: Role}): Role[] {
   roleDrillCache.set(role, roles);
 
   return roles;
+}
+
+// Clear cache if needed
+export function clearRoleDrillCache(): void {
+  roleDrillCache.clear();
+}
+
+// Cache for drilled-down actions
+const roleActionsCache = new Map<Role, Action[]>();
+
+/**
+ * Given a role, returns all actions that it can perform, including those
+ * from inherited roles
+ * @param role The role to analyze
+ * @returns Array of all actions granted by this role
+ */
+export function drillRoleActions({role}: {role: Role}): Action[] {
+  // Check cache first
+  if (roleActionsCache.has(role)) {
+    return roleActionsCache.get(role)!;
+  }
+
+  const actions = getAllActionsForRole(role);
+
+  // Cache the result
+  roleActionsCache.set(role, actions);
+
+  return actions;
+}
+
+/**
+ * Checks if any of the roles in the user's roles can perform the specified action
+ * @param roles Array of roles the user has
+ * @param action The action to check
+ * @returns Boolean indicating if the action is allowed
+ */
+export function roleGrantsAction({
+  roles,
+  action,
+}: {
+  roles: Role[];
+  action: Action;
+}): boolean {
+  for (const role of roles) {
+    const actions = drillRoleActions({role});
+    if (actions.includes(action)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export const resourceRolesEqual = (a: ResourceRole, b: ResourceRole): boolean =>
+  a.resourceId === b.resourceId && a.role === b.role;
+
+/**
+ * Given a set of roles, returns all actions that can be performed
+ * @param roles Array of roles to check
+ * @returns Array of all actions granted by these roles
+ */
+export function getAllActionsForRoles(roles: Role[]): Action[] {
+  const actionSet = new Set<Action>();
+
+  roles.forEach(role => {
+    drillRoleActions({role}).forEach(action => {
+      actionSet.add(action);
+    });
+  });
+
+  return Array.from(actionSet);
 }

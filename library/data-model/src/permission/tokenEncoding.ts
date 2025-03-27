@@ -1,7 +1,6 @@
-import {string, z} from 'zod';
+import {z} from 'zod';
 import {PeopleDBDocument} from '../data_storage';
-import {drillRolePermissions} from './helpers';
-import {Action, actionPermissions, Role} from './model';
+import {Action, actionRoles, Role, roleDetails, RoleScope} from './model';
 
 // ==============
 // TOKEN ENCODING
@@ -11,8 +10,17 @@ export const ENCODING_SEPARATOR = '||';
 export const COUCH_ADMIN_ROLE_NAME = '_admin';
 
 // This is configurable, but it's fine to use the default
-export const COUCHDB_PERMISSIONS_PATH = '_couchdb.roles';
+export const COUCHDB_ROLES_PATH = '_couchdb.roles';
 
+/**
+ * Decodes a resource-specific role string from the format "resourceId||role"
+ *
+ * @param input The encoded string containing resourceId and role separated by
+ * the encoding separator
+ * @returns An object containing the separated resourceId and claimString (role)
+ * @throws Error if the input string does not contain exactly two non-empty
+ * parts separated by the encoding separator
+ */
 export const decodePerResourceStatement = ({
   input,
 }: {
@@ -28,7 +36,7 @@ export const decodePerResourceStatement = ({
     splitResult[1].length === 0
   ) {
     throw Error(
-      'Invalid decoding of encoded resource specific role/permission. After splitting on ' +
+      'Invalid decoding of encoded resource specific role. After splitting on ' +
         ENCODING_SEPARATOR +
         ' there was not two distinct remaining sections of non zero length.'
     );
@@ -42,15 +50,14 @@ export const decodePerResourceStatement = ({
 
 // Input schema for the raw TokenStructure
 const tokenPermissionsSchema = z.object({
-  // Encoded resource permissions OR global permissions available to couch
-  // functions. Here we include ONLY permissions - not roles - as we want couch
-  // to not have to dispatch roles -> permissions
-  [COUCHDB_PERMISSIONS_PATH]: z.array(z.string()),
+  // Encoded resource roles OR global roles available to couch
+  // functions. Here we include roles that CouchDB needs for authorization.
+  [COUCHDB_ROLES_PATH]: z.array(z.string()),
   // These are roles which apply to specific resources (encoded as above) - NOT
   // visible in couch
   resourceRoles: z.array(z.string()),
   // These are roles that apply generally - not resource specific - they may
-  // imply resources specific permissions but for all resources of that type -
+  // imply resources specific actions but for all resources of that type -
   // NOT visible in couch
   globalRoles: z.array(z.string()),
 });
@@ -92,7 +99,7 @@ export type DecodedTokenPermissions = z.infer<typeof decodedTokenSchema>;
 /**
  * Transforms and validates an encoded TokenStructure into a more usable DecodedToken
  * @param encodedToken The raw encoded TokenStructure
- * @returns A validated DecodedToken with properly parsed roles and permissions
+ * @returns A validated DecodedToken with properly parsed roles
  */
 export function decodeAndValidateToken(
   encodedToken: TokenPermissions
@@ -132,8 +139,8 @@ export function decodeAndValidateToken(
 }
 
 /**
- * Encodes a permission claim into a token - including separator if needed for
- * resource scoped role/permission
+ * Encodes a role claim into a token - including separator if needed for
+ * resource scoped role
  * @returns string encoding
  */
 export const encodeClaim = ({
@@ -149,8 +156,6 @@ export const encodeClaim = ({
 /**
  * Encodes a decoded token back into the raw TokenStructure format
  *
- * This drills into resource roles to encode all permissions they provide into resourceId||permission
- *
  * @param decodedToken The decoded token
  * @returns The encoded TokenStructure
  */
@@ -165,43 +170,28 @@ export function encodeToken(
     encodeClaim({resourceId, claim: role})
   );
 
-  // Encode resource permissions - collect them all
-  let allPermissions: string[] = [];
+  // Generate CouchDB roles list - this contains both:
+  // 1. Global roles (as is)
+  // 2. Resource-specific roles (in the format resourceId||role)\
 
-  // For each resource specific role, drill down into all permissions, and add
-  // to the all permissions list per resource
-  decodedToken.resourceRoles.forEach(({resourceId, role}) => {
-    const permissions = drillRolePermissions({
-      role,
-    });
-    allPermissions = allPermissions.concat(
-      permissions.map(p => encodeClaim({resourceId, claim: p}))
-    );
-  });
-  decodedToken.globalRoles.forEach(role => {
-    const permissions = drillRolePermissions({
-      role,
-    });
-    allPermissions = allPermissions.concat(permissions);
-  });
+  // CouchDB will use these for authorization
+  const couchDbRoles = [...decodedToken.globalRoles, ...resourceRoles];
 
   // General roles don't need special encoding
   const globalRoles = decodedToken.globalRoles.map(role => role.toString());
 
   return {
-    [COUCHDB_PERMISSIONS_PATH]: allPermissions,
+    [COUCHDB_ROLES_PATH]: couchDbRoles,
     resourceRoles,
     globalRoles,
   };
 }
 
 /**
- *
  * Takes a couch user and builds an encoded token.
  *
  * This is achieved by first building a decoded token object from the couch
- * user, then using the encode token function to encode it. This involves
- * drilling out permissions only where necessary for couch to be satisfied.
+ * user, then using the encode token function to encode it.
  *
  * @returns encoded token object (to be signed/added other details)
  */
@@ -220,10 +210,11 @@ export function couchUserToTokenPermissions({
 }
 
 /**
- * From a given ACTION, reverse looks up permissions which grant that action,
+ * From a given ACTION, reverse looks up roles which grant that action,
  * and then encodes both the resource specific version i.e. <resource Id> ||
- * <permission> and the global version <permission> implying that either is
- * suitable
+ * <role> and the global version <role> implying that either is
+ * suitable for CouchDB authorization
+ *
  * @returns list of roles to be used in couch db security documents
  */
 export function necessaryActionToCouchRoleList({
@@ -234,16 +225,28 @@ export function necessaryActionToCouchRoleList({
   resourceId: string;
 }): string[] {
   let roles: string[] = [];
-  // lookup permissions from action
-  actionPermissions[action].forEach(p => {
-    // push encoded and non-encoded claim (global)
-    roles.push(
-      encodeClaim({
-        resourceId,
-        claim: p,
-      })
-    );
-    roles.push(p);
+
+  // Get all roles that can perform this action
+  const rolesForAction = actionRoles[action];
+
+  rolesForAction.forEach(role => {
+    const details = roleDetails[role];
+
+    // For global roles, just use the role name
+    if (details.scope === RoleScope.GLOBAL) {
+      roles.push(role);
+    }
+
+    // For resource-specific roles, encode with resourceId
+    else {
+      roles.push(
+        encodeClaim({
+          resourceId,
+          claim: role,
+        })
+      );
+    }
   });
+
   return roles;
 }

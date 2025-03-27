@@ -18,6 +18,8 @@ export const DataDBSecurityDocument = ({
     },
     members: {
       names: [],
+      // We have to stoop to reading here since there is no differentiation
+      // possible in couch (for read)
       roles: necessaryActionToCouchRoleList({
         action: Action.READ_MY_PROJECT_RECORDS,
         resourceId: projectId,
