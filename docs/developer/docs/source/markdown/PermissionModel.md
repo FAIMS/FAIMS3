@@ -1,234 +1,198 @@
-# Permission Model
+# Permissions Model Documentation
 
-## Definitions
+## Overview
 
-### User
+This permissions system is built around Resources, Actions, and Roles. It provides a flexible way to manage user access across different parts of the application.
 
-The person or entity interacting with the system, attempting to perform 'actions' on 'resources'.
+- **Resources**: Represent entities in the system (Projects, Templates, Users, System)
+- **Actions**: Operations that can be performed on resources
+- **Roles**: Collections of actions that can be assigned to users
 
-### Resource
+There are two types of roles:
 
-A resource is an object/entity in the system which we want to protect. You require a 'permission', granted through your 'role' to take an 'action' on a 'resource'. E.g. `project`, `template`.
+- **Global Roles**: Apply system-wide (General User, General Admin, General Creator)
+- **Resource-Specific Roles**: Apply only to specific resources (Project Guest, Project Contributor, etc.)
 
-### Permission
+## Core Concepts
 
-A permission is a grant which provides the right for a user to undertake some action(s) on given resource(s). E.g. `write-project`.
+### Resources and Actions
 
-### Role
+Each resource has a set of associated actions. Actions can be:
 
-A role is a label we grant to users which grants a set of permissions on a set of resources. E.g. `project-manager`.
+- **Resource-specific**: Require a specific resource ID (e.g., `READ_PROJECT_METADATA`)
+- **Non-resource-specific**: Apply to all resources of a type (e.g., `LIST_PROJECTS`)
 
-### Action
+### Role Inheritance
 
-An action is some task which a user wishes to undertake upon/involving some resource(s). E.g. `edit-project-specification`.
+Roles can inherit actions from other roles. For example, `PROJECT_CONTRIBUTOR` inherits all actions from `PROJECT_GUEST`.
 
-### Token
+### Token-Based Authorization
 
-A token is a verifiable form of evidence presented by a user which proves that the user has certain permissions based on the user's roles.
+Authorization is managed through tokens that encode:
 
-## Permission system overview
+- Global roles
+- Resource-specific roles with resource IDs
+- `_couchdb.roles` which is a flattened representation of a) global roles e.g. `GENERAL_ADMIN` b) resource specific roles applied globally as granted from global roles e.g. `PROJECT_ADMIN` c) resource specific roles e.g. `survey123||PROJECT_GUEST`
 
-Users are authorised to generate tokens which contain permissions. The system API knows everything about a user through the various system databases (e.g. their team membership, their relationship to various projects or templates), and generates on demand (when authenticated) a token which embeds all of the permissions that the user has at that time.
+CouchDB uses these roles in the `validate_doc_update` design document function and `member` array of the security document to enforce permissions.
 
-All other actors in the system then trust this token to provide evidence of user permissions.
+## Usage Examples
 
-When a user tries to take an action upon a resource, the permission model will perform the following check:
+### Checking User Permissions
 
-> Does the user have in their token a permission upon the targeted resource which authorises the requested action?
+```typescript
+// Check if a user can perform an action on a specific resource
+const canEdit = userCanDo({
+  user,
+  action: Action.EDIT_PROJECT_DETAILS,
+  resourceId: 'project-123',
+});
 
-This will be checked through a centralised, configurable and complete permission model in the `data-model`.
+// Check if a user has a specific role for a resource
+const isAdmin = userHasResourceRole({
+  user,
+  resourceRole: Role.PROJECT_ADMIN,
+  resourceId: 'project-123',
+});
+```
 
-This model is not replicated here, as it is best described/managed programmatically.
+The `app` code also provides a custom hook `useIsAuthorisedTo` which can be used to check the active user's right to perform a specific action:
 
-## Points of enforcement
+```typescript
+// Check user has the right role
+const canCreateProject = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
+```
 
-The permission model needs to be enforced in these locations
+### Managing User Roles
 
-### API
+```typescript
+// Add a resource-specific role to a user
+addResourceRole({
+  user,
+  role: Role.PROJECT_CONTRIBUTOR,
+  resourceId: 'project-123',
+});
 
-The system API needs to ensure that actions taken on resources are authorised. This is easy to achieve in the API as this is an always online service which has complete access to all resources relating to a user's permissions (e.g. databases, permission models) etc. The API also has the important responsibility of dispatching tokens which embed permissions on resources.
+// Remove a global role from a user
+removeGlobalRole({
+  user,
+  role: Role.GENERAL_CREATOR,
+});
+```
 
-### CouchDB
+### Token Authorization
 
-The Couch DB needs to ensure that read/writes to the database(s) are authorised. This is achieved by looking only at **permissions** that the token includes. CouchDB has a primitive security model which only allows the following control points
+```typescript
+// Check if a token authorizes an action
+const isAuthorized = isTokenAuthorized({
+  token,
+  action: Action.UPDATE_PROJECT_DETAILS,
+  resourceId: 'project-123',
+});
+```
 
-1. The database has a security document which determines which roles must be present on a token in order to grant either a) member or b) admin access to a database. Member access = read, write and delete all documents. Admin access = everything.
-2. `validate_doc_update` - this is a special method which can be embedded as a javascript function into the database which provides a runtime check of user's permissions before writing a document update. This allows fine grained document level control over **write operations**.
+## Developer Guide
 
-The overall approach for managing database permissions will be
+### Adding a New Resource
 
-1. For **all** system databases, only allow the `_admin` role to be a member or admin - this means only the API can interact with these databases at all
-2. For **data** databases, only allow the `_admin` role to be admin, and allow **any read or write related permission for that project** to be a member
-3. Restrict with `validate_doc_update` any write operations by checking that the user has the required write permission
-4. Make use of replication filters to minimise data being made available where our permission model dictates it _shouldn't_ be, while acknowledging that a malicious actor can bypass this client side good behaviour by relying on other methods such as all doc or get requests.
+1. Add the resource to the `Resource` enum:
 
-#### Notable limitation
+```typescript
+export enum Resource {
+  // Existing resources
+  PROJECT = 'PROJECT',
+  // New resource
+  ORGANIZATION = 'ORGANIZATION',
+}
+```
 
-CouchDB cannot enforce per-document level read access checks, only write. There is no `validate_doc_read` - **any user with member access to the database can always fundamentally read any document in that database**. The only option we have to bypass this system limitation is to a) produce an intermediary service between the client and Couch or b) block certain routes/requests through some proxy service before it reaches Couch to only allow access to whitelisted sync points.
+2. Create actions for the new resource in the `Action` enum.
+3. Add action details in the `actionDetails` record.
+4. Determine which roles should grant this action in the `roleActions` map.
 
-### Frontend clients
+### Adding a New Action
 
-Front-end clients will optimistically enforce the permission model, not so much as a security measure, but as a UX measure, to ensure that actions are not presented on resources for which the frontend theoretically knows in advance will result in authorisation errors. For example, a 'create new project' button should not be presented unless the permission model dictates that the user can perform that action on the resource.
-
-## Relevant source code references
-
-TODO.
-
-
-# Adding a new permission
-
-## Overview of the Permission System
-
-Our system uses a layered permission model:
-
-1. **Resources** - Main entities in our system (PROJECT, TEMPLATE, USER, SYSTEM)
-2. **Actions** - Specific operations that can be performed on resources
-3. **Permissions** - Logical groupings of actions for easier management and reduction of redundancy in token claims
-4. **Roles** - Collections of permissions assigned to users
-
-## Step-by-Step Guide to Adding a New Permission
-
-### 1. Define the New Action
-
-First, add the new action to the `Action` enum. Actions represent the atomic operations that can be performed in the system.
+1. Add the action to the `Action` enum in the appropriate section:
 
 ```typescript
 export enum Action {
-  // Other actions...
+  // PROJECT ACTIONS
+  // ...
 
-  // Add your new action
-  LIST_PROJECTS = 'LIST_PROJECTS',
-
-  // Existing actions...
+  // New action
+  ARCHIVE_PROJECT = 'ARCHIVE_PROJECT',
 }
 ```
 
-### 2. Add Action Details
-
-For each action, we need to provide metadata in the `actionDetails` object:
+2. Add action details to the `actionDetails` record:
 
 ```typescript
-export const actionDetails: Record<Action, ActionDetails> = {
-  // Other action details...
-
-  // Add details for your new action
-  [Action.LIST_PROJECTS]: {
-    name: 'List Projects',
-    description: 'Lists all high level details about projects in the system',
-    resourceSpecific: false,
-    resource: Resource.PROJECT,
-  },
-
-  // Existing action details...
-};
-```
-
-The `resourceSpecific` flag indicates whether this action applies to a specific resource instance or to the resource type as a whole. For example, `LIST_PROJECTS` applies to all projects, so it's not resource-specific.
-
-### 3. Define the New Permission or add to existing
-
-Add your new permission to the `Permission` enum:
-
-```typescript
-export enum Permission {
-  // Other permissions...
-
-  // Add your new permission
-  PROJECT_LIST = 'PROJECT_LIST',
-
-  // Existing permissions...
+[Action.ARCHIVE_PROJECT]: {
+  name: 'Archive Project',
+  description: 'Move a project to archived status',
+  resourceSpecific: true,
+  resource: Resource.PROJECT
 }
 ```
 
-Or if there is an existing permission you can group this action into, use that.
+3. Assign the action to appropriate roles in the `roleActions` mapping.
 
-### 4. Map Permission to Actions
+### Adding a New Role
 
-Define which actions this permission grants in the `permissionActions` object (either adding a new entry, or adding your action to the existing suitable permission)
-
-```typescript
-export const permissionActions: Record<
-  Permission,
-  {resource: Resource; actions: Action[]}
-> = {
-  // Other permission mappings...
-
-  // Add mapping for your new permission
-  [Permission.PROJECT_LIST]: {
-    resource: Resource.PROJECT,
-    actions: [Action.LIST_PROJECTS],
-  },
-
-  // Existing permission mappings...
-};
-```
-
-Each permission maps to a specific resource type and grants one or more actions.
-
-### 5. Update Role Permissions
-
-Finally, assign the new permission to appropriate roles in the `rolePermissions` object:
+1. Add the role to the `Role` enum:
 
 ```typescript
-export const rolePermissions: Record<
-  Role,
-  {permissions: Permission[]; alsoGrants?: Role[]}
-> = {
-  // Other role mappings...
+export enum Role {
+  // Existing roles
+  // ...
 
-  // Update the appropriate role(s) to include the new permission
-  [Role.GENERAL_USER]: {
-    permissions: [Permission.PROJECT_VIEW, Permission.PROJECT_LIST],
-    alsoGrants: [],
-  },
-
-  // Existing role mappings...
-};
+  // New role
+  PROJECT_REVIEWER = 'PROJECT_REVIEWER',
+}
 ```
 
-In this example, we added the `PROJECT_LIST` permission to the `GENERAL_USER` role, which means all users will be able to list projects.
+2. Add role details to the `roleDetails` record:
 
-## Understanding Permission Inheritance
+```typescript
+[Role.PROJECT_REVIEWER]: {
+  name: 'Project Reviewer',
+  description: 'Can review but not modify project data',
+  scope: RoleScope.RESOURCE_SPECIFIC,
+  resource: Resource.PROJECT
+}
+```
 
-Our system supports permission inheritance through roles:
+3. Define which actions the role grants in the `roleActions` mapping:
 
-- Roles can grant other roles via the `alsoGrants` property
-- This creates a hierarchy of roles where higher roles implicitly have all permissions of lower roles
-- For example, `PROJECT_ADMIN` grants the `PROJECT_MANAGER` role, which grants `PROJECT_CONTRIBUTOR`, which grants `PROJECT_GUEST`
+```typescript
+[Role.PROJECT_REVIEWER]: {
+  actions: [
+    Action.READ_PROJECT_METADATA,
+    Action.READ_ALL_PROJECT_RECORDS
+  ],
+  inheritedRoles: [Role.PROJECT_GUEST]
+}
+```
 
-### Action Naming Conventions
+### Changing Role Actions
 
-Actions typically follow a verb-noun pattern:
+Modify the `roleActions` mapping to adjust which actions are granted by a role:
 
-- `LIST_PROJECTS`
-- `CREATE_PROJECT`
-- `READ_PROJECT_METADATA`
-- `UPDATE_PROJECT_DETAILS`
+```typescript
+[Role.PROJECT_CONTRIBUTOR]: {
+  actions: [
+    // Existing actions
+    Action.READ_ALL_PROJECT_RECORDS,
+    // New action
+    Action.EXPORT_PROJECT_DATA
+  ],
+  inheritedRoles: [Role.PROJECT_GUEST]
+}
+```
 
-### Permission Grouping
+## Best Practices
 
-Permissions often group related actions:
-
-- `PROJECT_DATA_ADD` grants multiple related actions like `CREATE_PROJECT_RECORD`, `EDIT_MY_PROJECT_RECORDS`, etc.
-- Consider what logical grouping makes sense for your new permission
-
-### Resource-Specific vs. Global Permissions
-
-- **Resource-Specific**: Applies to individual instances (e.g., a particular project)
-- **Global**: Applies to all instances of a resource type (e.g., ability to list all projects)
-
-## Automatic Mappings
-
-The system automatically generates:
-
-1. `resourceToActions`: Maps each resource to all actions that can be performed on it
-2. `actionPermissions`: Maps each action to all permissions that grant it
-
-These are derived from the mappings you define and don't need manual updates.
-
-## Common Issues
-
-1. **Permission Not Applied**: Ensure the permission is assigned to the appropriate roles
-2. **Inheritance Issues**: Check the `alsoGrants` chain to ensure proper permission inheritance
-
-By following this guide, you should be able to successfully add new permissions to the system and understand how they integrate with the existing role-based access control framework.
+1. Use role inheritance to maintain a clean hierarchy.
+2. Create resource-specific roles for granular control where necessary.
+3. Always check actions (`userCanDo`) over roles when authorizing operations. This means that we can centrally update the permission model in the `data-model` rather than having to synchronise enforcement against multiple clients.
+4. When adding new features, define the required actions first, then update roles.
