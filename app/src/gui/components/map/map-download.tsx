@@ -115,14 +115,7 @@ export const MapDownloadComponent = () => {
   };
 
   return (
-    <Grid
-      container
-      spacing={2}
-      sx={{
-        height: '90vh',
-        position: 'relative',
-      }}
-    >
+    <Grid container spacing={2}>
       <Grid item xs={12}>
         <p>
           Download the current region for offline use. Note that download size
