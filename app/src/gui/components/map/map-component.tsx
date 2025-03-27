@@ -27,7 +27,7 @@ import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
-import {RegularShape, Stroke, Style} from 'ol/style';
+import {Circle, Fill, RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
 import {VectorTileStore} from './tile-source';
@@ -142,16 +142,14 @@ export const MapComponent = (props: MapComponentProps) => {
     const source = new VectorSource();
     const geoJson = new GeoJSON();
 
-    const stroke = new Stroke({color: 'black', width: 2});
+    const stroke = new Stroke({color: '#e2ebef', width: 2});
     const layer = new VectorLayer({
       source: source,
       style: new Style({
-        image: new RegularShape({
-          stroke: stroke,
-          points: 4,
+        image: new Circle({
           radius: 10,
-          radius2: 0,
-          angle: 0,
+          fill: new Fill({color: '#465ddf90'}),
+          stroke: stroke,
         }),
       }),
     });
