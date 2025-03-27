@@ -7,7 +7,6 @@ import {
   isAuthorized,
   ProjectUIModel,
   RecordMetadata,
-  TokenContents,
   UnhydratedRecord,
 } from '@faims3/data-model';
 import {QueryClient, useQueries, useQuery} from '@tanstack/react-query';

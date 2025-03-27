@@ -109,11 +109,11 @@ async function oauth_register(
     let errorMsg = '';
     const invite = await getInvite(req.session.invite);
     if (invite) {
-      [user, errorMsg] = await createUser(
-        {email : emails[0],
+      [user, errorMsg] = await createUser({
+        email: emails[0],
         username: emails[0],
-        name: profile.displayName}
-      );
+        name: profile.displayName,
+      });
 
       if (user) {
         user.profiles['google'] = profile;

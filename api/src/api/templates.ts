@@ -38,7 +38,6 @@ import {
   getTemplates,
   updateExistingTemplate,
 } from '../couchdb/templates';
-import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 
 import patch from '../utils/patchExpressAsync';

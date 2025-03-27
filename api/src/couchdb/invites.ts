@@ -94,7 +94,7 @@ export async function writeNewInvite(invite: InvitesDBFields) {
   let count = 0;
 
   // Build our document with ID
-  let doc: NewInvitesDBDocument = {...invite, _id: generateInviteId()};
+  const doc: NewInvitesDBDocument = {...invite, _id: generateInviteId()};
 
   // This could throw in case of other DB errors - but should happen
   while (count < maxCount) {

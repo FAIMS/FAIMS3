@@ -1,8 +1,8 @@
 /**
  * Custom equality function that compares two documents while ignoring property and array ordering
- * 
- * Helpful for migration functions where ordering could be unpredictable 
- * 
+ *
+ * Helpful for migration functions where ordering could be unpredictable
+ *
  * @param inputDoc The input document
  * @param expectedOutputDoc The expected output document after migration
  * @returns boolean indicating whether the documents are equal

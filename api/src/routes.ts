@@ -364,7 +364,7 @@ app.get(
     const relevantRoles = getRolesForNotebook().map(r => r.role);
     const userList = (await getUsersForResource({resourceId: projectId})).map(
       user => {
-        let roles: {name: Role; value: boolean}[] = [];
+        const roles: {name: Role; value: boolean}[] = [];
         for (const r of relevantRoles) {
           roles.push({
             value: userHasResourceRole({
@@ -409,7 +409,7 @@ app.get(
     const userListFiltered = userList
       .filter(user => user._id !== id)
       .map(user => {
-        let roles: Partial<Record<Role, boolean>> = {};
+        const roles: Partial<Record<Role, boolean>> = {};
         for (const r of globalRoles) {
           roles[r] = userHasGlobalRole({role: r, user});
         }

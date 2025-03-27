@@ -33,9 +33,17 @@ export type VerifyCallback = (
   info?: object
 ) => void;
 
+interface Flash {
+  flash(type: string, message?: any): any;
+  flash(type: string): any[];
+  flash(): {[key: string]: any[]};
+  session: any;
+}
+
 // See https://stackoverflow.com/questions/65772869/how-do-i-type-hint-the-user-argument-when-calling-passport-serializeuser-in-type
 declare global {
   namespace Express {
     interface User extends PeopleDBDocument {}
+    interface Request extends Flash {}
   }
 }

@@ -470,6 +470,7 @@ export interface ProjectUIViewset {
   hridField?: string;
   // Layout option
   layout?: 'inline' | 'tabs';
+  publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
 }
 
 export interface ProjectUIViewsets {

@@ -406,7 +406,7 @@ describe('Migration System Tests', () => {
             dbType: dbType as DATABASE_TYPE,
             dbName: `test-${dbType}-db`,
             version: targetVersion,
-            status: 'healthy' as 'healthy',
+            status: 'healthy' as const,
             migrationLog: [],
           };
 
@@ -433,7 +433,7 @@ describe('Migration System Tests', () => {
         dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
         version: 1,
-        status: 'healthy' as 'healthy',
+        status: 'healthy' as const,
         migrationLog: [],
       };
 
@@ -456,7 +456,7 @@ describe('Migration System Tests', () => {
         dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
         version: 3, // Higher than target (2)
-        status: 'healthy' as 'healthy',
+        status: 'healthy' as const,
         migrationLog: [],
       };
 
@@ -473,7 +473,7 @@ describe('Migration System Tests', () => {
         dbType: DatabaseType.PEOPLE,
         dbName: 'test-people-db',
         version: 1,
-        status: 'healthy' as 'healthy',
+        status: 'healthy' as const,
         migrationLog: [],
       };
 

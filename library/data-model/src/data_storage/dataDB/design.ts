@@ -53,9 +53,6 @@ export const permissionsDocument = (projectId: string) => ({
         };
       }
 
-      // This is replaced with actual projectId
-      const projectId = 'PROJECT_ID_PLACEHOLDER';
-
       // Check both _deleted and deleted flags in both documents NOTE this
       // doesn't actually work atm because deletion is just a change of deleted
       // to the latest rev (which is a new object!)
@@ -137,7 +134,6 @@ export const permissionsDocument = (projectId: string) => ({
       }
     }
   )
-    .replace('PROJECT_ID_PLACEHOLDER', projectId)
     .replace(
       '_ACCEPTABLE_EDIT_ANY_ROLES',
       necessaryActionToCouchRoleList({

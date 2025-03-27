@@ -48,7 +48,6 @@ export type InitialisationContent<Document extends {} = any> = {
   defaultDocument?: Document;
 };
 
-
 /**
  * Gets a record, updates the _rev, then puts or gracefully returns if
  * writeOnClash is false.

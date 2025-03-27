@@ -53,7 +53,7 @@ export const generateInitialUser = ({
     _id: username,
     user_id: username,
     name,
-    emails: !!email ? [email.toLowerCase()] : [],
+    emails: email ? [email.toLowerCase()] : [],
     // General user is given by default
     globalRoles: [Role.GENERAL_USER],
     // Resource roles are empty to start with

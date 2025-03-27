@@ -2,7 +2,6 @@
 // @ts-nocheck
 
 import {convertToCouchDBString} from '../utils';
-import {Role} from '../../permission';
 
 /**
  * Design document for indexing invites

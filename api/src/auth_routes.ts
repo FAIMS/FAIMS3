@@ -248,7 +248,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     async (req, res) => {
       const redirect = validateRedirect(req.query.redirect || '/');
       const invite_id = req.params.invite_id;
-      req.session['invite'] = invite_id;
+      (req.session as any)['invite'] = invite_id;
       const invite = await getInvite(invite_id);
       if (!invite) {
         res.render('invite-error', {redirect});

@@ -25,30 +25,29 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
   AuthDatabase,
+  couchInitialiser,
+  DATABASE_TYPE,
+  DatabaseType,
+  getDataDB,
   initAuthDB,
   initDataDB,
   initDirectoryDB,
+  initInvitesDB,
   initMetadataDB,
+  initMigrationsDB,
   initPeopleDB,
   initProjectsDB,
   initTemplatesDB,
+  InvitesDB,
+  migrateDbs,
+  MigrationsDB,
+  PeopleDB,
+  PeopleDBFields,
   ProjectDataObject,
   ProjectID,
   ProjectMetaObject,
   ProjectObject,
   TemplateDetails,
-  couchInitialiser,
-  initInvitesDB,
-  PeopleDB,
-  PeopleDBFields,
-  InvitesDB,
-  getDataDB,
-  DATABASE_TYPE,
-  DATABASE_TYPES,
-  DatabaseType,
-  migrateDbs,
-  MigrationsDB,
-  initMigrationsDB,
 } from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
@@ -59,7 +58,7 @@ import {
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {getAllProjectsDirectory, getNotebookMetadata} from './notebooks';
+import {getAllProjectsDirectory} from './notebooks';
 import {registerAdminUser} from './users';
 
 const DIRECTORY_DB_NAME = 'directory';

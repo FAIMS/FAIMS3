@@ -1,8 +1,8 @@
 import {isTokenAuthorized} from '../src/permission/functions';
 import {
-  roleGrantsAction,
   drillRoleActions,
   drillRoles,
+  roleGrantsAction,
 } from '../src/permission/helpers';
 import {Action, Role} from '../src/permission/model';
 import {
@@ -10,10 +10,10 @@ import {
   decodeAndValidateToken,
   DecodedTokenPermissions,
   decodePerResourceStatement,
-  TokenPermissions,
   encodeToken,
   ENCODING_SEPARATOR,
   necessaryActionToCouchRoleList,
+  TokenPermissions,
 } from '../src/permission/tokenEncoding';
 
 beforeEach(() => {
@@ -113,7 +113,7 @@ describe('Token Encoding and Decoding', () => {
       const tokenStructure: TokenPermissions = {
         [COUCHDB_ROLES_PATH]: [],
         resourceRoles: [
-          `invalid_encoding`, // Missing separator
+          'invalid_encoding', // Missing separator
         ],
         globalRoles: [],
       };
@@ -373,7 +373,7 @@ describe('Authorization Helper Functions', () => {
     it('returns false when no role grants the action', () => {
       jest
         .spyOn(require('../src/permission/helpers'), 'roleGrantsAction')
-        .mockImplementation((params: any) => {
+        .mockImplementation(() => {
           // For this test, no role grants DELETE_PROJECT
           return false;
         });
@@ -724,9 +724,9 @@ describe('isAuthorized', () => {
           return [];
         });
 
-      let action = Action.READ_MY_PROJECT_RECORDS;
-      let resourceId = '1234';
-      let result = necessaryActionToCouchRoleList({action, resourceId});
+      const action = Action.READ_MY_PROJECT_RECORDS;
+      const resourceId = '1234';
+      const result = necessaryActionToCouchRoleList({action, resourceId});
 
       // Check that both resource-specific and global roles that grant this action are included
       expect(result).toContain(`${resourceId}||${Role.PROJECT_GUEST}`);

@@ -224,7 +224,7 @@ export function necessaryActionToCouchRoleList({
   action: Action;
   resourceId: string;
 }): string[] {
-  let roles: string[] = [];
+  const roles: string[] = [];
 
   // Get all roles that can perform this action
   const rolesForAction = actionRoles[action];

@@ -66,8 +66,8 @@ const peopleV1toV2Migration: MigrationFunc = doc => {
   const inputDoc = doc as unknown as UserV1Document;
 
   // Need to convert existing roles -> resource and global roles
-  let globalRoles: Role[] = [];
-  let resourceRoles: ResourceRole[] = [];
+  const globalRoles: Role[] = [];
+  const resourceRoles: ResourceRole[] = [];
 
   // All users are general users
   globalRoles.push(Role.GENERAL_USER);

@@ -58,9 +58,9 @@ import {
   generateFilenameForAttachment,
   getEncodedNotebookUISpec,
   getNotebookMetadata,
-  getUserProjectsDetailed,
   getProjectUIModel,
   getRolesForNotebook,
+  getUserProjectsDetailed,
   streamNotebookFilesAsZip,
   streamNotebookRecordsAsCSV,
   updateNotebook,
@@ -76,7 +76,6 @@ import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
-import {frequency} from 'fast-check';
 
 // This must occur before express api is used
 patch();
@@ -516,7 +515,7 @@ api.get(
     },
   }),
   processRequest({params: z.object({notebookId: z.string()})}),
-  async ({params: {notebookId}, user}, res) => {
+  async ({params: {notebookId}}, res) => {
     const invites = await getInvitesForNotebook(notebookId);
     res.json(invites);
   }

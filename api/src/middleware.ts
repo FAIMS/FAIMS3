@@ -19,16 +19,9 @@
  *   which server to use and whether to include test data
  */
 
+import {Action, isAuthorized, userCanDo} from '@faims3/data-model';
 import Express from 'express';
 import {validateToken} from './authkeys/read';
-import {
-  Action,
-  isAuthorized,
-  Resource,
-  Role,
-  userCanDo,
-  userHasGlobalRole,
-} from '@faims3/data-model';
 import * as Exceptions from './exceptions';
 
 /**
@@ -134,7 +127,7 @@ export const isAllowedToMiddleware = ({
       next();
     } else {
       throw new Exceptions.UnauthorizedException(
-        `You are not authorized to perform this action.`
+        'You are not authorized to perform this action.'
       );
     }
   };

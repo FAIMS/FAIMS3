@@ -494,7 +494,7 @@ export const resourceToActions: Record<Resource, Action[]> = Object.values(
 ).reduce(
   (mapping, resource) => {
     mapping[resource] = Object.entries(actionDetails)
-      .filter(([_, desc]) => desc.resource === resource)
+      .filter(([, desc]) => desc.resource === resource)
       .map(([action]) => action as Action);
     return mapping;
   },
@@ -738,7 +738,7 @@ export const actionRoles: Record<Action, Role[]> = (() => {
 
   // For each role, determine all of its actions (including inherited ones)
   // and add this role to each action's list
-  Object.entries(roleActions).forEach(([roleKey, _]) => {
+  Object.entries(roleActions).forEach(([roleKey]) => {
     const role = roleKey as Role;
     const allActions = getAllActionsForRole(role);
 

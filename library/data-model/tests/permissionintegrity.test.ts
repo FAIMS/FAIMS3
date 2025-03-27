@@ -1,13 +1,13 @@
 import {
-  Resource,
   Action,
+  Resource,
   Role,
   actionDetails,
-  roleDetails,
+  actionRoles,
+  getAllActionsForRole,
   resourceToActions,
   roleActions,
-  actionRoles,
-  getAllActionsForRole
+  roleDetails,
 } from '../src/permission/index';
 
 /**
@@ -119,7 +119,7 @@ describe('Permission Model Validation', () => {
       const allGrantedActions = new Set<Action>();
 
       // Collect all actions granted by all roles (including inherited)
-      Object.entries(roleActions).forEach(([roleKey, config]) => {
+      Object.keys(roleActions).forEach(roleKey => {
         const role = roleKey as Role;
         getAllActionsForRole(role).forEach(action => {
           allGrantedActions.add(action);
@@ -168,10 +168,10 @@ describe('Permission Model Validation', () => {
         if (details.resource) {
           const role = roleKey as Role;
           const roleResource = details.resource;
-          
+
           // Get all direct actions this role grants
           const directActions = roleActions[role].actions;
-          
+
           // Each action should be for the same resource type
           directActions.forEach(action => {
             const actionResource = actionDetails[action].resource;
@@ -196,10 +196,10 @@ describe('Permission Model Validation', () => {
             .map(([role]) => role as Role);
 
           // Get the actual roles that directly grant this action
-          const actualRoles = actionRoles[action].filter(role => 
+          const actualRoles = actionRoles[action].filter(role =>
             roleActions[role].actions.includes(action)
           );
-          
+
           // Check that every expected role is in the actual roles list
           expectedRoles.forEach(role => {
             expect(actualRoles).toContain(role);
@@ -224,7 +224,8 @@ describe('Permission Model Validation', () => {
           // Check for indirect circular references
           const visited = new Set<Role>([role]);
           const checkCircular = (currentRole: Role): boolean => {
-            const currentInherits = roleActions[currentRole].inheritedRoles || [];
+            const currentInherits =
+              roleActions[currentRole].inheritedRoles || [];
 
             for (const inheritedRole of currentInherits) {
               if (visited.has(inheritedRole)) {
