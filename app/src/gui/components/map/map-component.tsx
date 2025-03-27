@@ -31,6 +31,7 @@ import {RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
 import {VectorTileStore} from './tile-source';
+import {useIsOnline} from '../../../utils/customHooks';
 
 const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
@@ -79,6 +80,8 @@ export const MapComponent = (props: MapComponentProps) => {
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
 
+  const {isOnline} = useIsOnline();
+
   const tileStore = useMemo(() => new VectorTileStore(), []);
 
   const {data: mapCenter, isLoading: loadingLocation} = useQuery({
@@ -103,9 +106,14 @@ export const MapComponent = (props: MapComponentProps) => {
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
     setAttribution(tileStore.getAttribution() as unknown as string);
     const tileLayer = tileStore.getTileLayer();
+    // if we're offline, limit the zoom level to 12 so that we don't go
+    // off map.
+    // TODO: Could also limit the extent to that covered by the offline
+    // map.
     const view = new View({
       projection: defaultMapProjection,
       zoom: zoomLevel,
+      minZoom: isOnline ? 0 : 12,
       maxZoom: MAX_ZOOM,
     });
 
@@ -119,6 +127,7 @@ export const MapComponent = (props: MapComponentProps) => {
     // create a center control
     theMap.getView().on('change:resolution', () => {
       const z = theMap.getView().getZoom();
+      console.log('zoom', z);
       if (z) setZoomLevel(z);
     });
 
