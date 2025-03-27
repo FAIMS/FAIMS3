@@ -127,7 +127,6 @@ export const MapComponent = (props: MapComponentProps) => {
     // create a center control
     theMap.getView().on('change:resolution', () => {
       const z = theMap.getView().getZoom();
-      console.log('zoom', z);
       if (z) setZoomLevel(z);
     });
 
