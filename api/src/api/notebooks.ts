@@ -66,11 +66,17 @@ import {
   updateNotebook,
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
-import {getUserFromEmailOrUsername, getUsers, saveUser} from '../couchdb/users';
+import {
+  getUserFromEmailOrUsername,
+  getUserInfoForProject,
+  getUsers,
+  saveUser,
+} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
+import {frequency} from 'fast-check';
 
 // This must occur before express api is used
 patch();
@@ -574,15 +580,38 @@ if (DEVELOPER_MODE) {
 // DELETE a user from a notebook
 api.delete(
   '/:notebook_id/users/:user_id',
+  requireAuthenticationAPI,
   processRequest({
     params: z.object({notebook_id: z.string(), user_id: z.string()}),
   }),
-  requireAuthenticationAPI,
   async (req, res: Response<PutUpdateNotebookResponse>) => {
-    if (!userHasPermission(req.user, req.params.notebook_id, 'modify')) {
-      throw new Exceptions.UnauthorizedException(
-        'You do not have permission to remove this user from this notebook.'
-      );
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Must be authenticated.');
+    }
+
+    // Check what resource role the user has on this notebook
+    const userInfo = await getUserInfoForProject({
+      projectId: req.params.notebook_id,
+    });
+    const userHasRoles =
+      userInfo.users.find(u => u.username === req.params.user_id)?.roles ?? [];
+
+    // Need all actions from these roles
+    const requiredActions = userHasRoles.map(role =>
+      projectRoleToAction({add: false, role: role.name})
+    );
+    for (const required of requiredActions) {
+      if (
+        !userCanDo({
+          action: required,
+          user: req.user,
+          resourceId: req.params.notebook_id,
+        })
+      ) {
+        throw new Exceptions.UnauthorizedException(
+          'You are not authorised to remove the user from this notebook.'
+        );
+      }
     }
 
     const user = await getUserFromEmailOrUsername(req.params.user_id);
@@ -593,14 +622,15 @@ api.delete(
       );
     }
 
-    if (user.project_roles[req.params.notebook_id].includes('admin')) {
-      throw new Exceptions.UnauthorizedException(
-        'You cannot remove an admin user from this notebook.'
-      );
-    }
-
-    for (const role of user.project_roles[req.params.notebook_id]) {
-      await removeProjectRoleFromUser(user, req.params.notebook_id, role);
+    // Remove all resource roles associated with this user
+    for (const role of user.resourceRoles) {
+      if (role.resourceId === req.params.notebook_id) {
+        removeResourceRole({
+          resourceId: req.params.notebook_id,
+          role: role.role,
+          user,
+        });
+      }
     }
 
     await saveUser(user);
