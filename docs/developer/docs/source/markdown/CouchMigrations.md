@@ -81,9 +81,6 @@ const peopleV2toV3Migration = (
   writeNeeded: boolean;
   updatedRecord?: PouchDB.Core.ExistingDocument<any>;
 } => {
-  // Make a deep copy of the record to avoid modifying the original
-  const updatedRecord = JSON.parse(JSON.stringify(record));
-
   // Perform your transformations
   // For example: add a new field, transform existing data, etc.
   updatedRecord.newField = 'default value';

@@ -1,4 +1,4 @@
-import {DatabaseType} from '../migrations';
+import {DatabaseType} from '../migrations/migrationService';
 
 export type MigrationLog = {
   // from and to version ID

@@ -31,16 +31,16 @@ export * from './internals';
 export * from './merging';
 export * from './queries';
 export * from './storageFunctions';
-export * from './migrations';
 export * from './utils';
 
 // Nested folders
 export * from './authDB';
 export * from './dataDB';
 export * from './directoryDB';
+export * from './invitesDB';
 export * from './metadataDB';
+export * from './migrations';
 export * from './migrationsDB';
 export * from './peopleDB';
 export * from './projectsDB';
 export * from './templatesDB';
-export * from './invitesDB';
