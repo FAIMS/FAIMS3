@@ -28,12 +28,14 @@ export enum Action {
   READ_PROJECT_METADATA = 'READ_PROJECT_METADATA',
   // Update the project high level details (e.g. description, title etc)
   UPDATE_PROJECT_DETAILS = 'UPDATE_PROJECT_DETAILS',
-  // Update the UI specification (potential consistency risk)
+  // Update the UI specification (we specify this as a separate action because
+  // changing the ui spec of a project with existing records could mean that
+  // records exist which are invalid/have extra/are missing data)
   UPDATE_PROJECT_UISPEC = 'UPDATE_PROJECT_UISPEC',
 
-  // Read responses for the project which are mine
+  // Read records hor the project which are mine
   READ_MY_PROJECT_RECORDS = 'READ_MY_PROJECT_RECORDS',
-  // Read responses for the project which are not mine
+  // Read records for the project which are not mine
   READ_ALL_PROJECT_RECORDS = 'READ_ALL_PROJECT_RECORDS',
 
   // Write a new record
@@ -195,48 +197,48 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.READ_MY_PROJECT_RECORDS]: {
     name: 'Read My Project Records',
     description:
-      'View responses for a project which were created by the current user',
+      'View records for a project which were created by the current user',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
   [Action.READ_ALL_PROJECT_RECORDS]: {
     name: 'Read All Project Records',
     description:
-      'View all responses for a project, including those created by other users',
+      'View all records for a project, including those created by other users',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
   [Action.CREATE_PROJECT_RECORD]: {
     name: 'Create Project Record',
-    description: 'Add a new record/response to a project',
+    description: 'Add a new record/records to a project',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
   [Action.EDIT_MY_PROJECT_RECORDS]: {
     name: 'Edit My Project Records',
     description:
-      'Modify records/responses in a project that were created by the current user',
+      'Modify records in a project that were created by the current user',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
   [Action.EDIT_ALL_PROJECT_RECORDS]: {
     name: 'Edit All Project Records',
     description:
-      'Modify any records/responses in a project, including those created by other users',
+      'Modify any records in a project, including those created by other users',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
   [Action.DELETE_MY_PROJECT_RECORDS]: {
     name: 'Delete My Project Records',
     description:
-      'Remove records/responses from a project that were created by the current user',
+      'Remove records from a project that were created by the current user',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
   [Action.DELETE_ALL_PROJECT_RECORDS]: {
     name: 'Delete All Project Records',
     description:
-      'Remove any records/responses from a project, including those created by other users',
+      'Remove any records from a project, including those created by other users',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
