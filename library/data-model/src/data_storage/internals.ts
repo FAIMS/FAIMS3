@@ -649,27 +649,17 @@ export async function listRecordMetadata({
 }
 
 /**
- * Retrieves a list of non-deleted record metadata.
+ * Hydrates an individual record by fetching AVPs to populate the data and hrid
+ * fields.
  *
+ * can use a provided hrid viewset ID -> field name map, or generate it's own.
  *
- * This function fetches records based on optional filtering criteria, retrieves
- * their latest revisions, and constructs metadata objects containing record
- * information along with human-readable identifiers (HRIDs) determined by the
- * UI specification.
+ * @param record The record to hydrate - not modified, a new one provided
+ * @param uiSpecification The ui spec (used for hrid field mapping)
+ * @param dataDb The data DB containing the AVPs etc
+ * @param hridFieldMap The hrid field map if provided to avoid recomputation
  *
- * If hydrate is set to true, then the data and hrid fields will be populated.
- * NOTE that this incurs additional queries (since we need to fetch AVPs for
- * every field in the response).
- *
- * @param projectId - The project identifier
- * @param recordIds - Optional array of specific record IDs to retrieve
- * @param hydrate - should AVPs be fetched to allow data and hrid to be populated?
- * @param uiSpecification - UI model containing HRID field configurations
- * @param dataDb - Database connection for retrieving record data
- *
- * @returns {Promise<RecordMetadata[]>} A promise that resolves to an array of
- * record metadata objects
- * @throws {Error} If record retrieval fails
+ * @returns
  */
 export async function hydrateIndividualRecord({
   record,

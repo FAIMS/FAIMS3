@@ -403,6 +403,7 @@ export const uiSpecificationReducer = createSlice({
       const newViewSet = {
         label: formName,
         views: [],
+        publishButtonBehaviour: 'always' as 'always' | 'visited' | 'noErrors',
       };
       const formID = slugify(formName);
       // add this to the viewsets
@@ -413,6 +414,7 @@ export const uiSpecificationReducer = createSlice({
         state.visible_types.push(formID);
       }
     },
+
     viewSetDeleted: (state, action: PayloadAction<{viewSetId: string}>) => {
       const {viewSetId} = action.payload;
 
@@ -530,6 +532,20 @@ export const uiSpecificationReducer = createSlice({
         state.visible_types.splice(state.visible_types.length, 0, viewSetId);
       }
     },
+
+    viewSetPublishButtonBehaviourUpdated: (
+      state,
+      action: PayloadAction<{
+        viewSetId: string;
+        publishButtonBehaviour: 'always' | 'visited' | 'noErrors';
+      }>
+    ) => {
+      const {viewSetId, publishButtonBehaviour} = action.payload;
+      if (viewSetId in state.viewsets) {
+        state.viewsets[viewSetId].publishButtonBehaviour =
+          publishButtonBehaviour;
+      }
+    },
   },
 });
 
@@ -553,6 +569,7 @@ export const {
   viewSetMoved,
   viewSetRenamed,
   formVisibilityUpdated,
+  viewSetPublishButtonBehaviourUpdated,
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
 } = uiSpecificationReducer.actions;

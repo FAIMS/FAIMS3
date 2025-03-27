@@ -22,13 +22,20 @@ import {
   addGlobalRole,
   PostUpdateUserInputSchema,
   removeGlobalRole,
+  Role,
   roleDetails,
   RoleScope,
+  userHasGlobalRole,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {getUserFromEmailOrUsername, getUsers, saveUser} from '../couchdb/users';
+import {
+  getUserFromEmailOrUsername,
+  getUsers,
+  removeUser,
+  saveUser,
+} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 
@@ -85,7 +92,12 @@ api.get(
   requireAuthenticationAPI,
   async (
     req: any,
-    res: Response<{id: string; name: string; email: string}>
+    res: Response<{
+      id: string;
+      name: string;
+      email: string;
+      cluster_admin: boolean;
+    }>
   ) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException(
@@ -94,7 +106,16 @@ api.get(
     }
 
     const {_id: id, name, emails} = req.user;
-    return res.json({id, name, email: emails[0]});
+
+    return res.json({
+      id,
+      name,
+      email: emails[0],
+      cluster_admin: userHasGlobalRole({
+        role: Role.GENERAL_ADMIN,
+        user: req.user,
+      }),
+    });
   }
 );
 
@@ -105,5 +126,40 @@ api.get(
   isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
   async (req: any, res: Response<Express.User[]>) => {
     return res.json(await getUsers());
+  }
+);
+
+// REMOVE a user
+api.delete(
+  '/:id',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.DELETE_USER,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async ({params: {id}}, res) => {
+    const userToRemove = await getUserFromEmailOrUsername(id);
+
+    if (!userToRemove)
+      throw new Exceptions.ItemNotFoundException(
+        'Username cannot be found in user database.'
+      );
+
+    if (userHasGlobalRole({role: Role.GENERAL_ADMIN, user: userToRemove}))
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to remove cluster admins.'
+      );
+
+    try {
+      removeUser(userToRemove);
+    } catch (e) {
+      throw new Exceptions.InternalSystemError('Error removing user');
+    }
+    res.status(200).send();
   }
 );

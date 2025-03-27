@@ -44,7 +44,7 @@ import {
   getMetadataDb,
   initialiseDataDb,
   initialiseMetadataDb,
-  localGetDataDb,
+  getDataDb,
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
@@ -727,7 +727,7 @@ export const streamNotebookRecordsAsCSV = async (
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
-  const dataDb = await localGetDataDb(projectId);
+  const dataDb = await getDataDb(projectId);
   const uiSpecification = await getProjectUIModel(projectId);
   const iterator = await notebookRecordIterator({
     dataDb,
@@ -821,7 +821,7 @@ export const streamNotebookFilesAsZip = async (
   let allFilesAdded = false;
   let doneFinalize = false;
 
-  const dataDb = await localGetDataDb(projectId);
+  const dataDb = await getDataDb(projectId);
   const uiSpecification = await getProjectUIModel(projectId);
   const iterator = await notebookRecordIterator({
     dataDb,

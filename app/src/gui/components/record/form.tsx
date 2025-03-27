@@ -32,7 +32,7 @@ import {
   upsertFAIMSData,
 } from '@faims3/data-model';
 import {Alert, Box, Divider, Typography} from '@mui/material';
-import {Form, Formik} from 'formik';
+import {Form, Formik, FormikProps} from 'formik';
 import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
 import {localGetDataDb} from '../../..';
@@ -175,6 +175,7 @@ type RecordFormState = {
 
 class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
   draftState: RecordDraftState | null = null;
+  private formikRef = React.createRef<FormikProps<any>>();
 
   // List of timeouts that unmount must cancel
   timeouts: (typeof setTimeout)[] = [];
@@ -791,29 +792,64 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     return new_values;
   }
 
+  checkAllSectionsVisited() {
+    const allSections =
+      this.props.ui_specification.viewsets[this.getViewsetName()].views;
+
+    allSections.every((section: string) =>
+      this.state.visitedSteps.has(section)
+    );
+  }
+
+  /**
+   * Handles navigation between form sections (steps).
+   *
+   * Tracks visited sections and updates the active step.
+   * When all sections are visited, forces Formik to revalidate the form
+   * to ensure the "Publish" button is shown correctly.
+   *
+   * This function supports the `publishButtonBehaviour` setting, which controls
+   * when the publish button should be displayed:
+   *
+   * - `'always'`: The publish button is always visible.
+   * - `'visited'`: The publish button is shown only after all sections are visited.
+   * - `'noErrors'`: The publish button is shown only after all the errors/required fields of the form as addressed.
+   */
   onChangeStepper(view_name: string, activeStepIndex: number) {
-    this.setState(prevState => {
-      const {activeStep} = prevState;
+    this.setState(
+      prevState => {
+        const {activeStep} = prevState;
 
-      const wasVisitedBefore = prevState.visitedSteps.has(view_name);
+        const wasVisitedBefore = prevState.visitedSteps.has(view_name);
 
-      // add to visitedSteps if it has not been visited before
-      const updatedVisitedSteps = new Set(prevState.visitedSteps);
-      updatedVisitedSteps.add(view_name);
+        // add to visitedSteps if it has not been visited before
+        const updatedVisitedSteps = new Set(prevState.visitedSteps);
+        updatedVisitedSteps.add(view_name);
 
-      const isFirstStep = activeStepIndex === 0;
+        const isFirstStep = activeStepIndex === 0;
 
-      const isRevisiting =
-        wasVisitedBefore || (isFirstStep && activeStep !== activeStepIndex);
+        const isRevisiting =
+          wasVisitedBefore || (isFirstStep && activeStep !== activeStepIndex);
 
-      return {
-        ...prevState,
-        view_cached: view_name,
-        activeStep: activeStepIndex,
-        visitedSteps: updatedVisitedSteps,
-        isRevisiting,
-      };
-    });
+        return {
+          ...prevState,
+          view_cached: view_name,
+          activeStep: activeStepIndex,
+          visitedSteps: updatedVisitedSteps,
+          isRevisiting,
+        };
+      },
+      () => {
+        this.checkAllSectionsVisited(); // Check if all sections are visited
+
+        if (
+          this.state.visitedSteps.size === this.state.views.length &&
+          this.formikRef?.current
+        ) {
+          this.formikRef.current.validateForm();
+        }
+      }
+    );
   }
 
   onChangeTab(event: React.ChangeEvent<{}>, newValue: string) {
@@ -1322,11 +1358,22 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
         viewsetName
       );
       const description = this.requireDescription(viewName);
+      const views = getViewsMatchingCondition(
+        this.props.ui_specification,
+        initialValues,
+        [],
+        viewsetName,
+        {}
+      );
+
+      // Track visited sections and errors
+      const allSectionsVisited = this.state.visitedSteps.size === views.length;
 
       return (
         <Box>
           <div>
             <Formik
+              innerRef={this.formikRef}
               initialValues={initialValues}
               // We are manually running the validate function now - if you
               // leave this here this schema validation will take precedence
@@ -1385,6 +1432,17 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
               }}
             >
               {formProps => {
+                const hasErrors = Object.keys(formProps.errors).length > 0;
+                const publishButtonBehaviour =
+                  this.props.ui_specification.viewsets[this.getViewsetName()]
+                    ?.publishButtonBehaviour || 'always';
+
+                const showPublishButton =
+                  publishButtonBehaviour === 'always' ||
+                  (publishButtonBehaviour === 'visited' &&
+                    allSectionsVisited) ||
+                  (publishButtonBehaviour === 'noErrors' && !hasErrors);
+
                 // Recompute derived values if something has changed
                 const {values, setValues} = formProps;
                 // Compare current values with last processed values
@@ -1533,6 +1591,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        showPublishButton={showPublishButton}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
@@ -1630,6 +1689,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        showPublishButton={showPublishButton}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {

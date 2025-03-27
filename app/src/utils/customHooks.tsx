@@ -21,7 +21,6 @@ import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
-import {clientsClaim} from 'workbox-core';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**

@@ -280,3 +280,19 @@ export async function getUserInfoForProject({
 
   return userList;
 }
+
+/**
+ * Remove a user from the database
+ * @param user - the user to remove
+ */
+export function removeUser(user: Express.User) {
+  const usersDb = getUsersDB();
+  usersDb
+    .get(user._id)
+    .then(doc => {
+      return usersDb.remove(doc);
+    })
+    .catch(err => {
+      throw new Error(`User not found or could not be removed! Error: ${err}.`);
+    });
+}

@@ -29,7 +29,7 @@ import {getEncodedNotebookUISpec} from './notebooks';
 import {randomInt} from 'crypto';
 import {readFileSync} from 'node:fs';
 import * as Exceptions from '../exceptions';
-import {localGetDataDb} from '.';
+import {getDataDb} from '.';
 
 export const createManyRandomRecords = async (
   project_id: ProjectID,
@@ -58,7 +58,7 @@ export const createRandomRecord = async (
   // generate data for each field
   // create the record object and call upsertFAIMSData
 
-  const dataDb = await localGetDataDb(projectId);
+  const dataDb = await getDataDb(projectId);
   const uiSpec = await getEncodedNotebookUISpec(projectId);
   if (!uiSpec) {
     throw new Exceptions.ItemNotFoundException(

@@ -317,7 +317,7 @@ export const getMetadataDb = async (
  * @param projectID The project ID to use
  * @returns The data DB for this project or undefined if not found
  */
-export const localGetDataDb = async (
+export const getDataDb = async (
   projectID: ProjectID
 ): Promise<PouchDB.Database<ProjectDataObject>> => {
   // Get the projects DB
@@ -402,7 +402,7 @@ export const initialiseDataDb = async ({
   const isTesting = process.env.NODE_ENV === 'test';
 
   // Get the metadata DB
-  const dataDb = await localGetDataDb(projectId);
+  const dataDb = await getDataDb(projectId);
 
   try {
     await couchInitialiser({
