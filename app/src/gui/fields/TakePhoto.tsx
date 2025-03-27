@@ -19,6 +19,7 @@
 
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
+// eslint-disable-next-line n/no-extraneous-import
 import {Exif} from '@capacitor-community/exif';
 import {Geolocation} from '@capacitor/geolocation';
 import AddCircleIcon from '@mui/icons-material/AddCircle';

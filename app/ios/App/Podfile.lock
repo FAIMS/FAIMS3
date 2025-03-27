@@ -1,27 +1,30 @@
 PODS:
-  - Capacitor (6.1.2):
+  - Capacitor (7.1.0):
     - CapacitorCordova
-  - CapacitorApp (6.0.1):
+  - CapacitorApp (7.0.0):
     - Capacitor
-  - CapacitorAppLauncher (6.0.2):
+  - CapacitorAppLauncher (7.0.0):
     - Capacitor
-  - CapacitorBrowser (6.0.2):
+  - CapacitorBrowser (7.0.0):
     - Capacitor
-  - CapacitorCamera (6.0.2):
+  - CapacitorCamera (7.0.0):
     - Capacitor
-  - CapacitorCordova (6.1.2)
-  - CapacitorDevice (6.0.1):
+  - CapacitorCommunityExif (7.0.0):
     - Capacitor
-  - CapacitorFilesystem (6.0.1):
+  - CapacitorCordova (7.1.0)
+  - CapacitorDevice (7.0.0):
     - Capacitor
-  - CapacitorGeolocation (6.0.1):
+  - CapacitorFilesystem (7.0.0):
     - Capacitor
+  - CapacitorGeolocation (7.1.1):
+    - Capacitor
+    - IONGeolocationLib (~> 1.0)
   - CapacitorMlkitBarcodeScanning (6.1.0):
     - Capacitor
     - GoogleMLKit/BarcodeScanning (= 5.0.0)
-  - CapacitorShare (6.0.2):
+  - CapacitorShare (7.0.0):
     - Capacitor
-  - CapacitorStatusBar (6.0.1):
+  - CapacitorStatusBar (7.0.0):
     - Capacitor
   - GoogleDataTransport (9.4.1):
     - GoogleUtilities/Environment (~> 7.7)
@@ -57,6 +60,7 @@ PODS:
   - GoogleUtilitiesComponents (1.1.0):
     - GoogleUtilities/Logger
   - GTMSessionFetcher/Core (3.5.0)
+  - IONGeolocationLib (1.0.0)
   - MLImage (1.0.0-beta5)
   - MLKitBarcodeScanning (4.0.0):
     - MLKitCommon (~> 10.0)
@@ -88,6 +92,7 @@ DEPENDENCIES:
   - "CapacitorAppLauncher (from `../../../node_modules/@capacitor/app-launcher`)"
   - "CapacitorBrowser (from `../../../node_modules/@capacitor/browser`)"
   - "CapacitorCamera (from `../../../node_modules/@capacitor/camera`)"
+  - "CapacitorCommunityExif (from `../../../node_modules/@capacitor-community/exif`)"
   - "CapacitorCordova (from `../../../node_modules/@capacitor/ios`)"
   - "CapacitorDevice (from `../../../node_modules/@capacitor/device`)"
   - "CapacitorFilesystem (from `../../../node_modules/@capacitor/filesystem`)"
@@ -104,6 +109,7 @@ SPEC REPOS:
     - GoogleUtilities
     - GoogleUtilitiesComponents
     - GTMSessionFetcher
+    - IONGeolocationLib
     - MLImage
     - MLKitBarcodeScanning
     - MLKitCommon
@@ -122,6 +128,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/@capacitor/browser"
   CapacitorCamera:
     :path: "../../../node_modules/@capacitor/camera"
+  CapacitorCommunityExif:
+    :path: "../../../node_modules/@capacitor-community/exif"
   CapacitorCordova:
     :path: "../../../node_modules/@capacitor/ios"
   CapacitorDevice:
@@ -138,24 +146,26 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/@capacitor/status-bar"
 
 SPEC CHECKSUMS:
-  Capacitor: 69c7f687aabb8d85e543497411e40638b5cc08c0
-  CapacitorApp: f51c08c64df914fc934239fd1b3fc809d62a02f6
-  CapacitorAppLauncher: b957226d48108ecba7b33f02553f85d5e11c4455
-  CapacitorBrowser: 80345fe3b83664d2f953e9fe102a996df73ec809
-  CapacitorCamera: 65a0d1235114a6a5042e664d6da8d213927f7aa0
-  CapacitorCordova: f48c89f96c319101cd2f0ce8a2b7449b5fb8b3dd
-  CapacitorDevice: da1884f895e17992648b27f6c8ee2be72cd0ce2e
-  CapacitorFilesystem: 30941c0fea0773fcaedab18e262b339f5b9c06bc
-  CapacitorGeolocation: 2621f3cbd11be93377d633c8eac7b99bfbf060b6
+  Capacitor: bceb785fb78f5e81e4a9e37843bc1c24bd9c7194
+  CapacitorApp: 9cb31064a6c6bb2b1438583733a7bf45557fc1da
+  CapacitorAppLauncher: e2c8917b37032e53694869df963e581ddcf112fb
+  CapacitorBrowser: 55c21db47416dcc8fc3b623e18fd7d09acb26081
+  CapacitorCamera: 20a37684b81c69c0c33fb5a7216919f135371a6f
+  CapacitorCommunityExif: de91ef8d7277b627af991117e06c9271fbfe59ac
+  CapacitorCordova: 866217f32c1d25b326c568a10ea3ed0c36b13e29
+  CapacitorDevice: 069faf433b3a99c3d5f0e500fbe634f60a8c6a84
+  CapacitorFilesystem: 59a2b7b56a897c6a3de4d04c5718e1d80de9d2f5
+  CapacitorGeolocation: c0755715aaadf5c86dc0053e1127b368444c914b
   CapacitorMlkitBarcodeScanning: e4794543a1341f8ea1bafccf03b2d5ded8300a27
-  CapacitorShare: 5d49f1b220e991372b4d5d34be9a6080a042bae4
-  CapacitorStatusBar: 9ed7f06318fd436917072a9bf60fda56d12c8bdb
+  CapacitorShare: d94c53d7656f1ce8f6712ae8d19ab0c18a69259f
+  CapacitorStatusBar: a8c4c83ed2e973bdafb979e80e4b00d027832cb7
   GoogleDataTransport: 6c09b596d841063d76d4288cc2d2f42cc36e1e2a
   GoogleMLKit: 90ba06e028795a50261f29500d238d6061538711
   GoogleToolboxForMac: 8bef7c7c5cf7291c687cf5354f39f9db6399ad34
   GoogleUtilities: ea963c370a38a8069cc5f7ba4ca849a60b6d7d15
   GoogleUtilitiesComponents: 679b2c881db3b615a2777504623df6122dd20afe
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
+  IONGeolocationLib: 81f33f88d025846946de2cf63b0c7628e7c6bc9d
   MLImage: 1824212150da33ef225fbd3dc49f184cf611046c
   MLKitBarcodeScanning: 9cb0ec5ec65bbb5db31de4eba0a3289626beab4e
   MLKitCommon: afcd11b6c0735066a0dde8b4bf2331f6197cbca2
@@ -163,6 +173,6 @@ SPEC CHECKSUMS:
   nanopb: 438bc412db1928dac798aa6fd75726007be04262
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
 
-PODFILE CHECKSUM: 221c050c332e6635cc85df48cd256192087104cf
+PODFILE CHECKSUM: bbb24c870b34e3276edded96c70b07c81084774f
 
 COCOAPODS: 1.15.2
