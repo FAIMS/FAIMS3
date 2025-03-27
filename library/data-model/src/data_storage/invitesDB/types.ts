@@ -27,12 +27,14 @@ export type V1InviteDBFields = {
   role: string;
 };
 
-export type InvitesDBFields = {
+export type V2InviteDBFields = {
   // The project it refers to
   projectId: string;
-  // Role
+  // Role (enum)
   role: Role;
 };
+
+export type InvitesDBFields = V2InviteDBFields;
 export type ExistingInvitesDBDocument =
   PouchDB.Core.ExistingDocument<InvitesDBFields>;
 export type NewInvitesDBDocument = PouchDB.Core.Document<InvitesDBFields>;

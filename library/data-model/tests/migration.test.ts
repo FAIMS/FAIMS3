@@ -1,5 +1,6 @@
 import PouchDB from 'pouchdb';
 import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
+import {Role} from '../src';
 import {
   DATABASE_TYPE,
   DATABASE_TYPES,
@@ -14,6 +15,8 @@ import {
   MigrationsDBFields,
   UserV1Document,
   UserV2Document,
+  V1InviteDBFields,
+  V2InviteDBFields,
   buildDefaultMigrationDoc,
   couchInitialiser,
   identifyMigrations,
@@ -22,9 +25,7 @@ import {
   migrateDbs,
   performMigration,
 } from '../src/data_storage';
-import {Role} from '../src';
 import {areDocsEqual} from './utils';
-import {update} from 'lodash';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -57,7 +58,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
     to: 2,
     inputDoc: {
       _id: 'abcd123456',
-      _rev: '46-48fbd6a01b20cba7669b390cc9b774fb',
+      _rev: '1234',
       user_id: 'abcd123456',
       name: 'George Costanza',
       emails: ['george.costanza@gmail.com'],
@@ -82,7 +83,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
     } satisfies UserV1Document,
     expectedOutputDoc: {
       _id: 'abcd123456',
-      _rev: '46-48fbd6a01b20cba7669b390cc9b774fb',
+      _rev: '1234',
       user_id: 'abcd123456',
       name: 'George Costanza',
       emails: ['george.costanza@gmail.com'],
@@ -104,6 +105,165 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
     } satisfies UserV2Document,
     expectedResult: {action: 'update'},
     equalityFunction: areDocsEqual,
+  },
+
+  // INVITES MIGRATION v1 -> v2
+  // ===========================
+  // Test case for 'admin' role mapping
+  {
+    name: 'invitesV1toV2Migration - admin role',
+    dbType: DatabaseType.INVITES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'invite_123',
+      _rev: '1-abc123',
+      project_id: 'project_xyz',
+      role: 'admin',
+    } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_123',
+      _rev: '1-abc123',
+      projectId: 'project_xyz',
+      role: Role.PROJECT_ADMIN,
+    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case for 'moderator' role mapping
+  {
+    name: 'invitesV1toV2Migration - moderator role',
+    dbType: DatabaseType.INVITES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'invite_456',
+      _rev: '1-def456',
+      project_id: 'project_xyz',
+      role: 'moderator',
+    } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_456',
+      _rev: '1-def456',
+      projectId: 'project_xyz',
+      role: Role.PROJECT_CONTRIBUTOR,
+    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case for 'team' role mapping
+  {
+    name: 'invitesV1toV2Migration - team role',
+    dbType: DatabaseType.INVITES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'invite_789',
+      _rev: '1-ghi789',
+      project_id: 'project_xyz',
+      role: 'team',
+    } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_789',
+      _rev: '1-ghi789',
+      projectId: 'project_xyz',
+      role: Role.PROJECT_CONTRIBUTOR,
+    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case for 'user' role mapping
+  {
+    name: 'invitesV1toV2Migration - user role',
+    dbType: DatabaseType.INVITES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'invite_012',
+      _rev: '1-jkl012',
+      project_id: 'project_xyz',
+      role: 'user',
+    } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_012',
+      _rev: '1-jkl012',
+      projectId: 'project_xyz',
+      role: Role.PROJECT_CONTRIBUTOR,
+    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case for unknown role (should delete the document)
+  {
+    name: 'invitesV1toV2Migration - unknown role',
+    dbType: DatabaseType.INVITES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'invite_345',
+      _rev: '1-mno345',
+      project_id: 'project_xyz',
+      role: 'unknown_role',
+    } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
+    expectedOutputDoc: null, // No output expected for deletion
+    expectedResult: {action: 'delete'},
+    equalityFunction: (actual, expected) => actual === expected, // Simple equality for null check
+  },
+
+  // Test case for empty role (should delete the document)
+  {
+    name: 'invitesV1toV2Migration - empty role',
+    dbType: DatabaseType.INVITES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'invite_678',
+      _rev: '1-pqr678',
+      project_id: 'project_xyz',
+      role: '',
+    } satisfies PouchDB.Core.ExistingDocument<V1InviteDBFields>,
+    expectedOutputDoc: null, // No output expected for deletion
+    expectedResult: {action: 'delete'},
+    equalityFunction: (actual, expected) => actual === expected, // Simple equality for null check
+  },
+
+  // Test case with additional fields (should preserve only the mapped fields)
+  {
+    name: 'invitesV1toV2Migration - with extra fields',
+    dbType: DatabaseType.INVITES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'invite_901',
+      _rev: '1-stu901',
+      project_id: 'project_xyz',
+      role: 'admin',
+      created_at: '2023-01-01T00:00:00Z',
+      created_by: 'user_123',
+      extra_field: 'should be removed',
+    } as unknown as PouchDB.Core.ExistingDocument<V1InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_901',
+      _rev: '1-stu901',
+      projectId: 'project_xyz',
+      role: Role.PROJECT_ADMIN,
+      // Other fields should not be present
+    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: (actual, expected) => {
+      // Custom equality function to check only the required fields
+      return (
+        actual._id === expected._id &&
+        actual._rev === expected._rev &&
+        actual.projectId === expected.projectId &&
+        actual.role === expected.role &&
+        Object.keys(actual).length === 4
+      ); // Only the 4 expected fields
+    },
   },
 ];
 

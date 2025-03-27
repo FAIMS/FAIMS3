@@ -1,4 +1,5 @@
 import {ResourceRole, Role} from '../permission';
+import {V1InviteDBFields, V2InviteDBFields} from './invitesDB';
 import {
   MigrationLog,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
@@ -55,6 +56,11 @@ export type MigrationFunc = (
   record: MigrationFuncRecordInput
 ) => MigrationFuncReturn;
 
+/**
+ * Takes a v1 person and maps the global and resource roles into new permission
+ * model
+ * @returns Updated doc
+ */
 const peopleV1toV2Migration: MigrationFunc = doc => {
   // Take input as v1 then output as v2
   const inputDoc = doc as unknown as UserV1Document;
@@ -110,8 +116,49 @@ const peopleV1toV2Migration: MigrationFunc = doc => {
 
   return {action: 'update', updatedRecord: outputDoc};
 };
-// TODO
-const invitesV1toV2Migration: MigrationFunc = doc => ({action: 'none'});
+
+/**
+ * Converts old invites into new ones based on mapping invites + renaming field
+ * @returns new invite doc
+ */
+const invitesV1toV2Migration: MigrationFunc = doc => {
+  // Cast input document to V1 type
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<V1InviteDBFields>;
+
+  // Map the old string roles to the new Role enum values
+  let newRole: Role | null = null;
+  const oldRole = inputDoc.role;
+
+  if (oldRole === 'admin') {
+    newRole = Role.PROJECT_ADMIN;
+  } else if (['moderator', 'team', 'user'].includes(oldRole)) {
+    newRole = Role.PROJECT_CONTRIBUTOR;
+  } else {
+    console.warn(
+      'The project role ' +
+        oldRole +
+        ' could not be mapped to a new role - ignoring...'
+    );
+  }
+
+  if (newRole === null) {
+    console.warn(
+      'The invite contained a role that is not understood. Deleting.'
+    );
+    return {action: 'delete'};
+  }
+
+  // Create the new V2 document structure
+  const outputDoc: PouchDB.Core.ExistingDocument<V2InviteDBFields> = {
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    projectId: inputDoc.project_id, // Rename field from project_id to projectId
+    role: newRole,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
 
 type MigrationDetails = {
   dbType: DATABASE_TYPE;
