@@ -27,6 +27,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
+import MapIcon from '@mui/icons-material/Map';
 import {
   Box,
   CircularProgress,
@@ -169,7 +170,7 @@ export default function MainAppBar() {
   if (OFFLINE_MAPS)
     bottomMenuItems.push({
       title: 'Offline Maps',
-      icon: <SettingsIcon />,
+      icon: <MapIcon />,
       to: ROUTES.OFFLINE_MAPS,
       disabled: false,
     });
