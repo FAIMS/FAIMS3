@@ -105,6 +105,7 @@ export default function Record() {
     revisionId: RevisionID;
     draftId?: string;
   }>();
+
   const [updatedRevisionId, setUpdatedRevisionId] = React.useState(revisionId);
 
   const dispatch = useAppDispatch();

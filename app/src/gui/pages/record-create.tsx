@@ -251,6 +251,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               draftLastSaved={draftLastSaved}
               mq_above_md={mq_above_md}
               navigate={navigate}
+              location={props.location}
               setProgress={setProgress}
               buttonRef={buttonRef}
             />
@@ -299,6 +300,7 @@ export default function RecordCreate() {
   if (recordId !== undefined) draft_record_id = recordId;
   if (location.state && location.state.child_record_id !== undefined)
     draft_record_id = location.state.child_record_id; //pass record_id from parent
+
 
   let showBreadcrumbs = false;
 

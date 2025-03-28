@@ -21,8 +21,8 @@
 import {
   FAIMSTypeName,
   generateFAIMSDataID,
+  getHRIDforRecordID,
   getPossibleRelatedRecords,
-  LocationState,
   RecordMetadata,
   RecordReference,
 } from '@faims3/data-model';
@@ -37,6 +37,7 @@ import {logError} from '../../logging';
 import {
   addRecordLink,
   getRelatedRecords,
+  LocationState,
   remove_link_from_list,
   removeRecordLink,
 } from '../components/record/relationships/RelatedInformation';
@@ -176,23 +177,27 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const url_split = search.split('&');
 
   const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
-
+  const [thisRecordHRID, setThisRecordHRID] = React.useState<string>(record_id);
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
   )
     search = search.replace(url_split[0] + '&' + url_split[1], '');
   if (search !== '') search = '&' + search;
-  const hrid =
-    props.current_form !== undefined
-      ? (props.form.values['hrid' + props.current_form] ??
-        props.form.values['_id'])
-      : props.form.values['_id'];
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (project_id !== undefined && mounted && props.isconflict !== true) {
+        const dataDb = localGetDataDb(project_id);
+        getHRIDforRecordID({
+          dataDb,
+          recordId: record_id!,
+          uiSpecification: uiSpec,
+        }).then(hrid => {
+          setThisRecordHRID(hrid);
+        });
+
         // need to enable the field for multiple=false since it defaults to disabled
         // enable if there is no existing value or if the existing value doesn't have
         // a record id (why would it not have a record ID?)
@@ -271,13 +276,10 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
 
   const newState: LocationState = {
     parent_record_id: props.form.values._id, //current form record id
-    parent_hrid: hrid,
+    parent_hrid: thisRecordHRID,
     field_id: props.field.name, // the field identifier
     type: type, //type of this relation
-    parent_link: location.pathname.replace(
-      ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE,
-      ''
-    ), // current form link
+    parent_link: location.pathname,
     parent: {},
     relation_type_vocabPair: relationshipPair, //pass the value of vocalPair
   };
@@ -308,8 +310,17 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     }
   };
 
+  /**
+   * save_new_record - called from the add new child record button
+   * it doesn't make or save a new record but rather generates
+   * the value of a related record field and stores it in the form,
+   * returning the generated record id.
+   *
+   * @returns void
+   */
   const save_new_record = () => {
     const new_record_id = generateFAIMSDataID();
+    console.log('%cnew record id: ', 'background-color: red', new_record_id);
     const new_child_record = {
       record_id: new_record_id,
       project_id: project_id,
