@@ -56,6 +56,8 @@ import {prettifyFieldName} from '../../../utils/formUtilities';
 import getLocalDate from '../../fields/LocalDate';
 import CircularLoading from '../ui/circular_loading';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
+import {useDataGridStyles} from '../../../utils/useDataGridStyles';
+import {useScreenSize} from '../../../utils/useScreenSize';
 
 // ============================================================================
 // Types & Interfaces
@@ -683,45 +685,6 @@ const KeyValueTable = ({data}: {data: {[key: string]: string | ReactNode}}) => {
   );
 };
 
-// ============================================================================
-// Custom Hooks
-// ============================================================================
-
-/**
- * Custom hook for responsive screen size management
- * Provides screen size category and pagination settings based on viewport size
- */
-const useScreenSize = () => {
-  const theme = useTheme();
-
-  const isXs = useMediaQuery(theme.breakpoints.only('xs'));
-  const isSm = useMediaQuery(theme.breakpoints.only('sm'));
-  const isMd = useMediaQuery(theme.breakpoints.only('md'));
-
-  const currentSize = useMemo((): SizeCategory => {
-    if (isXs) return 'xs';
-    if (isSm) return 'sm';
-    if (isMd) return 'md';
-    return 'lg';
-  }, [isXs, isSm, isMd]);
-
-  const pageSize = useMemo(() => {
-    const sizeMap: Record<SizeCategory, number> = {
-      xs: 10,
-      sm: 15,
-      md: 20,
-      lg: 25,
-    };
-
-    return (maxRows: number | null) =>
-      maxRows !== null
-        ? Math.min(maxRows, sizeMap[currentSize])
-        : sizeMap[currentSize];
-  }, [currentSize]);
-
-  return {currentSize, pageSize};
-};
-
 /**
  * Manages column definitions based on UI specifications and screen size
  */
@@ -782,111 +745,6 @@ const useTableRows = (
     };
   }, [rows, visibleTypes]);
 };
-
-/**
- * Data grid styling
- */
-const useDataGridStyles = (theme: Theme) => ({
-  root: {
-    border: 'none',
-  },
-  wrapper: {
-    borderRadius: '12px',
-    overflow: 'hidden',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-  },
-  grid: {
-    cursor: 'pointer',
-    // Header styling
-    '& .MuiDataGrid-columnHeaders': {
-      backgroundColor: theme.palette.grey[100],
-      borderBottom: `2px solid ${theme.palette.grey[200]}`,
-      minHeight: '60px !important',
-      '& .MuiDataGrid-columnHeader': {
-        padding: '16px 24px',
-        '&:focus': {
-          outline: 'none',
-        },
-        '&:focus-within': {
-          outline: 'none',
-        },
-      },
-      '& .MuiDataGrid-columnHeaderTitle': {
-        fontWeight: 600,
-        fontSize: '0.95rem',
-        color: theme.palette.text.primary,
-        letterSpacing: '0.01em',
-      },
-      '& .MuiDataGrid-columnSeparator': {
-        display: 'none',
-      },
-      '& .MuiDataGrid-sortIcon': {
-        color: theme.palette.text.secondary,
-        opacity: 1,
-      },
-    },
-    // Row and cell styling
-    '& .MuiDataGrid-row': {
-      minHeight: '80px !important',
-      '&:hover': {
-        backgroundColor: theme.palette.action.hover,
-        transition: 'background-color 0.2s ease',
-      },
-      '&.conflict-row': {
-        backgroundColor: theme.palette.warning.light,
-        '&:hover': {
-          backgroundColor: theme.palette.warning.light,
-          opacity: 0.95,
-        },
-      },
-    },
-    '& .MuiDataGrid-cell': {
-      padding: '16px 24px',
-      borderBottom: `1px solid ${theme.palette.divider}`,
-      '&:focus': {
-        outline: 'none',
-      },
-      '&:focus-within': {
-        outline: 'none',
-      },
-    },
-    // Footer styling
-    '& .MuiDataGrid-footerContainer': {
-      minHeight: '56px',
-      padding: '8px 16px',
-      borderTop: `1px solid ${theme.palette.divider}`,
-      backgroundColor: theme.palette.background.paper,
-    },
-    // Pagination styling
-    '& .MuiTablePagination-root': {
-      color: theme.palette.text.secondary,
-      '& .MuiTablePagination-select': {
-        marginRight: 2,
-      },
-      '& .MuiTablePagination-selectLabel': {
-        marginRight: 8,
-      },
-      '& .MuiTablePagination-displayedRows': {
-        marginLeft: 8,
-      },
-    },
-    // Typography within cells
-    '& .MuiTypography-root': {
-      lineHeight: 1.5,
-    },
-    // Responsive adjustments
-    [theme.breakpoints.down('sm')]: {
-      '& .MuiDataGrid-columnHeaders': {
-        '& .MuiDataGrid-columnHeader': {
-          padding: '12px 16px',
-        },
-      },
-      '& .MuiDataGrid-cell': {
-        padding: '12px 16px',
-      },
-    },
-  },
-});
 
 // ============================================================================
 // Main Component
