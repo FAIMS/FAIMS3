@@ -18,9 +18,9 @@
  */
 
 import {
-  PublicServerInfo,
   PostRefreshTokenInputSchema,
   PostRefreshTokenResponse,
+  PublicServerInfo,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import multer from 'multer';
@@ -30,6 +30,10 @@ import {
   CONDUCTOR_PUBLIC_URL,
   CONDUCTOR_SHORT_CODE_PREFIX,
   DEVELOPER_MODE,
+  EMAIL_CONFIG,
+  EMAIL_SERVICE,
+  EMAIL_SERVICE_TYPE,
+  TEST_EMAIL_ADDRESS,
 } from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
@@ -46,10 +50,10 @@ import {slugify} from '../utils';
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
 
-import patch from '../utils/patchExpressAsync';
 import {processRequest} from 'zod-express-middleware';
-import {validateRefreshToken} from '../couchdb/refreshTokens';
 import {generateUserToken} from '../authkeys/create';
+import {validateRefreshToken} from '../couchdb/refreshTokens';
+import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
 patch();
@@ -196,14 +200,6 @@ api.post(
     try {
       // Start timing the config validation
       const configStartTime = Date.now();
-
-      // Import from buildconfig
-      const {
-        EMAIL_SERVICE,
-        EMAIL_SERVICE_TYPE,
-        EMAIL_CONFIG,
-        TEST_EMAIL_ADDRESS,
-      } = require('../buildconfig');
 
       // End timing for config validation
       const configEndTime = Date.now();
