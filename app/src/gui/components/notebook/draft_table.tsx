@@ -20,7 +20,7 @@
 
 import {DraftMetadata, ProjectID, ProjectUIViewsets} from '@faims3/data-model';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
-import {Box, Grid, Link, Paper, Typography} from '@mui/material';
+import {Box, Grid, Link, Paper, Theme, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {
@@ -42,6 +42,8 @@ import {
 import {prettifyFieldName} from '../../../utils/formUtilities';
 import getLocalDate from '../../fields/LocalDate';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import {useDataGridStyles} from '../../../utils/useDataGridStyles';
+import {useScreenSize} from '../../../utils/useScreenSize';
 
 type DraftsRecordProps = {
   project_id: ProjectID;
@@ -78,8 +80,9 @@ export function DraftsTable(props: DraftsRecordProps) {
   const theme = useTheme();
   const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const styles = useDataGridStyles(theme);
+  const {currentSize, pageSize} = useScreenSize();
 
-  const mobileView: boolean = not_xs;
   const defaultMaxRowsMobile = 10;
 
   const uiSpecId = rows?.[0]?.ui_spec_id || project_id;
@@ -88,6 +91,13 @@ export function DraftsTable(props: DraftsRecordProps) {
     () => (uiSpec ? getVisibleTypes(uiSpec) : []),
     [uiSpec]
   );
+
+  const includeKind = visibleTypes.length > 1;
+  const viewsetId = visibleTypes.length === 1 ? visibleTypes[0] : '';
+  const summaryFields = useMemo(() => {
+    if (!uiSpec || visibleTypes.length !== 1) return [];
+    return getSummaryFieldInformation(uiSpec, visibleTypes[0]).fieldNames;
+  }, [uiSpec, visibleTypes]);
 
   // The entire row is clickable to the record
   const handleRowClick: GridEventListener<'rowClick'> = params => {
@@ -103,28 +113,56 @@ export function DraftsTable(props: DraftsRecordProps) {
     );
   };
 
-  function getRowType(params: GridCellParams) {
-    // The type (or Kind) is prettified and should be filterable as such.
-    return props.viewsets !== null &&
-      props.viewsets !== undefined &&
-      params.row.type !== null &&
-      params.row.type !== undefined &&
-      props.viewsets[(params.row.type || '').toString()] !== undefined
-      ? (props.viewsets[(params.row.type || '').toString()].label ??
-          params.row.type)
-      : params.row.type;
-  }
-  const summaryFields = useMemo(() => {
-    if (!uiSpec || visibleTypes.length !== 1) return [];
-    return getSummaryFieldInformation(uiSpec, visibleTypes[0]).fieldNames;
-  }, [uiSpec, visibleTypes]);
+  const columns: GridColDef[] = useMemo(() => {
+    if (!uiSpec) return [];
 
-  const getKindLabel = (type: string) =>
-    viewsets && type && viewsets[type]?.label ? viewsets[type].label : type;
+    if (currentSize === 'xs' || currentSize === 'sm') {
+      return [
+        {
+          field: 'summary',
+          headerName: 'Details',
+          type: 'string',
+          flex: 1,
+          renderCell: (params: GridCellParams) => {
+            const row = params.row || {};
+            const data = row.data || {};
+            const kv: Record<string, string> = {};
 
-  const columns: GridColDef[] = [
-    ...(summaryFields.length > 0
-      ? summaryFields.map(field => ({
+            if (includeKind) {
+              kv['Type'] = viewsets?.[row.type]?.label ?? row.type ?? '-';
+            }
+
+            (summaryFields.length > 0 ? summaryFields : ['hrid']).forEach(
+              field => {
+                const value = getDisplayDataFromDraft(field, data);
+                kv[prettifyFieldName(field)] = value || '-';
+              }
+            );
+
+            kv['Created'] = row.created
+              ? getLocalDate(row.created).replace('T', ' ')
+              : '-';
+            kv['Created By'] = row.created_by || '-';
+
+            return (
+              <Box>
+                {Object.entries(kv).map(([k, v]) => (
+                  <Typography key={k} variant="body2" fontSize="0.85rem">
+                    <strong>{k}:</strong> {v}
+                  </Typography>
+                ))}
+              </Box>
+            );
+          },
+        },
+      ];
+    }
+
+    const baseCols: GridColDef[] = [];
+
+    if (summaryFields.length > 0) {
+      summaryFields.forEach(field => {
+        baseCols.push({
           field,
           headerName: prettifyFieldName(field),
           type: 'string',
@@ -134,100 +172,183 @@ export function DraftsTable(props: DraftsRecordProps) {
               {getDisplayDataFromDraft(field, params.row.data || {}) || '-'}
             </Typography>
           ),
-        }))
-      : [
-          {
-            field: 'hrid',
-            headerName: 'HRID/UUID',
-            type: 'string',
-            flex: 1,
-            renderCell: (params: GridCellParams) => (
-              <Typography fontWeight="bold">{params.row.hrid}</Typography>
-            ),
-          },
-        ]),
-
-    {
-      field: 'created',
-      headerName: 'Created',
-      type: 'dateTime',
-      flex: 1,
-      renderCell: (params: GridCellParams) => (
-        <Typography>
-          {params.row.created
-            ? getLocalDate(params.row.created).replace('T', ' ')
-            : '-'}
-        </Typography>
-      ),
-    },
-    {
-      field: 'updated',
-      headerName: 'Last Updated',
-      type: 'dateTime',
-      flex: 1,
-      renderCell: (params: GridCellParams) => (
-        <Typography>
-          {params.row.updated
-            ? getLocalDate(params.row.updated).replace('T', ' ')
-            : '-'}
-        </Typography>
-      ),
-    },
-    {
-      field: 'created_by',
-      headerName: 'Created By',
-      type: 'string',
-      flex: 1,
-      renderCell: (params: GridCellParams) => (
-        <Typography>{params.row.created_by || '-'}</Typography>
-      ),
-    },
-    {
-      field: 'updated_by',
-      headerName: 'Last Updated By',
-      type: 'string',
-      flex: 1,
-      renderCell: (params: GridCellParams) => (
-        <Typography>{params.row.updated_by || '-'}</Typography>
-      ),
-    },
-    {
-      field: 'type',
-      headerName: 'Type',
-      flex: 1,
-      renderCell: (params: GridCellParams) => (
-        <Typography>{getKindLabel(params.row.type)}</Typography>
-      ),
-    },
-    {
-      field: 'conflicts',
-      headerName: 'Conflicts',
-      flex: 0.5,
-      renderCell: (params: GridCellParams) =>
-        params.row.conflicts ? (
-          <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
-        ) : (
-          '-'
+        });
+      });
+    } else {
+      baseCols.push({
+        field: 'hrid',
+        headerName: 'Field ID',
+        type: 'string',
+        flex: 1,
+        renderCell: (params: GridCellParams) => (
+          <Typography>{params.row.hrid}</Typography>
         ),
-    },
-    {
-      field: 'delete',
-      headerName: 'Actions',
-      type: 'actions',
-      flex: 0.3,
-      renderCell: (params: GridCellParams) => (
-        <RecordDelete
-          project_id={project_id}
-          serverId={serverId}
-          record_id={params.row.record_id}
-          revision_id={params.row.revision_id}
-          draft_id={params.row._id}
-          show_label={false}
-          handleRefresh={handleRefresh}
-        />
-      ),
-    },
-  ];
+      });
+    }
+
+    baseCols.push(
+      {
+        field: 'created',
+        headerName: 'Created',
+        type: 'dateTime',
+        flex: 1,
+        renderCell: (params: GridCellParams) => (
+          <Typography>
+            {params.row.created
+              ? getLocalDate(params.row.created).replace('T', ' ')
+              : '-'}
+          </Typography>
+        ),
+      },
+      {
+        field: 'created_by',
+        headerName: 'Created By',
+        type: 'string',
+        flex: 1,
+        renderCell: (params: GridCellParams) => (
+          <Typography>{params.row.created_by || '-'}</Typography>
+        ),
+      },
+      {
+        field: 'delete',
+        headerName: 'Actions',
+        type: 'actions',
+        flex: 0.3,
+        renderCell: (params: GridCellParams) => (
+          <RecordDelete
+            project_id={project_id}
+            serverId={serverId}
+            record_id={params.row.record_id}
+            revision_id={params.row.revision_id}
+            draft_id={params.row._id}
+            show_label={false}
+            handleRefresh={handleRefresh}
+          />
+        ),
+      }
+    );
+
+    return baseCols;
+  }, [summaryFields, uiSpec, viewsets, currentSize]);
+
+  // function getRowType(params: GridCellParams) {
+  //   // The type (or Kind) is prettified and should be filterable as such.
+  //   return props.viewsets !== null &&
+  //     props.viewsets !== undefined &&
+  //     params.row.type !== null &&
+  //     params.row.type !== undefined &&
+  //     props.viewsets[(params.row.type || '').toString()] !== undefined
+  //     ? (props.viewsets[(params.row.type || '').toString()].label ??
+  //         params.row.type)
+  //     : params.row.type;
+  // }
+
+  // const columns: GridColDef[] = [
+  //   ...(summaryFields.length > 0
+  //     ? summaryFields.map(field => ({
+  //         field,
+  //         headerName: prettifyFieldName(field),
+  //         type: 'string',
+  //         flex: 1,
+  //         renderCell: (params: GridCellParams) => (
+  //           <Typography>
+  //             {getDisplayDataFromDraft(field, params.row.data || {}) || '-'}
+  //           </Typography>
+  //         ),
+  //       }))
+  //     : [
+  //         {
+  //           field: 'hrid',
+  //           headerName: 'Field ID',
+  //           type: 'string',
+  //           flex: 1,
+  //           renderCell: (params: GridCellParams) => (
+  //             <Typography>{params.row.hrid}</Typography>
+  //           ),
+  //         },
+  //       ]),
+
+  //   {
+  //     field: 'created',
+  //     headerName: 'Created',
+  //     type: 'dateTime',
+  //     flex: 1,
+  //     renderCell: (params: GridCellParams) => (
+  //       <Typography>
+  //         {params.row.created
+  //           ? getLocalDate(params.row.created).replace('T', ' ')
+  //           : '-'}
+  //       </Typography>
+  //     ),
+  //   },
+  //   {
+  //     field: 'last_updated',
+  //     headerName: 'Last updated',
+  //     type: 'dateTime',
+  //     flex: 1,
+  //     renderCell: (params: GridCellParams) => (
+  //       <Typography>
+  //         {params.row.last_updated
+  //           ? getLocalDate(params.row.last_updated).replace('T', ' ')
+  //           : '-'}
+  //       </Typography>
+  //     ),
+  //   },
+  //   {
+  //     field: 'created_by',
+  //     headerName: 'Created By',
+  //     type: 'string',
+  //     flex: 1,
+  //     renderCell: (params: GridCellParams) => (
+  //       <Typography>{params.row.created_by || '-'}</Typography>
+  //     ),
+  //   },
+  //   {
+  //     field: 'updated_by',
+  //     headerName: 'Last updated By',
+  //     type: 'string',
+  //     flex: 1,
+  //     renderCell: (params: GridCellParams) => (
+  //       <Typography>{params.row.updated_by || '-'}</Typography>
+  //     ),
+  //   },
+  //   // {
+  //   //   field: 'type',
+  //   //   headerName: 'Type',
+  //   //   flex: 1,
+  //   //   renderCell: (params: GridCellParams) => (
+  //   //     <Typography>{getKindLabel(params.row.type)}</Typography>
+  //   //   ),
+  //   // },
+  //   // {
+  //   //   field: 'conflicts',
+  //   //   headerName: 'Conflicts',
+  //   //   flex: 0.5,
+  //   //   renderCell: (params: GridCellParams) =>
+  //   //     params.row.conflicts ? (
+  //   //       <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
+  //   //     ) : (
+  //   //       '-'
+  //   //     ),
+  //   // },
+  //   {
+  //     field: 'delete',
+  //     headerName: 'Actions',
+  //     type: 'actions',
+  //     flex: 0.3,
+  //     renderCell: (params: GridCellParams) => (
+  //       <RecordDelete
+  //         project_id={project_id}
+  //         serverId={serverId}
+  //         record_id={params.row.record_id}
+  //         revision_id={params.row.revision_id}
+  //         draft_id={params.row._id}
+  //         show_label={false}
+  //         handleRefresh={handleRefresh}
+  //       />
+  //     ),
+  //   },
+  // ];
   return (
     <React.Fragment>
       <Box component={Paper} elevation={0}>
@@ -238,25 +359,7 @@ export function DraftsTable(props: DraftsRecordProps) {
           getRowId={r => r._id}
           columns={columns}
           autoHeight
-          sx={{
-            cursor: 'pointer',
-            padding: '8px',
-            backgroundColor: theme.palette.background.tabsBackground,
-            borderRadius: '4px',
-            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
-            mb: 2,
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: theme.palette.background.default,
-              borderBottom: '1px solid #ccc',
-            },
-            '& .MuiDataGrid-columnSeparator': {
-              visibility: 'visible',
-              color: '#ccc',
-            },
-            '& .MuiDataGrid-cell': {
-              borderBottom: '1px solid #eee',
-            },
-          }}
+          sx={styles.grid}
           getRowHeight={() => 'auto'}
           disableRowSelectionOnClick
           onRowClick={handleRowClick}
@@ -268,7 +371,7 @@ export function DraftsTable(props: DraftsRecordProps) {
           }}
           initialState={{
             sorting: {
-              sortModel: [{field: 'updated', sort: 'desc'}],
+              sortModel: [{field: 'last_updated', sort: 'desc'}],
             },
             pagination: {
               paginationModel: {
