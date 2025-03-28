@@ -1,0 +1,243 @@
+{
+  "metadata": {
+    "notebook_version": "1.0",
+    "schema_version": "1.0",
+    "name": "Protection Test Template (Derived)",
+    "derived-from": "Protection-Test-Template",
+    "accesses": [
+      "admin",
+      "moderator",
+      "team"
+    ],
+    "filenames": [],
+    "ispublic": false,
+    "isrequest": false,
+    "lead_institution": "Macquarie University",
+    "showQRCodeButton": false,
+    "pre_description": "Use this template to test protection UI features in a template that **is** marked as being derived from another, meaning field protection modification is **disabled**.",
+    "project_lead": "Ryan Kontos",
+    "project_status": "New"
+  },
+  "ui-specification": {
+    "fields": {
+      "Field-with-No-Protection": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "TextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Field with No Protection",
+          "fullWidth": true,
+          "helperText": "Enter text",
+          "variant": "outlined",
+          "required": false,
+          "InputProps": {
+            "type": "text"
+          },
+          "name": "Field-with-No-Protection"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "Field-with-Hiding-Allowed-Protection": {
+        "component-namespace": "faims-custom",
+        "component-name": "RadioGroup",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Field with Hiding Allowed Protection",
+          "name": "Field-with-Hiding-Allowed-Protection",
+          "id": "radio-group-field",
+          "variant": "outlined",
+          "required": false,
+          "ElementProps": {
+            "options": [
+              {
+                "value": "1",
+                "label": "1",
+                "RadioProps": {
+                  "id": "radio-group-field-1"
+                }
+              }
+            ]
+          },
+          "helperText": "Make sure you choose the right one!",
+          "protection": "allow-hiding"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "Field-with-Full-Protection": {
+        "component-namespace": "mapping-plugin",
+        "component-name": "MapFormField",
+        "type-returned": "faims-core::JSON",
+        "component-parameters": {
+          "name": "Field-with-Full-Protection",
+          "id": "map-form-field",
+          "variant": "outlined",
+          "required": false,
+          "featureType": "Point",
+          "zoom": 12,
+          "label": "Field with Full Protection",
+          "geoTiff": "",
+          "protection": "protected"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "No-Protection-2": {
+        "component-namespace": "faims-custom",
+        "component-name": "Checkbox",
+        "type-returned": "faims-core::Bool",
+        "component-parameters": {
+          "label": "No Protection 2",
+          "name": "No-Protection-2",
+          "id": "checkbox-field",
+          "required": false,
+          "type": "checkbox",
+          "helperText": "Checkbox help."
+        },
+        "validationSchema": [
+          [
+            "yup.bool"
+          ]
+        ],
+        "initialValue": false,
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "Hiding-Allowed-2": {
+        "component-namespace": "faims-custom",
+        "component-name": "Checkbox",
+        "type-returned": "faims-core::Bool",
+        "component-parameters": {
+          "label": "Hiding Allowed 2",
+          "name": "Hiding-Allowed-2",
+          "id": "checkbox-field",
+          "required": false,
+          "type": "checkbox",
+          "helperText": "Checkbox help.",
+          "protection": "allow-hiding"
+        },
+        "validationSchema": [
+          [
+            "yup.bool"
+          ]
+        ],
+        "initialValue": false,
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "Full-Protection-2": {
+        "component-namespace": "faims-custom",
+        "component-name": "Checkbox",
+        "type-returned": "faims-core::Bool",
+        "component-parameters": {
+          "label": "Full Protection 2",
+          "name": "Full-Protection-2",
+          "id": "checkbox-field",
+          "required": false,
+          "type": "checkbox",
+          "helperText": "Checkbox help.",
+          "protection": "protected"
+        },
+        "validationSchema": [
+          [
+            "yup.bool"
+          ]
+        ],
+        "initialValue": false,
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      }
+    },
+    "fviews": {
+      "New-Form-New-Section": {
+        "label": "Protection Test (Derived)",
+        "fields": [
+          "Field-with-No-Protection",
+          "Field-with-Hiding-Allowed-Protection",
+          "Field-with-Full-Protection",
+          "No-Protection-2",
+          "Hiding-Allowed-2",
+          "Full-Protection-2"
+        ]
+      }
+    },
+    "viewsets": {
+      "New-Form": {
+        "label": "Protection Test",
+        "views": [
+          "New-Form-New-Section"
+        ]
+      }
+    },
+    "visible_types": [
+      "New-Form"
+    ]
+  }
+}
