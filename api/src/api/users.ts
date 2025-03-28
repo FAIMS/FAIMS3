@@ -52,9 +52,15 @@ api.post(
     body: PostUpdateUserInputSchema,
   }),
   async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to update user details.'
+      );
+    }
+
     // Cluster admins only
     if (!userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not authorised to update user details.'
       );
     }
@@ -66,6 +72,13 @@ api.post(
         'Username cannot be found in user database.'
       );
     }
+
+    if (req.params.id === req.user?.user_id) {
+      throw new Exceptions.ForbiddenException(
+        'You are not allowed to update your own roles.'
+      );
+    }
+
     if (req.body.addrole) {
       addOtherRoleToUser(user, req.body.role);
     } else {
@@ -111,13 +124,36 @@ api.get(
   '/',
   requireAuthenticationAPI,
   async (req: any, res: Response<Express.User[]>) => {
-    if (!req.user || !userIsClusterAdmin(req.user)) {
-      throw new Exceptions.UnauthorizedException(
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('You are not logged in.');
+    }
+
+    if (!userIsClusterAdmin(req.user)) {
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to get users.'
       );
     }
 
     return res.json(await getUsers());
+  }
+);
+
+// GET all roles
+api.get(
+  '/roles',
+  requireAuthenticationAPI,
+  async (req: any, res: Response<string[]>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('You are not logged in.');
+    }
+
+    if (!userIsClusterAdmin(req.user)) {
+      throw new Exceptions.ForbiddenException(
+        'You are not allowed to get roles.'
+      );
+    }
+
+    return res.json(['cluster-admin']);
   }
 );
 
@@ -130,7 +166,7 @@ api.delete(
   }),
   async ({params: {id}, user}, res) => {
     if (!userIsClusterAdmin(user))
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'Only cluster admins can remove users.'
       );
 
@@ -144,7 +180,7 @@ api.delete(
       );
 
     if (userIsClusterAdmin(userToRemove))
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to remove cluster admins.'
       );
 
