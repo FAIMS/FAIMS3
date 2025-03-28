@@ -48,7 +48,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "node-cache": "^5.1.2",
-    "nodemailer": "^6.9.9",
+    "nodemailer": "^6.10.0",
     "nyc": "^15.1.0",
     "oauth": "0.10.0",
     "passport": "^0.7.0",
