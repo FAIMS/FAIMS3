@@ -1,3 +1,5 @@
+import {ResourceRole} from '..';
+
 // Define the resources in the system
 export enum Resource {
   // Projects/surveys/notebooks in the system
@@ -8,6 +10,9 @@ export enum Resource {
 
   // Users in the system
   USER = 'USER',
+
+  // Teams in the system
+  TEAM = 'TEAM',
 
   // Other aspects of the system such as configuration
   SYSTEM = 'SYSTEM',
@@ -23,6 +28,7 @@ export enum Action {
 
   // Create a new project
   CREATE_PROJECT = 'CREATE_PROJECT',
+  CREATE_PROJECT_IN_MY_TEAM = 'CREATE_PROJECT_IN_MY_TEAM',
 
   // Read the high details of a project (e.g. description, title etc)
   READ_PROJECT_METADATA = 'READ_PROJECT_METADATA',
@@ -116,6 +122,28 @@ export enum Action {
   DELETE_TEMPLATE = 'DELETE_TEMPLATE',
 
   // ============================================================
+  // TEAM ACTIONS
+  // ============================================================
+
+  // CRUD (global)
+  CREATE_TEAM = 'CREATE_TEAM',
+
+  // CRUD (resource specific)
+  DELETE_TEAM = 'DELETE_TEAM',
+  UPDATE_TEAM_DETAILS = 'UPDATE_TEAM_DETAILS',
+  VIEW_TEAM_DETAILS = 'VIEW_TEAM_DETAILS',
+  VIEW_TEAM_MEMBERS = 'VIEW_TEAM_MEMBERS',
+
+  // Team invites (resource specific)
+  ADD_ADMIN_TO_TEAM = 'ADD_ADMIN_TO_TEAM',
+  ADD_MANAGER_TO_TEAM = 'ADD_MANAGER_TO_TEAM',
+  ADD_MEMBER_TO_TEAM = 'ADD_MEMBER_TO_TEAM',
+
+  REMOVE_ADMIN_FROM_TEAM = 'REMOVE_ADMIN_FROM_TEAM',
+  REMOVE_MANAGER_FROM_TEAM = 'REMOVE_MANAGER_FROM_TEAM',
+  REMOVE_MEMBER_FROM_TEAM = 'REMOVE_MEMBER_FROM_TEAM',
+
+  // ============================================================
   // USER ACTIONS
   // ============================================================
 
@@ -164,6 +192,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.CREATE_PROJECT]: {
     name: 'Create Project',
     description: 'Create a new project in the system',
+    resourceSpecific: false,
+    resource: Resource.PROJECT,
+  },
+  [Action.CREATE_PROJECT_IN_MY_TEAM]: {
+    name: 'Create Project (In my team)',
+    description: 'Create a new project in the system - in my team',
     resourceSpecific: false,
     resource: Resource.PROJECT,
   },
@@ -395,6 +429,82 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resource: Resource.PROJECT,
   },
 
+  // =====================================
+  // TEAMS
+  // =====================================
+
+  // Global actions
+  [Action.CREATE_TEAM]: {
+    name: 'Create Team',
+    description: 'Create a new team',
+    resourceSpecific: false,
+    resource: Resource.TEAM,
+  },
+
+  // Resource specific actions
+  [Action.DELETE_TEAM]: {
+    name: 'Delete Team',
+    description: 'Permanently remove a team from the system',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.UPDATE_TEAM_DETAILS]: {
+    name: 'Update Team Details',
+    description: 'Modify the details of a team (name, description, etc.)',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.VIEW_TEAM_DETAILS]: {
+    name: 'View Team Details',
+    description: 'View the details of a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.VIEW_TEAM_MEMBERS]: {
+    name: 'View Team Members',
+    description: 'View the list of members in a team and their roles',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+
+  [Action.ADD_ADMIN_TO_TEAM]: {
+    name: 'Add Admin to Team',
+    description: 'Grant a user administrator privileges for a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.ADD_MANAGER_TO_TEAM]: {
+    name: 'Add Manager to Team',
+    description: 'Grant a user manager privileges for a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.ADD_MEMBER_TO_TEAM]: {
+    name: 'Add Member to Team',
+    description: 'Add a user as a regular member to a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.REMOVE_ADMIN_FROM_TEAM]: {
+    name: 'Remove Admin from Team',
+    description:
+      'Revoke administrator privileges from a user for a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.REMOVE_MANAGER_FROM_TEAM]: {
+    name: 'Remove Manager from Team',
+    description: 'Revoke manager privileges from a user for a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.REMOVE_MEMBER_FROM_TEAM]: {
+    name: 'Remove Member from Team',
+    description: 'Remove a user from a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+
   // ============================================================
   // TEMPLATE ACTIONS
   // ============================================================
@@ -521,6 +631,12 @@ export enum Role {
   PROJECT_CONTRIBUTOR = 'PROJECT_CONTRIBUTOR',
   PROJECT_MANAGER = 'PROJECT_MANAGER',
   PROJECT_ADMIN = 'PROJECT_ADMIN',
+
+  // TEAM ROLES
+  // ================
+  TEAM_MEMBER = 'TEAM_MEMBER',
+  TEAM_MANAGER = 'TEAM_MANAGER',
+  TEAM_ADMIN = 'TEAM_ADMIN',
 }
 
 // Define role scope for clarity
@@ -589,6 +705,28 @@ export const roleDetails: Record<Role, RoleDetails> = {
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
+
+  // Team roles
+  [Role.TEAM_ADMIN]: {
+    name: 'Team Administrator',
+    description:
+      'Full control over a specific team, including deletion and admin user management',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEAM,
+  },
+  [Role.TEAM_MANAGER]: {
+    name: 'Team Manager',
+    description:
+      'Can manage team settings and member permissions within a team',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEAM,
+  },
+  [Role.TEAM_MEMBER]: {
+    name: 'Team Member',
+    description: 'Basic membership in a team with standard access privileges',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEAM,
+  },
 };
 
 // Maps resources into a list of role details + Role enum so you can ask the
@@ -617,7 +755,13 @@ export const resourceRoles: Record<Resource, (RoleDetails & {role: Role})[]> =
 // Map roles directly to the actions they grant
 export const roleActions: Record<
   Role,
-  {actions: Action[]; inheritedRoles?: Role[]}
+  {
+    actions: Action[];
+    inheritedRoles?: Role[];
+    virtualRoles?: (
+      resources: {resourceId: string; resourceType: Resource}[]
+    ) => ResourceRole[];
+  }
 > = {
   // PROJECT ROLES
   [Role.PROJECT_GUEST]: {
@@ -701,6 +845,87 @@ export const roleActions: Record<
       Action.VALIDATE_DBS,
     ],
     inheritedRoles: [Role.GENERAL_CREATOR, Role.PROJECT_ADMIN],
+  },
+
+  // TEAM ROLES
+  [Role.TEAM_MEMBER]: {
+    actions: [Action.VIEW_TEAM_DETAILS, Action.VIEW_TEAM_MEMBERS],
+    virtualRoles(resources) {
+      const outputResourceRoles = [];
+
+      // For each resource, if it's a PROJECT, grant PROJECT_CONTRIBUTOR role
+      for (const resource of resources) {
+        if (resource.resourceType === Resource.PROJECT) {
+          outputResourceRoles.push({
+            resourceId: resource.resourceId,
+            role: Role.PROJECT_CONTRIBUTOR,
+          });
+        }
+      }
+
+      return outputResourceRoles;
+    },
+  },
+
+  [Role.TEAM_MANAGER]: {
+    actions: [
+      // Other team based things
+      Action.UPDATE_TEAM_DETAILS,
+      Action.ADD_MEMBER_TO_TEAM,
+      Action.REMOVE_MEMBER_FROM_TEAM,
+      // Being a manager of a team also gives you the ability to create new key
+      // resources in that team
+      Action.CREATE_PROJECT_IN_MY_TEAM,
+      // And CRUD templates generally speaking
+      Action.CREATE_TEMPLATE,
+      Action.UPDATE_TEMPLATE_CONTENT,
+      Action.UPDATE_TEMPLATE_DETAILS,
+      Action.CHANGE_TEMPLATE_STATUS,
+      // TODO manage deletion of mine vs other's templates
+      Action.DELETE_TEMPLATE,
+    ],
+    inheritedRoles: [Role.TEAM_MEMBER, Role.GENERAL_CREATOR],
+    virtualRoles(resources) {
+      const outputResourceRoles = [];
+
+      // For each resource, if it's a PROJECT, grant PROJECT_MANAGER role
+      for (const resource of resources) {
+        if (resource.resourceType === Resource.PROJECT) {
+          outputResourceRoles.push({
+            resourceId: resource.resourceId,
+            role: Role.PROJECT_MANAGER,
+          });
+        }
+      }
+
+      return outputResourceRoles;
+    },
+  },
+
+  [Role.TEAM_ADMIN]: {
+    actions: [
+      Action.DELETE_TEAM,
+      Action.ADD_ADMIN_TO_TEAM,
+      Action.REMOVE_ADMIN_FROM_TEAM,
+      Action.ADD_MANAGER_TO_TEAM,
+      Action.REMOVE_MANAGER_FROM_TEAM,
+    ],
+    inheritedRoles: [Role.TEAM_MANAGER],
+    virtualRoles(resources) {
+      const outputResourceRoles = [];
+
+      // For each resource, if it's a PROJECT, grant PROJECT_ADMIN role
+      for (const resource of resources) {
+        if (resource.resourceType === Resource.PROJECT) {
+          outputResourceRoles.push({
+            resourceId: resource.resourceId,
+            role: Role.PROJECT_ADMIN,
+          });
+        }
+      }
+
+      return outputResourceRoles;
+    },
   },
 };
 

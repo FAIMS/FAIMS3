@@ -1,5 +1,12 @@
 import {resourceRolesEqual, roleGrantsAction} from './helpers';
-import {Action, actionDetails, Role} from './model';
+import {
+  Action,
+  actionDetails,
+  Resource,
+  Role,
+  roleActions,
+  roleDetails,
+} from './model';
 import {
   decodeAndValidateToken,
   DecodedTokenPermissions,
@@ -60,7 +67,18 @@ export function isAuthorized({
     // are irrelevant - just check global roles. If none provided, abort.
     if (!actionInfo.resourceSpecific) {
       // Check if any role grants this action in the global scope
-      return roleGrantsAction({roles: decodedToken.globalRoles, action});
+      if (roleGrantsAction({roles: decodedToken.globalRoles, action})) {
+        return true;
+      }
+
+      // Otherwise, resource specific roles can also grant global actions e.g.
+      // being a team manager lets you create projects
+      for (const resourceRole of decodedToken.resourceRoles) {
+        // If this role grants the action - proceed!
+        if (roleGrantsAction({roles: [resourceRole.role], action})) {
+          return true;
+        }
+      }
     }
 
     // So this is a resource specific action - this can be granted through
@@ -210,4 +228,130 @@ export function projectInviteToAction({
   }
 
   return actionNeeded;
+}
+
+/**
+ * Type definition for a resource identifier
+ */
+interface ResourceIdentifier {
+  resourceId: string;
+  resourceType: Resource;
+}
+
+/**
+ * Type definition for resource associations
+ */
+interface ResourceAssociation {
+  // The resource that has the association (e.g., a team)
+  resource: ResourceIdentifier;
+  // Resources associated with this resource (e.g., projects owned by the team)
+  associatedResources: ResourceIdentifier[];
+}
+
+/**
+ * Generates virtual resource roles for a user based on their existing roles and
+ * resource associations
+ */
+export function generateVirtualResourceRoles({
+  decodedToken,
+  resourceAssociations,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  resourceAssociations: ResourceAssociation[];
+}): ResourceRole[] {
+  // Set to track unique resource roles (avoid duplicates)
+  const virtualRolesSet = new Set<string>();
+  const virtualRoles: ResourceRole[] = [];
+
+  /**
+   * Helper function to process a role and generate virtual roles
+   */
+  function processRole({
+    role,
+    resourceId,
+    resourceType,
+  }: {
+    role: Role;
+    resourceId: string;
+    resourceType: Resource | undefined;
+  }): void {
+    const roleConfig = roleActions[role];
+
+    // Skip if role doesn't have virtual roles function
+    if (!roleConfig.virtualRoles) {
+      return;
+    }
+
+    // Find applicable resource associations
+    let applicableResources: ResourceIdentifier[] = [];
+
+    // Find matching associations
+    for (const association of resourceAssociations) {
+      if (
+        association.resource.resourceType === resourceType &&
+        association.resource.resourceId === resourceId
+      ) {
+        applicableResources = association.associatedResources;
+        break;
+      }
+    }
+
+    // Generate virtual roles for applicable resources
+    const generatedRoles = roleConfig.virtualRoles(applicableResources);
+
+    // Add unique virtual roles to the result
+    for (const vRole of generatedRoles) {
+      const roleKey = `${vRole.resourceId}:${vRole.role}`;
+      if (!virtualRolesSet.has(roleKey)) {
+        virtualRolesSet.add(roleKey);
+        virtualRoles.push(vRole);
+      }
+    }
+  }
+
+  // Currently global roles do not allow virtual roles - they already apply to
+  // everything
+
+  // Process resource-specific roles
+  for (const resourceRole of decodedToken.resourceRoles) {
+    const details = roleDetails[resourceRole.role];
+    if (!details.resource) {
+      // This role is not resource specific - how can you distribute non
+      // resource specific roles to a specific list of resources?
+      console.warn(
+        'Skipping virtual role distribution for a non resource specific role: ',
+        details.name,
+        details.description
+      );
+      continue;
+    }
+    processRole({
+      role: resourceRole.role,
+      resourceId: resourceRole.resourceId,
+      resourceType: details.resource,
+    });
+  }
+
+  return virtualRoles;
+}
+
+/**
+ * Extends a decoded token with virtual roles based on resource associations
+ */
+export function extendTokenWithVirtualRoles({
+  decodedToken,
+  resourceAssociations,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  resourceAssociations: ResourceAssociation[];
+}): DecodedTokenPermissions {
+  const virtualRoles = generateVirtualResourceRoles({
+    decodedToken,
+    resourceAssociations,
+  });
+
+  return {
+    ...decodedToken,
+    resourceRoles: [...decodedToken.resourceRoles, ...virtualRoles],
+  };
 }

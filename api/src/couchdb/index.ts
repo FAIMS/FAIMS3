@@ -28,7 +28,6 @@ import {
   couchInitialiser,
   DATABASE_TYPE,
   DatabaseType,
-  getDataDB,
   initAuthDB,
   initDataDB,
   initDirectoryDB,
@@ -633,7 +632,7 @@ export const initialiseAndMigrateDBs = async ({
   for (const project of projects) {
     // Project ID
     const projectId = project._id;
-    const dataDb = (await getDataDB(projectId)) as PouchDB.Database;
+    const dataDb = (await getDataDb(projectId)) as PouchDB.Database;
     const metadataDb = (await getMetadataDb(projectId)) as PouchDB.Database;
     dbs.concat([
       {
