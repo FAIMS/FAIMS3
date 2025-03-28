@@ -12,6 +12,23 @@ import {z} from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
 
+const SMTPConfigSchema = z.object({
+  /** Email service type (SMTP or MOCK) */
+  emailServiceType: z.enum(['SMTP']),
+  /** From email address */
+  fromEmail: z.string().email(),
+  /** From name */
+  fromName: z.string(),
+  /** Reply-to email address (optional) */
+  replyTo: z.string().email().optional(),
+  /** Test email address for admin verification */
+  testEmailAddress: z.string().email(),
+  /** Cache expiry in seconds (optional) */
+  cacheExpirySeconds: z.number().int().positive().optional(),
+  /** ARN of the secret containing SMTP credentials */
+  credentialsSecretArn: z.string(),
+});
+
 const MonitoringConfigSchema = z.object({
   cpu: z
     .object({
@@ -241,6 +258,8 @@ export const ConfigSchema = z.object({
   }),
   /** The new-conductor / web config */
   web: WebConfigSchema,
+  /** Email service configuration */
+  smtp: SMTPConfigSchema,
 });
 
 // Infer the types from the schemas
@@ -250,6 +269,7 @@ export type BackupConfig = z.infer<typeof BackupConfigSchema>;
 export type MonitoringConfig = z.infer<typeof MonitoringConfigSchema>;
 export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
+export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
 
 export const loadConfig = (filePath: string): Config => {
   // Parse and validate the config
@@ -394,6 +414,16 @@ export class FaimsInfraStack extends cdk.Stack {
       config: config.conductor,
       cookieSecret: cookieSecret,
       webUrl: `https://${domains.web}`,
+      // Add SMTP configuration
+      smtpCredsArn: config.smtp.credentialsSecretArn,
+      smtpConfig: {
+        emailServiceType: config.smtp.emailServiceType,
+        fromEmail: config.smtp.fromEmail,
+        fromName: config.smtp.fromName,
+        replyTo: config.smtp.replyTo,
+        testEmailAddress: config.smtp.testEmailAddress,
+        cacheExpirySeconds: config.smtp.cacheExpirySeconds,
+      },
     });
 
     // FRONT-END

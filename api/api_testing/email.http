@@ -1,0 +1,9 @@
+@emailBaseUrl = {{$dotenv BASE_URL}}/api/admin
+@token = {{$dotenv API_TOKEN}}
+
+### Test Email Service
+# This endpoint sends a test email to verify email service configuration
+# Requires admin authentication
+
+POST {{emailBaseUrl}}/test-email
+Authorization: Bearer {{token}}

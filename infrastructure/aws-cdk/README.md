@@ -609,3 +609,68 @@ graph TD
     Q --> R[Point load balancer to main instance]
     R --> N
 ```
+
+# Email Configuration
+
+## Configuration
+
+### SMTP Configuration
+
+To configure the email service, add an `smtp` section to your configuration file with the following fields:
+
+```json
+"smtp": {
+  "emailServiceType": "SMTP",
+  "fromEmail": "notifications@your-domain.com",
+  "fromName": "FAIMS Notification Service",
+  "replyTo": "support@your-domain.com",
+  "testEmailAddress": "admin@your-domain.com",
+  "cacheExpirySeconds": 300,
+  "credentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
+}
+```
+
+Parameters:
+
+- `emailServiceType`: The email service implementation to use (SMTP or MOCK)
+- `fromEmail`: The email address to use as the sender
+- `fromName`: The display name to use for the sender
+- `replyTo`: (Optional) The reply-to email address
+- `testEmailAddress`: Email address for admin verification tests
+- `cacheExpirySeconds`: (Optional) Duration to cache SMTP connections in seconds
+- `credentialsSecretArn`: ARN of the secret containing SMTP credentials
+
+### SMTP Credentials Secret
+
+The SMTP credentials must be stored in AWS Secrets Manager with the following structure:
+
+```json
+{
+  "host": "smtp.example.com",
+  "port": "587",
+  "secure": "true",
+  "user": "smtp_username",
+  "pass": "smtp_password"
+}
+```
+
+The script `scripts/genSMTPAWS.sh` provides a guided interface to generating this secret with the right structure in your AWS account.
+
+- ensure you have an active AWS session with the right creds for the target account
+- run `./scripts/genSMTPAWS.sh` and follow the prompts
+- add the resulting config to your config JSON
+
+## Testing Email Functionality
+
+Once deployed, administrators can test the email service by making a POST request to the test endpoint:
+
+```bash
+curl -X POST https://your-conductor-endpoint.com/api/admin/test-email \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"
+```
+
+This will:
+
+1. Send a test email to the configured test address
+2. Return detailed diagnostics about the process
+3. Help identify any configuration issues
