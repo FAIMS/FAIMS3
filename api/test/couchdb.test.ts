@@ -30,7 +30,7 @@ import {
 import {
   createNotebook,
   getNotebookMetadata,
-  getNotebooks,
+  getUserProjectsDetailed,
   getEncodedNotebookUISpec,
   getRolesForNotebook,
   updateNotebook,
@@ -38,15 +38,21 @@ import {
 } from '../src/couchdb/notebooks';
 import * as fs from 'fs';
 import {
-  addProjectRoleToUser,
   createUser,
   getUserFromEmailOrUsername,
-  removeProjectRoleFromUser,
   saveUser,
-  userHasPermission,
 } from '../src/couchdb/users';
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
-import {EncodedProjectUIModel} from '@faims3/data-model';
+import {
+  Action,
+  addResourceRole,
+  EncodedProjectUIModel,
+  removeResourceRole,
+  resourceRoles,
+  Role,
+  userCanDo,
+  userHasResourceRole,
+} from '@faims3/data-model';
 import {expect} from 'chai';
 import {resetDatabases} from './mocks';
 import {fail} from 'assert';
@@ -67,7 +73,7 @@ describe('notebook api', () => {
     await resetDatabases();
     const adminUser = await getUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const [user, error] = await createUser('', username);
+      const [user, error] = await createUser({username, name: username});
       if (user) {
         await saveUser(user);
         bobalooba = user;
@@ -104,17 +110,84 @@ describe('notebook api', () => {
 
     if (nb1 && nb2) {
       // give user access to two of them
-      addProjectRoleToUser(bobalooba, nb1, 'user');
-      expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(true);
-      addProjectRoleToUser(bobalooba, nb2, 'admin');
-      expect(userHasPermission(bobalooba, nb2, 'modify')).to.equal(true);
-      // and this should still be true
-      expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(true);
+      addResourceRole({
+        user: bobalooba,
+        resourceId: nb1,
+        role: Role.PROJECT_GUEST,
+      });
+      expect(
+        userHasResourceRole({
+          user: bobalooba,
+          resourceId: nb1,
+          resourceRole: Role.PROJECT_GUEST,
+        })
+      ).to.equal(true);
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb1,
+          action: Action.READ_MY_PROJECT_RECORDS,
+        })
+      ).to.equal(true);
 
-      removeProjectRoleFromUser(bobalooba, nb1, 'user');
-      expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(false);
+      addResourceRole({
+        user: bobalooba,
+        resourceId: nb2,
+        role: Role.PROJECT_ADMIN,
+      });
+      expect(
+        userHasResourceRole({
+          user: bobalooba,
+          resourceId: nb2,
+          resourceRole: Role.PROJECT_ADMIN,
+        })
+      ).to.equal(true);
+
+      // And inheritance
+      expect(
+        userHasResourceRole({
+          user: bobalooba,
+          resourceId: nb2,
+          resourceRole: Role.PROJECT_MANAGER,
+        })
+      ).to.equal(true);
+      expect(
+        userHasResourceRole({
+          user: bobalooba,
+          resourceId: nb2,
+          resourceRole: Role.PROJECT_GUEST,
+        })
+      ).to.equal(true);
+
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb2,
+          action: Action.DELETE_PROJECT,
+        })
+      ).to.equal(true);
+
+      removeResourceRole({
+        user: bobalooba,
+        resourceId: nb1,
+        role: Role.PROJECT_GUEST,
+      });
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb1,
+          action: Action.READ_MY_PROJECT_RECORDS,
+        })
+      ).to.equal(false);
+
       // but still...
-      expect(userHasPermission(bobalooba, nb2, 'modify')).to.equal(true);
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb2,
+          action: Action.DELETE_PROJECT,
+        })
+      ).to.equal(true);
     }
   });
 
@@ -127,11 +200,19 @@ describe('notebook api', () => {
 
     if (nb1 && nb2 && nb3 && nb4) {
       // give user access to two of them
-      addProjectRoleToUser(bobalooba, nb1, 'user');
-      addProjectRoleToUser(bobalooba, nb2, 'user');
+      addResourceRole({
+        user: bobalooba,
+        resourceId: nb1,
+        role: Role.PROJECT_GUEST,
+      });
+      addResourceRole({
+        user: bobalooba,
+        resourceId: nb2,
+        role: Role.PROJECT_GUEST,
+      });
       await saveUser(bobalooba);
 
-      const notebooks = await getNotebooks(bobalooba);
+      const notebooks = await getUserProjectsDetailed(bobalooba);
       expect(notebooks.length).to.equal(2);
     } else {
       throw new Error('could not make test notebooks');
@@ -160,7 +241,7 @@ describe('notebook api', () => {
     if (projectID && user) {
       expect(projectID.substring(13)).to.equal('-test-notebook');
 
-      const notebooks = await getNotebooks(user);
+      const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
       const db = await getMetadataDb(projectID);
       if (db) {
@@ -253,12 +334,8 @@ describe('notebook api', () => {
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const roles = await getRolesForNotebook(projectID);
-      expect(roles.length).to.equal(4);
-      expect(roles).to.include('admin'); // admin role should always be present
-      expect(roles).to.include('team'); // specified in the UISpec
-      expect(roles).to.include('moderator'); // specified in the UISpec
-      expect(roles).to.include('user'); // user role should always be present
+      const roles = getRolesForNotebook();
+      expect(roles.length).to.equal(resourceRoles.PROJECT.length);
     }
   });
 
@@ -305,7 +382,6 @@ describe('notebook api', () => {
         },
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: null,
-        access: ['admin'],
         meta: {
           annotation_label: 'annotation',
           annotation: true,
@@ -326,7 +402,7 @@ describe('notebook api', () => {
 
       expect(projectID.substring(13)).to.equal('-test-notebook');
 
-      const notebooks = await getNotebooks(user);
+      const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
       const newUISpec = await getEncodedNotebookUISpec(projectID);
       if (newUISpec) {

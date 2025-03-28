@@ -19,8 +19,8 @@
  */
 
 import {DraftMetadata, ProjectID, ProjectUIViewsets} from '@faims3/data-model';
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
-import {Box, Grid, Link, Paper, Typography} from '@mui/material';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import {Box, Paper, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {
@@ -32,8 +32,6 @@ import {
 import React, {useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
-import RecordDelete from './delete';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {
   getSummaryFieldInformation,
@@ -41,7 +39,8 @@ import {
 } from '../../../uiSpecification';
 import {prettifyFieldName} from '../../../utils/formUtilities';
 import getLocalDate from '../../fields/LocalDate';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
+import RecordDelete from './delete';
 
 type DraftsRecordProps = {
   project_id: ProjectID;
@@ -79,7 +78,6 @@ export function DraftsTable(props: DraftsRecordProps) {
   const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
-  const mobileView: boolean = not_xs;
   const defaultMaxRowsMobile = 10;
 
   const uiSpecId = rows?.[0]?.ui_spec_id || project_id;
@@ -103,17 +101,6 @@ export function DraftsTable(props: DraftsRecordProps) {
     );
   };
 
-  function getRowType(params: GridCellParams) {
-    // The type (or Kind) is prettified and should be filterable as such.
-    return props.viewsets !== null &&
-      props.viewsets !== undefined &&
-      params.row.type !== null &&
-      params.row.type !== undefined &&
-      props.viewsets[(params.row.type || '').toString()] !== undefined
-      ? (props.viewsets[(params.row.type || '').toString()].label ??
-          params.row.type)
-      : params.row.type;
-  }
   const summaryFields = useMemo(() => {
     if (!uiSpec || visibleTypes.length !== 1) return [];
     return getSummaryFieldInformation(uiSpec, visibleTypes[0]).fieldNames;

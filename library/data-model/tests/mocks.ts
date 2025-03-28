@@ -27,7 +27,6 @@ const mockGetDataDB = async (project_id: ProjectID) => {
   const db = getDatabase(databaseName);
   const config = initDataDB({
     projectId: project_id,
-    roles: ['admin', 'user', 'team'],
   });
   await couchInitialiser({
     db,

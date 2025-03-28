@@ -198,7 +198,7 @@ describe('Pages', () => {
       .get(`/notebooks/${project_id}/users`)
       .expect(200)
       .then(response => {
-        expect(response.text).to.include('admin');
+        expect(response.text).to.include('PROJECT_ADMIN');
       });
   });
 
@@ -274,6 +274,8 @@ describe('Pages', () => {
       .send({username: localUserName, password: localUserPassword})
       .expect(302);
 
-    await agent.get('/templates').expect(401);
+    // Who should be able to view templates? This should be the same as API which allows viewing
+    // await agent.get('/templates').expect(401);
+    await agent.get('/templates').expect(200);
   });
 });

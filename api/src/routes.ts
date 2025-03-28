@@ -18,10 +18,20 @@
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data
  */
-import {NonUniqueProjectID} from '@faims3/data-model';
-import {body, validationResult} from 'express-validator';
+import {
+  Action,
+  projectInviteToAction,
+  Resource,
+  Role,
+  roleDetails,
+  RoleScope,
+  userCanDo,
+  userHasGlobalRole,
+  userHasResourceRole,
+} from '@faims3/data-model';
 import QRCode from 'qrcode';
-import {app} from './core';
+import {z} from 'zod';
+import {processRequest} from 'zod-express-middleware';
 import {add_auth_providers} from './auth_providers';
 import {add_auth_routes} from './auth_routes';
 import {generateUserToken} from './authkeys/create';
@@ -35,33 +45,28 @@ import {
   IOS_APP_URL,
   WEBAPP_PUBLIC_URL,
 } from './buildconfig';
-import {createInvite, getInvitesForNotebook} from './couchdb/invites';
-import {
-  countRecordsInNotebook,
-  getNotebookMetadata,
-  getEncodedNotebookUISpec,
-  getNotebooks,
-  getRolesForNotebook,
-} from './couchdb/notebooks';
-import {getTemplate, getTemplates} from './couchdb/templates';
-import {
-  getUserInfoForNotebook,
-  getUsers,
-  userCanCreateNotebooks,
-  userHasPermission,
-  userIsClusterAdmin,
-} from './couchdb/users';
-import {
-  requireAuthentication,
-  requireClusterAdmin,
-  requireNotebookMembership,
-} from './middleware';
-import {validateProjectDatabase} from './couchdb/devtools';
+import {app} from './core';
 import {
   databaseValidityReport,
   initialiseDbAndKeys,
   verifyCouchDBConnection,
 } from './couchdb';
+import {validateProjectDatabase} from './couchdb/devtools';
+import {createInvite, getInvitesForNotebook} from './couchdb/invites';
+import {
+  countRecordsInNotebook,
+  getEncodedNotebookUISpec,
+  getNotebookMetadata,
+  getRolesForNotebook,
+  getUserProjectsDetailed,
+} from './couchdb/notebooks';
+import {getTemplate, getTemplates} from './couchdb/templates';
+import {getUsers, getUsersForResource} from './couchdb/users';
+import {
+  isAllowedToMiddleware,
+  requireAuthentication,
+  requireNotebookMembership,
+} from './middleware';
 
 export {app};
 
@@ -82,8 +87,14 @@ app.get('/', async (req, res) => {
       res.render('home', {
         user: req.user,
         token: token.token,
-        cluster_admin: userIsClusterAdmin(req.user),
-        can_create_notebooks: userCanCreateNotebooks(req.user),
+        cluster_admin: userHasGlobalRole({
+          role: Role.GENERAL_ADMIN,
+          user: req.user,
+        }),
+        can_create_notebooks: userCanDo({
+          action: Action.CREATE_PROJECT,
+          user: req.user,
+        }),
         provider: provider,
         developer: DEVELOPER_MODE,
         ANDROID_APP_URL: ANDROID_APP_URL,
@@ -120,76 +131,103 @@ app.post('/fallback-initialise', async (req, res) => {
   res.redirect('/');
 });
 
-app.get('/notebooks/:id/invite/', requireAuthentication, async (req, res) => {
-  if (await userHasPermission(req.user, req.params.id, 'modify')) {
+// TODO add action for invite specifically
+app.get(
+  '/notebooks/:id/invite/',
+  requireAuthentication,
+  isAllowedToMiddleware({
+    action: Action.READ_PROJECT_METADATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  async (req, res) => {
     const notebook = await getNotebookMetadata(req.params.id);
     if (notebook) {
       res.render('invite', {
         notebook: notebook,
-        roles: await getRolesForNotebook(req.params.id),
+        roles: getRolesForNotebook().map(r => r.role),
       });
     } else {
       res.status(404).end();
     }
-  } else {
-    res.status(401).end();
   }
-});
+);
 
 app.post(
-  '/notebooks/:id/invite/',
+  '/notebooks/:projectId/invite/',
   requireAuthentication,
-  body('role').not().isEmpty(),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.render('invite-error', {errors: errors.array()});
-    }
-    const project_id: NonUniqueProjectID = req.params.id;
-    const role: string = req.body.role;
-
-    if (!userHasPermission(req.user, project_id, 'modify')) {
+  // Ensure that the invite is for a valid role and that it relates to a project
+  // resource specifically
+  processRequest({
+    params: z.object({projectId: z.string()}),
+    body: z.object({
+      role: z
+        .nativeEnum(Role)
+        .refine(v => roleDetails[v].resource === Resource.PROJECT),
+    }),
+  }),
+  async ({params: {projectId}, body: {role}, user}, res) => {
+    // Determine if the user can do this action
+    const requiredAction = projectInviteToAction({role, action: 'create'});
+    if (
+      !user ||
+      !userCanDo({action: requiredAction, user, resourceId: projectId})
+    ) {
       res.render('invite-error', {
         errors: [
           {
-            msg: `You do not have permission to invite users to project ${project_id}`,
+            msg: `You do not have permission to invite users at this role level to this project ${projectId}`,
             location: 'header',
             param: 'user',
           },
         ],
       });
+      return;
+    }
+    await createInvite(projectId, role);
+    res.redirect('/notebooks/' + projectId);
+  }
+);
+
+app.get(
+  '/notebooks/',
+  requireAuthentication,
+  isAllowedToMiddleware({action: Action.LIST_PROJECTS}),
+  async (req, res) => {
+    const user = req.user;
+    if (user) {
+      const notebooks = await getUserProjectsDetailed(user);
+      const ownNotebooks = notebooks.filter(nb => nb.is_admin);
+      const otherNotebooks = notebooks.filter(nb => !nb.is_admin);
+
+      res.render('notebooks', {
+        user: user,
+        ownNotebooks: ownNotebooks,
+        otherNotebooks: otherNotebooks,
+        cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
+        can_create_notebooks: userHasGlobalRole({
+          role: Role.GENERAL_CREATOR,
+          user,
+        }),
+        developer: DEVELOPER_MODE,
+        DESIGNER_URL: DESIGNER_URL,
+      });
     } else {
-      await createInvite(project_id, role);
-      res.redirect('/notebooks/' + project_id);
+      res.status(401).end();
     }
   }
 );
 
-app.get('/notebooks/', requireAuthentication, async (req, res) => {
-  const user = req.user;
-  if (user) {
-    const notebooks = await getNotebooks(user);
-
-    const ownNotebooks = notebooks.filter(nb => nb.is_admin);
-    const otherNotebooks = notebooks.filter(nb => !nb.is_admin);
-
-    res.render('notebooks', {
-      user: user,
-      ownNotebooks: ownNotebooks,
-      otherNotebooks: otherNotebooks,
-      cluster_admin: userIsClusterAdmin(user),
-      can_create_notebooks: userCanCreateNotebooks(user),
-      developer: DEVELOPER_MODE,
-      DESIGNER_URL: DESIGNER_URL,
-    });
-  } else {
-    res.status(401).end();
-  }
-});
-
 app.get(
   '/notebooks/:notebook_id/',
-  requireNotebookMembership,
+  requireAuthentication,
+  isAllowedToMiddleware({
+    action: Action.READ_PROJECT_METADATA,
+    getResourceId(req) {
+      return req.params.notebook_id;
+    },
+  }),
   async (req, res) => {
     const user = req.user as Express.User; // requireAuthentication ensures user
     const project_id = req.params.notebook_id;
@@ -197,7 +235,11 @@ app.get(
     const uiSpec = await getEncodedNotebookUISpec(project_id);
     const invitesQR: any[] = [];
     if (notebook && uiSpec) {
-      const isAdmin = userHasPermission(user, project_id, 'modify');
+      const isAdmin = userHasResourceRole({
+        user,
+        resourceId: project_id,
+        resourceRole: Role.PROJECT_ADMIN,
+      });
       if (isAdmin) {
         const invites = await getInvitesForNotebook(project_id);
         for (let index = 0; index < invites.length; index++) {
@@ -212,8 +254,11 @@ app.get(
       }
       res.render('notebook-landing', {
         isAdmin: isAdmin,
-        cluster_admin: userIsClusterAdmin(user),
-        can_create_notebooks: userCanCreateNotebooks(req.user),
+        cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
+        can_create_notebooks: userHasGlobalRole({
+          role: Role.GENERAL_CREATOR,
+          user,
+        }),
         notebook: notebook,
         records: await countRecordsInNotebook(project_id),
         invites: invitesQR,
@@ -229,37 +274,42 @@ app.get(
   }
 );
 
-app.get('/templates/', requireAuthentication, async (req, res) => {
-  const user = req.user;
-  if (userCanCreateNotebooks(user)) {
+app.get(
+  '/templates/',
+  requireAuthentication,
+  isAllowedToMiddleware({action: Action.VIEW_TEMPLATES}),
+  async (req, res) => {
+    const user = req.user!;
     const templates = await getTemplates();
     res.render('templates', {
       user: user,
       templates: templates,
-      cluster_admin: userIsClusterAdmin(user),
-      can_create_notebooks: userCanCreateNotebooks(req.user),
+      cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
+      can_create_notebooks: userHasGlobalRole({
+        role: Role.GENERAL_CREATOR,
+        user,
+      }),
       developer: DEVELOPER_MODE,
     });
-  } else {
-    res.status(401).end();
   }
-});
+);
 
 app.get(
   '/templates/:template_id/',
   requireNotebookMembership,
+  isAllowedToMiddleware({action: Action.CREATE_TEMPLATE}),
   async (req, res) => {
-    const user = req.user as Express.User; // requireAuthentication ensures user
-    if (!userCanCreateNotebooks(user)) {
-      res.status(401).end();
-    }
+    const user = req.user!;
     const template_id = req.params.template_id;
     const template = await getTemplate(template_id);
     if (template) {
       res.render('template-landing', {
         user: user,
-        cluster_admin: userIsClusterAdmin(user),
-        can_create_notebooks: userCanCreateNotebooks(user),
+        cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
+        can_create_notebooks: userHasGlobalRole({
+          role: Role.GENERAL_CREATOR,
+          user,
+        }),
         template: template,
         developer: DEVELOPER_MODE,
       });
@@ -302,72 +352,113 @@ app.get('/get-token/', async (req, res) => {
   return;
 });
 
-app.get('/notebooks/:id/users', requireClusterAdmin, async (req, res) => {
-  if (req.user) {
-    const project_id = req.params.id;
-
-    const notebook = await getNotebookMetadata(project_id);
-
-    const userList = await getUserInfoForNotebook(project_id);
+app.get(
+  '/notebooks/:id/users',
+  requireAuthentication,
+  isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
+  processRequest({params: z.object({id: z.string().nonempty()})}),
+  async (req, res) => {
+    const projectId = req.params.id;
+    const user = req.user!;
+    const notebook = await getNotebookMetadata(projectId);
+    const relevantRoles = getRolesForNotebook().map(r => r.role);
+    const userList = (await getUsersForResource({resourceId: projectId})).map(
+      user => {
+        const roles: {name: Role; value: boolean}[] = [];
+        for (const r of relevantRoles) {
+          roles.push({
+            value: userHasResourceRole({
+              resourceRole: r,
+              user,
+              resourceId: projectId,
+              drill: false,
+            }),
+            name: r,
+          });
+        }
+        return {...user, roles};
+      }
+    );
 
     res.render('users', {
-      roles: userList.roles,
-      users: userList.users,
+      roles: relevantRoles,
+      users: userList,
       notebook: notebook,
-      cluster_admin: userIsClusterAdmin(req.user),
-      can_create_notebooks: userCanCreateNotebooks(req.user),
+      cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
+      can_create_notebooks: userHasGlobalRole({
+        role: Role.GENERAL_CREATOR,
+        user,
+      }),
       developer: DEVELOPER_MODE,
     });
-  } else {
-    res.status(401).end();
   }
-});
+);
 
-app.get('/users', requireClusterAdmin, async (req, res) => {
-  if (req.user) {
-    const id = req.user._id;
+app.get(
+  '/users',
+  requireAuthentication,
+  isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
+  async (req, res) => {
     const userList = await getUsers();
+    const user = req.user!;
+    const id = user._id;
+    const globalRoles = Object.entries(roleDetails)
+      .filter(([, v]) => v.scope === RoleScope.GLOBAL)
+      .map(([k]) => k as Role);
 
     const userListFiltered = userList
       .filter(user => user._id !== id)
       .map(user => {
+        const roles: Partial<Record<Role, boolean>> = {};
+        for (const r of globalRoles) {
+          roles[r] = userHasGlobalRole({role: r, user});
+        }
         return {
           username: user._id,
           name: user.name,
-          can_create_notebooks: userCanCreateNotebooks(user),
-          is_cluster_admin: userIsClusterAdmin(user),
+          ...roles,
         };
       });
 
     res.render('cluster-users', {
-      cluster_admin: userIsClusterAdmin(req.user),
-      can_create_notebooks: userCanCreateNotebooks(req.user),
       users: userListFiltered,
+      roles: globalRoles,
+      cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
+      can_create_notebooks: userHasGlobalRole({
+        role: Role.GENERAL_CREATOR,
+        user,
+      }),
     });
-  } else {
-    res.status(401).end();
   }
-});
+);
 
 if (DEVELOPER_MODE) {
-  app.get('/restore/', requireClusterAdmin, async (req, res) => {
-    if (req.user) {
+  app.get(
+    '/restore/',
+    requireAuthentication,
+    isAllowedToMiddleware({action: Action.RESTORE_FROM_BACKUP}),
+    async (req, res) => {
+      const user = req.user!;
       res.render('restore', {
-        cluster_admin: userIsClusterAdmin(req.user),
-        can_create_notebooks: userCanCreateNotebooks(req.user),
+        cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
+        can_create_notebooks: userHasGlobalRole({
+          role: Role.GENERAL_CREATOR,
+          user,
+        }),
         developer: DEVELOPER_MODE,
       });
-    } else {
-      res.status(401).end();
     }
-  });
+  );
 
-  app.get('/notebooks/:id/validate', requireClusterAdmin, async (req, res) => {
-    if (req.user) {
+  app.get(
+    '/notebooks/:id/validate',
+    requireAuthentication,
+    isAllowedToMiddleware({action: Action.VALIDATE_DBS}),
+    async (req, res) => {
       const result = await validateProjectDatabase(req.params.id);
       res.json(result);
     }
-  });
+  );
 }
 
 app.get('/up/', (req, res) => {

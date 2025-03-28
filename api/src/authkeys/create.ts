@@ -19,24 +19,36 @@
  *   which server to use and whether to include test data
  */
 
+import {couchUserToTokenPermissions, TokenPayload} from '@faims3/data-model';
 import {SignJWT} from 'jose';
-import type {SigningKey} from '../services/keyService';
 import {
   ACCESS_TOKEN_EXPIRY_MINUTES,
   CONDUCTOR_PUBLIC_URL,
   KEY_SERVICE,
 } from '../buildconfig';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
+import type {SigningKey} from '../services/keyService';
 
-export async function createAuthKey(
-  user: Express.User,
-  signingKey: SigningKey
-) {
-  const jwt = await new SignJWT({
-    '_couchdb.roles': user.roles ?? [],
+export async function generateJwtFromUser({
+  user,
+  signingKey,
+}: {
+  user: Express.User;
+  signingKey: SigningKey;
+}) {
+  // The data model provides this encoding method - it takes the couch user
+  // details and determines how to put that into the token
+  const permissionsComponent = couchUserToTokenPermissions({...user});
+  // We then augment this with extra details to help identify the origin of the
+  // token + user details
+  const completePayload: TokenPayload = {
+    ...permissionsComponent,
     name: user.name,
     server: CONDUCTOR_PUBLIC_URL,
-  })
+  };
+
+  // Then there are other parts we wish to include
+  const jwt = await new SignJWT(completePayload)
     .setProtectedHeader({
       alg: signingKey.alg,
       kid: signingKey.kid,
@@ -60,7 +72,7 @@ export async function generateUserToken(user: Express.User, refresh = false) {
   if (signingKey === null || signingKey === undefined) {
     throw new Error('No signing key is available, check configuration');
   } else {
-    const token = await createAuthKey(user, signingKey);
+    const token = await generateJwtFromUser({user, signingKey});
 
     return {
       token: token,

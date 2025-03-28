@@ -20,11 +20,12 @@ import {render, screen} from '@testing-library/react';
 import AppBarAuth from './appbarAuth';
 import {BrowserRouter} from 'react-router-dom';
 import {describe, expect, it} from 'vitest';
-import {TokenContents} from '@faims3/data-model';
+import {Role, TokenContents} from '@faims3/data-model';
 
 const testToken = {
   username: 'admin',
-  roles: ['cluster-admin'],
+  globalRoles: [Role.GENERAL_USER, Role.GENERAL_ADMIN],
+  resourceRoles: [],
   name: 'Admin User',
   server: 'fake.com',
   // Five minutes from now

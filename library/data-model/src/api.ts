@@ -1,5 +1,4 @@
 import {z} from 'zod';
-import {ADMIN_GROUP_NAMES_SCHEMA} from './auth';
 import {
   APINotebookGetSchema,
   APINotebookListSchema,
@@ -8,6 +7,7 @@ import {
   TemplateEditableDetailsSchema,
   UiSpecificationSchema,
 } from './types';
+import {Role} from './permission';
 
 // ==================
 // WIP USERS
@@ -16,7 +16,7 @@ import {
 // Post update a user UpdateUser input
 export const PostUpdateUserInputSchema = z.object({
   addrole: z.boolean(),
-  role: ADMIN_GROUP_NAMES_SCHEMA,
+  role: z.nativeEnum(Role),
 });
 export type PostUpdateUserInput = z.infer<typeof PostUpdateUserInputSchema>;
 
@@ -169,8 +169,8 @@ export type PutUpdateNotebookResponse = z.infer<
 export const PostAddNotebookUserInputSchema = z.object({
   // The username to add to the notebook roles
   username: z.string(),
-  // The role to add (must be valid in project metadata)
-  role: z.string(),
+  // The role to add
+  role: z.nativeEnum(Role),
   // Addrole:= true means add, false means remove
   addrole: z.boolean(),
 });

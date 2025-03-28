@@ -49,21 +49,6 @@ export type InitialisationContent<Document extends {} = any> = {
 };
 
 /**
- * Builds a role name for use in the couch DB security document from the project
- * ID + role name
- * @returns Role
- */
-export const buildCouchRoleFromProjectId = ({
-  projectId,
-  role,
-}: {
-  projectId: string;
-  role: string;
-}): string => {
-  return `${projectId}||${role}`;
-};
-
-/**
  * Gets a record, updates the _rev, then puts or gracefully returns if
  * writeOnClash is false.
  * @param db The database to upsert document into
@@ -82,9 +67,44 @@ export async function safeWriteDocument<T extends {}>({
   data: PouchDB.Core.Document<T>;
   writeOnClash?: boolean;
 }) {
+  // Try and put directly - if no clash or _rev already provided, all good
+  try {
+    await db.put(data);
+  } catch (err: any) {
+    // if 409 - that's conflict - get record then try again
+    if (err.status === 409) {
+      if (writeOnClash) {
+        try {
+          const existingRecord = await db.get<T>(data._id);
+          // Update _rev and otherwise put the original record
+          await db.put({...data, _rev: existingRecord._rev});
+        } catch (err) {
+          throw Error('Failed to update record in conflict. Error: ' + err);
+        }
+      }
+    } else {
+      // Something else happened - unsure and throw
+      throw Error('Failed to update record - non 409 error' + err);
+    }
+  }
+}
+
+/**
+ * Will only write a document if it doesn't exist - safely checks the error code
+ * from PUT.
+ * @param db The database to write new document into
+ * @param data The document to replace
+ */
+export async function writeNewDocument<T extends {}>({
+  db,
+  data,
+}: {
+  db: PouchDB.Database<T>;
+  data: PouchDB.Core.Document<T>;
+}): Promise<{wrote: boolean; existing?: PouchDB.Core.ExistingDocument<T>}> {
   try {
     // Try to get the existing document
-    let existingDoc;
+    let existingDoc: PouchDB.Core.ExistingDocument<T> | undefined;
     try {
       existingDoc = await db.get(data._id);
     } catch (err: any) {
@@ -92,23 +112,19 @@ export async function safeWriteDocument<T extends {}>({
       if (err.status !== 404) {
         throw err;
       }
+      existingDoc = undefined;
     }
 
-    if (existingDoc && !writeOnClash) {
-      // We don't overwrite an existing doc if writeOnClash is not true
-      return existingDoc;
+    if (!existingDoc) {
+      // Put the document (create only since it's new)
+      await db.put(data);
+      return {wrote: true, existing: undefined};
+    } else {
+      // Already exists - return it
+      return {wrote: false, existing: existingDoc};
     }
-
-    // If the document exists, include its revision (which is overridden to be
-    // latest ensuring it is upserted)
-    const upsertData = {...data, _rev: existingDoc?._rev};
-
-    // Put the document (create or update)
-    const response = await db.put(upsertData);
-
-    return response;
   } catch (error) {
-    console.error(`Error upserting document ${data._id}:`, error);
+    console.error(`Error creating new document ${data._id}:`, error);
     throw error;
   }
 }

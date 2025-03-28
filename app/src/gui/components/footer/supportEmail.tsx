@@ -21,9 +21,14 @@ export default function SupportEmail() {
     `Server: ${CONDUCTOR_URLS.join(', ')} \r` +
     `Commit Version: ${COMMIT_VERSION} \r` +
     `Username: ${activeUser?.username ?? 'Unauthenticated'} \r` +
-    `Roles: ${
-      activeUser?.parsedToken.roles
-        ? JSON.stringify(activeUser?.parsedToken.roles)
+    `Global Roles: ${
+      activeUser?.parsedToken.globalRoles
+        ? JSON.stringify(activeUser?.parsedToken.globalRoles)
+        : 'Unauthenticated'
+    } \r` +
+    `Resource Roles: ${
+      activeUser?.parsedToken.resourceRoles
+        ? JSON.stringify(activeUser?.parsedToken.resourceRoles)
         : 'Unauthenticated'
     }`;
 

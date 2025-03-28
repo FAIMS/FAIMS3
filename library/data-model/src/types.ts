@@ -19,6 +19,7 @@
  */
 
 import {z} from 'zod';
+import {DecodedTokenPermissions, Role} from './permission';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -60,10 +61,12 @@ export type FAIMSTypeName = string;
 
 export type Annotations = {annotation: string; uncertainty: boolean};
 
-export interface TokenContents {
-  username: string;
-  roles: string[];
+export interface TokenContents extends DecodedTokenPermissions {
+  // First/last name
   name?: string;
+  // Username (i.e. email)
+  username: string;
+  // Server generating
   server: string;
   // This is required now - all tokens must have an expiry
   exp: number;
@@ -131,7 +134,6 @@ export type PossibleConnectionInfo =
 export interface ProjectObject {
   _id: NonUniqueProjectID;
   name: string;
-  project_id: string;
   description?: string;
   // Was the project created from a template?
   template_id?: string;
@@ -148,7 +150,7 @@ export interface ProjectObject {
 // This is returned from the list project endpoints
 export const APINotebookListSchema = z.object({
   name: z.string(),
-  is_admin: z.boolean().optional(),
+  is_admin: z.boolean(),
   last_updated: z.string().optional(),
   created: z.string().optional(),
   template_id: z.string().optional(),
@@ -468,6 +470,7 @@ export interface ProjectUIViewset {
   hridField?: string;
   // Layout option
   layout?: 'inline' | 'tabs';
+  publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
 }
 
 export interface ProjectUIViewsets {
@@ -494,6 +497,7 @@ export interface ProjectUIViews {
     is_logic?: {[key: string]: string[]}; //add for branching logic
     condition?: ConditionalExpression; // new conditional logic
     conditionFn?: (v: RecordValues) => boolean; // compiled conditional function
+    description?: string;
   };
 }
 
@@ -776,7 +780,7 @@ export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
 // Information about users and roles for a notebook
 export const NotebookAuthSummarySchema = z.object({
   // What roles does the notebook have
-  roles: z.array(z.string()),
+  roles: z.array(z.nativeEnum(Role)),
   // users permissions for this notebook
   users: z.array(
     z.object({
@@ -784,7 +788,7 @@ export const NotebookAuthSummarySchema = z.object({
       username: z.string(),
       roles: z.array(
         z.object({
-          name: z.string(),
+          name: z.nativeEnum(Role),
           value: z.boolean(),
         })
       ),

@@ -24,25 +24,14 @@
 import {decodeJwt} from 'jose';
 
 import {
-  ClusterProjectRoles,
-  NOTEBOOK_CREATOR_GROUP_NAME,
-  ProjectID,
-  ProjectRole,
+  Action,
+  decodeAndValidateToken,
+  isAuthorized,
   RecordMetadata,
   TokenContents,
+  TokenPermissions,
 } from '@faims3/data-model';
-import {CLUSTER_ADMIN_GROUP_NAME, IGNORE_TOKEN_EXP} from './buildconfig';
-
-interface SplitCouchDBRole {
-  project_id: ProjectID;
-  project_role: ProjectRole;
-}
-
-// These are the roles which allow a user to create a notebook
-export const CREATE_NOTEBOOK_ROLES = [
-  CLUSTER_ADMIN_GROUP_NAME,
-  NOTEBOOK_CREATOR_GROUP_NAME,
-];
+import {IGNORE_TOKEN_EXP} from './buildconfig';
 
 /**
  * Decodes JWT ready for use in app.
@@ -84,63 +73,16 @@ export function parseToken(token: string): TokenContents {
     throw Error('Username not specified in token');
   }
 
-  const roles = (payload['_couchdb.roles'] as string[]) ?? [];
   const name = (payload['name'] as string) ?? undefined;
+  const decodedRoles = decodeAndValidateToken(payload as TokenPermissions);
 
   return {
     username: username,
-    roles: roles,
     name: name,
     server: server,
     exp,
+    ...decodedRoles,
   };
-}
-
-export function getUserProjectRolesForCluster(
-  contents: TokenContents
-): ClusterProjectRoles {
-  const couch_roles = contents.roles;
-  const cluster_project_roles: ClusterProjectRoles = {};
-
-  for (const couch_role of couch_roles) {
-    const split_role = splitCouchDBRole(couch_role);
-    if (split_role === undefined) {
-      continue;
-    }
-    if (cluster_project_roles[split_role.project_id] === undefined) {
-      cluster_project_roles[split_role.project_id] = [];
-    }
-    cluster_project_roles[split_role.project_id].push(split_role.project_role);
-  }
-  return cluster_project_roles;
-}
-
-function splitCouchDBRole(couch_role: string): SplitCouchDBRole | undefined {
-  const split_role = couch_role.split('||');
-  if (
-    split_role.length !== 2 ||
-    split_role[0].trim() === '' ||
-    split_role[1].trim() === ''
-  ) {
-    // This is likely a role like admin that couchdb handles, or at least is not
-    // for access control within a project, so ignore it
-    return undefined;
-  }
-  const cleaned_project_id = split_role[0].replace('\\|\\|', '||');
-  return {
-    project_id: cleaned_project_id,
-    project_role: split_role[1],
-  };
-}
-
-/**
- * Is the current user a cluster admin?
- * @param cluster_id server identifier
- * @returns true if the current user has cluster admin permissions
- */
-export function isClusterAdmin(contents: TokenContents): boolean {
-  const couch_roles = contents.roles;
-  return couch_roles.includes(CLUSTER_ADMIN_GROUP_NAME);
 }
 
 export async function shouldDisplayRecord({
@@ -152,60 +94,19 @@ export async function shouldDisplayRecord({
   projectId: string;
   recordMetadata: RecordMetadata;
 }): Promise<boolean> {
-  // TODO - consider the context in which this is being run - should only be
-  // active user notebooks!
-  // TODO understand why this is coming through as a full project instead of just project id
-
-  // TODO this should not be on a per row basis - it's the same for all of them
-  // (facepalm)
-  const user_id = contents.username;
-
+  const userId = contents.username;
   // Always display your own records
-  if (record_metadata.created_by === user_id) {
-    return true;
+  if (record_metadata.created_by === userId) {
+    return isAuthorized({
+      decodedToken: contents,
+      action: Action.READ_MY_PROJECT_RECORDS,
+      resourceId: projectId,
+    });
+  } else {
+    return isAuthorized({
+      decodedToken: contents,
+      action: Action.READ_ALL_PROJECT_RECORDS,
+      resourceId: projectId,
+    });
   }
-
-  // If you are admin (of cluster) then you can see all responses
-  const isAdmin = isClusterAdmin(contents);
-
-  if (isAdmin) {
-    return true;
-  }
-
-  // Get roles
-  const roles = getUserProjectRolesForCluster(contents);
-  for (const currentProjectId of Object.keys(roles)) {
-    if (
-      currentProjectId === projectId &&
-      // TODO BSS-453 consider how we handle this
-      // This currently hard-codes admin as a special role which allows visibility of all records but
-      // a) why is this necessary on client side?
-      // b) isn't this configurable in the notebook designer?
-      roles[currentProjectId].includes('admin')
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Check whether the current user can create notebooks on a server
- *
- * @param cluster_id - the cluster identifier
- * @returns true if the user is allowed to create notebooks
- */
-export function userCanCreateNotebooks(contents: TokenContents) {
-  const couch_roles = contents.roles;
-
-  // cluster admin can do anything
-  if (couch_roles.indexOf(CLUSTER_ADMIN_GROUP_NAME) >= 0) {
-    return true;
-  }
-
-  // explicit notebook creator permssions
-  if (couch_roles.indexOf(NOTEBOOK_CREATOR_GROUP_NAME) >= 0) {
-    return true;
-  }
-  return false;
 }

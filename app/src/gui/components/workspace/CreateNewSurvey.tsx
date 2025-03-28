@@ -1,3 +1,4 @@
+import {Action} from '@faims3/data-model';
 import DescriptionIcon from '@mui/icons-material/Description';
 import {
   Box,
@@ -11,7 +12,7 @@ import React from 'react';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
-import {userCanCreateNotebooks} from '../../../users';
+import {useIsAuthorisedTo} from '../../../utils/customHooks';
 import NewNotebookForListing from '../notebook/NewNotebookForListing';
 
 export interface CreateNewSurveyProps {}
@@ -25,10 +26,8 @@ const CreateNewSurvey: React.FC<CreateNewSurveyProps> = () => {
     return <p>An error occurred - no user is currently active!</p>;
   }
 
-  const tokenInfo = activeUser.parsedToken;
-
   // Check user has the right role
-  const allowed = userCanCreateNotebooks(tokenInfo);
+  const allowed = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
   // TODO guard this component with specific role - button should never appear.
   if (!allowed) {
