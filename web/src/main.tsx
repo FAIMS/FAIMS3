@@ -6,6 +6,7 @@ import {routeTree} from './routeTree.gen';
 import './index.css';
 import {AuthProvider, useAuth} from './context/auth-provider';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {Toaster} from 'sonner';
 
 /**
  * App component renders the main application layout.
@@ -52,6 +53,7 @@ if (!rootElement.innerHTML) {
         <AuthProvider>
           <QueryClientProvider client={queryClient}>
             <App />
+            <Toaster />
           </QueryClientProvider>
         </AuthProvider>
       </ThemeProvider>

@@ -60,10 +60,16 @@ api.post(
     params: z.object({id: z.string()}),
     body: PostUpdateUserInputSchema,
   }),
-  async ({body: {role, addrole: addRole}, params: {id}}, res) => {
-    // Get the current user from DB
-    const user = await getUserFromEmailOrUsername(id);
+  async ({body: {role, addrole: addRole}, user, params: {id}}, res) => {
     if (!user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to update user details.'
+      );
+    }
+
+    // Get the current user from DB
+    const foundUser = await getUserFromEmailOrUsername(id);
+    if (!foundUser) {
       throw new Exceptions.ItemNotFoundException(
         'Username cannot be found in user database.'
       );
@@ -76,12 +82,19 @@ api.post(
       );
     }
 
-    if (addRole) {
-      addGlobalRole({role, user});
-    } else {
-      removeGlobalRole({role, user});
+    if (id === user.user_id) {
+      throw new Exceptions.ForbiddenException(
+        'You are not allowed to update your own roles.'
+      );
     }
-    await saveUser(user);
+
+    if (addRole) {
+      addGlobalRole({role, user: foundUser});
+    } else {
+      removeGlobalRole({role, user: foundUser});
+    }
+
+    await saveUser(foundUser);
     res.status(200).send();
   }
 );
@@ -125,7 +138,38 @@ api.get(
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
   async (req: any, res: Response<Express.User[]>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('You are not logged in.');
+    }
+
+    if (!userHasGlobalRole({user: req.user, role: Role.GENERAL_ADMIN})) {
+      throw new Exceptions.ForbiddenException(
+        'You are not allowed to get users.'
+      );
+    }
+
     return res.json(await getUsers());
+  }
+);
+
+// GET all roles
+api.get(
+  '/roles',
+  requireAuthenticationAPI,
+  async (req: any, res: Response<string[]>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('You are not logged in.');
+    }
+
+    // TODO fix this
+    if (!userHasGlobalRole({user: req.user, role: Role.GENERAL_ADMIN})) {
+      throw new Exceptions.ForbiddenException(
+        'You are not allowed to get roles.'
+      );
+    }
+
+    // TODO fix this
+    return res.json(['cluster-admin']);
   }
 );
 
@@ -142,7 +186,9 @@ api.delete(
   processRequest({
     params: z.object({id: z.string()}),
   }),
-  async ({params: {id}}, res) => {
+  async ({params: {id}, user}, res) => {
+    if (!id) throw new Exceptions.ValidationException('User ID not specified');
+
     const userToRemove = await getUserFromEmailOrUsername(id);
 
     if (!userToRemove)
@@ -151,7 +197,7 @@ api.delete(
       );
 
     if (userHasGlobalRole({role: Role.GENERAL_ADMIN, user: userToRemove}))
-      throw new Exceptions.UnauthorizedException(
+      throw new Exceptions.ForbiddenException(
         'You are not allowed to remove cluster admins.'
       );
 
