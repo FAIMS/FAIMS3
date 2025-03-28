@@ -605,14 +605,14 @@ export const EMAIL_SERVICE: IEmailService = createEmailService({
  */
 function getTestEmailAddress(): string {
   const testEmailAddress = process.env.TEST_EMAIL_ADDRESS;
-  
+
   if (!testEmailAddress) {
     throw new Error(
       'TEST_EMAIL_ADDRESS environment variable is required for testing email functionality. ' +
-      'Please add this to your environment configuration.'
+        'Please add this to your environment configuration.'
     );
   }
-  
+
   return testEmailAddress;
 }
 

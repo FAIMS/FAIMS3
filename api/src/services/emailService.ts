@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { Transporter, SendMailOptions, SentMessageInfo } from 'nodemailer';
+import {Transporter, SendMailOptions, SentMessageInfo} from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import NodeCache from 'node-cache';
 
@@ -58,7 +58,7 @@ export interface IEmailService {
    * @param params - Email sending options.
    * @returns A Promise resolving to the result of the email sending operation.
    */
-  sendEmail({ options }: { options: EmailOptions }): Promise<SentMessageInfo>;
+  sendEmail({options}: {options: EmailOptions}): Promise<SentMessageInfo>;
 }
 
 /**
@@ -71,7 +71,7 @@ abstract class BaseEmailService implements IEmailService {
    * Creates an instance of BaseEmailService.
    * @param params - The parameters for creating the service.
    */
-  constructor({ config }: { config: EmailConfig }) {
+  constructor({config}: {config: EmailConfig}) {
     this.config = config;
   }
 
@@ -80,7 +80,11 @@ abstract class BaseEmailService implements IEmailService {
    * @param params - The parameters for sending an email.
    * @returns A Promise resolving to the result of the email sending operation.
    */
-  abstract sendEmail({ options }: { options: EmailOptions }): Promise<SentMessageInfo>;
+  abstract sendEmail({
+    options,
+  }: {
+    options: EmailOptions;
+  }): Promise<SentMessageInfo>;
 }
 
 /**
@@ -127,8 +131,8 @@ export class SMTPEmailService extends BaseEmailService {
    * Creates an instance of SMTPEmailService.
    * @param params - The parameters for creating the service.
    */
-  constructor({ config, smtpConfig }: SMTPEmailServiceParams) {
-    super({ config });
+  constructor({config, smtpConfig}: SMTPEmailServiceParams) {
+    super({config});
     this.smtpConfig = smtpConfig;
     this.cache = new NodeCache({
       stdTTL: this.smtpConfig.cacheExpirySeconds || 300, // Default 5 minutes
@@ -139,16 +143,18 @@ export class SMTPEmailService extends BaseEmailService {
    * Gets or creates an SMTP transporter.
    * @returns The nodemailer transporter.
    */
-  private async getTransporter(): Promise<Transporter<SMTPTransport.SentMessageInfo>> {
+  private async getTransporter(): Promise<
+    Transporter<SMTPTransport.SentMessageInfo>
+  > {
     // Check cache first
-    const cachedTransporter = this.cache.get<Transporter<SMTPTransport.SentMessageInfo>>(
-      this.TRANSPORTER_CACHE_KEY
-    );
-    
+    const cachedTransporter = this.cache.get<
+      Transporter<SMTPTransport.SentMessageInfo>
+    >(this.TRANSPORTER_CACHE_KEY);
+
     if (cachedTransporter) {
       return cachedTransporter;
     }
-    
+
     // Create new transporter
     const transporter = nodemailer.createTransport({
       host: this.smtpConfig.host,
@@ -159,15 +165,15 @@ export class SMTPEmailService extends BaseEmailService {
         pass: this.smtpConfig.auth.pass,
       },
     });
-    
+
     // Verify the connection
     try {
       await transporter.verify();
       console.log('SMTP connection verified successfully');
-      
+
       // Cache the transporter
       this.cache.set(this.TRANSPORTER_CACHE_KEY, transporter);
-      
+
       return transporter;
     } catch (error) {
       console.error('Failed to verify SMTP connection:', error);
@@ -180,9 +186,13 @@ export class SMTPEmailService extends BaseEmailService {
    * @param params - The parameters for sending an email.
    * @returns A Promise resolving to the result of the email sending operation.
    */
-  async sendEmail({ options }: { options: EmailOptions }): Promise<SentMessageInfo> {
+  async sendEmail({
+    options,
+  }: {
+    options: EmailOptions;
+  }): Promise<SentMessageInfo> {
     const transporter = await this.getTransporter();
-    
+
     const mailOptions: SendMailOptions = {
       from: `"${this.config.fromName}" <${this.config.fromEmail}>`,
       to: options.to,
@@ -194,7 +204,7 @@ export class SMTPEmailService extends BaseEmailService {
       attachments: options.attachments,
       replyTo: this.config.replyTo || this.config.fromEmail,
     };
-    
+
     try {
       const info = await transporter.sendMail(mailOptions);
       console.log('Email sent successfully', info.messageId);
@@ -218,14 +228,14 @@ interface MockEmailServiceParams {
  * Mock email service implementation for testing.
  */
 export class MockEmailService extends BaseEmailService {
-  private sentEmails: Array<EmailOptions & { timestamp: Date }> = [];
+  private sentEmails: Array<EmailOptions & {timestamp: Date}> = [];
 
   /**
    * Creates an instance of MockEmailService.
    * @param params - The parameters for creating the service.
    */
-  constructor({ config }: MockEmailServiceParams) {
-    super({ config });
+  constructor({config}: MockEmailServiceParams) {
+    super({config});
   }
 
   /**
@@ -233,19 +243,23 @@ export class MockEmailService extends BaseEmailService {
    * @param params - The parameters for sending an email.
    * @returns A Promise resolving to a mock result of the email sending operation.
    */
-  async sendEmail({ options }: { options: EmailOptions }): Promise<SentMessageInfo> {
+  async sendEmail({
+    options,
+  }: {
+    options: EmailOptions;
+  }): Promise<SentMessageInfo> {
     console.log('[MockEmailService] Sending email:', {
       from: `${this.config.fromName} <${this.config.fromEmail}>`,
       to: options.to,
       subject: options.subject,
     });
-    
+
     // Store the email for later inspection
     this.sentEmails.push({
       ...options,
       timestamp: new Date(),
     });
-    
+
     // Return a mock response
     return {
       messageId: `mock-email-${Date.now()}@test.com`,
@@ -264,7 +278,7 @@ export class MockEmailService extends BaseEmailService {
    * Gets all sent emails for inspection in tests.
    * @returns Array of all emails sent through this mock service.
    */
-  getSentEmails(): Array<EmailOptions & { timestamp: Date }> {
+  getSentEmails(): Array<EmailOptions & {timestamp: Date}> {
     return this.sentEmails;
   }
 
@@ -294,26 +308,28 @@ interface CreateEmailServiceParams {
  * @returns An instance of IEmailService.
  * @throws Error if an unsupported service type is specified.
  */
-export function createEmailService({ 
-  serviceType, 
-  emailConfig, 
-  serviceConfig 
+export function createEmailService({
+  serviceType,
+  emailConfig,
+  serviceConfig,
 }: CreateEmailServiceParams): IEmailService {
   switch (serviceType) {
     case EmailServiceType.SMTP:
       if (!serviceConfig) {
-        throw new Error('SMTP configuration is required for SMTP email service');
+        throw new Error(
+          'SMTP configuration is required for SMTP email service'
+        );
       }
-      return new SMTPEmailService({ 
-        config: emailConfig, 
-        smtpConfig: serviceConfig 
+      return new SMTPEmailService({
+        config: emailConfig,
+        smtpConfig: serviceConfig,
       });
-    
+
     case EmailServiceType.MOCK:
-      return new MockEmailService({ 
-        config: emailConfig 
+      return new MockEmailService({
+        config: emailConfig,
       });
-    
+
     default:
       throw new Error(`Unsupported email service type: ${serviceType}`);
   }

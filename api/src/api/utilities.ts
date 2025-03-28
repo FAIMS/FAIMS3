@@ -306,7 +306,7 @@ If you received this email, the email service is configured correctly.
 
       responseData.details = {error: errorDetail};
 
-      console.error(`[Email Test] Failed to send test email:`, error);
+      console.error('[Email Test] Failed to send test email:', error);
     } finally {
       // Calculate total execution time
       const endTime = Date.now();
