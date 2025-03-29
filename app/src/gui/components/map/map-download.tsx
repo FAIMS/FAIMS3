@@ -17,11 +17,26 @@
  *  A component supporting downloading of offline maps
  */
 
-import {Alert, Button, FormGroup, Grid, Paper, TextField} from '@mui/material';
+import {
+  Alert,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardHeader,
+  FormGroup,
+  Grid,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import Map from 'ol/Map';
 import {useEffect, useMemo, useState} from 'react';
 import {MapComponent} from './map-component';
 import {StoredTileSet, VectorTileStore} from './tile-source';
+import ProgressBar from '../progress-bar';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 /**
  * Map download component presents the UI for downloading offline maps.
@@ -43,7 +58,13 @@ export const MapDownloadComponent = () => {
   // whenever there is an update to offline maps (new tiles downloaded)
   useEffect(() => {
     const fn = async () => {
-      // this is happening too early, the database isn't there yet...
+      // force an await on the tile store database init
+      // to make sure the database is ready on page refresh
+      // (this is only an issue if we get a refresh on this page
+      // since the init called on startup should be finished in any
+      // other situation)
+      await tileStore.tileStore.initDB();
+
       await updateTileSets();
     };
     fn();
@@ -116,13 +137,16 @@ export const MapDownloadComponent = () => {
 
   return (
     <Grid container spacing={2}>
-      <Grid item xs={12}>
+      <Grid item xs={12} sx={{marginBottom: 2}}>
         <p>
           Download the current region for offline use. Note that download size
           estimates are approximate for metro areas, rural areas may be much
           smaller.
         </p>
-        <FormGroup row>
+        <Stack
+          direction={{xs: 'column', sm: 'row'}}
+          spacing={{xs: 1, sm: 2, md: 4}}
+        >
           <TextField
             label="Name for Downloaded Map"
             value={downloadSetName}
@@ -138,12 +162,13 @@ export const MapDownloadComponent = () => {
               Estimate Download Size
             </Button>
           )}
-        </FormGroup>
+        </Stack>
       </Grid>
 
       <Grid
         item
         xs={12}
+        md={9}
         sm={8}
         sx={{
           '& > div': {
@@ -155,7 +180,7 @@ export const MapDownloadComponent = () => {
         <MapComponent parentSetMap={setMap} />
       </Grid>
 
-      <Grid item xs={4} sm={4} md={4}>
+      <Grid item xs={12} sm={4} md={3}>
         <h3>Offline Maps</h3>
 
         {message && <Alert severity="error">{message}</Alert>}
@@ -163,28 +188,40 @@ export const MapDownloadComponent = () => {
         <h4>Maps Downloaded</h4>
         {tileSets.length === 0 && <p>No maps downloaded.</p>}
         {tileSets.map((mapSet: StoredTileSet, idx: number) => (
-          <Paper key={idx}>
-            <h4>{mapSet.setName}</h4>
-            <p>
-              Size: {Math.round((100 * mapSet.size) / 1024 / 1024) / 100} MB
-            </p>
-            <p>
-              Tiles: {mapSet.tileKeys.length}/{mapSet.expectedTileCount} (avg.{' '}
-              {Math.round((100 * mapSet.size) / mapSet.tileKeys.length / 1024) /
-                100}{' '}
-              Kb)
-            </p>
-            <p>Downloaded on: {mapSet.created.toLocaleDateString()}</p>
-            <Button
-              variant="outlined"
-              onClick={() => handleDeleteTileSet(mapSet.setName)}
-            >
-              Delete
-            </Button>
-            <Button variant="outlined" onClick={() => handleShowExtent(mapSet)}>
-              Show Download Area
-            </Button>
-          </Paper>
+          <Card variant="outlined" key={idx}>
+            <CardContent>
+              <Typography variant="h5" component="div">
+                {mapSet.setName}
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary">
+                Size: {Math.round((100 * mapSet.size) / 1024 / 1024) / 100} MB
+              </Typography>
+
+              {mapSet.tileKeys.length !== mapSet.expectedTileCount && (
+                <ProgressBar
+                  percentage={mapSet.tileKeys.length / mapSet.expectedTileCount}
+                />
+              )}
+              <Typography variant="body2" color="text.secondary">
+                Downloaded on: {mapSet.created.toLocaleDateString()}
+              </Typography>
+            </CardContent>
+            <CardActions>
+              <Button
+                variant="outlined"
+                onClick={() => handleDeleteTileSet(mapSet.setName)}
+              >
+                Delete
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => handleShowExtent(mapSet)}
+              >
+                Show
+              </Button>
+            </CardActions>
+          </Card>
         ))}
       </Grid>
     </Grid>

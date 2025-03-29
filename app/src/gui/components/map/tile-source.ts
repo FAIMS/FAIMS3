@@ -141,7 +141,6 @@ export class MapTileDatabase {
   makeDatabases(db: IDBDatabase) {
     MapTileDatabase.db = db;
     if (!this.tileDB) {
-      console.log('creating tile store');
       this.tileDB = new IDBObjectStore<StoredTile>(db, 'tiles', ['url']);
     }
     if (!this.tileSetDB)
@@ -417,12 +416,14 @@ class TileStoreBase {
     }
   }
 
+  // return all stored tile-sets except for 'system' tile-sets
+  // who's name starts with '_'
   async getTileSets() {
     if (this.tileStore.tileSetDB) {
       const tileSets = await this.tileStore.tileSetDB.getAll();
-      return tileSets?.toSorted(
-        (a, b) => b.created.getTime() - a.created.getTime()
-      );
+      return tileSets
+        ?.filter(ts => !ts.setName.startsWith('_'))
+        .toSorted((a, b) => b.created.getTime() - a.created.getTime());
     } else {
       return [];
     }
