@@ -27,7 +27,7 @@ import {
   Grid,
   Stack,
   TextField,
-  Typography
+  Typography,
 } from '@mui/material';
 import Map from 'ol/Map';
 import {useEffect, useMemo, useState} from 'react';
@@ -135,17 +135,10 @@ export const MapDownloadComponent = () => {
   return (
     <Grid container spacing={2}>
       <Grid item xs={12} sx={{marginBottom: 2}}>
-        <Typography variant="body1">
-          <Chip
-            sx={{margin: '5pt'}}
-            variant="outlined"
-            size="small"
-            label="Beta"
-            color="warning"
-          />
+        <Alert severity="info">
           Offline maps is an experimental feature. Please report any unexpected
           behaviour.
-        </Typography>
+        </Alert>
 
         <Typography variant="body1" sx={{marginBottom: 2}}>
           Download the current region for offline use. Note that download size
