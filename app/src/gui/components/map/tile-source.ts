@@ -277,13 +277,6 @@ class TileStoreBase {
     }
     const counter = tileSet.size;
     const estimatedSize = Math.round((counter * averageSize) / 1024);
-    console.log(
-      'estimated size',
-      Math.round(estimatedSize * 1000) / 1000,
-      'MB, ',
-      counter,
-      'tiles'
-    );
     return estimatedSize;
   }
 
@@ -623,7 +616,7 @@ export class VectorTileStore extends TileStoreBase {
       Object.defineProperty(response, 'url', {value: fullURL});
       return response;
     } else {
-      console.log('transformRequest fail', fullURL);
+      console.error('transformRequest fail', fullURL);
       return fullURL;
     }
   }

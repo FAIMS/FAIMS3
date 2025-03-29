@@ -23,20 +23,17 @@ import {
   Card,
   CardActions,
   CardContent,
-  CardHeader,
-  FormGroup,
+  Chip,
   Grid,
-  Paper,
   Stack,
   TextField,
-  Typography,
+  Typography
 } from '@mui/material';
 import Map from 'ol/Map';
 import {useEffect, useMemo, useState} from 'react';
+import ProgressBar from '../progress-bar';
 import {MapComponent} from './map-component';
 import {StoredTileSet, VectorTileStore} from './tile-source';
-import ProgressBar from '../progress-bar';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 /**
  * Map download component presents the UI for downloading offline maps.
@@ -138,11 +135,24 @@ export const MapDownloadComponent = () => {
   return (
     <Grid container spacing={2}>
       <Grid item xs={12} sx={{marginBottom: 2}}>
-        <p>
+        <Typography variant="body1">
+          <Chip
+            sx={{margin: '5pt'}}
+            variant="outlined"
+            size="small"
+            label="Beta"
+            color="warning"
+          />
+          Offline maps is an experimental feature. Please report any unexpected
+          behaviour.
+        </Typography>
+
+        <Typography variant="body1" sx={{marginBottom: 2}}>
           Download the current region for offline use. Note that download size
           estimates are approximate for metro areas, rural areas may be much
           smaller.
-        </p>
+        </Typography>
+
         <Stack
           direction={{xs: 'column', sm: 'row'}}
           spacing={{xs: 1, sm: 2, md: 4}}
