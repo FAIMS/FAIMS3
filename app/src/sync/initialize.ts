@@ -59,5 +59,4 @@ export async function initialize() {
 
   // initialise the tile store used for offline maps
   await MapTileDatabase.getInstance().initDB();
-  console.log('Tile store initialised');
 }
