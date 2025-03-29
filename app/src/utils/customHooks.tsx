@@ -287,7 +287,7 @@ export function filterOutDrafts<T extends UnhydratedRecord>(rows: T[]): T[] {
 }
 
 /**
- * Filters records to include only thosse created by the active user.
+ * Filters records to include only those created by the active user.
  *
  * @param rows - The dataset of records.
  * @param username - The active user's username.

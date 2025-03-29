@@ -47,6 +47,16 @@ import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
+import {MapDownloadComponent} from './gui/components/map/map-download';
+import {OFFLINE_MAPS} from './buildconfig';
+
+// type AppProps = {};
+
+// type AppState = {
+//   projects: ProjectsList;
+//   global_error: null | {};
+//   token: boolean;
+// };
 
 // Setup react query (prefer to use context provider but can import for legacy class components)
 const queryClient = new QueryClient({
@@ -200,6 +210,12 @@ export default function App() {
                         }
                       />
                       <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
+                      {OFFLINE_MAPS && (
+                        <Route
+                          path={ROUTES.OFFLINE_MAPS}
+                          Component={MapDownloadComponent}
+                        />
+                      )}
                       <Route path={'*'} Component={NotFound404} />
                     </Routes>
                   </MainLayout>

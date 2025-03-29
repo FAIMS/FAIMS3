@@ -38,6 +38,7 @@ export const RECORD_DRAFT = '/draft/';
 export const RECORD_RECORD = '/record/';
 export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
+export const OFFLINE_MAPS = '/offline-maps';
 export const AUTOINCREMENT = '/autoincrements/';
 export const PROJECT_ATTACHMENT = '/attachment/';
 export const SWITCH_ORG = '/switch-organisation';
