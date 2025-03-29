@@ -201,9 +201,11 @@ export function MapFormField({
         valueText = 'Line String: ' + geom.coordinates.length + ' points';
         break;
     }
+  } else if (canShowMap) {
+    valueText = `No ${featureLabel} selected, click above to choose one!`;
   } else {
     // if no location selected update msg dynamically.
-    valueText = `No ${featureLabel} selected, click above to choose one!`;
+    valueText = `No ${featureLabel} selected.`;
   }
 
   return (
@@ -222,16 +224,28 @@ export function MapFormField({
           width: '100%',
         }}
       >
-        {!canShowMap && featureType === 'Point' ? (
+        {!canShowMap ? (
           <>
-            <Alert variant="outlined" severity="warning">
-              The interactive map is not available while <b>offline</b>
-              and there is no downloaded map covering this location. Use the
-              button below to submit your current GPS location.
-            </Alert>
-            <Button variant="outlined" onClick={handleCurrentLocation}>
-              Use my current location
-            </Button>
+            {featureType === 'Point' && (
+              <>
+                <Alert variant="outlined" severity="warning">
+                  The interactive map is not available while <b>offline</b> and
+                  and there is no downloaded map covering this location. Use the
+                  button below to submit your current GPS location.
+                </Alert>
+                <Button variant="outlined" onClick={handleCurrentLocation}>
+                  Use my current location
+                </Button>
+              </>
+            )}
+            {featureType !== 'Point' && (
+              <>
+                <Alert variant="outlined" severity="warning">
+                  The interactive map is not available while <b>offline</b> and
+                  and there is no downloaded map covering this location.
+                </Alert>
+              </>
+            )}
           </>
         ) : (
           <MapWrapper
