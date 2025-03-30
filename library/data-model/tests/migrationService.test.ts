@@ -18,7 +18,7 @@ import {
   isDbUpToDate,
   migrateDbs,
   performMigration,
-} from '..';
+} from '../src/data_storage';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -436,6 +436,10 @@ describe('Migration System Tests', () => {
     it('should handle new database without existing migration document', async () => {
       // Mock the peopleV1toV2Migration for this test
       const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
+      const originalDefaultVersion =
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion;
+      // Set to 1
+      DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion = 1;
       DB_MIGRATIONS[0].migrationFunction = record => {
         return {
           action: 'update',
@@ -494,6 +498,8 @@ describe('Migration System Tests', () => {
 
       // Restore original migration function
       DB_MIGRATIONS[0].migrationFunction = originalMigrationFunc;
+      DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion =
+        originalDefaultVersion;
     });
 
     it('should handle existing database with migration document', async () => {
@@ -715,6 +721,9 @@ describe('Migration System Tests', () => {
       try {
         // For this test, we'll mock the peopleV1toV2Migration to work properly
         const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
+        const originalDefaultVersion =
+          DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion;
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion = 1;
         DB_MIGRATIONS[0].migrationFunction = record => {
           return {
             action: 'update',
@@ -770,6 +779,8 @@ describe('Migration System Tests', () => {
 
         // Restore original migration function
         DB_MIGRATIONS[0].migrationFunction = originalMigrationFunc;
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion =
+          originalDefaultVersion;
       } finally {
         // Clean up
         await testProjectsDb.destroy();

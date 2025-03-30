@@ -111,9 +111,6 @@ describe('Permission Model Validation', () => {
     });
   });
 
-  /**
-   * Test that all actions are granted by at least one role
-   */
   describe('e) Action-Role relationships', () => {
     it('should have at least one role granting each action', () => {
       const allGrantedActions = new Set<Action>();
@@ -126,11 +123,61 @@ describe('Permission Model Validation', () => {
         });
       });
 
-      // Check that every action is granted by at least one role
+      // Find any unmapped actions
+      const unmappedActions: Action[] = [];
+      Object.values(Action).forEach(action => {
+        if (
+          typeof action === 'string' &&
+          !allGrantedActions.has(action as Action)
+        ) {
+          unmappedActions.push(action as Action);
+        }
+      });
+
+      // Better failure message showing exactly which actions are unmapped
+      if (unmappedActions.length > 0) {
+        fail(
+          `The following actions are not mapped to any role: ${unmappedActions.join(', ')}`
+        );
+      }
+
+      // Make sure every action is granted by at least one role
+      expect(unmappedActions.length).toBe(0);
+    });
+
+    it('should show which roles grant each action', () => {
+      // Create a mapping of actions to the roles that grant them
+      const actionToRoles = {} as Record<Action, Role[]>;
+
       Object.values(Action).forEach(action => {
         if (typeof action === 'string') {
-          expect(allGrantedActions.has(action)).toBe(true);
+          actionToRoles[action as Action] = [];
         }
+      });
+
+      // Fill in the roles for each action
+      Object.keys(roleActions).forEach(roleKey => {
+        const role = roleKey as Role;
+        getAllActionsForRole(role).forEach(action => {
+          if (!actionToRoles[action].includes(role)) {
+            actionToRoles[action].push(role);
+          }
+        });
+      });
+
+      // Log out actions with no roles for easier debugging
+      Object.entries(actionToRoles).forEach(([action, roles]) => {
+        if (roles.length === 0) {
+          console.log(`ACTION WITH NO ROLES: ${action}`);
+        }
+      });
+
+      // Check each action has at least one role
+      Object.entries(actionToRoles).forEach(([action, roles]) => {
+        if (roles.length < 1) {
+          console.log(`Action ${action} is not mapped to any role`);
+        }
+        expect(roles.length).toBeGreaterThan(0);
       });
     });
   });
