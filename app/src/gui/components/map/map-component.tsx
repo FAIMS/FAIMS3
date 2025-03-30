@@ -27,11 +27,13 @@ import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
-import {Circle, Fill, RegularShape, Stroke, Style} from 'ol/style';
+import {Circle, Fill, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {createCenterControl} from '../map/center-control';
 import {VectorTileStore} from './tile-source';
 import {useIsOnline} from '../../../utils/customHooks';
+import {getCoordinates, useCurrentLocation} from '../../../utils/useLocation';
+import {Extent} from 'ol/extent';
 
 const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
@@ -72,6 +74,7 @@ export const canShowMapNear = async (
 export interface MapComponentProps {
   parentSetMap: (map: Map) => void;
   center?: [number, number];
+  extent?: Extent;
   zoom?: number;
 }
 
@@ -84,21 +87,17 @@ export const MapComponent = (props: MapComponentProps) => {
 
   const tileStore = useMemo(() => new VectorTileStore(), []);
 
-  const {data: mapCenter, isLoading: loadingLocation} = useQuery({
-    queryKey: ['current_location'],
-    queryFn: async (): Promise<[number, number]> => {
-      // if we are passed a center location use that, otherwise get the current location
-      if (props.center) {
-        return props.center;
-      }
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      });
-      return [position.coords.longitude, position.coords.latitude];
-    },
-  });
+  // Use the custom hook for location
+  const {data: currentPosition, isLoading: loadingLocation} =
+    useCurrentLocation();
+
+  // Determine map center based on props or current location
+  const mapCenter = useMemo(() => {
+    if (props.center) {
+      return props.center;
+    }
+    return getCoordinates(currentPosition);
+  }, [props.center, currentPosition]);
 
   /**
    * Create the OpenLayers map element
@@ -110,6 +109,7 @@ export const MapComponent = (props: MapComponentProps) => {
     // off map.
     // TODO: Could also limit the extent to that covered by the offline
     // map.
+
     const view = new View({
       projection: defaultMapProjection,
       zoom: zoomLevel,
@@ -176,13 +176,24 @@ export const MapComponent = (props: MapComponentProps) => {
 
   // when we have a location and a map, add the 'here' marker to the map
   useEffect(() => {
-    if (!loadingLocation && map) {
+    if (!loadingLocation && map && mapCenter) {
       addCurrentLocationMarker(map);
       if (mapCenter) {
         const center = transform(mapCenter, 'EPSG:4326', defaultMapProjection);
         // add the 'here' button to go to the current location
         map.addControl(createCenterControl(map.getView(), center));
-        map.getView().setCenter(center);
+
+        // we set the map extent if we were given one or if not,
+        // set the map center which will either have been passed
+        // in or derived from the current location
+        if (props.extent) {
+          map.getView().fit(props.extent, {
+            padding: [20, 20, 20, 20],
+            maxZoom: props.zoom,
+          });
+        } else {
+          map.getView().setCenter(center);
+        }
       }
     }
   }, [map, mapCenter, loadingLocation]);

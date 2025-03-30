@@ -31,6 +31,7 @@ import {memo, useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {MapComponent} from '../map/map-component';
+import {Extent} from 'ol/extent';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -56,6 +57,7 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
+  const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
 
   /**
    * Get the names of all GIS fields in this UI Specification
@@ -160,14 +162,9 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
       // set the view so that we can see the features
       // but don't zoom too much
       const extent = source.getExtent();
-      // if (!extent.includes(Infinity)) sourceExtent = extent;
-      // console.log('source extent: ', sourceExtent);
-
-      // don't fit if the extent is infinite because it crashes
+      // don't set if the extent is infinite because it crashes
       if (!extent.includes(Infinity)) {
-        theMap
-          .getView()
-          .fit(extent, {padding: [100, 100, 100, 100], maxZoom: 12});
+        setFeaturesExtent(extent);
       }
     }
 
@@ -204,8 +201,12 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
     return <Box>Loading...</Box>;
   } else
     return (
-      <Grid container spacing={2} sx={{height: '100%'}}>
-        <MapComponent parentSetMap={setMap} />
+      <Grid
+        container
+        spacing={2}
+        sx={{width: '90vw', marginTop: '20px', marginLeft: '20px'}}
+      >
+        <MapComponent parentSetMap={setMap} extent={featuresExtent} />
         <Popover
           open={!!selectedFeature}
           onClose={handlePopoverClose}

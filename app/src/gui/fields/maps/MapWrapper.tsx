@@ -77,6 +77,7 @@ import {
 import {useNotification} from '../../../context/popup';
 import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
+import {Extent} from 'ol/extent';
 
 function MapWrapper(props: MapProps) {
   const [mapOpen, setMapOpen] = useState<boolean>(false);
@@ -84,6 +85,7 @@ function MapWrapper(props: MapProps) {
   const [featuresLayer, setFeaturesLayer] = useState<VectorLayer<any>>();
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
+  const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
 
   // notifications
   const notify = useNotification();
@@ -126,9 +128,7 @@ function MapWrapper(props: MapProps) {
         const extent = source.getExtent();
         // don't fit if the extent is infinite because it crashes
         if (!extent.includes(Infinity)) {
-          theMap
-            .getView()
-            .fit(extent, {padding: [20, 20, 20, 20], maxZoom: props.zoom});
+          setFeaturesExtent(extent);
         }
       }
 
@@ -376,8 +376,9 @@ function MapWrapper(props: MapProps) {
           <MapComponent
             parentSetMap={setMap}
             center={props.center}
+            extent={featuresExtent}
             zoom={props.zoom}
-         />
+          />
         </Grid>
       </Dialog>
 

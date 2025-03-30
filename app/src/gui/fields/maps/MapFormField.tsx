@@ -24,7 +24,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {Alert, Box, Button, Typography} from '@mui/material';
 import {FieldProps} from 'formik';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useNotification} from '../../../context/popup';
 import {canShowMapNear} from '../../components/map/map-component';
 import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
@@ -33,6 +33,7 @@ import FieldWrapper from '../fieldWrapper';
 import './MapFormField.css';
 import MapWrapper, {MapAction} from './MapWrapper';
 import GeoJSON from 'ol/format/GeoJSON';
+import {getCoordinates, useCurrentLocation} from '../../../utils/useLocation';
 
 // If no center is available - pass this through
 // Sydney CBD
@@ -73,15 +74,7 @@ export function MapFormField({
   form,
   ...props
 }: MapFieldProps): JSX.Element {
-  // center location of map - use provided center if any
-  const [center, setCenter] = useState<[number, number] | undefined>(
-    props.center
-  );
-
   const [canShowMap, setCanShowMap] = useState(false);
-
-  // and a ref to track if gps location has already been requested
-  const gpsCenterRequested = useRef<boolean>(false);
 
   // flag set if we find we don't have location permission
   const [noPermission, setNoPermission] = useState(false);
@@ -105,8 +98,16 @@ export function MapFormField({
   // state for visual indicators
   const [animateCheck, setAnimateCheck] = useState(false);
 
-  // notification manager
-  const notify = useNotification();
+  // Use the custom hook for location
+  const {data: currentPosition} = useCurrentLocation();
+
+  // Determine map center based on props or current location
+  const center = useMemo(() => {
+    if (props.center) {
+      return props.center;
+    }
+    return getCoordinates(currentPosition);
+  }, [props.center, currentPosition]);
 
   // when the center changes, check if we can show this map
   useEffect(() => {
@@ -135,38 +136,6 @@ export function MapFormField({
       setTimeout(() => setAnimateCheck(false), 1000);
     }
   };
-
-  useEffect(() => {
-    const getCoords = async () => {
-      // Always get current position on component mount - this forces a permission
-      // request
-      if (!gpsCenterRequested.current) {
-        // Mark that we've requested already
-        gpsCenterRequested.current = true;
-        Geolocation.getCurrentPosition({
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        })
-          .then(result => {
-            // Only store the center result if we actually need it
-            if (center === undefined) {
-              setCenter([result.coords.longitude, result.coords.latitude]);
-            }
-            // Since we use a ref to track this running, we can safely run a state
-            // update here without infinite loop
-            setNoPermission(false);
-          })
-          .catch(() => {
-            notify.showWarning(
-              'We were unable to access your current location. Map fields may not work as expected.'
-            );
-            setNoPermission(true);
-          });
-      }
-    };
-    getCoords();
-  }, []);
 
   const handleCurrentLocation = () => {
     if (center) {
