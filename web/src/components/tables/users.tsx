@@ -4,12 +4,18 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {Button} from '../ui/button';
 import {RemoveUserDialog} from '../dialogs/remove-user';
 import {RoleCard} from '../ui/role-card';
+import {AddRolePopover} from '../popovers/add-role-popover';
+import {useAuth} from '@/context/auth-provider';
+import {useQueryClient} from '@tanstack/react-query';
 
 export const getColumns = ({
   onReset,
 }: {
   onReset: (id: string) => void;
 }): ColumnDef<any>[] => {
+  const {user} = useAuth();
+  const queryClient = useQueryClient();
+
   return [
     {
       accessorKey: 'name',
@@ -24,16 +30,57 @@ export const getColumns = ({
       ),
     },
     {
-      accessorKey: 'roles',
+      accessorKey: 'other_roles',
       header: 'Roles',
-      cell: ({row}: any) => (
-        <div className="flex flex-wrap gap-1">
-          {row
-            .getValue('roles')
-            .filter((role: string) => !role.includes('||'))
-            .map((role: string) => (
-              <RoleCard key={role}>{role}</RoleCard>
-            ))}
+      cell: ({
+        row: {
+          original: {other_roles, all_roles, _id: userId},
+        },
+      }: any) => (
+        <div className="flex flex-wrap gap-1 items-center">
+          <AddRolePopover
+            roles={all_roles.filter(
+              (role: string) => !other_roles.includes(role)
+            )}
+            userId={userId}
+          />
+          {other_roles.map((role: string) => (
+            <RoleCard
+              key={role}
+              onRemove={
+                userId === user?.user.id
+                  ? undefined
+                  : async () => {
+                      try {
+                        const response = await fetch(
+                          `${import.meta.env.VITE_API_URL}/api/users/${userId}/admin`,
+                          {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${user?.token}`,
+                            },
+                            body: JSON.stringify({
+                              addrole: false,
+                              role,
+                            }),
+                          }
+                        );
+
+                        if (!response.ok) {
+                          console.log('Error removing role', response);
+                        }
+
+                        queryClient.invalidateQueries({queryKey: ['users']});
+                      } catch (error) {
+                        console.log('Error removing role', error);
+                      }
+                    }
+              }
+            >
+              {role}
+            </RoleCard>
+          ))}
         </div>
       ),
     },
