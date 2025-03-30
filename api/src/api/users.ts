@@ -186,7 +186,7 @@ api.delete(
   processRequest({
     params: z.object({id: z.string()}),
   }),
-  async ({params: {id}, user}, res) => {
+  async ({params: {id}}, res) => {
     if (!id) throw new Exceptions.ValidationException('User ID not specified');
 
     const userToRemove = await getUserFromEmailOrUsername(id);

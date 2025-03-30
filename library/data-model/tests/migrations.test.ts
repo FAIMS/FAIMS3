@@ -8,9 +8,9 @@ import {
   UserV2Document,
   V1InviteDBFields,
   V2InviteDBFields,
-} from '..';
-import {Role} from '../..';
-import {areDocsEqual} from '../../../tests/utils';
+} from '../src/data_storage';
+import {Role} from '../src';
+import {areDocsEqual} from './utils';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
