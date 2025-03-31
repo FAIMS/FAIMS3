@@ -20,7 +20,7 @@
 
 import {
   Action,
-  addTeamRoleToUser,
+  addTeamRole,
   GetListTeamsResponse,
   GetTeamByIdResponse,
   getTeamMembershipAction,
@@ -29,12 +29,11 @@ import {
   PostCreateTeamResponse,
   PutUpdateTeamInputSchema,
   PutUpdateTeamResponse,
-  removeTeamRoleFromUser,
+  removeTeamRole,
   Resource,
+  Role,
   roleDetails,
   TeamMembershipInputSchema,
-  userCanDo,
-  Role,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
@@ -52,7 +51,7 @@ import {
   saveUser,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {isAllowedToMiddleware, requireAuthenticationAPI, userCanDo} from '../middleware';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -299,13 +298,13 @@ api.post(
 
     // Apply the role change
     if (add) {
-      addTeamRoleToUser({
+      addTeamRole({
         user: targetUser,
         teamId,
         role,
       });
     } else {
-      removeTeamRoleFromUser({
+      removeTeamRole({
         user: targetUser,
         teamId,
         role,

@@ -19,10 +19,35 @@
  *   which server to use and whether to include test data
  */
 
-import {Action, isAuthorized, userCanDo} from '@faims3/data-model';
+import {
+  Action,
+  isAuthorized,
+  PeopleDBDocument,
+  ResourceRole,
+} from '@faims3/data-model';
 import Express from 'express';
 import {validateToken} from './authkeys/read';
 import * as Exceptions from './exceptions';
+
+export const userCanDo = ({
+  user,
+  action,
+  resourceId,
+}: {
+  // typing weird here
+  user: PeopleDBDocument & {resourceRoles: ResourceRole[]};
+  action: Action;
+  resourceId?: string;
+}) => {
+  return isAuthorized({
+    decodedToken: {
+      globalRoles: user.globalRoles,
+      resourceRoles: user.resourceRoles,
+    },
+    action,
+    resourceId,
+  });
+};
 
 /**
  * Extracts the Bearer token from the Authorization header of an Express

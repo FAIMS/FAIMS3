@@ -30,6 +30,7 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
+import * as Exceptions from '../exceptions';
 import {
   archiveTemplate,
   createTemplate,
@@ -38,7 +39,11 @@ import {
   getTemplates,
   updateExistingTemplate,
 } from '../couchdb/templates';
-import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
 
 import patch from '../utils/patchExpressAsync';
 
@@ -54,9 +59,21 @@ export const api = express.Router();
 api.get(
   '/',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({action: Action.VIEW_TEMPLATES}),
+  isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
   async (req, res: Response<GetListTemplatesResponse>) => {
-    res.json({templates: await getTemplates()});
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    res.json({
+      templates: (await getTemplates()).filter(t =>
+        userCanDo({
+          action: Action.READ_TEMPLATE_DETAILS,
+          user: req.user!,
+          resourceId: t._id,
+        })
+      ),
+    });
   }
 );
 
@@ -67,7 +84,12 @@ api.get(
 api.get(
   '/:id',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({action: Action.VIEW_TEMPLATES}),
+  isAllowedToMiddleware({
+    action: Action.READ_TEMPLATE_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
   processRequest({
     params: z.object({id: z.string()}),
   }),
@@ -109,8 +131,8 @@ api.put(
   '/:id',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    // TODO be more specific about the kind of update
-    action: Action.UPDATE_TEMPLATE_CONTENT,
+    // TODO be more specific about the kind of update (i.e. ui spec or not)
+    action: Action.UPDATE_TEMPLATE_DETAILS,
     getResourceId(req) {
       return req.params.id;
     },
@@ -138,7 +160,6 @@ api.post(
   '/:id/delete',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    // TODO be more specific about the kind of update
     action: Action.DELETE_TEMPLATE,
     getResourceId(req) {
       return req.params.id;
@@ -164,7 +185,6 @@ api.put(
   '/:id/archive',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    // TODO be more specific about the kind of update
     action: Action.CHANGE_TEMPLATE_STATUS,
     getResourceId(req) {
       return req.params.id;

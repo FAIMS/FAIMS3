@@ -20,7 +20,7 @@
 
 import {
   Action,
-  addResourceRole,
+  addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
   EncodedProjectUIModel,
@@ -28,6 +28,7 @@ import {
   GetNotebookResponse,
   GetNotebookUsersResponse,
   getRecordsWithRegex,
+  isAuthorized,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
@@ -39,11 +40,9 @@ import {
   ProjectUIModel,
   PutUpdateNotebookInputSchema,
   PutUpdateNotebookResponse,
-  removeResourceRole,
-  Resource,
+  removeProjectRole,
   Role,
-  userCanDo,
-  userResourceRoles,
+  userHasProjectRole,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
@@ -73,7 +72,11 @@ import {
   saveUser,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
@@ -178,9 +181,9 @@ api.post(
     );
     if (projectID) {
       // Make the user an admin of this notebook
-      addResourceRole({
+      addProjectRole({
         user: req.user,
-        resourceId: projectID,
+        projectId: projectID,
         role: Role.PROJECT_ADMIN,
       });
       await saveUser(req.user);
@@ -397,15 +400,17 @@ api.get(
       roles: allRoles,
       users: users
         .map(u => {
-          const has = userResourceRoles({
-            resource: Resource.PROJECT,
-            user: u,
-            resourceId: req.params.id,
-          });
           return {
             name: u.name,
             username: u.user_id,
-            roles: allRoles.map(r => ({value: has.includes(r), name: r})),
+            roles: allRoles.map(r => ({
+              value: userHasProjectRole({
+                user: u,
+                projectId: req.params.id,
+                role: r,
+              }),
+              name: r,
+            })),
           };
         })
         .filter(d => d.roles.filter(r => r.value).length > 0),
@@ -437,9 +442,12 @@ api.post(
     });
 
     if (
-      !userCanDo({
+      !isAuthorized({
         action: actionNeeded,
-        user: req.user,
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
         resourceId: req.params.id,
       })
     ) {
@@ -468,14 +476,14 @@ api.post(
 
     if (addRole) {
       // Add project role to the user
-      addResourceRole({
+      addProjectRole({
         user,
-        resourceId: req.params.id,
+        projectId: req.params.id,
         role: role,
       });
     } else {
       // Remove project role from the user
-      removeResourceRole({user, resourceId: notebookMetadata.project_id, role});
+      removeProjectRole({user, projectId: notebookMetadata.project_id, role});
     }
 
     // save the user after modifications have been made
@@ -537,9 +545,12 @@ api.post(
     // Get the action needed
     const actionNeeded = projectInviteToAction({action: 'create', role});
     if (
-      !userCanDo({
+      !isAuthorized({
         action: actionNeeded,
-        user: user,
+        decodedToken: {
+          globalRoles: user.globalRoles,
+          resourceRoles: user.resourceRoles,
+        },
         resourceId: notebookId,
       })
     ) {
@@ -624,8 +635,8 @@ api.delete(
     // Remove all resource roles associated with this user
     for (const role of user.resourceRoles) {
       if (role.resourceId === req.params.notebook_id) {
-        removeResourceRole({
-          resourceId: req.params.notebook_id,
+        removeProjectRole({
+          projectId: req.params.notebook_id,
           role: role.role,
           user,
         });

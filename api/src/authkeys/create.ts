@@ -36,9 +36,12 @@ export async function generateJwtFromUser({
   user: Express.User;
   signingKey: SigningKey;
 }) {
+    // TODO build out the relevant associations - i.e. which teams is the user a
+    // part of - and then work out which resources this team owns
+
   // The data model provides this encoding method - it takes the couch user
   // details and determines how to put that into the token
-  const permissionsComponent = couchUserToTokenPermissions({...user});
+  const permissionsComponent = couchUserToTokenPermissions({user, relevantAssociations: []});
 
   // We then augment this with extra details to help identify the origin of the
   // token + user details
