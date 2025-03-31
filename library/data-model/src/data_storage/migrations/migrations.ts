@@ -1,9 +1,13 @@
 import {ResourceRole, Role} from '../../permission';
 import {V1InviteDBFields, V2InviteDBFields} from '../invitesDB';
-import {UserV1Document, UserV2Document} from '../peopleDB';
 import {
-  DATABASE_TYPE,
+  PeopleV1Document,
+  PeopleV2Document,
+  PeopleV3Document,
+} from '../peopleDB';
+import {
   DatabaseType,
+  DBTargetVersions,
   MigrationDetails,
   MigrationFunc,
 } from './migrationService';
@@ -15,7 +19,7 @@ import {
  */
 export const peopleV1toV2Migration: MigrationFunc = doc => {
   // Take input as v1 then output as v2
-  const inputDoc = doc as unknown as UserV1Document;
+  const inputDoc = doc as unknown as PeopleV1Document;
 
   // Need to convert existing roles -> resource and global roles
   const globalRoles: Role[] = [];
@@ -55,7 +59,7 @@ export const peopleV1toV2Migration: MigrationFunc = doc => {
     }
   }
 
-  const outputDoc: UserV2Document = {
+  const outputDoc: PeopleV2Document = {
     _id: inputDoc._id,
     _rev: inputDoc._rev,
     emails: inputDoc.emails,
@@ -64,6 +68,24 @@ export const peopleV1toV2Migration: MigrationFunc = doc => {
     profiles: inputDoc.profiles,
     globalRoles,
     resourceRoles,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Takes a v1 person and maps the global and resource roles into new permission
+ * model
+ * @returns Updated doc
+ */
+export const peopleV2toV3Migration: MigrationFunc = doc => {
+  // Take input as v1 then output as v2
+  const inputDoc = doc as unknown as PeopleV2Document;
+
+  // Add empty team roles
+  const outputDoc: PeopleV3Document = {
+    ...inputDoc,
+    teamRoles: [],
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -114,9 +136,7 @@ export const invitesV1toV2Migration: MigrationFunc = doc => {
 
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
-export const DB_TARGET_VERSIONS: {
-  [key in DATABASE_TYPE]: {defaultVersion: number; targetVersion: number};
-} = {
+export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
@@ -124,9 +144,10 @@ export const DB_TARGET_VERSIONS: {
   [DatabaseType.INVITES]: {defaultVersion: 2, targetVersion: 2},
   [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
   // people v2
-  [DatabaseType.PEOPLE]: {defaultVersion: 2, targetVersion: 2},
+  [DatabaseType.PEOPLE]: {defaultVersion: 3, targetVersion: 3},
   [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };
 
 export const DB_MIGRATIONS: MigrationDetails[] = [
@@ -136,6 +157,13 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     to: 2,
     description: 'Updates the people database to use new permissions models',
     migrationFunction: peopleV1toV2Migration,
+  },
+  {
+    dbType: DatabaseType.PEOPLE,
+    from: 2,
+    to: 3,
+    description: 'Adds empty teams field',
+    migrationFunction: peopleV2toV3Migration,
   },
   {
     dbType: DatabaseType.INVITES,

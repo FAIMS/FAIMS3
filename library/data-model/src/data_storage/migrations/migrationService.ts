@@ -16,6 +16,7 @@ export enum DatabaseType {
   PEOPLE = 'PEOPLE',
   PROJECTS = 'PROJECTS',
   TEMPLATES = 'TEMPLATES',
+  TEAMS = 'TEAMS',
 }
 export const DATABASE_TYPES = [
   DatabaseType.AUTH,
@@ -26,8 +27,13 @@ export const DATABASE_TYPES = [
   DatabaseType.PEOPLE,
   DatabaseType.PROJECTS,
   DatabaseType.TEMPLATES,
+  DatabaseType.TEAMS,
 ] as const;
 export type DATABASE_TYPE = (typeof DATABASE_TYPES)[number];
+
+export type DBTargetVersions = {
+  [key in DatabaseType]: {defaultVersion: number; targetVersion: number};
+};
 
 export type MigrationFuncReturn = {
   action: 'none' | 'update' | 'delete';
