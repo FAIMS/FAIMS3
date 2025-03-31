@@ -21,6 +21,7 @@ import {
   PostRefreshTokenInputSchema,
   PostRefreshTokenResponse,
   PublicServerInfo,
+  Action,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import multer from 'multer';
@@ -37,13 +38,12 @@ import {
 } from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
-import {getUserProjects} from '../couchdb/notebooks';
-import {userIsClusterAdmin} from '../couchdb/users';
+import {getUserProjectsDirectory} from '../couchdb/notebooks';
 import * as Exceptions from '../exceptions';
 import {
+  isAllowedToMiddleware,
   optionalAuthenticationJWT,
   requireAuthenticationAPI,
-  requireClusterAdmin,
 } from '../middleware';
 import {slugify} from '../utils';
 
@@ -82,9 +82,9 @@ api.post('/initialise/', async (req, res) => {
 api.post(
   '/forceInitialise',
   requireAuthenticationAPI,
-  requireClusterAdmin,
+  isAllowedToMiddleware({action: Action.INITIALISE_SYSTEM_API}),
   async (req, res) => {
-    initialiseDbAndKeys({force: true});
+    await initialiseDbAndKeys({force: true});
     res.json({success: true});
   }
 );
@@ -103,14 +103,19 @@ api.get('/info', async (req, res) => {
   res.json(response);
 });
 
-api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
-  // get the directory of notebooks on this server
-  if (!req.user) {
-    throw new Exceptions.UnauthorizedException();
+api.get(
+  '/directory/',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({action: Action.LIST_PROJECTS}),
+  async (req, res) => {
+    // get the directory of notebooks on this server
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const projects = await getUserProjectsDirectory(req.user);
+    res.json(projects);
   }
-  const projects = await getUserProjects(req.user);
-  res.json(projects);
-});
+);
 
 /**
  * Refresh - get a new JWT using a refresh token.
@@ -154,12 +159,10 @@ api.post(
 if (DEVELOPER_MODE) {
   api.post(
     '/restore',
-    upload.single('backup'),
     requireAuthenticationAPI,
+    isAllowedToMiddleware({action: Action.RESTORE_FROM_BACKUP}),
+    upload.single('backup'),
     async (req: any, res) => {
-      if (!userIsClusterAdmin(req.user)) {
-        throw new Exceptions.UnauthorizedException();
-      }
       await restoreFromBackup(req.file.path);
       res.json({status: 'success'});
     }
@@ -172,7 +175,7 @@ if (DEVELOPER_MODE) {
 api.post(
   '/admin/test-email',
   requireAuthenticationAPI,
-  requireClusterAdmin,
+  isAllowedToMiddleware({action: Action.SEND_TEST_EMAIL}),
   async (req, res) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('Authentication required.');
