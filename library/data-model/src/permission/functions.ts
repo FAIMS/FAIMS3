@@ -241,7 +241,7 @@ interface ResourceIdentifier {
 /**
  * Type definition for resource associations
  */
-interface ResourceAssociation {
+export interface ResourceAssociation {
   // The resource that has the association (e.g., a team)
   resource: ResourceIdentifier;
   // Resources associated with this resource (e.g., projects owned by the team)
@@ -251,6 +251,10 @@ interface ResourceAssociation {
 /**
  * Generates virtual resource roles for a user based on their existing roles and
  * resource associations
+ *
+ * @param decodedToken The user's decoded token with their actual roles
+ * @param resourceAssociations Mapping of resources to their associated resources
+ * @returns Array of virtual resource roles that should be added
  */
 export function generateVirtualResourceRoles({
   decodedToken,
@@ -259,9 +263,9 @@ export function generateVirtualResourceRoles({
   decodedToken: DecodedTokenPermissions;
   resourceAssociations: ResourceAssociation[];
 }): ResourceRole[] {
-  // Set to track unique resource roles (avoid duplicates)
-  const virtualRolesSet = new Set<string>();
-  const virtualRoles: ResourceRole[] = [];
+  // Use a Map to track virtual roles with effective deduplication
+  // Map key is 'resourceId:role' to ensure uniqueness
+  const virtualRolesMap = new Map<string, ResourceRole>();
 
   /**
    * Helper function to process a role and generate virtual roles
@@ -297,27 +301,33 @@ export function generateVirtualResourceRoles({
     }
 
     // Generate virtual roles for applicable resources
-    const generatedRoles = roleConfig.virtualRoles(applicableResources);
+    for (const {resourceId, resourceType} of applicableResources) {
+      if (roleConfig.virtualRoles.has(resourceType)) {
+        // Get the roles this grants for this resource type
+        const grantedRoles = roleConfig.virtualRoles.get(resourceType)!;
 
-    // Add unique virtual roles to the result
-    for (const vRole of generatedRoles) {
-      const roleKey = `${vRole.resourceId}:${vRole.role}`;
-      if (!virtualRolesSet.has(roleKey)) {
-        virtualRolesSet.add(roleKey);
-        virtualRoles.push(vRole);
+        // Add each granted role to the map (unless a higher role already exists)
+        for (const grantedRole of grantedRoles) {
+          const mapKey = `${resourceId}:${grantedRole}`;
+
+          // If we haven't seen this resource+role combination yet, add it
+          if (!virtualRolesMap.has(mapKey)) {
+            virtualRolesMap.set(mapKey, {resourceId, role: grantedRole});
+          } else {
+            // If we have seen it, we may need to determine which role has higher precedence
+            // This would require additional logic if needed
+            // For now, we're simply tracking uniqueness
+          }
+        }
       }
     }
   }
-
-  // Currently global roles do not allow virtual roles - they already apply to
-  // everything
 
   // Process resource-specific roles
   for (const resourceRole of decodedToken.resourceRoles) {
     const details = roleDetails[resourceRole.role];
     if (!details.resource) {
-      // This role is not resource specific - how can you distribute non
-      // resource specific roles to a specific list of resources?
+      // This role is not resource specific - skip
       console.warn(
         'Skipping virtual role distribution for a non resource specific role: ',
         details.name,
@@ -325,6 +335,7 @@ export function generateVirtualResourceRoles({
       );
       continue;
     }
+
     processRole({
       role: resourceRole.role,
       resourceId: resourceRole.resourceId,
@@ -332,7 +343,8 @@ export function generateVirtualResourceRoles({
     });
   }
 
-  return virtualRoles;
+  // Return the unique values from the Map
+  return Array.from(virtualRolesMap.values());
 }
 
 /**

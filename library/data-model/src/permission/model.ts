@@ -28,7 +28,6 @@ export enum Action {
 
   // Create a new project
   CREATE_PROJECT = 'CREATE_PROJECT',
-  CREATE_PROJECT_IN_MY_TEAM = 'CREATE_PROJECT_IN_MY_TEAM',
 
   // Read the high details of a project (e.g. description, title etc)
   READ_PROJECT_METADATA = 'READ_PROJECT_METADATA',
@@ -129,6 +128,7 @@ export enum Action {
   CREATE_TEAM = 'CREATE_TEAM',
 
   // CRUD (resource specific)
+  CREATE_PROJECT_IN_TEAM = 'CREATE_PROJECT_IN_TEAM',
   DELETE_TEAM = 'DELETE_TEAM',
   UPDATE_TEAM_DETAILS = 'UPDATE_TEAM_DETAILS',
   VIEW_TEAM_DETAILS = 'VIEW_TEAM_DETAILS',
@@ -195,11 +195,11 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.PROJECT,
   },
-  [Action.CREATE_PROJECT_IN_MY_TEAM]: {
-    name: 'Create Project (In my team)',
-    description: 'Create a new project in the system - in my team',
-    resourceSpecific: false,
-    resource: Resource.PROJECT,
+  [Action.CREATE_PROJECT_IN_TEAM]: {
+    name: 'Create Project (In team)',
+    description: 'Create a new project inside a given team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
   },
   [Action.READ_PROJECT_METADATA]: {
     name: 'Read Project Metadata',
@@ -758,9 +758,7 @@ export const roleActions: Record<
   {
     actions: Action[];
     inheritedRoles?: Role[];
-    virtualRoles?: (
-      resources: {resourceId: string; resourceType: Resource}[]
-    ) => ResourceRole[];
+    virtualRoles?: Map<Resource, Role[]>;
   }
 > = {
   // PROJECT ROLES
@@ -843,63 +841,35 @@ export const roleActions: Record<
       Action.INITIALISE_SYSTEM_API,
       Action.RESTORE_FROM_BACKUP,
       Action.VALIDATE_DBS,
+      Action.CREATE_TEAM,
     ],
-    inheritedRoles: [Role.GENERAL_CREATOR, Role.PROJECT_ADMIN],
+    inheritedRoles: [Role.GENERAL_CREATOR, Role.PROJECT_ADMIN, Role.TEAM_ADMIN],
   },
 
   // TEAM ROLES
   [Role.TEAM_MEMBER]: {
     actions: [Action.VIEW_TEAM_DETAILS, Action.VIEW_TEAM_MEMBERS],
-    virtualRoles(resources) {
-      const outputResourceRoles = [];
-
-      // For each resource, if it's a PROJECT, grant PROJECT_CONTRIBUTOR role
-      for (const resource of resources) {
-        if (resource.resourceType === Resource.PROJECT) {
-          outputResourceRoles.push({
-            resourceId: resource.resourceId,
-            role: Role.PROJECT_CONTRIBUTOR,
-          });
-        }
-      }
-
-      return outputResourceRoles;
-    },
+    // Projects owned by team -> contributor
+    virtualRoles: new Map([[Resource.PROJECT, [Role.PROJECT_CONTRIBUTOR]]]),
   },
 
   [Role.TEAM_MANAGER]: {
     actions: [
       // Other team based things
-      Action.UPDATE_TEAM_DETAILS,
-      Action.ADD_MEMBER_TO_TEAM,
-      Action.REMOVE_MEMBER_FROM_TEAM,
+      Action.UPDATE_TEAM_DETAILS, // resource
+      Action.ADD_MEMBER_TO_TEAM, // resource
+      Action.REMOVE_MEMBER_FROM_TEAM, // resource
+
       // Being a manager of a team also gives you the ability to create new key
       // resources in that team
-      Action.CREATE_PROJECT_IN_MY_TEAM,
-      // And CRUD templates generally speaking
-      Action.CREATE_TEMPLATE,
-      Action.UPDATE_TEMPLATE_CONTENT,
-      Action.UPDATE_TEMPLATE_DETAILS,
-      Action.CHANGE_TEMPLATE_STATUS,
-      // TODO manage deletion of mine vs other's templates
-      Action.DELETE_TEMPLATE,
+      Action.CREATE_PROJECT_IN_TEAM, // resource
     ],
+    // TODO make templates managed with their own roles/ownership model so that
+    // we can do virtualRoles over templates owned by the team
+    // NOTE this is a bit of a permission leak here re: general creator
     inheritedRoles: [Role.TEAM_MEMBER, Role.GENERAL_CREATOR],
-    virtualRoles(resources) {
-      const outputResourceRoles = [];
-
-      // For each resource, if it's a PROJECT, grant PROJECT_MANAGER role
-      for (const resource of resources) {
-        if (resource.resourceType === Resource.PROJECT) {
-          outputResourceRoles.push({
-            resourceId: resource.resourceId,
-            role: Role.PROJECT_MANAGER,
-          });
-        }
-      }
-
-      return outputResourceRoles;
-    },
+    // Projects owned by team -> manager
+    virtualRoles: new Map([[Resource.PROJECT, [Role.PROJECT_MANAGER]]]),
   },
 
   [Role.TEAM_ADMIN]: {
@@ -911,21 +881,8 @@ export const roleActions: Record<
       Action.REMOVE_MANAGER_FROM_TEAM,
     ],
     inheritedRoles: [Role.TEAM_MANAGER],
-    virtualRoles(resources) {
-      const outputResourceRoles = [];
-
-      // For each resource, if it's a PROJECT, grant PROJECT_ADMIN role
-      for (const resource of resources) {
-        if (resource.resourceType === Resource.PROJECT) {
-          outputResourceRoles.push({
-            resourceId: resource.resourceId,
-            role: Role.PROJECT_ADMIN,
-          });
-        }
-      }
-
-      return outputResourceRoles;
-    },
+    // Projects owned by team -> manager
+    virtualRoles: new Map([[Resource.PROJECT, [Role.PROJECT_ADMIN]]]),
   },
 };
 

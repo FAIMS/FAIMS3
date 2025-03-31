@@ -22,5 +22,6 @@
         "./src",
         "tests/migrationService.test.ts",
         "tests/migrations.test.ts",
+        "tests/permissionfunctions.test.ts",
     ]
 }
