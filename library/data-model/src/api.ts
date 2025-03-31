@@ -8,6 +8,7 @@ import {
   UiSpecificationSchema,
 } from './types';
 import {Role} from './permission';
+import {ExistingTeamsDBDocument} from './data_storage';
 
 // ==================
 // WIP USERS
@@ -270,4 +271,124 @@ export const PutRequestPasswordResetResponseSchema = z.object({
 });
 export type PutRequestPasswordResetResponse = z.infer<
   typeof PutRequestPasswordResetResponseSchema
+>;
+
+// TEAMS
+// =====
+
+/**
+ * Schema for creating a new team
+ */
+export const PostCreateTeamInputSchema = z.object({
+  name: z.string().min(5, 'Team name is required, minimum length 5.'),
+  description: z.string(),
+});
+
+/**
+ * Schema for updating an existing team
+ */
+export const PutUpdateTeamInputSchema = z.object({
+  name: z
+    .string()
+    .min(5, 'Team name is required, minimum length 5.')
+    .optional(),
+  description: z.string().optional(),
+});
+
+/**
+ * Basic team document schema
+ */
+export const TeamDocumentSchema = z.object({
+  _id: z.string(),
+  _rev: z.string(),
+  name: z.string(),
+  description: z.string(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  createdBy: z.string(),
+});
+
+/**
+ * GET /api/teams response
+ */
+export const GetListTeamsResponseSchema = z.object({
+  teams: z.array(TeamDocumentSchema),
+});
+
+/**
+ * GET /api/teams/:id response
+ */
+export const GetTeamByIdResponseSchema = TeamDocumentSchema;
+
+/**
+ * POST /api/teams response
+ */
+export const PostCreateTeamResponseSchema = TeamDocumentSchema;
+
+/**
+ * PUT /api/teams/:id response
+ */
+export const PutUpdateTeamResponseSchema = TeamDocumentSchema;
+
+// inferred types
+export type PostCreateTeamInput = z.infer<typeof PostCreateTeamInputSchema>;
+export type PutUpdateTeamInput = z.infer<typeof PutUpdateTeamInputSchema>;
+export type GetListTeamsResponse = z.infer<typeof GetListTeamsResponseSchema>;
+export type GetTeamByIdResponse = z.infer<typeof GetTeamByIdResponseSchema>;
+export type PostCreateTeamResponse = z.infer<
+  typeof PostCreateTeamResponseSchema
+>;
+export type PutUpdateTeamResponse = z.infer<typeof PutUpdateTeamResponseSchema>;
+
+/**
+ * Schema for managing team membership
+ */
+export const TeamMembershipInputSchema = z.object({
+  username: z.string().min(1, 'Username is required'),
+  role: z.nativeEnum(Role, {
+    errorMap: () => ({message: 'Must be a valid role'}),
+  }),
+  add: z.boolean(),
+});
+
+/**
+ * Team member role schema
+ */
+export const TeamMemberRoleSchema = z.object({
+  role: z.nativeEnum(Role),
+  hasRole: z.boolean(),
+});
+
+/**
+ * Team member info schema
+ */
+export const TeamMemberInfoSchema = z.object({
+  username: z.string(),
+  name: z.string(),
+  roles: z.array(TeamMemberRoleSchema),
+});
+
+/**
+ * Available role info schema
+ */
+export const AvailableRoleInfoSchema = z.object({
+  role: z.nativeEnum(Role),
+  name: z.string(),
+  description: z.string(),
+});
+
+/**
+ * GET /api/teams/:id/members response
+ */
+export const GetTeamMembersResponseSchema = z.object({
+  members: z.array(TeamMemberInfoSchema),
+  availableRoles: z.array(AvailableRoleInfoSchema),
+});
+
+export type TeamMembershipInput = z.infer<typeof TeamMembershipInputSchema>;
+export type TeamMemberRole = z.infer<typeof TeamMemberRoleSchema>;
+export type TeamMemberInfo = z.infer<typeof TeamMemberInfoSchema>;
+export type AvailableRoleInfo = z.infer<typeof AvailableRoleInfoSchema>;
+export type GetTeamMembersResponse = z.infer<
+  typeof GetTeamMembersResponseSchema
 >;

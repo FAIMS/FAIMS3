@@ -6,7 +6,7 @@ import {COUCH_ADMIN_ROLE_NAME} from '../..';
 import {SecurityDocument} from '../utils';
 
 export const TeamsDBSecurityDocument: SecurityDocument = {
-  // Only DB admins or cluster admins can interact with the AuthDB
+  // Only DB admins or cluster admins can interact with the TeamDB
   admins: {
     names: [],
     roles: [COUCH_ADMIN_ROLE_NAME],

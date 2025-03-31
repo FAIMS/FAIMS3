@@ -293,7 +293,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
       user_id: 'abcd123456',
       name: 'George Costanza',
       emails: ['george.costanza@gmail.com'],
-      resourceRoles: [
+      projectRoles: [
         {resourceId: 'survey1', role: Role.PROJECT_ADMIN},
         {resourceId: 'survey2', role: Role.PROJECT_CONTRIBUTOR},
       ],

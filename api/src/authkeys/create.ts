@@ -39,6 +39,7 @@ export async function generateJwtFromUser({
   // The data model provides this encoding method - it takes the couch user
   // details and determines how to put that into the token
   const permissionsComponent = couchUserToTokenPermissions({...user});
+
   // We then augment this with extra details to help identify the origin of the
   // token + user details
   const completePayload: TokenPayload = {

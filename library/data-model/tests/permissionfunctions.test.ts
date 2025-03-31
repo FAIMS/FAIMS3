@@ -2,6 +2,7 @@ import {
   extendTokenWithVirtualRoles,
   generateVirtualResourceRoles,
   isTokenAuthorized,
+  necessaryActionToCouchRoleList,
   ResourceAssociation,
 } from '../src/permission/functions';
 import {
@@ -17,7 +18,6 @@ import {
   decodePerResourceStatement,
   encodeToken,
   ENCODING_SEPARATOR,
-  necessaryActionToCouchRoleList,
   TokenPermissions,
 } from '../src/permission/tokenEncoding';
 
@@ -666,7 +666,7 @@ describe('isAuthorized', () => {
       expect(
         isTokenAuthorized({
           token: token,
-          action: Action.UPDATE_TEMPLATE_CONTENT,
+          action: Action.UPDATE_TEMPLATE_UISPEC,
           resourceId: 'template456',
         })
       ).toBe(true);
@@ -711,7 +711,7 @@ describe('isAuthorized', () => {
       // Mock the function for testing
       jest
         .spyOn(
-          require('../src/permission/tokenEncoding'),
+          require('../src/permission/functions'),
           'necessaryActionToCouchRoleList'
         )
         .mockImplementation(({action, resourceId}: any) => {
@@ -1000,13 +1000,8 @@ describe('Virtual Resource Roles', () => {
         role: Role.PROJECT_CONTRIBUTOR,
       });
 
-      // No roles for template resources (assuming there's no mapping defined)
-      expect(
-        virtualRoles.find(role => role.resourceId === 'templateA')
-      ).toBeUndefined();
-
-      // Total count should be 3 (2 projects for team A, 1 project for team B)
-      expect(virtualRoles.length).toBe(3);
+      // Total count should be 4 (2 projects for team A, 1 project for team B, 1 template for team A)
+      expect(virtualRoles.length).toBe(4);
     });
 
     it('should handle empty resource associations', () => {

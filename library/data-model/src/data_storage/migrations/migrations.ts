@@ -84,8 +84,19 @@ export const peopleV2toV3Migration: MigrationFunc = doc => {
 
   // Add empty team roles
   const outputDoc: PeopleV3Document = {
-    ...inputDoc,
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    emails: inputDoc.emails,
+    name: inputDoc.name,
+    profiles: inputDoc.profiles,
+    user_id: inputDoc.user_id,
+
+    // Global roles the same
+    globalRoles: inputDoc.globalRoles,
+    // Setup empty team roles
     teamRoles: [],
+    // convert resource roles -> project Roles
+    projectRoles: inputDoc.resourceRoles,
   };
 
   return {action: 'update', updatedRecord: outputDoc};

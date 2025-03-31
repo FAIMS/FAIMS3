@@ -1,15 +1,18 @@
-import {resourceRolesEqual, roleGrantsAction} from './helpers';
+import {roleGrantsAction} from './helpers';
 import {
   Action,
   actionDetails,
+  actionRoles,
   Resource,
   Role,
   roleActions,
   roleDetails,
+  RoleScope,
 } from './model';
 import {
   decodeAndValidateToken,
   DecodedTokenPermissions,
+  encodeClaim,
   ResourceRole,
   TokenPermissions,
 } from './tokenEncoding';
@@ -114,27 +117,6 @@ export function isAuthorized({
 }
 
 /**
- * Checks if a user has a specific resource role
- * @param resourceRoles The user's resource roles
- * @param needs The role being checked for
- * @param resourceId The specific resource ID
- * @returns True if the user has the specified role for the resource
- */
-export function hasResourceRole({
-  resourceRoles,
-  needs,
-  resourceId,
-}: {
-  resourceRoles: ResourceRole[];
-  needs: Role;
-  resourceId: string;
-}): boolean {
-  return resourceRoles.some(r =>
-    resourceRolesEqual(r, {resourceId, role: needs})
-  );
-}
-
-/**
  * Maps a add/remove role operation to the corresponding action needed
  * @param add Whether this is an add operation (true) or remove operation (false)
  * @param role The role being added or removed
@@ -228,6 +210,25 @@ export function projectInviteToAction({
   }
 
   return actionNeeded;
+}
+
+/**
+ * Maps a role and operation to the corresponding action
+ * @param role The role being modified
+ * @param add Whether adding (true) or removing (false)
+ * @returns The corresponding permission action
+ */
+export function getTeamMembershipAction(role: Role, add: boolean): Action {
+  switch (role) {
+    case Role.TEAM_ADMIN:
+      return add ? Action.ADD_ADMIN_TO_TEAM : Action.REMOVE_ADMIN_FROM_TEAM;
+    case Role.TEAM_MANAGER:
+      return add ? Action.ADD_MANAGER_TO_TEAM : Action.REMOVE_MANAGER_FROM_TEAM;
+    case Role.TEAM_MEMBER:
+      return add ? Action.ADD_MEMBER_TO_TEAM : Action.REMOVE_MEMBER_FROM_TEAM;
+    default:
+      throw new Error(`Invalid team role: ${role}`);
+  }
 }
 
 /**
@@ -366,4 +367,46 @@ export function extendTokenWithVirtualRoles({
     ...decodedToken,
     resourceRoles: [...decodedToken.resourceRoles, ...virtualRoles],
   };
+}
+
+/**
+ * From a given ACTION, reverse looks up roles which grant that action,
+ * and then encodes both the resource specific version i.e. <resource Id> ||
+ * <role> and the global version <role> implying that either is
+ * suitable for CouchDB authorization
+ *
+ * @returns list of roles to be used in couch db security documents
+ */
+export function necessaryActionToCouchRoleList({
+  action,
+  resourceId,
+}: {
+  action: Action;
+  resourceId: string;
+}): string[] {
+  const roles: string[] = [];
+
+  // Get all roles that can perform this action
+  const rolesForAction = actionRoles[action];
+
+  rolesForAction.forEach(role => {
+    const details = roleDetails[role];
+
+    // For global roles, just use the role name
+    if (details.scope === RoleScope.GLOBAL) {
+      roles.push(role);
+    }
+
+    // For resource-specific roles, encode with resourceId
+    else {
+      roles.push(
+        encodeClaim({
+          resourceId,
+          claim: role,
+        })
+      );
+    }
+  });
+
+  return roles;
 }

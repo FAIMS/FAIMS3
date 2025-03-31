@@ -46,7 +46,7 @@ patch();
 
 export const api = express.Router();
 
-// update a user
+// update a users roles
 api.post(
   '/:id/admin',
   requireAuthenticationAPI,

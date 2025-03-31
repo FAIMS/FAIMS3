@@ -1,5 +1,3 @@
-import {ResourceRole} from '..';
-
 // Define the resources in the system
 export enum Resource {
   // Projects/surveys/notebooks in the system
@@ -27,7 +25,7 @@ export enum Action {
   LIST_PROJECTS = 'LIST_PROJECTS',
 
   // Create a new project
-  CREATE_PROJECT = 'CREATE_PROJECT',
+  CREATE_PROJECT = 'CREATE_PROJECT', // global
 
   // Read the high details of a project (e.g. description, title etc)
   READ_PROJECT_METADATA = 'READ_PROJECT_METADATA',
@@ -102,22 +100,25 @@ export enum Action {
   // TEMPLATE ACTIONS
   // ============================================================
 
-  // View templates
-  VIEW_TEMPLATES = 'VIEW_TEMPLATES',
+  // View list of projects
+  LIST_TEMPLATES = 'LIST_TEMPLATES', // global
 
-  // Create a new template
-  CREATE_TEMPLATE = 'CREATE_TEMPLATE',
+  // Create a new project
+  CREATE_TEMPLATE = 'CREATE_TEMPLATE', // global
 
-  // Update a template (the actual specification)
-  UPDATE_TEMPLATE_CONTENT = 'UPDATE_TEMPLATE_CONTENT',
+  // Read the high details of a template (e.g. description, title etc)
+  READ_TEMPLATE_DETAILS = 'READ_TEMPLATE_DETAILS',
 
-  // Update a template details/description etc
+  // Update the template high level details (e.g. description, title etc)
   UPDATE_TEMPLATE_DETAILS = 'UPDATE_TEMPLATE_DETAILS',
 
-  // Change the status of a template
+  // Update the UI specification
+  UPDATE_TEMPLATE_UISPEC = 'UPDATE_TEMPLATE_UISPEC',
+
+  // Change open/closed status
   CHANGE_TEMPLATE_STATUS = 'CHANGE_TEMPLATE_STATUS',
 
-  // Delete a template
+  // Delete the project
   DELETE_TEMPLATE = 'DELETE_TEMPLATE',
 
   // ============================================================
@@ -129,6 +130,7 @@ export enum Action {
 
   // CRUD (resource specific)
   CREATE_PROJECT_IN_TEAM = 'CREATE_PROJECT_IN_TEAM',
+  CREATE_TEMPLATE_IN_TEAM = 'CREATE_TEMPLATE_IN_TEAM',
   DELETE_TEAM = 'DELETE_TEAM',
   UPDATE_TEAM_DETAILS = 'UPDATE_TEAM_DETAILS',
   VIEW_TEAM_DETAILS = 'VIEW_TEAM_DETAILS',
@@ -508,9 +510,9 @@ export const actionDetails: Record<Action, ActionDetails> = {
   // ============================================================
   // TEMPLATE ACTIONS
   // ============================================================
-  [Action.VIEW_TEMPLATES]: {
-    name: 'View templates',
-    description: 'View all templates in the system',
+  [Action.LIST_TEMPLATES]: {
+    name: 'List templates',
+    description: 'View all templates in the system (which you can see)',
     resourceSpecific: false,
     resource: Resource.TEMPLATE,
   },
@@ -520,8 +522,21 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.TEMPLATE,
   },
-  [Action.UPDATE_TEMPLATE_CONTENT]: {
-    name: 'Update Template Content',
+  [Action.CREATE_TEMPLATE_IN_TEAM]: {
+    name: 'Create Template (In team)',
+    description: 'Create a new template inside a given team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.READ_TEMPLATE_DETAILS]: {
+    name: 'View template',
+    description:
+      'View details of templates in the system you are authorised to see',
+    resourceSpecific: true,
+    resource: Resource.TEMPLATE,
+  },
+  [Action.UPDATE_TEMPLATE_UISPEC]: {
+    name: 'Update Template UI Specification',
     description: 'Modify the content/specification of a template',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
@@ -632,6 +647,11 @@ export enum Role {
   PROJECT_MANAGER = 'PROJECT_MANAGER',
   PROJECT_ADMIN = 'PROJECT_ADMIN',
 
+  // TEMPLATE ROLES
+  // ================
+  TEMPLATE_ADMIN = 'TEMPLATE_ADMIN',
+  TEMPLATE_GUEST = 'TEMPLATE_GUEST',
+
   // TEAM ROLES
   // ================
   TEAM_MEMBER = 'TEAM_MEMBER',
@@ -704,6 +724,20 @@ export const roleDetails: Record<Role, RoleDetails> = {
     description: 'Can view only their own contributions to a project',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
+  },
+
+  // Template roles
+  [Role.TEMPLATE_ADMIN]: {
+    name: 'Template Administrator',
+    description: 'Full control over a template.',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEMPLATE,
+  },
+  [Role.TEMPLATE_GUEST]: {
+    name: 'Template Manager',
+    description: 'Guest access to a template.',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEMPLATE,
   },
 
   // Team roles
@@ -818,19 +852,26 @@ export const roleActions: Record<
     inheritedRoles: [Role.PROJECT_MANAGER],
   },
 
-  // GLOBAL ROLES
-  [Role.GENERAL_USER]: {
-    actions: [Action.LIST_PROJECTS, Action.VIEW_TEMPLATES],
+  // TEMPLATE ROLES
+  [Role.TEMPLATE_GUEST]: {
+    actions: [Action.READ_TEMPLATE_DETAILS],
   },
-  [Role.GENERAL_CREATOR]: {
+  [Role.TEMPLATE_ADMIN]: {
     actions: [
-      Action.CREATE_PROJECT,
-      Action.CREATE_TEMPLATE,
-      Action.UPDATE_TEMPLATE_CONTENT,
       Action.UPDATE_TEMPLATE_DETAILS,
+      Action.UPDATE_TEMPLATE_UISPEC,
       Action.CHANGE_TEMPLATE_STATUS,
       Action.DELETE_TEMPLATE,
     ],
+    inheritedRoles: [Role.TEMPLATE_GUEST],
+  },
+
+  // GLOBAL ROLES
+  [Role.GENERAL_USER]: {
+    actions: [Action.LIST_PROJECTS, Action.LIST_TEMPLATES],
+  },
+  [Role.GENERAL_CREATOR]: {
+    actions: [Action.CREATE_PROJECT, Action.CREATE_TEMPLATE],
   },
   [Role.GENERAL_ADMIN]: {
     actions: [
@@ -843,14 +884,24 @@ export const roleActions: Record<
       Action.VALIDATE_DBS,
       Action.CREATE_TEAM,
     ],
-    inheritedRoles: [Role.GENERAL_CREATOR, Role.PROJECT_ADMIN, Role.TEAM_ADMIN],
+    inheritedRoles: [
+      // God role
+      Role.GENERAL_CREATOR,
+      Role.PROJECT_ADMIN,
+      Role.TEAM_ADMIN,
+      Role.TEMPLATE_ADMIN,
+    ],
   },
 
   // TEAM ROLES
   [Role.TEAM_MEMBER]: {
     actions: [Action.VIEW_TEAM_DETAILS, Action.VIEW_TEAM_MEMBERS],
-    // Projects owned by team -> contributor
-    virtualRoles: new Map([[Resource.PROJECT, [Role.PROJECT_CONTRIBUTOR]]]),
+    virtualRoles: new Map([
+      // Projects owned by team -> contributor
+      [Resource.PROJECT, [Role.PROJECT_CONTRIBUTOR]],
+      // Template owned by team -> guest
+      [Resource.TEMPLATE, [Role.TEMPLATE_GUEST]],
+    ]),
   },
 
   [Role.TEAM_MANAGER]: {
@@ -881,8 +932,12 @@ export const roleActions: Record<
       Action.REMOVE_MANAGER_FROM_TEAM,
     ],
     inheritedRoles: [Role.TEAM_MANAGER],
-    // Projects owned by team -> manager
-    virtualRoles: new Map([[Resource.PROJECT, [Role.PROJECT_ADMIN]]]),
+    virtualRoles: new Map([
+      // Projects owned by team -> manager
+      [Resource.PROJECT, [Role.PROJECT_ADMIN]],
+      // Template owned by team -> admin
+      [Resource.TEMPLATE, [Role.TEMPLATE_ADMIN]],
+    ]),
   },
 };
 

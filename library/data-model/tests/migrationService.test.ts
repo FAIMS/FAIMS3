@@ -737,7 +737,10 @@ describe('Migration System Tests', () => {
         const originalMigrationFunc = DB_MIGRATIONS[0].migrationFunction;
         const originalDefaultVersion =
           DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion;
+        const originalTargetVersion =
+          DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion = 1;
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = 2;
         DB_MIGRATIONS[0].migrationFunction = record => {
           return {
             action: 'update',
@@ -773,7 +776,7 @@ describe('Migration System Tests', () => {
           );
 
         expect(peopleMigrationDocs.rows.length).toBe(1);
-        expect(peopleMigrationDocs.rows[0].doc?.version).toBe(3);
+        expect(peopleMigrationDocs.rows[0].doc?.version).toBe(2);
 
         const projectsMigrationDocs =
           await testMigrationDb.query<MigrationsDBFields>(
@@ -793,8 +796,8 @@ describe('Migration System Tests', () => {
 
         // Restore original migration function
         DB_MIGRATIONS[0].migrationFunction = originalMigrationFunc;
-        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion =
-          originalDefaultVersion;
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion = originalDefaultVersion;
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = originalTargetVersion;
       } finally {
         // Clean up
         await testProjectsDb.destroy();

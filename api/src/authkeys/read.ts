@@ -21,7 +21,12 @@
 import {jwtVerify} from 'jose';
 import {getUserFromEmailOrUsername} from '../couchdb/users';
 import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
-import {decodeAndValidateToken} from '@faims3/data-model';
+import {
+  decodeAndValidateToken,
+  DecodedTokenPermissions,
+  TokenPermissions,
+} from '@faims3/data-model';
+
 
 /**
  * validateToken

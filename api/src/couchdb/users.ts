@@ -60,6 +60,7 @@ export const generateInitialUser = ({
     resourceRoles: [],
     // Profiles are injected later
     profiles: {},
+    teamRoles: [],
   };
 };
 
@@ -162,9 +163,7 @@ export async function getUsers(): Promise<Express.User[]> {
 }
 
 /**
- * Return all users from the users database, if it does not exist, throws error.
- * TODO wherever possible dumping the whole db will not be ideal as scales.
- * @returns all users as Express.User[]
+ * Gets users from the people db by resource Id (see design index)
  */
 export async function getUsersForResource({
   resourceId,
@@ -177,6 +176,28 @@ export async function getUsersForResource({
   return (
     await usersDb.query<PeopleDBFields>('indexes/byResource', {
       key: resourceId,
+      include_docs: true,
+    })
+  ).rows.reduce((filtered, option) => {
+    if (option.doc) filtered.push(option.doc);
+    return filtered;
+  }, [] as Express.User[]);
+}
+
+/**
+ * Gets users from the people db by team ID
+ */
+export async function getUsersForTeam({
+  teamId,
+}: {
+  teamId: string;
+}): Promise<Express.User[]> {
+  // Get the users database
+  const usersDb = getUsersDB();
+  // Fetch all user records from the database and get doc
+  return (
+    await usersDb.query<PeopleDBFields>('indexes/byTeam', {
+      key: teamId,
       include_docs: true,
     })
   ).rows.reduce((filtered, option) => {

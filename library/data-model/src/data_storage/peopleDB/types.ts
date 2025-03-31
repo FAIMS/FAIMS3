@@ -84,8 +84,30 @@ export interface PeopleV2Fields {
 export type PeopleV2Document = PouchDB.Core.ExistingDocument<PeopleV2Fields>;
 
 // V3 adds teams
-export interface PeopleV3Fields extends PeopleV2Fields {
+export interface PeopleV3Fields {
+  // Unique user ID - same as _id in all cases thus far
+  user_id: string;
+
+  // Full name
+  name: string;
+
+  // Emails associated with this profile
+  emails: Email[];
+
+  // This links profile information to profiles
+  profiles: UserServiceProfiles;
+
+  // Explicitly granted roles - we don't store the flattened/resolved roles
+  // This way we can be more careful about understanding where roles came from
+
+  // Project roles
+  projectRoles: ResourceRole[];
+
+  // Team roles
   teamRoles: ResourceRole[];
+
+  // Global (non resource-specific roles)
+  globalRoles: Role[];
 }
 export type PeopleV3Document = PouchDB.Core.ExistingDocument<PeopleV3Fields>;
 // We are at v3
