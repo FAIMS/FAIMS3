@@ -914,6 +914,7 @@ export const roleActions: Record<
       // Being a manager of a team also gives you the ability to create new key
       // resources in that team
       Action.CREATE_PROJECT_IN_TEAM, // resource
+      Action.CREATE_TEMPLATE_IN_TEAM, // resource
     ],
     // TODO make templates managed with their own roles/ownership model so that
     // we can do virtualRoles over templates owned by the team
