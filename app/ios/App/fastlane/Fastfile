@@ -102,7 +102,9 @@ platform :ios do
 
     match(
       type: 'appstore',
+      storage_mode: "git",
       app_identifier: "#{APPLE_BUNDLE_IDENTIFIER}",
+      git_url: ENV["MATCH_GIT_URL"],
       git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
       readonly: false,
       keychain_name: KEYCHAIN_NAME,
