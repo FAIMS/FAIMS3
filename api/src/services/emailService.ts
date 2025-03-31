@@ -169,7 +169,6 @@ export class SMTPEmailService extends BaseEmailService {
     // Verify the connection
     try {
       await transporter.verify();
-      console.log('SMTP connection verified successfully');
 
       // Cache the transporter
       this.cache.set(this.TRANSPORTER_CACHE_KEY, transporter);
@@ -206,9 +205,7 @@ export class SMTPEmailService extends BaseEmailService {
     };
 
     try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Email sent successfully', info.messageId);
-      return info;
+      return await transporter.sendMail(mailOptions);
     } catch (error) {
       console.error('Failed to send email:', error);
       throw error;

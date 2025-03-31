@@ -125,15 +125,15 @@ Run tests inside the conductor instance:
 docker compose exec conductor npm run test
 ```
 
-# Email Service
+## Email Service
 
-## Purpose
+### Purpose
 
 The Email Service provides a standardised interface for sending emails from the application with support for multiple implementations and error handling.
 
-## Configuration
+### Configuration
 
-### Environment Variables
+#### Environment Variables
 
 Add these to your `.env` file or other deployment `.env` configuration (included in `.env.dist`):
 
@@ -154,19 +154,19 @@ SMTP_PASSWORD=smtp_password
 TEST_EMAIL_ADDRESS=test@example.com
 ```
 
-## Service Implementations
+### Service Implementations
 
-### SMTP Service
+#### SMTP Service
 
 Production implementation that sends real emails via an SMTP server. Includes connection caching for performance.
 
-### Mock Service
+#### Mock Service
 
 Test implementation that records sent emails for verification. Use by setting `EMAIL_SERVICE_TYPE=MOCK`.
 
-## Usage
+### Usage
 
-### Basic Email
+#### Basic Email
 
 ```typescript
 import {EMAIL_SERVICE} from '../buildconfig';
@@ -181,7 +181,7 @@ await EMAIL_SERVICE.sendEmail({
 });
 ```
 
-### With Attachments
+#### With Attachments
 
 ```typescript
 await EMAIL_SERVICE.sendEmail({
@@ -200,9 +200,9 @@ await EMAIL_SERVICE.sendEmail({
 });
 ```
 
-## Admin Features
+### Admin Features
 
-### Test Email Route
+#### Test Email Route
 
 Administrators can verify email service configuration:
 
@@ -212,7 +212,7 @@ POST /api/admin/test-email
 
 Requires cluster admin authentication. Returns detailed diagnostics including timing and error suggestions.
 
-## Testing
+### Testing
 
 Use the Mock implementation with `EMAIL_SERVICE_TYPE=MOCK` for testing. Access sent emails for verification:
 
