@@ -213,12 +213,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     visibleTypes.includes(r.type)
   );
 
-  // console.log(
-  //   '111111111MyRecords types:',
-  //   records.myRecords.map(r => r.type)
-  // );
-  // console.log('222222222222Visible types:', visibleTypes);
-
   return (
     <Box>
       <Box>
@@ -291,7 +285,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               allowScrollButtonsMobile={true}
             >
               <Tab
-                label={`My ${recordLabel}s (${records.myRecords.length})`}
+                label={`My ${recordLabel}s (${visibleMyRecords.length})`}
                 value={0}
                 {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
               />
@@ -303,10 +297,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 />
               )}
 
-              {(tabIndex === 2 || records.otherRecords.length > 0) && (
+              {(tabIndex === 2 || visibleOtherRecords.length > 0) && (
                 <Tab
                   value={2}
-                  label={`Other ${recordLabel}s (${records.otherRecords.length})`}
+                  label={`Other ${recordLabel}s (${visibleOtherRecords.length})`}
                   {...a11yProps(2, `${NOTEBOOK_NAME}-otherrecords`)}
                 />
               )}
