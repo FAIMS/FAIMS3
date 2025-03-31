@@ -1,8 +1,10 @@
 import {
+  Action,
   getHridFieldMap,
   getMinimalRecordData,
   getMinimalRecordDataWithRegex,
   hydrateIndividualRecord,
+  isAuthorized,
   ProjectUIModel,
   RecordMetadata,
   UnhydratedRecord,
@@ -446,7 +448,8 @@ export const useRecordList = ({
       query,
       filterDeleted,
       activeUser?.username,
-      token?.roles,
+      token?.globalRoles,
+      token?.resourceRoles,
     ],
     networkMode: 'always',
     gcTime: 0,
@@ -667,3 +670,30 @@ export function useLoadingDebounce(
 
   return stabilizedLoading;
 }
+
+/**
+ * A simple custom hook which returns whether the user can do the thing, and
+ * re-renders if token changes. Applies to the active user.
+ */
+export const useIsAuthorisedTo = ({
+  action,
+  resourceId,
+}: {
+  action: Action;
+  resourceId?: string;
+}): boolean => {
+  const activeUser = useAppSelector(selectActiveUser);
+  if (!activeUser) {
+    return false;
+  }
+
+  return useMemo(
+    () =>
+      isAuthorized({
+        decodedToken: activeUser.parsedToken,
+        action,
+        resourceId,
+      }),
+    [action, resourceId, activeUser.token]
+  );
+};
