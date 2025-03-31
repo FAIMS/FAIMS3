@@ -125,7 +125,7 @@ export const ExpandedChecklist = ({
                   option.value !== selectedExclusiveOption
                 }
                 sx={{
-                  padding: '3px 8px 0 0',
+                  padding: '4px 8px 0 0',
                   alignSelf: 'flex-start',
                 }}
               />
@@ -137,7 +137,7 @@ export const ExpandedChecklist = ({
                   display: 'contents',
                   whiteSpace: 'normal',
                   wordBreak: 'break-word',
-                  lineHeight: '2rem',
+                  lineHeight: '1.8rem',
                   paddingTop: '4px',
                 }}
               >
@@ -145,7 +145,7 @@ export const ExpandedChecklist = ({
               </Box>
             }
             sx={{
-              alignItems: 'initial',
+              alignItems: 'center',
               mb: 1.5,
               m: 0, // reset default margins
               '& .MuiFormControlLabel-label': {
