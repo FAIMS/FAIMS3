@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import {Action} from '@faims3/data-model';
 import {AppBar, Box, Paper, Tab, Tabs, TabScrollButton} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -13,6 +14,7 @@ import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
   useDraftsList,
+  useIsAuthorisedTo,
   useQueryParams,
   useRecordList,
 } from '../../../utils/customHooks';
@@ -124,6 +126,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
   const queryClient = useQueryClient();
 
+  const isAllowedToAddRecords = useIsAuthorisedTo({
+    action: Action.CREATE_PROJECT_RECORD,
+    resourceId: project.projectId,
+  });
+
   const {uiSpecificationId} = project;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
   if (!uiSpecification) {
@@ -207,24 +214,26 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   return (
     <Box>
       <Box>
-        <Box sx={{mb: 1.5}}>
-          <AddRecordButtons
-            project={project}
-            recordLabel={recordLabel}
-            refreshList={() => {
-              invalidateProjectRecordList({
-                client: queryClient,
-                projectId: project.projectId,
-                reset: true,
-              });
-              invalidateProjectHydration({
-                client: queryClient,
-                projectId: project.projectId,
-                reset: true,
-              });
-            }}
-          />
-        </Box>
+        {isAllowedToAddRecords && (
+          <Box sx={{mb: 1.5}}>
+            <AddRecordButtons
+              project={project}
+              recordLabel={recordLabel}
+              refreshList={() => {
+                invalidateProjectRecordList({
+                  client: queryClient,
+                  projectId: project.projectId,
+                  reset: true,
+                });
+                invalidateProjectHydration({
+                  client: queryClient,
+                  projectId: project.projectId,
+                  reset: true,
+                });
+              }}
+            />
+          </Box>
+        )}
         <Box
           mb={2}
           sx={{

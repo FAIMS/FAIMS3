@@ -27,11 +27,14 @@ import {
   EncodedProjectUIModel,
   getDataDB,
   registerClient,
+  resourceRoles,
+  Role,
+  userHasResourceRole,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import fs from 'fs';
 import request from 'supertest';
-import {createAuthKey} from '../src/authkeys/create';
+import {generateJwtFromUser} from '../src/authkeys/create';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
@@ -40,20 +43,13 @@ import {
   DEVELOPER_MODE,
   KEY_SERVICE,
 } from '../src/buildconfig';
-import {
-  CLUSTER_ADMIN_GROUP_NAME,
-  NOTEBOOK_CREATOR_GROUP_NAME,
-} from '@faims3/data-model';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
   createNotebook,
   getNotebookMetadata,
-  getNotebooks,
+  getUserProjectsDetailed,
 } from '../src/couchdb/notebooks';
-import {
-  getUserFromEmailOrUsername,
-  userHasProjectRole,
-} from '../src/couchdb/users';
+import {getUserFromEmailOrUsername} from '../src/couchdb/users';
 import {app} from '../src/routes';
 import {callbackObject, databaseList} from './mocks';
 import {
@@ -180,7 +176,13 @@ describe('API tests', () => {
     const notebookUser = await getUserFromEmailOrUsername(notebookUserName);
     if (notebookUser) {
       // check that this user now has the right roles on this notebook
-      expect(userHasProjectRole(notebookUser, project_id, 'admin')).to.be.true;
+      expect(
+        userHasResourceRole({
+          user: notebookUser,
+          resourceId: project_id,
+          resourceRole: Role.PROJECT_ADMIN,
+        })
+      ).to.be.true;
     } else {
       console.log('notebookUser', notebookUser);
       expect(notebookUser).not.to.be.null;
@@ -226,7 +228,6 @@ describe('API tests', () => {
       },
       validationSchema: [['yup.string'], ['yup.required']],
       initialValue: null,
-      access: ['admin'],
       meta: {
         annotation_label: 'annotation',
         annotation: true,
@@ -290,7 +291,7 @@ describe('API tests', () => {
         uiSpec,
         metadata
       );
-      let notebooks = await getNotebooks(adminUser);
+      let notebooks = await getUserProjectsDetailed(adminUser);
       const dataDb = await getDataDB(project_id!);
       expect(notebooks).to.have.lengthOf(1);
       expect(project_id).not.to.be.undefined;
@@ -299,7 +300,7 @@ describe('API tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json')
         .expect(200);
-      notebooks = await getNotebooks(adminUser);
+      notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.be.empty;
 
       // Because of how mocks work with db list, we need to manually remove the
@@ -319,7 +320,7 @@ describe('API tests', () => {
   it('update admin user - no auth', async () => {
     await request(app)
       .post(`/api/users/${localUserName}/admin`)
-      .send({addrole: true, role: CLUSTER_ADMIN_GROUP_NAME})
+      .send({addrole: true, role: Role.GENERAL_ADMIN})
       .set('Content-Type', 'application/json')
       .expect(401);
   });
@@ -329,7 +330,7 @@ describe('API tests', () => {
       .post(`/api/users/${localUserName}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
-      .send({addrole: true, role: CLUSTER_ADMIN_GROUP_NAME})
+      .send({addrole: true, role: Role.GENERAL_ADMIN})
       .expect(200);
   });
 
@@ -338,7 +339,7 @@ describe('API tests', () => {
       .post(`/api/users/${localUserName}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
-      .send({addrole: false, role: CLUSTER_ADMIN_GROUP_NAME})
+      .send({addrole: false, role: Role.GENERAL_ADMIN})
       .expect(200);
   });
 
@@ -347,7 +348,7 @@ describe('API tests', () => {
       .post(`/api/users/${localUserName}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
-      .send({addrole: true, role: NOTEBOOK_CREATOR_GROUP_NAME})
+      .send({addrole: true, role: Role.GENERAL_CREATOR})
       .expect(200);
   });
 
@@ -373,12 +374,11 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(200)
       .then(response => {
-        expect(response.body.roles).to.deep.equal([
-          'admin',
-          'moderator',
-          'team',
-          'user',
-        ]);
+        expect(response.body.roles).to.deep.equal(
+          resourceRoles.PROJECT.map(r => r.role)
+        );
+        // only includes users who have at least one resource role on this
+        // notebook
         expect(response.body.users.length).to.equal(1);
       });
   });
@@ -394,7 +394,7 @@ describe('API tests', () => {
         .set('Content-Type', 'application/json')
         .send({
           username: localUserName,
-          role: 'user',
+          role: Role.PROJECT_CONTRIBUTOR,
           addrole: true,
         })
         .expect(200);
@@ -406,7 +406,7 @@ describe('API tests', () => {
         .set('Content-Type', 'application/json')
         .send({
           username: localUserName,
-          role: 'user',
+          role: Role.PROJECT_CONTRIBUTOR,
           addrole: false,
         })
         .expect(200);
@@ -427,7 +427,7 @@ describe('API tests', () => {
         .set('Content-Type', 'application/json')
         .send({
           username: localUserName,
-          role: 'user',
+          role: Role.PROJECT_CONTRIBUTOR,
           addrole: true,
         })
         .expect(404);
@@ -453,7 +453,7 @@ describe('API tests', () => {
         .set('Content-Type', 'application/json')
         .send({
           username: 'fred dag',
-          role: 'user',
+          role: Role.PROJECT_CONTRIBUTOR,
           addrole: true,
         })
         .expect(404);
@@ -461,7 +461,7 @@ describe('API tests', () => {
       const bobby = await getUserFromEmailOrUsername(localUserName);
       if (bobby) {
         const signingKey = await KEY_SERVICE.getSigningKey();
-        const bobbyToken = await createAuthKey(bobby, signingKey);
+        const bobbyToken = await generateJwtFromUser({user: bobby, signingKey});
 
         // invalid user name
         console.log('bobby token');
@@ -471,7 +471,7 @@ describe('API tests', () => {
           .set('Content-Type', 'application/json')
           .send({
             username: localUserName,
-            role: 'user',
+            role: Role.PROJECT_CONTRIBUTOR,
             addrole: true,
           })
           .expect(401);
@@ -487,7 +487,7 @@ describe('API tests', () => {
 
     const adminUser = await getUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const notebooks = await getNotebooks(adminUser);
+      const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
@@ -505,7 +505,7 @@ describe('API tests', () => {
 
     const adminUser = await getUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const notebooks = await getNotebooks(adminUser);
+      const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
@@ -537,7 +537,7 @@ describe('API tests', () => {
 
     const adminUser = await getUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const notebooks = await getNotebooks(adminUser);
+      const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
