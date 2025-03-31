@@ -19,9 +19,10 @@
  *   which server to use and whether to include test data
  */
 
+import {Action, isAuthorized, userCanDo} from '@faims3/data-model';
 import Express from 'express';
 import {validateToken} from './authkeys/read';
-import {userHasPermission, userIsClusterAdmin} from './couchdb/users';
+import * as Exceptions from './exceptions';
 
 /**
  * Extracts the Bearer token from the Authorization header of an Express
@@ -94,6 +95,43 @@ export async function requireAuthenticationAPI(
   }
 }
 
+export const isAllowedToMiddleware = ({
+  action,
+  getResourceId,
+}: {
+  action: Action;
+  getResourceId?: (req: Express.Request) => string | undefined;
+}) => {
+  return (
+    req: Express.Request,
+    res: Express.Response,
+    next: Express.NextFunction
+  ) => {
+    const user = req.user;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException('Authentication required.');
+    }
+
+    const resourceId = getResourceId ? getResourceId(req) : undefined;
+
+    const isAllowed = isAuthorized({
+      decodedToken: {
+        globalRoles: user.globalRoles,
+        resourceRoles: user.resourceRoles,
+      },
+      action,
+      resourceId,
+    });
+
+    if (isAllowed) {
+      next();
+    } else {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to perform this action.'
+      );
+    }
+  };
+};
 /**
  * Opportunistically parses the user and populates req.user from DB if JWT is
  * valid. If not, then passes through with no-op.
@@ -146,26 +184,16 @@ export function requireNotebookMembership(
 ) {
   if (req.user) {
     const project_id = req.params.notebook_id;
-    if (userHasPermission(req.user, project_id, 'read')) {
+    if (
+      userCanDo({
+        user: req.user,
+        resourceId: project_id,
+        action: Action.READ_PROJECT_METADATA,
+      })
+    ) {
       next();
     } else {
       res.status(404).end();
-    }
-  } else {
-    res.redirect('/auth/');
-  }
-}
-
-export function requireClusterAdmin(
-  req: Express.Request,
-  res: Express.Response,
-  next: Express.NextFunction
-) {
-  if (req.user) {
-    if (userIsClusterAdmin(req.user)) {
-      next();
-    } else {
-      res.status(401).end();
     }
   } else {
     res.redirect('/auth/');

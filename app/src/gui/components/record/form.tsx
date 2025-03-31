@@ -82,16 +82,18 @@ import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
 
 type RecordFormProps = {
+  setProgress: (progress: number) => void;
   navigate: NavigateFunction;
   serverId: string;
   project_id: ProjectID;
   record_id: RecordID;
+  location: any;
   // Might be given in the URL:
   ui_specification: ProjectUIModel;
   conflictfields?: string[] | null;
   handleChangeTab?: Function;
   isSyncing?: string;
-  disabled?: boolean;
+  disabled: boolean;
   handleSetIsDraftSaving: Function;
   handleSetDraftLastSaved: Function;
   handleSetDraftError: Function;
@@ -181,7 +183,7 @@ export type FormCloseOptions = 'continue' | 'close' | 'new';
     - this one works ok
 */
 
-class RecordForm extends React.Component<any, RecordFormState> {
+class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
   draftState: RecordDraftState | null = null;
   private formikRef = React.createRef<FormikProps<any>>();
 
@@ -521,7 +523,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
         this.props.revision_id === undefined &&
         this.state.revision_cached === undefined
       ) {
-        const location: any = this.props.location;
+        const location = this.props.location;
         if (
           location !== undefined &&
           location.state !== undefined &&
@@ -821,7 +823,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
     const allSections =
       this.props.ui_specification.viewsets[this.getViewsetName()].views;
 
-    const allVisited = allSections.every((section: string) =>
+    allSections.every((section: string) =>
       this.state.visitedSteps.has(section)
     );
   }
