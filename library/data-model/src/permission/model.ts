@@ -136,6 +136,7 @@ export enum Action {
   INITIALISE_SYSTEM_API = 'INITIALISE_SYSTEM_API',
   VALIDATE_DBS = 'VALIDATE_DBS',
   RESTORE_FROM_BACKUP = 'RESTORE_FROM_BACKUP',
+  SEND_TEST_EMAIL = 'SEND_TEST_EMAIL',
 }
 
 /**
@@ -485,6 +486,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },
+  [Action.SEND_TEST_EMAIL]: {
+    name: 'Send test email',
+    description: 'Send test email in the API email service',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
 };
 
 /**
@@ -699,6 +706,7 @@ export const roleActions: Record<
       Action.INITIALISE_SYSTEM_API,
       Action.RESTORE_FROM_BACKUP,
       Action.VALIDATE_DBS,
+      Action.SEND_TEST_EMAIL,
     ],
     inheritedRoles: [Role.GENERAL_CREATOR, Role.PROJECT_ADMIN],
   },
