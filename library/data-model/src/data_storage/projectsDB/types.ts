@@ -4,6 +4,7 @@ import {PossibleConnectionInfo} from '../..';
 export type ProjectV1Fields = {
   name: string;
   description?: string;
+
   // Was the project created from a template?
   template_id?: string;
   data_db?: PossibleConnectionInfo;
@@ -11,6 +12,9 @@ export type ProjectV1Fields = {
   last_updated?: string;
   created?: string;
   status?: string;
+
+  // Team ownership? Undefined means owned by an individual
+  ownedByTeamId?: string;
 };
 export type ProjectV1Document = PouchDB.Core.Document<ProjectV1Fields>;
 

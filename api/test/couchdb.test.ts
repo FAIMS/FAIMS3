@@ -85,14 +85,11 @@ describe('notebook api', () => {
   });
 
   it('check initialise', async () => {
-    console.log('Running initialise');
     await initialiseDbAndKeys({});
 
-    console.log('Getting directory DB');
     const directoryDB = getDirectoryDB();
     expect(directoryDB).not.to.equal(undefined);
     if (directoryDB) {
-      console.log('Getting document in DB');
       const default_document = (await directoryDB.get('default')) as any;
       expect(default_document.name).to.equal(CONDUCTOR_INSTANCE_NAME);
 

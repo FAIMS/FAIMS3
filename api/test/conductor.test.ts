@@ -108,18 +108,15 @@ describe('Pages', () => {
     await createNotebook('test-notebook', uiSpec, metadata);
     const agent = request.agent(app);
 
-    console.log('WAITING ON AUTH LOCAL');
     await agent
       .post('/auth/local/')
       .send({username: 'admin', password: adminPassword})
       .expect(302);
 
-    console.log('PASSED');
     await agent
       .get('/notebooks/')
       .expect(200)
       .then(response => {
-        console.log(response.text);
         expect(response.text).to.include('test-notebook');
         expect(response.text).to.include('New Notebook');
       });

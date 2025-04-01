@@ -242,11 +242,13 @@ describe('user creation', () => {
       })
     ).to.be.false;
 
+    // Now user should have read/modify permissions for all projects
     // Add GENERAL_ADMIN role - this should grant all permissions
     addGlobalRole({user, role: Role.GENERAL_ADMIN});
+    // Now user should have read/modify permissions for all projects
 
     // Recompile permissions
-    user = await upgradeDbUserToExpressUser({dbUser});
+    user = await upgradeDbUserToExpressUser({dbUser: user});
 
     // Now user should have read/modify permissions for all projects
     expect(
@@ -275,7 +277,7 @@ describe('user creation', () => {
       role: Role.PROJECT_GUEST,
     });
     // Recompile permissions
-    user = await upgradeDbUserToExpressUser({dbUser});
+    user = await upgradeDbUserToExpressUser({dbUser : user});
 
     // Should have read but not modify permission for this project
     expect(
@@ -319,7 +321,7 @@ describe('user creation', () => {
     });
 
     // Recompile permissions
-    user = await upgradeDbUserToExpressUser({dbUser});
+    user = await upgradeDbUserToExpressUser({dbUser : user});
 
     // Now should have full permissions for this project
     expect(

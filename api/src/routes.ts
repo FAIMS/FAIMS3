@@ -206,8 +206,8 @@ app.get(
         ownNotebooks: ownNotebooks,
         otherNotebooks: otherNotebooks,
         cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
-        can_create_notebooks: userHasGlobalRole({
-          role: Role.GENERAL_CREATOR,
+        can_create_notebooks: userCanDo({
+          action: Action.CREATE_PROJECT,
           user,
         }),
         developer: DEVELOPER_MODE,
