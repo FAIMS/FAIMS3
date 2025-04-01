@@ -491,6 +491,7 @@ class RecordDraftState {
     } else if (this.fetch_error !== null) {
       throw this.fetch_error;
     } else {
+      console.log('waiting for data', this.data_listeners);
       return new Promise((resolve, reject) => {
         this.data_listeners.push([resolve, reject]);
       });

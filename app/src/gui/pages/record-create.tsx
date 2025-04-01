@@ -155,7 +155,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const {type_name, project, draft_id, record_id, serverId} = props;
   const project_id = project.projectId;
   const navigate = useNavigate();
-  const location = useLocation();
   const [isDraftSaving, setIsDraftSaving] = useState(false);
   const [draftLastSaved, setDraftLastSaved] = useState<Date | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
@@ -251,8 +250,8 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               draftLastSaved={draftLastSaved}
               mq_above_md={mq_above_md}
               navigate={navigate}
+              location={props.location}
               setProgress={setProgress}
-              location={location}
               disabled={false}
             />
           </Box>
@@ -300,6 +299,7 @@ export default function RecordCreate() {
   if (recordId !== undefined) draft_record_id = recordId;
   if (location.state && location.state.child_record_id !== undefined)
     draft_record_id = location.state.child_record_id; //pass record_id from parent
+
 
   let showBreadcrumbs = false;
 

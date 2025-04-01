@@ -85,18 +85,6 @@ export interface SyncStatusCallbacks {
   sync_denied: () => void;
 }
 
-export type LocationState = {
-  parent_record_id?: string; // parent or linked record id, set from parent or linked record
-  field_id?: string; // parent or linked field id, set from parent or linked record
-  type?: string; // type of relationship: Child or Linked
-  parent_link?: string; // link of parent/linked record, so when child/link record saved, this is the redirect link
-  parent?: any; // parent to save upper level information for nest related, for example, grandparent
-  record_id?: RecordID; // child/linked record ID, set in child/linked record, should be pass back to parent
-  hrid?: string; // child/linked record HRID, this is the value displayed in field, set in child/linked record, should be pass back to parent
-  relation_type_vocabPair?: string[] | null; //pass the parent information to child
-  child_record_id?: RecordID; //child/linked record ID created from parent
-  parent_hrid?: string;
-};
 export interface LinkedRelation {
   record_id: RecordID;
   field_id: string;
