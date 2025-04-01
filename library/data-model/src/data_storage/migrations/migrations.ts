@@ -121,10 +121,10 @@ export const DB_TARGET_VERSIONS: {
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   // invites v2
-  [DatabaseType.INVITES]: {defaultVersion: 2, targetVersion: 2},
+  [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
   // people v2
-  [DatabaseType.PEOPLE]: {defaultVersion: 2, targetVersion: 2},
+  [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 1},
 };
