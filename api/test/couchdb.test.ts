@@ -39,23 +39,24 @@ import {
 import * as fs from 'fs';
 import {
   createUser,
-  getUserFromEmailOrUsername,
+  getExpressUserFromEmailOrUsername,
   saveUser,
 } from '../src/couchdb/users';
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {
   Action,
-  addResourceRole,
+  addProjectRole,
   EncodedProjectUIModel,
-  removeResourceRole,
   resourceRoles,
   Role,
-  userCanDo,
-  userHasResourceRole,
+  userHasProjectRole,
+  removeProjectRole,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {resetDatabases} from './mocks';
 import {fail} from 'assert';
+import {upgradeDbUserToExpressUser} from '../src/authkeys/create';
+import {userCanDo} from '../src/middleware';
 
 const uispec: EncodedProjectUIModel = {
   _id: '',
@@ -71,12 +72,12 @@ let bobalooba: Express.User;
 describe('notebook api', () => {
   beforeEach(async () => {
     await resetDatabases();
-    const adminUser = await getUserFromEmailOrUsername('admin');
+    const adminUser = await getExpressUserFromEmailOrUsername('admin');
     if (adminUser) {
       const [user, error] = await createUser({username, name: username});
       if (user) {
         await saveUser(user);
-        bobalooba = user;
+        bobalooba = await upgradeDbUserToExpressUser({dbUser: user});
       } else {
         throw new Error(error);
       }
@@ -110,16 +111,16 @@ describe('notebook api', () => {
 
     if (nb1 && nb2) {
       // give user access to two of them
-      addResourceRole({
+      addProjectRole({
         user: bobalooba,
-        resourceId: nb1,
+        projectId: nb1,
         role: Role.PROJECT_GUEST,
       });
       expect(
-        userHasResourceRole({
+        userHasProjectRole({
           user: bobalooba,
-          resourceId: nb1,
-          resourceRole: Role.PROJECT_GUEST,
+          projectId: nb1,
+          role: Role.PROJECT_GUEST,
         })
       ).to.equal(true);
       expect(
@@ -130,32 +131,32 @@ describe('notebook api', () => {
         })
       ).to.equal(true);
 
-      addResourceRole({
+      addProjectRole({
         user: bobalooba,
-        resourceId: nb2,
+        projectId: nb2,
         role: Role.PROJECT_ADMIN,
       });
       expect(
-        userHasResourceRole({
+        userHasProjectRole({
           user: bobalooba,
-          resourceId: nb2,
-          resourceRole: Role.PROJECT_ADMIN,
+          projectId: nb2,
+          role: Role.PROJECT_ADMIN,
         })
       ).to.equal(true);
 
       // And inheritance
       expect(
-        userHasResourceRole({
+        userHasProjectRole({
           user: bobalooba,
-          resourceId: nb2,
-          resourceRole: Role.PROJECT_MANAGER,
+          projectId: nb2,
+          role: Role.PROJECT_MANAGER,
         })
       ).to.equal(true);
       expect(
-        userHasResourceRole({
+        userHasProjectRole({
           user: bobalooba,
-          resourceId: nb2,
-          resourceRole: Role.PROJECT_GUEST,
+          projectId: nb2,
+          role: Role.PROJECT_GUEST,
         })
       ).to.equal(true);
 
@@ -167,9 +168,9 @@ describe('notebook api', () => {
         })
       ).to.equal(true);
 
-      removeResourceRole({
+      removeProjectRole({
         user: bobalooba,
-        resourceId: nb1,
+        projectId: nb1,
         role: Role.PROJECT_GUEST,
       });
       expect(
@@ -200,14 +201,14 @@ describe('notebook api', () => {
 
     if (nb1 && nb2 && nb3 && nb4) {
       // give user access to two of them
-      addResourceRole({
+      addProjectRole({
         user: bobalooba,
-        resourceId: nb1,
+        projectId: nb1,
         role: Role.PROJECT_GUEST,
       });
-      addResourceRole({
+      addProjectRole({
         user: bobalooba,
-        resourceId: nb2,
+        projectId: nb2,
         role: Role.PROJECT_GUEST,
       });
       await saveUser(bobalooba);
@@ -221,7 +222,7 @@ describe('notebook api', () => {
 
   it('can create a notebook', async () => {
     await initialiseDbAndKeys({});
-    const user = await getUserFromEmailOrUsername('admin');
+    const user = await getExpressUserFromEmailOrUsername('admin');
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -341,7 +342,7 @@ describe('notebook api', () => {
 
   it('updateNotebook', async () => {
     await initialiseDbAndKeys({});
-    const user = await getUserFromEmailOrUsername('admin');
+    const user = await getExpressUserFromEmailOrUsername('admin');
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',

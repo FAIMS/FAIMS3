@@ -1,10 +1,10 @@
 /**
  * Set of helper functions to check/interact with the user object
- * (PeopleV3Fields) in relation to roles and actions.
+ * (PeopleDBDocument) in relation to roles and actions.
  */
 
 import {generateVirtualResourceRoles, ResourceAssociation} from '..';
-import {PeopleDBDocument, PeopleV3Fields} from '../data_storage';
+import {PeopleDBDocument} from '../data_storage';
 import {Role} from './model';
 import {encodeToken, ResourceRole, TokenPermissions} from './tokenEncoding';
 
@@ -22,7 +22,7 @@ export function userHasGlobalRole({
   user,
   role,
 }: {
-  user: PeopleV3Fields;
+  user: PeopleDBDocument;
   role: Role;
 }): boolean {
   return user.globalRoles.includes(role);
@@ -40,7 +40,7 @@ export function userHasProjectRole({
   role,
   projectId,
 }: {
-  user: PeopleV3Fields;
+  user: PeopleDBDocument;
   role: Role;
   projectId: string;
 }): boolean {
@@ -61,11 +61,33 @@ export function userHasTeamRole({
   role,
   teamId,
 }: {
-  user: PeopleV3Fields;
+  user: PeopleDBDocument;
   role: Role;
   teamId: string;
 }): boolean {
   return user.teamRoles.some(r => r.resourceId === teamId && r.role === role);
+}
+
+export function userProjectRoles({
+  user,
+  projectId,
+}: {
+  user: PeopleDBDocument;
+  projectId: string;
+}): Role[] {
+  return user.projectRoles
+    .filter(r => r.resourceId === projectId)
+    .map(r => r.role);
+}
+
+export function userTeamRoles({
+  user,
+  teamId,
+}: {
+  user: PeopleDBDocument;
+  teamId: string;
+}): Role[] {
+  return user.teamRoles.filter(r => r.resourceId === teamId).map(r => r.role);
 }
 
 // ============
@@ -83,7 +105,7 @@ export function addProjectRole({
   role,
   projectId,
 }: {
-  user: PeopleV3Fields;
+  user: PeopleDBDocument;
   role: Role;
   projectId: string;
 }): void {
@@ -119,7 +141,7 @@ export function removeProjectRole({
   role,
   projectId,
 }: {
-  user: PeopleV3Fields;
+  user: PeopleDBDocument;
   role: Role;
   projectId: string;
 }): void {
@@ -141,7 +163,7 @@ export function addTeamRole({
   role,
   teamId,
 }: {
-  user: PeopleV3Fields;
+  user: PeopleDBDocument;
   role: Role;
   teamId: string;
 }): void {
@@ -177,7 +199,7 @@ export function removeTeamRole({
   role,
   teamId,
 }: {
-  user: PeopleV3Fields;
+  user: PeopleDBDocument;
   role: Role;
   teamId: string;
 }): void {
@@ -197,7 +219,7 @@ export function addGlobalRole({
   user,
   role,
 }: {
-  user: PeopleV3Fields;
+  user: PeopleDBDocument;
   role: Role;
 }): void {
   // Check if the user already has this global role
@@ -219,7 +241,7 @@ export function removeGlobalRole({
   user,
   role,
 }: {
-  user: PeopleV3Fields;
+  user: PeopleDBDocument;
   role: Role;
 }): void {
   // Filter out the role we want to remove
@@ -239,7 +261,7 @@ export function addEmails({
   user,
   emails,
 }: {
-  user: PeopleV3Fields;
+  user: PeopleDBDocument;
   emails: string[];
 }): void {
   // Filter out emails that already exist in the user's emails array
@@ -291,25 +313,16 @@ export function couchUserToResourceRoles({
  * This is achieved by first building a decoded token object from the couch
  * user, then using the encode token function to encode it.
  *
- * We also allow the change to propagate virtual roles -> resource roles.
- *
- * You must provide a set of associations. Associations are, for example, saying
- * "team A owns surveys A,B,C", this will then result in virtualRoles as per the
- * permission model being appended to the resource role list for each of survey
- * A,B,C
- *
  * @returns encoded token object (to be signed/added other details)
  */
-export function couchUserToTokenPermissions({
+export function expressUserToTokenPermissions({
   user,
-  relevantAssociations,
 }: {
-  user: PeopleDBDocument;
-  relevantAssociations: ResourceAssociation[];
+  user: PeopleDBDocument & {resourceRoles: ResourceRole[]};
 }): TokenPermissions {
-  // Get all resource roles, taking into account associative virtual roles
-  const resourceRoles = couchUserToResourceRoles({user, relevantAssociations});
-
   // Now encode - this just propagates global roles -> resource roles and encodes resource roles nicely
-  return encodeToken({globalRoles: user.globalRoles, resourceRoles});
+  return encodeToken({
+    globalRoles: user.globalRoles,
+    resourceRoles: user.resourceRoles,
+  });
 }

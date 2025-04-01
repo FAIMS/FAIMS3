@@ -46,7 +46,7 @@ import {
   ProjectDataObject,
   ProjectID,
   ProjectMetaObject,
-  ProjectObject,
+  ProjectDocument,
   TeamsDB,
   TemplateDetails,
 } from '@faims3/data-model';
@@ -72,7 +72,7 @@ const INVITE_DB_NAME = 'invites';
 const TEAMS_DB_NAME = 'teams';
 
 let _directoryDB: PouchDB.Database | undefined;
-let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
+let _projectsDB: PouchDB.Database<ProjectDocument> | undefined;
 let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
 let _authDB: AuthDatabase | undefined;
 let _usersDB: PeopleDB | undefined;
@@ -207,7 +207,7 @@ export const getUsersDB = (): PeopleDB => {
   return _usersDB;
 };
 
-export const localGetProjectsDb = (): PouchDB.Database<ProjectObject> => {
+export const localGetProjectsDb = (): PouchDB.Database<ProjectDocument> => {
   if (!_projectsDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PROJECTS_DB_NAME;

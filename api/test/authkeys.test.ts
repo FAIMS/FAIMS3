@@ -23,7 +23,10 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
-import {generateJwtFromUser} from '../src/authkeys/create';
+import {
+  generateJwtFromUser,
+  upgradeDbUserToExpressUser,
+} from '../src/authkeys/create';
 import {validateToken} from '../src/authkeys/read';
 import {createUser, saveUser} from '../src/couchdb/users';
 import {expect} from 'chai';
@@ -38,29 +41,33 @@ describe('roundtrip creating and reading token', () => {
     const signing_key = await KEY_SERVICE.getSigningKey();
 
     // need to make a user with these details
-    const [user, err] = await createUser({username, name});
+    const [dbUser, err] = await createUser({username, name});
 
-    if (user) {
-      for (let i = 0; i < roles.length; i++) {
-        addGlobalRole({user, role: roles[i]});
-      }
-      await saveUser(user);
-
-      return generateJwtFromUser({user, signingKey: signing_key})
-        .then(token => {
-          return validateToken(token);
-        })
-        .then(valid_user => {
-          expect(valid_user).not.to.be.undefined;
-          if (valid_user) {
-            expect(valid_user.user_id).to.equal(user.user_id);
-            expect(valid_user.globalRoles).to.deep.equal(user.globalRoles);
-            expect(valid_user.resourceRoles).to.deep.equal(user.resourceRoles);
-            expect(valid_user.name).to.equal(user.name);
-          }
-        });
-    } else {
-      console.error(err);
+    if (!dbUser) {
+      // create user failed
+      throw new Error('Create user failed!');
     }
+
+    // upgrade the user
+    const user = await upgradeDbUserToExpressUser({dbUser});
+
+    for (let i = 0; i < roles.length; i++) {
+      addGlobalRole({user, role: roles[i]});
+    }
+    await saveUser(user);
+
+    return generateJwtFromUser({user, signingKey: signing_key})
+      .then(token => {
+        return validateToken(token);
+      })
+      .then(valid_user => {
+        expect(valid_user).not.to.be.undefined;
+        if (valid_user) {
+          expect(valid_user.user_id).to.equal(user.user_id);
+          expect(valid_user.globalRoles).to.deep.equal(user.globalRoles);
+          expect(valid_user.resourceRoles).to.deep.equal(user.resourceRoles);
+          expect(valid_user.name).to.equal(user.name);
+        }
+      });
   });
 });

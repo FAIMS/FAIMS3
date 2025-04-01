@@ -20,6 +20,7 @@
 
 import {z} from 'zod';
 import {DecodedTokenPermissions, Role} from './permission';
+import { ExistingProjectDocument } from './data_storage';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -131,18 +132,6 @@ export type PossibleConnectionInfo =
       };
       jwt_token?: string;
     };
-export interface ProjectObject {
-  _id: NonUniqueProjectID;
-  name: string;
-  description?: string;
-  // Was the project created from a template?
-  template_id?: string;
-  data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
-  last_updated?: string;
-  created?: string;
-  status?: string;
-}
 
 // TODO make this better, currently there is no real explanation for this
 // structure
@@ -169,7 +158,7 @@ export const APINotebookGetSchema = z.object({
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 
 export type ProjectsList = {
-  [key: string]: ProjectObject;
+  [key: string]: ExistingProjectDocument;
 };
 
 export interface ProjectSchema {

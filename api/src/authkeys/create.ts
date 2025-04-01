@@ -20,9 +20,11 @@
  */
 
 import {
-  couchUserToTokenPermissions,
-  ExistingPeopleDBDocument,
-  ResourceRole,
+  couchUserToResourceRoles,
+  expressUserToTokenPermissions,
+  PeopleDBDocument,
+  Resource,
+  ResourceAssociation,
   TokenPayload,
 } from '@faims3/data-model';
 import {SignJWT} from 'jose';
@@ -34,20 +36,72 @@ import {
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import type {SigningKey} from '../services/keyService';
 
-export async function enhanceUserWithResourceRoles({
+const ASSOCIATIVE_RESOURCES = [Resource.TEMPLATE, Resource.PROJECT];
+
+/**
+ *
+ */
+export async function getRelevantUserAssociations({
   dbUser,
 }: {
-  dbUser: ExistingPeopleDBDocument;
-}): Promise<ResourceRole[]> {
-  // TODO build out the relevant associations - i.e. which teams is the user a
-  // part of - and then work out which resources this team owns
+  dbUser: PeopleDBDocument;
+}): Promise<ResourceAssociation[]> {
+  // To determine relevant associations we need to
 
-  // The data model provides this encoding method - it takes the couch user
-  // details and determines how to put that into the token
-  const permissionsComponent = couchUserToTokenPermissions({
-    user : dbUser,
-    relevantAssociations: [],
+  // for each team the user is on, find what resources (projects, templates
+  // (currently!)) the team owns, then include that
+  let relevantAssociations: ResourceAssociation[] = [];
+  for (const teamRole of dbUser.teamRoles) {
+    for (const targetResource of ASSOCIATIVE_RESOURCES) {
+      if (targetResource === Resource.PROJECT) {
+        // TODO find all projects owned by the team
+        relevantAssociations = relevantAssociations.concat([]);
+      } else if (targetResource === Resource.TEMPLATE) {
+        // TODO find all templates owned by the team
+        relevantAssociations = relevantAssociations.concat([]);
+      } else {
+        throw new Error(
+          'No method registered to find associations for resource: ' +
+            targetResource
+        );
+      }
+    }
+    // Find projects
+  }
+  return relevantAssociations;
+}
+
+/**
+ * Adds in the resource roles by querying for associative relationships.
+ *
+ * This converts a database user to an active Express.User for which we can
+ * assert permissions against their project, team, global, and resourceRoles.
+ *
+ * The reason for this additional step is such that we can reuse the associative
+ * logic throughout any authorisation context, including for signing tokens. It
+ * also means we can directly decode from a token into an express user (saving
+ * time to recompute this on server side).
+ *
+ * @warning - this should not be used casually - as it requires some db queries.
+ *
+ * @param dbUser - The database people entry for this user
+ * @return The Express.User with the drilled/properly encoded resource roles
+ */
+export async function upgradeDbUserToExpressUser({
+  dbUser,
+}: {
+  dbUser: PeopleDBDocument;
+}): Promise<Express.User> {
+  // Work out relevant connected entities
+  const relevantAssociations = await getRelevantUserAssociations({dbUser});
+
+  // Use the data model method to encode virtual roles
+  const resourceRoles = couchUserToResourceRoles({
+    user: dbUser,
+    relevantAssociations,
   });
+
+  return {...dbUser, resourceRoles};
 }
 
 export async function generateJwtFromUser({
@@ -57,14 +111,10 @@ export async function generateJwtFromUser({
   user: Express.User;
   signingKey: SigningKey;
 }) {
-  // TODO build out the relevant associations - i.e. which teams is the user a
-  // part of - and then work out which resources this team owns
-
   // The data model provides this encoding method - it takes the couch user
   // details and determines how to put that into the token
-  const permissionsComponent = couchUserToTokenPermissions({
+  const permissionsComponent = expressUserToTokenPermissions({
     user,
-    relevantAssociations: [],
   });
 
   // We then augment this with extra details to help identify the origin of the

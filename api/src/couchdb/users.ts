@@ -37,6 +37,7 @@ import {
 import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
+import {upgradeDbUserToExpressUser} from '../authkeys/create';
 
 /**
  * Builds a minimum spec user object - need to add profiles
@@ -74,7 +75,7 @@ export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
   // register a local admin user with the same password as couchdb if there
   // isn't already one there
   if (db && LOCAL_COUCHDB_AUTH) {
-    const adminUser = await getUserFromEmailOrUsername('admin');
+    const adminUser = await getCouchUserFromEmailOrUsername('admin');
     if (adminUser) {
       return;
     }
@@ -139,7 +140,7 @@ export async function updateUserPassword(
   userId: string,
   newPassword: string
 ): Promise<void> {
-  const possibleUser = await getUserFromEmailOrUsername(userId);
+  const possibleUser = await getCouchUserFromEmailOrUsername(userId);
 
   if (!possibleUser) {
     throw new Exceptions.ItemNotFoundException(
@@ -213,7 +214,7 @@ export async function getUsersForTeam({
  * @param identifier - either an email address or username
  * @returns The Express.User record denoted by the identifier or null if it doesn't exist
  */
-export async function getUserFromEmailOrUsername(
+export async function getCouchUserFromEmailOrUsername(
   identifier: string
 ): Promise<null | ExistingPeopleDBDocument> {
   let user;
@@ -222,6 +223,23 @@ export async function getUserFromEmailOrUsername(
     user = await getUserFromUsername(identifier);
   }
   return user;
+}
+
+/**
+ * Fetch and then upgrade express user (drilling permission into resource roles
+ * based on associative virtual roles etc)
+ * @param identifier
+ * @returns
+ */
+export async function getExpressUserFromEmailOrUsername(
+  identifier: string
+): Promise<Express.User | null> {
+  const dbUser = await getCouchUserFromEmailOrUsername(identifier);
+  if (dbUser === null) {
+    return dbUser;
+  }
+
+  return await upgradeDbUserToExpressUser({dbUser});
 }
 
 /**
@@ -311,7 +329,7 @@ export async function getUserInfoForProject({
  * Remove a user from the database
  * @param user - the user to remove
  */
-export function removeUser(user: Express.User) {
+export function removeUser(user: ExistingPeopleDBDocument) {
   const usersDb = getUsersDB();
   usersDb
     .get(user._id)

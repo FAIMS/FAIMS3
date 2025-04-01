@@ -31,7 +31,7 @@ import {
   logError,
   notebookRecordIterator,
   ProjectID,
-  ProjectObject,
+  ProjectDocument,
   Resource,
   resourceRoles,
   Role,
@@ -71,10 +71,10 @@ import {userCanDo} from '../middleware';
  * getAllProjects - get the internal project documents that reference
  * the project databases that the front end will connnect to
  */
-export const getAllProjectsDirectory = async (): Promise<ProjectObject[]> => {
+export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
   const projectsDb = localGetProjectsDb();
-  const projects: ProjectObject[] = [];
-  const res = await projectsDb.allDocs<ProjectObject>({
+  const projects: ProjectDocument[] = [];
+  const res = await projectsDb.allDocs<ProjectDocument>({
     include_docs: true,
   });
   res.rows.forEach(e => {
@@ -100,7 +100,7 @@ export const getAllProjectsDirectory = async (): Promise<ProjectObject[]> => {
  */
 export const getUserProjectsDirectory = async (
   user: Express.User
-): Promise<ProjectObject[]> => {
+): Promise<ProjectDocument[]> => {
   return (await getAllProjectsDirectory()).filter(p =>
     userCanDo({
       user,
@@ -113,7 +113,7 @@ export const getUserProjectsDirectory = async (
 /**
  * getNotebooks -- return an array of notebooks from the database
  * @param user - only return notebooks that this user can see
- * @returns an array of ProjectObject objects
+ * @returns an array of ProjectDocument objects
  */
 export const getUserProjectsDetailed = async (
   user: Express.User
@@ -122,7 +122,7 @@ export const getUserProjectsDetailed = async (
   const projectsDb = localGetProjectsDb();
 
   // Get all projects and filter for user access
-  const allDocs = await projectsDb.allDocs<ProjectObject>({
+  const allDocs = await projectsDb.allDocs<ProjectDocument>({
     include_docs: true,
   });
 
@@ -287,7 +287,7 @@ export const createNotebook = async (
       db_name: dataDBName,
     },
     status: 'published',
-  } satisfies ProjectObject;
+  } satisfies ProjectDocument;
 
   try {
     // first add an entry to the projects db about this project
@@ -454,7 +454,7 @@ export const writeProjectMetadata = async (
 /**
  * getNotebookMetadata -- return metadata for a single notebook from the database
  * @param project_id a project identifier
- * @returns a ProjectObject object or null if it doesn't exist
+ * @returns a ProjectDocument object or null if it doesn't exist
  */
 export const getNotebookMetadata = async (
   project_id: string

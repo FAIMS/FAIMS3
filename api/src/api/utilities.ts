@@ -51,7 +51,10 @@ import {slugify} from '../utils';
 const upload = multer({dest: '/tmp/'});
 
 import {processRequest} from 'zod-express-middleware';
-import {generateUserToken} from '../authkeys/create';
+import {
+  generateUserToken,
+  upgradeDbUserToExpressUser,
+} from '../authkeys/create';
 import {validateRefreshToken} from '../couchdb/refreshTokens';
 import patch from '../utils/patchExpressAsync';
 
@@ -149,7 +152,9 @@ api.post(
 
     // We know the refresh is valid, generate a JWT (no refresh) for this
     // existing user.
-    const {token} = await generateUserToken(user!, false);
+    // From the db user, drill and generate permissions
+    const expressUser = await upgradeDbUserToExpressUser({dbUser: user!});
+    const {token} = await generateUserToken(expressUser, false);
 
     // return the token
     res.json({token});

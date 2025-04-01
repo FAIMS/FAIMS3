@@ -19,10 +19,11 @@
  */
 
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
+import {assert, expect} from 'chai';
 import {
   addLocalPasswordForUser,
   validateLocalUser,
@@ -33,22 +34,22 @@ import {
   getUserInfoForProject,
   saveUser,
 } from '../src/couchdb/users';
-import {expect, assert} from 'chai';
 
-import * as fs from 'fs';
-import {createNotebook} from '../src/couchdb/notebooks';
 import {
   Action,
   addGlobalRole,
-  addResourceRole,
+  addProjectRole,
   removeGlobalRole,
-  removeResourceRole,
+  removeProjectRole,
   Resource,
   Role,
-  userCanDo,
-  userHasResourceRole,
-  userResourceRoles,
+  userHasProjectRole,
+  userProjectRoles,
 } from '@faims3/data-model';
+import * as fs from 'fs';
+import {createNotebook} from '../src/couchdb/notebooks';
+import {userCanDo} from '../src/middleware';
+import {upgradeDbUserToExpressUser} from '../src/authkeys/create';
 
 const clearUsers = async () => {
   const usersDB = getUsersDB();
@@ -145,9 +146,9 @@ describe('user creation', () => {
       expect(newUser.globalRoles).to.include(Role.GENERAL_CREATOR);
 
       // add resource role
-      addResourceRole({
+      addProjectRole({
         user: newUser,
-        resourceId: 'important-project',
+        projectId: 'important-project',
         role: Role.PROJECT_ADMIN,
       });
 
@@ -158,55 +159,54 @@ describe('user creation', () => {
       expect(newUser.globalRoles).to.include(Role.GENERAL_CREATOR);
 
       // verify resource role was added
-      expect(newUser.resourceRoles.length).to.equal(1);
+      expect(newUser.projectRoles.length).to.equal(1);
       expect(
-        userHasResourceRole({
+        userHasProjectRole({
           user: newUser,
-          resourceId: 'important-project',
-          resourceRole: Role.PROJECT_ADMIN,
+          projectId: 'important-project',
+          role: Role.PROJECT_ADMIN,
         })
       ).to.be.true;
 
       // Get all roles for the resource
-      const projectRoles = userResourceRoles({
+      const projectRoles = userProjectRoles({
         user: newUser,
-        resource: Resource.PROJECT,
-        resourceId: 'important-project',
+        projectId: 'important-project',
       });
       expect(projectRoles).to.include(Role.PROJECT_ADMIN);
       expect(projectRoles.length).to.equal(4);
       expect(
-        userHasResourceRole({
+        userHasProjectRole({
           user: newUser,
-          resourceId: 'important-project',
-          resourceRole: Role.PROJECT_ADMIN,
+          projectId: 'important-project',
+          role: Role.PROJECT_ADMIN,
         })
       ).to.be.true;
       expect(
-        userHasResourceRole({
+        userHasProjectRole({
           user: newUser,
-          resourceId: 'important-project',
-          resourceRole: Role.PROJECT_MANAGER,
+          projectId: 'important-project',
+          role: Role.PROJECT_MANAGER,
         })
       ).to.be.true;
 
       addGlobalRole({user: newUser, role: Role.GENERAL_ADMIN});
       expect(newUser.globalRoles.length).to.equal(3);
-      expect(newUser.resourceRoles.length).to.equal(1);
+      expect(newUser.projectRoles.length).to.equal(1);
 
       // remove resource role
-      removeResourceRole({
+      removeProjectRole({
         user: newUser,
-        resourceId: 'important-project',
+        projectId: 'important-project',
         role: Role.PROJECT_ADMIN,
       });
 
       // Still true due to general admin
       expect(
-        userHasResourceRole({
+        userHasProjectRole({
           user: newUser,
-          resourceId: 'important-project',
-          resourceRole: Role.PROJECT_ADMIN,
+          projectId: 'important-project',
+          role: Role.PROJECT_ADMIN,
         })
       ).to.be.true;
 
@@ -218,9 +218,9 @@ describe('user creation', () => {
 
       // remove roles that aren't there should be harmless
       const userBeforeNonExistentRemoval = {...newUser};
-      removeResourceRole({
+      removeProjectRole({
         user: newUser,
-        resourceId: 'important-project',
+        projectId: 'important-project',
         role: Role.PROJECT_GUEST, // trying to remove a role that isn't assigned
       });
       expect(newUser).to.deep.equal(userBeforeNonExistentRemoval);
@@ -231,114 +231,115 @@ describe('user creation', () => {
     const email = 'BOBBY@here.com';
     const username = 'bobalooba';
     const project_id = 'myProject';
-    const [user, error] = await createUser({email, username, name: username});
-    expect(error).to.equal('');
-    if (user) {
-      // Use userCanDo with proper Action enums instead of the old userHasPermission
-      expect(
-        userCanDo({
-          user,
-          action: Action.READ_PROJECT_METADATA,
-          resourceId: project_id,
-        })
-      ).to.be.false;
-
-      expect(
-        userCanDo({
-          user,
-          action: Action.UPDATE_PROJECT_DETAILS,
-          resourceId: project_id,
-        })
-      ).to.be.false;
-
-      // Add GENERAL_ADMIN role - this should grant all permissions
-      addGlobalRole({user, role: Role.GENERAL_ADMIN});
-
-      // Now user should have read/modify permissions for all projects
-      expect(
-        userCanDo({
-          user,
-          action: Action.READ_PROJECT_METADATA,
-          resourceId: project_id,
-        })
-      ).to.be.true;
-
-      expect(
-        userCanDo({
-          user,
-          action: Action.UPDATE_PROJECT_DETAILS,
-          resourceId: project_id,
-        })
-      ).to.be.true;
-
-      // Remove the admin role
-      removeGlobalRole({user, role: Role.GENERAL_ADMIN});
-
-      // Add PROJECT_GUEST role (similar to old 'user' role) for specific project
-      addResourceRole({
-        user,
-        resourceId: project_id,
-        role: Role.PROJECT_GUEST,
-      });
-
-      // Should have read but not modify permission for this project
-      expect(
-        userCanDo({
-          user,
-          action: Action.READ_PROJECT_METADATA,
-          resourceId: project_id,
-        })
-      ).to.be.true;
-
-      expect(
-        userCanDo({
-          user,
-          action: Action.UPDATE_PROJECT_DETAILS,
-          resourceId: project_id,
-        })
-      ).to.be.false;
-
-      // But can't access another project
-      expect(
-        userCanDo({
-          user,
-          action: Action.READ_PROJECT_METADATA,
-          resourceId: 'anotherProject',
-        })
-      ).to.be.false;
-
-      expect(
-        userCanDo({
-          user,
-          action: Action.UPDATE_PROJECT_DETAILS,
-          resourceId: 'anotherProject',
-        })
-      ).to.be.false;
-
-      // Give them PROJECT_ADMIN permission for the project
-      addResourceRole({
-        user,
-        resourceId: project_id,
-        role: Role.PROJECT_ADMIN,
-      });
-
-      // Now should have full permissions for this project
-      expect(
-        userCanDo({
-          user,
-          action: Action.READ_PROJECT_METADATA,
-          resourceId: project_id,
-        })
-      ).to.be.true;
-
-      expect(
-        userCanDo({
-          user,
-          action: Action.UPDATE_PROJECT_DETAILS,
-          resourceId: project_id,
-        })
-      ).to.be.true;
+    const [dbUser, error] = await createUser({email, username, name: username});
+    if (!dbUser) {
+      throw new Error('Failed to create user! Error: ' + error);
     }
+    const user = await upgradeDbUserToExpressUser({dbUser});
+    // Use userCanDo with proper Action enums instead of the old userHasPermission
+    expect(
+      userCanDo({
+        user,
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: project_id,
+      })
+    ).to.be.false;
+
+    expect(
+      userCanDo({
+        user,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: project_id,
+      })
+    ).to.be.false;
+
+    // Add GENERAL_ADMIN role - this should grant all permissions
+    addGlobalRole({user, role: Role.GENERAL_ADMIN});
+
+    // Now user should have read/modify permissions for all projects
+    expect(
+      userCanDo({
+        user,
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: project_id,
+      })
+    ).to.be.true;
+
+    expect(
+      userCanDo({
+        user,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: project_id,
+      })
+    ).to.be.true;
+
+    // Remove the admin role
+    removeGlobalRole({user, role: Role.GENERAL_ADMIN});
+
+    // Add PROJECT_GUEST role (similar to old 'user' role) for specific project
+    addProjectRole({
+      user,
+      projectId: project_id,
+      role: Role.PROJECT_GUEST,
+    });
+
+    // Should have read but not modify permission for this project
+    expect(
+      userCanDo({
+        user,
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: project_id,
+      })
+    ).to.be.true;
+
+    expect(
+      userCanDo({
+        user,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: project_id,
+      })
+    ).to.be.false;
+
+    // But can't access another project
+    expect(
+      userCanDo({
+        user,
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: 'anotherProject',
+      })
+    ).to.be.false;
+
+    expect(
+      userCanDo({
+        user,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: 'anotherProject',
+      })
+    ).to.be.false;
+
+    // Give them PROJECT_ADMIN permission for the project
+    addProjectRole({
+      user,
+      projectId: project_id,
+      role: Role.PROJECT_ADMIN,
+    });
+
+    // Now should have full permissions for this project
+    expect(
+      userCanDo({
+        user,
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: project_id,
+      })
+    ).to.be.true;
+
+    expect(
+      userCanDo({
+        user,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: project_id,
+      })
+    ).to.be.true;
   });
 
   it('add local password', async () => {
@@ -393,14 +394,14 @@ describe('user creation', () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [user, error] = await createUser({username, name: username});
     if (user && project_id) {
-      addResourceRole({
+      addProjectRole({
         user,
-        resourceId: project_id,
+        projectId: project_id,
         role: Role.PROJECT_CONTRIBUTOR,
       });
-      addResourceRole({
+      addProjectRole({
         user,
-        resourceId: project_id,
+        projectId: project_id,
         role: Role.PROJECT_MANAGER,
       });
       await saveUser(user);

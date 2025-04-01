@@ -25,11 +25,14 @@ PouchDB.plugin(PouchDBFind);
 import {expect} from 'chai';
 import request from 'supertest';
 import {addLocalPasswordForUser} from '../src/auth_providers/local';
-import {generateJwtFromUser} from '../src/authkeys/create';
+import {
+  generateJwtFromUser,
+  upgradeDbUserToExpressUser,
+} from '../src/authkeys/create';
 import {KEY_SERVICE} from '../src/buildconfig';
 import {
   createUser,
-  getUserFromEmailOrUsername,
+  getExpressUserFromEmailOrUsername,
   saveUser,
 } from '../src/couchdb/users';
 import {cleanDataDBS, resetDatabases} from './mocks';
@@ -65,7 +68,8 @@ export const beforeApiTests = async () => {
   const signingKey = await KEY_SERVICE.getSigningKey();
 
   // get the admin user - this should exist at this point
-  const possibleAdminUser = await getUserFromEmailOrUsername(adminUserName);
+  const possibleAdminUser =
+    await getExpressUserFromEmailOrUsername(adminUserName);
 
   // If this is null then the admin user wasn't seeded properly
   expect(possibleAdminUser, 'Admin user was null from the database.').to.not.be
@@ -88,7 +92,9 @@ export const beforeApiTests = async () => {
   // save user and create password
   await saveUser(localUser);
   await addLocalPasswordForUser(localUser, localUserPassword); // saves the user
-  localUserToken = await generateJwtFromUser({user: localUser, signingKey});
+  // Upgrade
+  const upgraded = await upgradeDbUserToExpressUser({dbUser: localUser});
+  localUserToken = await generateJwtFromUser({user: upgraded, signingKey});
 
   // create the nb user
   const [possibleNbUser] = await createUser({
@@ -105,7 +111,8 @@ export const beforeApiTests = async () => {
   await saveUser(nbUser);
   addGlobalRole({user: nbUser, role: Role.GENERAL_CREATOR});
   await addLocalPasswordForUser(nbUser, notebookPassword);
-  notebookUserToken = await generateJwtFromUser({user: nbUser, signingKey});
+  const upgradedNb = await upgradeDbUserToExpressUser({dbUser: nbUser});
+  notebookUserToken = await generateJwtFromUser({user: upgradedNb, signingKey});
 };
 
 /**

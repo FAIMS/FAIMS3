@@ -46,12 +46,16 @@ import {
   updateTeam,
 } from '../couchdb/teams';
 import {
-  getUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUsername,
   getUsersForTeam,
   saveUser,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {isAllowedToMiddleware, requireAuthenticationAPI, userCanDo} from '../middleware';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -282,7 +286,7 @@ api.post(
     }
 
     // Get user to modify
-    const targetUser = await getUserFromEmailOrUsername(username);
+    const targetUser = await getCouchUserFromEmailOrUsername(username);
     if (!targetUser) {
       throw new Exceptions.ItemNotFoundException(
         'User not found. Please check the username or email address.'

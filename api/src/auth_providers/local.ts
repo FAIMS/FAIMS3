@@ -22,10 +22,10 @@ import {pbkdf2Sync, randomBytes} from 'crypto';
 import {Strategy} from 'passport-local';
 import {
   createUser,
-  getUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUsername,
   saveUser,
 } from '../couchdb/users';
-import { ExistingPeopleDBDocument, PeopleDBDocument } from '@faims3/data-model';
+import {ExistingPeopleDBDocument, PeopleDBDocument} from '@faims3/data-model';
 
 type LocalProfile = {
   password: string;
@@ -38,7 +38,7 @@ export const validateLocalUser = async (
   password: string,
   done: CallableFunction
 ) => {
-  const user = await getUserFromEmailOrUsername(username);
+  const user = await getCouchUserFromEmailOrUsername(username);
   if (user) {
     // check the password...
     const profile = user.profiles['local'] as LocalProfile;
@@ -69,6 +69,7 @@ export const get_strategy = () => {
  * registerLocalUser - create a new user account
  *   either `username` or `email` is required to make an account
  *   no existing account should exist with these credentials
+ *
  * @param username - a username, not previously used
  * @param email - an email address, not previously used
  * @param name - user's full name

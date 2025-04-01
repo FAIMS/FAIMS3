@@ -66,7 +66,7 @@ import {
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
 import {
-  getUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUsername,
   getUserInfoForProject,
   getUsers,
   saveUser,
@@ -457,7 +457,7 @@ api.post(
     }
 
     // Get the user specified
-    const user = await getUserFromEmailOrUsername(username);
+    const user = await getCouchUserFromEmailOrUsername(username);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
@@ -624,7 +624,7 @@ api.delete(
       }
     }
 
-    const user = await getUserFromEmailOrUsername(req.params.user_id);
+    const user = await getCouchUserFromEmailOrUsername(req.params.user_id);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
@@ -633,7 +633,7 @@ api.delete(
     }
 
     // Remove all resource roles associated with this user
-    for (const role of user.resourceRoles) {
+    for (const role of user.projectRoles) {
       if (role.resourceId === req.params.notebook_id) {
         removeProjectRole({
           projectId: req.params.notebook_id,

@@ -13,7 +13,10 @@ import {
   markCodeAsUsed,
   validateEmailCode,
 } from '../couchdb/emailCodes';
-import {getUserFromEmailOrUsername, updateUserPassword} from '../couchdb/users';
+import {
+  getCouchUserFromEmailOrUsername,
+  updateUserPassword,
+} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 
@@ -48,7 +51,7 @@ api.post(
     const {email} = req.body;
 
     // Get the user by email
-    const user = await getUserFromEmailOrUsername(email);
+    const user = await getCouchUserFromEmailOrUsername(email);
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
         'No user found with the specified email address.'
