@@ -116,6 +116,10 @@ describe('notebook api', () => {
         projectId: nb1,
         role: Role.PROJECT_GUEST,
       });
+
+      // Update permissions
+      bobalooba = await upgradeDbUserToExpressUser({dbUser: bobalooba});
+
       expect(
         userHasProjectRole({
           user: bobalooba,
@@ -136,6 +140,10 @@ describe('notebook api', () => {
         projectId: nb2,
         role: Role.PROJECT_ADMIN,
       });
+
+      // Update permissions
+      bobalooba = await upgradeDbUserToExpressUser({dbUser: bobalooba});
+
       expect(
         userHasProjectRole({
           user: bobalooba,
@@ -151,14 +159,14 @@ describe('notebook api', () => {
           projectId: nb2,
           role: Role.PROJECT_MANAGER,
         })
-      ).to.equal(true);
+      ).to.equal(false);
       expect(
         userHasProjectRole({
           user: bobalooba,
           projectId: nb2,
           role: Role.PROJECT_GUEST,
         })
-      ).to.equal(true);
+      ).to.equal(false);
 
       expect(
         userCanDo({
@@ -168,11 +176,24 @@ describe('notebook api', () => {
         })
       ).to.equal(true);
 
+      // check role inheritance too
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb2,
+          action: Action.READ_PROJECT_METADATA,
+        })
+      ).to.equal(true);
+
       removeProjectRole({
         user: bobalooba,
         projectId: nb1,
         role: Role.PROJECT_GUEST,
       });
+
+      // Update permissions
+      bobalooba = await upgradeDbUserToExpressUser({dbUser: bobalooba});
+
       expect(
         userCanDo({
           user: bobalooba,
@@ -212,6 +233,9 @@ describe('notebook api', () => {
         role: Role.PROJECT_GUEST,
       });
       await saveUser(bobalooba);
+
+      // Update permissions
+      bobalooba = await upgradeDbUserToExpressUser({dbUser: bobalooba});
 
       const notebooks = await getUserProjectsDetailed(bobalooba);
       expect(notebooks.length).to.equal(2);

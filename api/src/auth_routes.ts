@@ -177,10 +177,15 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       }
 
       req.login(user, async (loginErr: any) => {
+        console.log('LOGIN FUNCTION START');
         if (loginErr) {
+          console.log('ERR');
           return next(loginErr);
         }
-        return redirect_with_token(res, user, redirect);
+        console.log('User object: ' + JSON.stringify(user, undefined, 2));
+        console.log('Return redirect with token');
+        const fullUser = await upgradeDbUserToExpressUser({dbUser: user});
+        return redirect_with_token(res, fullUser, redirect);
       });
     };
   };
@@ -200,6 +205,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     user: Express.User,
     redirect: string
   ) => {
+    console.log('Redirect with token running');
     // there is a case where the redirect url will already
     // have a token (register >> login >>  register)
     if (redirect.indexOf('?token=') >= 0) {
@@ -207,12 +213,14 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     }
 
     // Generate a token (include refresh)
+    console.log('Generating token');
     const token = await generateUserToken(user, true);
 
     // Append the token to the redirect URL
     const redirectUrlWithToken = `${redirect}?token=${token.token}&refreshToken=${token.refreshToken}`;
 
     // Redirect to the app with the token
+    console.log('Returning redirect');
     return res.redirect(redirectUrlWithToken);
   };
 
@@ -226,11 +234,15 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       query: PostLocalAuthQuerySchema,
     }),
     (req, res, next: NextFunction) => {
+      console.log('VALIDATE');
       const redirect = validateRedirect(req.query.redirect || '/');
+      console.log('VALIDATE DONE');
+      console.log('AUTHENTICATE');
       passport.authenticate(
         'local',
         authenticate_return(req, res, next, redirect)
       )(req, res, next);
+      console.log('ROUTE DONE');
     }
   );
 

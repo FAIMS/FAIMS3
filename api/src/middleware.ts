@@ -34,7 +34,7 @@ export const userCanDo = ({
   action,
   resourceId,
 }: {
-  // typing weird here
+  // NOTE: cannot use Express.User here for some reason :/
   user: PeopleDBDocument & {resourceRoles: ResourceRole[]};
   action: Action;
   resourceId?: string;

@@ -174,21 +174,8 @@ describe('user creation', () => {
         projectId: 'important-project',
       });
       expect(projectRoles).to.include(Role.PROJECT_ADMIN);
-      expect(projectRoles.length).to.equal(4);
-      expect(
-        userHasProjectRole({
-          user: newUser,
-          projectId: 'important-project',
-          role: Role.PROJECT_ADMIN,
-        })
-      ).to.be.true;
-      expect(
-        userHasProjectRole({
-          user: newUser,
-          projectId: 'important-project',
-          role: Role.PROJECT_MANAGER,
-        })
-      ).to.be.true;
+      // These are not drilled explicitly anymore
+      expect(projectRoles.length).to.equal(1);
 
       addGlobalRole({user: newUser, role: Role.GENERAL_ADMIN});
       expect(newUser.globalRoles.length).to.equal(3);
@@ -202,13 +189,14 @@ describe('user creation', () => {
       });
 
       // Still true due to general admin
+      // This asks "does this user explicitly have this role" so does not drill!
       expect(
         userHasProjectRole({
           user: newUser,
           projectId: 'important-project',
           role: Role.PROJECT_ADMIN,
         })
-      ).to.be.true;
+      ).to.be.false;
 
       // remove global role
       removeGlobalRole({user: newUser, role: Role.GENERAL_ADMIN});
@@ -235,7 +223,8 @@ describe('user creation', () => {
     if (!dbUser) {
       throw new Error('Failed to create user! Error: ' + error);
     }
-    const user = await upgradeDbUserToExpressUser({dbUser});
+    let user = await upgradeDbUserToExpressUser({dbUser});
+
     // Use userCanDo with proper Action enums instead of the old userHasPermission
     expect(
       userCanDo({
@@ -255,6 +244,9 @@ describe('user creation', () => {
 
     // Add GENERAL_ADMIN role - this should grant all permissions
     addGlobalRole({user, role: Role.GENERAL_ADMIN});
+
+    // Recompile permissions
+    user = await upgradeDbUserToExpressUser({dbUser});
 
     // Now user should have read/modify permissions for all projects
     expect(
@@ -282,6 +274,8 @@ describe('user creation', () => {
       projectId: project_id,
       role: Role.PROJECT_GUEST,
     });
+    // Recompile permissions
+    user = await upgradeDbUserToExpressUser({dbUser});
 
     // Should have read but not modify permission for this project
     expect(
@@ -323,6 +317,9 @@ describe('user creation', () => {
       projectId: project_id,
       role: Role.PROJECT_ADMIN,
     });
+
+    // Recompile permissions
+    user = await upgradeDbUserToExpressUser({dbUser});
 
     // Now should have full permissions for this project
     expect(

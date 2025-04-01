@@ -111,33 +111,43 @@ export async function generateJwtFromUser({
   user: Express.User;
   signingKey: SigningKey;
 }) {
+  console.log('GEtting permission');
   // The data model provides this encoding method - it takes the couch user
   // details and determines how to put that into the token
-  const permissionsComponent = expressUserToTokenPermissions({
-    user,
-  });
+  try {
+    const permissionsComponent = expressUserToTokenPermissions({
+      user,
+    });
+    console.log('Payload ready');
 
-  // We then augment this with extra details to help identify the origin of the
-  // token + user details
-  const completePayload: TokenPayload = {
-    ...permissionsComponent,
-    name: user.name,
-    server: CONDUCTOR_PUBLIC_URL,
-  };
+    // We then augment this with extra details to help identify the origin of the
+    // token + user details
+    const completePayload: TokenPayload = {
+      ...permissionsComponent,
+      name: user.name,
+      server: CONDUCTOR_PUBLIC_URL,
+    };
 
-  // Then there are other parts we wish to include
-  const jwt = await new SignJWT(completePayload)
-    .setProtectedHeader({
-      alg: signingKey.alg,
-      kid: signingKey.kid,
-    })
-    .setSubject(user.user_id)
-    .setIssuedAt()
-    .setIssuer(signingKey.instanceName)
-    // Expiry in minutes
-    .setExpirationTime(ACCESS_TOKEN_EXPIRY_MINUTES.toString() + 'm')
-    .sign(signingKey.privateKey);
-  return jwt;
+    console.log('Signing JWT');
+    // Then there are other parts we wish to include
+    const jwt = await new SignJWT(completePayload)
+      .setProtectedHeader({
+        alg: signingKey.alg,
+        kid: signingKey.kid,
+      })
+      .setSubject(user.user_id)
+      .setIssuedAt()
+      .setIssuer(signingKey.instanceName)
+      // Expiry in minutes
+      .setExpirationTime(ACCESS_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+      .sign(signingKey.privateKey);
+
+    console.log('Returning jwt');
+    return jwt;
+  } catch (e) {
+    console.error('ERROR: ' + e);
+    throw e
+  }
 }
 
 /**
@@ -146,12 +156,17 @@ export async function generateJwtFromUser({
  * @returns The generated token which is a payload containing the actual JWT + refresh token + other information
  */
 export async function generateUserToken(user: Express.User, refresh = false) {
+  console.log('STARTING GENERATE');
   const signingKey = await KEY_SERVICE.getSigningKey();
+
   if (signingKey === null || signingKey === undefined) {
+    console.log('NO SIGNING KEY ERROR!');
     throw new Error('No signing key is available, check configuration');
   } else {
+    console.log('GENERATE JWT');
     const token = await generateJwtFromUser({user, signingKey});
 
+    console.log('DONE RETURN');
     return {
       token: token,
       // Provide a refresh token if necessary

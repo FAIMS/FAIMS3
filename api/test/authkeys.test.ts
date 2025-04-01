@@ -35,7 +35,7 @@ import {addGlobalRole, Role} from '@faims3/data-model';
 
 describe('roundtrip creating and reading token', () => {
   it('create and read token', async () => {
-    const username = 'bobalooba';
+    const username = 'bobalooba-the-great';
     const name = 'Bob Bobalooba';
     const roles: Role[] = [Role.GENERAL_ADMIN, Role.GENERAL_USER];
     const signing_key = await KEY_SERVICE.getSigningKey();
@@ -45,16 +45,19 @@ describe('roundtrip creating and reading token', () => {
 
     if (!dbUser) {
       // create user failed
-      throw new Error('Create user failed!');
+      throw new Error('Create user failed!. Error: ' + err);
     }
 
     // upgrade the user
-    const user = await upgradeDbUserToExpressUser({dbUser});
+    let user = await upgradeDbUserToExpressUser({dbUser});
 
     for (let i = 0; i < roles.length; i++) {
       addGlobalRole({user, role: roles[i]});
     }
     await saveUser(user);
+
+    // Recompile permissions
+    user = await upgradeDbUserToExpressUser({dbUser});
 
     return generateJwtFromUser({user, signingKey: signing_key})
       .then(token => {
