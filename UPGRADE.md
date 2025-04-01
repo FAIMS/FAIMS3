@@ -89,6 +89,10 @@ export const DB_TARGET_VERSIONS: {
 };
 ```
 
+Once you have completed your migrations, you can safely revert the above changes.
+
+**This process should only need to be run once, to initialise the state of your migration DB**.
+
 #### Run the migration command
 
 - run the migration command `npm run migrate`
