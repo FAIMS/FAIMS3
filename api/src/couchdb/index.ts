@@ -25,19 +25,28 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
   AuthDatabase,
+  couchInitialiser,
+  DATABASE_TYPE,
+  DatabaseType,
   initAuthDB,
   initDataDB,
   initDirectoryDB,
+  initInvitesDB,
   initMetadataDB,
+  initMigrationsDB,
   initPeopleDB,
   initProjectsDB,
   initTemplatesDB,
+  InvitesDB,
+  migrateDbs,
+  MigrationsDB,
+  PeopleDB,
+  PeopleDBFields,
   ProjectDataObject,
   ProjectID,
   ProjectMetaObject,
   ProjectObject,
   TemplateDetails,
-  couchInitialiser,
 } from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {
@@ -48,7 +57,7 @@ import {
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {getAllProjects, getNotebookMetadata} from './notebooks';
+import {getAllProjectsDirectory} from './notebooks';
 import {registerAdminUser} from './users';
 
 const DIRECTORY_DB_NAME = 'directory';
@@ -56,14 +65,16 @@ const PROJECTS_DB_NAME = 'projects';
 const TEMPLATES_DB_NAME = 'templates';
 const AUTH_DB_NAME = 'auth';
 const PEOPLE_DB_NAME = 'people';
+const MIGRATIONS_DB_NAME = 'migrations';
 const INVITE_DB_NAME = 'invites';
 
 let _directoryDB: PouchDB.Database | undefined;
 let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
 let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
 let _authDB: AuthDatabase | undefined;
-let _usersDB: PouchDB.Database<Express.User> | undefined;
-let _invitesDB: PouchDB.Database | undefined;
+let _usersDB: PeopleDB | undefined;
+let _invitesDB: InvitesDB | undefined;
+let _migrationsDB: MigrationsDB | undefined;
 
 const pouchOptions = () => {
   const options: PouchDB.Configuration.RemoteDatabaseConfiguration = {};
@@ -176,12 +187,12 @@ export const getAuthDB = (): AuthDatabase => {
   return _authDB;
 };
 
-export const getUsersDB = (): PouchDB.Database<Express.User> => {
+export const getUsersDB = (): PeopleDB => {
   if (!_usersDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PEOPLE_DB_NAME;
     try {
-      _usersDB = new PouchDB<Express.User>(dbName, pouch_options);
+      _usersDB = new PouchDB<PeopleDBFields>(dbName, pouch_options);
     } catch {
       throw new Exceptions.InternalSystemError(
         'Error occurred while getting users database.'
@@ -222,7 +233,22 @@ export const getTemplatesDb = (): PouchDB.Database<TemplateDetails> => {
   return _templatesDb;
 };
 
-export const getInvitesDB = (): PouchDB.Database | undefined => {
+export const getMigrationDb = (): MigrationsDB => {
+  if (!_migrationsDB) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + MIGRATIONS_DB_NAME;
+    try {
+      _migrationsDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting migrations database.'
+      );
+    }
+  }
+  return _migrationsDB;
+};
+
+export const getInvitesDB = (): PouchDB.Database => {
   if (!_invitesDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + INVITE_DB_NAME;
@@ -333,11 +359,9 @@ export const getDataDb = async (
  */
 export const initialiseMetadataDb = async ({
   projectId,
-  roles = ['admin', 'user', 'team'],
   force = false,
 }: {
   projectId: string;
-  roles?: string[];
   force?: boolean;
 }): Promise<PouchDB.Database<ProjectMetaObject>> => {
   // Are we in a testing environment?
@@ -346,18 +370,10 @@ export const initialiseMetadataDb = async ({
   // Get the metadata DB
   const metaDb = await getMetadataDb(projectId);
 
-  // get roles from the notebook, ensure that 'user' and 'admin' are included
-  if (roles.indexOf('user') < 0) {
-    roles.push('user');
-  }
-  if (roles.indexOf('admin') < 0) {
-    roles.push('admin');
-  }
-
   try {
     await couchInitialiser({
       db: metaDb,
-      content: initMetadataDB({projectId, roles}),
+      content: initMetadataDB({projectId}),
       config: {applyPermissions: !isTesting, forceWrite: force},
     });
   } catch (e) {
@@ -375,11 +391,9 @@ export const initialiseMetadataDb = async ({
  */
 export const initialiseDataDb = async ({
   projectId,
-  roles = ['admin', 'user', 'team'],
   force = false,
 }: {
   projectId: string;
-  roles?: string[];
   force?: boolean;
 }): Promise<PouchDB.Database<ProjectDataObject>> => {
   // Are we in a testing environment?
@@ -388,18 +402,10 @@ export const initialiseDataDb = async ({
   // Get the metadata DB
   const dataDb = await getDataDb(projectId);
 
-  // get roles from the notebook, ensure that 'user' and 'admin' are included
-  if (roles.indexOf('user') < 0) {
-    roles.push('user');
-  }
-  if (roles.indexOf('admin') < 0) {
-    roles.push('admin');
-  }
-
   try {
     await couchInitialiser({
       db: dataDb,
-      content: initDataDB({projectId, roles}),
+      content: initDataDB({projectId}),
       config: {applyPermissions: !isTesting, forceWrite: force},
     });
   } catch (e) {
@@ -442,17 +448,17 @@ export const initialiseDbAndKeys = async ({
   // Projects
   const projectsDB = localGetProjectsDb();
 
+  // Invites
+  const invitesDB = getInvitesDB();
+
   // Templates
-  let templatesDb: PouchDB.Database;
-  try {
-    templatesDb = getTemplatesDb();
-  } catch {
-    throw new Exceptions.InternalSystemError(
-      'An error occurred while instantiating the templates DB. Aborting operation.'
-    );
-  }
+  const templatesDb = getTemplatesDb();
+
   // Users
   const peopleDb = getUsersDB();
+
+  // Migrations DB
+  const migrationsDb = getMigrationDb();
 
   // Now for each, generate their initialisation documents and apply
 
@@ -530,24 +536,46 @@ export const initialiseDbAndKeys = async ({
     );
   }
 
+  // Invites DB
+  try {
+    await couchInitialiser({
+      db: invitesDB,
+      content: initInvitesDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the invites database!...' + e
+    );
+  }
+
+  // Migrations DB
+  try {
+    await couchInitialiser({
+      db: migrationsDb,
+      content: initMigrationsDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the migrations database!...' + e
+    );
+  }
+
   // For users, we also establish an admin user, if not already present
   await registerAdminUser(peopleDb);
 
   // For each project, ensure the metadata and data DBs are also
   // initialised/synced
-  const projects = await getAllProjects();
+  const projects = await getAllProjectsDirectory();
 
   for (const project of projects) {
     // Project ID
     const projectId = project._id;
 
-    // Try and get the metadata (which has roles in it)
-    const roles = ((await getNotebookMetadata(projectId)) ?? undefined)
-      ?.accesses as string[] | undefined;
-
     // Now initialise the DBs (potentially updating security documents etc)
-    await initialiseMetadataDb({projectId, roles, force});
-    await initialiseDataDb({projectId, roles, force});
+    await initialiseMetadataDb({projectId, force});
+    await initialiseDataDb({projectId, force});
   }
 
   // Setup keys
@@ -560,4 +588,64 @@ export const initialiseDbAndKeys = async ({
     );
     throw error;
   }
+};
+
+/**
+ * Initialises and then migrates all databases!
+ */
+export const initialiseAndMigrateDBs = async ({
+  force = false,
+}: {
+  force?: boolean;
+}) => {
+  await initialiseDbAndKeys({force});
+
+  let dbs: {dbType: DATABASE_TYPE; dbName: string; db: PouchDB.Database}[] = [
+    {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
+    {
+      db: getDirectoryDB(),
+      dbType: DatabaseType.DIRECTORY,
+      dbName: DIRECTORY_DB_NAME,
+    },
+    {db: getInvitesDB(), dbType: DatabaseType.INVITES, dbName: INVITE_DB_NAME},
+    {db: getUsersDB(), dbType: DatabaseType.PEOPLE, dbName: PEOPLE_DB_NAME},
+    {
+      db: localGetProjectsDb(),
+      dbType: DatabaseType.PROJECTS,
+      dbName: PROJECTS_DB_NAME,
+    },
+    {
+      db: getTemplatesDb(),
+      dbType: DatabaseType.TEMPLATES,
+      dbName: TEMPLATES_DB_NAME,
+    },
+  ];
+
+  // Migrate these first
+  const migrationsDb = getMigrationDb();
+  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+
+  // Now migrate all data/metadata DBs
+  const projects = await getAllProjectsDirectory();
+  dbs = [];
+
+  for (const project of projects) {
+    // Project ID
+    const projectId = project._id;
+    const dataDb = (await getDataDb(projectId)) as PouchDB.Database;
+    const metadataDb = (await getMetadataDb(projectId)) as PouchDB.Database;
+    dbs.concat([
+      {
+        db: dataDb,
+        dbType: DatabaseType.DATA,
+        dbName: dataDb.name,
+      },
+      {
+        db: metadataDb,
+        dbType: DatabaseType.METADATA,
+        dbName: metadataDb.name,
+      },
+    ]);
+  }
+  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
 };

@@ -37,7 +37,6 @@ import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
 import {localGetDataDb} from '../../..';
 import * as ROUTES from '../../../constants/routes';
-import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../constants/routes';
 import {
   NotificationContext,
   NotificationContextType,
@@ -76,22 +75,25 @@ import {
   generateLocationState,
   generateRelationship,
   getParentLinkInfo,
+  LocationState,
+  recordIsChildRecord,
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
-import {c} from 'vitest/dist/reporters-5f784f42';
 
 type RecordFormProps = {
+  setProgress: (progress: number) => void;
   navigate: NavigateFunction;
   serverId: string;
   project_id: ProjectID;
   record_id: RecordID;
+  location: any;
   // Might be given in the URL:
   ui_specification: ProjectUIModel;
   conflictfields?: string[] | null;
   handleChangeTab?: Function;
   isSyncing?: string;
-  disabled?: boolean;
+  disabled: boolean;
   handleSetIsDraftSaving: Function;
   handleSetDraftLastSaved: Function;
   handleSetDraftError: Function;
@@ -161,6 +163,15 @@ type RecordFormState = {
   lastProcessedValues: ValuesObject | null;
 };
 
+// utility type used in the save method for RecordForm
+type RecordIdentifiers = {
+  record_id: string;
+  revision_id: string;
+};
+
+// options for the close action on a form
+export type FormCloseOptions = 'continue' | 'close' | 'new';
+
 /*
   Callers of RecordForm
 
@@ -172,7 +183,7 @@ type RecordFormState = {
     - this one works ok
 */
 
-class RecordForm extends React.Component<any, RecordFormState> {
+class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
   draftState: RecordDraftState | null = null;
   private formikRef = React.createRef<FormikProps<any>>();
 
@@ -363,7 +374,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
     if (this.state.view_cached && this.state.type_cached) {
       return true;
     }
-
     let viewSetName;
     if (this.props.type === undefined) {
       if (revision_id !== undefined) {
@@ -428,7 +438,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
     ) {
       viewName = this.state.view_cached;
     }
-
     this.setState({
       type_cached: viewSetName,
       view_cached: viewName,
@@ -464,7 +473,6 @@ class RecordForm extends React.Component<any, RecordFormState> {
       this.props.navigate(-1);
       return;
     }
-
     if (this.draftState && this.getViewName() && this.getViewsetName()) {
       // If the draft saving has .start()'d already,
       // The proper way to change the record/revision/etc is this
@@ -515,7 +523,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
         this.props.revision_id === undefined &&
         this.state.revision_cached === undefined
       ) {
-        const location: any = this.props.location;
+        const location = this.props.location;
         if (
           location !== undefined &&
           location.state !== undefined &&
@@ -532,7 +540,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
             logError(
               `Error in formChanged, data not saved, child_record_id is not record_id ${this.props.record_id} != ${location.state.child_record_id}`
             );
-          } else this.save(this.state.initialValues, 'continue', () => {});
+          } else
+            this.save({
+              values: this.state.initialValues,
+              closeOption: 'continue',
+            });
         }
       }
     } catch (err: any) {
@@ -564,8 +576,12 @@ class RecordForm extends React.Component<any, RecordFormState> {
       const database_data = fromdb ? fromdb.data : {};
       const database_annotations = fromdb ? fromdb.annotations : {};
 
+      // this doesn't resolve when the draftState is 'uninitialized'
+      // which happens when we redirect here from a child record
       const [staged_data, staged_annotations] =
-        await this.draftState.getInitialValues();
+        this.draftState.data.state === 'uninitialized'
+          ? [{}, {}]
+          : await this.draftState.getInitialValues();
 
       const fields = getFieldsForViewSet(
         this.props.ui_specification,
@@ -588,6 +604,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
         _current_revision_id: revision_id,
       };
       const annotations: {[key: string]: any} = {};
+
       fieldNames.forEach(fieldName => {
         let initial_value = fields[fieldName]['initialValue'];
 
@@ -778,10 +795,21 @@ class RecordForm extends React.Component<any, RecordFormState> {
     return '';
   }
 
+  /**
+   * Filter out internal fields from the values object before saving
+   * @param values form values
+   * @returns filtered form values
+   */
   filterValues(values: object) {
+    const internalFields = [
+      '_id',
+      '_project_id',
+      '_current_revision_id',
+      '_server_id',
+    ];
     const new_values: any = {};
     for (const [k, v] of Object.entries(values)) {
-      if (k !== '_id' && k !== '_project_id' && k !== '_current_revision_id') {
+      if (!internalFields.includes(k)) {
         new_values[k] = v;
         if (k[0] === '_') {
           logError(`Including possibly bad key ${k} in record`);
@@ -795,7 +823,7 @@ class RecordForm extends React.Component<any, RecordFormState> {
     const allSections =
       this.props.ui_specification.viewsets[this.getViewsetName()].views;
 
-    const allVisited = allSections.every((section: string) =>
+    allSections.every((section: string) =>
       this.state.visitedSteps.has(section)
     );
   }
@@ -865,22 +893,28 @@ class RecordForm extends React.Component<any, RecordFormState> {
       });
     }
   }
-  // before save:
-  // for link/create new record
-  // save child and parent information into record
-  // function save:
-  // - save doc/record
-  // - save persistence data
-  // - get new revision id, and set new revision id if user click save and continue
-  // - clear the draft
-  // after save: direct user to different path
-  // - - publish and continue: setSubmitting re-enabled, so user can save form for the new revision id
-  // - - publish and close: - close the current record and return to project list
-  //                     - close the current record and back to parent record if record created from parent or if record has parent
-  // - - publish and new:  - close the current record and create new record when current record has no parent relationship
-  //                    - when current record has parent: close current record, add new record into parent record, open the new record with parent
 
-  save(values: object, is_close: string, setSubmitting: any) {
+  /**
+   * save a record and navigate to the next location
+   *  - continue: setSubmitting re-enabled, so user can save form for the new revision id
+   *  - close: - close the current record and return to project list
+   *           - close the current record and back to parent record if record created from parent or if record has parent
+   *  - new:   - close the current record and create new record when current record has no parent relationship
+   *           - when current record has parent: close current record, add new record into parent record, open the new record with parent
+   *
+   * @param values: an object containing the values from the form to be saved as a new or updated record
+   * @param closeOption: the action to perform after save 'continue', 'close', 'new'
+   * @param setSubmitting: function to update the submitting state of the form
+   */
+  save({
+    values,
+    closeOption,
+    setSubmitting = () => {},
+  }: {
+    values: object;
+    closeOption: FormCloseOptions;
+    setSubmitting?: (s: boolean) => void;
+  }): Promise<RevisionID | void | undefined> {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
     //save state into persistent data
@@ -957,26 +991,34 @@ class RecordForm extends React.Component<any, RecordFormState> {
           // update the component state with the new revision id and notify the parent
           try {
             this.setState({revision_cached: revision_id});
-            // SC. Removing this call since it prevents deletion of the draft
-            // later on (draftState.clear())
-            // by changing the draft state to 'uninitialised'
-            //
-            //this.formChanged(true, revision_id);
             if (this.props.setRevision_id !== undefined)
               this.props.setRevision_id(revision_id); //pass the revision id back
           } catch (error) {
             logError(error);
           }
-          return is_close === 'close'
-            ? (doc.data['hrid' + this.state.type_cached] ??
-                this.props.record_id)
-            : revision_id; // return revision id for save and continue function
+          // we need both the revision id and the record id below
+          const result: RecordIdentifiers = {
+            revision_id,
+            record_id: this.props.record_id,
+          };
+          return result;
         })
         // generate a success alert
-        .then(hrid => {
-          const message = 'Record successfully saved';
-          (this.context as NotificationContextType).showSuccess(message);
-          return hrid;
+        .then(async (ids: RecordIdentifiers) => {
+          (this.context as NotificationContextType).showSuccess(
+            'Record successfully saved'
+          );
+          // Clear the current draft state
+          this.draftState && (await this.draftState.clear());
+          return ids;
+        })
+        // handle the next step after saving, redirect to the parent, a new record or the record list
+        .then((ids: RecordIdentifiers) => {
+          if (closeOption === 'continue') {
+            setSubmitting(false);
+            return ids.revision_id;
+          } else
+            return this.redirectAfterSave({ids, closeOption, setSubmitting});
         })
         // Could not save record error
         // TODO: this is actually very serious and we should work out how
@@ -987,286 +1029,280 @@ class RecordForm extends React.Component<any, RecordFormState> {
           (this.context as NotificationContextType).showError(message);
           logError('Unsaved record error:' + err);
         })
-        // Clear the current draft area (Possibly after redirecting back to project page)
-        .then(async revision_id => {
-          this.draftState && (await this.draftState.clear());
-          return revision_id;
-        })
-        // publish and continue editing
-        .then(hrid => {
-          if (is_close === 'continue') {
-            setSubmitting(false);
-            return hrid;
-          } else {
-            const relationState = this.props.location?.state;
-            if (relationState !== undefined && relationState !== null) {
-              const {state_parent, is_direct} = getParentLinkInfo(
-                hrid,
-                this.props.location.state,
-                this.props.record_id
-              );
-              // if this is not a child record then is_direct will be false
-              if (is_direct === false) {
-                // publish and close
-                if (is_close === 'close') {
-                  this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      this.props.serverId +
-                      '/' +
-                      this.props.project_id
-                  ); //update for save and close button
-                  window.scrollTo(0, 0);
-                  return hrid;
-                  // publish and new record
-                } else if (is_close === 'new') {
-                  //not child record
-                  setSubmitting(false);
-                  this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      this.props.serverId +
-                      '/' +
-                      this.props.project_id +
-                      ROUTES.RECORD_CREATE +
-                      this.state.type_cached
-                  );
-                  window.scrollTo(0, 0);
-                  return hrid;
-                }
-              } else {
-                // or we're dealing with a child record
-                if (is_close === 'close') {
-                  this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      this.props.serverId +
-                      '/' +
-                      state_parent.parent_link,
-                    {state: state_parent}
-                  );
-                  window.scrollTo(0, 0);
-                  return hrid;
-                } else if (is_close === 'new') {
-                  // for new child record, should save the parent record and pass the location state --TODO
-                  const locationState: any = this.props.location.state;
-                  setSubmitting(false);
-                  this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      this.props.serverId +
-                      '/' +
-                      this.props.project_id +
-                      ROUTES.RECORD_CREATE +
-                      this.state.type_cached,
-                    {state: this.props.location.state}
-                  );
-                  const field_id = locationState.field_id;
-                  const new_record_id = generateFAIMSDataID();
-                  const new_child_record = {
-                    record_id: new_record_id,
-                    project_id: this.props.project_id,
-                  };
-                  getFirstRecordHead({
-                    dataDb: localGetDataDb(this.props.project_id),
-                    recordId: locationState.parent_record_id,
-                  }).then(revision_id =>
-                    getFullRecordData({
-                      dataDb: localGetDataDb(this.props.project_id),
-                      projectId: this.props.project_id,
-                      recordId: locationState.parent_record_id,
-                      revisionId: revision_id,
-                    }).then(latest_record => {
-                      const new_doc = latest_record;
-                      if (new_doc !== null) {
-                        if (
-                          this.props.ui_specification['fields'][field_id][
-                            'component-parameters'
-                          ]['multiple'] === true
-                        )
-                          new_doc['data'][field_id] = [
-                            ...new_doc['data'][field_id],
-                            new_child_record,
-                          ];
-                        else
-                          new_doc['data'][field_id] = [
-                            ...new_doc['data'][field_id],
-                            new_child_record,
-                          ];
-                        upsertFAIMSData({
-                          dataDb: localGetDataDb(this.props.project_id),
-                          record: new_doc,
-                        })
-                          .then(new_revision_id => {
-                            const location_state: any = locationState;
-                            location_state['parent_link'] =
-                              ROUTES.getRecordRoute(
-                                this.props.serverId,
-                                this.props.project_id,
-                                (
-                                  location_state.parent_record_id || ''
-                                ).toString(),
-                                (new_revision_id || '').toString()
-                              ).replace(INDIVIDUAL_NOTEBOOK_ROUTE, '');
-                            location_state['child_record_id'] = new_record_id;
-                            this.props.navigate(
-                              ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                                this.props.serverId +
-                                '/' +
-                                this.props.project_id +
-                                ROUTES.RECORD_CREATE +
-                                this.state.type_cached,
-                              {state: location_state}
-                            );
-                            setSubmitting(false);
-                            window.scrollTo(0, 0);
-                            return revision_id;
-                          })
-                          .catch(error => logError(error));
-                      } else {
-                        logError(
-                          'Error saving the parent record, latest record is null'
-                        );
-                        this.props.navigate(
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                            this.props.serverId +
-                            '/' +
-                            this.props.project_id +
-                            ROUTES.RECORD_CREATE +
-                            this.state.type_cached,
-                          {state: locationState.location_state}
-                        );
-                        setSubmitting(false);
-                        window.scrollTo(0, 0);
-                        return revision_id;
-                      }
-                    })
-                  );
-                  return hrid;
-                }
-              }
-            } else {
-              const relationship = this.state.relationship;
-              if (
-                relationship === undefined ||
-                relationship === null ||
-                relationship.parent === undefined ||
-                relationship.parent === null
-              ) {
-                if (is_close === 'close') {
-                  this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      this.props.serverId +
-                      '/' +
-                      this.props.project_id
-                  );
-                  window.scrollTo(0, 0);
-                  return hrid;
-                } else if (is_close === 'new') {
-                  //not child record
-                  setSubmitting(false);
-                  this.props.navigate(
-                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      this.props.serverId +
-                      '/' +
-                      this.props.project_id +
-                      ROUTES.RECORD_CREATE +
-                      this.state.type_cached
-                  );
-                  return hrid;
-                }
-              } else {
-                generateLocationState(
-                  relationship.parent,
-                  this.props.project_id,
-                  this.props.serverId
-                )
-                  .then(locationState => {
-                    if (is_close === 'close') {
-                      this.props.navigate(
-                        locationState.location_state.parent_link
-                      );
-                      window.scrollTo(0, 0);
-                      return hrid;
-                    } else if (is_close === 'new') {
-                      // for new child record, should save the parent record and pass the location state --TODO
-                      // update parent information
-
-                      const new_doc = locationState.latest_record;
-                      const field_id = locationState.location_state.field_id;
-                      const new_record_id = generateFAIMSDataID();
-                      const new_child_record = {
-                        record_id: new_record_id,
-                        project_id: this.props.project_id,
-                        // record_label:new_record_id
-                        // relation_type_vocabPair: [],
-                      };
-                      if (new_doc !== null) {
-                        if (
-                          this.props.ui_specification['fields'][field_id][
-                            'component-parameters'
-                          ]['multiple'] === true
-                        )
-                          new_doc['data'][field_id] = [
-                            ...new_doc['data'][field_id],
-                            new_child_record,
-                          ];
-                        else
-                          new_doc['data'][field_id] = [
-                            ...new_doc['data'][field_id],
-                            new_child_record,
-                          ];
-                        upsertFAIMSData({
-                          dataDb: localGetDataDb(this.props.project_id),
-                          record: new_doc,
-                        })
-                          .then(new_revision_id => {
-                            const location_state: any =
-                              locationState.location_state;
-                            location_state['parent_link'] =
-                              ROUTES.getRecordRoute(
-                                this.props.serverId,
-                                this.props.project_id,
-                                (
-                                  location_state.parent_record_id || ''
-                                ).toString(),
-                                (new_revision_id || '').toString()
-                              ).replace(INDIVIDUAL_NOTEBOOK_ROUTE, '');
-                            location_state['child_record_id'] = new_record_id;
-                            this.props.navigate(
-                              ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                                this.props.serverId +
-                                '/' +
-                                this.props.project_id +
-                                ROUTES.RECORD_CREATE +
-                                this.state.type_cached,
-                              {state: location_state}
-                            );
-                            setSubmitting(false);
-                            window.scrollTo(0, 0);
-                            return hrid;
-                          })
-                          .catch(error => logError(error));
-                      } else {
-                        logError(
-                          'Error to save the parent record from child relationship, latest record is null'
-                        );
-                        this.props.navigate(
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                            this.props.serverId +
-                            '/' +
-                            this.props.project_id +
-                            ROUTES.RECORD_CREATE +
-                            this.state.type_cached,
-                          {state: locationState.location_state}
-                        );
-                        setSubmitting(false);
-                        window.scrollTo(0, 0);
-                      }
-                    }
-                  })
-                  .catch(error => logError(error));
-              }
-            }
-          }
-        })
     );
+  }
+
+  /**
+   * Wrapper around the navigate method - navigate and scroll to top
+   * @param destination route to navigate to
+   * @param state state to be passed to navigate, optional
+   */
+  navigateTo(destination: string, state?: any) {
+    this.props.navigate(destination, state ? {state} : undefined);
+    window.scrollTo(0, 0);
+  }
+
+  /**
+   * A helper method to generate the navigation routes used after records are saved
+   * @param type - type of route we are generating (project, record, create)
+   * @param params - parameters needed for the route,
+   *          for 'project' this can be empty
+   *          for 'create' this should include formType (eg. the value of this.state.type_cached)
+   * @returns {string} route path to be passed to navigateTo
+   */
+  getRoute(
+    type: 'project' | 'create',
+    params: {
+      recordId?: string;
+      revisionId?: string;
+      formType?: string | null;
+    } = {}
+  ) {
+    const {serverId, project_id} = this.props;
+    const base = ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + project_id;
+
+    switch (type) {
+      case 'project':
+        return base;
+      case 'create':
+        if (!params.formType)
+          throw new Error('Form type required for create route');
+        return base + ROUTES.RECORD_CREATE + params.formType;
+      default:
+        return base;
+    }
+  }
+
+  /**
+   * Handle redirect after a record is saved
+   * - navigates to the appropriate place based on the user selection
+   *   in closeOption, passing the right context as needed.
+   *
+   * @param ids - record and revision ids
+   * @param closeOption - close or new
+   * @param setSubmitting - function to set the submitting state
+   * @returns revision id of the recently saved child record
+   */
+  redirectAfterSave({
+    ids,
+    closeOption,
+    setSubmitting = () => {},
+  }: {
+    ids: RecordIdentifiers;
+    closeOption: FormCloseOptions;
+    setSubmitting?: (s: boolean) => void;
+  }) {
+    const relationState = this.props.location?.state;
+    // first case is if we have a parent record, there should be
+    // some location state passed in
+    if (relationState !== undefined && relationState !== null) {
+      if (
+        recordIsChildRecord(
+          ids.revision_id,
+          relationState,
+          this.props.record_id
+        )
+      )
+        return this.navigateAfterSaveChild({ids, closeOption, setSubmitting});
+      else return this.simpleFinishOrNew({ids, closeOption, setSubmitting});
+    } else {
+      // here we don't have location state passed in, check the current state
+      // to see if we have recorded a relationship
+      // when is this set?
+      const relationship = this.state.relationship;
+      if (
+        relationship === undefined ||
+        relationship === null ||
+        relationship.parent === undefined ||
+        relationship.parent === null
+      ) {
+        return this.simpleFinishOrNew({
+          ids,
+          closeOption,
+          setSubmitting,
+        });
+      } else {
+        generateLocationState(
+          relationship.parent,
+          this.props.project_id,
+          this.props.serverId
+        )
+          .then(locationState => {
+            return this.navigateAfterSaveChild({
+              ids,
+              closeOption,
+              setSubmitting,
+              relationData: locationState.location_state,
+            });
+          })
+          .catch(error => logError(error));
+      }
+    }
+  }
+
+  /**
+   * Simple case where we just redirect back to the project page or
+   * a new record creation page
+   *
+   * @param ids - record and revision ids
+   * @param closeOption - close or new
+   * @param setSubmitting - function to set the submitting state
+   * @returns revision id of the recently saved child record
+   */
+  simpleFinishOrNew({
+    ids,
+    closeOption,
+    setSubmitting = () => {},
+  }: {
+    ids: RecordIdentifiers;
+    closeOption: FormCloseOptions;
+    setSubmitting?: (s: boolean) => void;
+  }) {
+    // publish and close
+    if (closeOption === 'close') {
+      this.navigateTo(this.getRoute('project'));
+      return ids.revision_id;
+      // publish and new record
+    } else if (closeOption === 'new') {
+      //not child record
+      setSubmitting(false);
+      this.navigateTo(
+        this.getRoute('create', {formType: this.state.type_cached})
+      );
+      // finally return the revision id
+      return ids.revision_id;
+    }
+  }
+
+  /**
+   * More complex case after saving a child record, may need to
+   * modify the parent record's relationship if we're making another child record
+   *
+   * @param ids - record and revision ids
+   * @param closeOption - close or new
+   * @param setSubmitting - function to set the submitting state
+   * @returns revision id of the recently saved child record
+   */
+  navigateAfterSaveChild({
+    ids,
+    closeOption,
+    setSubmitting = () => {},
+    relationData = null,
+  }: {
+    ids: RecordIdentifiers;
+    closeOption: FormCloseOptions;
+    setSubmitting?: (s: boolean) => void;
+    relationData?: LocationState | null;
+  }) {
+    // Use provided relationData or get from props.location.state
+    const state_parent = relationData
+      ? getParentLinkInfo(ids.revision_id, relationData, this.props.record_id)
+      : getParentLinkInfo(
+          ids.revision_id,
+          this.props.location.state,
+          this.props.record_id
+        );
+
+    // use either the location state passed in or the location state from props
+    const locationState: LocationState =
+      relationData || this.props.location.state;
+
+    // this shouldn't happen since we check location.state before we get here
+    // but just to be safe we'll handle there being no parent cleanly
+    if (state_parent === null) return ids.revision_id;
+
+    if (closeOption === 'close') {
+      // redirect back to the parent record or the project page if we don't have a link
+      if (state_parent.parent_link)
+        this.navigateTo(state_parent.parent_link, state_parent);
+      else this.navigateTo(this.getRoute('project'));
+
+      // finally return the revision id
+      return ids.revision_id;
+    } else if (closeOption === 'new') {
+      setSubmitting(false);
+      const field_id = locationState.field_id;
+      const new_record_id = generateFAIMSDataID();
+      const new_child_record = {
+        record_id: new_record_id,
+        project_id: this.props.project_id,
+      };
+      if (locationState.parent_record_id) {
+        // just to persuade typescript that this isn't undefined
+        const parent_record_id = locationState.parent_record_id;
+        // here we get the parent record, insert a new child record
+        // value into the relation field, save it and then
+        // redirect to the route that will actually create
+        // the new child record.
+        // Insane!
+
+        getFirstRecordHead({
+          dataDb: localGetDataDb(this.props.project_id),
+          recordId: locationState.parent_record_id,
+        }).then(revision_id =>
+          getFullRecordData({
+            dataDb: localGetDataDb(this.props.project_id),
+            projectId: this.props.project_id,
+            recordId: parent_record_id,
+            revisionId: revision_id,
+          }).then(latest_record => {
+            const new_doc = latest_record;
+            if (new_doc !== null) {
+              if (
+                field_id &&
+                this.props.ui_specification['fields'][field_id][
+                  'component-parameters'
+                ]['multiple'] === true
+              )
+                new_doc['data'][field_id] = [
+                  ...new_doc['data'][field_id],
+                  new_child_record,
+                ];
+              else if (field_id)
+                new_doc['data'][field_id] = [
+                  ...new_doc['data'][field_id],
+                  new_child_record,
+                ];
+              upsertFAIMSData({
+                dataDb: localGetDataDb(this.props.project_id),
+                record: new_doc,
+              })
+                .then(new_revision_id => {
+                  // update location state to point to the parent record
+                  locationState['parent_link'] = ROUTES.getRecordRoute(
+                    this.props.serverId,
+                    this.props.project_id,
+                    (locationState.parent_record_id || '').toString(),
+                    (new_revision_id || '').toString()
+                  );
+                  // and add the reference ot the child record id
+                  locationState['child_record_id'] = new_record_id;
+                  // navigate to the page to create a new record with the updated state
+                  this.navigateTo(
+                    this.getRoute('create', {formType: this.state.type_cached}),
+                    locationState
+                  );
+                  setSubmitting(false);
+                  return revision_id;
+                })
+                .catch(error => logError(error));
+            } else {
+              logError('Error saving the parent record, latest record is null');
+
+              // navigate to the page to create a new record with the updated state
+              this.navigateTo(
+                this.getRoute('create', {formType: this.state.type_cached}),
+                locationState
+              );
+              setSubmitting(false);
+              return revision_id;
+            }
+          })
+        );
+      }
+      // finally return the revision id
+      return ids.revision_id;
+    }
   }
 
   updateView(viewName: string) {
@@ -1427,7 +1463,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
               }}
               onSubmit={(values, {setSubmitting}) => {
                 setSubmitting(true);
-                return this.save(values, 'continue', setSubmitting);
+                return this.save({
+                  values,
+                  closeOption: 'continue',
+                  setSubmitting,
+                });
               }}
             >
               {formProps => {
@@ -1549,11 +1589,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
                           <UGCReport
                             handleUGCReport={(value: string) => {
                               this.setState({ugc_comment: value});
-                              this.save(
-                                formProps.values,
-                                'continue',
-                                formProps.setSubmitting
-                              );
+                              this.save({
+                                values: formProps.values,
+                                closeOption: 'continue',
+                                setSubmitting: formProps.setSubmitting,
+                              });
                             }}
                           />
                         </Box>
@@ -1591,14 +1631,14 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         ui_specification={ui_specification}
                         views={views}
                         showPublishButton={showPublishButton}
-                        handleFormSubmit={(is_close: string) => {
+                        handleFormSubmit={(closeOption: FormCloseOptions) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
-                            this.save(
-                              formProps.values,
-                              is_close,
-                              formProps.setSubmitting
-                            );
+                            this.save({
+                              values: formProps.values,
+                              closeOption,
+                              setSubmitting: formProps.setSubmitting,
+                            });
                           }, 500);
                         }}
                         layout={layout}
@@ -1610,11 +1650,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
                           <UGCReport
                             handleUGCReport={(value: string) => {
                               this.setState({ugc_comment: value});
-                              this.save(
-                                formProps.values,
-                                'continue',
-                                formProps.setSubmitting
-                              );
+                              this.save({
+                                values: formProps.values,
+                                closeOption: 'continue',
+                                setSubmitting: formProps.setSubmitting,
+                              });
                             }}
                           />
                         </Box>
@@ -1689,14 +1729,14 @@ class RecordForm extends React.Component<any, RecordFormState> {
                         ui_specification={ui_specification}
                         views={views}
                         showPublishButton={showPublishButton}
-                        handleFormSubmit={(is_close: string) => {
+                        handleFormSubmit={(closeOption: FormCloseOptions) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
-                            this.save(
-                              formProps.values,
-                              is_close,
-                              formProps.setSubmitting
-                            );
+                            this.save({
+                              values: formProps.values,
+                              closeOption,
+                              setSubmitting: formProps.setSubmitting,
+                            });
                           }, 500);
                         }}
                         layout={layout}
@@ -1707,11 +1747,11 @@ class RecordForm extends React.Component<any, RecordFormState> {
                           <UGCReport
                             handleUGCReport={(value: string) => {
                               this.setState({ugc_comment: value});
-                              this.save(
-                                formProps.values,
-                                'continue',
-                                formProps.setSubmitting
-                              );
+                              this.save({
+                                values: formProps.values,
+                                closeOption: 'continue',
+                                setSubmitting: formProps.setSubmitting,
+                              });
                             }}
                           />
                         </Box>

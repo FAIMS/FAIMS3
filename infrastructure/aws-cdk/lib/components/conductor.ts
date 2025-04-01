@@ -28,6 +28,37 @@ import {ConductorConfig} from '../faims-infra-stack';
 import {getPathToRoot} from '../util/mono';
 import {SharedBalancer} from './networking';
 
+const DEFAULT_SMTP_CACHE_EXPIRY = 300;
+
+/**
+ * SMTP credentials secret structure
+ *
+ * The AWS Secrets Manager secret should contain the following fields:
+ * - host: SMTP server hostname (string)
+ * - port: SMTP server port (number)
+ * - secure: Whether to use TLS/SSL (boolean) e.g. true/false
+ * - user: SMTP authentication username (string)
+ * - pass: SMTP authentication password (string)
+ */
+
+/**
+ * General SMTP configuration for email service
+ */
+export interface SMTPGeneralConfig {
+  /** Email service type (SMTP or MOCK) */
+  emailServiceType: string;
+  /** From email address */
+  fromEmail: string;
+  /** From name */
+  fromName: string;
+  /** Reply-to email address (optional) */
+  replyTo?: string;
+  /** Test email address for admin verification */
+  testEmailAddress: string;
+  /** Cache expiry in seconds (optional) */
+  cacheExpirySeconds?: number;
+}
+
 /**
  * Properties for the FaimsConductor construct
  */
@@ -62,6 +93,10 @@ export interface FaimsConductorProps {
   config: ConductorConfig;
   /** FAIMS_COOKIE_SECRET */
   cookieSecret: sm.Secret;
+  /** SMTP credentials secret ARN */
+  smtpCredsArn: string;
+  /** SMTP general configuration */
+  smtpConfig: SMTPGeneralConfig;
 }
 
 /**
@@ -118,55 +153,70 @@ export class FaimsConductor extends Construct {
     );
 
     // Add container to the task definition
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _conductorContainerDfn = conductorTaskDfn.addContainer(
-      'conductor-container-dfn',
-      {
-        image: conductorContainerImage,
-        portMappings: [
-          {
-            containerPort: this.internalPort,
-            appProtocol: ecs.AppProtocol.http,
-            name: 'conductor-port',
-          },
-        ],
-        environment: {
-          PROFILE_NAME: 'default',
-          CONDUCTOR_INSTANCE_NAME: props.config.name,
-          CONDUCTOR_DESCRIPTION: props.config.description,
-          COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
-          COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
-          COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
-          CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
-          // Conductor API URLs
-          CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
-          CONDUCTOR_URL: this.conductorEndpoint,
-          WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
-          ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
-          IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
-          KEY_SOURCE: 'AWS_SM',
-          AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
-          NEW_CONDUCTOR_URL: props.webUrl,
-        },
-        secrets: {
-          COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(
-            props.couchDbAdminSecret,
-            'password'
-          ),
-          COUCHDB_USER: ecs.Secret.fromSecretsManager(
-            props.couchDbAdminSecret,
-            'username'
-          ),
-          FAIMS_COOKIE_SECRET: ecs.Secret.fromSecretsManager(
-            props.cookieSecret
-          ),
-        },
-        logging: ecs.LogDriver.awsLogs({
-          streamPrefix: 'faims-conductor',
-          logRetention: logs.RetentionDays.ONE_MONTH,
-        }),
-      }
+    const smtpSecret = sm.Secret.fromSecretCompleteArn(
+      this,
+      'SMTPSecret',
+      props.smtpCredsArn
     );
+
+    conductorTaskDfn.addContainer('conductor-container-dfn', {
+      image: conductorContainerImage,
+      portMappings: [
+        {
+          containerPort: this.internalPort,
+          appProtocol: ecs.AppProtocol.http,
+          name: 'conductor-port',
+        },
+      ],
+      environment: {
+        PROFILE_NAME: 'default',
+        CONDUCTOR_INSTANCE_NAME: props.config.name,
+        CONDUCTOR_DESCRIPTION: props.config.description,
+        COUCHDB_EXTERNAL_PORT: `${props.couchDBPort}`,
+        COUCHDB_PUBLIC_URL: props.couchDBEndpoint,
+        COUCHDB_INTERNAL_URL: props.couchDBEndpoint,
+        CONDUCTOR_SHORT_CODE_PREFIX: props.config.shortCodePrefix,
+        // Conductor API URLs
+        CONDUCTOR_PUBLIC_URL: this.conductorEndpoint,
+        CONDUCTOR_URL: this.conductorEndpoint,
+        WEB_APP_PUBLIC_URL: props.webAppPublicUrl,
+        ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
+        IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
+        KEY_SOURCE: 'AWS_SM',
+        AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
+        NEW_CONDUCTOR_URL: props.webUrl,
+
+        // Email Service Configuration
+        EMAIL_SERVICE_TYPE: props.smtpConfig.emailServiceType,
+        EMAIL_FROM_ADDRESS: props.smtpConfig.fromEmail,
+        EMAIL_FROM_NAME: props.smtpConfig.fromName,
+        EMAIL_REPLY_TO: props.smtpConfig.replyTo || props.smtpConfig.fromEmail,
+        TEST_EMAIL_ADDRESS: props.smtpConfig.testEmailAddress,
+        SMTP_CACHE_EXPIRY_SECONDS: `${props.smtpConfig.cacheExpirySeconds || DEFAULT_SMTP_CACHE_EXPIRY}`,
+      },
+      secrets: {
+        COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(
+          props.couchDbAdminSecret,
+          'password'
+        ),
+        COUCHDB_USER: ecs.Secret.fromSecretsManager(
+          props.couchDbAdminSecret,
+          'username'
+        ),
+        FAIMS_COOKIE_SECRET: ecs.Secret.fromSecretsManager(props.cookieSecret),
+
+        // SMTP Credentials from Secret
+        SMTP_HOST: ecs.Secret.fromSecretsManager(smtpSecret, 'host'),
+        SMTP_PORT: ecs.Secret.fromSecretsManager(smtpSecret, 'port'),
+        SMTP_SECURE: ecs.Secret.fromSecretsManager(smtpSecret, 'secure'),
+        SMTP_USER: ecs.Secret.fromSecretsManager(smtpSecret, 'user'),
+        SMTP_PASSWORD: ecs.Secret.fromSecretsManager(smtpSecret, 'pass'),
+      },
+      logging: ecs.LogDriver.awsLogs({
+        streamPrefix: 'faims-conductor',
+        logRetention: logs.RetentionDays.ONE_MONTH,
+      }),
+    });
 
     // CLUSTER AND SERVICE SETUP
     // =========================
