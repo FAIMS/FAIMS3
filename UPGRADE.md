@@ -4,7 +4,7 @@ This document will describe the necessary steps to migrate existing deployments 
 
 ## [feat: admin forgot password reset workflow](https://github.com/FAIMS/FAIMS3/pull/1334)
 
-**CouchDB migration**
+### CouchDB migration
 
 This functionality will not work until you apply the following migration
 
@@ -15,7 +15,7 @@ This functionality will not work until you apply the following migration
 - run the force init action npm run forceinitdb
 - Try generating a code and make sure the workflow is functional.
 
-**Deployment configuration**
+### Deployment configuration
 
 Add the new `NEW_CONDUCTOR_URL` environment variable to the conductor/api build. This is already done in the aws-cdk IaC - however in existing deployments you may need to update your build configuration.
 
