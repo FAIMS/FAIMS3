@@ -10,7 +10,7 @@ const extension = (filename: string) => {
   );
 };
 
-const loadNotebook = async (filename: string) => {
+const loadTemplate = async (filename: string) => {
   try {
     console.log('loading', filename);
     const jsonText = readFileSync(filename, 'utf-8');
@@ -30,7 +30,7 @@ const main = async () => {
     const files = process.argv.slice(2);
     files.forEach(filename => {
       if (extension(filename) === 'json') {
-        loadNotebook(filename);
+        loadTemplate(filename);
       }
     });
   }

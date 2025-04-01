@@ -9,9 +9,8 @@ const extension = (filename: string) => {
   );
 };
 
-const loadNotebook = async (filename: string) => {
+const loadProject = async (filename: string) => {
   try {
-    console.log('loading', filename);
     const jsonText = readFileSync(filename, 'utf-8');
     const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
     const projectName = metadata.name;
@@ -20,7 +19,7 @@ const loadNotebook = async (filename: string) => {
     console.log('created project', projectID);
     process.exit(0);
   } catch (error) {
-    console.error('Notebook import failed:', error);
+    console.error('Project import failed:', error);
     process.exit(1);
   }
 };
@@ -30,7 +29,7 @@ const main = async () => {
     const files = process.argv.slice(2);
     files.forEach(filename => {
       if (extension(filename) === 'json') {
-        loadNotebook(filename);
+        loadProject(filename);
       }
     });
   }
