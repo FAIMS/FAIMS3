@@ -556,6 +556,89 @@ describe('API tests', () => {
     }
   });
 
+  it('test email route - not authenticated', async () => {
+    const result = await request(app).post('/api/admin/test-email');
+    expect(result.statusCode).to.equal(401);
+  });
+
+  it('test email route - not admin', async () => {
+    const result = await request(app)
+      .post('/api/admin/test-email')
+      .set('Authorization', `Bearer ${localUserToken}`);
+    expect(result.statusCode).to.equal(401);
+  });
+
+  it('test email route - admin user', async () => {
+    // Mock the email service
+    const originalEmailService = require('../src/buildconfig').EMAIL_SERVICE;
+    const mockSendEmail = async () => ({
+      messageId: 'test-message-id-123',
+      response: 'Test email sent successfully',
+      envelope: {
+        from: 'test@example.com',
+        to: ['test-recipient@example.com'],
+      },
+    });
+
+    // Replace with mock temporarily
+    require('../src/buildconfig').EMAIL_SERVICE = {
+      sendEmail: mockSendEmail,
+    };
+
+    try {
+      const result = await request(app)
+        .post('/api/admin/test-email')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(result.statusCode).to.equal(200);
+      expect(result.body.success).to.be.true;
+      expect(result.body.status).to.equal('sent');
+      expect(result.body.details.messageId).to.equal('test-message-id-123');
+      expect(result.body.timings).to.have.property('total');
+    } finally {
+      // Restore original email service
+      require('../src/buildconfig').EMAIL_SERVICE = originalEmailService;
+    }
+  });
+
+  it('test email route - handles errors', async () => {
+    // Mock the email service with an error
+    const originalEmailService = require('../src/buildconfig').EMAIL_SERVICE;
+    const mockSendEmail = async () => {
+      const error: any = new Error('SMTP connection failed');
+      error.code = 'ECONNREFUSED';
+      throw error;
+    };
+
+    // Replace with mock temporarily
+    require('../src/buildconfig').EMAIL_SERVICE = {
+      sendEmail: mockSendEmail,
+    };
+
+    try {
+      const result = await request(app)
+        .post('/api/admin/test-email')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(result.statusCode).to.equal(200);
+      expect(result.body.success).to.be.false;
+      expect(result.body.status).to.equal('error');
+      expect(result.body.message).to.include('Failed to send test email');
+      expect(result.body.details.error).to.have.property('name', 'Error');
+      expect(result.body.details.error).to.have.property(
+        'message',
+        'SMTP connection failed'
+      );
+      expect(result.body.details.error).to.have.property('suggestion');
+      expect(result.body.details.error.suggestion).to.include(
+        'Check your SMTP host'
+      );
+    } finally {
+      // Restore original email service
+      require('../src/buildconfig').EMAIL_SERVICE = originalEmailService;
+    }
+  });
+
   //======= DEV ONLY ===========
   //============================
 
