@@ -258,10 +258,10 @@ export interface ResourceAssociation {
  * @returns Array of virtual resource roles that should be added
  */
 export function generateVirtualResourceRoles({
-  decodedToken,
+  resourceRoles,
   resourceAssociations,
 }: {
-  decodedToken: DecodedTokenPermissions;
+  resourceRoles: ResourceRole[];
   resourceAssociations: ResourceAssociation[];
 }): ResourceRole[] {
   // Use a Map to track virtual roles with effective deduplication
@@ -325,7 +325,7 @@ export function generateVirtualResourceRoles({
   }
 
   // Process resource-specific roles
-  for (const resourceRole of decodedToken.resourceRoles) {
+  for (const resourceRole of resourceRoles) {
     const details = roleDetails[resourceRole.role];
     if (!details.resource) {
       // This role is not resource specific - skip
@@ -359,7 +359,7 @@ export function extendTokenWithVirtualRoles({
   resourceAssociations: ResourceAssociation[];
 }): DecodedTokenPermissions {
   const virtualRoles = generateVirtualResourceRoles({
-    decodedToken,
+    resourceRoles: decodedToken.resourceRoles,
     resourceAssociations,
   });
 

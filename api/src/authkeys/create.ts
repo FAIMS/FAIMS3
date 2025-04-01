@@ -19,7 +19,12 @@
  *   which server to use and whether to include test data
  */
 
-import {couchUserToTokenPermissions, TokenPayload} from '@faims3/data-model';
+import {
+  couchUserToTokenPermissions,
+  ExistingPeopleDBDocument,
+  ResourceRole,
+  TokenPayload,
+} from '@faims3/data-model';
 import {SignJWT} from 'jose';
 import {
   ACCESS_TOKEN_EXPIRY_MINUTES,
@@ -29,6 +34,22 @@ import {
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import type {SigningKey} from '../services/keyService';
 
+export async function enhanceUserWithResourceRoles({
+  dbUser,
+}: {
+  dbUser: ExistingPeopleDBDocument;
+}): Promise<ResourceRole[]> {
+  // TODO build out the relevant associations - i.e. which teams is the user a
+  // part of - and then work out which resources this team owns
+
+  // The data model provides this encoding method - it takes the couch user
+  // details and determines how to put that into the token
+  const permissionsComponent = couchUserToTokenPermissions({
+    user : dbUser,
+    relevantAssociations: [],
+  });
+}
+
 export async function generateJwtFromUser({
   user,
   signingKey,
@@ -36,12 +57,15 @@ export async function generateJwtFromUser({
   user: Express.User;
   signingKey: SigningKey;
 }) {
-    // TODO build out the relevant associations - i.e. which teams is the user a
-    // part of - and then work out which resources this team owns
+  // TODO build out the relevant associations - i.e. which teams is the user a
+  // part of - and then work out which resources this team owns
 
   // The data model provides this encoding method - it takes the couch user
   // details and determines how to put that into the token
-  const permissionsComponent = couchUserToTokenPermissions({user, relevantAssociations: []});
+  const permissionsComponent = couchUserToTokenPermissions({
+    user,
+    relevantAssociations: [],
+  });
 
   // We then augment this with extra details to help identify the origin of the
   // token + user details

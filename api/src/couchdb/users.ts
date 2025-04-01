@@ -21,11 +21,13 @@
 import {
   addGlobalRole,
   CouchDBUsername,
+  ExistingPeopleDBDocument,
   NotebookAuthSummary,
+  PeopleDBDocument,
   PeopleDBFields,
   Role,
   safeWriteDocument,
-  userHasResourceRole,
+  userHasProjectRole,
 } from '@faims3/data-model';
 import {getUsersDB} from '.';
 import {
@@ -48,7 +50,7 @@ export const generateInitialUser = ({
   email?: string;
   username: string;
   name: string;
-}): Express.User => {
+}): PeopleDBDocument => {
   return {
     _id: username,
     user_id: username,
@@ -56,8 +58,8 @@ export const generateInitialUser = ({
     emails: email ? [email.toLowerCase()] : [],
     // General user is given by default
     globalRoles: [Role.GENERAL_USER],
-    // Resource roles are empty to start with
-    resourceRoles: [],
+    // Project roles is empty
+    projectRoles: [],
     // Profiles are injected later
     profiles: {},
     teamRoles: [],
@@ -107,7 +109,7 @@ export async function createUser({
   email?: string;
   username?: string;
   name: string;
-}): Promise<[Express.User | null, string]> {
+}): Promise<[PeopleDBDocument | null, string]> {
   if (!email && !username) {
     return [null, 'At least one of username or email is required'];
   }
@@ -153,7 +155,7 @@ export async function updateUserPassword(
  * TODO wherever possible dumping the whole db will not be ideal as scales.
  * @returns all users as Express.User[]
  */
-export async function getUsers(): Promise<Express.User[]> {
+export async function getUsers(): Promise<ExistingPeopleDBDocument[]> {
   // Get the users database
   const users_db = getUsersDB();
   // Fetch all user records from the database and get doc
@@ -169,7 +171,7 @@ export async function getUsersForResource({
   resourceId,
 }: {
   resourceId: string;
-}): Promise<Express.User[]> {
+}): Promise<ExistingPeopleDBDocument[]> {
   // Get the users database
   const usersDb = getUsersDB();
   // Fetch all user records from the database and get doc
@@ -181,7 +183,7 @@ export async function getUsersForResource({
   ).rows.reduce((filtered, option) => {
     if (option.doc) filtered.push(option.doc);
     return filtered;
-  }, [] as Express.User[]);
+  }, [] as ExistingPeopleDBDocument[]);
 }
 
 /**
@@ -191,7 +193,7 @@ export async function getUsersForTeam({
   teamId,
 }: {
   teamId: string;
-}): Promise<Express.User[]> {
+}): Promise<ExistingPeopleDBDocument[]> {
   // Get the users database
   const usersDb = getUsersDB();
   // Fetch all user records from the database and get doc
@@ -203,7 +205,7 @@ export async function getUsersForTeam({
   ).rows.reduce((filtered, option) => {
     if (option.doc) filtered.push(option.doc);
     return filtered;
-  }, [] as Express.User[]);
+  }, [] as ExistingPeopleDBDocument[]);
 }
 
 /**
@@ -213,7 +215,7 @@ export async function getUsersForTeam({
  */
 export async function getUserFromEmailOrUsername(
   identifier: string
-): Promise<null | Express.User> {
+): Promise<null | ExistingPeopleDBDocument> {
   let user;
   user = await getUserFromEmail(identifier);
   if (!user) {
@@ -227,7 +229,9 @@ export async function getUserFromEmailOrUsername(
  * @param email User email address
  * @returns An Express.User record or null if the user is not in the database
  */
-async function getUserFromEmail(email: string): Promise<null | Express.User> {
+async function getUserFromEmail(
+  email: string
+): Promise<null | ExistingPeopleDBDocument> {
   const users_db = getUsersDB();
   if (users_db) {
     const result = await users_db.find({
@@ -236,7 +240,7 @@ async function getUserFromEmail(email: string): Promise<null | Express.User> {
     if (result.docs.length === 0) {
       return null;
     } else if (result.docs.length === 1) {
-      return result.docs[0] as Express.User;
+      return result.docs[0] as ExistingPeopleDBDocument;
     } else {
       throw Error(`Multiple conflicting users with email ${email}`);
     }
@@ -248,16 +252,15 @@ async function getUserFromEmail(email: string): Promise<null | Express.User> {
 /**
  * getUserFromUsername - retrieve a user record given their username
  * @param username - the username
- * @returns An Express.User record or null if the user is not in the database
+ * @returns An ExistingPeopleDBDocument record or null if the user is not in the database
  */
 async function getUserFromUsername(
   username: CouchDBUsername
-): Promise<Express.User | null> {
+): Promise<ExistingPeopleDBDocument | null> {
   const users_db = getUsersDB();
   try {
-    const user = (await users_db.get(username)) as Express.User;
+    const user = (await users_db.get(username)) as ExistingPeopleDBDocument;
     return user;
-    //return (await users_db.get(username)) as Express.User;
   } catch (err) {
     return null;
   }
@@ -267,7 +270,9 @@ async function getUserFromUsername(
  * saveUser - save a user record to the database as a new record or new revision
  * @param user An Express.User record to be written to the database
  */
-export async function saveUser(user: Express.User): Promise<void> {
+export async function saveUser(
+  user: PeopleDBDocument | ExistingPeopleDBDocument
+): Promise<void> {
   await safeWriteDocument({db: getUsersDB(), data: user, writeOnClash: true});
 }
 
@@ -290,10 +295,10 @@ export async function getUserInfoForProject({
       username: user.user_id,
       roles: roles.map(role => ({
         name: role,
-        value: userHasResourceRole({
+        value: userHasProjectRole({
           user,
-          resourceId: projectId,
-          resourceRole: role,
+          projectId,
+          role,
         }),
       })),
     })),

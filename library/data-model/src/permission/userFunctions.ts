@@ -265,6 +265,26 @@ export function resourceRolesEqual(a: ResourceRole, b: ResourceRole): boolean {
 // ENCODING HELPER
 // ===============
 
+export function couchUserToResourceRoles({
+  user: {projectRoles, teamRoles},
+  relevantAssociations,
+}: {
+  user: PeopleDBDocument;
+  relevantAssociations: ResourceAssociation[];
+}): ResourceRole[] {
+  // Collapse the project and team roles into one set
+  let allResourceRoles = [...projectRoles, ...teamRoles];
+
+  // Need to drill teams virtual roles
+  const virtualRoles = generateVirtualResourceRoles({
+    resourceRoles: allResourceRoles,
+    resourceAssociations: relevantAssociations,
+  });
+
+  // And build it into resource roles list
+  return allResourceRoles.concat(virtualRoles);
+}
+
 /**
  * Takes a couch user and builds an encoded token.
  *
@@ -281,24 +301,15 @@ export function resourceRolesEqual(a: ResourceRole, b: ResourceRole): boolean {
  * @returns encoded token object (to be signed/added other details)
  */
 export function couchUserToTokenPermissions({
-  user: {globalRoles, projectRoles, teamRoles},
+  user,
   relevantAssociations,
 }: {
   user: PeopleDBDocument;
   relevantAssociations: ResourceAssociation[];
 }): TokenPermissions {
-  // Collapse the project and team roles into one set
-  let allResourceRoles = [...projectRoles, ...teamRoles];
-
-  // Need to drill teams virtual roles
-  const virtualRoles = generateVirtualResourceRoles({
-    decodedToken: {globalRoles: globalRoles, resourceRoles: allResourceRoles},
-    resourceAssociations: relevantAssociations,
-  });
-
-  // And build it into resource roles list
-  allResourceRoles = allResourceRoles.concat(virtualRoles);
+  // Get all resource roles, taking into account associative virtual roles
+  const resourceRoles = couchUserToResourceRoles({user, relevantAssociations});
 
   // Now encode - this just propagates global roles -> resource roles and encodes resource roles nicely
-  return encodeToken({globalRoles, resourceRoles: allResourceRoles});
+  return encodeToken({globalRoles: user.globalRoles, resourceRoles});
 }

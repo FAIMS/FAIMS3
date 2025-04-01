@@ -774,7 +774,7 @@ describe('Virtual Resource Roles', () => {
 
       // Generate virtual roles
       const virtualRoles = generateVirtualResourceRoles({
-        decodedToken,
+        resourceRoles: decodedToken.resourceRoles,
         resourceAssociations,
       });
 
@@ -821,7 +821,7 @@ describe('Virtual Resource Roles', () => {
 
       // Generate virtual roles
       const virtualRoles = generateVirtualResourceRoles({
-        decodedToken,
+        resourceRoles: decodedToken.resourceRoles,
         resourceAssociations,
       });
 
@@ -864,7 +864,7 @@ describe('Virtual Resource Roles', () => {
 
       // Generate virtual roles
       const virtualRoles = generateVirtualResourceRoles({
-        decodedToken,
+        resourceRoles: decodedToken.resourceRoles,
         resourceAssociations,
       });
 
@@ -977,7 +977,7 @@ describe('Virtual Resource Roles', () => {
 
       // Generate virtual roles
       const virtualRoles = generateVirtualResourceRoles({
-        decodedToken,
+        resourceRoles: decodedToken.resourceRoles,
         resourceAssociations,
       });
 
@@ -1014,7 +1014,7 @@ describe('Virtual Resource Roles', () => {
       const resourceAssociations: ResourceAssociation[] = [];
 
       const virtualRoles = generateVirtualResourceRoles({
-        decodedToken,
+        resourceRoles: decodedToken.resourceRoles,
         resourceAssociations,
       });
 

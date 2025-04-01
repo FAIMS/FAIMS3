@@ -20,6 +20,7 @@
 import {
   Action,
   addGlobalRole,
+  ExistingPeopleDBDocument,
   PostUpdateUserInputSchema,
   removeGlobalRole,
   Role,
@@ -137,7 +138,7 @@ api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
-  async (req: any, res: Response<Express.User[]>) => {
+  async (req: any, res: Response<ExistingPeopleDBDocument[]>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('You are not logged in.');
     }

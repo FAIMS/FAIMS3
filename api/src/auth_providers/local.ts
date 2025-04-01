@@ -25,6 +25,7 @@ import {
   getUserFromEmailOrUsername,
   saveUser,
 } from '../couchdb/users';
+import { ExistingPeopleDBDocument, PeopleDBDocument } from '@faims3/data-model';
 
 type LocalProfile = {
   password: string;
@@ -79,7 +80,7 @@ export const registerLocalUser = async (
   email: string,
   name: string,
   password: string
-): Promise<[Express.User | null, string]> => {
+): Promise<[PeopleDBDocument | null, string]> => {
   const [user, error] = await createUser({email, username, name});
   if (user) {
     addLocalPasswordForUser(user, password);
@@ -88,7 +89,7 @@ export const registerLocalUser = async (
 };
 
 export const addLocalPasswordForUser = async (
-  user: Express.User,
+  user: PeopleDBDocument | ExistingPeopleDBDocument,
   password: string
 ) => {
   const salt = randomBytes(64).toString('hex');

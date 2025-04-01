@@ -35,8 +35,7 @@ import {
   Resource,
   resourceRoles,
   Role,
-  userCanDo,
-  userHasResourceRole,
+  userHasProjectRole,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
@@ -66,6 +65,7 @@ import {
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
 import {slugify} from '../utils';
+import {userCanDo} from '../middleware';
 
 /**
  * getAllProjects - get the internal project documents that reference
@@ -146,10 +146,10 @@ export const getUserProjectsDetailed = async (
 
         return {
           name: project!.name,
-          is_admin: userHasResourceRole({
+          is_admin: userHasProjectRole({
             user,
-            resourceId: projectId,
-            resourceRole: Role.PROJECT_ADMIN,
+            projectId,
+            role: Role.PROJECT_ADMIN,
           }),
           last_updated: project!.last_updated,
           created: project!.created,
