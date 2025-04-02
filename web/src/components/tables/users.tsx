@@ -46,8 +46,7 @@ export const getColumns = ({
               roles={Object.values(roleDetails)
                 .filter(
                   (role: RoleDetails) =>
-                    role.scope === 'RESOURCE_SPECIFIC' &&
-                    !globalRoles.includes(role.name)
+                    role.scope === 'GLOBAL' && !globalRoles.includes(role.name)
                 )
                 .map((role: RoleDetails) => role.name)}
               userId={userId}
