@@ -69,33 +69,27 @@ instead, which will monitor for changes with `nodemon`.
 ## Initialisation
 
 Once the services are up and running we need to initialise the CouchDB
-database. This is done by sending a request to the API via a short script.
-This operation will create a local user called `admin` with the same password
-as configured for CouchDB (`COUCHDB_PASSWORD` in `.env`). The script will
-have no effect if the admin user is already set up. Run the script with:
+database. This is done with the migrate script:
 
 ```bash
-npm run initdb
+npm run migrate
 ```
 
-There is also a script that will populate the database with notebooks that are
+For development, there is also a script that will populate the database with projects (notebooks
+or surveys) that are
 stored in the `notebooks` directory. There should be two sample notebooks in
 there but you can also create new ones.
 
-This script requires authentication, so you need to get a user token for the admin
-user. First, connect to the conductor instance on <http://localhost:8080/> or whatever
-port you have configured. Login using the local `admin` user and password.
-Now, from the Conductor home page (<http://localhost:8080/>) scroll down to "Copy
-Bearer Token to Clipboard". Paste this value into your .env file as the
-value of USER_TOKEN.
-
 ```bash
-npm run load-notebooks
+npm run load-projects
 ```
 
-## Deploying a notebook
+Similarly, there is a script to populate project templates which again reads
+all json files in the `notebooks` folder:
 
-Notebooks can be uploaded to Conductor via the web interface.
+```bash
+npm run load-templates
+```
 
 ## Development
 
@@ -127,17 +121,15 @@ docker compose exec conductor npm run test
 
 ## Email Service
 
-### Purpose
-
 The Email Service provides a standardised interface for sending emails from the application with support for multiple implementations and error handling.
 
-### Configuration
+### Email Configuration
 
 #### Environment Variables
 
 Add these to your `.env` file or other deployment `.env` configuration (included in `.env.dist`):
 
-```
+```bash
 # Email Service Type (SMTP or MOCK)
 EMAIL_SERVICE_TYPE=SMTP
 # Sender Information
@@ -206,7 +198,7 @@ await EMAIL_SERVICE.sendEmail({
 
 Administrators can verify email service configuration:
 
-```
+```HTTP
 POST /api/admin/test-email
 ```
 

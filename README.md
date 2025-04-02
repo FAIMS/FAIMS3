@@ -134,7 +134,7 @@ as configured for CouchDB (`COUCHDB_PASSWORD` in `.env`). The script will
 have no effect if the admin user is already set up. Run the script with:
 
 ```bash
-npm run initdb
+npm run migrate
 ```
 
 There is also a script that will populate the database with notebooks that are
