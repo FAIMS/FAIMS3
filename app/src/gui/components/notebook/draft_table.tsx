@@ -19,8 +19,16 @@
  */
 
 import {DraftMetadata, ProjectID, ProjectUIViewsets} from '@faims3/data-model';
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
-import {Box, Grid, Link, Paper, Theme, Typography} from '@mui/material';
+import {
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  Typography,
+} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {
@@ -41,10 +49,12 @@ import {
 } from '../../../uiSpecification';
 import {prettifyFieldName} from '../../../utils/formUtilities';
 import getLocalDate from '../../fields/LocalDate';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../utils/useScreenSize';
 
+/**
+ * Props for the `DraftsTable` component
+ */
 type DraftsRecordProps = {
   project_id: ProjectID;
   serverId: string;
@@ -55,18 +65,34 @@ type DraftsRecordProps = {
   handleRefresh: () => void;
 };
 
-function getDisplayDataFromDraft(
-  field: string,
-  data: {[key: string]: any}
-): string | undefined {
-  const value = data[field];
-  console.log('value in drafts', value);
-
-  if (value === undefined || value === null) return undefined;
-  if (typeof value === 'object') return JSON.stringify(value);
-  return value.toString();
+/**
+ * Returns the value from a draft row for a given field.
+ * Looks both at top-level keys and inside the `data` field.
+ *
+ * @param field - The field name to extract
+ * @param row - The draft row
+ * @returns The stringified value, or '-' if not found
+ */
+function getDisplayDataFromDraft(field: string, row: any): string | undefined {
+  const value = row?.[field] ?? row?.data?.[field];
+  if (value === undefined || value === null) return '-';
+  return typeof value === 'object' ? JSON.stringify(value) : String(value);
 }
 
+/**
+ * React component for rendering the drafts table view.
+ *
+ * @component
+ * @param props - Component props
+ * @param props.project_id - The project ID
+ * @param props.serverId - Server identifier for route navigation
+ * @param props.maxRows - Maximum rows to show in the table (pagination limit)
+ * @param props.rows - Array of draft records to display
+ * @param props.loading - Flag indicating if data is loading
+ * @param props.viewsets - Optional viewsets for mapping types to labels
+ * @param props.handleRefresh - Callback to trigger data refresh
+ * @returns A responsive DataGrid component for drafts (mobile & desktop views)
+ */
 export function DraftsTable(props: DraftsRecordProps) {
   const {
     project_id,
@@ -87,19 +113,23 @@ export function DraftsTable(props: DraftsRecordProps) {
 
   const uiSpecId = rows?.[0]?.ui_spec_id || project_id;
   const uiSpec = compiledSpecService.getSpec(uiSpecId);
+
   const visibleTypes = useMemo(
     () => (uiSpec ? getVisibleTypes(uiSpec) : []),
     [uiSpec]
   );
 
   const includeKind = visibleTypes.length > 1;
-  const viewsetId = visibleTypes.length === 1 ? visibleTypes[0] : '';
   const summaryFields = useMemo(() => {
-    if (!uiSpec || visibleTypes.length !== 1) return [];
+    if (!uiSpec || visibleTypes.length !== 1) return ['hrid'];
     return getSummaryFieldInformation(uiSpec, visibleTypes[0]).fieldNames;
   }, [uiSpec, visibleTypes]);
 
-  // The entire row is clickable to the record
+  /**
+   * Navigates to the draft editing route when a row is clicked.
+   *
+   * @param params - Row click event params containing draft data
+   */
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     history(
       ROUTES.getDraftRoute(
@@ -113,10 +143,13 @@ export function DraftsTable(props: DraftsRecordProps) {
     );
   };
 
+  /**
+   * Defines the columns used in the DataGrid based on screen size.
+   * Mobile view shows a compact vertical stack, desktop uses multiple columns.
+   */
   const columns: GridColDef[] = useMemo(() => {
-    if (!uiSpec) return [];
-
-    if (currentSize === 'xs' || currentSize === 'sm') {
+    const isMobile = currentSize === 'xs' || currentSize === 'sm';
+    if (isMobile) {
       return [
         {
           field: 'summary',
@@ -124,34 +157,68 @@ export function DraftsTable(props: DraftsRecordProps) {
           type: 'string',
           flex: 1,
           renderCell: (params: GridCellParams) => {
+            //  key-value pairs to show in a stacked table layout (mobile view)
             const row = params.row || {};
             const data = row.data || {};
-            const kv: Record<string, string> = {};
 
+            const kvp: {[key: string]: string} = {};
+
+            // includiing record type label
             if (includeKind) {
-              kv['Type'] = viewsets?.[row.type]?.label ?? row.type ?? '-';
+              kvp['Type'] = viewsets?.[row.type]?.label ?? row.type ?? '-';
             }
 
+            // summary fields or hrid
             (summaryFields.length > 0 ? summaryFields : ['hrid']).forEach(
               field => {
-                const value = getDisplayDataFromDraft(field, data);
-                kv[prettifyFieldName(field)] = value || '-';
+                let value = row?.[field];
+                if (value === undefined) {
+                  value = getDisplayDataFromDraft(field, data);
+                }
+                const label =
+                  field === 'hrid' ? 'Field ID' : prettifyFieldName(field);
+                kvp[label] = value || '-';
               }
             );
 
-            kv['Created'] = row.created
+            kvp['Created'] = row.created
               ? getLocalDate(row.created).replace('T', ' ')
               : '-';
-            kv['Created By'] = row.created_by || '-';
+
+            kvp['Last Updated'] = row.updated
+              ? getLocalDate(row.updated).replace('T', ' ')
+              : '-';
 
             return (
-              <Box>
-                {Object.entries(kv).map(([k, v]) => (
-                  <Typography key={k} variant="body2" fontSize="0.85rem">
-                    <strong>{k}:</strong> {v}
-                  </Typography>
-                ))}
-              </Box>
+              <TableContainer>
+                <Table size="small">
+                  <TableBody>
+                    {Object.entries(kvp).map(([key, val]) => (
+                      <TableRow key={key}>
+                        <TableCell
+                          sx={{
+                            width: '40%',
+                            borderBottom: 'none',
+                            padding: '4px 8px',
+                          }}
+                        >
+                          {key}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            width: '60%',
+                            borderBottom: 'none',
+                            padding: '4px 8px',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          {val}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             );
           },
         },
@@ -160,32 +227,19 @@ export function DraftsTable(props: DraftsRecordProps) {
 
     const baseCols: GridColDef[] = [];
 
-    if (summaryFields.length > 0) {
-      summaryFields.forEach(field => {
-        baseCols.push({
-          field,
-          headerName: prettifyFieldName(field),
-          type: 'string',
-          flex: 1,
-          renderCell: (params: GridCellParams) => (
-            <Typography>
-              {getDisplayDataFromDraft(field, params.row.data || {}) || '-'}
-            </Typography>
-          ),
-        });
-      });
-    } else {
+    (summaryFields.length > 0 ? summaryFields : ['hrid']).forEach(field => {
       baseCols.push({
-        field: 'hrid',
-        headerName: 'Field ID',
+        field,
+        headerName: field === 'hrid' ? 'Field ID' : prettifyFieldName(field),
         type: 'string',
         flex: 1,
         renderCell: (params: GridCellParams) => (
-          <Typography>{params.row.hrid}</Typography>
+          <Typography>
+            {getDisplayDataFromDraft(field, params.row) || '-'}
+          </Typography>
         ),
       });
-    }
-
+    });
     baseCols.push(
       {
         field: 'created',
@@ -200,15 +254,21 @@ export function DraftsTable(props: DraftsRecordProps) {
           </Typography>
         ),
       },
+
       {
-        field: 'created_by',
-        headerName: 'Created By',
-        type: 'string',
+        field: 'last_updated',
+        headerName: 'Last Updated',
+        type: 'dateTime',
         flex: 1,
         renderCell: (params: GridCellParams) => (
-          <Typography>{params.row.created_by || '-'}</Typography>
+          <Typography>
+            {params.row.updated
+              ? getLocalDate(params.row.updated).replace('T', ' ')
+              : '-'}
+          </Typography>
         ),
       },
+
       {
         field: 'delete',
         headerName: 'Actions',
@@ -229,129 +289,15 @@ export function DraftsTable(props: DraftsRecordProps) {
     );
 
     return baseCols;
-  }, [summaryFields, uiSpec, viewsets, currentSize]);
+  }, [summaryFields, viewsets, currentSize]);
 
-  // function getRowType(params: GridCellParams) {
-  //   // The type (or Kind) is prettified and should be filterable as such.
-  //   return props.viewsets !== null &&
-  //     props.viewsets !== undefined &&
-  //     params.row.type !== null &&
-  //     params.row.type !== undefined &&
-  //     props.viewsets[(params.row.type || '').toString()] !== undefined
-  //     ? (props.viewsets[(params.row.type || '').toString()].label ??
-  //         params.row.type)
-  //     : params.row.type;
-  // }
-
-  // const columns: GridColDef[] = [
-  //   ...(summaryFields.length > 0
-  //     ? summaryFields.map(field => ({
-  //         field,
-  //         headerName: prettifyFieldName(field),
-  //         type: 'string',
-  //         flex: 1,
-  //         renderCell: (params: GridCellParams) => (
-  //           <Typography>
-  //             {getDisplayDataFromDraft(field, params.row.data || {}) || '-'}
-  //           </Typography>
-  //         ),
-  //       }))
-  //     : [
-  //         {
-  //           field: 'hrid',
-  //           headerName: 'Field ID',
-  //           type: 'string',
-  //           flex: 1,
-  //           renderCell: (params: GridCellParams) => (
-  //             <Typography>{params.row.hrid}</Typography>
-  //           ),
-  //         },
-  //       ]),
-
-  //   {
-  //     field: 'created',
-  //     headerName: 'Created',
-  //     type: 'dateTime',
-  //     flex: 1,
-  //     renderCell: (params: GridCellParams) => (
-  //       <Typography>
-  //         {params.row.created
-  //           ? getLocalDate(params.row.created).replace('T', ' ')
-  //           : '-'}
-  //       </Typography>
-  //     ),
-  //   },
-  //   {
-  //     field: 'last_updated',
-  //     headerName: 'Last updated',
-  //     type: 'dateTime',
-  //     flex: 1,
-  //     renderCell: (params: GridCellParams) => (
-  //       <Typography>
-  //         {params.row.last_updated
-  //           ? getLocalDate(params.row.last_updated).replace('T', ' ')
-  //           : '-'}
-  //       </Typography>
-  //     ),
-  //   },
-  //   {
-  //     field: 'created_by',
-  //     headerName: 'Created By',
-  //     type: 'string',
-  //     flex: 1,
-  //     renderCell: (params: GridCellParams) => (
-  //       <Typography>{params.row.created_by || '-'}</Typography>
-  //     ),
-  //   },
-  //   {
-  //     field: 'updated_by',
-  //     headerName: 'Last updated By',
-  //     type: 'string',
-  //     flex: 1,
-  //     renderCell: (params: GridCellParams) => (
-  //       <Typography>{params.row.updated_by || '-'}</Typography>
-  //     ),
-  //   },
-  //   // {
-  //   //   field: 'type',
-  //   //   headerName: 'Type',
-  //   //   flex: 1,
-  //   //   renderCell: (params: GridCellParams) => (
-  //   //     <Typography>{getKindLabel(params.row.type)}</Typography>
-  //   //   ),
-  //   // },
-  //   // {
-  //   //   field: 'conflicts',
-  //   //   headerName: 'Conflicts',
-  //   //   flex: 0.5,
-  //   //   renderCell: (params: GridCellParams) =>
-  //   //     params.row.conflicts ? (
-  //   //       <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
-  //   //     ) : (
-  //   //       '-'
-  //   //     ),
-  //   // },
-  //   {
-  //     field: 'delete',
-  //     headerName: 'Actions',
-  //     type: 'actions',
-  //     flex: 0.3,
-  //     renderCell: (params: GridCellParams) => (
-  //       <RecordDelete
-  //         project_id={project_id}
-  //         serverId={serverId}
-  //         record_id={params.row.record_id}
-  //         revision_id={params.row.revision_id}
-  //         draft_id={params.row._id}
-  //         show_label={false}
-  //         handleRefresh={handleRefresh}
-  //       />
-  //     ),
-  //   },
-  // ];
   return (
     <React.Fragment>
-      <Box component={Paper} elevation={0}>
+      <Box
+        component={Paper}
+        elevation={0}
+        sx={{backgroundColor: 'voilet', padding: 2}}
+      >
         <DataGrid
           key={'drafttable'}
           rows={rows}
@@ -369,6 +315,7 @@ export function DraftsTable(props: DraftsRecordProps) {
           componentsProps={{
             filterPanel: {sx: {maxWidth: '96vw'}},
           }}
+          sortModel={[{field: 'last_updated', sort: 'desc'}]}
           initialState={{
             sorting: {
               sortModel: [{field: 'last_updated', sort: 'desc'}],
