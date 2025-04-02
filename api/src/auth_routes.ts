@@ -27,7 +27,10 @@ import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
 import {getInvite} from './couchdb/invites';
 import {getCouchUserFromEmailOrUsername} from './couchdb/users';
 import {acceptInvite} from './registration';
-import {generateUserToken, upgradeDbUserToExpressUser} from './authkeys/create';
+import {
+  generateUserToken,
+  upgradeCouchUserToExpressUser,
+} from './authkeys/create';
 import {NextFunction, Request, Response, Router} from 'express';
 import {processRequest} from 'zod-express-middleware';
 import {
@@ -57,7 +60,7 @@ passport.deserializeUser((id: string, done: DoneFunction) => {
       if (!user_data) {
         return Promise.reject('User could not be found!');
       } else {
-        return upgradeDbUserToExpressUser({dbUser: user_data});
+        return upgradeCouchUserToExpressUser({dbUser: user_data});
       }
     })
     .then(user => {
@@ -187,7 +190,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         if (loginErr) {
           return next(loginErr);
         }
-        const fullUser = await upgradeDbUserToExpressUser({dbUser: user});
+        const fullUser = await upgradeCouchUserToExpressUser({dbUser: user});
         return redirect_with_token(res, fullUser, redirect);
       });
     };
@@ -384,7 +387,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
           return next(err);
         }
         // Upgrade by drilling permissions/associations
-        const expressUser = await upgradeDbUserToExpressUser({dbUser: user});
+        const expressUser = await upgradeCouchUserToExpressUser({dbUser: user});
         return redirect_with_token(res, expressUser, redirect);
       });
     }

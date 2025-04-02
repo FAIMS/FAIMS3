@@ -34,7 +34,7 @@ import {
 import {fail} from 'assert';
 import {expect} from 'chai';
 import * as fs from 'fs';
-import {upgradeDbUserToExpressUser} from '../src/authkeys/create';
+import {upgradeCouchUserToExpressUser} from '../src/authkeys/create';
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {
   getDirectoryDB,
@@ -78,7 +78,7 @@ describe('notebook api', () => {
       const [user, error] = await createUser({username, name: username});
       if (user) {
         await saveCouchUser(user);
-        bobalooba = await upgradeDbUserToExpressUser({dbUser: user});
+        bobalooba = await upgradeCouchUserToExpressUser({dbUser: user});
       } else {
         throw new Error(error);
       }
@@ -116,7 +116,7 @@ describe('notebook api', () => {
       });
 
       // Update permissions
-      bobalooba = await upgradeDbUserToExpressUser({dbUser: bobalooba});
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
 
       expect(
         userHasProjectRole({
@@ -140,7 +140,7 @@ describe('notebook api', () => {
       });
 
       // Update permissions
-      bobalooba = await upgradeDbUserToExpressUser({dbUser: bobalooba});
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
 
       expect(
         userHasProjectRole({
@@ -190,7 +190,7 @@ describe('notebook api', () => {
       });
 
       // Update permissions
-      bobalooba = await upgradeDbUserToExpressUser({dbUser: bobalooba});
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
 
       expect(
         userCanDo({
@@ -233,7 +233,7 @@ describe('notebook api', () => {
       await saveExpressUser(bobalooba);
 
       // Update permissions
-      bobalooba = await upgradeDbUserToExpressUser({dbUser: bobalooba});
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
 
       const notebooks = await getUserProjectsDetailed(bobalooba);
       expect(notebooks.length).to.equal(2);

@@ -39,7 +39,7 @@ import {
   addLocalPasswordForUser,
   validateLocalUser,
 } from '../src/auth_providers/local';
-import {upgradeDbUserToExpressUser} from '../src/authkeys/create';
+import {upgradeCouchUserToExpressUser} from '../src/authkeys/create';
 import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
 import {createNotebook} from '../src/couchdb/notebooks';
 import {
@@ -222,7 +222,7 @@ describe('user creation', () => {
     if (!dbUser) {
       throw new Error('Failed to create user! Error: ' + error);
     }
-    let user = await upgradeDbUserToExpressUser({dbUser});
+    let user = await upgradeCouchUserToExpressUser({dbUser});
 
     // Use userCanDo with proper Action enums instead of the old userHasPermission
     expect(
@@ -247,7 +247,7 @@ describe('user creation', () => {
     // Now user should have read/modify permissions for all projects
 
     // Recompile permissions
-    user = await upgradeDbUserToExpressUser({dbUser: user});
+    user = await upgradeCouchUserToExpressUser({dbUser: user});
 
     // Now user should have read/modify permissions for all projects
     expect(
@@ -276,7 +276,7 @@ describe('user creation', () => {
       role: Role.PROJECT_GUEST,
     });
     // Recompile permissions
-    user = await upgradeDbUserToExpressUser({dbUser: user});
+    user = await upgradeCouchUserToExpressUser({dbUser: user});
 
     // Should have read but not modify permission for this project
     expect(
@@ -320,7 +320,7 @@ describe('user creation', () => {
     });
 
     // Recompile permissions
-    user = await upgradeDbUserToExpressUser({dbUser: user});
+    user = await upgradeCouchUserToExpressUser({dbUser: user});
 
     // Now should have full permissions for this project
     expect(

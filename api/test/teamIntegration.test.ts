@@ -45,7 +45,7 @@ import {addLocalPasswordForUser} from '../src/auth_providers/local';
 import {
   generateJwtFromUser,
   getRelevantUserAssociations,
-  upgradeDbUserToExpressUser,
+  upgradeCouchUserToExpressUser,
 } from '../src/authkeys/create';
 import {KEY_SERVICE} from '../src/buildconfig';
 import {getDataDb, localGetProjectsDb} from '../src/couchdb';
@@ -260,7 +260,7 @@ describe('Team integration with templates and projects', () => {
     await addLocalPasswordForUser(user, password);
     // Generate token for this user
     const signingKey = await KEY_SERVICE.getSigningKey();
-    const upgraded = await upgradeDbUserToExpressUser({dbUser: user});
+    const upgraded = await upgradeCouchUserToExpressUser({dbUser: user});
     const memberToken = await generateJwtFromUser({user: upgraded, signingKey});
 
     // Test permissions - this user should NOT be allowed to create projects globally
@@ -317,7 +317,7 @@ describe('Team integration with templates and projects', () => {
       role: Role.TEAM_MANAGER,
     });
     await saveCouchUser(user);
-    const upgradedManager = await upgradeDbUserToExpressUser({dbUser: user});
+    const upgradedManager = await upgradeCouchUserToExpressUser({dbUser: user});
     const managerToken = await generateJwtFromUser({
       user: upgradedManager,
       signingKey,
@@ -387,7 +387,7 @@ describe('Team integration with templates and projects', () => {
 
     // Generate token for this user
     const signingKey = await KEY_SERVICE.getSigningKey();
-    const upgraded = await upgradeDbUserToExpressUser({dbUser: user});
+    const upgraded = await upgradeCouchUserToExpressUser({dbUser: user});
     const userToken = await generateJwtFromUser({user: upgraded, signingKey});
 
     // Test permissions - this user SHOULD be allowed to create projects globally
@@ -618,7 +618,9 @@ describe('Team integration with templates and projects', () => {
 
     await saveCouchUser(user);
 
-    const upgradeToExpress = await upgradeDbUserToExpressUser({dbUser: user});
+    const upgradeToExpress = await upgradeCouchUserToExpressUser({
+      dbUser: user,
+    });
 
     // Set up resource associations
     const resourceAssociations: ResourceAssociation[] = [
@@ -677,7 +679,7 @@ describe('Team integration with templates and projects', () => {
 
     await saveCouchUser(user);
 
-    const upgradeToExpressManager = await upgradeDbUserToExpressUser({
+    const upgradeToExpressManager = await upgradeCouchUserToExpressUser({
       dbUser: user,
     });
 
@@ -710,7 +712,7 @@ describe('Team integration with templates and projects', () => {
 
     await saveCouchUser(user);
 
-    const upgradeToExpressAdmin = await upgradeDbUserToExpressUser({
+    const upgradeToExpressAdmin = await upgradeCouchUserToExpressUser({
       dbUser: user,
     });
 
@@ -1218,13 +1220,13 @@ describe('Team integration with templates and projects', () => {
     await saveCouchUser(adminUser);
 
     // Upgrade users
-    const upgradedMember = await upgradeDbUserToExpressUser({
+    const upgradedMember = await upgradeCouchUserToExpressUser({
       dbUser: memberUser,
     });
-    const upgradedManager = await upgradeDbUserToExpressUser({
+    const upgradedManager = await upgradeCouchUserToExpressUser({
       dbUser: managerUser,
     });
-    const upgradedAdmin = await upgradeDbUserToExpressUser({
+    const upgradedAdmin = await upgradeCouchUserToExpressUser({
       dbUser: adminUser,
     });
 
@@ -1417,7 +1419,7 @@ describe('Team integration with templates and projects', () => {
     await saveCouchUser(user);
 
     // Upgrade user
-    const upgradedUser = await upgradeDbUserToExpressUser({dbUser: user});
+    const upgradedUser = await upgradeCouchUserToExpressUser({dbUser: user});
 
     // Test permissions on team 1 resources (should have admin access)
     expect(

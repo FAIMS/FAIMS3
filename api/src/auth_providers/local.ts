@@ -26,7 +26,7 @@ import {
   saveCouchUser,
 } from '../couchdb/users';
 import {ExistingPeopleDBDocument, PeopleDBDocument} from '@faims3/data-model';
-import {upgradeDbUserToExpressUser} from '../authkeys/create';
+import {upgradeCouchUserToExpressUser} from '../authkeys/create';
 
 type LocalProfile = {
   password: string;
@@ -53,7 +53,7 @@ export const validateLocalUser = async (
       );
       if (hashedPassword.toString('hex') === profile.password) {
         // Now we enhance with virtual roles
-        const user = await upgradeDbUserToExpressUser({dbUser});
+        const user = await upgradeCouchUserToExpressUser({dbUser});
         return done(null, user);
       } else {
         return done(null, false);

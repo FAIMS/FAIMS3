@@ -36,7 +36,7 @@ import fs from 'fs';
 import request from 'supertest';
 import {
   generateJwtFromUser,
-  upgradeDbUserToExpressUser,
+  upgradeCouchUserToExpressUser,
 } from '../src/authkeys/create';
 import {
   CONDUCTOR_DESCRIPTION,
@@ -291,7 +291,9 @@ describe('API tests', () => {
     if (!adminDbUser) {
       throw Error('Admin db user missing!');
     }
-    const adminUser = await upgradeDbUserToExpressUser({dbUser: adminDbUser});
+    const adminUser = await upgradeCouchUserToExpressUser({
+      dbUser: adminDbUser,
+    });
 
     const project_id = await createNotebook('test-notebook', uiSpec, metadata);
     let notebooks = await getUserProjectsDetailed(adminUser);
@@ -464,7 +466,7 @@ describe('API tests', () => {
       if (!bobbyDb) {
         throw new Error('Bobby gone-a missin!');
       }
-      const bobby = await upgradeDbUserToExpressUser({dbUser: bobbyDb});
+      const bobby = await upgradeCouchUserToExpressUser({dbUser: bobbyDb});
       const signingKey = await KEY_SERVICE.getSigningKey();
       const bobbyToken = await generateJwtFromUser({user: bobby, signingKey});
 

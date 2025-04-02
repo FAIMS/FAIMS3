@@ -34,7 +34,7 @@ import {
   addLocalPasswordForUser,
   registerLocalUser,
 } from '../auth_providers/local';
-import {upgradeDbUserToExpressUser} from '../authkeys/create';
+import {upgradeCouchUserToExpressUser} from '../authkeys/create';
 import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
@@ -241,7 +241,7 @@ export async function getExpressUserFromEmailOrUsername(
     return dbUser;
   }
 
-  return await upgradeDbUserToExpressUser({dbUser});
+  return await upgradeCouchUserToExpressUser({dbUser});
 }
 
 /**

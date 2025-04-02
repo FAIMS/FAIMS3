@@ -27,7 +27,7 @@ import request from 'supertest';
 import {addLocalPasswordForUser} from '../src/auth_providers/local';
 import {
   generateJwtFromUser,
-  upgradeDbUserToExpressUser,
+  upgradeCouchUserToExpressUser,
 } from '../src/authkeys/create';
 import {KEY_SERVICE} from '../src/buildconfig';
 import {
@@ -93,7 +93,7 @@ export const beforeApiTests = async () => {
   await saveCouchUser(localUser);
   await addLocalPasswordForUser(localUser, localUserPassword); // saves the user
   // Upgrade
-  const upgraded = await upgradeDbUserToExpressUser({dbUser: localUser});
+  const upgraded = await upgradeCouchUserToExpressUser({dbUser: localUser});
   localUserToken = await generateJwtFromUser({user: upgraded, signingKey});
 
   // create the nb user
@@ -111,7 +111,7 @@ export const beforeApiTests = async () => {
   await saveCouchUser(nbUser);
   addGlobalRole({user: nbUser, role: Role.GENERAL_CREATOR});
   await addLocalPasswordForUser(nbUser, notebookPassword);
-  const upgradedNb = await upgradeDbUserToExpressUser({dbUser: nbUser});
+  const upgradedNb = await upgradeCouchUserToExpressUser({dbUser: nbUser});
   notebookUserToken = await generateJwtFromUser({user: upgradedNb, signingKey});
 };
 

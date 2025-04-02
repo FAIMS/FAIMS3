@@ -29,7 +29,7 @@ import {
   saveCouchUser,
 } from '../couchdb/users';
 import {acceptInvite} from '../registration';
-import {upgradeDbUserToExpressUser} from '../authkeys/create';
+import {upgradeCouchUserToExpressUser} from '../authkeys/create';
 
 async function oauth_verify(
   req: Request,
@@ -47,7 +47,7 @@ async function oauth_verify(
   let dbUser = await getCouchUserFromEmailOrUsername(profile.id);
   if (dbUser) {
     // Upgrade by drilling permissions/associations
-    const user = await upgradeDbUserToExpressUser({dbUser});
+    const user = await upgradeCouchUserToExpressUser({dbUser});
     // TODO: do we need to validate further? could check that the profiles match???
     done(null, user, profile);
   }
@@ -65,7 +65,7 @@ async function oauth_verify(
         await saveCouchUser(dbUser);
       }
       // Upgrade by drilling permissions/associations
-      const user = await upgradeDbUserToExpressUser({dbUser});
+      const user = await upgradeCouchUserToExpressUser({dbUser});
       return done(null, user, profile);
     }
   }
@@ -93,7 +93,7 @@ async function oauth_register(
 
   if (dbUser) {
     // Upgrade by drilling permissions/associations
-    const user = await upgradeDbUserToExpressUser({dbUser});
+    const user = await upgradeCouchUserToExpressUser({dbUser});
     // TODO: do we need to validate further? could check that the profiles match???
     done(null, user, profile);
   }
@@ -112,7 +112,7 @@ async function oauth_register(
       }
 
       // Upgrade by drilling permissions/associations
-      const user = await upgradeDbUserToExpressUser({dbUser});
+      const user = await upgradeCouchUserToExpressUser({dbUser});
       done(null, user, profile);
       break;
     }
@@ -132,7 +132,7 @@ async function oauth_register(
         // accepting the invite will add roles and save the user record
         await acceptInvite(dbUser, invite);
         // Upgrade by drilling permissions/associations
-        const user = await upgradeDbUserToExpressUser({dbUser});
+        const user = await upgradeCouchUserToExpressUser({dbUser});
         done(null, user, profile);
       } else {
         throw Error(errorMsg);

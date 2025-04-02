@@ -27,7 +27,7 @@ import {addGlobalRole, Role} from '@faims3/data-model';
 import {expect} from 'chai';
 import {
   generateJwtFromUser,
-  upgradeDbUserToExpressUser,
+  upgradeCouchUserToExpressUser,
 } from '../src/authkeys/create';
 import {validateToken} from '../src/authkeys/read';
 import {KEY_SERVICE} from '../src/buildconfig';
@@ -49,7 +49,7 @@ describe('roundtrip creating and reading token', () => {
     }
 
     // upgrade the user
-    let user = await upgradeDbUserToExpressUser({dbUser});
+    let user = await upgradeCouchUserToExpressUser({dbUser});
 
     for (let i = 0; i < roles.length; i++) {
       addGlobalRole({user, role: roles[i]});
@@ -57,7 +57,7 @@ describe('roundtrip creating and reading token', () => {
     await saveExpressUser(user);
 
     // Recompile permissions
-    user = await upgradeDbUserToExpressUser({dbUser});
+    user = await upgradeCouchUserToExpressUser({dbUser});
 
     return generateJwtFromUser({user, signingKey: signing_key})
       .then(token => {

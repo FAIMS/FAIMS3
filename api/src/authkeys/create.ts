@@ -106,7 +106,7 @@ export async function getRelevantUserAssociations({
  * @param dbUser - The database people entry for this user
  * @return The Express.User with the drilled/properly encoded resource roles
  */
-export async function upgradeDbUserToExpressUser({
+export async function upgradeCouchUserToExpressUser({
   dbUser,
 }: {
   dbUser: PeopleDBDocument;
