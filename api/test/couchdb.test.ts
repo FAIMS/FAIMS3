@@ -18,10 +18,24 @@
  *   Tests for the interface to couchDB
  */
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
+import {
+  Action,
+  addProjectRole,
+  EncodedProjectUIModel,
+  removeProjectRole,
+  resourceRoles,
+  Role,
+  userHasProjectRole,
+} from '@faims3/data-model';
+import {fail} from 'assert';
+import {expect} from 'chai';
+import * as fs from 'fs';
+import {upgradeDbUserToExpressUser} from '../src/authkeys/create';
+import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {
   getDirectoryDB,
   getMetadataDb,
@@ -29,34 +43,21 @@ import {
 } from '../src/couchdb';
 import {
   createNotebook,
-  getNotebookMetadata,
-  getUserProjectsDetailed,
   getEncodedNotebookUISpec,
+  getNotebookMetadata,
   getRolesForNotebook,
+  getUserProjectsDetailed,
   updateNotebook,
   validateNotebookID,
 } from '../src/couchdb/notebooks';
-import * as fs from 'fs';
 import {
   createUser,
   getExpressUserFromEmailOrUsername,
-  saveUser,
+  saveCouchUser,
+  saveExpressUser,
 } from '../src/couchdb/users';
-import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
-import {
-  Action,
-  addProjectRole,
-  EncodedProjectUIModel,
-  resourceRoles,
-  Role,
-  userHasProjectRole,
-  removeProjectRole,
-} from '@faims3/data-model';
-import {expect} from 'chai';
-import {resetDatabases} from './mocks';
-import {fail} from 'assert';
-import {upgradeDbUserToExpressUser} from '../src/authkeys/create';
 import {userCanDo} from '../src/middleware';
+import {resetDatabases} from './mocks';
 
 const uispec: EncodedProjectUIModel = {
   _id: '',
@@ -76,7 +77,7 @@ describe('notebook api', () => {
     if (adminUser) {
       const [user, error] = await createUser({username, name: username});
       if (user) {
-        await saveUser(user);
+        await saveCouchUser(user);
         bobalooba = await upgradeDbUserToExpressUser({dbUser: user});
       } else {
         throw new Error(error);
@@ -229,7 +230,7 @@ describe('notebook api', () => {
         projectId: nb2,
         role: Role.PROJECT_GUEST,
       });
-      await saveUser(bobalooba);
+      await saveExpressUser(bobalooba);
 
       // Update permissions
       bobalooba = await upgradeDbUserToExpressUser({dbUser: bobalooba});

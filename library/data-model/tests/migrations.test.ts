@@ -304,6 +304,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
       ],
       // added empty team roles
       teamRoles: [],
+      templateRoles: [],
       profiles: {
         local: {
           password: '1234',

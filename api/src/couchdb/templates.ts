@@ -4,8 +4,10 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
+  addTemplateRole,
   PostCreateTemplateInput,
   ProjectID,
+  Role,
   TemplateDocument,
   TemplateEditableDetails,
   TEMPLATES_BY_TEAM_ID,
@@ -13,6 +15,7 @@ import {
 import {getTemplatesDb} from '.';
 import {slugify} from '../utils';
 import * as Exceptions from '../exceptions';
+import {getCouchUserFromEmailOrUsername, saveCouchUser} from './users';
 
 /**
  * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
@@ -99,12 +102,17 @@ const generateTemplateId = (templateName: string): ProjectID => {
 /**
  * Sets up and lodges a new template record into the template database. Error is
  * thrown under failure to lodge.
+ *
+ * NOTE this does not add any permissions!
+ *
  * @param payload The document details for a template
  * @returns The ID of the minted template
  */
-export const createTemplate = async (
-  payload: PostCreateTemplateInput
-): Promise<TemplateDocument> => {
+export const createTemplate = async ({
+  payload,
+}: {
+  payload: PostCreateTemplateInput;
+}): Promise<TemplateDocument> => {
   // Get the templates DB so we can interact with it
   const templatesDb = getTemplatesDb();
 

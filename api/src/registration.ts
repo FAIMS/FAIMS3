@@ -23,12 +23,12 @@ import {
   InvitesDBFields,
   PeopleDBDocument,
 } from '@faims3/data-model';
-import {saveUser} from './couchdb/users';
+import {saveCouchUser} from './couchdb/users';
 
 export async function acceptInvite(
   user: PeopleDBDocument,
   invite: InvitesDBFields
 ) {
   addProjectRole({user, projectId: invite.projectId, role: invite.role});
-  await saveUser(user);
+  await saveCouchUser(user);
 }

@@ -21,6 +21,7 @@
 
 import {
   couchUserToResourceRoles,
+  ExistingPeopleDBDocument,
   expressUserToTokenPermissions,
   PeopleDBDocument,
   Resource,

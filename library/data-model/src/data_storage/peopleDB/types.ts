@@ -106,6 +106,9 @@ export interface PeopleV3Fields {
   // Team roles
   teamRoles: ResourceRole[];
 
+  // Template roles
+  templateRoles: ResourceRole[];
+
   // Global (non resource-specific roles)
   globalRoles: Role[];
 }

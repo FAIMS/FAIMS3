@@ -19,8 +19,8 @@
  */
 
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
 import {
@@ -51,9 +51,6 @@ import {
   localUserToken,
   requestAuthAndType,
 } from './utils';
-import {createUser, saveUser} from '../src/couchdb/users';
-import { addLocalPasswordForUser } from '../src/auth_providers/local';
-import { generateJwtFromUser, generateUserToken } from '../src/authkeys/create';
 
 // Where it the template API?
 const TEMPLATE_API_BASE = '/api/templates';
@@ -525,7 +522,6 @@ describe('template API tests', () => {
         expect(JSON.stringify(err.errors)).to.include('metadata');
       });
   });
-
 
   // Auth checks
   // ===========

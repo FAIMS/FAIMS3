@@ -33,7 +33,7 @@ import {KEY_SERVICE} from '../src/buildconfig';
 import {
   createUser,
   getExpressUserFromEmailOrUsername,
-  saveUser,
+  saveCouchUser,
 } from '../src/couchdb/users';
 import {cleanDataDBS, resetDatabases} from './mocks';
 import {addGlobalRole, Role} from '@faims3/data-model';
@@ -90,7 +90,7 @@ export const beforeApiTests = async () => {
   const localUser = possibleLocalUser!;
 
   // save user and create password
-  await saveUser(localUser);
+  await saveCouchUser(localUser);
   await addLocalPasswordForUser(localUser, localUserPassword); // saves the user
   // Upgrade
   const upgraded = await upgradeDbUserToExpressUser({dbUser: localUser});
@@ -108,7 +108,7 @@ export const beforeApiTests = async () => {
   const nbUser = possibleNbUser!;
 
   // save user and create password
-  await saveUser(nbUser);
+  await saveCouchUser(nbUser);
   addGlobalRole({user: nbUser, role: Role.GENERAL_CREATOR});
   await addLocalPasswordForUser(nbUser, notebookPassword);
   const upgradedNb = await upgradeDbUserToExpressUser({dbUser: nbUser});

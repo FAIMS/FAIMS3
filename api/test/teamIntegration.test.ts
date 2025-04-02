@@ -28,6 +28,7 @@ import {
   addGlobalRole,
   addProjectRole,
   addTeamRole,
+  addTemplateRole,
   EncodedProjectUIModel,
   generateVirtualResourceRoles,
   registerClient,
@@ -53,17 +54,26 @@ import {
   getNotebookMetadata,
   getProjectIdsByTeamId,
 } from '../src/couchdb/notebooks';
+import {createTeamDocument} from '../src/couchdb/teams';
 import {
   createTemplate,
   getTemplate,
   getTemplateIdsByTeamId,
 } from '../src/couchdb/templates';
-import {createUser, saveUser} from '../src/couchdb/users';
+import {
+  createUser,
+  getCouchUserFromEmailOrUsername,
+  saveCouchUser,
+} from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
 import {app} from '../src/routes';
 import {callbackObject} from './mocks';
-import {adminToken, beforeApiTests, requestAuthAndType} from './utils';
-import {createTeamDocument} from '../src/couchdb/teams';
+import {
+  adminToken,
+  adminUserName,
+  beforeApiTests,
+  requestAuthAndType,
+} from './utils';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
@@ -255,7 +265,7 @@ describe('Team integration with templates and projects', () => {
       teamId: team._id,
       role: Role.TEAM_MEMBER,
     });
-    await saveUser(user);
+    await saveCouchUser(user);
     await addLocalPasswordForUser(user, password);
     // Generate token for this user
     const signingKey = await KEY_SERVICE.getSigningKey();
@@ -315,7 +325,7 @@ describe('Team integration with templates and projects', () => {
       teamId: team._id,
       role: Role.TEAM_MANAGER,
     });
-    await saveUser(user);
+    await saveCouchUser(user);
     const upgradedManager = await upgradeDbUserToExpressUser({dbUser: user});
     const managerToken = await generateJwtFromUser({
       user: upgradedManager,
@@ -381,7 +391,7 @@ describe('Team integration with templates and projects', () => {
       role: Role.GENERAL_CREATOR,
     });
 
-    await saveUser(user);
+    await saveCouchUser(user);
     await addLocalPasswordForUser(user, password);
 
     // Generate token for this user
@@ -480,25 +490,33 @@ describe('Team integration with templates and projects', () => {
 
     // Create template in team 1
     const template1 = await createTemplate({
-      ...notebook,
-      teamId: team1._id,
+      payload: {
+        ...notebook,
+        teamId: team1._id,
+      },
     });
 
     // Create template in team 2
     const template2 = await createTemplate({
-      ...notebook,
-      teamId: team2._id,
+      payload: {
+        ...notebook,
+        teamId: team2._id,
+      },
     });
 
     // Create another template in team 1
     const template3 = await createTemplate({
-      ...notebook,
-      teamId: team1._id,
+      payload: {
+        ...notebook,
+        teamId: team1._id,
+      },
     });
 
     // Create template without a team
     await createTemplate({
-      ...notebook,
+      payload: {
+        ...notebook,
+      },
     });
 
     // Get templates by team ID
@@ -581,8 +599,10 @@ describe('Team integration with templates and projects', () => {
 
     // Create a template owned by the team
     const template = await createTemplate({
-      ...getSampleNotebook(),
-      teamId: team._id,
+      payload: {
+        ...getSampleNotebook(),
+        teamId: team._id,
+      },
     });
 
     // Create a test user for virtual role testing
@@ -605,7 +625,7 @@ describe('Team integration with templates and projects', () => {
       role: Role.TEAM_MEMBER,
     });
 
-    await saveUser(user);
+    await saveCouchUser(user);
 
     const upgradeToExpress = await upgradeDbUserToExpressUser({dbUser: user});
 
@@ -664,7 +684,7 @@ describe('Team integration with templates and projects', () => {
       role: Role.TEAM_MANAGER,
     });
 
-    await saveUser(user);
+    await saveCouchUser(user);
 
     const upgradeToExpressManager = await upgradeDbUserToExpressUser({
       dbUser: user,
@@ -697,7 +717,7 @@ describe('Team integration with templates and projects', () => {
       role: Role.TEAM_ADMIN,
     });
 
-    await saveUser(user);
+    await saveCouchUser(user);
 
     const upgradeToExpressAdmin = await upgradeDbUserToExpressUser({
       dbUser: user,
@@ -853,7 +873,7 @@ describe('Team integration with templates and projects', () => {
       role: Role.TEAM_MEMBER,
     });
 
-    await saveUser(user);
+    await saveCouchUser(user);
 
     const associations = await getRelevantUserAssociations({dbUser: user});
     expect(associations).to.be.an('array');
@@ -897,12 +917,16 @@ describe('Team integration with templates and projects', () => {
 
     // Create templates owned by the team
     const template1 = await createTemplate({
-      ...getSampleNotebook(),
-      teamId: team._id,
+      payload: {
+        ...getSampleNotebook(),
+        teamId: team._id,
+      },
     });
     const template2 = await createTemplate({
-      ...getSampleNotebook(),
-      teamId: team._id,
+      payload: {
+        ...getSampleNotebook(),
+        teamId: team._id,
+      },
     });
 
     // Create test user with team role
@@ -924,7 +948,7 @@ describe('Team integration with templates and projects', () => {
       role: Role.TEAM_MEMBER,
     });
 
-    await saveUser(user);
+    await saveCouchUser(user);
 
     const associations = await getRelevantUserAssociations({dbUser: user});
     expect(associations).to.be.an('array');
@@ -1007,8 +1031,10 @@ describe('Team integration with templates and projects', () => {
       team1._id
     );
     const template1 = await createTemplate({
-      ...getSampleNotebook(),
-      teamId: team1._id,
+      payload: {
+        ...getSampleNotebook(),
+        teamId: team1._id,
+      },
     });
 
     // Create resources for team 2
@@ -1027,8 +1053,10 @@ describe('Team integration with templates and projects', () => {
       team2._id
     );
     const template2 = await createTemplate({
-      ...getSampleNotebook(),
-      teamId: team2._id,
+      payload: {
+        ...getSampleNotebook(),
+        teamId: team2._id,
+      },
     });
 
     // Create test user with multiple team roles
@@ -1063,7 +1091,7 @@ describe('Team integration with templates and projects', () => {
       role: Role.TEAM_ADMIN,
     });
 
-    await saveUser(user);
+    await saveCouchUser(user);
 
     const associations = await getRelevantUserAssociations({dbUser: user});
     expect(associations).to.be.an('array');
@@ -1139,8 +1167,10 @@ describe('Team integration with templates and projects', () => {
 
     // Create a template owned by the team
     const template = await createTemplate({
-      ...getSampleNotebook(),
-      teamId: team._id,
+      payload: {
+        ...getSampleNotebook(),
+        teamId: team._id,
+      },
     });
 
     // Create test users with different team roles
@@ -1168,7 +1198,9 @@ describe('Team integration with templates and projects', () => {
     expect(adminUser).to.not.be.null;
 
     if (!memberUser || !managerUser || !adminUser) {
-      throw new Error('Failed to create users ' + err1 || err2 || err3 || "Unknown...");
+      throw new Error(
+        'Failed to create users ' + err1 || err2 || err3 || 'Unknown...'
+      );
     }
 
     // Assign different roles to each user
@@ -1190,9 +1222,9 @@ describe('Team integration with templates and projects', () => {
       role: Role.TEAM_ADMIN,
     });
 
-    await saveUser(memberUser);
-    await saveUser(managerUser);
-    await saveUser(adminUser);
+    await saveCouchUser(memberUser);
+    await saveCouchUser(managerUser);
+    await saveCouchUser(adminUser);
 
     // Upgrade users
     const upgradedMember = await upgradeDbUserToExpressUser({
@@ -1282,6 +1314,27 @@ describe('Team integration with templates and projects', () => {
   });
 
   it('upgradeDbUserToExpressUser with complex resource hierarchy', async () => {
+    // Create test user with mixed team roles
+    let [user, err] = await createUser({
+      username: 'complexUser',
+      name: 'User With Complex Hierarchy',
+    });
+
+    expect(err).to.equal('');
+    expect(user).to.not.be.null;
+
+    if (!user) {
+      throw new Error('User create failed ' + err);
+    }
+
+    // Add global role
+    addGlobalRole({
+      user,
+      role: Role.GENERAL_CREATOR,
+    });
+
+    await saveCouchUser(user);
+
     // Create multiple teams with overlapping resources
     const team1 = await createTeamDocument({
       name: 'Primary Team',
@@ -1315,8 +1368,10 @@ describe('Team integration with templates and projects', () => {
       team1._id
     );
     const template1 = await createTemplate({
-      ...getSampleNotebook(),
-      teamId: team1._id,
+      payload: {
+        ...getSampleNotebook(),
+        teamId: team1._id,
+      },
     });
 
     // Create resources for team 2
@@ -1328,8 +1383,10 @@ describe('Team integration with templates and projects', () => {
       team2._id
     );
     const template2 = await createTemplate({
-      ...getSampleNotebook(),
-      teamId: team2._id,
+      payload: {
+        ...getSampleNotebook(),
+        teamId: team2._id,
+      },
     });
 
     // Create some non-team resources
@@ -1338,132 +1395,113 @@ describe('Team integration with templates and projects', () => {
       uispec,
       {}
     );
+
     const independentTemplate = await createTemplate({
-      ...getSampleNotebook(),
+      payload: {
+        ...getSampleNotebook(),
+      },
     });
 
-    // Create test user with mixed team roles
-    const [user, err] = await createUser({
-      username: 'complexUser',
-      name: 'User With Complex Hierarchy',
+    // Make the user an admin of the independent notebook (since they made it)
+    addTemplateRole({
+      role: Role.TEMPLATE_ADMIN,
+      templateId: independentTemplate._id,
+      user,
     });
 
-    expect(err).to.equal('');
-    expect(user).to.not.be.null;
+    // Add user to teams with different roles
+    addTeamRole({
+      user,
+      teamId: team1._id,
+      role: Role.TEAM_ADMIN,
+    });
 
-    if (!user) {
-      throw new Error('User create failed ' + err);
-    }
+    addTeamRole({
+      user,
+      teamId: team2._id,
+      role: Role.TEAM_MEMBER,
+    });
 
-    if (user) {
-      // Add user to teams with different roles
-      addTeamRole({
-        user,
-        teamId: team1._id,
-        role: Role.TEAM_ADMIN,
-      });
+    // Add direct project role (non-virtual)
+    addProjectRole({
+      user,
+      projectId: independentProject!,
+      role: Role.PROJECT_MANAGER,
+    });
 
-      addTeamRole({
-        user,
-        teamId: team2._id,
-        role: Role.TEAM_MEMBER,
-      });
+    await saveCouchUser(user);
 
-      // Add direct project role (non-virtual)
-      addProjectRole({
-        user,
-        projectId: independentProject!,
-        role: Role.PROJECT_MANAGER,
-      });
+    // Upgrade user
+    const upgradedUser = await upgradeDbUserToExpressUser({dbUser: user});
 
-      // Add global role
-      addGlobalRole({
-        user,
-        role: Role.GENERAL_CREATOR,
-      });
+    // Test permissions on team 1 resources (should have admin access)
+    expect(
+      userCanDo({
+        user: upgradedUser,
+        action: Action.DELETE_PROJECT,
+        resourceId: project1a,
+      })
+    ).to.be.true;
 
-      await saveUser(user);
+    expect(
+      userCanDo({
+        user: upgradedUser,
+        action: Action.DELETE_TEMPLATE,
+        resourceId: template1._id,
+      })
+    ).to.be.true;
 
-      // Upgrade user
-      const upgradedUser = await upgradeDbUserToExpressUser({dbUser: user});
+    // Test permissions on team 2 resources (should have contributor access)
+    expect(
+      userCanDo({
+        user: upgradedUser,
+        action: Action.READ_ALL_PROJECT_RECORDS,
+        resourceId: project2,
+      })
+    ).to.be.true;
 
-      // Test permissions on team 1 resources (should have admin access)
-      expect(
-        userCanDo({
-          user: upgradedUser,
-          action: Action.DELETE_PROJECT,
-          resourceId: project1a,
-        })
-      ).to.be.true;
+    expect(
+      userCanDo({
+        user: upgradedUser,
+        action: Action.DELETE_PROJECT,
+        resourceId: project2,
+      })
+    ).to.be.false;
 
-      expect(
-        userCanDo({
-          user: upgradedUser,
-          action: Action.DELETE_TEMPLATE,
-          resourceId: template1._id,
-        })
-      ).to.be.true;
+    // Test permissions on independent project (direct role)
+    expect(
+      userCanDo({
+        user: upgradedUser,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: independentProject,
+      })
+    ).to.be.true;
 
-      // Test permissions on team 2 resources (should have contributor access)
-      expect(
-        userCanDo({
-          user: upgradedUser,
-          action: Action.READ_ALL_PROJECT_RECORDS,
-          resourceId: project2,
-        })
-      ).to.be.true;
+    // Test permissions on independent template - since user created it - they
+    // should have admin
+    expect(
+      userCanDo({
+        user: upgradedUser,
+        action: Action.READ_TEMPLATE_DETAILS,
+        resourceId: independentTemplate._id,
+      })
+    ).to.be.true;
 
-      expect(
-        userCanDo({
-          user: upgradedUser,
-          action: Action.DELETE_PROJECT,
-          resourceId: project2,
-        })
-      ).to.be.false;
+    // Test global permissions
+    expect(
+      userCanDo({
+        user: upgradedUser,
+        action: Action.CREATE_PROJECT,
+        resourceId: undefined,
+      })
+    ).to.be.true;
 
-      // Test permissions on independent project (direct role)
-      expect(
-        userCanDo({
-          user: upgradedUser,
-          action: Action.UPDATE_PROJECT_DETAILS,
-          resourceId: independentProject,
-        })
-      ).to.be.true;
-
-      // Test permissions on independent template (no direct role, but global creator)
-      expect(
-        userCanDo({
-          user: upgradedUser,
-          action: Action.READ_TEMPLATE_DETAILS,
-          resourceId: independentTemplate._id,
-        })
-      ).to.be.true;
-
-      // Should NOT have admin rights on independent template
-      expect(
-        userCanDo({
-          user: upgradedUser,
-          action: Action.DELETE_TEMPLATE,
-          resourceId: independentTemplate._id,
-        })
-      ).to.be.false;
-
-      // Test global permissions
-      expect(
-        userCanDo({
-          user: upgradedUser,
-          action: Action.CREATE_PROJECT,
-          resourceId: undefined,
-        })
-      ).to.be.true;
-
-      expect(
-        userCanDo({
-          user: upgradedUser,
-          action: Action.CREATE_TEMPLATE,
-          resourceId: undefined,
-        })
-      ).to.be.true;
-    }
+    expect(
+      userCanDo({
+        user: upgradedUser,
+        action: Action.CREATE_TEMPLATE,
+        resourceId: undefined,
+      })
+    ).to.be.true;
   });
 });

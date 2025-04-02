@@ -62,6 +62,8 @@ export const generateInitialUser = ({
     globalRoles: [Role.GENERAL_USER],
     // Project roles is empty
     projectRoles: [],
+    // Template roles is empty
+    templateRoles: [],
     // Profiles are injected later
     profiles: {},
     teamRoles: [],
@@ -88,7 +90,7 @@ export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
     );
     if (user) {
       addGlobalRole({user, role: Role.GENERAL_ADMIN});
-      saveUser(user);
+      saveCouchUser(user);
     } else {
       console.error(error);
     }
@@ -286,13 +288,22 @@ async function getUserFromUsername(
 }
 
 /**
- * saveUser - save a user record to the database as a new record or new revision
- * @param user An Express.User record to be written to the database
+ * saveCouchUser - save a user record to the database as a new record or new revision
+ * @param user A people db document to write
  */
-export async function saveUser(
+export async function saveCouchUser(
   user: PeopleDBDocument | ExistingPeopleDBDocument
 ): Promise<void> {
   await safeWriteDocument({db: getUsersDB(), data: user, writeOnClash: true});
+}
+
+/**
+ * saveExpressUser - saves an express user to the db (stripping out resource roles)
+ * @param user An Express.User record to be written to the database
+ */
+export async function saveExpressUser(user: Express.User): Promise<void> {
+  const {resourceRoles, ...dbUser} = user;
+  await saveCouchUser(dbUser);
 }
 
 export async function getUserInfoForProject({

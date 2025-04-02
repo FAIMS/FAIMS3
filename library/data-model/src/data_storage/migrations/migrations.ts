@@ -95,6 +95,8 @@ export const peopleV2toV3Migration: MigrationFunc = doc => {
     globalRoles: inputDoc.globalRoles,
     // Setup empty team roles
     teamRoles: [],
+    // Setup empty template roles (previously ownership was not established)
+    templateRoles: [],
     // convert resource roles -> project Roles
     projectRoles: inputDoc.resourceRoles,
   };

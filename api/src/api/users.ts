@@ -35,7 +35,7 @@ import {
   getCouchUserFromEmailOrUsername,
   getUsers,
   removeUser,
-  saveUser,
+  saveCouchUser,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
@@ -95,7 +95,7 @@ api.post(
       removeGlobalRole({role, user: foundUser});
     }
 
-    await saveUser(foundUser);
+    await saveCouchUser(foundUser);
     res.status(200).send();
   }
 );

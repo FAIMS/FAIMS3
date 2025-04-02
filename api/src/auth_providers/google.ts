@@ -26,7 +26,7 @@ import {getInvite} from '../couchdb/invites';
 import {
   createUser,
   getCouchUserFromEmailOrUsername,
-  saveUser,
+  saveCouchUser,
 } from '../couchdb/users';
 import {acceptInvite} from '../registration';
 import {upgradeDbUserToExpressUser} from '../authkeys/create';
@@ -62,7 +62,7 @@ async function oauth_verify(
       // add the profile if not already there
       if (!('google' in dbUser.profiles)) {
         dbUser.profiles['google'] = profile;
-        await saveUser(dbUser);
+        await saveCouchUser(dbUser);
       }
       // Upgrade by drilling permissions/associations
       const user = await upgradeDbUserToExpressUser({dbUser});
@@ -108,7 +108,7 @@ async function oauth_register(
       // add the profile if not already there
       if (!('google' in dbUser.profiles)) {
         dbUser.profiles['google'] = profile;
-        await saveUser(dbUser);
+        await saveCouchUser(dbUser);
       }
 
       // Upgrade by drilling permissions/associations

@@ -32,7 +32,7 @@ import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   createUser,
   getUserInfoForProject,
-  saveUser,
+  saveCouchUser,
 } from '../src/couchdb/users';
 
 import {
@@ -95,7 +95,7 @@ describe('user creation', () => {
     const [newUser, errorFirst] = await createUser({email, name: email});
     expect(errorFirst).to.equal('');
     if (newUser) {
-      await saveUser(newUser);
+      await saveCouchUser(newUser);
       // now make another user with the same email
       const [anotherUser, errorSecond] = await createUser({email, name: email});
       expect(errorSecond).to.equal(`User with email '${email}' already exists`);
@@ -107,7 +107,7 @@ describe('user creation', () => {
     });
     expect(errorFirstU).to.equal('');
     if (newUserU) {
-      await saveUser(newUserU);
+      await saveCouchUser(newUserU);
       // now make another user with the same email
       const [anotherUserU, errorSecondU] = await createUser({
         username,
@@ -277,7 +277,7 @@ describe('user creation', () => {
       role: Role.PROJECT_GUEST,
     });
     // Recompile permissions
-    user = await upgradeDbUserToExpressUser({dbUser : user});
+    user = await upgradeDbUserToExpressUser({dbUser: user});
 
     // Should have read but not modify permission for this project
     expect(
@@ -321,7 +321,7 @@ describe('user creation', () => {
     });
 
     // Recompile permissions
-    user = await upgradeDbUserToExpressUser({dbUser : user});
+    user = await upgradeDbUserToExpressUser({dbUser: user});
 
     // Now should have full permissions for this project
     expect(
@@ -403,7 +403,7 @@ describe('user creation', () => {
         projectId: project_id,
         role: Role.PROJECT_MANAGER,
       });
-      await saveUser(user);
+      await saveCouchUser(user);
 
       const userInfo = await getUserInfoForProject({projectId: project_id});
 

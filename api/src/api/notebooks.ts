@@ -69,7 +69,8 @@ import {
   getCouchUserFromEmailOrUsername,
   getUserInfoForProject,
   getUsers,
-  saveUser,
+  saveCouchUser,
+  saveExpressUser,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {
@@ -209,7 +210,7 @@ api.post(
         projectId: projectID,
         role: Role.PROJECT_ADMIN,
       });
-      await saveUser(req.user);
+      await saveExpressUser(req.user);
       res.json({notebook: projectID} satisfies PostCreateNotebookResponse);
     } else {
       throw new Exceptions.InternalSystemError(
@@ -510,7 +511,7 @@ api.post(
     }
 
     // save the user after modifications have been made
-    await saveUser(user);
+    await saveCouchUser(user);
     res.status(200).end();
   }
 );
@@ -666,7 +667,7 @@ api.delete(
       }
     }
 
-    await saveUser(user);
+    await saveCouchUser(user);
     res.status(200).end();
   }
 );

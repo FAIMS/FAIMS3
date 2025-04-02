@@ -20,6 +20,7 @@
 
 import {
   Action,
+  addTemplateRole,
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
   PostCreateTemplateInput,
@@ -27,11 +28,11 @@ import {
   PostCreateTemplateResponse,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
+  Role,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import * as Exceptions from '../exceptions';
 import {
   archiveTemplate,
   createTemplate,
@@ -40,12 +41,14 @@ import {
   getTemplates,
   updateExistingTemplate,
 } from '../couchdb/templates';
+import * as Exceptions from '../exceptions';
 import {
   isAllowedToMiddleware,
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
 
+import {saveExpressUser} from '../couchdb/users';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -135,8 +138,23 @@ api.post(
     },
   }),
   async (req, res: Response<PostCreateTemplateResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
     // Now we can create the new template and return it
-    const newTemplate = await createTemplate(req.body);
+    const newTemplate = await createTemplate({
+      payload: req.body,
+    });
+
+    // Make the creator the admin
+    addTemplateRole({
+      user: req.user,
+      role: Role.TEMPLATE_ADMIN,
+      templateId: newTemplate._id,
+    });
+    await saveExpressUser(req.user);
+
     res.json(newTemplate);
   }
 );

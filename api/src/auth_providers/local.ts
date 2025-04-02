@@ -23,10 +23,10 @@ import {Strategy} from 'passport-local';
 import {
   createUser,
   getCouchUserFromEmailOrUsername,
-  saveUser,
+  saveCouchUser,
 } from '../couchdb/users';
 import {ExistingPeopleDBDocument, PeopleDBDocument} from '@faims3/data-model';
-import { upgradeDbUserToExpressUser } from '../authkeys/create';
+import {upgradeDbUserToExpressUser} from '../authkeys/create';
 
 type LocalProfile = {
   password: string;
@@ -52,8 +52,8 @@ export const validateLocalUser = async (
         'sha256'
       );
       if (hashedPassword.toString('hex') === profile.password) {
-        // Now we enhance with virtual roles 
-        const user = await upgradeDbUserToExpressUser({dbUser})
+        // Now we enhance with virtual roles
+        const user = await upgradeDbUserToExpressUser({dbUser});
         return done(null, user);
       } else {
         return done(null, false);
@@ -103,7 +103,7 @@ export const addLocalPasswordForUser = async (
       password: hashedPassword.toString('hex'),
       salt: salt,
     };
-    await saveUser(user);
+    await saveCouchUser(user);
   } catch {
     throw Error('Error hashing password');
   }

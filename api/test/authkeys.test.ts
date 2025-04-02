@@ -19,19 +19,19 @@
  */
 
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
+import {addGlobalRole, Role} from '@faims3/data-model';
+import {expect} from 'chai';
 import {
   generateJwtFromUser,
   upgradeDbUserToExpressUser,
 } from '../src/authkeys/create';
 import {validateToken} from '../src/authkeys/read';
-import {createUser, saveUser} from '../src/couchdb/users';
-import {expect} from 'chai';
 import {KEY_SERVICE} from '../src/buildconfig';
-import {addGlobalRole, Role} from '@faims3/data-model';
+import {createUser, saveExpressUser} from '../src/couchdb/users';
 
 describe('roundtrip creating and reading token', () => {
   it('create and read token', async () => {
@@ -54,7 +54,7 @@ describe('roundtrip creating and reading token', () => {
     for (let i = 0; i < roles.length; i++) {
       addGlobalRole({user, role: roles[i]});
     }
-    await saveUser(user);
+    await saveExpressUser(user);
 
     // Recompile permissions
     user = await upgradeDbUserToExpressUser({dbUser});

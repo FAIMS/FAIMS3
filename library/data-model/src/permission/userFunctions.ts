@@ -248,6 +248,106 @@ export function removeGlobalRole({
   user.globalRoles = user.globalRoles.filter(globalRole => globalRole !== role);
 }
 
+// TEMPLATE ROLES
+// ==============
+
+/**
+ * Checks if a user has a specific role for a specific template
+ * @param user - User object to check
+ * @param role - Role to check for
+ * @param templateId - ID of the template to check
+ * @returns True if the user has the specified template role
+ */
+export function userHasTemplateRole({
+  user,
+  role,
+  templateId,
+}: {
+  user: PeopleDBDocument;
+  role: Role;
+  templateId: string;
+}): boolean {
+  return user.templateRoles.some(
+    r => r.resourceId === templateId && r.role === role
+  );
+}
+
+/**
+ * Gets all roles a user has for a specific template
+ * @param user - User object to check
+ * @param templateId - ID of the template to check
+ * @returns Array of roles the user has for the specified template
+ */
+export function userTemplateRoles({
+  user,
+  templateId,
+}: {
+  user: PeopleDBDocument;
+  templateId: string;
+}): Role[] {
+  return user.templateRoles
+    .filter(r => r.resourceId === templateId)
+    .map(r => r.role);
+}
+
+/**
+ * Adds a template role to a user
+ * @param user - User object to modify
+ * @param role - Role to add
+ * @param templateId - ID of the template for the role
+ */
+export function addTemplateRole({
+  user,
+  role,
+  templateId,
+}: {
+  user: PeopleDBDocument;
+  role: Role;
+  templateId: string;
+}): void {
+  // Check if the user already has this role for this template
+  const hasRole = userHasTemplateRole({
+    user,
+    role,
+    templateId,
+  });
+
+  // If the user already has this role, return
+  if (hasRole) {
+    return;
+  }
+
+  // Create a new template role and add it to the user
+  const newTemplateRole: ResourceRole = {
+    resourceId: templateId,
+    role,
+  };
+
+  user.templateRoles = [...user.templateRoles, newTemplateRole];
+}
+
+/**
+ * Removes a template role from a user
+ * @param user - User object to modify
+ * @param role - Role to remove
+ * @param templateId - ID of the template for the role
+ */
+export function removeTemplateRole({
+  user,
+  role,
+  templateId,
+}: {
+  user: PeopleDBDocument;
+  role: Role;
+  templateId: string;
+}): void {
+  // Filter out the role we want to remove using resourceRolesEqual helper
+  const roleToRemove: ResourceRole = {resourceId: templateId, role};
+  user.templateRoles = user.templateRoles.filter(
+    templateRole => !resourceRolesEqual(templateRole, roleToRemove)
+  );
+}
+
 // =============
 // OTHER UPDATES
 // =============
@@ -288,14 +388,14 @@ export function resourceRolesEqual(a: ResourceRole, b: ResourceRole): boolean {
 // ===============
 
 export function couchUserToResourceRoles({
-  user: {projectRoles, teamRoles},
+  user: {projectRoles, teamRoles, templateRoles},
   relevantAssociations,
 }: {
   user: PeopleDBDocument;
   relevantAssociations: ResourceAssociation[];
 }): ResourceRole[] {
   // Collapse the project and team roles into one set
-  let allResourceRoles = [...projectRoles, ...teamRoles];
+  let allResourceRoles = [...projectRoles, ...teamRoles, ...templateRoles];
 
   // Need to drill teams virtual roles
   const virtualRoles = generateVirtualResourceRoles({
