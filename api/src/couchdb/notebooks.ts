@@ -150,15 +150,25 @@ export const getUserProjectsDirectory = async (
  * @returns an array of ProjectDocument objects
  */
 export const getUserProjectsDetailed = async (
-  user: Express.User
+  user: Express.User,
+  teamId: string | undefined = undefined
 ): Promise<APINotebookList[]> => {
   // Get projects DB
   const projectsDb = localGetProjectsDb();
 
   // Get all projects and filter for user access
-  const allDocs = await projectsDb.allDocs<ProjectDocument>({
-    include_docs: true,
-  });
+
+  let allDocs;
+  if (!teamId) {
+    allDocs = await projectsDb.allDocs<ProjectDocument>({
+      include_docs: true,
+    });
+  } else {
+    allDocs = await projectsDb.query<ProjectDocument>(PROJECTS_BY_TEAM_ID, {
+      key: teamId,
+      include_docs: true,
+    });
+  }
 
   const userProjects = allDocs.rows
     .map(r => r.doc)

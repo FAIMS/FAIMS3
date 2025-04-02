@@ -39,6 +39,24 @@ export const useGetProjects = (user: User | null, projectId?: string) =>
   });
 
 /**
+ * useGetProjectsForTeam hook returns a query for fetching projects.
+ *
+ * @param {User} user - The user object.
+ * @returns {Query} A query for fetching projects.
+ */
+export const useGetProjectsForTeam = ({
+  teamId,
+  user,
+}: {
+  user: User | null;
+  teamId: string;
+}) =>
+  useQuery({
+    queryKey: ['projectsbyteam', teamId],
+    queryFn: () => get(`/api/notebooks?teamId=${teamId}`, user),
+  });
+
+/**
  * Gets a particular team
  *
  * @param {User} user - The user object.

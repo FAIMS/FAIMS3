@@ -89,3 +89,24 @@ export const downloadFile = async (
 
   link.click();
 };
+
+export function displayUnixTimestampMs({
+  timestamp,
+}: {
+  timestamp: number;
+}): string {
+  const date = new Date(timestamp);
+  // Format: Apr 2, 2025, 3:30 PM
+  return (
+    date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }) +
+    ', ' +
+    date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  );
+}

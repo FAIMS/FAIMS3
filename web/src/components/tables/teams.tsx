@@ -1,6 +1,7 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {GetListTeamsResponse} from '@faims3/data-model';
+import {displayUnixTimestampMs} from '@/lib/utils';
 
 export const columns: ColumnDef<GetListTeamsResponse['teams']>[] = [
   {
@@ -32,20 +33,7 @@ export const columns: ColumnDef<GetListTeamsResponse['teams']>[] = [
 
       // Convert timestamp to a readable date format
       if (timestamp) {
-        const date = new Date(timestamp);
-        // Format: Apr 2, 2025, 3:30 PM
-        return (
-          date.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-          }) +
-          ', ' +
-          date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          })
-        );
+        return displayUnixTimestampMs({timestamp});
       }
       return '';
     },

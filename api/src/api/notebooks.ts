@@ -92,12 +92,13 @@ export const api = express.Router();
 api.get(
   '/',
   requireAuthenticationAPI,
+  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
   async (req, res: Response<GetNotebookListResponse>) => {
     // get a list of notebooks from the db
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const notebooks = await getUserProjectsDetailed(req.user);
+    const notebooks = await getUserProjectsDetailed(req.user, req.query.teamId);
     res.json(notebooks);
   }
 );

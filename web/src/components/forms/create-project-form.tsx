@@ -2,7 +2,7 @@ import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
-import {useGetTemplates} from '@/hooks/get-hooks';
+import {useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
 import {Divider} from '../ui/word-divider';
 import {
   createProjectFromFile,
@@ -26,6 +26,7 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
   const QueryClient = useQueryClient();
 
   const {data: templates} = useGetTemplates(user);
+  const {data: teams} = useGetTeams(user);
 
   const fields = [
     {
@@ -34,6 +35,15 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
       schema: z.string().min(5, {
         message: 'Project name must be at least 5 characters.',
       }),
+    },
+    {
+      name: 'team',
+      label: 'Create survey in team?',
+      options: teams?.teams.map(({_id, name}) => ({
+        label: name,
+        value: _id,
+      })),
+      schema: z.string().optional(),
     },
     {
       name: 'template',
@@ -59,17 +69,18 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
 
   const dividers = [
     {
-      index: 1,
+      index: 2,
       component: <div className="h-4" />,
     },
     {
-      index: 2,
+      index: 3,
       component: <Divider word="OR" />,
     },
   ];
 
   interface onSubmitProps {
     name: string;
+    team?: string;
     template?: string;
     file?: File;
   }
@@ -80,20 +91,28 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
    * @param {{name: string, template?: string, file?: File}} params - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
-  const onSubmit = async ({name, template, file}: onSubmitProps) => {
+  const onSubmit = async ({name, template, file, team}: onSubmitProps) => {
     if (!user) return {type: 'submit', message: 'User not authenticated'};
 
     if (!template && !file)
       return {type: 'submit', message: 'No file or template selected'};
 
     const response = file
-      ? await createProjectFromFile(user, name, file)
-      : await createProjectFromTemplate(user, name, template || '');
+      ? await createProjectFromFile({user, name, file, teamId: team})
+      : await createProjectFromTemplate({
+          user,
+          name,
+          template: template || '',
+          teamId: team,
+        });
 
     if (!response.ok)
       return {type: 'submit', message: 'Error creating project'};
 
-    QueryClient.invalidateQueries({queryKey: ['projects', undefined]});
+    if (team) {
+      QueryClient.invalidateQueries({queryKey: ['projectsbyteam', team]});
+    }
+    QueryClient.invalidateQueries({queryKey: ['projects']});
 
     setDialogOpen(false);
   };

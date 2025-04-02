@@ -4,10 +4,15 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
 import {useGetTeam} from '@/hooks/get-hooks';
+import {useMemo} from 'react';
+import {displayUnixTimestampMs} from '@/lib/utils';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
   {field: 'description', label: 'Description'},
+  {field: 'createdBy', label: 'Created By'},
+  {field: 'createdAtDisplay', label: 'Created At'},
+  {field: 'updatedAtDisplay', label: 'Updated At'},
 ];
 
 /**
@@ -20,7 +25,21 @@ const detailsFields = [
 const TeamDetails = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
 
-  const {data, isPending} = useGetTeam(user, teamId);
+  const {data: rawData, isPending} = useGetTeam(user, teamId);
+
+  const data = useMemo(() => {
+    return rawData
+      ? {
+          ...rawData,
+          createdAtDisplay: displayUnixTimestampMs({
+            timestamp: rawData.createdAt,
+          }),
+          updatedAtDisplay: displayUnixTimestampMs({
+            timestamp: rawData.updatedAt,
+          }),
+        }
+      : undefined;
+  }, [rawData]);
 
   return (
     <Card>
