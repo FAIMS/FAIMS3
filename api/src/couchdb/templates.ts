@@ -12,7 +12,7 @@ import {
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
-import {slugify} from '../utils';
+import {generateRandomString, slugify} from '../utils';
 
 /**
  * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
@@ -89,11 +89,16 @@ export const getTemplate = async (id: string) => {
 
 /**
  * Generate a good project identifier for a new project
+ *
+ * Uses MS time + also a random short prefix in case of very very fast or parallel
+ * execution
+ *
  * @param projectName the project name string
  * @returns a suitable project identifier
  */
 const generateTemplateId = (templateName: string): ProjectID => {
-  return `${Date.now().toFixed()}-${slugify(templateName)}`;
+  const randomPrefix = generateRandomString(3);
+  return `${Date.now().toFixed()}-${randomPrefix}-${slugify(templateName)}`;
 };
 
 /**
@@ -137,7 +142,7 @@ export const createTemplate = async ({
     await templatesDb.put(templateDoc);
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An unexpected error occurred while trying to PUT the new template document into the teams DB. Exception ' +
+      'An unexpected error occurred while trying to PUT the new template document into the template DB. Exception ' +
         e
     );
   }

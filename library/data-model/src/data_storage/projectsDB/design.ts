@@ -4,15 +4,17 @@ import {convertToCouchDBString} from '../utils';
 
 // Index constants
 const INDEX_DOCUMENT_NAME = 'index';
-export const PROJECTS_BY_TEAM_ID = INDEX_DOCUMENT_NAME + '/byTeamId';
+const PROJECTS_BY_TEAM_ID_POSTFIX = 'byTeamId';
+
+export const PROJECTS_BY_TEAM_ID = `${INDEX_DOCUMENT_NAME}/${PROJECTS_BY_TEAM_ID_POSTFIX}`;
 
 /**
  * Design document for indexing by key fields
  */
 const indexDocument = {
-  _id: '_design/' + INDEX_DOCUMENT_NAME,
+  _id: `_design/${INDEX_DOCUMENT_NAME}`,
   views: {
-    [PROJECTS_BY_TEAM_ID.split('/')[1]]: {
+    [PROJECTS_BY_TEAM_ID_POSTFIX]: {
       map: convertToCouchDBString(doc => {
         if (
           doc &&
