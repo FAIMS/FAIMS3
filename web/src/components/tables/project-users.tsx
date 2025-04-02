@@ -1,9 +1,9 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import {roleLabel} from '@/lib/utils';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
 import {RoleCard} from '../ui/role-card';
+import {Role, roleDetails} from '@faims3/data-model';
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -13,20 +13,20 @@ export const columns: ColumnDef<any>[] = [
     ),
   },
   {
-    accessorKey: 'team-roles',
+    accessorKey: 'globalRoles',
     header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Team Roles" />
+      <DataTableColumnHeader column={column} title="Global Roles" />
     ),
     cell: ({row}: any) => (
       <div className="flex flex-wrap gap-1">
-        {row.getValue('team-roles').map((role: string) => (
-          <RoleCard key={role}>{roleLabel(role)}</RoleCard>
+        {row.getValue('globalRoles').map((role: string) => (
+          <RoleCard key={role}>{roleDetails[role as Role].name}</RoleCard>
         ))}
       </div>
     ),
   },
   {
-    accessorKey: 'project-roles',
+    accessorKey: 'projectRoles',
     header: ({column}) => (
       <DataTableColumnHeader
         column={column}
@@ -35,8 +35,8 @@ export const columns: ColumnDef<any>[] = [
     ),
     cell: ({row}: any) => (
       <div className="flex flex-wrap gap-1">
-        {row.getValue('project-roles').map((role: string) => (
-          <RoleCard key={role}>{roleLabel(role)}</RoleCard>
+        {row.getValue('projectRoles').map((role: string) => (
+          <RoleCard key={role}>{roleDetails[role as Role].name}</RoleCard>
         ))}
       </div>
     ),
@@ -45,7 +45,7 @@ export const columns: ColumnDef<any>[] = [
     id: 'remove',
     cell: ({
       row: {
-        original: {_id, 'project-roles': roles},
+        original: {_id, projectRoles: roles},
       },
     }: any) => (
       <div className="flex justify-center items-center -my-2">

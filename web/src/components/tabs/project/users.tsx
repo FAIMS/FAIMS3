@@ -35,8 +35,7 @@ const ProjectUsers = ({projectId}: {projectId: string}) => {
         )
         .map((user: any) => ({
           ...user,
-          'team-roles': user.globalRoles,
-          'project-roles': user.resourceRoles
+          projectRoles: user.resourceRoles
             .filter((role: any) => role.resourceId === projectId)
             .map((role: any) => role.role),
         }));
