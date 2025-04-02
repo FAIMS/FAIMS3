@@ -20,7 +20,6 @@ const loadProject = async (filename: string) => {
     process.exit(0);
   } catch (error) {
     console.error('Project import failed:', error);
-    process.exit(1);
   }
 };
 

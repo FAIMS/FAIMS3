@@ -21,7 +21,6 @@ const loadTemplate = async (filename: string) => {
     process.exit(0);
   } catch (error) {
     console.error('Template import failed:', error);
-    process.exit(1);
   }
 };
 
