@@ -1,6 +1,5 @@
 import {DataTable} from '@/components/data-table/data-table';
-import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
-import { CreateTemplateDialog } from '@/components/dialogs/create-template-dialog';
+import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog';
 import {columns} from '@/components/tables/templates';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTemplatesForTeam} from '@/hooks/get-hooks';

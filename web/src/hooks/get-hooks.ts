@@ -4,6 +4,7 @@ import {
   GetListTeamsResponse,
   GetListTemplatesResponse,
   GetTeamByIdResponse,
+  GetTeamMembersResponse,
 } from '@faims3/data-model';
 import QRCode from 'qrcode';
 
@@ -80,6 +81,26 @@ export const useGetTemplatesForTeam = ({
         `/api/templates?teamId=${teamId}`,
         user
       )) as GetListTemplatesResponse;
+    },
+  });
+
+/**
+ * @param {User} user - The user object.
+ */
+export const useGetUsersForTeam = ({
+  teamId,
+  user,
+}: {
+  user: User;
+  teamId: string;
+}) =>
+  useQuery({
+    queryKey: ['teamusers', teamId],
+    queryFn: async () => {
+      return (await get(
+        `/api/teams/${teamId}/members`,
+        user
+      )) as GetTeamMembersResponse;
     },
   });
 
