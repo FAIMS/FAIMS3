@@ -13,6 +13,7 @@ import {
   initialiseDbAndKeys,
   getTeamsDB,
 } from '../src/couchdb';
+import {registerAdminUser} from '../src/couchdb/users';
 
 export const databaseList: any = {};
 
@@ -70,6 +71,7 @@ export const resetDatabases = async () => {
   }
   // Clear all metadata DBs
   await initialiseDbAndKeys({force: true});
+  await registerAdminUser();
 };
 
 export const cleanDataDBS = async () => {

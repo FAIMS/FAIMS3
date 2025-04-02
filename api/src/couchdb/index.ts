@@ -596,9 +596,6 @@ export const initialiseDbAndKeys = async ({
     );
   }
 
-  // For users, we also establish an admin user, if not already present
-  await registerAdminUser(peopleDb);
-
   // For each project, ensure the metadata and data DBs are also
   // initialised/synced
   const projects = await getAllProjectsDirectory();
@@ -682,4 +679,8 @@ export const initialiseAndMigrateDBs = async ({
     ]);
   }
   await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+
+  // For users, we also establish an admin user, if not already present
+  // do this after all migrations so we know the db is up to date
+  await registerAdminUser();
 };

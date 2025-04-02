@@ -74,10 +74,10 @@ export const generateInitialUser = ({
  * Registers the admin user into the people DB
  * @param db
  */
-export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
+export const registerAdminUser = async () => {
   // register a local admin user with the same password as couchdb if there
   // isn't already one there
-  if (db && LOCAL_COUCHDB_AUTH) {
+  if (LOCAL_COUCHDB_AUTH) {
     const adminUser = await getCouchUserFromEmailOrUsername('admin');
     if (adminUser) {
       return;
@@ -90,7 +90,7 @@ export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
     );
     if (user) {
       addGlobalRole({user, role: Role.GENERAL_ADMIN});
-      saveCouchUser(user);
+      await saveCouchUser(user);
     } else {
       console.error(error);
     }
