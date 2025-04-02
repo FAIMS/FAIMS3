@@ -31,6 +31,7 @@ import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   createUser,
   getUserInfoForProject,
+  registerAdminUser,
   saveUser,
 } from '../src/couchdb/users';
 import {expect, assert} from 'chai';
@@ -380,6 +381,7 @@ describe('user creation', () => {
 
   it('listing users for notebooks', async () => {
     await initialiseDbAndKeys({force: false});
+    registerAdminUser();
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
