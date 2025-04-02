@@ -19,12 +19,26 @@ import {slugify} from '../utils';
  * validate with Zod.
  * @returns an array of template objects
  */
-export const getTemplates = async (): Promise<TemplateDocument[]> => {
+export const getTemplates = async ({
+  teamId,
+}: {
+  teamId?: string;
+}): Promise<TemplateDocument[]> => {
   const templatesDb = getTemplatesDb();
   try {
-    const resultList = await templatesDb.allDocs({
-      include_docs: true,
-    });
+    let resultList;
+    if (teamId) {
+      resultList = await templatesDb.query<TemplateDocument>(
+        TEMPLATES_BY_TEAM_ID,
+        {
+          include_docs: true,
+        }
+      );
+    } else {
+      resultList = await templatesDb.allDocs({
+        include_docs: true,
+      });
+    }
     return resultList.rows
       .filter(document => {
         return !!document.doc && !document.id.startsWith('_');

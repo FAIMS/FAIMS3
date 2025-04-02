@@ -1,6 +1,10 @@
 import {useQuery} from '@tanstack/react-query';
 import {User} from '@/context/auth-provider';
-import {GetListTeamsResponse, GetTeamByIdResponse} from '@faims3/data-model';
+import {
+  GetListTeamsResponse,
+  GetListTemplatesResponse,
+  GetTeamByIdResponse,
+} from '@faims3/data-model';
 import QRCode from 'qrcode';
 
 /**
@@ -54,6 +58,29 @@ export const useGetProjectsForTeam = ({
   useQuery({
     queryKey: ['projectsbyteam', teamId],
     queryFn: () => get(`/api/notebooks?teamId=${teamId}`, user),
+  });
+
+/**
+ * useGetTemplatesForTeam hook returns a query for fetching projects.
+ *
+ * @param {User} user - The user object.
+ * @returns {Query} A query for fetching projects.
+ */
+export const useGetTemplatesForTeam = ({
+  teamId,
+  user,
+}: {
+  user: User | null;
+  teamId: string;
+}) =>
+  useQuery({
+    queryKey: ['templatesbyteam', teamId],
+    queryFn: async () => {
+      return (await get(
+        `/api/templates?teamId=${teamId}`,
+        user
+      )) as GetListTemplatesResponse;
+    },
   });
 
 /**

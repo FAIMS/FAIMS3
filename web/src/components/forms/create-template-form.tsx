@@ -3,26 +3,11 @@ import {Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
+import {useGetTeams} from '@/hooks/get-hooks';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
-
-const fields = [
-  {
-    name: 'name',
-    label: 'Name',
-    schema: z.string().min(5, {
-      message: 'Template name must be at least 5 characters.',
-    }),
-  },
-  {
-    name: 'file',
-    label: 'Template File',
-    type: 'file',
-    schema: z.instanceof(File).refine(file => file.type === 'application/json'),
-  },
-];
 
 /**
  * CreateTemplateForm component renders a form for creating a template.
@@ -35,7 +20,44 @@ export function CreateTemplateForm({setDialogOpen}: CreateTemplateFormProps) {
   const {user} = useAuth();
   const QueryClient = useQueryClient();
 
-  const onSubmit = async ({name, file}: {name: string; file: File}) => {
+  const {data: teams} = useGetTeams(user);
+
+  const fields = [
+    {
+      name: 'name',
+      label: 'Name',
+      schema: z.string().min(5, {
+        message: 'Template name must be at least 5 characters.',
+      }),
+    },
+    {
+      name: 'team',
+      label: 'Create template in team?',
+      options: teams?.teams.map(({_id, name}) => ({
+        label: name,
+        value: _id,
+      })),
+      schema: z.string().optional(),
+    },
+    {
+      name: 'file',
+      label: 'Template File',
+      type: 'file',
+      schema: z
+        .instanceof(File)
+        .refine(file => file.type === 'application/json'),
+    },
+  ];
+
+  const onSubmit = async ({
+    name,
+    file,
+    team,
+  }: {
+    name: string;
+    file: File;
+    team?: string;
+  }) => {
     if (!user) return {type: 'submit', message: 'User not authenticated'};
 
     const jsonString = await readFileAsText(file);
@@ -57,7 +79,7 @@ export function CreateTemplateForm({setDialogOpen}: CreateTemplateFormProps) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify({template_name: name, ...json}),
+        body: JSON.stringify({teamId: team, template_name: name, ...json}),
       }
     );
 
@@ -66,6 +88,10 @@ export function CreateTemplateForm({setDialogOpen}: CreateTemplateFormProps) {
       return {type: 'submit', message: 'Error creating template'};
     }
 
+    // query invals
+    if (team) {
+      QueryClient.invalidateQueries({queryKey: ['templatesbyteam', team]});
+    }
     QueryClient.invalidateQueries({queryKey: ['templates', undefined]});
 
     setDialogOpen(false);

@@ -1,6 +1,7 @@
 import {UpdateTeamDialog} from '@/components/dialogs/update-team-dialog';
 import TeamDetails from '@/components/tabs/teams/team-details';
 import TeamProjects from '@/components/tabs/teams/team-projects';
+import TeamTemplates from '@/components/tabs/teams/team-templates';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {createFileRoute} from '@tanstack/react-router';
 import {Edit} from 'lucide-react';
@@ -8,6 +9,7 @@ import {Edit} from 'lucide-react';
 const tabs = [
   {name: 'Details', Component: TeamDetails},
   {name: 'Surveys', Component: TeamProjects},
+  {name: 'Templates', Component: TeamTemplates},
 ];
 
 export const Route = createFileRoute('/_protected/teams/$teamId')({

@@ -6,14 +6,11 @@ import {useGetProjectsForTeam} from '@/hooks/get-hooks';
 import {useNavigate} from '@tanstack/react-router';
 
 const TeamProjects = ({teamId}: {teamId: string}) => {
-    console.log("TEAM ID", teamId)
   const {user} = useAuth();
 
   const {isPending, data} = useGetProjectsForTeam({user, teamId});
 
   const navigate = useNavigate();
-
-  console.log(data);
 
   return (
     <DataTable
