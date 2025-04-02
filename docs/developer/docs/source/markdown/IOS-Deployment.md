@@ -49,8 +49,8 @@ Next we run the following command to initialise the signing keys for app store d
 bundle exec fastlane match appstore       
 ```
 
-This will ask you for a passphrase to encrypt the certificates which you should store securely.
-__TODO__: how is that used later? Should it be in a config variable?
+This will ask you for a passphrase to encrypt the certificates which will be the
+value of `MATCH_PASSWORD` in your configuration.
 
 Once this is complete you can remove the `Matchfile` that was created.
 
@@ -75,11 +75,13 @@ by looking at your personal account which will list the id of your team.
 Fastlane certificates repository.
 
 `APPLE_KEY_ID` - The key id from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.
-`APPLE_ISSUER_ID` - the Issuer ID from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.wake tired eat bus stops
+`APPLE_ISSUER_ID` - the Issuer ID from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.
 `APPLE_KEY_CONTENT` - base64 encoded content of the key file. You can only download this on creation of the key.
 
 `BROWSERSTACK_USERNAME` - username on BrowserStack (for app testing);
 'BROWSERSTACK_ACCESS_KEY` - api access key for BrowserStack.
+
+`MATCH_PASSWORD` - password used to encrypt certificates in fastlane match.
 
 ### Variables
 
