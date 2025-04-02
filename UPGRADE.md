@@ -12,6 +12,13 @@ This functionality will not work until you apply the following migration
 - run the migrate action `npm run migrate`
 - Try generating a code and make sure the workflow is functional.
 
+**Note** If you are running inside a container, then the above command needs to be
+run in the container rather than from your local environment:
+
+```bash
+docker compose exec conductor npm run migrate
+```
+
 ### Deployment configuration
 
 Add the new `NEW_CONDUCTOR_URL` environment variable to the conductor/api build. This is already done in the aws-cdk IaC - however in existing deployments you may need to update your build configuration.
@@ -33,6 +40,13 @@ After deployment, the system will likely not function until the DB migration is 
 ### Run the migration command
 
 - run the migration command `npm run migrate`
+
+**Note** If you are running inside a container, then the above command needs to be
+run in the container rather than from your local environment:
+
+```bash
+docker compose exec conductor npm run migrate
+```
 
 You should see output indicating that a) the invites DB has been migrated without errors b) the people DB has been migrated without errors. If either fails, login to your couchDB and interrogate the migration DB logs.
 

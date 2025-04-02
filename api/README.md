@@ -75,6 +75,16 @@ database. This is done with the migrate script:
 npm run migrate
 ```
 
+**Note** If you are running inside a container, then the above command needs to be
+run in the container rather than from your local environment:
+
+```bash
+docker compose exec conductor npm run migrate
+```
+
+This ensures that the correct CouchDB URL is used to access the database.  The same
+applies for the commands below.
+
 For development, there is also a script that will populate the database with projects (notebooks
 or surveys) that are
 stored in the `notebooks` directory. There should be two sample notebooks in
