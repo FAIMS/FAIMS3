@@ -20,5 +20,7 @@
     },
     "include": [
         "./src",
+        "tests/migrationService.test.ts",
+        "tests/migrations.test.ts",
     ]
 }

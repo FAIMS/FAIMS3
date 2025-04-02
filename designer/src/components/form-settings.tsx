@@ -25,8 +25,13 @@ import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 
-type FormSettingsPanelProps = {
-  viewSetId: string;
+type ViewSetType = {
+  views: string[];
+  label: string;
+  summary_fields?: string[];
+  layout?: 'inline' | 'tabs';
+  hridField?: string;
+  publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
 };
 
 /**
@@ -64,18 +69,46 @@ const SettingSection = ({
   </div>
 );
 
-export const FormSettingsPanel = ({viewSetId}: FormSettingsPanelProps) => {
+export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   const dispatch = useAppDispatch();
+
   const fields = useAppSelector(
     state => state.notebook['ui-specification'].fields
   );
-  const viewSet = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets[viewSetId]
+  const viewSet: ViewSetType | undefined = useAppSelector(
+    state =>
+      state.notebook?.['ui-specification']?.viewsets?.[viewSetId] || undefined
   );
   const fviews = useAppSelector(
     state => state.notebook['ui-specification'].fviews
   );
   const [expanded, setExpanded] = React.useState(false);
+
+  const [selectedPublishBehaviour, setSelectedPublishBehaviour] =
+    React.useState('always');
+
+  // Ensure selected value persists and is updated in the Redux store
+  React.useEffect(() => {
+    if (viewSet?.publishButtonBehaviour) {
+      setSelectedPublishBehaviour(viewSet.publishButtonBehaviour);
+    }
+  }, [viewSet?.publishButtonBehaviour]);
+
+  /**
+   * Updates the Publish Button Behavior setting in Redux and persists it
+   */
+  const handlePublishButtonBehaviourChange = (event: any) => {
+    const newValue = event.target.value;
+    setSelectedPublishBehaviour(newValue);
+
+    dispatch({
+      type: 'ui-specification/viewSetPublishButtonBehaviourUpdated',
+      payload: {
+        viewSetId,
+        publishButtonBehaviour: newValue as 'always' | 'visited' | 'noErrors',
+      },
+    });
+  };
 
   /**
    * Collects all fields that belong to any view in the current viewset
@@ -120,19 +153,6 @@ export const FormSettingsPanel = ({viewSetId}: FormSettingsPanelProps) => {
         : null;
     })
     .filter((x): x is {label: string; value: string} => x !== null);
-
-  /**
-   * Updates the form layout setting
-   */
-  const handleLayoutChange = (event: any) => {
-    dispatch({
-      type: 'ui-specification/viewSetLayoutUpdated',
-      payload: {
-        viewSetId,
-        layout: event.target.value as 'inline' | 'tabs' | undefined,
-      },
-    });
-  };
 
   /**
    * Updates the selected summary fields
@@ -197,6 +217,27 @@ export const FormSettingsPanel = ({viewSetId}: FormSettingsPanelProps) => {
 
       <Collapse in={expanded}>
         <CardContent>
+          {/* Publish Button Behavior*/}
+          <SettingSection
+            title="Publish Button Behavior"
+            description="Configure when the Publish and Close buttons should be shown."
+          >
+            <Select
+              fullWidth
+              value={selectedPublishBehaviour}
+              onChange={handlePublishButtonBehaviourChange}
+            >
+              <MenuItem value="always">Always Show</MenuItem>
+              <MenuItem value="visited">
+                Show Once All Sections Visited
+              </MenuItem>
+              <MenuItem value="noErrors">
+                Show Only When No Errors Exist
+              </MenuItem>
+            </Select>
+          </SettingSection>
+
+          {/* Layout Style section  */}
           <SettingSection
             title="Layout Style"
             description="Choose how form sections are displayed. The 'tabs' layout will display questions split up into their sections. The 'inline' layout will display all questions in a single scrollable form."
@@ -204,13 +245,22 @@ export const FormSettingsPanel = ({viewSetId}: FormSettingsPanelProps) => {
             <Select
               fullWidth
               value={viewSet.layout || 'tabs'}
-              onChange={handleLayoutChange}
+              onChange={event =>
+                dispatch({
+                  type: 'ui-specification/viewSetLayoutUpdated',
+                  payload: {
+                    viewSetId,
+                    layout: event.target.value as 'inline' | 'tabs' | undefined,
+                  },
+                })
+              }
             >
               <MenuItem value="tabs">Tabs</MenuItem>
               <MenuItem value="inline">Inline</MenuItem>
             </Select>
           </SettingSection>
 
+          {/* Summary fields section */}
           <SettingSection
             title="Summary Fields"
             description="Select the field(s) you would like to display in the record list table."
@@ -233,6 +283,7 @@ export const FormSettingsPanel = ({viewSetId}: FormSettingsPanelProps) => {
             />
           </SettingSection>
 
+          {/* HRID  */}
           <SettingSection
             title="Human-Readable ID Field"
             description="A HRID is a human readable label for the record, which will be displayed in the record table. Select a required string field to use as the human-readable ID. You can use a TemplatedStringField to construct complex HRIDs."

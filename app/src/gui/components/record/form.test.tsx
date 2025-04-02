@@ -1331,7 +1331,8 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            buttonRef={null as any}
+            // TODO fix missing props
+            {...({} as any)}
           />
         </BrowserRouter>
       );
@@ -1410,7 +1411,8 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            buttonRef={null as any}
+            // TODO fix missing props
+            {...({} as any)}
           />
         </BrowserRouter>
       );
@@ -1453,7 +1455,8 @@ describe('Check form component', () => {
             serverId="todo"
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            buttonRef={null as any}
+            // TODO fix missing props
+            {...({} as any)}
           />
         </BrowserRouter>
       );
@@ -1465,7 +1468,7 @@ describe('Check form component', () => {
       {timeout: 3000}
     );
 
-    const closeBtn = screen.getByTestId('publish-close-record');
+    const closeBtn = screen.getByTestId('finish-close-record');
 
     expect(closeBtn).toBeTruthy();
 
@@ -1493,7 +1496,8 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            buttonRef={null as any}
+            // TODO fix missing props
+            {...({} as any)}
           />
         </BrowserRouter>
       );
@@ -1536,7 +1540,8 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            buttonRef={null as any}
+            // TODO fix missing props
+            {...({} as any)}
           />
         </BrowserRouter>
       );
@@ -1582,7 +1587,8 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            buttonRef={null as any}
+            // TODO fix missing props
+            {...({} as any)}
           />
         </BrowserRouter>
       );

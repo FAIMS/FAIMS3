@@ -27,22 +27,29 @@ import {
   addLocalPasswordForUser,
   validateLocalUser,
 } from '../src/auth_providers/local';
-import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
 import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
-  addProjectRoleToUser,
-  addOtherRoleToUser,
   createUser,
-  removeOtherRoleFromUser,
-  removeProjectRoleFromUser,
+  getUserInfoForProject,
+  registerAdminUser,
   saveUser,
-  userHasPermission,
-  getUserInfoForNotebook,
 } from '../src/couchdb/users';
 import {expect, assert} from 'chai';
 
 import * as fs from 'fs';
 import {createNotebook} from '../src/couchdb/notebooks';
+import {
+  Action,
+  addGlobalRole,
+  addResourceRole,
+  removeGlobalRole,
+  removeResourceRole,
+  Resource,
+  Role,
+  userCanDo,
+  userHasResourceRole,
+  userResourceRoles,
+} from '@faims3/data-model';
 
 const clearUsers = async () => {
   const usersDB = getUsersDB();
@@ -59,7 +66,10 @@ describe('user creation', () => {
   it('create user - good', async () => {
     const email = 'BOB@Here.com';
     const username = 'bobalooba';
-    const [newUserUsername, errorUsername] = await createUser('', username);
+    const [newUserUsername, errorUsername] = await createUser({
+      username,
+      name: username,
+    });
     expect(errorUsername).to.equal('');
     if (newUserUsername) {
       expect(newUserUsername.user_id).to.equal(username);
@@ -68,7 +78,7 @@ describe('user creation', () => {
       assert.fail('user is null after createUser with valid username');
     }
 
-    const [newUserEmail, errorEmail] = await createUser(email, '');
+    const [newUserEmail, errorEmail] = await createUser({email, name: email});
     expect(errorEmail).to.equal('');
     if (newUserEmail) {
       expect(newUserEmail.user_id).not.to.equal('');
@@ -82,29 +92,35 @@ describe('user creation', () => {
     const email = 'BOBBY@here.com';
     const username = 'bobalooba';
 
-    const [newUser, errorFirst] = await createUser(email, '');
+    const [newUser, errorFirst] = await createUser({email, name: email});
     expect(errorFirst).to.equal('');
     if (newUser) {
       await saveUser(newUser);
       // now make another user with the same email
-      const [anotherUser, errorSecond] = await createUser(email, '');
+      const [anotherUser, errorSecond] = await createUser({email, name: email});
       expect(errorSecond).to.equal(`User with email '${email}' already exists`);
       expect(anotherUser).to.be.null;
     }
-    const [newUserU, errorFirstU] = await createUser('', username);
+    const [newUserU, errorFirstU] = await createUser({
+      username,
+      name: username,
+    });
     expect(errorFirstU).to.equal('');
     if (newUserU) {
       await saveUser(newUserU);
       // now make another user with the same email
-      const [anotherUserU, errorSecondU] = await createUser('', username);
+      const [anotherUserU, errorSecondU] = await createUser({
+        username,
+        name: username,
+      });
       expect(errorSecondU).to.equal(
         `User with username '${username}' already exists`
       );
       expect(anotherUserU).to.be.null;
     }
 
-    const [newUserM, errorM] = await createUser('', '');
-    expect(errorM).to.equal('At least one of username and email is required');
+    const [newUserM, errorM] = await createUser({name: 'name'});
+    expect(errorM).to.equal('At least one of username or email is required');
     expect(newUserM).to.be.null;
   });
 
@@ -112,80 +128,103 @@ describe('user creation', () => {
     const email = 'BOBBY@here.com';
     const username = 'bobalooba';
 
-    const [newUser, error] = await createUser(email, username);
+    const [newUser, error] = await createUser({
+      email,
+      username,
+      name: username,
+    });
     expect(error).to.equal('');
-    if (newUser) {
-      // add some roles
-      addOtherRoleToUser(newUser, 'cluster-admin');
-      addOtherRoleToUser(newUser, 'chief-bobalooba');
+    if (newUser !== null) {
+      // add some global roles using Role enum
+      addGlobalRole({user: newUser, role: Role.GENERAL_ADMIN});
+      addGlobalRole({user: newUser, role: Role.GENERAL_CREATOR});
 
-      // check that 'roles' has been updated
-      expect(newUser.roles.length).to.equal(2);
-      expect(newUser.roles).to.include('cluster-admin');
-      expect(newUser.roles).to.include('chief-bobalooba');
+      // check that global roles have been updated
+      expect(newUser.globalRoles.length).to.equal(3);
+      expect(newUser.globalRoles).to.include(Role.GENERAL_USER);
+      expect(newUser.globalRoles).to.include(Role.GENERAL_ADMIN);
+      expect(newUser.globalRoles).to.include(Role.GENERAL_CREATOR);
 
-      addProjectRoleToUser(newUser, 'important-project', 'admin');
+      // add resource role
+      addResourceRole({
+        user: newUser,
+        resourceId: 'important-project',
+        role: Role.PROJECT_ADMIN,
+      });
 
-      expect(newUser.other_roles.length).to.equal(2);
-      expect(newUser.other_roles).to.include('cluster-admin');
-      expect(newUser.other_roles).to.include('chief-bobalooba');
-      expect(Object.keys(newUser.project_roles)).to.include(
-        'important-project'
-      );
-      expect(newUser.project_roles['important-project']).to.include('admin');
+      // verify global roles remain unchanged
+      expect(newUser.globalRoles.length).to.equal(3);
+      expect(newUser.globalRoles).to.include(Role.GENERAL_USER);
+      expect(newUser.globalRoles).to.include(Role.GENERAL_ADMIN);
+      expect(newUser.globalRoles).to.include(Role.GENERAL_CREATOR);
 
-      expect(newUser.roles.length).to.equal(3);
-      expect(newUser.roles).to.include('important-project||admin');
+      // verify resource role was added
+      expect(newUser.resourceRoles.length).to.equal(1);
+      expect(
+        userHasResourceRole({
+          user: newUser,
+          resourceId: 'important-project',
+          resourceRole: Role.PROJECT_ADMIN,
+        })
+      ).to.be.true;
 
-      // add more project roles
-      addProjectRoleToUser(newUser, 'important-project', 'team');
-      expect(newUser.project_roles['important-project']).to.include('admin');
-      expect(newUser.project_roles['important-project']).to.include('team');
-      expect(newUser.project_roles['important-project'].length).to.equal(2);
+      // Get all roles for the resource
+      const projectRoles = userResourceRoles({
+        user: newUser,
+        resource: Resource.PROJECT,
+        resourceId: 'important-project',
+      });
+      expect(projectRoles).to.include(Role.PROJECT_ADMIN);
+      expect(projectRoles.length).to.equal(4);
+      expect(
+        userHasResourceRole({
+          user: newUser,
+          resourceId: 'important-project',
+          resourceRole: Role.PROJECT_ADMIN,
+        })
+      ).to.be.true;
+      expect(
+        userHasResourceRole({
+          user: newUser,
+          resourceId: 'important-project',
+          resourceRole: Role.PROJECT_MANAGER,
+        })
+      ).to.be.true;
 
-      expect(newUser.roles.length).to.equal(4);
-      expect(newUser.roles).to.include('cluster-admin');
-      expect(newUser.roles).to.include('chief-bobalooba');
-      expect(newUser.roles).to.include('important-project||admin');
-      expect(newUser.roles).to.include('important-project||team');
+      addGlobalRole({user: newUser, role: Role.GENERAL_ADMIN});
+      expect(newUser.globalRoles.length).to.equal(3);
+      expect(newUser.resourceRoles.length).to.equal(1);
 
-      // doing it again should be a no-op
-      addProjectRoleToUser(newUser, 'important-project', 'team');
-      expect(newUser.project_roles['important-project'].length).to.equal(2);
+      // remove resource role
+      removeResourceRole({
+        user: newUser,
+        resourceId: 'important-project',
+        role: Role.PROJECT_ADMIN,
+      });
 
-      addOtherRoleToUser(newUser, 'cluster-admin');
-      expect(newUser.other_roles.length).to.equal(2);
+      // Still true due to general admin
+      expect(
+        userHasResourceRole({
+          user: newUser,
+          resourceId: 'important-project',
+          resourceRole: Role.PROJECT_ADMIN,
+        })
+      ).to.be.true;
 
-      expect(newUser.roles.length).to.equal(4);
-      expect(newUser.roles).to.include('cluster-admin');
-      expect(newUser.roles).to.include('chief-bobalooba');
-      expect(newUser.roles).to.include('important-project||admin');
-      expect(newUser.roles).to.include('important-project||team');
-
-      // remove one
-      removeProjectRoleFromUser(newUser, 'important-project', 'admin');
-      expect(newUser.project_roles['important-project']).not.to.include(
-        'admin'
-      );
-      expect(newUser.project_roles['important-project']).to.include('team');
-
-      removeOtherRoleFromUser(newUser, 'cluster-admin');
-      expect(newUser.other_roles.length).to.equal(1);
-      expect(newUser.other_roles).to.include('chief-bobalooba');
-      expect(newUser.other_roles).not.to.include('cluster-admin');
-
-      expect(newUser.roles.length).to.equal(2);
-      expect(newUser.roles).not.to.include('cluster-admin');
-      expect(newUser.roles).to.include('chief-bobalooba');
-      expect(newUser.roles).not.to.include('important-project||admin');
-      expect(newUser.roles).to.include('important-project||team');
+      // remove global role
+      removeGlobalRole({user: newUser, role: Role.GENERAL_ADMIN});
+      expect(newUser.globalRoles.length).to.equal(2);
+      expect(newUser.globalRoles).to.include(Role.GENERAL_CREATOR);
+      expect(newUser.globalRoles).to.include(Role.GENERAL_USER);
 
       // remove roles that aren't there should be harmless
-      removeProjectRoleFromUser(newUser, 'important-project', 'not-there');
-      expect(newUser.project_roles['important-project'].length).to.equal(1);
-      removeOtherRoleFromUser(newUser, 'non-existant');
-      expect(newUser.other_roles.length).to.equal(1);
-      expect(newUser.other_roles).to.include('chief-bobalooba');
+      const userBeforeNonExistentRemoval = {...newUser};
+      removeResourceRole({
+        user: newUser,
+        resourceId: 'important-project',
+        role: Role.PROJECT_GUEST, // trying to remove a role that isn't assigned
+      });
+      expect(newUser).to.deep.equal(userBeforeNonExistentRemoval);
     }
   });
 
@@ -193,42 +232,120 @@ describe('user creation', () => {
     const email = 'BOBBY@here.com';
     const username = 'bobalooba';
     const project_id = 'myProject';
-
-    const [user, error] = await createUser(email, username);
+    const [user, error] = await createUser({email, username, name: username});
     expect(error).to.equal('');
     if (user) {
-      expect(userHasPermission(user, project_id, 'read')).to.be.false;
-      expect(userHasPermission(user, project_id, 'modify')).to.be.false;
+      // Use userCanDo with proper Action enums instead of the old userHasPermission
+      expect(
+        userCanDo({
+          user,
+          action: Action.READ_PROJECT_METADATA,
+          resourceId: project_id,
+        })
+      ).to.be.false;
 
-      // add some roles
-      addOtherRoleToUser(user, CLUSTER_ADMIN_GROUP_NAME);
+      expect(
+        userCanDo({
+          user,
+          action: Action.UPDATE_PROJECT_DETAILS,
+          resourceId: project_id,
+        })
+      ).to.be.false;
 
-      expect(userHasPermission(user, project_id, 'read')).to.be.true;
-      expect(userHasPermission(user, project_id, 'modify')).to.be.true;
+      // Add GENERAL_ADMIN role - this should grant all permissions
+      addGlobalRole({user, role: Role.GENERAL_ADMIN});
 
-      removeOtherRoleFromUser(user, CLUSTER_ADMIN_GROUP_NAME);
+      // Now user should have read/modify permissions for all projects
+      expect(
+        userCanDo({
+          user,
+          action: Action.READ_PROJECT_METADATA,
+          resourceId: project_id,
+        })
+      ).to.be.true;
 
-      // test permissions for user role
-      addProjectRoleToUser(user, project_id, 'user');
-      expect(userHasPermission(user, project_id, 'read')).to.be.true;
-      expect(userHasPermission(user, project_id, 'modify')).to.be.false;
+      expect(
+        userCanDo({
+          user,
+          action: Action.UPDATE_PROJECT_DETAILS,
+          resourceId: project_id,
+        })
+      ).to.be.true;
 
-      // but can't access another project
-      expect(userHasPermission(user, 'anotherProject', 'read')).to.be.false;
-      expect(userHasPermission(user, 'anotherProject', 'modify')).to.be.false;
+      // Remove the admin role
+      removeGlobalRole({user, role: Role.GENERAL_ADMIN});
 
-      // give them admin permission
-      addProjectRoleToUser(user, project_id, 'admin');
+      // Add PROJECT_GUEST role (similar to old 'user' role) for specific project
+      addResourceRole({
+        user,
+        resourceId: project_id,
+        role: Role.PROJECT_GUEST,
+      });
 
-      expect(userHasPermission(user, project_id, 'read')).to.be.true;
-      expect(userHasPermission(user, project_id, 'modify')).to.be.true;
+      // Should have read but not modify permission for this project
+      expect(
+        userCanDo({
+          user,
+          action: Action.READ_PROJECT_METADATA,
+          resourceId: project_id,
+        })
+      ).to.be.true;
+
+      expect(
+        userCanDo({
+          user,
+          action: Action.UPDATE_PROJECT_DETAILS,
+          resourceId: project_id,
+        })
+      ).to.be.false;
+
+      // But can't access another project
+      expect(
+        userCanDo({
+          user,
+          action: Action.READ_PROJECT_METADATA,
+          resourceId: 'anotherProject',
+        })
+      ).to.be.false;
+
+      expect(
+        userCanDo({
+          user,
+          action: Action.UPDATE_PROJECT_DETAILS,
+          resourceId: 'anotherProject',
+        })
+      ).to.be.false;
+
+      // Give them PROJECT_ADMIN permission for the project
+      addResourceRole({
+        user,
+        resourceId: project_id,
+        role: Role.PROJECT_ADMIN,
+      });
+
+      // Now should have full permissions for this project
+      expect(
+        userCanDo({
+          user,
+          action: Action.READ_PROJECT_METADATA,
+          resourceId: project_id,
+        })
+      ).to.be.true;
+
+      expect(
+        userCanDo({
+          user,
+          action: Action.UPDATE_PROJECT_DETAILS,
+          resourceId: project_id,
+        })
+      ).to.be.true;
     }
   });
 
   it('add local password', async () => {
     const username = 'bobalooba';
     const password = 'verysecret';
-    const [user, error] = await createUser('', username);
+    const [user, error] = await createUser({username, name: username});
     expect(error).to.equal('');
     if (user) {
       await addLocalPasswordForUser(user, password);
@@ -264,6 +381,7 @@ describe('user creation', () => {
 
   it('listing users for notebooks', async () => {
     await initialiseDbAndKeys({force: false});
+    registerAdminUser();
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -275,17 +393,25 @@ describe('user creation', () => {
     const username = 'bobalooba';
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [user, error] = await createUser('', username);
+    const [user, error] = await createUser({username, name: username});
     if (user && project_id) {
-      addProjectRoleToUser(user, project_id, 'team');
-      addProjectRoleToUser(user, project_id, 'moderator');
+      addResourceRole({
+        user,
+        resourceId: project_id,
+        role: Role.PROJECT_CONTRIBUTOR,
+      });
+      addResourceRole({
+        user,
+        resourceId: project_id,
+        role: Role.PROJECT_MANAGER,
+      });
       await saveUser(user);
 
-      const userInfo = await getUserInfoForNotebook(project_id);
+      const userInfo = await getUserInfoForProject({projectId: project_id});
 
-      expect(userInfo.roles).to.include('admin');
-      expect(userInfo.roles).to.include('moderator');
-      expect(userInfo.roles).to.include('team');
+      expect(userInfo.roles).to.include(Role.PROJECT_ADMIN);
+      expect(userInfo.roles).to.include(Role.PROJECT_MANAGER);
+      expect(userInfo.roles).to.include(Role.PROJECT_CONTRIBUTOR);
       // should have the admin user and this new one
       expect(userInfo.users.length).to.equal(2);
       expect(userInfo.users[1].username).to.equal(username);
