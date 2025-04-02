@@ -1,4 +1,5 @@
 import {InitialisationContent} from '../utils';
+import {projectsDbDesignDocuments} from './design';
 import {ProjectsDBSecurityDocument} from './security';
 
 export type ProjectsDBInitialisationConfig = {};
@@ -7,7 +8,7 @@ export function initProjectsDB(
   config: ProjectsDBInitialisationConfig
 ): InitialisationContent {
   return {
-    designDocuments: [],
+    designDocuments: [projectsDbDesignDocuments.indexDocument],
     securityDocument: ProjectsDBSecurityDocument,
   };
 }

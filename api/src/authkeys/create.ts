@@ -35,30 +35,50 @@ import {
 } from '../buildconfig';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import type {SigningKey} from '../services/keyService';
+import {getProjectIdsByTeamId} from '../couchdb/notebooks';
+import {getTemplateIdsByTeamId} from '../couchdb/templates';
 
 const ASSOCIATIVE_RESOURCES = [Resource.TEMPLATE, Resource.PROJECT];
 
 /**
- *
+ * Given a db user, looks at their team roles, then for each team, looks up
+ * projects and templates owned by that team. This then produces a
+ * ResourceAssociation array which is a collection of associations from
+ * Resources to other resources. This allows virtual role propagation where a
+ * role in a Team, for example, grants roles in resources owned by the team.
  */
 export async function getRelevantUserAssociations({
   dbUser,
 }: {
   dbUser: PeopleDBDocument;
 }): Promise<ResourceAssociation[]> {
-  // To determine relevant associations we need to
-
-  // for each team the user is on, find what resources (projects, templates
-  // (currently!)) the team owns, then include that
+  // To determine relevant associations we need to for each team the user is on,
+  // find what resources (projects, templates (currently!)) the team owns, then
+  // include that
   let relevantAssociations: ResourceAssociation[] = [];
   for (const teamRole of dbUser.teamRoles) {
+    const teamId = teamRole.resourceId;
     for (const targetResource of ASSOCIATIVE_RESOURCES) {
       if (targetResource === Resource.PROJECT) {
-        // TODO find all projects owned by the team
-        relevantAssociations = relevantAssociations.concat([]);
+        // Get all projects owned by the team and add this association
+        const projectsForTeam = await getProjectIdsByTeamId({teamId});
+        relevantAssociations.push({
+          resource: {resourceId: teamId, resourceType: Resource.TEAM},
+          associatedResources: projectsForTeam.map(projectId => ({
+            resourceId: projectId,
+            resourceType: Resource.PROJECT,
+          })),
+        });
       } else if (targetResource === Resource.TEMPLATE) {
-        // TODO find all templates owned by the team
-        relevantAssociations = relevantAssociations.concat([]);
+        // Get all templates owned by the team and add this association
+        const templatesForTeam = await getTemplateIdsByTeamId({teamId});
+        relevantAssociations.push({
+          resource: {resourceId: teamId, resourceType: Resource.TEAM},
+          associatedResources: templatesForTeam.map(templateId => ({
+            resourceId: templateId,
+            resourceType: Resource.TEMPLATE,
+          })),
+        });
       } else {
         throw new Error(
           'No method registered to find associations for resource: ' +
@@ -66,7 +86,6 @@ export async function getRelevantUserAssociations({
         );
       }
     }
-    // Find projects
   }
   return relevantAssociations;
 }
@@ -75,7 +94,7 @@ export async function getRelevantUserAssociations({
  * Adds in the resource roles by querying for associative relationships.
  *
  * This converts a database user to an active Express.User for which we can
- * assert permissions against their project, team, global, and resourceRoles.
+ * assert permissions against their global and resourceRoles.
  *
  * The reason for this additional step is such that we can reuse the associative
  * logic throughout any authorisation context, including for signing tokens. It
@@ -95,7 +114,7 @@ export async function upgradeDbUserToExpressUser({
   // Work out relevant connected entities
   const relevantAssociations = await getRelevantUserAssociations({dbUser});
 
-  // Use the data model method to encode virtual roles
+  // Use the data model method to encode virtual roles -> resourceRoles
   const resourceRoles = couchUserToResourceRoles({
     user: dbUser,
     relevantAssociations,
@@ -104,6 +123,15 @@ export async function upgradeDbUserToExpressUser({
   return {...dbUser, resourceRoles};
 }
 
+/**
+ * Given an express user and signing key, will produce a JWT which encodes the
+ * users permissions according to the data model encoding protocol.
+ *
+ * Note that only the global and resource roles are included in the token -
+ * along with the _couchdb.roles.
+ *
+ * @returns JWT signed with public key
+ */
 export async function generateJwtFromUser({
   user,
   signingKey,
@@ -142,14 +170,16 @@ export async function generateJwtFromUser({
     return jwt;
   } catch (e) {
     console.error('ERROR: ' + e);
-    throw e
+    throw e;
   }
 }
 
 /**
- * Generates a token for a user. Also generates a reusable refresh token.
+ * Generates a token for an express user. Also generates a reusable refresh
+ * token.
  * @param user The passport user
- * @returns The generated token which is a payload containing the actual JWT + refresh token + other information
+ * @returns The generated token which is a payload containing the actual JWT +
+ * refresh token + other information
  */
 export async function generateUserToken(user: Express.User, refresh = false) {
   const signingKey = await KEY_SERVICE.getSigningKey();

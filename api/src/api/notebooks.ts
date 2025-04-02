@@ -112,9 +112,30 @@ api.get(
 api.post(
   '/',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({action: Action.CREATE_PROJECT}),
   processRequest({
     body: PostCreateNotebookInputSchema,
+  }),
+  isAllowedToMiddleware({
+    getAction(req) {
+      const body = req.body as PostCreateNotebookInput;
+      // If in team - suitable action (which is against team ID)
+      if (body.teamId) {
+        return Action.CREATE_PROJECT_IN_TEAM;
+      } else {
+        // Otherwise global create project required
+        return Action.CREATE_PROJECT;
+      }
+    },
+    getResourceId(req) {
+      const body = req.body as PostCreateNotebookInput;
+      if (body.teamId) {
+        // If creating a project in a team, the resource ID is the team!
+        return body.teamId;
+      } else {
+        // If creating a project globally - there is no resource ID!
+        return undefined;
+      }
+    },
   }),
   async (req, res: Response<PostCreateNotebookResponse>) => {
     // Force a check to be sure
@@ -177,7 +198,9 @@ api.post(
       uiSpec,
       metadata,
       // link to template ID if necessary
-      templateId
+      templateId,
+      // team ID if provided (authorisation to do so already checked)
+      req.body.teamId
     );
     if (projectID) {
       // Make the user an admin of this notebook

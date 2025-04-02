@@ -290,14 +290,16 @@ export function generateVirtualResourceRoles({
     // Find applicable resource associations
     let applicableResources: ResourceIdentifier[] = [];
 
-    // Find matching associations
+    // Find matching associations (there can be multiple such associations so
+    // concat the list!)
     for (const association of resourceAssociations) {
       if (
         association.resource.resourceType === resourceType &&
         association.resource.resourceId === resourceId
       ) {
-        applicableResources = association.associatedResources;
-        break;
+        applicableResources = applicableResources.concat(
+          association.associatedResources
+        );
       }
     }
 
@@ -314,10 +316,6 @@ export function generateVirtualResourceRoles({
           // If we haven't seen this resource+role combination yet, add it
           if (!virtualRolesMap.has(mapKey)) {
             virtualRolesMap.set(mapKey, {resourceId, role: grantedRole});
-          } else {
-            // If we have seen it, we may need to determine which role has higher precedence
-            // This would require additional logic if needed
-            // For now, we're simply tracking uniqueness
           }
         }
       }

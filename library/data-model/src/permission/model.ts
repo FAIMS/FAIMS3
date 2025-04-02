@@ -927,7 +927,7 @@ export const roleActions: Record<
     // TODO make templates managed with their own roles/ownership model so that
     // we can do virtualRoles over templates owned by the team
     // NOTE this is a bit of a permission leak here re: general creator
-    inheritedRoles: [Role.TEAM_MEMBER, Role.GENERAL_CREATOR],
+    inheritedRoles: [Role.TEAM_MEMBER],
     // Projects owned by team -> manager
     virtualRoles: new Map([[Resource.PROJECT, [Role.PROJECT_MANAGER]]]),
   },

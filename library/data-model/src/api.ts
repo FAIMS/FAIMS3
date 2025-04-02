@@ -115,6 +115,7 @@ export const CreateNotebookFromTemplateSchema = z.object({
   // Prefer project_name for APIs but keeping alignment with existing endpoint
   name: z.string(),
   template_id: z.string(),
+  teamId: z.string().min(1).optional(),
 });
 export type CreateNotebookFromTemplate = z.infer<
   typeof CreateNotebookFromTemplateSchema
@@ -123,6 +124,7 @@ export type CreateNotebookFromTemplate = z.infer<
 export const CreateNotebookFromScratchSchema =
   NotebookEditableDetailsSchema.extend({
     name: z.string(),
+    teamId: z.string().min(1).optional(),
   });
 export type CreateNotebookFromScratch = z.infer<
   typeof CreateNotebookFromScratchSchema
@@ -200,7 +202,9 @@ export type PostRandomRecordsResponse = z.infer<
 // =================
 
 // POST create new template input
-export const PostCreateTemplateInputSchema = TemplateEditableDetailsSchema;
+export const PostCreateTemplateInputSchema =
+  TemplateEditableDetailsSchema.extend({teamId: z.string().min(1).optional()});
+
 export type PostCreateTemplateInput = z.infer<
   typeof PostCreateTemplateInputSchema
 >;

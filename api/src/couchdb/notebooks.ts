@@ -30,8 +30,10 @@ import {
   EncodedProjectUIModel,
   logError,
   notebookRecordIterator,
-  ProjectID,
+  ProjectDBFields,
   ProjectDocument,
+  ProjectID,
+  PROJECTS_BY_TEAM_ID,
   Resource,
   resourceRoles,
   Role,
@@ -40,10 +42,10 @@ import {
 import archiver from 'archiver';
 import {Stream} from 'stream';
 import {
+  getDataDb,
   getMetadataDb,
   initialiseDataDb,
   initialiseMetadataDb,
-  getDataDb,
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
@@ -64,8 +66,40 @@ import {
   setAttachmentLoaderForType,
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
-import {slugify} from '../utils';
 import {userCanDo} from '../middleware';
+import {slugify} from '../utils';
+
+/**
+ * Gets project IDs by teamID (who owns it)
+ * @returns an array of template ids
+ */
+export const getProjectIdsByTeamId = async ({
+  teamId,
+}: {
+  teamId: string;
+}): Promise<string[]> => {
+  const projectsDb = localGetProjectsDb();
+  try {
+    const resultList = await projectsDb.query<ProjectDBFields>(
+      PROJECTS_BY_TEAM_ID,
+      {
+        key: teamId,
+        include_docs: false,
+      }
+    );
+    return resultList.rows
+      .filter(res => {
+        return !res.id.startsWith('_');
+      })
+      .map(res => {
+        return res.id;
+      });
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading projects by team ID from the Project DB.'
+    );
+  }
+};
 
 /**
  * getAllProjects - get the internal project documents that reference
@@ -270,7 +304,8 @@ export const createNotebook = async (
   projectName: string,
   uispec: EncodedProjectUIModel,
   metadata: any,
-  template_id: string | undefined = undefined
+  template_id: string | undefined = undefined,
+  teamId: string | undefined = undefined
 ) => {
   const projectId = generateProjectID(projectName);
 
@@ -287,6 +322,7 @@ export const createNotebook = async (
       db_name: dataDBName,
     },
     status: 'published',
+    ownedByTeamId: teamId,
   } satisfies ProjectDocument;
 
   try {

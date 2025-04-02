@@ -122,9 +122,11 @@ export async function requireAuthenticationAPI(
 
 export const isAllowedToMiddleware = ({
   action,
+  getAction,
   getResourceId,
 }: {
-  action: Action;
+  action?: Action;
+  getAction?: (req: Express.Request) => Action;
   getResourceId?: (req: Express.Request) => string | undefined;
 }) => {
   return (
@@ -132,6 +134,25 @@ export const isAllowedToMiddleware = ({
     res: Express.Response,
     next: Express.NextFunction
   ) => {
+    if (!action && !getAction) {
+      throw new Exceptions.InternalSystemError(
+        'Invalid use of isAllowedToMiddleware - must provide either an action or getAction'
+      );
+    }
+    if (action && getAction) {
+      throw new Exceptions.InternalSystemError(
+        'Ambiguous usage of isAllowedToMiddleware - must provide either an action or getAction, not both!'
+      );
+    }
+
+    // ascertain relevant action by either direct provision or function from req object
+    let relevantAction: Action;
+    if (action) {
+      relevantAction = action;
+    } else {
+      relevantAction = getAction!(req);
+    }
+
     const user = req.user;
     if (!user) {
       throw new Exceptions.UnauthorizedException('Authentication required.');
@@ -144,7 +165,7 @@ export const isAllowedToMiddleware = ({
         globalRoles: user.globalRoles,
         resourceRoles: user.resourceRoles,
       },
-      action,
+      action: relevantAction,
       resourceId,
     });
 

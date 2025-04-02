@@ -22,6 +22,7 @@ import {
   Action,
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
+  PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
   PutUpdateTemplateInputSchema,
@@ -104,13 +105,34 @@ api.get(
  *
  * Creates a new template. The payload is validated by Zod before reaching this
  * function. Expects a document as the response JSON.
+ *
+ * Permissions respect team context.
  */
 api.post(
   '/',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({action: Action.CREATE_TEMPLATE}),
   processRequest({
     body: PostCreateTemplateInputSchema,
+  }),
+  isAllowedToMiddleware({
+    getAction(req) {
+      const body = req.body as PostCreateTemplateInput;
+      if (body.teamId) {
+        return Action.CREATE_TEMPLATE_IN_TEAM;
+      } else {
+        return Action.CREATE_TEMPLATE;
+      }
+    },
+    getResourceId(req) {
+      const body = req.body as PostCreateTemplateInput;
+      if (body.teamId) {
+        // If creating a template in a team, the resource ID is the team!
+        return body.teamId;
+      } else {
+        // If creating a template globally - there is no resource ID!
+        return undefined;
+      }
+    },
   }),
   async (req, res: Response<PostCreateTemplateResponse>) => {
     // Now we can create the new template and return it

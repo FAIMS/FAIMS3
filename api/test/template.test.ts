@@ -51,6 +51,9 @@ import {
   localUserToken,
   requestAuthAndType,
 } from './utils';
+import {createUser, saveUser} from '../src/couchdb/users';
+import { addLocalPasswordForUser } from '../src/auth_providers/local';
+import { generateJwtFromUser, generateUserToken } from '../src/authkeys/create';
 
 // Where it the template API?
 const TEMPLATE_API_BASE = '/api/templates';
@@ -74,7 +77,7 @@ const getSampleNotebook = () => {
 const createSampleTemplate = async (
   app: Express,
   options: {
-    templateName?: string;
+    teamId?: string;
     payloadExtras?: Object;
   },
   token: string = adminToken
@@ -89,6 +92,8 @@ const createSampleTemplate = async (
       .post(`${TEMPLATE_API_BASE}`)
       .send({
         ...nb,
+        // Team?
+        ...(options.teamId ? {teamId: options.teamId} : {}),
         ...(options.payloadExtras ?? {}),
       } as PostCreateTemplateInput),
     token
@@ -520,6 +525,7 @@ describe('template API tests', () => {
         expect(JSON.stringify(err.errors)).to.include('metadata');
       });
   });
+
 
   // Auth checks
   // ===========

@@ -25,6 +25,7 @@ import {
   NotebookAuthSummary,
   PeopleDBDocument,
   PeopleDBFields,
+  resourceRolesEqual,
   Role,
   safeWriteDocument,
   userHasProjectRole,

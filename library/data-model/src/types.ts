@@ -20,7 +20,7 @@
 
 import {z} from 'zod';
 import {DecodedTokenPermissions, Role} from './permission';
-import { ExistingProjectDocument } from './data_storage';
+import {ExistingProjectDocument} from './data_storage';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -805,6 +805,9 @@ export type TemplateEditableDetails = z.infer<
 export const TemplateDerivedDetailsSchema = z.object({
   // Version identifier for the template
   version: z.number().default(1),
+
+  // Is this owned by a team?
+  ownedByTeamId: z.string().min(1).optional(),
 });
 export type TemplateDerivedDetails = z.infer<
   typeof TemplateDerivedDetailsSchema

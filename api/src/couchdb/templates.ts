@@ -4,9 +4,11 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
+  PostCreateTemplateInput,
   ProjectID,
   TemplateDocument,
   TemplateEditableDetails,
+  TEMPLATES_BY_TEAM_ID,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import {slugify} from '../utils';
@@ -33,6 +35,38 @@ export const getTemplates = async (): Promise<TemplateDocument[]> => {
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading templates from the Template DB.'
+    );
+  }
+};
+
+/**
+ * Gets template IDs by teamID (who owns it)
+ * @returns an array of template ids
+ */
+export const getTemplateIdsByTeamId = async ({
+  teamId,
+}: {
+  teamId: string;
+}): Promise<string[]> => {
+  const templatesDb = getTemplatesDb();
+  try {
+    const resultList = await templatesDb.query<TemplateDocument>(
+      TEMPLATES_BY_TEAM_ID,
+      {
+        key: teamId,
+        include_docs: false,
+      }
+    );
+    return resultList.rows
+      .filter(res => {
+        return !res.id.startsWith('_');
+      })
+      .map(res => {
+        return res.id;
+      });
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading templates by team ID from the Template DB.'
     );
   }
 };
@@ -69,7 +103,7 @@ const generateTemplateId = (templateName: string): ProjectID => {
  * @returns The ID of the minted template
  */
 export const createTemplate = async (
-  payload: TemplateEditableDetails
+  payload: PostCreateTemplateInput
 ): Promise<TemplateDocument> => {
   // Get the templates DB so we can interact with it
   const templatesDb = getTemplatesDb();
@@ -90,6 +124,7 @@ export const createTemplate = async (
       ...payload.metadata,
       project_status: 'active',
     },
+    ownedByTeamId: payload.teamId,
   };
 
   // Try putting the new document
@@ -97,7 +132,8 @@ export const createTemplate = async (
     await templatesDb.put(templateDoc);
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An unexpected error occurred while trying to PUT the new template document into the templates DB.'
+      'An unexpected error occurred while trying to PUT the new template document into the teams DB. Exception ' +
+        e
     );
   }
 
@@ -143,12 +179,15 @@ export const updateExistingTemplate = async (
   payload.metadata.template_id = templateId;
 
   const newDocument = {
+    ...payload,
+
+    // explicitly retain these details!
     _id: templateId,
     _rev: existingTemplate._rev,
     // Increment version by 1 when updated
     version: existingTemplate.version + 1,
-    ...payload,
-  };
+    ownedByTeamId: existingTemplate.ownedByTeamId,
+  } satisfies TemplateDocument;
   try {
     await templateDb.put(newDocument);
   } catch (e) {
@@ -213,7 +252,8 @@ export const archiveTemplate = async (id: string, archive: boolean) => {
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An unexpected error occurred while trying to PUT the new template document into the templates DB.'
+      'An unexpected error occurred while trying to PUT the new template document into the teams DB. Exception ' +
+        e
     );
   }
 
