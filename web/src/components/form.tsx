@@ -1,5 +1,11 @@
 import {zodResolver} from '@hookform/resolvers/zod';
-import {ErrorOption, FieldValues, Path, useForm} from 'react-hook-form';
+import {
+  DefaultValues,
+  ErrorOption,
+  FieldValues,
+  Path,
+  useForm,
+} from 'react-hook-form';
 import {z} from 'zod';
 import {Button, ButtonProps} from '@/components/ui/button';
 import {
@@ -59,6 +65,8 @@ export function Form<
   submitButtonText = 'Submit',
   submitButtonVariant = 'default',
   warningMessage,
+  // TODO this is not working!
+  defaultValues,
 }: {
   fields: TFields;
   dividers?: Divider[];
@@ -66,6 +74,7 @@ export function Form<
   submitButtonText?: string;
   submitButtonVariant?: ButtonProps['variant'];
   warningMessage?: string;
+  defaultValues?: DefaultValues<TSchema>;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -78,6 +87,7 @@ export function Form<
         }, {} as z.ZodRawShape)
       )
     ),
+    defaultValues,
   });
 
   return (

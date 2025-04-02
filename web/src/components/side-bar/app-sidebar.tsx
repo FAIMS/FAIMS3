@@ -1,4 +1,3 @@
-import {useAuth} from '@/context/auth-provider';
 import {NavMain} from '@/components/side-bar/nav-main';
 import {NavUser} from '@/components/side-bar/nav-user';
 import {
@@ -8,12 +7,13 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {useGetProjects, useGetTemplates} from '@/hooks/get-hooks';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {useAuth} from '@/context/auth-provider';
+import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
 import {Link, useLocation} from '@tanstack/react-router';
-import {LayoutTemplate, LetterText, Users} from 'lucide-react';
+import {LayoutTemplate, LetterText, Users, House} from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 /**
  * AppSidebar component renders the main application sidebar with navigation items
@@ -30,6 +30,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   if (!user) return <></>;
 
   const {data: projects} = useGetProjects(user);
+  const {data: teams} = useGetTeams(user);
   const {data: templates} = useGetTemplates(user);
 
   return (
@@ -81,6 +82,20 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                 title: 'Users',
                 url: '/users',
                 icon: Users,
+              },
+              {
+                title: `Teams`,
+                url: '/teams',
+                icon: House,
+                isActive: pathname.startsWith('/teams'),
+                items:
+                  teams && teams.teams.length > 0
+                    ? teams.teams.map(({_id, name}) => ({
+                        id: _id,
+                        title: name,
+                        url: `/teams/${_id}`,
+                      }))
+                    : [{id: 'no-teams', title: `No teams...`}],
               },
             ]}
           />

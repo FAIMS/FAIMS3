@@ -1,5 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import {User} from '@/context/auth-provider';
+import {GetListTeamsResponse, GetTeamByIdResponse} from '@faims3/data-model';
 import QRCode from 'qrcode';
 
 /**
@@ -35,6 +36,34 @@ export const useGetProjects = (user: User | null, projectId?: string) =>
   useQuery({
     queryKey: ['projects', projectId],
     queryFn: () => get(`/api/notebooks/${projectId || ''}`, user),
+  });
+
+/**
+ * Gets a particular team
+ *
+ * @param {User} user - The user object.
+ * @returns {Query} A query for fetching projects.
+ */
+export const useGetTeam = (user: User | null, teamId: string) =>
+  useQuery({
+    queryKey: ['teams', teamId],
+    queryFn: async () => {
+      return (await get(`/api/teams/${teamId}`, user)) as GetTeamByIdResponse;
+    },
+  });
+
+/**
+ * useGetTeams hook returns a query for fetching projects.
+ *
+ * @param {User} user - The user object.
+ * @returns {Query} A query for fetching projects.
+ */
+export const useGetTeams = (user: User | null) =>
+  useQuery({
+    queryKey: ['teams'],
+    queryFn: async () => {
+      return (await get(`/api/teams/`, user)) as GetListTeamsResponse;
+    },
   });
 
 /**
