@@ -1,0 +1,291 @@
+{
+  "metadata": {
+    "notebook_version": "1.0",
+    "schema_version": "1.0",
+    "name": "Relation Sampler",
+    "accesses": [
+      "admin",
+      "moderator",
+      "team"
+    ],
+    "filenames": [],
+    "ispublic": false,
+    "isrequest": false,
+    "lead_institution": "Steve's House",
+    "showQRCodeButton": false,
+    "pre_description": "Just a sample notebook to test a new field.",
+    "project_lead": "Steve",
+    "project_status": "New"
+  },
+  "ui-specification": {
+    "fields": {
+      "Name": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "TextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Helper Text",
+          "variant": "outlined",
+          "required": false,
+          "InputProps": {
+            "type": "text"
+          },
+          "SelectProps": {},
+          "name": "Name",
+          "label": "Factory Name"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "hridForm-Section": {
+        "component-namespace": "faims-custom",
+        "component-name": "TemplatedStringField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "hridField",
+          "fullWidth": true,
+          "name": "hridForm-Section",
+          "helperText": "Human Readable ID",
+          "required": true,
+          "template": "{{Name}}",
+          "InputProps": {
+            "type": "text"
+          },
+          "hrid": true,
+          "InputLabelProps": {
+            "label": "hridField"
+          }
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "Name-2": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "TextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Name",
+          "fullWidth": true,
+          "helperText": "Enter text",
+          "variant": "outlined",
+          "required": false,
+          "InputProps": {
+            "type": "text"
+          },
+          "name": "Name-2"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "hridWidget-Main": {
+        "component-namespace": "faims-custom",
+        "component-name": "TemplatedStringField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "ID",
+          "fullWidth": true,
+          "name": "hridWidget-Main",
+          "helperText": "Human Readable ID",
+          "required": true,
+          "template": "{{Name-2}}",
+          "InputProps": {
+            "type": "text"
+          },
+          "hrid": true,
+          "InputLabelProps": {
+            "label": "ID"
+          }
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "Widgets": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Widgets in Company",
+          "fullWidth": true,
+          "helperText": "Add widgets to this thing.",
+          "required": false,
+          "related_type": "Widget",
+          "relation_type": "faims-core::Child",
+          "multiple": true,
+          "related_type_label": "Widget",
+          "name": "Widgets",
+          "relation_linked_vocabPair": [],
+          "relation_preferred_label": "Preferred"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "Factories": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "label": "Factories",
+          "fullWidth": true,
+          "helperText": "Add one or more related factories",
+          "required": false,
+          "related_type": "Form",
+          "relation_type": "faims-core::Linked",
+          "multiple": true,
+          "related_type_label": "Factory",
+          "name": "Factories",
+          "relation_linked_vocabPair": [
+            [
+              "exports to",
+              "imports from"
+            ],
+            [
+              "supplies",
+              "is supplied by"
+            ]
+          ]
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      }
+    },
+    "fviews": {
+      "Form-Section": {
+        "label": "Section",
+        "fields": [
+          "hridForm-Section",
+          "Name",
+          "Widgets",
+          "Factories"
+        ]
+      },
+      "Widget-Main": {
+        "label": "Main",
+        "fields": [
+          "hridWidget-Main",
+          "Name-2"
+        ]
+      }
+    },
+    "viewsets": {
+      "Form": {
+        "label": "Factory",
+        "views": [
+          "Form-Section"
+        ]
+      },
+      "Widget": {
+        "label": "Widget",
+        "views": [
+          "Widget-Main"
+        ]
+      }
+    },
+    "visible_types": [
+      "Form",
+      "Widget"
+    ]
+  }
+}

@@ -8,12 +8,16 @@ This document will describe the necessary steps to migrate existing deployments 
 
 This functionality will not work until you apply the following migration
 
-- login as cluster admin to old conductor
-- copy the bearer token
-- update /api/.env with USER_TOKEN=<>
 - setup npm env cd /api && npm i
-- run the force init action npm run forceinitdb
+- run the migrate action `npm run migrate`
 - Try generating a code and make sure the workflow is functional.
+
+**Note** If you are running inside a container, then the above command needs to be
+run in the container rather than from your local environment:
+
+```bash
+docker compose exec conductor npm run migrate
+```
 
 ### Deployment configuration
 
@@ -33,62 +37,21 @@ After deployment, the system will likely not function until the DB migration is 
 - setup a working local dev environment for `api`
 - ensure the `.env` of your API is accurately configured for the target deployment (being careful of secrets here)
 
-### Bootstrap the migration service
-
-Since the migration DB doesn't exist, the service has no way of knowing which version of the database is currently deployed.
-
-In your local copy of the code, navigate to `library/data-model/src/data_storage/migrations/migrations.ts`.
-
-Here you will need to edit the `DB_TARGET_VERSIONS` array to correctly specify `1` as the `defaultVersion` for all the DB types (assuming you have never migrated previously).
-
-Before:
-
-```typescript
-export const DB_TARGET_VERSIONS: {
-  [key in DATABASE_TYPE]: {defaultVersion: number; targetVersion: number};
-} = {
-  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 1},
-  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
-  [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
-  // invites v2
-  [DatabaseType.INVITES]: {defaultVersion: 2, targetVersion: 2},
-  [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
-  // people v2
-  [DatabaseType.PEOPLE]: {defaultVersion: 2, targetVersion: 2},
-  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 1},
-  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 1},
-};
-```
-
-After:
-
-```typescript
-export const DB_TARGET_VERSIONS: {
-  [key in DATABASE_TYPE]: {defaultVersion: number; targetVersion: number};
-} = {
-  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 1},
-  [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
-  [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
-  // CHANGED
-  [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 2},
-  [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
-  // CHANGED
-  [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 2},
-  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 1},
-  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 1},
-};
-```
-
-Once you have completed your migrations, you can safely revert the above changes.
-
-**This process should only need to be run once, to initialise the state of your migration DB**.
-
 ### Run the migration command
 
 - run the migration command `npm run migrate`
 
+**Note** If you are running inside a container, then the above command needs to be
+run in the container rather than from your local environment:
+
+```bash
+docker compose exec conductor npm run migrate
+```
+
 You should see output indicating that a) the invites DB has been migrated without errors b) the people DB has been migrated without errors. If either fails, login to your couchDB and interrogate the migration DB logs.
 
-### Force the migration to run 
+### Force the migration to run
 
-If needed, you can login to your `/_utils` fauxton instance of CouchDB, then navigate to the Migrations DB. Find the migration document for the target DB, and update the `version` field to reflect what you want the migration system to think the database version is.
+If needed, you can login to your `/_utils` fauxton instance of CouchDB, then navigate to the Migrations DB.
+Find the migration document for the target DB, and update the `version` field to reflect what
+you want the migration system to think the database version is.
