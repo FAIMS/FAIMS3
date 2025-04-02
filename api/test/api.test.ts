@@ -24,7 +24,6 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 import {
-  addProjectRole,
   EncodedProjectUIModel,
   getDataDB,
   registerClient,
@@ -53,15 +52,11 @@ import {
   getNotebookMetadata,
   getUserProjectsDetailed,
 } from '../src/couchdb/notebooks';
-import {
-  getCouchUserFromEmailOrUsername,
-  getExpressUserFromEmailOrUsername,
-} from '../src/couchdb/users';
+import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
 import {app} from '../src/routes';
 import {callbackObject, databaseList} from './mocks';
 import {
   adminToken,
-  adminUserName,
   beforeApiTests,
   localUserName,
   localUserToken,

@@ -93,7 +93,7 @@ async function oauth_register(
 
   if (dbUser) {
     // Upgrade by drilling permissions/associations
-    let user = await upgradeDbUserToExpressUser({dbUser});
+    const user = await upgradeDbUserToExpressUser({dbUser});
     // TODO: do we need to validate further? could check that the profiles match???
     done(null, user, profile);
   }
@@ -120,7 +120,7 @@ async function oauth_register(
   if (!dbUser) {
     const invite = await getInvite(req.session.invite);
     if (invite) {
-      let [dbUser, errorMsg] = await createUser({
+      const [dbUser, errorMsg] = await createUser({
         email: emails[0],
         username: emails[0],
         name: profile.displayName,

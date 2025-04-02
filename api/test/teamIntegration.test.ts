@@ -60,20 +60,11 @@ import {
   getTemplate,
   getTemplateIdsByTeamId,
 } from '../src/couchdb/templates';
-import {
-  createUser,
-  getCouchUserFromEmailOrUsername,
-  saveCouchUser,
-} from '../src/couchdb/users';
+import {createUser, saveCouchUser} from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
 import {app} from '../src/routes';
 import {callbackObject} from './mocks';
-import {
-  adminToken,
-  adminUserName,
-  beforeApiTests,
-  requestAuthAndType,
-} from './utils';
+import {adminToken, beforeApiTests, requestAuthAndType} from './utils';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
@@ -1030,7 +1021,7 @@ describe('Team integration with templates and projects', () => {
       undefined,
       team1._id
     );
-    const template1 = await createTemplate({
+    await createTemplate({
       payload: {
         ...getSampleNotebook(),
         teamId: team1._id,
@@ -1052,7 +1043,7 @@ describe('Team integration with templates and projects', () => {
       undefined,
       team2._id
     );
-    const template2 = await createTemplate({
+    await createTemplate({
       payload: {
         ...getSampleNotebook(),
         teamId: team2._id,
@@ -1315,7 +1306,7 @@ describe('Team integration with templates and projects', () => {
 
   it('upgradeDbUserToExpressUser with complex resource hierarchy', async () => {
     // Create test user with mixed team roles
-    let [user, err] = await createUser({
+    const [user, err] = await createUser({
       username: 'complexUser',
       name: 'User With Complex Hierarchy',
     });
@@ -1360,13 +1351,7 @@ describe('Team integration with templates and projects', () => {
       undefined,
       team1._id
     );
-    const project1b = await createNotebook(
-      'Team 1 Project B',
-      uispec,
-      {},
-      undefined,
-      team1._id
-    );
+    await createNotebook('Team 1 Project B', uispec, {}, undefined, team1._id);
     const template1 = await createTemplate({
       payload: {
         ...getSampleNotebook(),
@@ -1382,7 +1367,7 @@ describe('Team integration with templates and projects', () => {
       undefined,
       team2._id
     );
-    const template2 = await createTemplate({
+    await createTemplate({
       payload: {
         ...getSampleNotebook(),
         teamId: team2._id,

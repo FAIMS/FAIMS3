@@ -25,7 +25,6 @@ import {
   NotebookAuthSummary,
   PeopleDBDocument,
   PeopleDBFields,
-  resourceRolesEqual,
   Role,
   safeWriteDocument,
   userHasProjectRole,
@@ -35,10 +34,10 @@ import {
   addLocalPasswordForUser,
   registerLocalUser,
 } from '../auth_providers/local';
+import {upgradeDbUserToExpressUser} from '../authkeys/create';
 import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
-import {upgradeDbUserToExpressUser} from '../authkeys/create';
 
 /**
  * Builds a minimum spec user object - need to add profiles
@@ -302,6 +301,7 @@ export async function saveCouchUser(
  * @param user An Express.User record to be written to the database
  */
 export async function saveExpressUser(user: Express.User): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const {resourceRoles, ...dbUser} = user;
   await saveCouchUser(dbUser);
 }

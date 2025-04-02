@@ -1,11 +1,11 @@
 import {
-    ExistingTeamsDBDocument,
-    TeamsDBDocument,
-    TeamsDBFields,
+  ExistingTeamsDBDocument,
+  TeamsDBDocument,
+  TeamsDBFields,
 } from '@faims3/data-model';
-import { getTeamsDB } from '.';
+import {getTeamsDB} from '.';
 import * as Exceptions from '../exceptions';
-import { slugify } from '../utils';
+import {slugify} from '../utils';
 
 /**
  * Lists all documents in the teams DB.
@@ -83,7 +83,8 @@ export const createTeamDocument = async (
     await teamsDb.put(teamDoc);
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An unexpected error occurred while trying to PUT the new team document into the teams DB. Exception ' + e
+      'An unexpected error occurred while trying to PUT the new team document into the teams DB. Exception ' +
+        e
     );
   }
 

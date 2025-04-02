@@ -23,34 +23,32 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
-import {assert, expect} from 'chai';
-import {
-  addLocalPasswordForUser,
-  validateLocalUser,
-} from '../src/auth_providers/local';
-import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
-import {
-  createUser,
-  getUserInfoForProject,
-  saveCouchUser,
-  registerAdminUser,
-} from '../src/couchdb/users';
-
 import {
   Action,
   addGlobalRole,
   addProjectRole,
   removeGlobalRole,
   removeProjectRole,
-  Resource,
   Role,
   userHasProjectRole,
   userProjectRoles,
 } from '@faims3/data-model';
+import {assert, expect} from 'chai';
 import * as fs from 'fs';
-import {createNotebook} from '../src/couchdb/notebooks';
-import {userCanDo} from '../src/middleware';
+import {
+  addLocalPasswordForUser,
+  validateLocalUser,
+} from '../src/auth_providers/local';
 import {upgradeDbUserToExpressUser} from '../src/authkeys/create';
+import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
+import {createNotebook} from '../src/couchdb/notebooks';
+import {
+  createUser,
+  getUserInfoForProject,
+  registerAdminUser,
+  saveCouchUser,
+} from '../src/couchdb/users';
+import {userCanDo} from '../src/middleware';
 
 const clearUsers = async () => {
   const usersDB = getUsersDB();

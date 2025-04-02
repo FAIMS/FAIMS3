@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {Role} from './permission';
 import {
   APINotebookGetSchema,
   APINotebookListSchema,
@@ -7,8 +8,6 @@ import {
   TemplateEditableDetailsSchema,
   UiSpecificationSchema,
 } from './types';
-import {Role} from './permission';
-import {ExistingTeamsDBDocument} from './data_storage';
 
 // ==================
 // WIP USERS

@@ -395,7 +395,7 @@ export function couchUserToResourceRoles({
   relevantAssociations: ResourceAssociation[];
 }): ResourceRole[] {
   // Collapse the project and team roles into one set
-  let allResourceRoles = [...projectRoles, ...teamRoles, ...templateRoles];
+  const allResourceRoles = [...projectRoles, ...teamRoles, ...templateRoles];
 
   // Need to drill teams virtual roles
   const virtualRoles = generateVirtualResourceRoles({

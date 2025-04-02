@@ -4,18 +4,15 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
-  addTemplateRole,
   PostCreateTemplateInput,
   ProjectID,
-  Role,
   TemplateDocument,
   TemplateEditableDetails,
   TEMPLATES_BY_TEAM_ID,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
-import {slugify} from '../utils';
 import * as Exceptions from '../exceptions';
-import {getCouchUserFromEmailOrUsername, saveCouchUser} from './users';
+import {slugify} from '../utils';
 
 /**
  * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO

@@ -21,7 +21,6 @@
 
 import {
   couchUserToResourceRoles,
-  ExistingPeopleDBDocument,
   expressUserToTokenPermissions,
   PeopleDBDocument,
   Resource,
@@ -34,10 +33,10 @@ import {
   CONDUCTOR_PUBLIC_URL,
   KEY_SERVICE,
 } from '../buildconfig';
-import {createNewRefreshToken} from '../couchdb/refreshTokens';
-import type {SigningKey} from '../services/keyService';
 import {getProjectIdsByTeamId} from '../couchdb/notebooks';
+import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {getTemplateIdsByTeamId} from '../couchdb/templates';
+import type {SigningKey} from '../services/keyService';
 
 const ASSOCIATIVE_RESOURCES = [Resource.TEMPLATE, Resource.PROJECT];
 
@@ -56,7 +55,7 @@ export async function getRelevantUserAssociations({
   // To determine relevant associations we need to for each team the user is on,
   // find what resources (projects, templates (currently!)) the team owns, then
   // include that
-  let relevantAssociations: ResourceAssociation[] = [];
+  const relevantAssociations: ResourceAssociation[] = [];
   for (const teamRole of dbUser.teamRoles) {
     const teamId = teamRole.resourceId;
     for (const targetResource of ASSOCIATIVE_RESOURCES) {

@@ -796,8 +796,10 @@ describe('Migration System Tests', () => {
 
         // Restore original migration function
         DB_MIGRATIONS[0].migrationFunction = originalMigrationFunc;
-        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion = originalDefaultVersion;
-        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = originalTargetVersion;
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion =
+          originalDefaultVersion;
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion =
+          originalTargetVersion;
       } finally {
         // Clean up
         await testProjectsDb.destroy();
