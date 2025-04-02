@@ -54,6 +54,7 @@ const indexContent = readFileSync(
 import markdownit from 'markdown-it';
 import {api as notebookApi} from './api/notebooks';
 import {api as templatesApi} from './api/templates';
+import {api as teamsApi} from './api/teams';
 import {api as resetPasswordApi} from './api/emailReset';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
@@ -154,9 +155,10 @@ app.set('view engine', 'handlebars');
 app.use(express.static('public'));
 app.use('/api/notebooks', notebookApi);
 app.use('/api/templates', templatesApi);
-app.use('/api', utilityApi);
+app.use('/api/teams', teamsApi);
 app.use('/api/users', usersApi);
 app.use('/api/reset', resetPasswordApi);
+app.use('/api', utilityApi);
 
 // Custom error handler which returns a JSON description of error
 // TODO specify this interface in data models

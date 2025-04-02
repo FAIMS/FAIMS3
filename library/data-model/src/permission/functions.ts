@@ -1,8 +1,18 @@
-import {resourceRolesEqual, roleGrantsAction} from './helpers';
-import {Action, actionDetails, Role} from './model';
+import {roleGrantsAction} from './helpers';
+import {
+  Action,
+  actionDetails,
+  actionRoles,
+  Resource,
+  Role,
+  roleActions,
+  roleDetails,
+  RoleScope,
+} from './model';
 import {
   decodeAndValidateToken,
   DecodedTokenPermissions,
+  encodeClaim,
   ResourceRole,
   TokenPermissions,
 } from './tokenEncoding';
@@ -60,7 +70,18 @@ export function isAuthorized({
     // are irrelevant - just check global roles. If none provided, abort.
     if (!actionInfo.resourceSpecific) {
       // Check if any role grants this action in the global scope
-      return roleGrantsAction({roles: decodedToken.globalRoles, action});
+      if (roleGrantsAction({roles: decodedToken.globalRoles, action})) {
+        return true;
+      }
+
+      // Otherwise, resource specific roles can also grant global actions e.g.
+      // being a team manager lets you create projects
+      for (const resourceRole of decodedToken.resourceRoles) {
+        // If this role grants the action - proceed!
+        if (roleGrantsAction({roles: [resourceRole.role], action})) {
+          return true;
+        }
+      }
     }
 
     // So this is a resource specific action - this can be granted through
@@ -93,27 +114,6 @@ export function isAuthorized({
     // Always fail closed (deny access) when there's an error
     return false;
   }
-}
-
-/**
- * Checks if a user has a specific resource role
- * @param resourceRoles The user's resource roles
- * @param needs The role being checked for
- * @param resourceId The specific resource ID
- * @returns True if the user has the specified role for the resource
- */
-export function hasResourceRole({
-  resourceRoles,
-  needs,
-  resourceId,
-}: {
-  resourceRoles: ResourceRole[];
-  needs: Role;
-  resourceId: string;
-}): boolean {
-  return resourceRoles.some(r =>
-    resourceRolesEqual(r, {resourceId, role: needs})
-  );
 }
 
 /**
@@ -210,4 +210,201 @@ export function projectInviteToAction({
   }
 
   return actionNeeded;
+}
+
+/**
+ * Maps a role and operation to the corresponding action
+ * @param role The role being modified
+ * @param add Whether adding (true) or removing (false)
+ * @returns The corresponding permission action
+ */
+export function getTeamMembershipAction(role: Role, add: boolean): Action {
+  switch (role) {
+    case Role.TEAM_ADMIN:
+      return add ? Action.ADD_ADMIN_TO_TEAM : Action.REMOVE_ADMIN_FROM_TEAM;
+    case Role.TEAM_MANAGER:
+      return add ? Action.ADD_MANAGER_TO_TEAM : Action.REMOVE_MANAGER_FROM_TEAM;
+    case Role.TEAM_MEMBER:
+      return add ? Action.ADD_MEMBER_TO_TEAM : Action.REMOVE_MEMBER_FROM_TEAM;
+    default:
+      throw new Error(`Invalid team role: ${role}`);
+  }
+}
+
+/**
+ * Type definition for a resource identifier
+ */
+interface ResourceIdentifier {
+  resourceId: string;
+  resourceType: Resource;
+}
+
+/**
+ * Type definition for resource associations
+ */
+export interface ResourceAssociation {
+  // The resource that has the association (e.g., a team)
+  resource: ResourceIdentifier;
+  // Resources associated with this resource (e.g., projects owned by the team)
+  associatedResources: ResourceIdentifier[];
+}
+
+/**
+ * Generates virtual resource roles for a user based on their existing roles and
+ * resource associations
+ *
+ * @param decodedToken The user's decoded token with their actual roles
+ * @param resourceAssociations Mapping of resources to their associated resources
+ * @returns Array of virtual resource roles that should be added
+ */
+export function generateVirtualResourceRoles({
+  resourceRoles,
+  resourceAssociations,
+}: {
+  resourceRoles: ResourceRole[];
+  resourceAssociations: ResourceAssociation[];
+}): ResourceRole[] {
+  // Use a Map to track virtual roles with effective deduplication
+  // Map key is 'resourceId:role' to ensure uniqueness
+  const virtualRolesMap = new Map<string, ResourceRole>();
+
+  /**
+   * Helper function to process a role and generate virtual roles
+   */
+  function processRole({
+    role,
+    resourceId,
+    resourceType,
+  }: {
+    role: Role;
+    resourceId: string;
+    resourceType: Resource | undefined;
+  }): void {
+    const roleConfig = roleActions[role];
+
+    // Skip if role doesn't have virtual roles function
+    if (!roleConfig.virtualRoles) {
+      return;
+    }
+
+    // Find applicable resource associations
+    let applicableResources: ResourceIdentifier[] = [];
+
+    // Find matching associations (there can be multiple such associations so
+    // concat the list!)
+    for (const association of resourceAssociations) {
+      if (
+        association.resource.resourceType === resourceType &&
+        association.resource.resourceId === resourceId
+      ) {
+        applicableResources = applicableResources.concat(
+          association.associatedResources
+        );
+      }
+    }
+
+    // Generate virtual roles for applicable resources
+    for (const {resourceId, resourceType} of applicableResources) {
+      if (roleConfig.virtualRoles.has(resourceType)) {
+        // Get the roles this grants for this resource type
+        const grantedRoles = roleConfig.virtualRoles.get(resourceType)!;
+
+        // Add each granted role to the map (unless a higher role already exists)
+        for (const grantedRole of grantedRoles) {
+          const mapKey = `${resourceId}:${grantedRole}`;
+
+          // If we haven't seen this resource+role combination yet, add it
+          if (!virtualRolesMap.has(mapKey)) {
+            virtualRolesMap.set(mapKey, {resourceId, role: grantedRole});
+          }
+        }
+      }
+    }
+  }
+
+  // Process resource-specific roles
+  for (const resourceRole of resourceRoles) {
+    const details = roleDetails[resourceRole.role];
+    if (!details.resource) {
+      // This role is not resource specific - skip
+      console.warn(
+        'Skipping virtual role distribution for a non resource specific role: ',
+        details.name,
+        details.description
+      );
+      continue;
+    }
+
+    processRole({
+      role: resourceRole.role,
+      resourceId: resourceRole.resourceId,
+      resourceType: details.resource,
+    });
+  }
+
+  // Return the unique values from the Map
+  return Array.from(virtualRolesMap.values());
+}
+
+/**
+ * Extends a decoded token with virtual roles based on resource associations
+ */
+export function extendTokenWithVirtualRoles({
+  decodedToken,
+  resourceAssociations,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  resourceAssociations: ResourceAssociation[];
+}): DecodedTokenPermissions {
+  const virtualRoles = generateVirtualResourceRoles({
+    resourceRoles: decodedToken.resourceRoles,
+    resourceAssociations,
+  });
+
+  return {
+    ...decodedToken,
+    resourceRoles: [...decodedToken.resourceRoles, ...virtualRoles],
+  };
+}
+
+/**
+ * From a given ACTION, reverse looks up roles which grant that action,
+ * and then encodes both the resource specific version i.e. <resource Id> ||
+ * <role> and the global version <role> implying that either is
+ * suitable for CouchDB authorization
+ *
+ * @returns list of roles to be used in couch db security documents
+ */
+export function necessaryActionToCouchRoleList({
+  action,
+  resourceId,
+}: {
+  action: Action;
+  resourceId: string;
+}): string[] {
+  const roles: string[] = [];
+
+  // Get all roles that can perform this action
+  const rolesForAction = actionRoles[action];
+
+  rolesForAction.forEach(role => {
+    const details = roleDetails[role];
+
+    // For global roles, just use the role name
+    if (details.scope === RoleScope.GLOBAL) {
+      roles.push(role);
+    }
+
+    // For resource-specific roles, encode with resourceId
+    else {
+      roles.push(
+        encodeClaim({
+          resourceId,
+          claim: role,
+        })
+      );
+    }
+  });
+
+  return roles;
 }

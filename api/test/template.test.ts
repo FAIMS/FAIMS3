@@ -19,8 +19,8 @@
  */
 
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
 import {
@@ -74,7 +74,7 @@ const getSampleNotebook = () => {
 const createSampleTemplate = async (
   app: Express,
   options: {
-    templateName?: string;
+    teamId?: string;
     payloadExtras?: Object;
   },
   token: string = adminToken
@@ -89,6 +89,8 @@ const createSampleTemplate = async (
       .post(`${TEMPLATE_API_BASE}`)
       .send({
         ...nb,
+        // Team?
+        ...(options.teamId ? {teamId: options.teamId} : {}),
         ...(options.payloadExtras ?? {}),
       } as PostCreateTemplateInput),
     token

@@ -25,9 +25,12 @@ import {body, validationResult} from 'express-validator';
 import {registerLocalUser} from './auth_providers/local';
 import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
 import {getInvite} from './couchdb/invites';
-import {getUserFromEmailOrUsername} from './couchdb/users';
+import {getCouchUserFromEmailOrUsername} from './couchdb/users';
 import {acceptInvite} from './registration';
-import {generateUserToken} from './authkeys/create';
+import {
+  generateUserToken,
+  upgradeCouchUserToExpressUser,
+} from './authkeys/create';
 import {NextFunction, Request, Response, Router} from 'express';
 import {processRequest} from 'zod-express-middleware';
 import {
@@ -52,9 +55,16 @@ passport.serializeUser((user: Express.User, done: DoneFunction) => {
 });
 
 passport.deserializeUser((id: string, done: DoneFunction) => {
-  getUserFromEmailOrUsername(id)
+  getCouchUserFromEmailOrUsername(id)
     .then(user_data => {
-      done(null, user_data);
+      if (!user_data) {
+        return Promise.reject('User could not be found!');
+      } else {
+        return upgradeCouchUserToExpressUser({dbUser: user_data});
+      }
+    })
+    .then(user => {
+      done(null, user);
     })
     .catch(err => done(err, null));
 });
@@ -180,7 +190,8 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         if (loginErr) {
           return next(loginErr);
         }
-        return redirect_with_token(res, user, redirect);
+        const fullUser = await upgradeCouchUserToExpressUser({dbUser: user});
+        return redirect_with_token(res, fullUser, redirect);
       });
     };
   };
@@ -367,13 +378,17 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         return;
       }
 
+      // This also saves the user!
       await acceptInvite(user, invite);
+
       req.flash('message', 'Registration successful. Please login below.');
-      req.login(user, (err: any) => {
+      req.login(user, async (err: any) => {
         if (err) {
           return next(err);
         }
-        return redirect_with_token(res, user, redirect);
+        // Upgrade by drilling permissions/associations
+        const expressUser = await upgradeCouchUserToExpressUser({dbUser: user});
+        return redirect_with_token(res, expressUser, redirect);
       });
     }
   );

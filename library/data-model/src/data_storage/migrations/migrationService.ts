@@ -7,6 +7,9 @@ import {
 } from '../migrationsDB';
 import {DB_MIGRATIONS, DB_TARGET_VERSIONS} from './migrations';
 
+// Check if we are testing
+export const IS_TESTING = process.env.NODE_ENV === 'test';
+
 export enum DatabaseType {
   AUTH = 'AUTH',
   DATA = 'DATA',
@@ -16,6 +19,7 @@ export enum DatabaseType {
   PEOPLE = 'PEOPLE',
   PROJECTS = 'PROJECTS',
   TEMPLATES = 'TEMPLATES',
+  TEAMS = 'TEAMS',
 }
 export const DATABASE_TYPES = [
   DatabaseType.AUTH,
@@ -26,8 +30,13 @@ export const DATABASE_TYPES = [
   DatabaseType.PEOPLE,
   DatabaseType.PROJECTS,
   DatabaseType.TEMPLATES,
+  DatabaseType.TEAMS,
 ] as const;
 export type DATABASE_TYPE = (typeof DATABASE_TYPES)[number];
+
+export type DBTargetVersions = {
+  [key in DatabaseType]: {defaultVersion: number; targetVersion: number};
+};
 
 export type MigrationFuncReturn = {
   action: 'none' | 'update' | 'delete';
@@ -352,9 +361,11 @@ export async function migrateDbs({
 
       // Check if the database is already up to date
       if (isDbUpToDate({migrationDoc})) {
-        console.log(
-          `Database ${dbName} (${dbType}) is already up to date at version ${migrationDoc.version}`
-        );
+        if (!IS_TESTING) {
+          console.log(
+            `Database ${dbName} (${dbType}) is already up to date at version ${migrationDoc.version}`
+          );
+        }
         continue; // Skip to the next database
       }
 
@@ -383,9 +394,11 @@ export async function migrateDbs({
 
       for (const migrationDetail of migrationsToApply) {
         // Start migration for this step
-        console.log(
-          `Applying migration for ${dbType} from v${migrationDetail.from} to v${migrationDetail.to}: ${migrationDetail.description}`
-        );
+        if (!IS_TESTING) {
+          console.log(
+            `Applying migration for ${dbType} from v${migrationDetail.from} to v${migrationDetail.to}: ${migrationDetail.description}`
+          );
+        }
 
         // Add the migration description to the notes
         if (!migrationLogEntry.notes) {
@@ -400,9 +413,11 @@ export async function migrateDbs({
         });
 
         // Log stats about this migration step
-        console.log(
-          `Migration step completed. Processed ${result.processedCount} documents, updated ${result.writtenCount} documents.`
-        );
+        if (!IS_TESTING) {
+          console.log(
+            `Migration step completed. Processed ${result.processedCount} documents, updated ${result.writtenCount} documents.`
+          );
+        }
 
         // Check for issues during migration
         if (result.issues.length > 0) {
@@ -440,13 +455,17 @@ export async function migrateDbs({
 
       // Log completion status
       if (migrationLogEntry.status === 'success') {
-        console.log(
-          `Successfully migrated database ${dbName} (${dbType}) from version ${migrationLogEntry.from} to ${migrationLogEntry.to}`
-        );
+        if (!IS_TESTING) {
+          console.log(
+            `Successfully migrated database ${dbName} (${dbType}) from version ${migrationLogEntry.from} to ${migrationLogEntry.to}`
+          );
+        }
       } else {
-        console.error(
-          `Migration of database ${dbName} (${dbType}) completed with issues. Check migration logs for details.`
-        );
+        if (!IS_TESTING) {
+          console.error(
+            `Migration of database ${dbName} (${dbType}) completed with issues. Check migration logs for details.`
+          );
+        }
       }
     } catch (error) {
       // Handle any unexpected errors in the migration process

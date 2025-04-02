@@ -590,12 +590,15 @@ function getSMTPConfig(): SMTPEmailServiceConfig {
 
 export const EMAIL_SERVICE_TYPE = getEmailServiceType();
 export const EMAIL_CONFIG = getEmailConfig();
-export const SMTP_CONFIG = getSMTPConfig();
+export const EMAIL_SERVICE_CONFIG =
+  EMAIL_SERVICE_TYPE === EmailServiceType.SMTP ? getSMTPConfig() : undefined;
 export const EMAIL_SERVICE: IEmailService = createEmailService({
   serviceType: EMAIL_SERVICE_TYPE,
   emailConfig: EMAIL_CONFIG,
   serviceConfig:
-    EMAIL_SERVICE_TYPE === EmailServiceType.SMTP ? SMTP_CONFIG : undefined,
+    EMAIL_SERVICE_TYPE === EmailServiceType.SMTP
+      ? EMAIL_SERVICE_CONFIG
+      : undefined,
 });
 
 /**
@@ -605,6 +608,11 @@ export const EMAIL_SERVICE: IEmailService = createEmailService({
  */
 function getTestEmailAddress(): string {
   const testEmailAddress = process.env.TEST_EMAIL_ADDRESS;
+
+  // Uses fake address if we are unit testing
+  if (is_testing()) {
+    return 'fake@gmail.com';
+  }
 
   if (!testEmailAddress) {
     throw new Error(

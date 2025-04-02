@@ -1,257 +1,213 @@
 /**
  * Set of helper functions to check/interact with the user object
- * (PeopleDBFields) in relation to roles and actions.
+ * (PeopleDBDocument) in relation to roles and actions.
  */
 
-import {PeopleDBFields} from '../data_storage';
-import {Action, Resource, Role, roleDetails, RoleScope} from './model';
-import {drillRoles, roleGrantsAction} from './helpers';
-import {ResourceRole} from './tokenEncoding';
+import {generateVirtualResourceRoles, ResourceAssociation} from '..';
+import {PeopleDBDocument} from '../data_storage';
+import {Role} from './model';
+import {encodeToken, ResourceRole, TokenPermissions} from './tokenEncoding';
 
 // ======
 // CHECKS
 // ======
 
 /**
- * Checks if a user has a specific global role, considering role inheritance
+ * Checks if a user has a specific global role
  * @param user - User object to check
  * @param role - Role to check for
- * @returns True if the user has the specified global role or any role that grants it
+ * @returns True if the user has the specified global role
  */
 export function userHasGlobalRole({
   user,
   role,
-  drill = true,
 }: {
-  user: PeopleDBFields;
+  user: PeopleDBDocument;
   role: Role;
-  drill?: boolean;
 }): boolean {
-  // Check each of the user's global roles
-  for (const userRole of user.globalRoles) {
-    // Get all roles granted by this user role (including the role itself)
-    const grantedRoles = drill ? drillRoles({role: userRole}) : [userRole];
-    // If the target role is in the granted roles, return true
-    if (grantedRoles.includes(role)) {
-      return true;
-    }
-  }
-
-  // If we get here, none of the user's roles grant the target role
-  return false;
+  return user.globalRoles.includes(role);
 }
 
 /**
- * Checks if a user has a specific role for a specific resource, considering role inheritance
+ * Checks if a user has a specific role for a specific project
  * @param user - User object to check
- * @param resourceRole - Role to check for
- * @param resourceId - ID of the resource to check
- * @returns True if the user has the specified role or any role that grants it for the specified resource
+ * @param role - Role to check for
+ * @param projectId - ID of the project to check
+ * @returns True if the user has the specified project role
  */
-export function userHasResourceRole({
-  user,
-  resourceRole,
-  resourceId,
-  drill = true,
-}: {
-  user: PeopleDBFields;
-  resourceRole: Role;
-  resourceId: string;
-  drill?: boolean;
-}): boolean {
-  // First check if any global role grants this resource role
-  if (userHasGlobalRole({user, role: resourceRole, drill})) {
-    return true;
-  }
-
-  // Check each of the user's resource roles for this specific resource
-  for (const userResourceRole of user.resourceRoles) {
-    // Skip roles for different resources
-    if (userResourceRole.resourceId !== resourceId) {
-      continue;
-    }
-
-    // Get all roles granted by this user resource role
-    const grantedRoles = drill
-      ? drillRoles({role: userResourceRole.role})
-      : [userResourceRole.role];
-
-    // If the target role is in the granted roles, return true
-    if (grantedRoles.includes(resourceRole)) {
-      return true;
-    }
-  }
-
-  // If we get here, none of the user's roles grant the target role for this resource
-  return false;
-}
-
-/**
- * Determines if a user can perform a specific action, optionally on a specific resource
- * @param user - User object to check
- * @param action - Action to check permission for
- * @param resourceId - Optional ID of the resource for resource-specific actions
- * @returns True if the user can perform the specified action
- */
-export function userCanDo({
-  user,
-  action,
-  resourceId,
-}: {
-  user: PeopleDBFields;
-  action: Action;
-  resourceId?: string;
-}): boolean {
-  // First check if any global role grants this action
-  if (roleGrantsAction({roles: user.globalRoles, action})) {
-    return true;
-  }
-
-  // If this is a resource-specific action and we have a resource ID
-  if (resourceId) {
-    // Filter for roles specific to this resource
-    const relevantResourceRoles = user.resourceRoles
-      .filter(role => role.resourceId === resourceId)
-      .map(resourceRole => resourceRole.role);
-
-    // Check if any of these resource-specific roles grant the action
-    if (roleGrantsAction({roles: relevantResourceRoles, action})) {
-      return true;
-    }
-  }
-
-  // If we get here, the user cannot perform the action
-  return false;
-}
-
-/**
- * Gets all resource roles a user has for a specific resource, including roles
- * granted through inheritance
- * @param user - User object to check
- * @param resourceId - ID of the resource to check roles for
- * @param resource - Specify the resource type so that global roles can be
- * properly handled
- * @returns Array of Role enums that the user has for the specified resource
- */
-export function userResourceRoles({
-  user,
-  resourceId,
-  resource,
-}: {
-  user: PeopleDBFields;
-  resourceId: string;
-  resource: Resource;
-}): Role[] {
-  // Set to track all granted roles without duplicates
-  const allRolesSet = new Set<Role>();
-
-  // Process explicitly granted resource roles
-  const explicitlyGranted = user.resourceRoles
-    .filter(resourceRole => resourceRole.resourceId === resourceId)
-    .map(resourceRole => resourceRole.role);
-
-  // Add each explicitly granted role and all roles it grants
-  for (const role of explicitlyGranted) {
-    drillRoles({role}).forEach(grantedRole => allRolesSet.add(grantedRole));
-  }
-
-  // Process global roles that apply to this resource type
-  const applicableGlobalRoles = user.globalRoles.filter(r => {
-    const details = roleDetails[r];
-    return (
-      (details.scope === RoleScope.RESOURCE_SPECIFIC &&
-        details.resource === resource) ||
-      // Include roles that might grant applicable resource-specific roles
-      details.scope === RoleScope.GLOBAL
-    );
-  });
-
-  // Add each applicable global role and all roles it grants
-  for (const role of applicableGlobalRoles) {
-    drillRoles({role})
-      .filter(grantedRole => {
-        // Only include resource-specific roles for this resource type
-        const details = roleDetails[grantedRole];
-        return (
-          details.scope === RoleScope.RESOURCE_SPECIFIC &&
-          details.resource === resource
-        );
-      })
-      .forEach(grantedRole => allRolesSet.add(grantedRole));
-  }
-
-  return Array.from(allRolesSet);
-}
-
-// =======
-// CHANGES
-// =======
-
-/**
- * Adds a resource role to a user
- * @param user - User object to modify
- * @param role - Role to add
- * @param resourceId - ID of the resource for the role
- */
-export function addResourceRole({
+export function userHasProjectRole({
   user,
   role,
-  resourceId,
+  projectId,
 }: {
-  user: PeopleDBFields;
+  user: PeopleDBDocument;
   role: Role;
-  resourceId: string;
-}) {
-  // Check if the user already has this role for this resource
-  const hasRole = userHasResourceRole({
+  projectId: string;
+}): boolean {
+  return user.projectRoles.some(
+    r => r.resourceId === projectId && r.role === role
+  );
+}
+
+/**
+ * Checks if a user has a specific role for a specific team
+ * @param user - User object to check
+ * @param role - Role to check for
+ * @param teamId - ID of the team to check
+ * @returns True if the user has the specified team role
+ */
+export function userHasTeamRole({
+  user,
+  role,
+  teamId,
+}: {
+  user: PeopleDBDocument;
+  role: Role;
+  teamId: string;
+}): boolean {
+  return user.teamRoles.some(r => r.resourceId === teamId && r.role === role);
+}
+
+export function userProjectRoles({
+  user,
+  projectId,
+}: {
+  user: PeopleDBDocument;
+  projectId: string;
+}): Role[] {
+  return user.projectRoles
+    .filter(r => r.resourceId === projectId)
+    .map(r => r.role);
+}
+
+export function userTeamRoles({
+  user,
+  teamId,
+}: {
+  user: PeopleDBDocument;
+  teamId: string;
+}): Role[] {
+  return user.teamRoles.filter(r => r.resourceId === teamId).map(r => r.role);
+}
+
+// ============
+// ROLE UPDATES
+// ============
+
+/**
+ * Adds a project role to a user
+ * @param user - User object to modify
+ * @param role - Role to add
+ * @param projectId - ID of the project for the role
+ */
+export function addProjectRole({
+  user,
+  role,
+  projectId,
+}: {
+  user: PeopleDBDocument;
+  role: Role;
+  projectId: string;
+}): void {
+  // Check if the user already has this role for this project
+  const hasRole = userHasProjectRole({
     user,
-    resourceRole: role,
-    resourceId,
-    drill: false,
+    role,
+    projectId,
   });
 
-  // If the user already has this role, return the unchanged user object
+  // If the user already has this role, return
   if (hasRole) {
     return;
   }
 
-  // Create a new resource role
-  const newResourceRole: ResourceRole = {
-    resourceId,
+  // Create a new project role and add it to the user
+  const newProjectRole: ResourceRole = {
+    resourceId: projectId,
     role,
   };
 
-  user.resourceRoles = [...user.resourceRoles, newResourceRole];
+  user.projectRoles = [...user.projectRoles, newProjectRole];
 }
 
 /**
- * Removes a resource role from a user
+ * Removes a project role from a user
  * @param user - User object to modify
  * @param role - Role to remove
- * @param resourceId - ID of the resource for the role
+ * @param projectId - ID of the project for the role
  */
-export function removeResourceRole({
+export function removeProjectRole({
   user,
   role,
-  resourceId,
+  projectId,
 }: {
-  user: PeopleDBFields;
+  user: PeopleDBDocument;
   role: Role;
-  resourceId: string;
-}) {
-  // Create the resource role object to remove
-  const roleToRemove: ResourceRole = {
-    resourceId,
+  projectId: string;
+}): void {
+  // Filter out the role we want to remove using resourceRolesEqual helper
+  const roleToRemove: ResourceRole = {resourceId: projectId, role};
+  user.projectRoles = user.projectRoles.filter(
+    projectRole => !resourceRolesEqual(projectRole, roleToRemove)
+  );
+}
+
+/**
+ * Adds a team role to a user
+ * @param user - User object to modify
+ * @param role - Role to add
+ * @param teamId - ID of the team for the role
+ */
+export function addTeamRole({
+  user,
+  role,
+  teamId,
+}: {
+  user: PeopleDBDocument;
+  role: Role;
+  teamId: string;
+}): void {
+  // Check if the user already has this role for this team
+  const hasRole = userHasTeamRole({
+    user,
+    role,
+    teamId,
+  });
+
+  // If the user already has this role, return
+  if (hasRole) {
+    return;
+  }
+
+  // Create a new team role and add it to the user
+  const newTeamRole: ResourceRole = {
+    resourceId: teamId,
     role,
   };
 
-  // Filter out the role we want to remove
-  const updatedResourceRoles = user.resourceRoles.filter(
-    userRole => !resourceRolesEqual(userRole, roleToRemove)
-  );
+  user.teamRoles = [...user.teamRoles, newTeamRole];
+}
 
-  // Return a new user object with the updated resource roles
-  user.resourceRoles = updatedResourceRoles;
+/**
+ * Removes a team role from a user
+ * @param user - User object to modify
+ * @param role - Role to remove
+ * @param teamId - ID of the team for the role
+ */
+export function removeTeamRole({
+  user,
+  role,
+  teamId,
+}: {
+  user: PeopleDBDocument;
+  role: Role;
+  teamId: string;
+}): void {
+  // Filter out the role we want to remove using resourceRolesEqual helper
+  const roleToRemove: ResourceRole = {resourceId: teamId, role};
+  user.teamRoles = user.teamRoles.filter(
+    teamRole => !resourceRolesEqual(teamRole, roleToRemove)
+  );
 }
 
 /**
@@ -263,15 +219,16 @@ export function addGlobalRole({
   user,
   role,
 }: {
-  user: PeopleDBFields;
+  user: PeopleDBDocument;
   role: Role;
-}) {
+}): void {
   // Check if the user already has this global role
-  if (userHasGlobalRole({user, role, drill: false})) {
-    // If so, return the unchanged user object
+  if (userHasGlobalRole({user, role})) {
+    // If so, return
     return;
   }
 
+  // Add the global role to the user
   user.globalRoles = [...user.globalRoles, role];
 }
 
@@ -284,16 +241,116 @@ export function removeGlobalRole({
   user,
   role,
 }: {
-  user: PeopleDBFields;
+  user: PeopleDBDocument;
   role: Role;
-}) {
+}): void {
   // Filter out the role we want to remove
-  const updatedGlobalRoles = user.globalRoles.filter(
-    globalRole => globalRole !== role
-  );
-
-  user.globalRoles = updatedGlobalRoles;
+  user.globalRoles = user.globalRoles.filter(globalRole => globalRole !== role);
 }
+
+// TEMPLATE ROLES
+// ==============
+
+/**
+ * Checks if a user has a specific role for a specific template
+ * @param user - User object to check
+ * @param role - Role to check for
+ * @param templateId - ID of the template to check
+ * @returns True if the user has the specified template role
+ */
+export function userHasTemplateRole({
+  user,
+  role,
+  templateId,
+}: {
+  user: PeopleDBDocument;
+  role: Role;
+  templateId: string;
+}): boolean {
+  return user.templateRoles.some(
+    r => r.resourceId === templateId && r.role === role
+  );
+}
+
+/**
+ * Gets all roles a user has for a specific template
+ * @param user - User object to check
+ * @param templateId - ID of the template to check
+ * @returns Array of roles the user has for the specified template
+ */
+export function userTemplateRoles({
+  user,
+  templateId,
+}: {
+  user: PeopleDBDocument;
+  templateId: string;
+}): Role[] {
+  return user.templateRoles
+    .filter(r => r.resourceId === templateId)
+    .map(r => r.role);
+}
+
+/**
+ * Adds a template role to a user
+ * @param user - User object to modify
+ * @param role - Role to add
+ * @param templateId - ID of the template for the role
+ */
+export function addTemplateRole({
+  user,
+  role,
+  templateId,
+}: {
+  user: PeopleDBDocument;
+  role: Role;
+  templateId: string;
+}): void {
+  // Check if the user already has this role for this template
+  const hasRole = userHasTemplateRole({
+    user,
+    role,
+    templateId,
+  });
+
+  // If the user already has this role, return
+  if (hasRole) {
+    return;
+  }
+
+  // Create a new template role and add it to the user
+  const newTemplateRole: ResourceRole = {
+    resourceId: templateId,
+    role,
+  };
+
+  user.templateRoles = [...user.templateRoles, newTemplateRole];
+}
+
+/**
+ * Removes a template role from a user
+ * @param user - User object to modify
+ * @param role - Role to remove
+ * @param templateId - ID of the template for the role
+ */
+export function removeTemplateRole({
+  user,
+  role,
+  templateId,
+}: {
+  user: PeopleDBDocument;
+  role: Role;
+  templateId: string;
+}): void {
+  // Filter out the role we want to remove using resourceRolesEqual helper
+  const roleToRemove: ResourceRole = {resourceId: templateId, role};
+  user.templateRoles = user.templateRoles.filter(
+    templateRole => !resourceRolesEqual(templateRole, roleToRemove)
+  );
+}
+
+// =============
+// OTHER UPDATES
+// =============
 
 /**
  * Add emails to a user's emails array if they don't already exist
@@ -304,18 +361,18 @@ export function addEmails({
   user,
   emails,
 }: {
-  user: PeopleDBFields;
+  user: PeopleDBDocument;
   emails: string[];
-}) {
+}): void {
   // Filter out emails that already exist in the user's emails array
   const newEmails = emails.filter(email => !user.emails.includes(email));
 
-  // If no new emails to add, return user unchanged
+  // If no new emails to add, return
   if (newEmails.length === 0) {
     return;
   }
 
-  // Return updated user with new emails added
+  // Add new emails to user
   user.emails = [...user.emails, ...newEmails];
 }
 
@@ -324,4 +381,53 @@ export function addEmails({
  */
 export function resourceRolesEqual(a: ResourceRole, b: ResourceRole): boolean {
   return a.resourceId === b.resourceId && a.role === b.role;
+}
+
+// ===============
+// ENCODING HELPER
+// ===============
+
+/**
+ * Takes a couch user and associations (e.g. this team owns these projects) and
+ * returns a compiled list of resource roles
+ * @returns a compiled list of resource roles
+ */
+export function couchUserToResourceRoles({
+  user: {projectRoles, teamRoles, templateRoles},
+  relevantAssociations,
+}: {
+  user: PeopleDBDocument;
+  relevantAssociations: ResourceAssociation[];
+}): ResourceRole[] {
+  // Collapse the project and team roles into one set
+  const allResourceRoles = [...projectRoles, ...teamRoles, ...templateRoles];
+
+  // Need to drill teams virtual roles
+  const virtualRoles = generateVirtualResourceRoles({
+    resourceRoles: allResourceRoles,
+    resourceAssociations: relevantAssociations,
+  });
+
+  // And build it into resource roles list
+  return allResourceRoles.concat(virtualRoles);
+}
+
+/**
+ * Takes a couch user and builds an encoded token.
+ *
+ * This is achieved by first building a decoded token object from the couch
+ * user, then using the encode token function to encode it.
+ *
+ * @returns encoded token object (to be signed/added other details)
+ */
+export function expressUserToTokenPermissions({
+  user,
+}: {
+  user: PeopleDBDocument & {resourceRoles: ResourceRole[]};
+}): TokenPermissions {
+  // Now encode - this just propagates global roles -> resource roles and encodes resource roles nicely
+  return encodeToken({
+    globalRoles: user.globalRoles,
+    resourceRoles: user.resourceRoles,
+  });
 }

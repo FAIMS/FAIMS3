@@ -20,6 +20,7 @@
 import {
   Action,
   addGlobalRole,
+  ExistingPeopleDBDocument,
   PostUpdateUserInputSchema,
   removeGlobalRole,
   Role,
@@ -31,10 +32,10 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
-  getUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUsername,
   getUsers,
   removeUser,
-  saveUser,
+  saveCouchUser,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
@@ -46,7 +47,7 @@ patch();
 
 export const api = express.Router();
 
-// update a user
+// update a users roles
 api.post(
   '/:id/admin',
   requireAuthenticationAPI,
@@ -68,7 +69,7 @@ api.post(
     }
 
     // Get the current user from DB
-    const foundUser = await getUserFromEmailOrUsername(id);
+    const foundUser = await getCouchUserFromEmailOrUsername(id);
     if (!foundUser) {
       throw new Exceptions.ItemNotFoundException(
         'Username cannot be found in user database.'
@@ -94,7 +95,7 @@ api.post(
       removeGlobalRole({role, user: foundUser});
     }
 
-    await saveUser(foundUser);
+    await saveCouchUser(foundUser);
     res.status(200).send();
   }
 );
@@ -137,7 +138,7 @@ api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
-  async (req: any, res: Response<Express.User[]>) => {
+  async (req: any, res: Response<ExistingPeopleDBDocument[]>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('You are not logged in.');
     }
@@ -189,7 +190,7 @@ api.delete(
   async ({params: {id}}, res) => {
     if (!id) throw new Exceptions.ValidationException('User ID not specified');
 
-    const userToRemove = await getUserFromEmailOrUsername(id);
+    const userToRemove = await getCouchUserFromEmailOrUsername(id);
 
     if (!userToRemove)
       throw new Exceptions.ItemNotFoundException(

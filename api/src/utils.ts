@@ -44,3 +44,14 @@ export const mockTokenContentsForUser = (user: Express.User): TokenContents => {
     exp: Date.now() + 1000 * 60 * 5,
   };
 };
+
+/**
+ * Generates a random alphanumeric sequence for use in identifiers
+ * @param length The length of the sequence to generate (default: 4)
+ * @returns A random alphanumeric string
+ */
+export const generateRandomString = (length = 4): string => {
+  return Math.random()
+    .toString(36)
+    .substring(2, 2 + length);
+};
