@@ -50,7 +50,7 @@ export const mockTokenContentsForUser = (user: Express.User): TokenContents => {
  * @param length The length of the sequence to generate (default: 4)
  * @returns A random alphanumeric string
  */
-export const generateRandomString = (length: number = 4): string => {
+export const generateRandomString = (length = 4): string => {
   return Math.random()
     .toString(36)
     .substring(2, 2 + length);
