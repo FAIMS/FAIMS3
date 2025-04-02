@@ -3,18 +3,20 @@ import {Form} from '@/components/form';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
+import {Role} from '@faims3/data-model';
+import {roleLabel} from '@/lib/utils';
 
 export const fields = [
   {
     name: 'role',
     label: 'Role',
-    options: [
-      {label: 'User', value: 'user'},
-      {label: 'Team', value: 'team'},
-      {label: 'Moderator', value: 'moderator'},
-      {label: 'Admin', value: 'admin'},
-    ],
-    schema: z.any(),
+    options: Object.values(Role)
+      .filter(role => role.startsWith('PROJECT_'))
+      .map(role => ({
+        label: roleLabel(role),
+        value: role as string,
+      })),
+    schema: z.nativeEnum(Role),
   },
 ];
 

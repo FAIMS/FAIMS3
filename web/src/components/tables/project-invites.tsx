@@ -3,6 +3,7 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
 import {CopyButton} from '../ui/copy-button';
 import {QRCodeDialog} from '../dialogs/qr-code-dialog';
+import {roleLabel} from '@/lib/utils';
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -14,7 +15,7 @@ export const columns: ColumnDef<any>[] = [
       row: {
         original: {role},
       },
-    }: any) => <RoleCard>{role}</RoleCard>,
+    }: any) => <RoleCard>{roleLabel(role)}</RoleCard>,
   },
   {
     accessorKey: 'code',

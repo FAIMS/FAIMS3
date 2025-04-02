@@ -1,6 +1,6 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-
+import {roleLabel} from '@/lib/utils';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
 import {RoleCard} from '../ui/role-card';
@@ -20,7 +20,7 @@ export const columns: ColumnDef<any>[] = [
     cell: ({row}: any) => (
       <div className="flex flex-wrap gap-1">
         {row.getValue('team-roles').map((role: string) => (
-          <RoleCard key={role}>{role}</RoleCard>
+          <RoleCard key={role}>{roleLabel(role)}</RoleCard>
         ))}
       </div>
     ),
@@ -36,7 +36,7 @@ export const columns: ColumnDef<any>[] = [
     cell: ({row}: any) => (
       <div className="flex flex-wrap gap-1">
         {row.getValue('project-roles').map((role: string) => (
-          <RoleCard key={role}>{role}</RoleCard>
+          <RoleCard key={role}>{roleLabel(role)}</RoleCard>
         ))}
       </div>
     ),

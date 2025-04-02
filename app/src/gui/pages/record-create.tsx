@@ -300,7 +300,6 @@ export default function RecordCreate() {
   if (location.state && location.state.child_record_id !== undefined)
     draft_record_id = location.state.child_record_id; //pass record_id from parent
 
-
   let showBreadcrumbs = false;
 
   const breadcrumbs = [
