@@ -4,7 +4,7 @@
     "rootDir": ".",
     "outDir": "build",
     "target": "ES2015",
-    "module": "ESNext",
+    "module": "CommonJS",
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -18,9 +18,5 @@
     "noEmit": false,
     "declaration": true
   },
-  "include": [
-    "./src",
-    "tests/migrationService.test.ts",
-    "tests/migrations.test.ts"
-  ]
+  "include": ["./src"]
 }
