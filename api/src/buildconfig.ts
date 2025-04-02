@@ -19,9 +19,16 @@
  *   which server to use and whether to include test data
  */
 
-import {v4 as uuidv4} from 'uuid';
-import {getKeyService, IKeyService, KeySource} from './services/keyService';
 import {existsSync} from 'fs';
+import {v4 as uuidv4} from 'uuid';
+import {
+  createEmailService,
+  EmailConfig,
+  EmailServiceType,
+  IEmailService,
+  SMTPEmailServiceConfig,
+} from './services/emailService';
+import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
@@ -474,3 +481,140 @@ export const AWS_SECRET_KEY_ARN: string | undefined =
   KEY_SOURCE === KeySource.AWS_SM ? getAwsSecretKeyArn() : undefined;
 
 export const KEY_SERVICE: IKeyService = getKeyService(KEY_SOURCE);
+
+/**
+ * Determines which email service type to use based on environment variables.
+ * @returns The email service type.
+ */
+function getEmailServiceType(): EmailServiceType {
+  const emailServiceType = process.env.EMAIL_SERVICE_TYPE as EmailServiceType;
+
+  if (is_testing()) {
+    console.log('Since we are testing, using mock email service.');
+    return EmailServiceType.MOCK;
+  }
+
+  if (
+    emailServiceType === undefined ||
+    !(emailServiceType in EmailServiceType)
+  ) {
+    // Otherwise default to SMTP
+    console.log(
+      'EMAIL_SERVICE_TYPE not set or invalid, using default SMTP - configuration may not be available depending on your environment. Please explicitly configure SMTP if this is the preferred behaviour.'
+    );
+    return EmailServiceType.SMTP;
+  }
+
+  return emailServiceType;
+}
+
+const DEFAULT_FROM_EMAIL = 'noreply@example.com';
+const DEFAULT_FROM_NAME = 'FAIMS System Notification';
+
+/**
+ * Gets the email configuration from environment variables.
+ * @returns The email configuration.
+ */
+function getEmailConfig(): EmailConfig {
+  const fromEmail = process.env.EMAIL_FROM_ADDRESS;
+  const fromName = process.env.EMAIL_FROM_NAME;
+  const replyTo = process.env.EMAIL_REPLY_TO;
+
+  if (!fromEmail || !fromName) {
+    console.warn('Email configuration is incomplete. Using default values.');
+    return {
+      fromEmail: fromEmail || DEFAULT_FROM_EMAIL,
+      fromName: fromName || DEFAULT_FROM_NAME,
+      replyTo: replyTo,
+    };
+  }
+
+  return {
+    fromEmail,
+    fromName,
+    replyTo,
+  };
+}
+
+/**
+ * Gets the SMTP configuration from environment variables.
+ * @returns The SMTP configuration.
+ */
+function getSMTPConfig(): SMTPEmailServiceConfig {
+  const host = process.env.SMTP_HOST;
+  const portStr = process.env.SMTP_PORT;
+  const secure = process.env.SMTP_SECURE === 'true';
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASSWORD;
+  const cacheExpirySecondsStr = process.env.SMTP_CACHE_EXPIRY_SECONDS;
+
+  // Check for missing configuration and provide detailed error message
+  const missingConfig = [];
+  if (!host) missingConfig.push('SMTP_HOST');
+  if (!portStr) missingConfig.push('SMTP_PORT');
+  if (!user) missingConfig.push('SMTP_USER');
+  if (!pass) missingConfig.push('SMTP_PASSWORD');
+
+  if (missingConfig.length > 0) {
+    const providedConfig = {
+      SMTP_HOST: host || '[missing]',
+      SMTP_PORT: portStr || '[missing]',
+      SMTP_SECURE: secure.toString(),
+      SMTP_USER: user ? '[provided]' : '[missing]',
+      SMTP_PASSWORD: pass ? '[provided]' : '[missing]',
+      SMTP_CACHE_EXPIRY_SECONDS: cacheExpirySecondsStr || '[using default]',
+    };
+
+    throw new Error(
+      `SMTP configuration is incomplete. Missing required values: ${missingConfig.join(', ')}.\n` +
+        `Provided configuration: ${JSON.stringify(providedConfig, null, 2)}`
+    );
+  }
+
+  const port = parseInt(portStr!);
+  const cacheExpirySeconds = cacheExpirySecondsStr
+    ? parseInt(cacheExpirySecondsStr)
+    : 300;
+
+  return {
+    host: host!,
+    port,
+    secure,
+    auth: {
+      user: user!,
+      pass: pass!,
+    },
+    cacheExpirySeconds,
+  };
+}
+
+export const EMAIL_SERVICE_TYPE = getEmailServiceType();
+export const EMAIL_CONFIG = getEmailConfig();
+export const SMTP_CONFIG = getSMTPConfig();
+export const EMAIL_SERVICE: IEmailService = createEmailService({
+  serviceType: EMAIL_SERVICE_TYPE,
+  emailConfig: EMAIL_CONFIG,
+  serviceConfig:
+    EMAIL_SERVICE_TYPE === EmailServiceType.SMTP ? SMTP_CONFIG : undefined,
+});
+
+/**
+ * Gets the test email address configuration from environment variables.
+ * @returns The test email address.
+ * @throws Error if test email address is not configured.
+ */
+function getTestEmailAddress(): string {
+  const testEmailAddress = process.env.TEST_EMAIL_ADDRESS;
+
+  if (!testEmailAddress) {
+    throw new Error(
+      'TEST_EMAIL_ADDRESS environment variable is required for testing email functionality. ' +
+        'Please add this to your environment configuration.'
+    );
+  }
+
+  return testEmailAddress;
+}
+
+// Export the test email address
+export const TEST_EMAIL_ADDRESS = getTestEmailAddress();

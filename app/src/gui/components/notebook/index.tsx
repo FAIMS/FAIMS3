@@ -25,6 +25,7 @@ import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
+import {getVisibleTypes} from '../../../uiSpecification';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -211,6 +212,14 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         uiSpecification.visible_types[0]
       : 'Record';
 
+  const visibleTypes = getVisibleTypes(uiSpecification);
+  const visibleMyRecords = records.myRecords.filter(r =>
+    visibleTypes.includes(r.type)
+  );
+  const visibleOtherRecords = records.otherRecords.filter(r =>
+    visibleTypes.includes(r.type)
+  );
+
   return (
     <Box>
       <Box>
@@ -285,7 +294,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               allowScrollButtonsMobile={true}
             >
               <Tab
-                label={`My ${recordLabel}s (${records.myRecords.length})`}
+                label={`My ${recordLabel}s (${visibleMyRecords.length})`}
                 value={0}
                 {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
               />
@@ -297,10 +306,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 />
               )}
 
-              {(tabIndex === 2 || records.otherRecords.length > 0) && (
+              {(tabIndex === 2 || visibleOtherRecords.length > 0) && (
                 <Tab
                   value={2}
-                  label={`Other ${recordLabel}s (${records.otherRecords.length})`}
+                  label={`Other ${recordLabel}s (${visibleOtherRecords.length})`}
                   {...a11yProps(2, `${NOTEBOOK_NAME}-otherrecords`)}
                 />
               )}
