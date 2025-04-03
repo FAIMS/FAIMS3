@@ -29,9 +29,14 @@ export const AddTeamUserDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="outline" className="bg-primary text-primary-foreground">
-        {buttonContent}
-      </Button>
+      <DialogTrigger>
+        <Button
+          variant="outline"
+          className="bg-primary text-primary-foreground"
+        >
+          {buttonContent}
+        </Button>
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add user to team</DialogTitle>
