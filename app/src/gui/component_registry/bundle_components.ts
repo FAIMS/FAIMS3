@@ -76,14 +76,6 @@ registerField(
   Checkbox
 );
 
-registerField(
-  'core-material-ui',
-  'TextField',
-  'HTML text field',
-  'A simple text field',
-  'Simple',
-  TextField
-);
 
 registerField(
   'formik-material-ui',
