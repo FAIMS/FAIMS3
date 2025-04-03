@@ -12,6 +12,7 @@ import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 interface CreateProjectFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  defaultValues?: {teamId?: string};
 }
 
 /**
@@ -21,7 +22,10 @@ interface CreateProjectFormProps {
  * @param {CreateProjectFormProps} props - The props for the form.
  * @returns {JSX.Element} The rendered CreateProjectForm component.
  */
-export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
+export function CreateProjectForm({
+  setDialogOpen,
+  defaultValues,
+}: CreateProjectFormProps) {
   const {user} = useAuth();
   const QueryClient = useQueryClient();
 
@@ -123,6 +127,8 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
       dividers={dividers}
       onSubmit={onSubmit}
       submitButtonText={NOTEBOOK_NAME_CAPITALIZED}
+      // pass in team ID default, if provided
+      defaultValues={{team: defaultValues?.teamId}}
     />
   );
 }

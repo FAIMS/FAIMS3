@@ -144,7 +144,7 @@ export const createTemplate = async ({
   const templateDoc: TemplateDocument = {
     _id: templateId,
     version: 1,
-    ...payload,
+    'ui-specification': payload['ui-specification'],
     metadata: {
       ...payload.metadata,
       project_status: 'active',

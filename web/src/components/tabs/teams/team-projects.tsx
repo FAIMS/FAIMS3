@@ -18,8 +18,7 @@ const TeamProjects = ({teamId}: {teamId: string}) => {
       data={data || []}
       loading={isPending}
       onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
-      // TODO prepopulate with team Id
-      button={<CreateProjectDialog />}
+      button={<CreateProjectDialog defaultValues={{teamId}} />}
     />
   );
 };

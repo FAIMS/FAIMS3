@@ -7,6 +7,7 @@ import {useGetTeams} from '@/hooks/get-hooks';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  defaultValues?: {teamId?: string};
 }
 
 /**
@@ -16,7 +17,10 @@ interface CreateTemplateFormProps {
  * @param {CreateTemplateFormProps} props - The props for the form.
  * @returns {JSX.Element} The rendered CreateTemplateForm component.
  */
-export function CreateTemplateForm({setDialogOpen}: CreateTemplateFormProps) {
+export function CreateTemplateForm({
+  setDialogOpen,
+  defaultValues,
+}: CreateTemplateFormProps) {
   const {user} = useAuth();
   const QueryClient = useQueryClient();
 
@@ -102,6 +106,7 @@ export function CreateTemplateForm({setDialogOpen}: CreateTemplateFormProps) {
       fields={fields}
       onSubmit={onSubmit}
       submitButtonText="Create Template"
+      defaultValues={{team: defaultValues?.teamId}}
     />
   );
 }

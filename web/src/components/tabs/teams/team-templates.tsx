@@ -18,7 +18,7 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
       data={data?.templates || []}
       loading={isPending}
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
-      button={<CreateTemplateDialog />}
+      button={<CreateTemplateDialog defaultValues={{teamId}}/>}
     />
   );
 };

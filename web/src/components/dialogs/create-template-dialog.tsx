@@ -10,7 +10,11 @@ import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateTemplateForm} from '../forms/create-template-form';
 
-export const CreateTemplateDialog = () => {
+export const CreateTemplateDialog = ({
+  defaultValues,
+}: {
+  defaultValues?: {teamId?: string};
+}) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -25,7 +29,7 @@ export const CreateTemplateDialog = () => {
             Create a new template by uploading a JSON template file.
           </DialogDescription>
         </DialogHeader>
-        <CreateTemplateForm setDialogOpen={setOpen} />
+        <CreateTemplateForm setDialogOpen={setOpen} defaultValues={defaultValues}/>
       </DialogContent>
     </Dialog>
   );
