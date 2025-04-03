@@ -23,8 +23,8 @@ export const CreateTeamDialog = () => {
         <DialogHeader>
           <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>
-            Create a new team to help manager users and share access to{' '}
-            {NOTEBOOK_NAME_CAPITALIZED}s.
+            Create a new team to help manage users and share access to{' '}
+            {NOTEBOOK_NAME_CAPITALIZED}s and Templates.
           </DialogDescription>
         </DialogHeader>
         <CreateTeamForm setDialogOpen={setOpen} />
