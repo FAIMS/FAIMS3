@@ -15,6 +15,10 @@ import {useAppSelector} from '../../../context/store';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {Refresh} from '@mui/icons-material';
 
+// Temporary flag for on-screen debug info for testing offline-issue
+// @TODO: RG to remove after testing
+const __DEV_MODE__ = true;
+
 type AddRecordButtonsProps = {
   project: Project;
   recordLabel: string;
@@ -36,11 +40,38 @@ export default function AddRecordButtons({
   >(undefined);
   const showQRButton = metadata['showQRCodeButton'] === true;
   const buttonLabel = `Add new ${recordLabel}`;
-  const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
+  // const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
+  // if (uiSpecification === undefined) {
+  //   return <CircularProgress thickness={2} size={12} />;
+  // }
+  // Detect offline state
+  const isOffline = !navigator.onLine;
+  console.log('[DEBUG] Offline mode:', isOffline);
 
-  if (uiSpecification === undefined) {
-    return <CircularProgress thickness={2} size={12} />;
+  // Use existing compiledSpecService to get the UI spec
+  const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
+  console.log('[DEBUG] uiSpecification:', uiSpecification);
+
+  const isSpecLoaded =
+    uiSpecification && Array.isArray(uiSpecification.visible_types);
+  console.log('[DEBUG] visible_types:', uiSpecification?.visible_types);
+
+  // Early fallback if spec didn'tt load
+  if (!isSpecLoaded) {
+    return (
+      <Box sx={{textAlign: 'center', p: 2}}>
+        {isOffline ? (
+          <p>
+            Unable to load form data in offline mode. Please check if the
+            project is synced.
+          </p>
+        ) : (
+          <CircularProgress thickness={2} size={24} />
+        )}
+      </Box>
+    );
   }
+
   const viewsets = uiSpecification.viewsets;
   const visible_types = uiSpecification.visible_types;
 
@@ -178,6 +209,35 @@ export default function AddRecordButtons({
             Refresh records
           </Button>
         </ButtonGroup>
+        {/*  On-screen debug panel for Android app testing */}
+        {__DEV_MODE__ && (
+          <Box
+            sx={{
+              mt: 2,
+              p: 1,
+              border: '1px dashed grey',
+              backgroundColor: '#f4f4f4',
+              fontSize: '12px',
+              maxHeight: '200px',
+              overflowY: 'auto',
+            }}
+          >
+            <strong>Debug Info:</strong>
+            <pre>
+              {JSON.stringify(
+                {
+                  isOffline,
+                  uiSpecificationLoaded: !!uiSpecification,
+                  visible_types,
+                  activeUser: !!activeUser,
+                  recordLabel,
+                },
+                null,
+                2
+              )}
+            </pre>
+          </Box>
+        )}
       </Box>
     );
   }
