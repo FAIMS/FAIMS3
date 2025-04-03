@@ -113,6 +113,7 @@ const MyTabScrollButton = styled(TabScrollButton)({
  */
 type NotebookComponentProps = {
   project: Project;
+  fromDraft: boolean;
 };
 
 /**
@@ -122,7 +123,10 @@ type NotebookComponentProps = {
  * @param props - The properties for the NotebookComponent.
  * @returns The JSX element for the NotebookComponent.
  */
-export default function NotebookComponent({project}: NotebookComponentProps) {
+export default function NotebookComponent({
+  project,
+  fromDraft,
+}: NotebookComponentProps) {
   const theme = useTheme();
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
   const queryClient = useQueryClient();
@@ -147,11 +151,14 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   });
 
   // This is the actual tab index state
-  const [tabIndex, setTabIndex] = React.useState<TabIndex>(
-    TAB_TO_INDEX.get(params.tab ?? 'my_records') ??
+  const [tabIndex, setTabIndex] = React.useState<TabIndex>(() => {
+    if (fromDraft) return TAB_TO_INDEX.get('drafts') ?? 1;
+    return (
+      TAB_TO_INDEX.get(params.tab ?? 'my_records') ??
       TAB_TO_INDEX.get('my_records') ??
       0
-  );
+    );
+  });
 
   // This is a function which updates the param based on the tab index
   const setTabValue = (val: TabIndex) => {

@@ -271,6 +271,8 @@ export default function RecordCreate() {
   }>();
   const {serverId, projectId, typeName, draftId, recordId} = params;
   const location = useLocation();
+  const from_draft = location.state?.from_draft === true;
+
   const navigate = useNavigate();
 
   if (!serverId) return <></>;

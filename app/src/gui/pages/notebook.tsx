@@ -30,7 +30,7 @@
 import {CircularProgress, Stack, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import NotebookComponent from '../components/notebook';
 import BackButton from '../components/ui/BackButton';
@@ -50,6 +50,8 @@ export default function Notebook() {
     state => state.projects.servers[serverId]?.projects[projectId]
   );
   const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));
+  const location = useLocation();
+  const fromDraft = location?.state?.fromDraft ?? false;
 
   if (!project) return <CircularProgress data-testid="progressbar" />;
 
@@ -74,7 +76,7 @@ export default function Notebook() {
         </Typography>
       </Stack>
 
-      <NotebookComponent project={project} />
+      <NotebookComponent project={project} fromDraft={fromDraft} />
     </Stack>
   );
 }
