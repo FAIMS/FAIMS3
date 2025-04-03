@@ -42,7 +42,8 @@ const key = 'user';
  */
 function decodeToken(token: string): TokenContents | null {
   try {
-    const payload = jwtDecode<TokenPayload>(token);
+    // TODO clarify the typing for payload vs contents -this is confusing!
+    const payload = jwtDecode<TokenPayload & {exp: number}>(token);
     // Combine the permissions part with the base payload to construct a complete version
     return {...payload, ...decodeAndValidateToken(payload)};
   } catch (e) {
