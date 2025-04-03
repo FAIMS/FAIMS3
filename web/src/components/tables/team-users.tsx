@@ -54,7 +54,7 @@ export const useGetColumns = ({
     resourceId: teamId,
   });
 
-  const rolesAvailable : Role[] = [];
+  const rolesAvailable: Role[] = [];
   if (canAddMemberToTeam) {
     rolesAvailable.push(Role.TEAM_MEMBER);
   }
