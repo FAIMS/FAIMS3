@@ -15,7 +15,7 @@ import {
   localUserToken,
   requestAuthAndType,
 } from './utils';
-import {getUserFromEmailOrUsername} from '../src/couchdb/users';
+import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
 import {
   PostRequestPasswordResetRequest,
   PutRequestPasswordResetRequest,
@@ -79,7 +79,7 @@ describe('password reset tests', () => {
 
   it('complete password reset with valid code', async () => {
     // First get a user and create a reset code
-    const localUser = await getUserFromEmailOrUsername(localUserName);
+    const localUser = await getExpressUserFromEmailOrUsername(localUserName);
     expect(localUser).to.not.be.undefined;
 
     const {code} = await createNewEmailCode(localUser!.user_id!);
@@ -121,7 +121,7 @@ describe('password reset tests', () => {
 
   it('complete password reset fails with expired code', async () => {
     // Create a code with very short expiry
-    const localUser = await getUserFromEmailOrUsername(localUserName);
+    const localUser = await getExpressUserFromEmailOrUsername(localUserName);
     const {code} = await createNewEmailCode(localUser!.user_id!, 10); // 10ms expiry
 
     // Wait for code to expire
@@ -137,7 +137,7 @@ describe('password reset tests', () => {
   });
 
   it('email code validation works correctly', async () => {
-    const localUser = await getUserFromEmailOrUsername(localUserName);
+    const localUser = await getExpressUserFromEmailOrUsername(localUserName);
     const {code} = await createNewEmailCode(localUser!.user_id!);
 
     // Valid code check
@@ -151,7 +151,7 @@ describe('password reset tests', () => {
     expect(validation.valid).to.be.true;
 
     // Check with wrong user ID
-    const adminUser = await getUserFromEmailOrUsername(adminUserName);
+    const adminUser = await getExpressUserFromEmailOrUsername(adminUserName);
     validation = await validateEmailCode(code, adminUser!.user_id);
     expect(validation.valid).to.be.false;
 

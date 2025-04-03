@@ -4,12 +4,20 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {Button} from '../ui/button';
 import {RemoveUserDialog} from '../dialogs/remove-user';
 import {RoleCard} from '../ui/role-card';
+import {AddRolePopover} from '../popovers/add-role-popover';
+import {useAuth} from '@/context/auth-provider';
+import {useQueryClient} from '@tanstack/react-query';
+import {toast} from 'sonner';
+import {Role, roleDetails, RoleScope} from '@faims3/data-model';
 
 export const getColumns = ({
   onReset,
 }: {
   onReset: (id: string) => void;
 }): ColumnDef<any>[] => {
+  const {user} = useAuth();
+  const queryClient = useQueryClient();
+
   return [
     {
       accessorKey: 'name',
@@ -24,16 +32,59 @@ export const getColumns = ({
       ),
     },
     {
-      accessorKey: 'roles',
+      accessorKey: 'globalRoles',
       header: 'Roles',
-      cell: ({row}: any) => (
-        <div className="flex flex-wrap gap-1">
-          {row
-            .getValue('roles')
-            .filter((role: string) => !role.includes('||'))
-            .map((role: string) => (
-              <RoleCard key={role}>{role}</RoleCard>
-            ))}
+      cell: ({
+        row: {
+          original: {globalRoles, _id: userId},
+        },
+      }: any) => (
+        <div className="flex flex-wrap gap-1 items-center">
+          {userId !== user?.user.id && (
+            <AddRolePopover
+              roles={Object.entries(roleDetails)
+                .filter(([_, {scope}]) => scope === RoleScope.GLOBAL)
+                .map(([value]) => value)}
+              userId={userId}
+            />
+          )}
+          {globalRoles.map((role: string) => (
+            <RoleCard
+              key={role}
+              onRemove={
+                userId === user?.user.id
+                  ? undefined
+                  : async () => {
+                      try {
+                        const response = await fetch(
+                          `${import.meta.env.VITE_API_URL}/api/users/${userId}/admin`,
+                          {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${user?.token}`,
+                            },
+                            body: JSON.stringify({
+                              addrole: false,
+                              role,
+                            }),
+                          }
+                        );
+
+                        if (!response.ok) {
+                          console.log('Error removing role', response);
+                        }
+
+                        queryClient.invalidateQueries({queryKey: ['users']});
+                      } catch (error) {
+                        toast.error('Error removing role');
+                      }
+                    }
+              }
+            >
+              {roleDetails[role as Role].name}
+            </RoleCard>
+          ))}
         </div>
       ),
     },
@@ -60,13 +111,13 @@ export const getColumns = ({
       id: 'remove',
       cell: ({
         row: {
-          original: {_id, other_roles},
+          original: {_id, _id: userId},
         },
       }: any) => (
         <div className="flex justify-center items-center -my-2">
           <RemoveUserDialog
             userId={_id}
-            disabled={!_id || other_roles.includes('cluster-admin')}
+            disabled={!_id || userId === user?.user.id}
           />
         </div>
       ),

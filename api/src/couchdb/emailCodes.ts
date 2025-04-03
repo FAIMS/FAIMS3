@@ -12,11 +12,12 @@ import {
   GetEmailCodeIndex,
   EmailCodeFields,
   EmailCodeRecord,
+  ExistingPeopleDBDocument,
 } from '@faims3/data-model';
 import {getAuthDB} from '.';
 import {v4 as uuidv4} from 'uuid';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
-import {getUserFromEmailOrUsername} from './users';
+import {getCouchUserFromEmailOrUsername} from './users';
 import {EMAIL_CODE_EXPIRY_MINUTES, NEW_CONDUCTOR_URL} from '../buildconfig';
 import crypto from 'crypto';
 
@@ -133,7 +134,11 @@ export const createNewEmailCode = async (
 export const validateEmailCode = async (
   code: string,
   userId?: string
-): Promise<{valid: boolean; user?: Express.User; validationError?: string}> => {
+): Promise<{
+  valid: boolean;
+  user?: ExistingPeopleDBDocument;
+  validationError?: string;
+}> => {
   try {
     // Hash the code
     const hashedCode = hashVerificationCode(code);
@@ -166,7 +171,7 @@ export const validateEmailCode = async (
       return {valid: false, validationError: 'Code has expired.'};
     }
 
-    const user = await getUserFromEmailOrUsername(codeDoc.userId);
+    const user = await getCouchUserFromEmailOrUsername(codeDoc.userId);
     if (!user) {
       return {
         valid: false,

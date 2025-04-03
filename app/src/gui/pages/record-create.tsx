@@ -33,7 +33,7 @@ import {
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Location,
   Navigate,
@@ -43,9 +43,9 @@ import {
 } from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
+import {addAlert} from '../../context/slices/alertSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {Project, selectProjectById} from '../../context/slices/projectSlice';
-import {addAlert} from '../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {newStagedData} from '../../sync/draft-storage';
 import {getReturnedTypesForViewSet} from '../../uiSpecification';
@@ -164,7 +164,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const [parentLinks, setParentLinks] = useState<ParentLinkProps[]>([]);
   const [is_link_ready, setIs_link_ready] = useState(false);
   const [progress, setProgress] = useState(0);
-  const buttonRef = useRef<HTMLDivElement | null>(null);
 
   const uiSpecId = useAppSelector(state =>
     selectProjectById(state, project_id)
@@ -251,8 +250,9 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               draftLastSaved={draftLastSaved}
               mq_above_md={mq_above_md}
               navigate={navigate}
+              location={props.location}
               setProgress={setProgress}
-              buttonRef={buttonRef}
+              disabled={false}
             />
           </Box>
         </Box>

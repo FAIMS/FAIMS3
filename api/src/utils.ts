@@ -29,17 +29,29 @@ export const slugify = (str: string) => {
 /**
  * Generate a TokenContents object for use in API code
  *
+ * Not to be used for real authentication use cases.
+ *
  * @param user A user object
  * @returns a token that can be used where authentication is required
  */
-export const generateTokenContentsForUser = (
-  user: Express.User
-): TokenContents => {
+export const mockTokenContentsForUser = (user: Express.User): TokenContents => {
   return {
-    roles: user.roles,
+    globalRoles: user.globalRoles,
+    resourceRoles: user.resourceRoles,
     server: slugify(CONDUCTOR_INSTANCE_NAME),
     username: user.user_id,
     // Five minutes from now
     exp: Date.now() + 1000 * 60 * 5,
   };
+};
+
+/**
+ * Generates a random alphanumeric sequence for use in identifiers
+ * @param length The length of the sequence to generate (default: 4)
+ * @returns A random alphanumeric string
+ */
+export const generateRandomString = (length = 4): string => {
+  return Math.random()
+    .toString(36)
+    .substring(2, 2 + length);
 };

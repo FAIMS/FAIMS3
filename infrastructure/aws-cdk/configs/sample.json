@@ -19,7 +19,9 @@
   "uiConfiguration": {
     "uiTheme": "default",
     "notebookListType": "tabs",
-    "notebookName": "notebook"
+    "notebookName": "notebook",
+    "appName": "FAIMS Mobile",
+    "appId": "FAIMS"
   },
   "couch": {
     "ebsRecoverySnapshotId": "1234",
@@ -75,6 +77,7 @@
     "description": "FAIMS Conductor instance deployment.",
     "conductorDockerImage": "org/faims3-api",
     "conductorDockerImageTag": "latest",
+    "shortCodePrefix": "FAIMS",
     "cpu": 1024,
     "memory": 2048,
     "autoScaling": {
@@ -91,13 +94,21 @@
     "designer": "designer",
     "conductor": "conductor",
     "couch": "couchdb",
-    "faims": "faims"
+    "faims": "faims",
+    "web": "web"
   },
   "mobileApps": {
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
     "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
   },
-  "web": {
-
+  "web": {},
+  "smtp": {
+    "emailServiceType": "SMTP",
+    "fromEmail": "notifications@your-domain.com",
+    "fromName": "FAIMS Notification Service",
+    "replyTo": "support@your-domain.com",
+    "testEmailAddress": "admin@your-domain.com",
+    "cacheExpirySeconds": 300,
+    "credentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
   }
 }
