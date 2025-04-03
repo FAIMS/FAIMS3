@@ -239,10 +239,10 @@ export const OptionsEditor = ({
     state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
   const allFviews = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
+    state => state.notebook['ui-specification'].present.fviews
   );
 
   const dispatch = useAppDispatch();

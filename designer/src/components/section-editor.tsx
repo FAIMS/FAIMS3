@@ -89,10 +89,10 @@ export const SectionEditor = ({
     state => state.notebook['ui-specification'].present.viewsets
   );
   const allFviews = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
+    state => state.notebook['ui-specification'].present.fviews
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
 
   const dispatch = useAppDispatch();
