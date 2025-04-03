@@ -1,8 +1,10 @@
 import {DataTable} from '@/components/data-table/data-table';
-import {columns} from '@/components/tables/teamUsers';
+import {AddTeamUserDialog} from '@/components/dialogs/teams/add-team-user-dialog';
+import {getColumns} from '@/components/tables/team-users';
 import {useAuth} from '@/context/auth-provider';
 import {useGetUsersForTeam} from '@/hooks/get-hooks';
 import {ErrorComponent} from '@tanstack/react-router';
+import {Plus} from 'lucide-react';
 
 const TeamUsers = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
@@ -12,9 +14,27 @@ const TeamUsers = ({teamId}: {teamId: string}) => {
   }
 
   const {isPending, data} = useGetUsersForTeam({user, teamId});
+  const columns = getColumns({teamId});
 
   return (
-    <DataTable columns={columns} data={data?.members} loading={isPending} />
+    <div>
+      <DataTable
+        columns={columns}
+        data={data?.members || []}
+        loading={isPending}
+        button={
+          <AddTeamUserDialog
+            teamId={teamId}
+            buttonContent={
+              <>
+                <Plus />
+                {'Add user'}
+              </>
+            }
+          />
+        }
+      />
+    </div>
   );
 };
 

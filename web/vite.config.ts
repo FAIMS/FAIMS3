@@ -4,6 +4,7 @@ import {defineConfig} from 'vite';
 import {TanStackRouterVite} from '@tanstack/router-plugin/vite';
 
 export default defineConfig({
+  // @ts-ignore
   plugins: [TanStackRouterVite(), react()],
   resolve: {
     alias: {

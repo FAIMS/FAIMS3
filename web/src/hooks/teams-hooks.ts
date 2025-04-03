@@ -1,4 +1,5 @@
 import {User} from '@/context/auth-provider';
+import {Role, TeamMembershipInput} from '@faims3/data-model';
 
 /**
  * Creates a new team
@@ -56,4 +57,35 @@ export const updateTeam = async ({
       name,
       description,
     }),
+  });
+
+/**
+ * Modifies team membership
+ */
+export const modifyMemberForTeam = async ({
+  user,
+  email,
+  role,
+  teamId,
+  action,
+}: {
+  user: User;
+  email: string;
+  // use Role once import works
+  role?: string;
+  teamId: string;
+  action: TeamMembershipInput['action'];
+}) =>
+  await fetch(`${import.meta.env.VITE_API_URL}/api/teams/${teamId}/members`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${user.token}`,
+    },
+    body: JSON.stringify({
+      action,
+      // TODO remove cast
+      role: role as Role,
+      username: email,
+    } satisfies TeamMembershipInput),
   });

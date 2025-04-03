@@ -1,6 +1,6 @@
 import {Form} from '@/components/form';
 import {useAuth} from '@/context/auth-provider';
-import {createTeam} from '@/hooks/create-team';
+import {createTeam} from '@/hooks/teams-hooks';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
 

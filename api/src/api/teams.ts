@@ -275,21 +275,10 @@ api.post(
     }
 
     const teamId = req.params.id;
-    const {username, role, add} = req.body;
+    const {username, role, action} = req.body;
 
     // First verify team exists
     await getTeamById(teamId);
-
-    // Check appropriate permission based on role and operation
-    const requiredAction = getTeamMembershipAction(role, add);
-
-    if (
-      !userCanDo({user: req.user, action: requiredAction, resourceId: teamId})
-    ) {
-      throw new Exceptions.UnauthorizedException(
-        'You do not have permission to manage team members for this role.'
-      );
-    }
 
     // Get user to modify
     const targetUser = await getCouchUserFromEmailOrUsername(username);
@@ -306,19 +295,61 @@ api.post(
       );
     }
 
+    // Check appropriate permission based on role and operation
+    let rolesOfTargetUser: Role[] = [];
+    let requiredActions: Action[] = [];
+
+    if (action === 'REMOVE_USER') {
+      rolesOfTargetUser = targetUser.teamRoles
+        .filter(r => r.resourceId === teamId)
+        .map(r => r.role);
+    } else if (action === 'ADD_ROLE' || action === 'REMOVE_ROLE') {
+      rolesOfTargetUser = [role!];
+    }
+
+    for (const roleToCheck of rolesOfTargetUser) {
+      requiredActions.push(
+        getTeamMembershipAction(
+          roleToCheck,
+          // add remove based on action
+          action === 'REMOVE_USER' || action === 'REMOVE_ROLE' ? false : true
+        )
+      );
+    }
+
+    for (const actionToCheck of requiredActions) {
+      if (
+        !userCanDo({user: req.user, action: actionToCheck, resourceId: teamId})
+      ) {
+        throw new Exceptions.UnauthorizedException(
+          'You do not have permission to manage team members for this role.'
+        );
+      }
+    }
+
     // Apply the role change
-    if (add) {
+    if (action === 'ADD_ROLE') {
       addTeamRole({
         user: targetUser,
         teamId,
-        role,
+        // this is defined - see zod model
+        role: role!,
       });
-    } else {
+    } else if (action === 'REMOVE_ROLE') {
       removeTeamRole({
         user: targetUser,
         teamId,
-        role,
+        // this is defined - see zod model
+        role: role!,
       });
+    } else if (action === 'REMOVE_USER') {
+      for (const hasRole of rolesOfTargetUser) {
+        removeTeamRole({
+          user: targetUser,
+          teamId,
+          role: hasRole,
+        });
+      }
     }
 
     // Save the user changes

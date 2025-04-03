@@ -14,8 +14,8 @@ const TeamProjects = ({teamId}: {teamId: string}) => {
 
   return (
     <DataTable
-      columns={columns}
-      data={data}
+      columns={columns.filter(c => c.id !== 'team')}
+      data={data || []}
       loading={isPending}
       onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
       // TODO prepopulate with team Id

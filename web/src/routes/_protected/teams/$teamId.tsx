@@ -1,4 +1,4 @@
-import {UpdateTeamDialog} from '@/components/dialogs/update-team-dialog';
+import {UpdateTeamDialog} from '@/components/dialogs/teams/update-team-dialog';
 import TeamDetails from '@/components/tabs/teams/team-details';
 import TeamProjects from '@/components/tabs/teams/team-projects';
 import TeamTemplates from '@/components/tabs/teams/team-templates';

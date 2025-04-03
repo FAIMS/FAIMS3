@@ -6,17 +6,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import React, {useState} from 'react';
-import {CreateTeamForm} from '../forms/create-team-form';
-import {Button} from '../ui/button';
-import {useGetTeam} from '@/hooks/get-hooks';
 import {useAuth} from '@/context/auth-provider';
-import {LoaderCircleIcon} from 'lucide-react';
-import {UpdateTeamForm} from '../forms/update-team-form';
+import {useGetTeam} from '@/hooks/get-hooks';
 import {ErrorComponent} from '@tanstack/react-router';
+import {LoaderCircleIcon} from 'lucide-react';
+import React, {useState} from 'react';
+import {UpdateTeamForm} from '../../forms/teams/update-team-form';
+import {Button} from '../../ui/button';
 
-export const UpdateTeamDialog = ({teamId, buttonContent}: {teamId: string, buttonContent?: React.ReactNode}) => {
+export const UpdateTeamDialog = ({
+  teamId,
+  buttonContent,
+}: {
+  teamId: string;
+  buttonContent?: React.ReactNode;
+}) => {
   const {user} = useAuth();
   if (!user) {
     return <p>Not authenticated...</p>;

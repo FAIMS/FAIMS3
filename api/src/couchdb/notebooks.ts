@@ -28,6 +28,7 @@ import {
   Action,
   APINotebookList,
   EncodedProjectUIModel,
+  GetNotebookListResponse,
   logError,
   notebookRecordIterator,
   ProjectDBFields,
@@ -201,7 +202,8 @@ export const getUserProjectsDetailed = async (
           status: project!.status,
           project_id: projectId,
           metadata: projectMeta,
-        };
+          ownedByTeamId: project!.ownedByTeamId,
+        } satisfies GetNotebookListResponse[number];
       } catch (e) {
         console.error('Error occurred during detailed notebook listing');
         logError(e);

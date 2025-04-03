@@ -14,8 +14,8 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
 
   return (
     <DataTable
-      columns={columns}
-      data={data?.templates}
+      columns={columns.filter(c => c.id !== 'team')}
+      data={data?.templates || []}
       loading={isPending}
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
       button={<CreateTemplateDialog />}

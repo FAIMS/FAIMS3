@@ -8,8 +8,8 @@ import {
 } from '@/components/ui/dialog';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useState} from 'react';
-import {CreateTeamForm} from '../forms/create-team-form';
-import {Button} from '../ui/button';
+import {CreateTeamForm} from '../../forms/teams/create-team-form';
+import {Button} from '../../ui/button';
 
 export const CreateTeamDialog = () => {
   const [open, setOpen] = useState(false);

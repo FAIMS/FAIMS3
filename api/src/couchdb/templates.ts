@@ -31,6 +31,7 @@ export const getTemplates = async ({
       resultList = await templatesDb.query<TemplateDocument>(
         TEMPLATES_BY_TEAM_ID,
         {
+          key: teamId,
           include_docs: true,
         }
       );

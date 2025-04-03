@@ -4,7 +4,7 @@ import {useAuth} from '@/context/auth-provider';
 import {useGetTeams} from '@/hooks/get-hooks';
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
 
-import {CreateTeamDialog} from '@/components/dialogs/create-team-dialog';
+import {CreateTeamDialog} from '@/components/dialogs/teams/create-team-dialog';
 
 export const Route = createFileRoute('/_protected/teams/')({
   component: RouteComponent,
