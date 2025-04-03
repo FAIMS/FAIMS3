@@ -11,4 +11,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // Polyfill global in case of weird importing going on!
+  define: {
+    global: 'globalThis',
+  },
 });

@@ -1,0 +1,14 @@
+// library/data-model/tsconfig.esm.json
+{
+  "extends": "./tsconfig.json", // Inherit base settings
+  "compilerOptions": {
+    "module": "ESNext",        // Output ESM
+    "outDir": "./build/esm",   // Output to a separate directory
+    "declaration": false       // Don't need duplicate .d.ts files
+    // Make sure target is compatible with ESNext modules if needed,
+    // but inheriting ES2015 might be fine.
+  },
+  "include": [ // Ensure it includes the same source files
+    "./src"
+  ]
+}
