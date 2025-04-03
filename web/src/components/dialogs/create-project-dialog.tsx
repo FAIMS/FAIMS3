@@ -10,7 +10,7 @@ import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateProjectForm} from '../forms/create-project-form';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import { Plus } from 'lucide-react';
+import {Plus} from 'lucide-react';
 
 export const CreateProjectDialog = ({
   defaultValues,

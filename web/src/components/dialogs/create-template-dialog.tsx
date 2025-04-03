@@ -9,7 +9,7 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateTemplateForm} from '../forms/create-template-form';
-import { Plus } from 'lucide-react';
+import {Plus} from 'lucide-react';
 
 export const CreateTemplateDialog = ({
   defaultValues,
