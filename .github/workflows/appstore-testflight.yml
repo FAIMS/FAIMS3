@@ -1,5 +1,11 @@
 name: Deploy to Apple App Store on Demo Track, Manual
 
+# Grant permssions to this workflow to read the private repo with fastlane signing keys
+permissions: 
+  contents: read
+  actions: read
+  id-token: write
+
 on:
   workflow_dispatch:
   schedule:
@@ -118,7 +124,8 @@ jobs:
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: '${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}'
           MATCH_PASSWORD: '${{ secrets.MATCH_PASSWORD }}'
           MATCH_GIT_URL: '${{ vars.MATCH_GIT_URL }}'
-          GIT_AUTHORIZATION: '${{ secrets.GIT_AUTHORIZATION }}'
+#          GIT_AUTHORIZATION: '${{ secrets.GIT_AUTHORIZATION }}'
+          GIT_AUTHORIZATION: "x-access-token:${{ secrets.GITHUB_TOKEN }}"
           PROVISIONING_PROFILE_SPECIFIER: '${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}'
           APPLE_KEY_ID: '${{ secrets.APPLE_KEY_ID }}'
           APPLE_ISSUER_ID: '${{ secrets.APPLE_ISSUER_ID }}'
