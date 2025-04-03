@@ -387,7 +387,6 @@ export function resourceRolesEqual(a: ResourceRole, b: ResourceRole): boolean {
 // ENCODING HELPER
 // ===============
 
-
 /**
  * Takes a couch user and associations (e.g. this team owns these projects) and
  * returns a compiled list of resource roles

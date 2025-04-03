@@ -8,6 +8,7 @@ import {
 import {
   DatabaseType,
   DBTargetVersions,
+  IS_TESTING,
   MigrationDetails,
   MigrationFunc,
 } from './migrationService';
@@ -50,11 +51,13 @@ export const peopleV1toV2Migration: MigrationFunc = doc => {
           resourceId: projectId,
         });
       } else {
-        console.warn(
-          'The project role ' +
-            projectRole +
-            ' could not be mapped to a new role - ignoring...'
-        );
+        if (!IS_TESTING) {
+          console.warn(
+            'The project role ' +
+              projectRole +
+              ' could not be mapped to a new role - ignoring...'
+          );
+        }
       }
     }
   }
@@ -122,17 +125,21 @@ export const invitesV1toV2Migration: MigrationFunc = doc => {
   } else if (['moderator', 'team', 'user'].includes(oldRole)) {
     newRole = Role.PROJECT_CONTRIBUTOR;
   } else {
-    console.warn(
-      'The project role ' +
-        oldRole +
-        ' could not be mapped to a new role - ignoring...'
-    );
+    if (!IS_TESTING) {
+      console.warn(
+        'The project role ' +
+          oldRole +
+          ' could not be mapped to a new role - ignoring...'
+      );
+    }
   }
 
   if (newRole === null) {
-    console.warn(
-      'The invite contained a role that is not understood. Deleting.'
-    );
+    if (!IS_TESTING) {
+      console.warn(
+        'The invite contained a role that is not understood. Deleting.'
+      );
+    }
     return {action: 'delete'};
   }
 

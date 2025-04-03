@@ -35,6 +35,7 @@ import {
   EMAIL_SERVICE,
   EMAIL_SERVICE_TYPE,
   TEST_EMAIL_ADDRESS,
+  RUNNING_UNDER_TEST,
 } from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
@@ -189,9 +190,11 @@ api.post(
     const startTime = Date.now();
 
     // Log starting the test
-    console.log(
-      `[Email Test] Starting email test requested by admin user ${req.user._id}`
-    );
+    if (!RUNNING_UNDER_TEST) {
+      console.log(
+        `[Email Test] Starting email test requested by admin user ${req.user._id}`
+      );
+    }
 
     const responseData = {
       success: false,
@@ -253,9 +256,11 @@ If you received this email, the email service is configured correctly.
       };
 
       // Log sending attempt
-      console.log(
-        `[Email Test] Attempting to send test email to ${TEST_EMAIL_ADDRESS}`
-      );
+      if (!RUNNING_UNDER_TEST) {
+        console.log(
+          `[Email Test] Attempting to send test email to ${TEST_EMAIL_ADDRESS}`
+        );
+      }
 
       // Start timing the email sending
       const emailStartTime = Date.now();
@@ -280,9 +285,11 @@ If you received this email, the email service is configured correctly.
         emailResponse: emailResult.response,
       };
 
-      console.log(
-        `[Email Test] Test email sent successfully. Message ID: ${emailResult.messageId}`
-      );
+      if (!RUNNING_UNDER_TEST) {
+        console.log(
+          `[Email Test] Test email sent successfully. Message ID: ${emailResult.messageId}`
+        );
+      }
     } catch (error: any) {
       // Email failed to send
       responseData.success = false;
@@ -321,9 +328,11 @@ If you received this email, the email service is configured correctly.
       responseData.timings.total = endTime - startTime;
 
       // Log test completion
-      console.log(
-        `[Email Test] Email test complete. Status: ${responseData.status}. Duration: ${responseData.timings.total}ms`
-      );
+      if (!RUNNING_UNDER_TEST) {
+        console.log(
+          `[Email Test] Email test complete. Status: ${responseData.status}. Duration: ${responseData.timings.total}ms`
+        );
+      }
 
       // Return the result to the client
       res.json(responseData);
