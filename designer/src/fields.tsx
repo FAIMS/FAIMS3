@@ -15,19 +15,16 @@
 import {FieldType} from './state/initial';
 
 const fields: {[key: string]: FieldType} = {
-  TextField: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
+  FAIMSTextField: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'FAIMSTextField',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Text Field',
+      label: 'FAIMS Text Field',
       fullWidth: true,
       helperText: 'Enter text',
       variant: 'outlined',
       required: false,
-      InputProps: {
-        type: 'text',
-      },
     },
     validationSchema: [['yup.string']],
     initialValue: '',
@@ -437,20 +434,6 @@ const fields: {[key: string]: FieldType} = {
       label: 'Address',
     },
     validationSchema: [['yup.object'], ['yup.nullable']],
-  },
-  FAIMSTextField: {
-    'component-namespace': 'faims-custom',
-    'component-name': 'FAIMSTextField',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'FAIMS Text Field',
-      fullWidth: true,
-      helperText: 'Enter text',
-      variant: 'outlined',
-      required: false,
-    },
-    validationSchema: [['yup.string']],
-    initialValue: '',
   },
 
   NumberField: {
