@@ -4,17 +4,13 @@ import TeamProjects from '@/components/tabs/teams/team-projects';
 import TeamTemplates from '@/components/tabs/teams/team-templates';
 import TeamUsers from '@/components/tabs/teams/team-users';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {Action} from '@faims3/data-model';
 import {createFileRoute} from '@tanstack/react-router';
 import {Edit} from 'lucide-react';
-import React, {useState} from 'react';
+import {useState} from 'react';
 
 type TabLabel = 'Details' | 'Surveys' | 'Templates' | 'Users';
-const tabs: {name: TabLabel; Component: any}[] = [
-  {name: 'Details', Component: TeamDetails},
-  {name: 'Surveys', Component: TeamProjects},
-  {name: 'Templates', Component: TeamTemplates},
-  {name: 'Users', Component: TeamUsers},
-];
 
 export const Route = createFileRoute('/_protected/teams/$teamId')({
   component: RouteComponent,
@@ -22,6 +18,34 @@ export const Route = createFileRoute('/_protected/teams/$teamId')({
 
 function RouteComponent() {
   const {teamId} = Route.useParams();
+
+  // Access checks
+  const canSeeTeamDetails = useIsAuthorisedTo({
+    action: Action.VIEW_TEAM_DETAILS,
+    resourceId: teamId,
+  });
+  const canEditTeamDetails = useIsAuthorisedTo({
+    action: Action.UPDATE_TEAM_DETAILS,
+    resourceId: teamId,
+  });
+  const canViewTeamMembers = useIsAuthorisedTo({
+    action: Action.VIEW_TEAM_MEMBERS,
+    resourceId: teamId,
+  });
+
+  const tabs: {name: TabLabel; Component: any}[] = [];
+
+  // details?
+  if (canSeeTeamDetails) {
+    tabs.push({name: 'Details', Component: TeamDetails});
+  }
+  tabs.push({name: 'Surveys', Component: TeamProjects});
+  tabs.push({name: 'Templates', Component: TeamTemplates});
+  // members?
+  if (canViewTeamMembers) {
+    tabs.push({name: 'Users', Component: TeamUsers});
+  }
+
   const [activeTab, setActiveTab] = useState<TabLabel>(tabs[0].name);
 
   return (
@@ -40,7 +64,7 @@ function RouteComponent() {
           ))}
         </TabsList>
 
-        {activeTab === 'Details' && (
+        {activeTab === 'Details' && canEditTeamDetails && (
           <UpdateTeamDialog
             teamId={teamId}
             buttonContent={

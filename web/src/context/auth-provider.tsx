@@ -1,5 +1,9 @@
 import {useEffect, createContext, useState, useContext} from 'react';
-import {TokenContents} from '@faims3/data-model';
+import {
+  decodeAndValidateToken,
+  TokenContents,
+  TokenPayload,
+} from '@faims3/data-model';
 import {jwtDecode} from 'jwt-decode';
 
 export interface User {
@@ -38,7 +42,9 @@ const key = 'user';
  */
 function decodeToken(token: string): TokenContents | null {
   try {
-    return jwtDecode<TokenContents>(token);
+    const payload = jwtDecode<TokenPayload>(token);
+    // Combine the permissions part with the base payload to construct a complete version
+    return {...payload, ...decodeAndValidateToken(payload)};
   } catch (e) {
     console.error('Failed to decode token:', e);
     return null;

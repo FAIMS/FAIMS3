@@ -1,11 +1,12 @@
-import {DataTable} from '@/components/data-table/data-table';
-import {AddTeamUserDialog} from '@/components/dialogs/teams/add-team-user-dialog';
-import {getColumns} from '@/components/tables/team-users';
-import {useAuth} from '@/context/auth-provider';
-import {useGetUsersForTeam} from '@/hooks/get-hooks';
-import {ErrorComponent} from '@tanstack/react-router';
-import {LoaderCircle, Plus} from 'lucide-react';
-import {useMemo} from 'react';
+import { DataTable } from '@/components/data-table/data-table';
+import { AddTeamUserDialog } from '@/components/dialogs/teams/add-team-user-dialog';
+import { useGetColumns } from '@/components/tables/team-users';
+import { useAuth } from '@/context/auth-provider';
+import { useIsAuthorisedTo } from '@/hooks/auth-hooks';
+import { useGetUsersForTeam } from '@/hooks/get-hooks';
+import { Action } from '@faims3/data-model';
+import { ErrorComponent } from '@tanstack/react-router';
+import { LoaderCircle, Plus } from 'lucide-react';
 
 const TeamUsers = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
@@ -15,7 +16,26 @@ const TeamUsers = ({teamId}: {teamId: string}) => {
   }
 
   const {isLoading, data} = useGetUsersForTeam({user, teamId});
-  const columns = useMemo(() => getColumns({teamId}), [teamId]);
+
+  // permission checks
+
+  // can we add a user to the team?
+  const canAddMemberToTeam = useIsAuthorisedTo({
+    action: Action.ADD_MEMBER_TO_TEAM,
+    resourceId: teamId,
+  });
+  const canAddManagerToTeam = useIsAuthorisedTo({
+    action: Action.ADD_MANAGER_TO_TEAM,
+    resourceId: teamId,
+  });
+  const canAddAdminToTeam = useIsAuthorisedTo({
+    action: Action.ADD_ADMIN_TO_TEAM,
+    resourceId: teamId,
+  });
+  const canAddSomeUser =
+    canAddAdminToTeam || canAddManagerToTeam || canAddMemberToTeam;
+
+  const columns = useGetColumns({teamId});
 
   return (
     <div>
@@ -27,15 +47,17 @@ const TeamUsers = ({teamId}: {teamId: string}) => {
           data={data?.members || []}
           loading={isLoading}
           button={
-            <AddTeamUserDialog
-              teamId={teamId}
-              buttonContent={
-                <>
-                  <Plus />
-                  {'Add user'}
-                </>
-              }
-            />
+            canAddSomeUser && (
+              <AddTeamUserDialog
+                teamId={teamId}
+                buttonContent={
+                  <>
+                    <Plus />
+                    {'Add user'}
+                  </>
+                }
+              />
+            )
           }
         />
       )}

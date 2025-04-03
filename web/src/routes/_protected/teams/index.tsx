@@ -5,6 +5,8 @@ import {useGetTeams} from '@/hooks/get-hooks';
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
 
 import {CreateTeamDialog} from '@/components/dialogs/teams/create-team-dialog';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {Action} from '@faims3/data-model';
 
 export const Route = createFileRoute('/_protected/teams/')({
   component: RouteComponent,
@@ -23,6 +25,9 @@ function RouteComponent() {
     return <p>No user!</p>;
   }
 
+  // Can the user create a new team?
+  const canCreateTeam = useIsAuthorisedTo({action: Action.CREATE_TEAM});
+
   const {isPending, data} = useGetTeams(user);
 
   const navigate = useNavigate();
@@ -33,7 +38,7 @@ function RouteComponent() {
       data={data ? data?.teams : []}
       loading={isPending}
       onRowClick={({_id}) => navigate({to: `/teams/${_id}`})}
-      button={<CreateTeamDialog />}
+      button={canCreateTeam && <CreateTeamDialog />}
     />
   );
 }

@@ -1,5 +1,5 @@
 import {useAuth} from '@/context/auth-provider';
-import {isAuthorized, Action} from '@faims3/data-model';
+import {isAuthorized, Action, decodeAndValidateToken} from '@faims3/data-model';
 import {useMemo} from 'react';
 
 /**
@@ -14,14 +14,19 @@ export const useIsAuthorisedTo = ({
   resourceId?: string;
 }): boolean => {
   const {user} = useAuth();
+
+  console.log('Checking auth with input: ', {action, resourceId});
+  console.log('User: ', {user});
+
   if (!user || !user.decodedToken) {
+    console.log('User or decoded token not defined');
     return false;
   }
 
   return useMemo(
     () =>
       isAuthorized({
-        decodedToken: {...user.decodedToken!},
+        decodedToken: user.decodedToken!,
         action,
         resourceId,
       }),

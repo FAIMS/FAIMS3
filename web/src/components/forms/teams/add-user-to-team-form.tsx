@@ -4,24 +4,14 @@ import {modifyMemberForTeam} from '@/hooks/teams-hooks';
 import {useQueryClient} from '@tanstack/react-query';
 import {Field} from '@/components/form';
 import {z} from 'zod';
-
-const fields: Field[] = [
-  {
-    name: 'email',
-    label: 'User Email',
-    schema: z.string().email(),
-  },
-  {
-    name: 'role',
-    label: 'Role',
-    // TODO use role enum once import works
-    options: ['TEAM_MEMBER', 'TEAM_MANAGER', 'TEAM_ADMIN'].map(r => ({
-      label: r,
-      value: r,
-    })),
-    schema: z.enum(['TEAM_MEMBER', 'TEAM_MANAGER', 'TEAM_ADMIN']),
-  },
-];
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {
+  Action,
+  Resource,
+  Role,
+  roleDetails,
+  RoleScope,
+} from '@faims3/data-model';
 
 interface AddUserToTeamFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -36,6 +26,48 @@ export function AddUserToTeamForm({
 }: AddUserToTeamFormProps) {
   const {user} = useAuth();
   const QueryClient = useQueryClient();
+
+  // can we add a user to the team?
+  const canAddMemberToTeam = useIsAuthorisedTo({
+    action: Action.ADD_MEMBER_TO_TEAM,
+    resourceId: teamId,
+  });
+  const canAddManagerToTeam = useIsAuthorisedTo({
+    action: Action.ADD_MANAGER_TO_TEAM,
+    resourceId: teamId,
+  });
+  const canAddAdminToTeam = useIsAuthorisedTo({
+    action: Action.ADD_ADMIN_TO_TEAM,
+    resourceId: teamId,
+  });
+
+  const rolesAvailable: Role[] = [];
+  if (canAddMemberToTeam) {
+    rolesAvailable.push(Role.TEAM_MEMBER);
+  }
+  if (canAddManagerToTeam) {
+    rolesAvailable.push(Role.TEAM_MANAGER);
+  }
+  if (canAddAdminToTeam) {
+    rolesAvailable.push(Role.TEAM_ADMIN);
+  }
+
+  const fields: Field[] = [
+    {
+      name: 'email',
+      label: 'User Email',
+      schema: z.string().email(),
+    },
+    {
+      name: 'role',
+      label: 'Role',
+      options: rolesAvailable.map(r => ({
+        label: roleDetails[r].name,
+        value: r,
+      })),
+      schema: z.enum(['TEAM_MEMBER', 'TEAM_MANAGER', 'TEAM_ADMIN']),
+    },
+  ];
 
   interface onSubmitProps {
     email: string;
