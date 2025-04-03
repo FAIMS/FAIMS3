@@ -7,6 +7,8 @@ import {RoleCard} from '../ui/role-card';
 import {AddRolePopover} from '../popovers/add-role-popover';
 import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
+import {toast} from 'sonner';
+import {Role, roleDetails, RoleScope} from '@faims3/data-model';
 
 export const getColumns = ({
   onReset,
@@ -30,21 +32,23 @@ export const getColumns = ({
       ),
     },
     {
-      accessorKey: 'other_roles',
+      accessorKey: 'globalRoles',
       header: 'Roles',
       cell: ({
         row: {
-          original: {other_roles, all_roles, _id: userId},
+          original: {globalRoles, _id: userId},
         },
       }: any) => (
         <div className="flex flex-wrap gap-1 items-center">
-          <AddRolePopover
-            roles={all_roles.filter(
-              (role: string) => !other_roles.includes(role)
-            )}
-            userId={userId}
-          />
-          {other_roles.map((role: string) => (
+          {userId !== user?.user.id && (
+            <AddRolePopover
+              roles={Object.entries(roleDetails)
+                .filter(([_, {scope}]) => scope === RoleScope.GLOBAL)
+                .map(([value]) => value)}
+              userId={userId}
+            />
+          )}
+          {globalRoles.map((role: string) => (
             <RoleCard
               key={role}
               onRemove={
@@ -73,12 +77,12 @@ export const getColumns = ({
 
                         queryClient.invalidateQueries({queryKey: ['users']});
                       } catch (error) {
-                        console.log('Error removing role', error);
+                        toast.error('Error removing role');
                       }
                     }
               }
             >
-              {role}
+              {roleDetails[role as Role].name}
             </RoleCard>
           ))}
         </div>
@@ -107,13 +111,13 @@ export const getColumns = ({
       id: 'remove',
       cell: ({
         row: {
-          original: {_id, other_roles},
+          original: {_id, _id: userId},
         },
       }: any) => (
         <div className="flex justify-center items-center -my-2">
           <RemoveUserDialog
             userId={_id}
-            disabled={!_id || other_roles.includes('cluster-admin')}
+            disabled={!_id || userId === user?.user.id}
           />
         </div>
       ),

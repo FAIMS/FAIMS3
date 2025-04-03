@@ -54,10 +54,10 @@ export function CreateTemplateForm({
   ];
 
   const onSubmit = async ({
-    name,
     file,
     team,
   }: {
+    // Doesn't currently do anything!
     name: string;
     file: File;
     team?: string;
@@ -74,21 +74,21 @@ export function CreateTemplateForm({
     } catch (e) {
       return {type: 'submit', message: 'Error parsing file'};
     }
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/templates/`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`,
+          },
+          body: JSON.stringify({teamId: team, ...json}),
+        }
+      );
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/templates/`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({teamId: team, template_name: name, ...json}),
-      }
-    );
-
-    if (!response.ok) {
-      console.log(response);
+      if (!response.ok) throw Error(response.statusText);
+    } catch (e) {
       return {type: 'submit', message: 'Error creating template'};
     }
 

@@ -1,9 +1,7 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
-        // Output ESM
         "module": "ESNext",
-        // Output to a separate directory
         "outDir": "./build/esm",
         "declaration": true
     },
