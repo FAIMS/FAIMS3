@@ -4,7 +4,8 @@ import {getColumns} from '@/components/tables/team-users';
 import {useAuth} from '@/context/auth-provider';
 import {useGetUsersForTeam} from '@/hooks/get-hooks';
 import {ErrorComponent} from '@tanstack/react-router';
-import {Plus} from 'lucide-react';
+import {LoaderCircle, Plus} from 'lucide-react';
+import {useMemo} from 'react';
 
 const TeamUsers = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
@@ -13,27 +14,31 @@ const TeamUsers = ({teamId}: {teamId: string}) => {
     return <ErrorComponent error="Unauthenticated" />;
   }
 
-  const {isPending, data} = useGetUsersForTeam({user, teamId});
-  const columns = getColumns({teamId});
+  const {isLoading, data} = useGetUsersForTeam({user, teamId});
+  const columns = useMemo(() => getColumns({teamId}), [teamId]);
 
   return (
     <div>
-      <DataTable
-        columns={columns}
-        data={data?.members || []}
-        loading={isPending}
-        button={
-          <AddTeamUserDialog
-            teamId={teamId}
-            buttonContent={
-              <>
-                <Plus />
-                {'Add user'}
-              </>
-            }
-          />
-        }
-      />
+      {isLoading ? (
+        <LoaderCircle />
+      ) : (
+        <DataTable
+          columns={columns}
+          data={data?.members || []}
+          loading={isLoading}
+          button={
+            <AddTeamUserDialog
+              teamId={teamId}
+              buttonContent={
+                <>
+                  <Plus />
+                  {'Add user'}
+                </>
+              }
+            />
+          }
+        />
+      )}
     </div>
   );
 };

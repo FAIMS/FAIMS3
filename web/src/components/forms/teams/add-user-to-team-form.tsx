@@ -2,9 +2,10 @@ import {Form} from '@/components/form';
 import {useAuth} from '@/context/auth-provider';
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
 import {useQueryClient} from '@tanstack/react-query';
+import {Field} from '@/components/form';
 import {z} from 'zod';
 
-const fields = [
+const fields: Field[] = [
   {
     name: 'email',
     label: 'User Email',

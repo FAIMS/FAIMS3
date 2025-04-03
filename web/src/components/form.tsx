@@ -28,7 +28,7 @@ import {
 } from './ui/select';
 import {Divider} from './ui/word-divider';
 
-interface Field {
+export interface Field {
   name: string;
   label?: string;
   description?: string;
