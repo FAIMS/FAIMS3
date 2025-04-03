@@ -258,13 +258,13 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
               });
             }}
           >
-            {allFieldNames
-              .filter(fieldName => fieldName !== 'TextField')
-              .map(fieldName => (
+            {allFieldNames.map((fieldName: string) => {
+              return (
                 <MenuItem key={fieldName} value={fieldName}>
                   {fieldName}
                 </MenuItem>
-              ))}
+              );
+            })}
           </Select>
         </DialogContent>
         <DialogActions>

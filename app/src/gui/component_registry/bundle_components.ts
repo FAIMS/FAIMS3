@@ -76,7 +76,6 @@ registerField(
   Checkbox
 );
 
-
 registerField(
   'formik-material-ui',
   'TextField',
@@ -239,6 +238,15 @@ registerField(
   'Multiple line Input Box',
   'Text',
   FormikTextField
+);
+
+registerField(
+  'core-material-ui',
+  'TextField',
+  'HTML text field',
+  'A simple text field',
+  'Simple',
+  TextField
 );
 
 registerField(
