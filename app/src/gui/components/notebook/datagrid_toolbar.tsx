@@ -185,45 +185,6 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
             }}
           />
         </Grid>
-
-        <Grid item sx={{flexShrink: 0, ml: 1}}>
-          <GridToolbarFilterButton
-            componentsProps={{
-              button: {
-                startIcon: (
-                  <TuneIcon
-                    style={{
-                      color: theme.palette.primary.main,
-                      fontSize: '1.85rem',
-                      fontWeight: 'bold',
-                      marginRight: theme.spacing(1),
-                    }}
-                  />
-                ),
-              },
-            }}
-            sx={{
-              borderRadius: '8px',
-              padding: '8px',
-              minWidth: 'auto',
-              backgroundColor: theme.palette.background.default,
-              border: '2px solid #e0e0e0',
-              transition: 'all 0.2s ease-in-out',
-              textTransform: 'none',
-              boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
-              '&:hover': {
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                borderColor: theme => theme.palette.primary.main,
-              },
-              '& .MuiButton-startIcon': {
-                margin: 0,
-              },
-              '& .MuiButton-endIcon': {
-                display: 'none',
-              },
-            }}
-          />
-        </Grid>
       </Grid>
     </Box>
   );
@@ -271,7 +232,7 @@ export function NotebookDraftDataGridToolbar() {
       >
         <Grid item>
           {/*<GridToolbarColumnsButton />*/}
-          <GridToolbarFilterButton />
+          {/* <GridToolbarFilterButton /> */}
           {/*<GridToolbarDensitySelector />*/}
         </Grid>
       </Grid>
