@@ -1,0 +1,552 @@
+{
+  "metadata": {
+    "notebook_version": "1.0",
+    "schema_version": "1.0",
+    "name": "Field Sampler",
+    "accesses": [
+      "admin",
+      "moderator",
+      "team"
+    ],
+    "filenames": [],
+    "ispublic": false,
+    "isrequest": false,
+    "lead_institution": "Fieldmark",
+    "showQRCodeButton": false,
+    "pre_description": "Sample notebook with required fields of many types to test validation",
+    "project_lead": "Steve Cassidy",
+    "project_status": "New"
+  },
+  "ui-specification": {
+    "fields": {
+      "hridMain-New-Section": {
+        "component-namespace": "faims-custom",
+        "component-name": "TemplatedStringField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "HRID Field",
+          "fullWidth": true,
+          "name": "hridMain-New-Section",
+          "helperText": "Human Readable ID",
+          "required": true,
+          "template": "{{Text-Field}}-{{Select}}",
+          "InputProps": {
+            "type": "text"
+          },
+          "hrid": true,
+          "InputLabelProps": {
+            "label": "HRID Field"
+          }
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "Text-Field": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "TextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Text Field",
+          "fullWidth": true,
+          "helperText": "Enter text",
+          "variant": "outlined",
+          "required": true,
+          "InputProps": {
+            "type": "text"
+          },
+          "name": "Text-Field"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "Multi-Select": {
+        "component-namespace": "faims-custom",
+        "component-name": "MultiSelect",
+        "type-returned": "faims-core::Array",
+        "component-parameters": {
+          "label": "Multi Select",
+          "fullWidth": true,
+          "helperText": "Choose items from the dropdown",
+          "variant": "outlined",
+          "required": true,
+          "select": true,
+          "SelectProps": {
+            "multiple": true
+          },
+          "ElementProps": {
+            "options": [
+              {
+                "label": "One",
+                "value": "One"
+              },
+              {
+                "label": "Two",
+                "value": "Two"
+              },
+              {
+                "label": "Three",
+                "value": "Three"
+              }
+            ]
+          },
+          "name": "Multi-Select"
+        },
+        "validationSchema": [
+          [
+            "yup.array"
+          ]
+        ],
+        "initialValue": [],
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "Select": {
+        "component-namespace": "faims-custom",
+        "component-name": "Select",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Select",
+          "fullWidth": true,
+          "helperText": "Choose a value from the dropdown",
+          "required": true,
+          "ElementProps": {
+            "options": [
+              {
+                "label": "First",
+                "value": "First"
+              },
+              {
+                "label": "Last",
+                "value": "Last"
+              },
+              {
+                "label": "Never",
+                "value": "Never"
+              }
+            ]
+          },
+          "name": "Select"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "Date-and-Time": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "TextField",
+        "type-returned": "faims-core::Datetime",
+        "component-parameters": {
+          "label": "Date and Time",
+          "fullWidth": true,
+          "helperText": "And a calendar prompt with a timestamp.",
+          "variant": "outlined",
+          "required": true,
+          "InputProps": {
+            "type": "datetime-local"
+          },
+          "name": "Date-and-Time"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "File-Upload": {
+        "component-namespace": "faims-custom",
+        "component-name": "FileUploader",
+        "type-returned": "faims-attachment::Files",
+        "component-parameters": {
+          "label": "File Upload",
+          "name": "File-Upload",
+          "id": "file-upload-field",
+          "helperText": "Choose a file",
+          "required": true
+        },
+        "validationSchema": [
+          [
+            "yup.mixed"
+          ]
+        ],
+        "initialValue": null,
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "Map-Position": {
+        "component-namespace": "mapping-plugin",
+        "component-name": "MapFormField",
+        "type-returned": "faims-core::JSON",
+        "component-parameters": {
+          "name": "Map-Position",
+          "id": "map-form-field",
+          "variant": "outlined",
+          "required": true,
+          "featureType": "Point",
+          "zoom": 12,
+          "label": "Map Position",
+          "geoTiff": "",
+          "helperText": ""
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "Radio": {
+        "component-namespace": "faims-custom",
+        "component-name": "RadioGroup",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "label": "Radio",
+          "name": "Radio",
+          "id": "radio-group-field",
+          "variant": "outlined",
+          "required": true,
+          "ElementProps": {
+            "options": [
+              {
+                "label": "Big",
+                "value": "Big"
+              },
+              {
+                "label": "Little",
+                "value": "Little"
+              }
+            ]
+          },
+          "helperText": "Make sure you choose the right one!"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "Check": {
+        "component-namespace": "faims-custom",
+        "component-name": "Checkbox",
+        "type-returned": "faims-core::Bool",
+        "component-parameters": {
+          "label": "Check",
+          "name": "Check",
+          "id": "checkbox-field",
+          "required": true,
+          "type": "checkbox",
+          "helperText": "Checkbox help."
+        },
+        "validationSchema": [
+          [
+            "yup.bool"
+          ]
+        ],
+        "initialValue": false,
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "Photo": {
+        "component-namespace": "faims-custom",
+        "component-name": "TakePhoto",
+        "type-returned": "faims-attachment::Files",
+        "component-parameters": {
+          "name": "Photo",
+          "helperText": "Take a photo",
+          "label": "Photo",
+          "required": true
+        },
+        "validationSchema": [
+          [
+            "yup.array"
+          ],
+          [
+            "yup.of",
+            [
+              [
+                "yup.object"
+              ],
+              [
+                "yup.nullable"
+              ]
+            ]
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
+        "initialValue": null,
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "GPS-Location": {
+        "component-namespace": "faims-custom",
+        "component-name": "TakePoint",
+        "type-returned": "faims-pos::Location",
+        "component-parameters": {
+          "fullWidth": true,
+          "name": "GPS-Location",
+          "helperText": "Click to save current location",
+          "variant": "outlined",
+          "label": "GPS Location",
+          "required": true
+        },
+        "validationSchema": [
+          [
+            "yup.object"
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
+        "initialValue": null,
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "QR": {
+        "component-namespace": "qrcode",
+        "component-name": "QRCodeFormField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "name": "QR",
+          "required": true,
+          "label": "QR",
+          "helperText": "Scan QR Code on the sample"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      },
+      "Address": {
+        "component-namespace": "faims-custom",
+        "component-name": "AddressField",
+        "type-returned": "faims-core::JSON",
+        "component-parameters": {
+          "helperText": "Enter your address",
+          "required": true,
+          "name": "Address",
+          "label": "Address"
+        },
+        "validationSchema": [
+          [
+            "yup.object"
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
+        "meta": {
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        },
+        "condition": null,
+        "persistent": false,
+        "displayParent": false
+      }
+    },
+    "fviews": {
+      "Main-New-Section": {
+        "label": "Section 1",
+        "fields": [
+          "hridMain-New-Section",
+          "Text-Field",
+          "Multi-Select",
+          "Select",
+          "Date-and-Time",
+          "File-Upload"
+        ]
+      },
+      "Main-Section2": {
+        "label": "Section 2",
+        "fields": [
+          "Map-Position",
+          "Radio",
+          "Check",
+          "Photo",
+          "GPS-Location",
+          "QR",
+          "Address"
+        ]
+      }
+    },
+    "viewsets": {
+      "Main": {
+        "label": "Main",
+        "views": [
+          "Main-New-Section",
+          "Main-Section2"
+        ]
+      }
+    },
+    "visible_types": [
+      "Main"
+    ]
+  }
+}

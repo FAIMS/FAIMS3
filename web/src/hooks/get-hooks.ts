@@ -100,3 +100,14 @@ export const useGetRecords = (user: User | null, projectId: string) =>
     queryKey: ['records', projectId],
     queryFn: () => get(`/api/notebooks/${projectId}/records/`, user),
   });
+
+/**
+ * useGetRoles hook returns a query for fetching roles.
+ * @param {User} user - The user object.
+ * @returns {Query} A query for fetching roles.
+ */
+export const useGetRoles = (user: User | null) =>
+  useQuery({
+    queryKey: ['roles'],
+    queryFn: () => get('/api/users/roles', user),
+  });

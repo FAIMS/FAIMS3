@@ -26,6 +26,7 @@ import {
   FormHelperText,
   FormHelperTextProps,
   FormControlLabelProps,
+  Box,
 } from '@mui/material';
 import {fieldToCheckbox, CheckboxProps} from 'formik-mui';
 
@@ -63,7 +64,7 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
     return (
       <FormControl error={error}>
         <FormControlLabel
-          label={label}
+          label={<Box component="span">{label}</Box>}
           control={
             <MuiCheckbox
               {...fieldToCheckbox(checkboxWithLabelProps)}
