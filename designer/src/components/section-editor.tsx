@@ -35,9 +35,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import DebouncedTextField, {
-  DebouncedTextFieldProps,
-} from './debounced-text-field';
+import DebouncedTextField from './debounced-text-field';
 import {useState, useMemo} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
