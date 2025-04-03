@@ -27,7 +27,10 @@ export const migrateNotebook = (notebook: unknown) => {
   validateNotebook(notebook);
   // error will be thrown by validateNotebook if invalid, let it go through
 
-  const notebookCopy = JSON.parse(JSON.stringify(notebook)) as Notebook; // deep copy
+  const notebookCopy = JSON.parse(JSON.stringify(notebook)) as any;
+
+  // wrap the ui-specification in redux-undo shape
+  wrapUiSpecInUndoableShape(notebookCopy);
 
   // move field labels from old locations to .label
   updateFieldLabels(notebookCopy);
@@ -84,6 +87,25 @@ export const validateNotebook = (n: unknown) => {
     }
   }
   return valid;
+};
+
+/**
+ * Ensures that the `ui-specification` in the notebook is in redux-undo format.
+ *
+ * @param notebook A mutable notebook object
+ */
+const wrapUiSpecInUndoableShape = (notebook: any) => {
+  if (
+    notebook['ui-specification'] &&
+    !('present' in notebook['ui-specification'])
+  ) {
+    const uiSpec = notebook['ui-specification'];
+    notebook['ui-specification'] = {
+      past: [],
+      present: uiSpec,
+      future: [],
+    };
+  }
 };
 
 /**
