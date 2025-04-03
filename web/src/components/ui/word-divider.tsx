@@ -8,9 +8,9 @@
 export const Divider = ({word}: {word?: string}) => {
   return (
     <div className="flex items-center">
-      <div className="bg-input h-px flex-1" />
-      {word && <div className="text-sm text-input px-2">{word}</div>}
-      <div className="bg-input h-px flex-1" />
+      <div className="bg-gray-300 h-px flex-1" />
+      {word && <div className="text-sm text-gray-500 px-2 font-medium">{word}</div>}
+      <div className="bg-gray-300 h-px flex-1" />
     </div>
   );
 };

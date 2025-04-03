@@ -1,4 +1,6 @@
 import {useEffect, createContext, useState, useContext} from 'react';
+import {TokenContents} from '@faims3/data-model';
+import {jwtDecode} from 'jwt-decode';
 
 export interface User {
   user: {
@@ -9,6 +11,7 @@ export interface User {
   };
   token: string;
   refreshToken: string;
+  decodedToken: TokenContents | null;
 }
 
 export interface AuthContext {
@@ -29,6 +32,20 @@ const AuthContext = createContext<AuthContext | null>(null);
 const key = 'user';
 
 /**
+ * Decodes a JWT token string into TokenContents.
+ * @param {string} token - The JWT token to decode.
+ * @returns {TokenContents | null} The decoded token or null if decoding fails.
+ */
+function decodeToken(token: string): TokenContents | null {
+  try {
+    return jwtDecode<TokenContents>(token);
+  } catch (e) {
+    console.error('Failed to decode token:', e);
+    return null;
+  }
+}
+
+/**
  * Stores or removes the user object in/from localStorage.
  * @param {User | null} user - The user object to store or `null` to remove the user.
  */
@@ -46,9 +63,22 @@ function setStoredUser(user: User | null) {
  * @returns {JSX.Element} The AuthProvider component.
  */
 export function AuthProvider({children}: {children: React.ReactNode}) {
-  const [user, setUser] = useState<User | null>(
-    JSON.parse(localStorage.getItem(key) || 'null')
-  );
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem(key);
+    if (!storedUser) return null;
+
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      // Add decoded token to stored user if it exists
+      if (parsedUser && parsedUser.token) {
+        parsedUser.decodedToken = decodeToken(parsedUser.token);
+      }
+      return parsedUser;
+    } catch (e) {
+      console.error('Failed to parse stored user:', e);
+      return null;
+    }
+  });
 
   const isAuthenticated = !!user;
 
@@ -88,10 +118,18 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       if (!response.ok)
         return {status: 'error', message: 'Error fetching user'};
 
-      const user = await response.json();
+      const userData = await response.json();
+      const decodedToken = decodeToken(token);
 
-      setStoredUser({user, token, refreshToken});
-      setUser({user, token, refreshToken});
+      const updatedUser = {
+        user: userData,
+        token,
+        refreshToken,
+        decodedToken,
+      };
+
+      setStoredUser(updatedUser);
+      setUser(updatedUser);
 
       return {status: 'success', message: ''};
     } catch (e) {
@@ -126,9 +164,16 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     }
 
     const {token} = await response.json();
+    const decodedToken = decodeToken(token);
 
-    setStoredUser({...user, token});
-    setUser({...user, token});
+    const updatedUser = {
+      ...user,
+      token,
+      decodedToken,
+    };
+
+    setStoredUser(updatedUser);
+    setUser(updatedUser);
 
     return {status: 'success', message: ''};
   };

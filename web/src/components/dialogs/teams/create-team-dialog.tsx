@@ -10,6 +10,7 @@ import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useState} from 'react';
 import {CreateTeamForm} from '../../forms/teams/create-team-form';
 import {Button} from '../../ui/button';
+import {Plus} from 'lucide-react';
 
 export const CreateTeamDialog = () => {
   const [open, setOpen] = useState(false);
@@ -17,7 +18,13 @@ export const CreateTeamDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant={'outline'}>Create Team</Button>
+        <Button
+          variant="outline"
+          className="bg-primary text-primary-foreground"
+        >
+          <Plus />
+          Create Team
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

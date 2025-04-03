@@ -10,6 +10,7 @@ import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateProjectForm} from '../forms/create-project-form';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import { Plus } from 'lucide-react';
 
 export const CreateProjectDialog = ({
   defaultValues,
@@ -21,7 +22,13 @@ export const CreateProjectDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant={'outline'}>Create {NOTEBOOK_NAME_CAPITALIZED}</Button>
+        <Button
+          variant="outline"
+          className="bg-primary text-primary-foreground"
+        >
+          <Plus />
+          Create {NOTEBOOK_NAME_CAPITALIZED}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

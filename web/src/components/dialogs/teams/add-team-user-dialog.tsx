@@ -11,6 +11,7 @@ import {useAuth} from '@/context/auth-provider';
 import {ErrorComponent} from '@tanstack/react-router';
 import React, {useState} from 'react';
 import {Button} from '../../ui/button';
+import {Plus} from 'lucide-react';
 
 export const AddTeamUserDialog = ({
   teamId,
@@ -28,9 +29,9 @@ export const AddTeamUserDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild className="w-fit">
-        <Button variant={'outline'}>{buttonContent}</Button>
-      </DialogTrigger>
+      <Button variant="outline" className="bg-primary text-primary-foreground">
+        {buttonContent}
+      </Button>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add user to team</DialogTitle>

@@ -14,6 +14,7 @@ import {useGetProjects} from '@/hooks/get-hooks';
 import {useState} from 'react';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {UpdateProjectForm} from '../forms/update-project-form';
+import {Pencil} from 'lucide-react';
 
 /**
  * EditProjectDialog component renders a dialog for editing a project.
@@ -32,7 +33,12 @@ export const EditProjectDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button>Edit {NOTEBOOK_NAME_CAPITALIZED}</Button>
+        <Button
+          variant="outline"
+        >
+          Edit {NOTEBOOK_NAME_CAPITALIZED}
+          <Pencil />
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

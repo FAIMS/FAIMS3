@@ -9,7 +9,7 @@ import {
 import {useAuth} from '@/context/auth-provider';
 import {useGetTeam} from '@/hooks/get-hooks';
 import {ErrorComponent} from '@tanstack/react-router';
-import {LoaderCircleIcon} from 'lucide-react';
+import {LoaderCircleIcon, Plus} from 'lucide-react';
 import React, {useState} from 'react';
 import {UpdateTeamForm} from '../../forms/teams/update-team-form';
 import {Button} from '../../ui/button';
@@ -31,7 +31,12 @@ export const UpdateTeamDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant={'outline'}>{buttonContent ?? 'Update Team'}</Button>
+        <Button
+          variant="outline"
+          className="bg-primary text-primary-foreground"
+        >
+          {buttonContent ?? 'Update Team'}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         {isLoading ? (

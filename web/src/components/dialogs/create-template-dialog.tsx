@@ -9,6 +9,7 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateTemplateForm} from '../forms/create-template-form';
+import { Plus } from 'lucide-react';
 
 export const CreateTemplateDialog = ({
   defaultValues,
@@ -20,7 +21,13 @@ export const CreateTemplateDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant={'outline'}>Create Template</Button>
+        <Button
+          variant="outline"
+          className="bg-primary text-primary-foreground"
+        >
+          <Plus />
+          Create Template
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

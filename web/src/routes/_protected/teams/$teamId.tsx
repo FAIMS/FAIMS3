@@ -6,8 +6,10 @@ import TeamUsers from '@/components/tabs/teams/team-users';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {createFileRoute} from '@tanstack/react-router';
 import {Edit} from 'lucide-react';
+import React, {useState} from 'react';
 
-const tabs = [
+type TabLabel = 'Details' | 'Surveys' | 'Templates' | 'Users';
+const tabs: {name: TabLabel; Component: any}[] = [
   {name: 'Details', Component: TeamDetails},
   {name: 'Surveys', Component: TeamProjects},
   {name: 'Templates', Component: TeamTemplates},
@@ -20,8 +22,15 @@ export const Route = createFileRoute('/_protected/teams/$teamId')({
 
 function RouteComponent() {
   const {teamId} = Route.useParams();
+  const [activeTab, setActiveTab] = useState<TabLabel>(tabs[0].name);
+
   return (
-    <Tabs defaultValue={tabs[0].name}>
+    <Tabs
+      defaultValue={tabs[0].name}
+      onValueChange={tab => {
+        setActiveTab(tab as TabLabel);
+      }}
+    >
       <div className="flex justify-start items-center gap-4">
         <TabsList>
           {tabs.map(({name}) => (
@@ -30,15 +39,19 @@ function RouteComponent() {
             </TabsTrigger>
           ))}
         </TabsList>
-        <UpdateTeamDialog
-          teamId={teamId}
-          buttonContent={
-            <>
-              Edit <Edit size={18} />
-            </>
-          }
-        ></UpdateTeamDialog>
+
+        {activeTab === 'Details' && (
+          <UpdateTeamDialog
+            teamId={teamId}
+            buttonContent={
+              <>
+                Edit <Edit size={18} />
+              </>
+            }
+          ></UpdateTeamDialog>
+        )}
       </div>
+
       {tabs.map(({name, Component}) => (
         <TabsContent key={name} value={name}>
           <Component teamId={teamId} />

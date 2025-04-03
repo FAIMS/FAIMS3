@@ -8,7 +8,9 @@ import {
   createProjectFromFile,
   createProjectFromTemplate,
 } from '@/hooks/create-project';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {Action, isAuthorized} from '@faims3/data-model';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 
 interface CreateProjectFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -29,6 +31,9 @@ export function CreateProjectForm({
   const {user} = useAuth();
   const QueryClient = useQueryClient();
 
+  // can they create projects outside team?
+  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
+
   const {data: templates} = useGetTemplates(user);
   const {data: teams} = useGetTeams(user);
 
@@ -41,17 +46,8 @@ export function CreateProjectForm({
       }),
     },
     {
-      name: 'team',
-      label: 'Create survey in team?',
-      options: teams?.teams.map(({_id, name}) => ({
-        label: name,
-        value: _id,
-      })),
-      schema: z.string().optional(),
-    },
-    {
       name: 'template',
-      label: 'Existing Survey Template',
+      label: `Existing ${NOTEBOOK_NAME_CAPITALIZED} Template`,
       options: templates?.map(({_id, template_name}: any) => ({
         label: template_name,
         value: _id,
@@ -61,7 +57,7 @@ export function CreateProjectForm({
     },
     {
       name: 'file',
-      label: 'Project File',
+      label: `${NOTEBOOK_NAME_CAPITALIZED} File`,
       type: 'file',
       schema: z
         .instanceof(File)
@@ -69,16 +65,29 @@ export function CreateProjectForm({
         .optional(),
       excludes: 'template',
     },
+    {
+      name: 'team',
+      label: `Create ${NOTEBOOK_NAME} in this team${canCreateGlobally && ' (optional)'}`,
+      options: teams?.teams.map(({_id, name}) => ({
+        label: name,
+        value: _id,
+      })),
+      schema: canCreateGlobally ? z.string().optional() : z.string(),
+    },
   ];
 
   const dividers = [
     {
+      index: 1,
+      component: <div className="h-5" />,
+    },
+    {
       index: 2,
-      component: <div className="h-4" />,
+      component: <Divider word="OR" />,
     },
     {
       index: 3,
-      component: <Divider word="OR" />,
+      component: <div className="h-5" />,
     },
   ];
 
@@ -126,7 +135,7 @@ export function CreateProjectForm({
       fields={fields}
       dividers={dividers}
       onSubmit={onSubmit}
-      submitButtonText={NOTEBOOK_NAME_CAPITALIZED}
+      submitButtonText={`Create ${NOTEBOOK_NAME_CAPITALIZED}`}
       // pass in team ID default, if provided
       defaultValues={{team: defaultValues?.teamId}}
     />
