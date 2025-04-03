@@ -2,7 +2,7 @@ import {useAuth} from '@/context/auth-provider';
 import {getColumns} from '@/components/tables/users';
 import {DataTable} from '@/components/data-table/data-table';
 import {createFileRoute} from '@tanstack/react-router';
-import {useGetRoles, useGetUsers} from '@/hooks/get-hooks';
+import {useGetUsers} from '@/hooks/get-hooks';
 import {useState} from 'react';
 import {GeneratePasswordReset} from '@/components/dialogs/generate-password-reset';
 
@@ -18,8 +18,7 @@ export const Route = createFileRoute('/_protected/_admin/users')({
  */
 function RouteComponent() {
   const {user: authUser} = useAuth();
-  const {data: users, isPending} = useGetUsers(authUser);
-  const {data: roles} = useGetRoles(authUser);
+  const {data, isPending} = useGetUsers(authUser);
 
   const [resetDialog, setResetDialog] = useState<boolean>(false);
   const [resetUserId, setResetUserId] = useState<string | undefined>(undefined);
@@ -29,6 +28,8 @@ function RouteComponent() {
     setResetDialog(true);
   };
 
+  console.log('data', data);
+
   return (
     <>
       <DataTable
@@ -36,10 +37,9 @@ function RouteComponent() {
         data={
           isPending
             ? []
-            : users.map((user: any) => ({
+            : data.map((user: any) => ({
                 ...user,
                 email: user.emails[0],
-                all_roles: roles,
               }))
         }
         loading={isPending}
