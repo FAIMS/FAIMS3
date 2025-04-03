@@ -3,7 +3,7 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
 import {RoleCard} from '../ui/role-card';
-import {Role, roleDetails} from '@/lib/roles';
+import {Role, roleDetails} from '@faims3/data-model';
 
 export const columns: ColumnDef<any>[] = [
   {

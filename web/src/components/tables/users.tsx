@@ -8,7 +8,7 @@ import {AddRolePopover} from '../popovers/add-role-popover';
 import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
 import {toast} from 'sonner';
-import {Role, roleDetails, RoleScope} from '@/lib/roles';
+import {Role, roleDetails, RoleScope} from '@faims3/data-model';
 
 export const getColumns = ({
   onReset,

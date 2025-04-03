@@ -3,7 +3,7 @@ import {Form} from '@/components/form';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
-import {Role, roleDetails, RoleScope} from '@/lib/roles';
+import {Role, roleDetails, RoleScope} from '@faims3/data-model';
 
 export const fields = [
   {
