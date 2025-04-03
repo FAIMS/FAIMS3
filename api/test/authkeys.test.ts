@@ -19,24 +19,37 @@
  */
 
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
+<<<<<<< HEAD
 import {createAuthKey} from '../src/authkeys/create';
 import {validateToken} from '../src/authkeys/read';
 import {addOtherRoleToUser, createUser, saveUser} from '../src/couchdb/users';
 import {expect} from 'chai';
 import {KEY_SERVICE} from '../src/buildconfig';
+=======
+import {addGlobalRole, Role} from '@faims3/data-model';
+import {expect} from 'chai';
+import {
+  generateJwtFromUser,
+  upgradeCouchUserToExpressUser,
+} from '../src/authkeys/create';
+import {validateToken} from '../src/authkeys/read';
+import {KEY_SERVICE} from '../src/buildconfig';
+import {createUser, saveExpressUser} from '../src/couchdb/users';
+>>>>>>> origin/main
 
 describe('roundtrip creating and reading token', () => {
   it('create and read token', async () => {
-    const username = 'bobalooba';
+    const username = 'bobalooba-the-great';
     const name = 'Bob Bobalooba';
     const roles = ['admin', 'user'];
     const signing_key = await KEY_SERVICE.getSigningKey();
 
     // need to make a user with these details
+<<<<<<< HEAD
     const [user, err] = await createUser(username, '');
 
     if (user) {
@@ -60,6 +73,38 @@ describe('roundtrip creating and reading token', () => {
         });
     } else {
       console.error(err);
+=======
+    const [dbUser, err] = await createUser({username, name});
+
+    if (!dbUser) {
+      // create user failed
+      throw new Error('Create user failed!. Error: ' + err);
+>>>>>>> origin/main
     }
+
+    // upgrade the user
+    let user = await upgradeCouchUserToExpressUser({dbUser});
+
+    for (let i = 0; i < roles.length; i++) {
+      addGlobalRole({user, role: roles[i]});
+    }
+    await saveExpressUser(user);
+
+    // Recompile permissions
+    user = await upgradeCouchUserToExpressUser({dbUser});
+
+    return generateJwtFromUser({user, signingKey: signing_key})
+      .then(token => {
+        return validateToken(token);
+      })
+      .then(valid_user => {
+        expect(valid_user).not.to.be.undefined;
+        if (valid_user) {
+          expect(valid_user.user_id).to.equal(user.user_id);
+          expect(valid_user.globalRoles).to.deep.equal(user.globalRoles);
+          expect(valid_user.resourceRoles).to.deep.equal(user.resourceRoles);
+          expect(valid_user.name).to.equal(user.name);
+        }
+      });
   });
 });

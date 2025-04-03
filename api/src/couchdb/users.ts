@@ -20,32 +20,94 @@
  */
 
 import {
+<<<<<<< HEAD
   CLUSTER_ADMIN_GROUP_NAME,
   NonUniqueProjectID,
   NOTEBOOK_CREATOR_GROUP_NAME,
   NotebookAuthSummary,
   ProjectID,
+=======
+  addGlobalRole,
+  CouchDBUsername,
+  ExistingPeopleDBDocument,
+  NotebookAuthSummary,
+  PeopleDBDocument,
+  PeopleDBFields,
+  Role,
+  safeWriteDocument,
+  userHasProjectRole,
+>>>>>>> origin/main
 } from '@faims3/data-model';
 import {ProjectRole} from '@faims3/data-model/build/src/types';
 import {getUsersDB} from '.';
 import {addLocalPasswordForUser} from '../auth_providers/local';
 import {
+<<<<<<< HEAD
   AllProjectRoles,
   ConductorRole,
   CouchDBUsername,
   CouchDBUserRoles,
   OtherRoles,
 } from '../datamodel/users';
+=======
+  addLocalPasswordForUser,
+  registerLocalUser,
+} from '../auth_providers/local';
+import {upgradeCouchUserToExpressUser} from '../authkeys/create';
+import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
+>>>>>>> origin/main
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
 import {registerLocalUser} from '../auth_providers/local';
 import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
 
+<<<<<<< HEAD
 export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
   // register a local admin user with the same password as couchdb if there
   // isn't already one there
   if (db && LOCAL_COUCHDB_AUTH) {
     const adminUser = await getUserFromEmailOrUsername('admin');
+=======
+/**
+ * Builds a minimum spec user object - need to add profiles
+ * @returns User object
+ */
+export const generateInitialUser = ({
+  email,
+  username,
+  name,
+}: {
+  email?: string;
+  username: string;
+  name: string;
+}): PeopleDBDocument => {
+  return {
+    _id: username,
+    user_id: username,
+    name,
+    emails: email ? [email.toLowerCase()] : [],
+    // General user is given by default
+    globalRoles: [Role.GENERAL_USER],
+    // Project roles is empty
+    projectRoles: [],
+    // Template roles is empty
+    templateRoles: [],
+    // Profiles are injected later
+    profiles: {},
+    teamRoles: [],
+  };
+};
+
+/**
+ * Registers the admin user into the people DB
+ * @param db
+ */
+export const registerAdminUser = async () => {
+  // register a local admin user with the same password as couchdb if there
+  // isn't already one there
+  if (LOCAL_COUCHDB_AUTH) {
+    const adminUser = await getCouchUserFromEmailOrUsername('admin');
+>>>>>>> origin/main
     if (adminUser) {
       return;
     }
@@ -56,8 +118,13 @@ export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
       LOCAL_COUCHDB_AUTH.password
     );
     if (user) {
+<<<<<<< HEAD
       addOtherRoleToUser(user, CLUSTER_ADMIN_GROUP_NAME);
       saveUser(user);
+=======
+      addGlobalRole({user, role: Role.GENERAL_ADMIN});
+      await saveCouchUser(user);
+>>>>>>> origin/main
     } else {
       console.error(error);
     }
@@ -71,10 +138,22 @@ export const registerAdminUser = async (db: PouchDB.Database | undefined) => {
  * @param username - username
  * @returns a new Express.User object ready to be saved in the DB
  */
+<<<<<<< HEAD
 export async function createUser(
   email: string,
   username: string
 ): Promise<[Express.User | null, string]> {
+=======
+export async function createUser({
+  email,
+  username,
+  name,
+}: {
+  email?: string;
+  username?: string;
+  name: string;
+}): Promise<[PeopleDBDocument | null, string]> {
+>>>>>>> origin/main
   if (!email && !username) {
     return [null, 'At least one of username and email is required'];
   }
@@ -123,6 +202,7 @@ export async function updateUserPassword(
   userId: string,
   newPassword: string
 ): Promise<void> {
+<<<<<<< HEAD
   const userDb = getUsersDB();
   if (!userDb) {
     console.log('Failed to connect to user db');
@@ -130,6 +210,9 @@ export async function updateUserPassword(
   }
 
   const possibleUser = await getUserFromEmailOrUsername(userId);
+=======
+  const possibleUser = await getCouchUserFromEmailOrUsername(userId);
+>>>>>>> origin/main
 
   if (!possibleUser) {
     throw new Exceptions.ItemNotFoundException(
@@ -145,7 +228,7 @@ export async function updateUserPassword(
  * TODO wherever possible dumping the whole db will not be ideal as scales.
  * @returns all users as Express.User[]
  */
-export async function getUsers(): Promise<Express.User[]> {
+export async function getUsers(): Promise<ExistingPeopleDBDocument[]> {
   // Get the users database
   const users_db = getUsersDB();
   if (users_db) {
@@ -159,6 +242,7 @@ export async function getUsers(): Promise<Express.User[]> {
 }
 
 /**
+<<<<<<< HEAD
  * Fetches users with a specific permission for a project.
  * TODO optimise this by filtering in DB
  * @param project_id - The ID of the project/notebook.
@@ -197,6 +281,49 @@ export async function getUserInfoForNotebook(
   };
 
   return userList;
+=======
+ * Gets users from the people db by resource Id (see design index)
+ */
+export async function getUsersForResource({
+  resourceId,
+}: {
+  resourceId: string;
+}): Promise<ExistingPeopleDBDocument[]> {
+  // Get the users database
+  const usersDb = getUsersDB();
+  // Fetch all user records from the database and get doc
+  return (
+    await usersDb.query<PeopleDBFields>('indexes/byResource', {
+      key: resourceId,
+      include_docs: true,
+    })
+  ).rows.reduce((filtered, option) => {
+    if (option.doc) filtered.push(option.doc);
+    return filtered;
+  }, [] as ExistingPeopleDBDocument[]);
+}
+
+/**
+ * Gets users from the people db by team ID
+ */
+export async function getUsersForTeam({
+  teamId,
+}: {
+  teamId: string;
+}): Promise<ExistingPeopleDBDocument[]> {
+  // Get the users database
+  const usersDb = getUsersDB();
+  // Fetch all user records from the database and get doc
+  return (
+    await usersDb.query<PeopleDBFields>('indexes/byTeam', {
+      key: teamId,
+      include_docs: true,
+    })
+  ).rows.reduce((filtered, option) => {
+    if (option.doc) filtered.push(option.doc);
+    return filtered;
+  }, [] as ExistingPeopleDBDocument[]);
+>>>>>>> origin/main
 }
 
 /**
@@ -204,9 +331,9 @@ export async function getUserInfoForNotebook(
  * @param identifier - either an email address or username
  * @returns The Express.User record denoted by the identifier or null if it doesn't exist
  */
-export async function getUserFromEmailOrUsername(
+export async function getCouchUserFromEmailOrUsername(
   identifier: string
-): Promise<null | Express.User> {
+): Promise<null | ExistingPeopleDBDocument> {
   let user;
   user = await getUserFromEmail(identifier);
   if (!user) {
@@ -216,11 +343,30 @@ export async function getUserFromEmailOrUsername(
 }
 
 /**
+ * Fetch and then upgrade express user (drilling permission into resource roles
+ * based on associative virtual roles etc)
+ * @param identifier
+ * @returns
+ */
+export async function getExpressUserFromEmailOrUsername(
+  identifier: string
+): Promise<Express.User | null> {
+  const dbUser = await getCouchUserFromEmailOrUsername(identifier);
+  if (dbUser === null) {
+    return dbUser;
+  }
+
+  return await upgradeCouchUserToExpressUser({dbUser});
+}
+
+/**
  * getUserFromEmail - retrieve a user record given their email address
  * @param email User email address
  * @returns An Express.User record or null if the user is not in the database
  */
-async function getUserFromEmail(email: string): Promise<null | Express.User> {
+async function getUserFromEmail(
+  email: string
+): Promise<null | ExistingPeopleDBDocument> {
   const users_db = getUsersDB();
   if (users_db) {
     const result = await users_db.find({
@@ -229,7 +375,7 @@ async function getUserFromEmail(email: string): Promise<null | Express.User> {
     if (result.docs.length === 0) {
       return null;
     } else if (result.docs.length === 1) {
-      return result.docs[0] as Express.User;
+      return result.docs[0] as ExistingPeopleDBDocument;
     } else {
       throw Error(`Multiple conflicting users with email ${email}`);
     }
@@ -241,12 +387,13 @@ async function getUserFromEmail(email: string): Promise<null | Express.User> {
 /**
  * getUserFromUsername - retrieve a user record given their username
  * @param username - the username
- * @returns An Express.User record or null if the user is not in the database
+ * @returns An ExistingPeopleDBDocument record or null if the user is not in the database
  */
 async function getUserFromUsername(
   username: CouchDBUsername
-): Promise<Express.User | null> {
+): Promise<ExistingPeopleDBDocument | null> {
   const users_db = getUsersDB();
+<<<<<<< HEAD
   if (users_db) {
     try {
       const user = (await users_db.get(username)) as Express.User;
@@ -257,13 +404,31 @@ async function getUserFromUsername(
     }
   } else {
     throw Error('Failed to connect to user database');
+=======
+  try {
+    const user = (await users_db.get(username)) as ExistingPeopleDBDocument;
+    return user;
+  } catch (err) {
+    return null;
+>>>>>>> origin/main
   }
 }
 
 /**
- * saveUser - save a user record to the database as a new record or new revision
+ * saveCouchUser - save a user record to the database as a new record or new revision
+ * @param user A people db document to write
+ */
+export async function saveCouchUser(
+  user: PeopleDBDocument | ExistingPeopleDBDocument
+): Promise<void> {
+  await safeWriteDocument({db: getUsersDB(), data: user, writeOnClash: true});
+}
+
+/**
+ * saveExpressUser - saves an express user to the db (stripping out resource roles)
  * @param user An Express.User record to be written to the database
  */
+<<<<<<< HEAD
 export async function saveUser(user: Express.User): Promise<void> {
   const users_db = getUsersDB();
   if (users_db) {
@@ -288,6 +453,12 @@ export async function saveUser(user: Express.User): Promise<void> {
   } else {
     throw Error('Failed to connect to user database');
   }
+=======
+export async function saveExpressUser(user: Express.User): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const {resourceRoles, ...dbUser} = user;
+  await saveCouchUser(dbUser);
+>>>>>>> origin/main
 }
 
 export function addOtherRoleToUser(user: Express.User, role: string) {
@@ -320,6 +491,7 @@ export function addProjectRoleToUser(
   user.roles = compactRoles(user.project_roles, user.other_roles);
 }
 
+<<<<<<< HEAD
 /**
  * Checks if a user has a given role on a project. This is defined by the user
  * project roles map containing a list for the project ID which contains this
@@ -341,6 +513,24 @@ export function userHasProjectRole(
   }
   return false;
 }
+=======
+  const userList: NotebookAuthSummary = {
+    // What roles does the notebook have
+    roles,
+    users: allUsers.map(user => ({
+      name: user.name,
+      username: user.user_id,
+      roles: roles.map(role => ({
+        name: role,
+        value: userHasProjectRole({
+          user,
+          projectId,
+          role,
+        }),
+      })),
+    })),
+  };
+>>>>>>> origin/main
 
 /*
  * The following convert between two representations of roles.
@@ -572,6 +762,7 @@ export function userIsClusterAdmin(user: Express.User | undefined | null) {
  * Remove a user from the database
  * @param user - the user to remove
  */
+<<<<<<< HEAD
 export function removeUser(user: Express.User) {
   const users_db = getUsersDB();
 
@@ -580,4 +771,16 @@ export function removeUser(user: Express.User) {
   if (!user._id || !user._rev) throw new Error('User not found');
 
   users_db.remove({_id: user._id, _rev: user._rev});
+=======
+export function removeUser(user: ExistingPeopleDBDocument) {
+  const usersDb = getUsersDB();
+  usersDb
+    .get(user._id)
+    .then(doc => {
+      return usersDb.remove(doc);
+    })
+    .catch(err => {
+      throw new Error(`User not found or could not be removed! Error: ${err}.`);
+    });
+>>>>>>> origin/main
 }

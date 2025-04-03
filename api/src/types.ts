@@ -19,6 +19,7 @@
  *   uses in relation to third-party code.
  */
 import type {OAuth2} from 'oauth';
+<<<<<<< HEAD
 import type {
   Email,
   AllProjectRoles,
@@ -26,6 +27,9 @@ import type {
   UserServiceProfiles,
 } from './datamodel/users';
 import type {NonUniqueProjectID} from '@faims3/data-model';
+=======
+import {PeopleDBDocument, ResourceRole} from '@faims3/data-model';
+>>>>>>> origin/main
 
 export type DoneFunction = (err?: Error | null, profile?: any) => void;
 export type UserProfileCallback = (
@@ -42,6 +46,7 @@ export type VerifyCallback = (
 // See https://stackoverflow.com/questions/65772869/how-do-i-type-hint-the-user-argument-when-calling-passport-serializeuser-in-type
 declare global {
   namespace Express {
+<<<<<<< HEAD
     interface User {
       user_id: string;
       _id?: string;
@@ -54,5 +59,14 @@ declare global {
       profiles: UserServiceProfiles;
       owned: NonUniqueProjectID[];
     }
+=======
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface User extends PeopleDBDocument {
+      // The drilled resource roles which pre-compute the teams membership etc
+      resourceRoles: ResourceRole[];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface Request extends Flash {}
+>>>>>>> origin/main
   }
 }

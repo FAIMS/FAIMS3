@@ -250,6 +250,7 @@ function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'dateTime',
+        sortable: true,
         valueGetter: params => {
           const rawValue = params.row.updated;
           return rawValue ? new Date(rawValue) : null;
@@ -821,7 +822,6 @@ export function RecordsTable(props: RecordsTableProps) {
           filterPanel: {sx: {maxWidth: '96vw'}},
           toolbar: {handleQueryFunction: props.handleQueryFunction},
         }}
-        sortModel={[{field: 'last_updated', sort: 'desc'}]}
         initialState={{
           sorting: {sortModel: [{field: 'last_updated', sort: 'desc'}]},
           pagination: {paginationModel: {pageSize: pageSize(maxRows)}},

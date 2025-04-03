@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "extends": "../../node_modules/gts/tsconfig-google.json",
     "compilerOptions": {
         "rootDir": ".",
@@ -22,3 +23,32 @@
         "./src",
     ]
 }
+=======
+  "extends": "../../node_modules/gts/tsconfig-google.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "build",
+    "target": "ES2015",
+    "module": "CommonJS",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": false,
+    "declaration": true
+  },
+  "include": [
+    "./src",
+    "tests/migrationService.test.ts",
+    "tests/migrationService2.test.ts",
+    "tests/migrations.test.ts",
+    "tests/permissionfunctions.test.ts"
+  ]
+}
+>>>>>>> origin/main

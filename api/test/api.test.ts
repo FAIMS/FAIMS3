@@ -27,11 +27,24 @@ import {
   EncodedProjectUIModel,
   getDataDB,
   registerClient,
+<<<<<<< HEAD
+=======
+  resourceRoles,
+  Role,
+  userHasProjectRole,
+>>>>>>> origin/main
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import fs from 'fs';
 import request from 'supertest';
+<<<<<<< HEAD
 import {createAuthKey} from '../src/authkeys/create';
+=======
+import {
+  generateJwtFromUser,
+  upgradeCouchUserToExpressUser,
+} from '../src/authkeys/create';
+>>>>>>> origin/main
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
@@ -50,10 +63,14 @@ import {
   getNotebookMetadata,
   getNotebooks,
 } from '../src/couchdb/notebooks';
+<<<<<<< HEAD
 import {
   getUserFromEmailOrUsername,
   userHasProjectRole,
 } from '../src/couchdb/users';
+=======
+import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
+>>>>>>> origin/main
 import {app} from '../src/routes';
 import {callbackObject, databaseList} from './mocks';
 import {
@@ -177,10 +194,21 @@ describe('API tests', () => {
     expect(project_id).not.to.be.undefined;
     expect(project_id).to.include('-test-notebook');
 
-    const notebookUser = await getUserFromEmailOrUsername(notebookUserName);
+    const notebookUser =
+      await getExpressUserFromEmailOrUsername(notebookUserName);
     if (notebookUser) {
       // check that this user now has the right roles on this notebook
+<<<<<<< HEAD
       expect(userHasProjectRole(notebookUser, project_id, 'admin')).to.be.true;
+=======
+      expect(
+        userHasProjectRole({
+          user: notebookUser,
+          projectId: project_id,
+          role: Role.PROJECT_ADMIN,
+        })
+      ).to.be.true;
+>>>>>>> origin/main
     } else {
       console.log('notebookUser', notebookUser);
       expect(notebookUser).not.to.be.null;
@@ -282,8 +310,15 @@ describe('API tests', () => {
     const filename = 'notebooks/sample_notebook.json';
     const jsonText = fs.readFileSync(filename, 'utf-8');
     const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-    const adminUser = await getUserFromEmailOrUsername('admin');
+    const adminDbUser = await getExpressUserFromEmailOrUsername('admin');
+    if (!adminDbUser) {
+      throw Error('Admin db user missing!');
+    }
+    const adminUser = await upgradeCouchUserToExpressUser({
+      dbUser: adminDbUser,
+    });
 
+<<<<<<< HEAD
     if (adminUser) {
       const project_id = await createNotebook(
         'test-notebook',
@@ -301,17 +336,30 @@ describe('API tests', () => {
         .expect(200);
       notebooks = await getNotebooks(adminUser);
       expect(notebooks).to.be.empty;
+=======
+    const project_id = await createNotebook('test-notebook', uiSpec, metadata);
+    let notebooks = await getUserProjectsDetailed(adminUser);
+    const dataDb = await getDataDB(project_id!);
+    expect(notebooks).to.have.lengthOf(1);
+    expect(project_id).not.to.be.undefined;
+    await request(app)
+      .post('/api/notebooks/' + project_id + '/delete')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+    notebooks = await getUserProjectsDetailed(adminUser);
+    expect(notebooks).to.be.empty;
+>>>>>>> origin/main
 
-      // Because of how mocks work with db list, we need to manually remove the
-      // data db from the list TODO make the mock respect database deletion
-      // properly - this was being masked before as I don't think the delete
-      // operation was actually occurring, instead the redirect request was
-      // being accepted despite a hidden error. If we don't do this, the
-      // db.destroy() method will run forever.
-      for (const db_name of Object.keys(databaseList)) {
-        if (databaseList[db_name].name === dataDb.name) {
-          delete databaseList[db_name];
-        }
+    // Because of how mocks work with db list, we need to manually remove the
+    // data db from the list TODO make the mock respect database deletion
+    // properly - this was being masked before as I don't think the delete
+    // operation was actually occurring, instead the redirect request was
+    // being accepted despite a hidden error. If we don't do this, the
+    // db.destroy() method will run forever.
+    for (const db_name of Object.keys(databaseList)) {
+      if (databaseList[db_name].name === dataDb.name) {
+        delete databaseList[db_name];
       }
     }
   });
@@ -373,6 +421,7 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(200)
       .then(response => {
+<<<<<<< HEAD
         expect(response.body.roles).to.deep.equal([
           'admin',
           'moderator',
@@ -380,6 +429,14 @@ describe('API tests', () => {
           'user',
         ]);
         expect(response.body.users.length).to.equal(1);
+=======
+        expect(response.body.roles).to.deep.equal(
+          resourceRoles.PROJECT.map(r => r.role)
+        );
+        // only includes users who have at least one resource role on this
+        // notebook
+        expect(response.body.users.length).to.equal(0);
+>>>>>>> origin/main
       });
   });
 
@@ -458,6 +515,7 @@ describe('API tests', () => {
         })
         .expect(404);
 
+<<<<<<< HEAD
       const bobby = await getUserFromEmailOrUsername(localUserName);
       if (bobby) {
         const signingKey = await KEY_SERVICE.getSigningKey();
@@ -475,9 +533,28 @@ describe('API tests', () => {
             addrole: true,
           })
           .expect(401);
+=======
+      const bobbyDb = await getExpressUserFromEmailOrUsername(localUserName);
+      if (!bobbyDb) {
+        throw new Error('Bobby gone-a missin!');
+>>>>>>> origin/main
       }
-    } else {
-      throw new Error('could not make test notebooks');
+      const bobby = await upgradeCouchUserToExpressUser({dbUser: bobbyDb});
+      const signingKey = await KEY_SERVICE.getSigningKey();
+      const bobbyToken = await generateJwtFromUser({user: bobby, signingKey});
+
+      // invalid user name
+      console.log('bobby token');
+      await request(app)
+        .post(`/api/notebooks/${nb1}/users/`)
+        .set('Authorization', `Bearer ${bobbyToken}`)
+        .set('Content-Type', 'application/json')
+        .send({
+          username: localUserName,
+          role: Role.PROJECT_CONTRIBUTOR,
+          addrole: true,
+        })
+        .expect(401);
     }
   });
 
@@ -485,6 +562,7 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
 
+<<<<<<< HEAD
     const adminUser = await getUserFromEmailOrUsername('admin');
     if (adminUser) {
       const notebooks = await getNotebooks(adminUser);
@@ -496,14 +574,29 @@ describe('API tests', () => {
         .set('Content-Type', 'application/json')
         .expect(200)
         .expect('Content-Type', 'application/json; charset=utf-8');
+=======
+    const admin = await getExpressUserFromEmailOrUsername('admin');
+    if (!admin) {
+      throw new Error('Admin gone missing');
+>>>>>>> origin/main
     }
+
+    const notebooks = await getUserProjectsDetailed(admin);
+    expect(notebooks).to.have.lengthOf(2);
+
+    await request(app)
+      .get('/api/notebooks/1693291182736-campus-survey-demo/records/')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200)
+      .expect('Content-Type', 'application/json; charset=utf-8');
   });
 
   it('can download records as csv', async () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
 
-    const adminUser = await getUserFromEmailOrUsername('admin');
+    const adminUser = await getExpressUserFromEmailOrUsername('admin');
     if (adminUser) {
       const notebooks = await getNotebooks(adminUser);
       expect(notebooks).to.have.lengthOf(2);
@@ -535,7 +628,7 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
 
-    const adminUser = await getUserFromEmailOrUsername('admin');
+    const adminUser = await getExpressUserFromEmailOrUsername('admin');
     if (adminUser) {
       const notebooks = await getNotebooks(adminUser);
       expect(notebooks).to.have.lengthOf(2);

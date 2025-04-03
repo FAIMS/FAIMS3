@@ -18,10 +18,13 @@ import {Field} from 'formik';
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../../../constants/routes';
-import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../../../constants/routes';
 import {addAlert} from '../../../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../../../context/store';
 import {logError} from '../../../../../logging';
+<<<<<<< HEAD
+=======
+import {LocationState} from '../RelatedInformation';
+>>>>>>> origin/main
 import {CreateRecordLinkProps} from '../types';
 
 export function AddNewRecordButton(props: {

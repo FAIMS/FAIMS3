@@ -19,6 +19,11 @@
  */
 
 import {z} from 'zod';
+<<<<<<< HEAD
+=======
+import {DecodedTokenPermissions, Role} from './permission';
+import {ExistingProjectDocument} from './data_storage';
+>>>>>>> origin/main
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -128,6 +133,7 @@ export type PossibleConnectionInfo =
       };
       jwt_token?: string;
     };
+<<<<<<< HEAD
 export interface ProjectObject {
   _id: NonUniqueProjectID;
   name: string;
@@ -141,6 +147,8 @@ export interface ProjectObject {
   created?: string;
   status?: string;
 }
+=======
+>>>>>>> origin/main
 
 // TODO make this better, currently there is no real explanation for this
 // structure
@@ -167,7 +175,7 @@ export const APINotebookGetSchema = z.object({
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 
 export type ProjectsList = {
-  [key: string]: ProjectObject;
+  [key: string]: ExistingProjectDocument;
 };
 
 export interface ProjectSchema {
@@ -812,6 +820,9 @@ export type TemplateEditableDetails = z.infer<
 export const TemplateDerivedDetailsSchema = z.object({
   // Version identifier for the template
   version: z.number().default(1),
+
+  // Is this owned by a team?
+  ownedByTeamId: z.string().min(1).optional(),
 });
 export type TemplateDerivedDetails = z.infer<
   typeof TemplateDerivedDetailsSchema

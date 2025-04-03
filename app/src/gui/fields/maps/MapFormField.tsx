@@ -18,15 +18,20 @@
  *   Implement MapFormField for entry of data via maps in FAIMS
  */
 
-import {Geolocation} from '@capacitor/geolocation';
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {Alert, Box, Button, Typography} from '@mui/material';
 import {FieldProps} from 'formik';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
+<<<<<<< HEAD
 import {useEffect, useRef, useState} from 'react';
 import {useNotification} from '../../../context/popup';
 import {useIsOnline} from '../../../utils/customHooks';
+=======
+import {useEffect, useMemo, useState} from 'react';
+import {getCoordinates, useCurrentLocation} from '../../../utils/useLocation';
+import {canShowMapNear} from '../../components/map/map-component';
+>>>>>>> origin/main
 import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
 import {theme} from '../../themes';
 import FieldWrapper from '../fieldWrapper';

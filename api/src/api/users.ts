@@ -17,17 +17,39 @@
  *   This module contains user based API routes at /api/users
  */
 
+<<<<<<< HEAD
+=======
+import {
+  Action,
+  addGlobalRole,
+  ExistingPeopleDBDocument,
+  PostUpdateUserInputSchema,
+  removeGlobalRole,
+  Role,
+  roleDetails,
+  RoleScope,
+  userHasGlobalRole,
+} from '@faims3/data-model';
+>>>>>>> origin/main
 import express, {Response} from 'express';
 import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
 import {
+<<<<<<< HEAD
   addOtherRoleToUser,
   getUserFromEmailOrUsername,
+=======
+  getCouchUserFromEmailOrUsername,
+>>>>>>> origin/main
   getUsers,
   removeOtherRoleFromUser,
   removeUser,
+<<<<<<< HEAD
   saveUser,
   userIsClusterAdmin,
+=======
+  saveCouchUser,
+>>>>>>> origin/main
 } from '../couchdb/users';
 import {processRequest} from 'zod-express-middleware';
 import {z} from 'zod';
@@ -43,7 +65,7 @@ patch();
 
 export const api = express.Router();
 
-// update a user
+// update a users roles
 api.post(
   '/:id/admin',
   requireAuthenticationAPI,
@@ -60,8 +82,13 @@ api.post(
     }
 
     // Get the current user from DB
+<<<<<<< HEAD
     const user = await getUserFromEmailOrUsername(req.params.id);
     if (!user) {
+=======
+    const foundUser = await getCouchUserFromEmailOrUsername(id);
+    if (!foundUser) {
+>>>>>>> origin/main
       throw new Exceptions.ItemNotFoundException(
         'Username cannot be found in user database.'
       );
@@ -71,7 +98,12 @@ api.post(
     } else {
       removeOtherRoleFromUser(user, req.body.role);
     }
+<<<<<<< HEAD
     await saveUser(user);
+=======
+
+    await saveCouchUser(foundUser);
+>>>>>>> origin/main
     res.status(200).send();
   }
 );
@@ -110,9 +142,20 @@ api.get(
 api.get(
   '/',
   requireAuthenticationAPI,
+<<<<<<< HEAD
   async (req: any, res: Response<Express.User[]>) => {
     if (!req.user || !userIsClusterAdmin(req.user)) {
       throw new Exceptions.UnauthorizedException(
+=======
+  isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
+  async (req: any, res: Response<ExistingPeopleDBDocument[]>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('You are not logged in.');
+    }
+
+    if (!userHasGlobalRole({user: req.user, role: Role.GENERAL_ADMIN})) {
+      throw new Exceptions.ForbiddenException(
+>>>>>>> origin/main
         'You are not allowed to get users.'
       );
     }
@@ -136,7 +179,7 @@ api.delete(
 
     if (!id) throw new Exceptions.ValidationException('User ID not specified');
 
-    const userToRemove = await getUserFromEmailOrUsername(id);
+    const userToRemove = await getCouchUserFromEmailOrUsername(id);
 
     if (!userToRemove)
       throw new Exceptions.ItemNotFoundException(

@@ -18,6 +18,7 @@
  *   Handle registration of new users via invites
  */
 
+<<<<<<< HEAD
 import {RoleInvite, ConductorRole} from './datamodel/users';
 import {addProjectRoleToUser, saveUser} from './couchdb/users';
 import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
@@ -51,6 +52,21 @@ export function userCanRemoveOtherRole(
 export async function acceptInvite(user: Express.User, invite: RoleInvite) {
   addProjectRoleToUser(user, invite.project_id, invite.role);
   await saveUser(user);
+=======
+import {
+  addProjectRole,
+  InvitesDBFields,
+  PeopleDBDocument,
+} from '@faims3/data-model';
+import {saveCouchUser} from './couchdb/users';
+
+export async function acceptInvite(
+  user: PeopleDBDocument,
+  invite: InvitesDBFields
+) {
+  addProjectRole({user, projectId: invite.projectId, role: invite.role});
+  await saveCouchUser(user);
+>>>>>>> origin/main
 }
 
 export async function rejectInvite(invite: RoleInvite) {

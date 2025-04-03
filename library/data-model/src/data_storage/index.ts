@@ -40,4 +40,5 @@ export * from './directoryDB';
 export * from './metadataDB';
 export * from './peopleDB';
 export * from './projectsDB';
+export * from './teamsDB';
 export * from './templatesDB';

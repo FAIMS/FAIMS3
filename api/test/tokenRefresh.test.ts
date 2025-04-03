@@ -36,7 +36,7 @@ import {
   invalidateToken,
   validateRefreshToken,
 } from '../src/couchdb/refreshTokens';
-import {getUserFromEmailOrUsername} from '../src/couchdb/users';
+import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
 import {app} from '../src/routes';
 import {
   adminToken,
@@ -60,7 +60,7 @@ describe('token refresh tests', () => {
   //=============================
 
   it('generate refresh token', async () => {
-    const adminUser = await getUserFromEmailOrUsername(adminUserName);
+    const adminUser = await getExpressUserFromEmailOrUsername(adminUserName);
     expect(adminUser).to.be.not.undefined;
 
     // true indicates generation of refresh token
@@ -78,9 +78,10 @@ describe('token refresh tests', () => {
     // get all tokens
 
     // setup user profiles
-    const adminUser = (await getUserFromEmailOrUsername(adminUserName))!;
-    const localUser = (await getUserFromEmailOrUsername(localUserName))!;
-    const notebookUser = (await getUserFromEmailOrUsername(notebookUserName))!;
+    const adminUser = (await getExpressUserFromEmailOrUsername(adminUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const notebookUser =
+      (await getExpressUserFromEmailOrUsername(notebookUserName))!;
 
     // check there are no tokens for all list methods
     let allTokens = await getAllTokens();
@@ -179,8 +180,8 @@ describe('token refresh tests', () => {
 
   it('refresh token validity expiry and enabled', async () => {
     // Get local user profile and setup refresh
-    const localUser = (await getUserFromEmailOrUsername(localUserName))!;
-    const adminUser = (await getUserFromEmailOrUsername(adminUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const adminUser = (await getExpressUserFromEmailOrUsername(adminUserName))!;
 
     let refresh = (await generateUserToken(localUser, true)).refreshToken!;
 
@@ -225,7 +226,15 @@ describe('token refresh tests', () => {
 
   it('use refresh token to generate new token', async () => {
     // Get local user profile and setup refresh
+<<<<<<< HEAD
     const localUser = (await getUserFromEmailOrUsername(localUserName))!;
+=======
+    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+
+    // This should work now
+    await listTemplates(app, localUserToken);
+
+>>>>>>> origin/main
     const refresh = (await generateUserToken(localUser, true)).refreshToken!;
 
     // now run the refresh method
@@ -250,7 +259,7 @@ describe('token refresh tests', () => {
 
   it('user ID must match if requested as a logged in user', async () => {
     // Get local user profile and setup refresh
-    const localUser = (await getUserFromEmailOrUsername(localUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
     const refresh = (await generateUserToken(localUser, true)).refreshToken!;
 
     // now run the refresh method - this should work

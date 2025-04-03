@@ -18,10 +18,24 @@
  *   Tests for the interface to couchDB
  */
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
+import {
+  Action,
+  addProjectRole,
+  EncodedProjectUIModel,
+  removeProjectRole,
+  resourceRoles,
+  Role,
+  userHasProjectRole,
+} from '@faims3/data-model';
+import {fail} from 'assert';
+import {expect} from 'chai';
+import * as fs from 'fs';
+import {upgradeCouchUserToExpressUser} from '../src/authkeys/create';
+import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {
   getDirectoryDB,
   getMetadataDb,
@@ -29,17 +43,22 @@ import {
 } from '../src/couchdb';
 import {
   createNotebook,
+<<<<<<< HEAD
   getNotebookMetadata,
   getNotebooks,
+=======
+>>>>>>> origin/main
   getEncodedNotebookUISpec,
+  getNotebookMetadata,
   getRolesForNotebook,
+  getUserProjectsDetailed,
   updateNotebook,
   validateNotebookID,
 } from '../src/couchdb/notebooks';
-import * as fs from 'fs';
 import {
   addProjectRoleToUser,
   createUser,
+<<<<<<< HEAD
   getUserFromEmailOrUsername,
   removeProjectRoleFromUser,
   saveUser,
@@ -48,8 +67,14 @@ import {
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {EncodedProjectUIModel} from '@faims3/data-model';
 import {expect} from 'chai';
+=======
+  getExpressUserFromEmailOrUsername,
+  saveCouchUser,
+  saveExpressUser,
+} from '../src/couchdb/users';
+import {userCanDo} from '../src/middleware';
+>>>>>>> origin/main
 import {resetDatabases} from './mocks';
-import {fail} from 'assert';
 
 const uispec: EncodedProjectUIModel = {
   _id: '',
@@ -65,12 +90,12 @@ let bobalooba: Express.User;
 describe('notebook api', () => {
   beforeEach(async () => {
     await resetDatabases();
-    const adminUser = await getUserFromEmailOrUsername('admin');
+    const adminUser = await getExpressUserFromEmailOrUsername('admin');
     if (adminUser) {
       const [user, error] = await createUser('', username);
       if (user) {
-        await saveUser(user);
-        bobalooba = user;
+        await saveCouchUser(user);
+        bobalooba = await upgradeCouchUserToExpressUser({dbUser: user});
       } else {
         throw new Error(error);
       }
@@ -78,14 +103,11 @@ describe('notebook api', () => {
   });
 
   it('check initialise', async () => {
-    console.log('Running initialise');
     await initialiseDbAndKeys({});
 
-    console.log('Getting directory DB');
     const directoryDB = getDirectoryDB();
     expect(directoryDB).not.to.equal(undefined);
     if (directoryDB) {
-      console.log('Getting document in DB');
       const default_document = (await directoryDB.get('default')) as any;
       expect(default_document.name).to.equal(CONDUCTOR_INSTANCE_NAME);
 
@@ -104,12 +126,105 @@ describe('notebook api', () => {
 
     if (nb1 && nb2) {
       // give user access to two of them
+<<<<<<< HEAD
       addProjectRoleToUser(bobalooba, nb1, 'user');
       expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(true);
       addProjectRoleToUser(bobalooba, nb2, 'admin');
       expect(userHasPermission(bobalooba, nb2, 'modify')).to.equal(true);
       // and this should still be true
       expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(true);
+=======
+      addProjectRole({
+        user: bobalooba,
+        projectId: nb1,
+        role: Role.PROJECT_GUEST,
+      });
+
+      // Update permissions
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
+
+      expect(
+        userHasProjectRole({
+          user: bobalooba,
+          projectId: nb1,
+          role: Role.PROJECT_GUEST,
+        })
+      ).to.equal(true);
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb1,
+          action: Action.READ_MY_PROJECT_RECORDS,
+        })
+      ).to.equal(true);
+
+      addProjectRole({
+        user: bobalooba,
+        projectId: nb2,
+        role: Role.PROJECT_ADMIN,
+      });
+
+      // Update permissions
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
+
+      expect(
+        userHasProjectRole({
+          user: bobalooba,
+          projectId: nb2,
+          role: Role.PROJECT_ADMIN,
+        })
+      ).to.equal(true);
+
+      // And inheritance
+      expect(
+        userHasProjectRole({
+          user: bobalooba,
+          projectId: nb2,
+          role: Role.PROJECT_MANAGER,
+        })
+      ).to.equal(false);
+      expect(
+        userHasProjectRole({
+          user: bobalooba,
+          projectId: nb2,
+          role: Role.PROJECT_GUEST,
+        })
+      ).to.equal(false);
+
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb2,
+          action: Action.DELETE_PROJECT,
+        })
+      ).to.equal(true);
+
+      // check role inheritance too
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb2,
+          action: Action.READ_PROJECT_METADATA,
+        })
+      ).to.equal(true);
+
+      removeProjectRole({
+        user: bobalooba,
+        projectId: nb1,
+        role: Role.PROJECT_GUEST,
+      });
+
+      // Update permissions
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
+
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb1,
+          action: Action.READ_MY_PROJECT_RECORDS,
+        })
+      ).to.equal(false);
+>>>>>>> origin/main
 
       removeProjectRoleFromUser(bobalooba, nb1, 'user');
       expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(false);
@@ -127,9 +242,26 @@ describe('notebook api', () => {
 
     if (nb1 && nb2 && nb3 && nb4) {
       // give user access to two of them
+<<<<<<< HEAD
       addProjectRoleToUser(bobalooba, nb1, 'user');
       addProjectRoleToUser(bobalooba, nb2, 'user');
       await saveUser(bobalooba);
+=======
+      addProjectRole({
+        user: bobalooba,
+        projectId: nb1,
+        role: Role.PROJECT_GUEST,
+      });
+      addProjectRole({
+        user: bobalooba,
+        projectId: nb2,
+        role: Role.PROJECT_GUEST,
+      });
+      await saveExpressUser(bobalooba);
+
+      // Update permissions
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
+>>>>>>> origin/main
 
       const notebooks = await getNotebooks(bobalooba);
       expect(notebooks.length).to.equal(2);
@@ -140,7 +272,7 @@ describe('notebook api', () => {
 
   it('can create a notebook', async () => {
     await initialiseDbAndKeys({});
-    const user = await getUserFromEmailOrUsername('admin');
+    const user = await getExpressUserFromEmailOrUsername('admin');
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -264,7 +396,7 @@ describe('notebook api', () => {
 
   it('updateNotebook', async () => {
     await initialiseDbAndKeys({});
-    const user = await getUserFromEmailOrUsername('admin');
+    const user = await getExpressUserFromEmailOrUsername('admin');
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',

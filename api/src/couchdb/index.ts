@@ -31,11 +31,13 @@ import {
   initMetadataDB,
   initPeopleDB,
   initProjectsDB,
+  initTeamsDB,
   initTemplatesDB,
   ProjectDataObject,
   ProjectID,
   ProjectMetaObject,
-  ProjectObject,
+  ProjectDocument,
+  TeamsDB,
   TemplateDetails,
   couchInitialiser,
 } from '@faims3/data-model';
@@ -57,13 +59,21 @@ const TEMPLATES_DB_NAME = 'templates';
 const AUTH_DB_NAME = 'auth';
 const PEOPLE_DB_NAME = 'people';
 const INVITE_DB_NAME = 'invites';
+const TEAMS_DB_NAME = 'teams';
 
 let _directoryDB: PouchDB.Database | undefined;
-let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
+let _projectsDB: PouchDB.Database<ProjectDocument> | undefined;
 let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
 let _authDB: AuthDatabase | undefined;
+<<<<<<< HEAD
 let _usersDB: PouchDB.Database<Express.User> | undefined;
 let _invitesDB: PouchDB.Database | undefined;
+=======
+let _usersDB: PeopleDB | undefined;
+let _invitesDB: InvitesDB | undefined;
+let _teamsDB: TeamsDB | undefined;
+let _migrationsDB: MigrationsDB | undefined;
+>>>>>>> origin/main
 
 const pouchOptions = () => {
   const options: PouchDB.Configuration.RemoteDatabaseConfiguration = {};
@@ -192,7 +202,7 @@ export const getUsersDB = (): PouchDB.Database<Express.User> => {
   return _usersDB;
 };
 
-export const localGetProjectsDb = (): PouchDB.Database<ProjectObject> => {
+export const localGetProjectsDb = (): PouchDB.Database<ProjectDocument> => {
   if (!_projectsDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PROJECTS_DB_NAME;
@@ -237,6 +247,20 @@ export const getInvitesDB = (): PouchDB.Database | undefined => {
   return _invitesDB;
 };
 
+export const getTeamsDB = (): TeamsDB => {
+  if (!_teamsDB) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + TEAMS_DB_NAME;
+    try {
+      _teamsDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting teams database.'
+      );
+    }
+  }
+  return _teamsDB;
+};
 /**
  * Returns the metadata DB for a given project - involves fetching the project
  * doc and then fetching the corresponding metadata db
@@ -442,6 +466,15 @@ export const initialiseDbAndKeys = async ({
   // Projects
   const projectsDB = localGetProjectsDb();
 
+<<<<<<< HEAD
+=======
+  // Invites
+  const invitesDB = getInvitesDB();
+
+  // Teams
+  const teamsDB = getTeamsDB();
+
+>>>>>>> origin/main
   // Templates
   let templatesDb: PouchDB.Database;
   try {
@@ -530,8 +563,49 @@ export const initialiseDbAndKeys = async ({
     );
   }
 
+<<<<<<< HEAD
   // For users, we also establish an admin user, if not already present
   await registerAdminUser(peopleDb);
+=======
+  // Invites DB
+  try {
+    await couchInitialiser({
+      db: invitesDB,
+      content: initInvitesDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the invites database!...' + e
+    );
+  }
+
+  // Teams DB
+  try {
+    await couchInitialiser({
+      db: teamsDB,
+      content: initTeamsDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the teams database!...' + e
+    );
+  }
+
+  // Migrations DB
+  try {
+    await couchInitialiser({
+      db: migrationsDb,
+      content: initMigrationsDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the migrations database!...' + e
+    );
+  }
+>>>>>>> origin/main
 
   // For each project, ensure the metadata and data DBs are also
   // initialised/synced

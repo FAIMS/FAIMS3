@@ -26,13 +26,20 @@ import {NOTEBOOK_CREATOR_GROUP_NAME} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
 import {addLocalPasswordForUser} from '../src/auth_providers/local';
+<<<<<<< HEAD
 import {createAuthKey} from '../src/authkeys/create';
+=======
+import {
+  generateJwtFromUser,
+  upgradeCouchUserToExpressUser,
+} from '../src/authkeys/create';
+>>>>>>> origin/main
 import {KEY_SERVICE} from '../src/buildconfig';
 import {
   addOtherRoleToUser,
   createUser,
-  getUserFromEmailOrUsername,
-  saveUser,
+  getExpressUserFromEmailOrUsername,
+  saveCouchUser,
 } from '../src/couchdb/users';
 import {cleanDataDBS, resetDatabases} from './mocks';
 
@@ -66,7 +73,8 @@ export const beforeApiTests = async () => {
   const signingKey = await KEY_SERVICE.getSigningKey();
 
   // get the admin user - this should exist at this point
-  const possibleAdminUser = await getUserFromEmailOrUsername(adminUserName);
+  const possibleAdminUser =
+    await getExpressUserFromEmailOrUsername(adminUserName);
 
   // If this is null then the admin user wasn't seeded properly
   expect(possibleAdminUser, 'Admin user was null from the database.').to.not.be
@@ -84,9 +92,15 @@ export const beforeApiTests = async () => {
   const localUser = possibleLocalUser!;
 
   // save user and create password
-  await saveUser(localUser);
+  await saveCouchUser(localUser);
   await addLocalPasswordForUser(localUser, localUserPassword); // saves the user
+<<<<<<< HEAD
   localUserToken = await createAuthKey(localUser, signingKey);
+=======
+  // Upgrade
+  const upgraded = await upgradeCouchUserToExpressUser({dbUser: localUser});
+  localUserToken = await generateJwtFromUser({user: upgraded, signingKey});
+>>>>>>> origin/main
 
   // create the nb user
   const [possibleNbUser] = await createUser('', notebookUserName);
@@ -97,10 +111,18 @@ export const beforeApiTests = async () => {
   const nbUser = possibleNbUser!;
 
   // save user and create password
+<<<<<<< HEAD
   await saveUser(nbUser);
   addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
   await addLocalPasswordForUser(nbUser, notebookPassword);
   notebookUserToken = await createAuthKey(nbUser, signingKey);
+=======
+  await saveCouchUser(nbUser);
+  addGlobalRole({user: nbUser, role: Role.GENERAL_CREATOR});
+  await addLocalPasswordForUser(nbUser, notebookPassword);
+  const upgradedNb = await upgradeCouchUserToExpressUser({dbUser: nbUser});
+  notebookUserToken = await generateJwtFromUser({user: upgradedNb, signingKey});
+>>>>>>> origin/main
 };
 
 /**

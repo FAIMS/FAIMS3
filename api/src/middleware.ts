@@ -19,9 +19,38 @@
  *   which server to use and whether to include test data
  */
 
+<<<<<<< HEAD
+=======
+import {
+  Action,
+  isAuthorized,
+  PeopleDBDocument,
+  ResourceRole,
+} from '@faims3/data-model';
+>>>>>>> origin/main
 import Express from 'express';
 import {validateToken} from './authkeys/read';
 import {userHasPermission, userIsClusterAdmin} from './couchdb/users';
+
+export const userCanDo = ({
+  user,
+  action,
+  resourceId,
+}: {
+  // NOTE: cannot use Express.User here for some reason :/
+  user: PeopleDBDocument & {resourceRoles: ResourceRole[]};
+  action: Action;
+  resourceId?: string;
+}) => {
+  return isAuthorized({
+    decodedToken: {
+      globalRoles: user.globalRoles,
+      resourceRoles: user.resourceRoles,
+    },
+    action,
+    resourceId,
+  });
+};
 
 /**
  * Extracts the Bearer token from the Authorization header of an Express
@@ -94,6 +123,67 @@ export async function requireAuthenticationAPI(
   }
 }
 
+<<<<<<< HEAD
+=======
+export const isAllowedToMiddleware = ({
+  action,
+  getAction,
+  getResourceId,
+}: {
+  action?: Action;
+  getAction?: (req: Express.Request) => Action;
+  getResourceId?: (req: Express.Request) => string | undefined;
+}) => {
+  return (
+    req: Express.Request,
+    res: Express.Response,
+    next: Express.NextFunction
+  ) => {
+    if (!action && !getAction) {
+      throw new Exceptions.InternalSystemError(
+        'Invalid use of isAllowedToMiddleware - must provide either an action or getAction'
+      );
+    }
+    if (action && getAction) {
+      throw new Exceptions.InternalSystemError(
+        'Ambiguous usage of isAllowedToMiddleware - must provide either an action or getAction, not both!'
+      );
+    }
+
+    // ascertain relevant action by either direct provision or function from req object
+    let relevantAction: Action;
+    if (action) {
+      relevantAction = action;
+    } else {
+      relevantAction = getAction!(req);
+    }
+
+    const user = req.user;
+    if (!user) {
+      throw new Exceptions.UnauthorizedException('Authentication required.');
+    }
+
+    const resourceId = getResourceId ? getResourceId(req) : undefined;
+
+    const isAllowed = isAuthorized({
+      decodedToken: {
+        globalRoles: user.globalRoles,
+        resourceRoles: user.resourceRoles,
+      },
+      action: relevantAction,
+      resourceId,
+    });
+
+    if (isAllowed) {
+      next();
+    } else {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to perform this action.'
+      );
+    }
+  };
+};
+>>>>>>> origin/main
 /**
  * Opportunistically parses the user and populates req.user from DB if JWT is
  * valid. If not, then passes through with no-op.

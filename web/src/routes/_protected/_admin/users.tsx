@@ -28,14 +28,27 @@ function RouteComponent() {
     setResetDialog(true);
   };
 
+<<<<<<< HEAD
   console.log(data);
+=======
+  console.log('data', data);
+>>>>>>> origin/main
 
   return (
     <>
       <DataTable
         columns={getColumns({onReset})}
         data={
+<<<<<<< HEAD
           data?.map((user: any) => ({...user, email: user.emails[0]})) || []
+=======
+          isPending
+            ? []
+            : data.map((user: any) => ({
+                ...user,
+                email: user.emails[0],
+              }))
+>>>>>>> origin/main
         }
         loading={isPending}
         defaultRowsPerPage={15}

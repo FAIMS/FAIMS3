@@ -28,16 +28,26 @@ import {
   APINotebookList,
   EncodedProjectUIModel,
   notebookRecordIterator,
+  ProjectDBFields,
+  ProjectDocument,
   ProjectID,
+<<<<<<< HEAD
   ProjectObject,
+=======
+  PROJECTS_BY_TEAM_ID,
+  Resource,
+  resourceRoles,
+  Role,
+  userHasProjectRole,
+>>>>>>> origin/main
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
 import {
+  getDataDb,
   getMetadataDb,
   initialiseDataDb,
   initialiseMetadataDb,
-  getDataDb,
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
@@ -58,17 +68,57 @@ import {
   setAttachmentLoaderForType,
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
+import {userCanDo} from '../middleware';
 import {slugify} from '../utils';
 import {userHasPermission} from './users';
+
+/**
+ * Gets project IDs by teamID (who owns it)
+ * @returns an array of template ids
+ */
+export const getProjectIdsByTeamId = async ({
+  teamId,
+}: {
+  teamId: string;
+}): Promise<string[]> => {
+  const projectsDb = localGetProjectsDb();
+  try {
+    const resultList = await projectsDb.query<ProjectDBFields>(
+      PROJECTS_BY_TEAM_ID,
+      {
+        key: teamId,
+        include_docs: false,
+      }
+    );
+    return resultList.rows
+      .filter(res => {
+        return !res.id.startsWith('_');
+      })
+      .map(res => {
+        return res.id;
+      });
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading projects by team ID from the Project DB.'
+    );
+  }
+};
 
 /**
  * getAllProjects - get the internal project documents that reference
  * the project databases that the front end will connnect to
  */
+<<<<<<< HEAD
 export const getAllProjects = async (): Promise<ProjectObject[]> => {
   const projectsDb = localGetProjectsDb();
   const projects: ProjectObject[] = [];
   const res = await projectsDb.allDocs({
+=======
+export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
+  const projectsDb = localGetProjectsDb();
+  const projects: ProjectDocument[] = [];
+  const res = await projectsDb.allDocs<ProjectDocument>({
+>>>>>>> origin/main
     include_docs: true,
   });
   res.rows.forEach(e => {
@@ -93,16 +143,31 @@ export const getAllProjects = async (): Promise<ProjectObject[]> => {
  */
 export const getUserProjects = async (
   user: Express.User
+<<<<<<< HEAD
 ): Promise<ProjectObject[]> => {
   return (await getAllProjects()).filter(p =>
     userHasPermission(user, p._id, 'read')
+=======
+): Promise<ProjectDocument[]> => {
+  return (await getAllProjectsDirectory()).filter(p =>
+    userCanDo({
+      user,
+      action: Action.READ_PROJECT_METADATA,
+      resourceId: p._id,
+    })
+>>>>>>> origin/main
   );
 };
 
 /**
  * getNotebooks -- return an array of notebooks from the database
+<<<<<<< HEAD
  * @oaram user - only return notebooks that this user can see
  * @returns an array of ProjectObject objects
+=======
+ * @param user - only return notebooks that this user can see
+ * @returns an array of ProjectDocument objects
+>>>>>>> origin/main
  */
 export const getNotebooks = async (
   user: Express.User
@@ -123,6 +188,7 @@ export const getNotebooks = async (
       }
     });
 
+<<<<<<< HEAD
     for (const project of projects) {
       const projectId = project._id;
       const projectMeta = await getNotebookMetadata(projectId);
@@ -134,6 +200,42 @@ export const getNotebooks = async (
           created: project.created,
           template_id: project.template_id,
           status: project.status,
+=======
+  // Get all projects and filter for user access
+  const allDocs = await projectsDb.allDocs<ProjectDocument>({
+    include_docs: true,
+  });
+
+  const userProjects = allDocs.rows
+    .map(r => r.doc)
+    .filter(d => d !== undefined && !d._id.startsWith('_'))
+    .filter(p =>
+      userCanDo({
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: p!._id,
+        user,
+      })
+    );
+
+  // Process all projects in parallel using Promise.all
+  const output = await Promise.all(
+    userProjects.map(async project => {
+      try {
+        const projectId = project!._id;
+        const projectMeta = await getNotebookMetadata(projectId);
+
+        return {
+          name: project!.name,
+          is_admin: userHasProjectRole({
+            user,
+            projectId,
+            role: Role.PROJECT_ADMIN,
+          }),
+          last_updated: project!.last_updated,
+          created: project!.created,
+          template_id: project!.template_id,
+          status: project!.status,
+>>>>>>> origin/main
           project_id: projectId,
           metadata: projectMeta,
         });
@@ -244,7 +346,8 @@ export const createNotebook = async (
   projectName: string,
   uispec: EncodedProjectUIModel,
   metadata: any,
-  template_id: string | undefined = undefined
+  template_id: string | undefined = undefined,
+  teamId: string | undefined = undefined
 ) => {
   const projectId = generateProjectID(projectName);
 
@@ -261,7 +364,12 @@ export const createNotebook = async (
       db_name: dataDBName,
     },
     status: 'published',
+<<<<<<< HEAD
   } as ProjectObject;
+=======
+    ownedByTeamId: teamId,
+  } satisfies ProjectDocument;
+>>>>>>> origin/main
 
   try {
     // first add an entry to the projects db about this project
@@ -432,7 +540,7 @@ export const writeProjectMetadata = async (
 /**
  * getNotebookMetadata -- return metadata for a single notebook from the database
  * @param project_id a project identifier
- * @returns a ProjectObject object or null if it doesn't exist
+ * @returns a ProjectDocument object or null if it doesn't exist
  */
 export const getNotebookMetadata = async (
   project_id: string

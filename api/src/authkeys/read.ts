@@ -18,9 +18,16 @@
  *   Provides a function to validate a user token and return user details
  */
 
+<<<<<<< HEAD
 import {jwtVerify} from 'jose';
 import {getUserFromEmailOrUsername} from '../couchdb/users';
 import {KEY_SERVICE} from '../buildconfig';
+=======
+import {decodeAndValidateToken} from '@faims3/data-model';
+import {jwtVerify} from 'jose';
+import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
+import {getCouchUserFromEmailOrUsername} from '../couchdb/users';
+>>>>>>> origin/main
 
 /**
  * validateToken
@@ -40,6 +47,30 @@ export const validateToken = async (token: string) => {
     } else {
       return undefined;
     }
+<<<<<<< HEAD
+=======
+
+    if (!payload.sub) {
+      throw Error('No sub claim!');
+    }
+
+    const user = await getCouchUserFromEmailOrUsername(payload.sub);
+    if (!user) {
+      // TODO here we could check more sophisticated things
+      throw Error('User not present in database.');
+    }
+
+    // Better to use the token provided to build the user! This ensures
+    // synchronisation between API resources and the client's browser.
+    // NOTE we intentionally ANY this since zod validation occurs
+    const validatedToken = decodeAndValidateToken({...(payload as any)});
+
+    // TODO consider if we want a more sophisticated permission merge, for
+    // example in the case of blacklisting
+
+    // overwrite user details with the token permissions!
+    return {...user, ...validatedToken};
+>>>>>>> origin/main
   } catch (error) {
     console.error(error);
     return undefined;

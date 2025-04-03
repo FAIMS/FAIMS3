@@ -19,20 +19,38 @@
  */
 
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
+import {
+  Action,
+  addGlobalRole,
+  addProjectRole,
+  removeGlobalRole,
+  removeProjectRole,
+  Role,
+  userHasProjectRole,
+  userProjectRoles,
+} from '@faims3/data-model';
+import {assert, expect} from 'chai';
+import * as fs from 'fs';
 import {
   addLocalPasswordForUser,
   validateLocalUser,
 } from '../src/auth_providers/local';
+<<<<<<< HEAD
 import {CLUSTER_ADMIN_GROUP_NAME} from '@faims3/data-model';
+=======
+import {upgradeCouchUserToExpressUser} from '../src/authkeys/create';
+>>>>>>> origin/main
 import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
+import {createNotebook} from '../src/couchdb/notebooks';
 import {
   addProjectRoleToUser,
   addOtherRoleToUser,
   createUser,
+<<<<<<< HEAD
   removeOtherRoleFromUser,
   removeProjectRoleFromUser,
   saveUser,
@@ -43,6 +61,13 @@ import {expect, assert} from 'chai';
 
 import * as fs from 'fs';
 import {createNotebook} from '../src/couchdb/notebooks';
+=======
+  getUserInfoForProject,
+  registerAdminUser,
+  saveCouchUser,
+} from '../src/couchdb/users';
+import {userCanDo} from '../src/middleware';
+>>>>>>> origin/main
 
 const clearUsers = async () => {
   const usersDB = getUsersDB();
@@ -85,7 +110,7 @@ describe('user creation', () => {
     const [newUser, errorFirst] = await createUser(email, '');
     expect(errorFirst).to.equal('');
     if (newUser) {
-      await saveUser(newUser);
+      await saveCouchUser(newUser);
       // now make another user with the same email
       const [anotherUser, errorSecond] = await createUser(email, '');
       expect(errorSecond).to.equal(`User with email '${email}' already exists`);
@@ -94,7 +119,7 @@ describe('user creation', () => {
     const [newUserU, errorFirstU] = await createUser('', username);
     expect(errorFirstU).to.equal('');
     if (newUserU) {
-      await saveUser(newUserU);
+      await saveCouchUser(newUserU);
       // now make another user with the same email
       const [anotherUserU, errorSecondU] = await createUser('', username);
       expect(errorSecondU).to.equal(
@@ -124,7 +149,16 @@ describe('user creation', () => {
       expect(newUser.roles).to.include('cluster-admin');
       expect(newUser.roles).to.include('chief-bobalooba');
 
+<<<<<<< HEAD
       addProjectRoleToUser(newUser, 'important-project', 'admin');
+=======
+      // add resource role
+      addProjectRole({
+        user: newUser,
+        projectId: 'important-project',
+        role: Role.PROJECT_ADMIN,
+      });
+>>>>>>> origin/main
 
       expect(newUser.other_roles.length).to.equal(2);
       expect(newUser.other_roles).to.include('cluster-admin');
@@ -134,6 +168,7 @@ describe('user creation', () => {
       );
       expect(newUser.project_roles['important-project']).to.include('admin');
 
+<<<<<<< HEAD
       expect(newUser.roles.length).to.equal(3);
       expect(newUser.roles).to.include('important-project||admin');
 
@@ -155,6 +190,47 @@ describe('user creation', () => {
 
       addOtherRoleToUser(newUser, 'cluster-admin');
       expect(newUser.other_roles.length).to.equal(2);
+=======
+      // verify resource role was added
+      expect(newUser.projectRoles.length).to.equal(1);
+      expect(
+        userHasProjectRole({
+          user: newUser,
+          projectId: 'important-project',
+          role: Role.PROJECT_ADMIN,
+        })
+      ).to.be.true;
+
+      // Get all roles for the resource
+      const projectRoles = userProjectRoles({
+        user: newUser,
+        projectId: 'important-project',
+      });
+      expect(projectRoles).to.include(Role.PROJECT_ADMIN);
+      // These are not drilled explicitly anymore
+      expect(projectRoles.length).to.equal(1);
+
+      addGlobalRole({user: newUser, role: Role.GENERAL_ADMIN});
+      expect(newUser.globalRoles.length).to.equal(3);
+      expect(newUser.projectRoles.length).to.equal(1);
+
+      // remove resource role
+      removeProjectRole({
+        user: newUser,
+        projectId: 'important-project',
+        role: Role.PROJECT_ADMIN,
+      });
+
+      // Still true due to general admin
+      // This asks "does this user explicitly have this role" so does not drill!
+      expect(
+        userHasProjectRole({
+          user: newUser,
+          projectId: 'important-project',
+          role: Role.PROJECT_ADMIN,
+        })
+      ).to.be.false;
+>>>>>>> origin/main
 
       expect(newUser.roles.length).to.equal(4);
       expect(newUser.roles).to.include('cluster-admin');
@@ -181,11 +257,21 @@ describe('user creation', () => {
       expect(newUser.roles).to.include('important-project||team');
 
       // remove roles that aren't there should be harmless
+<<<<<<< HEAD
       removeProjectRoleFromUser(newUser, 'important-project', 'not-there');
       expect(newUser.project_roles['important-project'].length).to.equal(1);
       removeOtherRoleFromUser(newUser, 'non-existant');
       expect(newUser.other_roles.length).to.equal(1);
       expect(newUser.other_roles).to.include('chief-bobalooba');
+=======
+      const userBeforeNonExistentRemoval = {...newUser};
+      removeProjectRole({
+        user: newUser,
+        projectId: 'important-project',
+        role: Role.PROJECT_GUEST, // trying to remove a role that isn't assigned
+      });
+      expect(newUser).to.deep.equal(userBeforeNonExistentRemoval);
+>>>>>>> origin/main
     }
   });
 
@@ -193,6 +279,7 @@ describe('user creation', () => {
     const email = 'BOBBY@here.com';
     const username = 'bobalooba';
     const project_id = 'myProject';
+<<<<<<< HEAD
 
     const [user, error] = await createUser(email, username);
     expect(error).to.equal('');
@@ -222,7 +309,128 @@ describe('user creation', () => {
 
       expect(userHasPermission(user, project_id, 'read')).to.be.true;
       expect(userHasPermission(user, project_id, 'modify')).to.be.true;
+=======
+    const [dbUser, error] = await createUser({email, username, name: username});
+    if (!dbUser) {
+      throw new Error('Failed to create user! Error: ' + error);
+>>>>>>> origin/main
     }
+    let user = await upgradeCouchUserToExpressUser({dbUser});
+
+    // Use userCanDo with proper Action enums instead of the old userHasPermission
+    expect(
+      userCanDo({
+        user,
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: project_id,
+      })
+    ).to.be.false;
+
+    expect(
+      userCanDo({
+        user,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: project_id,
+      })
+    ).to.be.false;
+
+    // Now user should have read/modify permissions for all projects
+    // Add GENERAL_ADMIN role - this should grant all permissions
+    addGlobalRole({user, role: Role.GENERAL_ADMIN});
+    // Now user should have read/modify permissions for all projects
+
+    // Recompile permissions
+    user = await upgradeCouchUserToExpressUser({dbUser: user});
+
+    // Now user should have read/modify permissions for all projects
+    expect(
+      userCanDo({
+        user,
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: project_id,
+      })
+    ).to.be.true;
+
+    expect(
+      userCanDo({
+        user,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: project_id,
+      })
+    ).to.be.true;
+
+    // Remove the admin role
+    removeGlobalRole({user, role: Role.GENERAL_ADMIN});
+
+    // Add PROJECT_GUEST role (similar to old 'user' role) for specific project
+    addProjectRole({
+      user,
+      projectId: project_id,
+      role: Role.PROJECT_GUEST,
+    });
+    // Recompile permissions
+    user = await upgradeCouchUserToExpressUser({dbUser: user});
+
+    // Should have read but not modify permission for this project
+    expect(
+      userCanDo({
+        user,
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: project_id,
+      })
+    ).to.be.true;
+
+    expect(
+      userCanDo({
+        user,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: project_id,
+      })
+    ).to.be.false;
+
+    // But can't access another project
+    expect(
+      userCanDo({
+        user,
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: 'anotherProject',
+      })
+    ).to.be.false;
+
+    expect(
+      userCanDo({
+        user,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: 'anotherProject',
+      })
+    ).to.be.false;
+
+    // Give them PROJECT_ADMIN permission for the project
+    addProjectRole({
+      user,
+      projectId: project_id,
+      role: Role.PROJECT_ADMIN,
+    });
+
+    // Recompile permissions
+    user = await upgradeCouchUserToExpressUser({dbUser: user});
+
+    // Now should have full permissions for this project
+    expect(
+      userCanDo({
+        user,
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: project_id,
+      })
+    ).to.be.true;
+
+    expect(
+      userCanDo({
+        user,
+        action: Action.UPDATE_PROJECT_DETAILS,
+        resourceId: project_id,
+      })
+    ).to.be.true;
   });
 
   it('add local password', async () => {
@@ -277,9 +485,23 @@ describe('user creation', () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [user, error] = await createUser('', username);
     if (user && project_id) {
+<<<<<<< HEAD
       addProjectRoleToUser(user, project_id, 'team');
       addProjectRoleToUser(user, project_id, 'moderator');
       await saveUser(user);
+=======
+      addProjectRole({
+        user,
+        projectId: project_id,
+        role: Role.PROJECT_CONTRIBUTOR,
+      });
+      addProjectRole({
+        user,
+        projectId: project_id,
+        role: Role.PROJECT_MANAGER,
+      });
+      await saveCouchUser(user);
+>>>>>>> origin/main
 
       const userInfo = await getUserInfoForNotebook(project_id);
 

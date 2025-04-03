@@ -70,7 +70,6 @@ function toggleRole(event) {
         }, 2000)
       } else {
         const data = await response.json();
-        console.log(data);
         document.getElementById('message').innerHTML = data.error;
         setInterval(() => {
           document.getElementById('message').innerHTML = "&nbsp;";

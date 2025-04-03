@@ -29,9 +29,18 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
+<<<<<<< HEAD
 import {getNotebooks, getProjectUIModel} from '../src/couchdb/notebooks';
 import {getUserFromEmailOrUsername} from '../src/couchdb/users';
 import {generateTokenContentsForUser} from '../src/utils';
+=======
+import {
+  getUserProjectsDetailed,
+  getProjectUIModel,
+} from '../src/couchdb/notebooks';
+import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
+import {mockTokenContentsForUser} from '../src/utils';
+>>>>>>> origin/main
 import {
   callbackObject,
   cleanDataDBS,
@@ -52,7 +61,7 @@ describe('Backup and restore', () => {
     await restoreFromBackup('test/backup.jsonl');
 
     // should now have the notebooks from the backup defined
-    const user = await getUserFromEmailOrUsername('admin');
+    const user = await getExpressUserFromEmailOrUsername('admin');
     expect(user).not.to.be.undefined;
     if (user) {
       const notebooks = await getNotebooks(user);

@@ -18,8 +18,21 @@
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data
  */
+<<<<<<< HEAD
 import {NonUniqueProjectID} from '@faims3/data-model';
 import {body, validationResult} from 'express-validator';
+=======
+import {
+  Action,
+  projectInviteToAction,
+  Resource,
+  Role,
+  roleDetails,
+  RoleScope,
+  userHasGlobalRole,
+  userHasProjectRole,
+} from '@faims3/data-model';
+>>>>>>> origin/main
 import QRCode from 'qrcode';
 import {app} from './core';
 import {add_auth_providers} from './auth_providers';
@@ -62,6 +75,26 @@ import {
   initialiseDbAndKeys,
   verifyCouchDBConnection,
 } from './couchdb';
+<<<<<<< HEAD
+=======
+import {validateProjectDatabase} from './couchdb/devtools';
+import {createInvite, getInvitesForNotebook} from './couchdb/invites';
+import {
+  countRecordsInNotebook,
+  getEncodedNotebookUISpec,
+  getNotebookMetadata,
+  getRolesForNotebook,
+  getUserProjectsDetailed,
+} from './couchdb/notebooks';
+import {getTemplate, getTemplates} from './couchdb/templates';
+import {getUsers, getUsersForResource} from './couchdb/users';
+import {
+  isAllowedToMiddleware,
+  requireAuthentication,
+  requireNotebookMembership,
+  userCanDo,
+} from './middleware';
+>>>>>>> origin/main
 
 export {app};
 
@@ -158,6 +191,39 @@ app.post(
           },
         ],
       });
+<<<<<<< HEAD
+=======
+      return;
+    }
+    await createInvite(projectId, role);
+    res.redirect('/notebooks/' + projectId);
+  }
+);
+
+app.get(
+  '/notebooks/',
+  requireAuthentication,
+  isAllowedToMiddleware({action: Action.LIST_PROJECTS}),
+  async (req, res) => {
+    const user = req.user;
+    if (user) {
+      const notebooks = await getUserProjectsDetailed(user);
+      const ownNotebooks = notebooks.filter(nb => nb.is_admin);
+      const otherNotebooks = notebooks.filter(nb => !nb.is_admin);
+
+      res.render('notebooks', {
+        user: user,
+        ownNotebooks: ownNotebooks,
+        otherNotebooks: otherNotebooks,
+        cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
+        can_create_notebooks: userCanDo({
+          action: Action.CREATE_PROJECT,
+          user,
+        }),
+        developer: DEVELOPER_MODE,
+        DESIGNER_URL: DESIGNER_URL,
+      });
+>>>>>>> origin/main
     } else {
       await createInvite(project_id, role);
       res.redirect('/notebooks/' + project_id);
@@ -197,7 +263,15 @@ app.get(
     const uiSpec = await getEncodedNotebookUISpec(project_id);
     const invitesQR: any[] = [];
     if (notebook && uiSpec) {
+<<<<<<< HEAD
       const isAdmin = userHasPermission(user, project_id, 'modify');
+=======
+      const isAdmin = userHasProjectRole({
+        user,
+        projectId: project_id,
+        role: Role.PROJECT_ADMIN,
+      });
+>>>>>>> origin/main
       if (isAdmin) {
         const invites = await getInvitesForNotebook(project_id);
         for (let index = 0; index < invites.length; index++) {
@@ -229,10 +303,24 @@ app.get(
   }
 );
 
+<<<<<<< HEAD
 app.get('/templates/', requireAuthentication, async (req, res) => {
   const user = req.user;
   if (userCanCreateNotebooks(user)) {
     const templates = await getTemplates();
+=======
+app.get(
+  '/templates/',
+  requireAuthentication,
+  isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
+  async (req, res) => {
+    const user = req.user!;
+    // permission visibility filter (TODO optimise lookup by filtering based on
+    // user visibility pre-query?)
+    const templates = (await getTemplates()).filter(t =>
+      userCanDo({action: Action.READ_TEMPLATE_DETAILS, user, resourceId: t._id})
+    );
+>>>>>>> origin/main
     res.render('templates', {
       user: user,
       templates: templates,
@@ -302,6 +390,7 @@ app.get('/get-token/', async (req, res) => {
   return;
 });
 
+<<<<<<< HEAD
 app.get('/notebooks/:id/users', requireClusterAdmin, async (req, res) => {
   if (req.user) {
     const project_id = req.params.id;
@@ -309,6 +398,34 @@ app.get('/notebooks/:id/users', requireClusterAdmin, async (req, res) => {
     const notebook = await getNotebookMetadata(project_id);
 
     const userList = await getUserInfoForNotebook(project_id);
+=======
+app.get(
+  '/notebooks/:id/users',
+  requireAuthentication,
+  isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
+  processRequest({params: z.object({id: z.string().nonempty()})}),
+  async (req, res) => {
+    const projectId = req.params.id;
+    const user = req.user!;
+    const notebook = await getNotebookMetadata(projectId);
+    const relevantRoles = getRolesForNotebook().map(r => r.role);
+    const userList = (await getUsersForResource({resourceId: projectId})).map(
+      user => {
+        const roles: {name: Role; value: boolean}[] = [];
+        for (const r of relevantRoles) {
+          roles.push({
+            value: userHasProjectRole({
+              role: r,
+              user,
+              projectId: projectId,
+            }),
+            name: r,
+          });
+        }
+        return {...user, roles};
+      }
+    );
+>>>>>>> origin/main
 
     res.render('users', {
       roles: userList.roles,
