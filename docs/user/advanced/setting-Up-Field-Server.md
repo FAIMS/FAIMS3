@@ -390,7 +390,7 @@ more then 7 minutes on a RaspberryPI, and it does spend a lot of time on
 the part of the build involving "npm" packaging.
 
 Then you must create the database in the running system. Execute: "sudo
-docker-compose exec conductor npm run initdb"
+docker-compose exec conductor npm run migrate"
 
 To check if the docker containers are running - execute "sudo docker
 ps". E.g (for a running system)
@@ -589,7 +589,7 @@ This likely indicates you have not initialised the database. You can
 cd FAIMS3-conductor<br />
 git tag<br />
 git checkout &lt;tagname&gt;cp .env-dist .env# Edit .env - make required changes.#  then do:./keymanagement/makeInstanceKeys.shsudo docker-compose up -d</p>
-<p># If you do need to update the DB.sudo docker-compose exec conductor npm run initdb</p>
+<p># If you do need to update the DB.sudo docker-compose exec conductor npm run migrate</p>
 <p># And if neededsudo docker-compose restart</p>
 </blockquote></td>
 </tr>

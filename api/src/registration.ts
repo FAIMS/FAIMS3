@@ -18,13 +18,17 @@
  *   Handle registration of new users via invites
  */
 
-import {addResourceRole, InvitesDBFields} from '@faims3/data-model';
-import {saveUser} from './couchdb/users';
+import {
+  addProjectRole,
+  InvitesDBFields,
+  PeopleDBDocument,
+} from '@faims3/data-model';
+import {saveCouchUser} from './couchdb/users';
 
 export async function acceptInvite(
-  user: Express.User,
+  user: PeopleDBDocument,
   invite: InvitesDBFields
 ) {
-  addResourceRole({user, resourceId: invite.projectId, role: invite.role});
-  await saveUser(user);
+  addProjectRole({user, projectId: invite.projectId, role: invite.role});
+  await saveCouchUser(user);
 }

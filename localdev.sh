@@ -98,8 +98,8 @@ else
 fi
 
 echo "Initialising database"
-echo "> npm run initdb"
-npm run initdb
+echo "> npm run migrate"
+npm run migrate
 
 
 echo "Service is setup, to load notebooks and templates follow the below steps"

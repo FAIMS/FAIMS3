@@ -18,5 +18,11 @@
     "noEmit": false,
     "declaration": true
   },
-  "include": ["./src"]
+  "include": [
+    "./src",
+    "tests/migrationService.test.ts",
+    "tests/migrationService2.test.ts",
+    "tests/migrations.test.ts",
+    "tests/permissionfunctions.test.ts"
+  ]
 }

@@ -1,10 +1,16 @@
-import {isTokenAuthorized} from '../src/permission/functions';
+import {
+  extendTokenWithVirtualRoles,
+  generateVirtualResourceRoles,
+  isTokenAuthorized,
+  necessaryActionToCouchRoleList,
+  ResourceAssociation,
+} from '../src/permission/functions';
 import {
   drillRoleActions,
   drillRoles,
   roleGrantsAction,
 } from '../src/permission/helpers';
-import {Action, Role} from '../src/permission/model';
+import {Action, Resource, Role} from '../src/permission/model';
 import {
   COUCHDB_ROLES_PATH,
   decodeAndValidateToken,
@@ -12,7 +18,6 @@ import {
   decodePerResourceStatement,
   encodeToken,
   ENCODING_SEPARATOR,
-  necessaryActionToCouchRoleList,
   TokenPermissions,
 } from '../src/permission/tokenEncoding';
 
@@ -661,7 +666,7 @@ describe('isAuthorized', () => {
       expect(
         isTokenAuthorized({
           token: token,
-          action: Action.UPDATE_TEMPLATE_CONTENT,
+          action: Action.UPDATE_TEMPLATE_UISPEC,
           resourceId: 'template456',
         })
       ).toBe(true);
@@ -706,7 +711,7 @@ describe('isAuthorized', () => {
       // Mock the function for testing
       jest
         .spyOn(
-          require('../src/permission/tokenEncoding'),
+          require('../src/permission/functions'),
           'necessaryActionToCouchRoleList'
         )
         .mockImplementation(({action, resourceId}: any) => {
@@ -733,6 +738,288 @@ describe('isAuthorized', () => {
       expect(result).toContain(`${resourceId}||${Role.PROJECT_CONTRIBUTOR}`);
       expect(result).toContain(Role.PROJECT_ADMIN);
       expect(result).toContain(Role.GENERAL_ADMIN);
+    });
+  });
+});
+
+describe('Virtual Resource Roles', () => {
+  describe('generateVirtualResourceRoles', () => {
+    it('should generate virtual roles for team-owned projects', () => {
+      // Create a decoded token with team roles
+      const decodedToken: DecodedTokenPermissions = {
+        resourceRoles: [
+          {resourceId: 'team1', role: Role.TEAM_MANAGER},
+          {resourceId: 'team2', role: Role.TEAM_MEMBER},
+        ],
+        globalRoles: [],
+      };
+
+      // Define the resource associations (team -> projects)
+      const resourceAssociations = [
+        {
+          resource: {resourceId: 'team1', resourceType: Resource.TEAM},
+          associatedResources: [
+            {resourceId: 'project1', resourceType: Resource.PROJECT},
+            {resourceId: 'project2', resourceType: Resource.PROJECT},
+          ],
+        },
+        {
+          resource: {resourceId: 'team2', resourceType: Resource.TEAM},
+          associatedResources: [
+            {resourceId: 'project3', resourceType: Resource.PROJECT},
+            {resourceId: 'project4', resourceType: Resource.PROJECT},
+          ],
+        },
+      ];
+
+      // Generate virtual roles
+      const virtualRoles = generateVirtualResourceRoles({
+        resourceRoles: decodedToken.resourceRoles,
+        resourceAssociations,
+      });
+
+      // Team1 manager should get PROJECT_MANAGER role for project1 and project2
+      expect(virtualRoles).toContainEqual({
+        resourceId: 'project1',
+        role: Role.PROJECT_MANAGER,
+      });
+      expect(virtualRoles).toContainEqual({
+        resourceId: 'project2',
+        role: Role.PROJECT_MANAGER,
+      });
+
+      // Team2 member should get PROJECT_CONTRIBUTOR role for project3 and project4
+      expect(virtualRoles).toContainEqual({
+        resourceId: 'project3',
+        role: Role.PROJECT_CONTRIBUTOR,
+      });
+      expect(virtualRoles).toContainEqual({
+        resourceId: 'project4',
+        role: Role.PROJECT_CONTRIBUTOR,
+      });
+
+      // Verify the total number of virtual roles
+      expect(virtualRoles.length).toBe(4);
+    });
+
+    it('should not generate virtual roles for non-existent team associations', () => {
+      // Create a decoded token with team roles
+      const decodedToken: DecodedTokenPermissions = {
+        resourceRoles: [{resourceId: 'team3', role: Role.TEAM_ADMIN}],
+        globalRoles: [],
+      };
+
+      // No associations for team3
+      const resourceAssociations = [
+        {
+          resource: {resourceId: 'team1', resourceType: Resource.TEAM},
+          associatedResources: [
+            {resourceId: 'project1', resourceType: Resource.PROJECT},
+          ],
+        },
+      ];
+
+      // Generate virtual roles
+      const virtualRoles = generateVirtualResourceRoles({
+        resourceRoles: decodedToken.resourceRoles,
+        resourceAssociations,
+      });
+
+      // No virtual roles should be generated
+      expect(virtualRoles.length).toBe(0);
+    });
+
+    it('should generate different virtual roles based on team role level', () => {
+      // Create a decoded token with different team roles
+      const decodedToken: DecodedTokenPermissions = {
+        resourceRoles: [
+          {resourceId: 'team1', role: Role.TEAM_ADMIN},
+          {resourceId: 'team2', role: Role.TEAM_MANAGER},
+          {resourceId: 'team3', role: Role.TEAM_MEMBER},
+        ],
+        globalRoles: [],
+      };
+
+      // Define the resource associations (all teams own the same project)
+      const resourceAssociations = [
+        {
+          resource: {resourceId: 'team1', resourceType: Resource.TEAM},
+          associatedResources: [
+            {resourceId: 'sharedProject', resourceType: Resource.PROJECT},
+          ],
+        },
+        {
+          resource: {resourceId: 'team2', resourceType: Resource.TEAM},
+          associatedResources: [
+            {resourceId: 'sharedProject', resourceType: Resource.PROJECT},
+          ],
+        },
+        {
+          resource: {resourceId: 'team3', resourceType: Resource.TEAM},
+          associatedResources: [
+            {resourceId: 'sharedProject', resourceType: Resource.PROJECT},
+          ],
+        },
+      ];
+
+      // Generate virtual roles
+      const virtualRoles = generateVirtualResourceRoles({
+        resourceRoles: decodedToken.resourceRoles,
+        resourceAssociations,
+      });
+
+      // There should be exactly 3 virtual roles for the same project (no duplicates)
+      expect(virtualRoles.length).toBe(3);
+
+      // Team admin should get PROJECT_ADMIN role
+      expect(virtualRoles).toContainEqual({
+        resourceId: 'sharedProject',
+        role: Role.PROJECT_ADMIN,
+      });
+
+      // Team manager should get PROJECT_MANAGER role
+      expect(virtualRoles).toContainEqual({
+        resourceId: 'sharedProject',
+        role: Role.PROJECT_MANAGER,
+      });
+
+      // Team member should get PROJECT_CONTRIBUTOR role
+      expect(virtualRoles).toContainEqual({
+        resourceId: 'sharedProject',
+        role: Role.PROJECT_CONTRIBUTOR,
+      });
+    });
+  });
+
+  describe('extendTokenWithVirtualRoles', () => {
+    it('should add virtual roles to the token while preserving existing roles', () => {
+      // Original token with direct roles
+      const decodedToken: DecodedTokenPermissions = {
+        resourceRoles: [
+          {resourceId: 'team1', role: Role.TEAM_ADMIN},
+          {resourceId: 'directProject', role: Role.PROJECT_CONTRIBUTOR},
+        ],
+        globalRoles: [Role.GENERAL_USER],
+      };
+
+      // Team1 owns two projects
+      const resourceAssociations = [
+        {
+          resource: {resourceId: 'team1', resourceType: Resource.TEAM},
+          associatedResources: [
+            {resourceId: 'teamProject1', resourceType: Resource.PROJECT},
+            {resourceId: 'teamProject2', resourceType: Resource.PROJECT},
+          ],
+        },
+      ];
+
+      // Extend the token with virtual roles
+      const extendedToken = extendTokenWithVirtualRoles({
+        decodedToken,
+        resourceAssociations,
+      });
+
+      // Original roles should be preserved
+      expect(extendedToken.globalRoles).toEqual([Role.GENERAL_USER]);
+      expect(extendedToken.resourceRoles).toContainEqual({
+        resourceId: 'team1',
+        role: Role.TEAM_ADMIN,
+      });
+      expect(extendedToken.resourceRoles).toContainEqual({
+        resourceId: 'directProject',
+        role: Role.PROJECT_CONTRIBUTOR,
+      });
+
+      // Virtual roles should be added
+      expect(extendedToken.resourceRoles).toContainEqual({
+        resourceId: 'teamProject1',
+        role: Role.PROJECT_ADMIN,
+      });
+      expect(extendedToken.resourceRoles).toContainEqual({
+        resourceId: 'teamProject2',
+        role: Role.PROJECT_ADMIN,
+      });
+
+      // Total number of resource roles should be 4 (2 original + 2 virtual)
+      expect(extendedToken.resourceRoles.length).toBe(4);
+    });
+  });
+
+  describe('Complex scenarios', () => {
+    it('should handle multiple resource types and virtual role mappings', () => {
+      // Token with various team roles
+      const decodedToken: DecodedTokenPermissions = {
+        resourceRoles: [
+          {resourceId: 'teamA', role: Role.TEAM_ADMIN},
+          {resourceId: 'teamB', role: Role.TEAM_MEMBER},
+        ],
+        globalRoles: [],
+      };
+
+      // Complex resource associations
+      const resourceAssociations = [
+        {
+          resource: {resourceId: 'teamA', resourceType: Resource.TEAM},
+          associatedResources: [
+            {resourceId: 'projectA1', resourceType: Resource.PROJECT},
+            {resourceId: 'projectA2', resourceType: Resource.PROJECT},
+            // In the future, teams might own other resource types
+            {resourceId: 'templateA', resourceType: Resource.TEMPLATE},
+          ],
+        },
+        {
+          resource: {resourceId: 'teamB', resourceType: Resource.TEAM},
+          associatedResources: [
+            {resourceId: 'projectB1', resourceType: Resource.PROJECT},
+          ],
+        },
+      ];
+
+      // Generate virtual roles
+      const virtualRoles = generateVirtualResourceRoles({
+        resourceRoles: decodedToken.resourceRoles,
+        resourceAssociations,
+      });
+
+      // Should only map roles to resources where the mapping is defined
+      // Since virtualRoles in model.ts only maps to PROJECT resources
+
+      // Team admin should get admin roles on team's projects
+      expect(virtualRoles).toContainEqual({
+        resourceId: 'projectA1',
+        role: Role.PROJECT_ADMIN,
+      });
+      expect(virtualRoles).toContainEqual({
+        resourceId: 'projectA2',
+        role: Role.PROJECT_ADMIN,
+      });
+
+      // Team member should get contributor role on team's project
+      expect(virtualRoles).toContainEqual({
+        resourceId: 'projectB1',
+        role: Role.PROJECT_CONTRIBUTOR,
+      });
+
+      // Total count should be 4 (2 projects for team A, 1 project for team B, 1 template for team A)
+      expect(virtualRoles.length).toBe(4);
+    });
+
+    it('should handle empty resource associations', () => {
+      const decodedToken: DecodedTokenPermissions = {
+        resourceRoles: [{resourceId: 'team1', role: Role.TEAM_ADMIN}],
+        globalRoles: [],
+      };
+
+      // Empty resource associations
+      const resourceAssociations: ResourceAssociation[] = [];
+
+      const virtualRoles = generateVirtualResourceRoles({
+        resourceRoles: decodedToken.resourceRoles,
+        resourceAssociations,
+      });
+
+      // No virtual roles should be generated
+      expect(virtualRoles.length).toBe(0);
     });
   });
 });

@@ -17,11 +17,10 @@
  *   Display a map
  */
 
-import {Geolocation} from '@capacitor/geolocation';
 import {Box, Grid} from '@mui/material';
-import {useQuery} from '@tanstack/react-query';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
+import {Extent} from 'ol/extent';
 import GeoJSON, {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
@@ -29,11 +28,10 @@ import {transform} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Circle, Fill, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {createCenterControl} from '../map/center-control';
-import {VectorTileStore} from './tile-source';
 import {useIsOnline} from '../../../utils/customHooks';
 import {getCoordinates, useCurrentLocation} from '../../../utils/useLocation';
-import {Extent} from 'ol/extent';
+import {createCenterControl} from '../map/center-control';
+import {VectorTileStore} from './tile-source';
 
 const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;

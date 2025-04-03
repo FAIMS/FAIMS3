@@ -4,8 +4,9 @@ import {
   DB_MIGRATIONS,
   DatabaseType,
   MigrationFuncReturn,
-  UserV1Document,
-  UserV2Document,
+  PeopleV1Document,
+  PeopleV2Document,
+  PeopleV3Document,
   V1InviteDBFields,
   V2InviteDBFields,
 } from '../src/data_storage';
@@ -73,7 +74,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
           salt: '123456',
         },
       },
-    } satisfies UserV1Document,
+    } satisfies PeopleV1Document,
     expectedOutputDoc: {
       _id: 'abcd123456',
       _rev: '1234',
@@ -95,7 +96,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
           salt: '123456',
         },
       },
-    } satisfies UserV2Document,
+    } satisfies PeopleV2Document,
     expectedResult: {action: 'update'},
     equalityFunction: areDocsEqual,
   },
@@ -257,6 +258,62 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
         Object.keys(actual).length === 4
       ); // Only the 4 expected fields
     },
+  },
+
+  {
+    name: 'peopleV2toV3Migration - add team roles',
+    dbType: DatabaseType.PEOPLE,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'abcd123456',
+      _rev: '1234',
+      user_id: 'abcd123456',
+      name: 'George Costanza',
+      emails: ['george.costanza@gmail.com'],
+      resourceRoles: [
+        {resourceId: 'survey1', role: Role.PROJECT_ADMIN},
+        {resourceId: 'survey2', role: Role.PROJECT_CONTRIBUTOR},
+      ],
+      globalRoles: [
+        Role.GENERAL_ADMIN,
+        Role.GENERAL_CREATOR,
+        Role.GENERAL_USER,
+      ],
+      profiles: {
+        local: {
+          password: '1234',
+          salt: '123456',
+        },
+      },
+    } satisfies PeopleV2Document,
+    expectedOutputDoc: {
+      _id: 'abcd123456',
+      _rev: '1234',
+      user_id: 'abcd123456',
+      name: 'George Costanza',
+      emails: ['george.costanza@gmail.com'],
+      projectRoles: [
+        {resourceId: 'survey1', role: Role.PROJECT_ADMIN},
+        {resourceId: 'survey2', role: Role.PROJECT_CONTRIBUTOR},
+      ],
+      globalRoles: [
+        Role.GENERAL_ADMIN,
+        Role.GENERAL_CREATOR,
+        Role.GENERAL_USER,
+      ],
+      // added empty team roles
+      teamRoles: [],
+      templateRoles: [],
+      profiles: {
+        local: {
+          password: '1234',
+          salt: '123456',
+        },
+      },
+    } satisfies PeopleV3Document,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
   },
 ];
 

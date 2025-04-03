@@ -19,7 +19,7 @@
  *   uses in relation to third-party code.
  */
 import type {OAuth2} from 'oauth';
-import {PeopleDBDocument} from '@faims3/data-model';
+import {PeopleDBDocument, ResourceRole} from '@faims3/data-model';
 
 export type DoneFunction = (err?: Error | null, profile?: any) => void;
 export type UserProfileCallback = (
@@ -44,7 +44,10 @@ interface Flash {
 declare global {
   namespace Express {
     // eslint-disable-next-line @typescript-eslint/no-empty-interface
-    interface User extends PeopleDBDocument {}
+    interface User extends PeopleDBDocument {
+      // The drilled resource roles which pre-compute the teams membership etc
+      resourceRoles: ResourceRole[];
+    }
     // eslint-disable-next-line @typescript-eslint/no-empty-interface
     interface Request extends Flash {}
   }

@@ -9,6 +9,9 @@ export enum Resource {
   // Users in the system
   USER = 'USER',
 
+  // Teams in the system
+  TEAM = 'TEAM',
+
   // Other aspects of the system such as configuration
   SYSTEM = 'SYSTEM',
 }
@@ -22,7 +25,7 @@ export enum Action {
   LIST_PROJECTS = 'LIST_PROJECTS',
 
   // Create a new project
-  CREATE_PROJECT = 'CREATE_PROJECT',
+  CREATE_PROJECT = 'CREATE_PROJECT', // global
 
   // Read the high details of a project (e.g. description, title etc)
   READ_PROJECT_METADATA = 'READ_PROJECT_METADATA',
@@ -97,23 +100,50 @@ export enum Action {
   // TEMPLATE ACTIONS
   // ============================================================
 
-  // View templates
-  VIEW_TEMPLATES = 'VIEW_TEMPLATES',
+  // View list of projects
+  LIST_TEMPLATES = 'LIST_TEMPLATES', // global
 
-  // Create a new template
-  CREATE_TEMPLATE = 'CREATE_TEMPLATE',
+  // Create a new project
+  CREATE_TEMPLATE = 'CREATE_TEMPLATE', // global
 
-  // Update a template (the actual specification)
-  UPDATE_TEMPLATE_CONTENT = 'UPDATE_TEMPLATE_CONTENT',
+  // Read the high details of a template (e.g. description, title etc)
+  READ_TEMPLATE_DETAILS = 'READ_TEMPLATE_DETAILS',
 
-  // Update a template details/description etc
+  // Update the template high level details (e.g. description, title etc)
   UPDATE_TEMPLATE_DETAILS = 'UPDATE_TEMPLATE_DETAILS',
 
-  // Change the status of a template
+  // Update the UI specification
+  UPDATE_TEMPLATE_UISPEC = 'UPDATE_TEMPLATE_UISPEC',
+
+  // Change open/closed status
   CHANGE_TEMPLATE_STATUS = 'CHANGE_TEMPLATE_STATUS',
 
-  // Delete a template
+  // Delete the project
   DELETE_TEMPLATE = 'DELETE_TEMPLATE',
+
+  // ============================================================
+  // TEAM ACTIONS
+  // ============================================================
+
+  // CRUD (global)
+  CREATE_TEAM = 'CREATE_TEAM',
+
+  // CRUD (resource specific)
+  CREATE_PROJECT_IN_TEAM = 'CREATE_PROJECT_IN_TEAM',
+  CREATE_TEMPLATE_IN_TEAM = 'CREATE_TEMPLATE_IN_TEAM',
+  DELETE_TEAM = 'DELETE_TEAM',
+  UPDATE_TEAM_DETAILS = 'UPDATE_TEAM_DETAILS',
+  VIEW_TEAM_DETAILS = 'VIEW_TEAM_DETAILS',
+  VIEW_TEAM_MEMBERS = 'VIEW_TEAM_MEMBERS',
+
+  // Team invites (resource specific)
+  ADD_ADMIN_TO_TEAM = 'ADD_ADMIN_TO_TEAM',
+  ADD_MANAGER_TO_TEAM = 'ADD_MANAGER_TO_TEAM',
+  ADD_MEMBER_TO_TEAM = 'ADD_MEMBER_TO_TEAM',
+
+  REMOVE_ADMIN_FROM_TEAM = 'REMOVE_ADMIN_FROM_TEAM',
+  REMOVE_MANAGER_FROM_TEAM = 'REMOVE_MANAGER_FROM_TEAM',
+  REMOVE_MEMBER_FROM_TEAM = 'REMOVE_MEMBER_FROM_TEAM',
 
   // ============================================================
   // USER ACTIONS
@@ -167,6 +197,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
     description: 'Create a new project in the system',
     resourceSpecific: false,
     resource: Resource.PROJECT,
+  },
+  [Action.CREATE_PROJECT_IN_TEAM]: {
+    name: 'Create Project (In team)',
+    description: 'Create a new project inside a given team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
   },
   [Action.READ_PROJECT_METADATA]: {
     name: 'Read Project Metadata',
@@ -396,12 +432,88 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resource: Resource.PROJECT,
   },
 
+  // =====================================
+  // TEAMS
+  // =====================================
+
+  // Global actions
+  [Action.CREATE_TEAM]: {
+    name: 'Create Team',
+    description: 'Create a new team',
+    resourceSpecific: false,
+    resource: Resource.TEAM,
+  },
+
+  // Resource specific actions
+  [Action.DELETE_TEAM]: {
+    name: 'Delete Team',
+    description: 'Permanently remove a team from the system',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.UPDATE_TEAM_DETAILS]: {
+    name: 'Update Team Details',
+    description: 'Modify the details of a team (name, description, etc.)',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.VIEW_TEAM_DETAILS]: {
+    name: 'View Team Details',
+    description: 'View the details of a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.VIEW_TEAM_MEMBERS]: {
+    name: 'View Team Members',
+    description: 'View the list of members in a team and their roles',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+
+  [Action.ADD_ADMIN_TO_TEAM]: {
+    name: 'Add Admin to Team',
+    description: 'Grant a user administrator privileges for a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.ADD_MANAGER_TO_TEAM]: {
+    name: 'Add Manager to Team',
+    description: 'Grant a user manager privileges for a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.ADD_MEMBER_TO_TEAM]: {
+    name: 'Add Member to Team',
+    description: 'Add a user as a regular member to a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.REMOVE_ADMIN_FROM_TEAM]: {
+    name: 'Remove Admin from Team',
+    description:
+      'Revoke administrator privileges from a user for a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.REMOVE_MANAGER_FROM_TEAM]: {
+    name: 'Remove Manager from Team',
+    description: 'Revoke manager privileges from a user for a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.REMOVE_MEMBER_FROM_TEAM]: {
+    name: 'Remove Member from Team',
+    description: 'Remove a user from a specific team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+
   // ============================================================
   // TEMPLATE ACTIONS
   // ============================================================
-  [Action.VIEW_TEMPLATES]: {
-    name: 'View templates',
-    description: 'View all templates in the system',
+  [Action.LIST_TEMPLATES]: {
+    name: 'List templates',
+    description: 'View all templates in the system (which you can see)',
     resourceSpecific: false,
     resource: Resource.TEMPLATE,
   },
@@ -411,8 +523,21 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.TEMPLATE,
   },
-  [Action.UPDATE_TEMPLATE_CONTENT]: {
-    name: 'Update Template Content',
+  [Action.CREATE_TEMPLATE_IN_TEAM]: {
+    name: 'Create Template (In team)',
+    description: 'Create a new template inside a given team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.READ_TEMPLATE_DETAILS]: {
+    name: 'View template',
+    description:
+      'View details of templates in the system you are authorised to see',
+    resourceSpecific: true,
+    resource: Resource.TEMPLATE,
+  },
+  [Action.UPDATE_TEMPLATE_UISPEC]: {
+    name: 'Update Template UI Specification',
     description: 'Modify the content/specification of a template',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
@@ -528,6 +653,17 @@ export enum Role {
   PROJECT_CONTRIBUTOR = 'PROJECT_CONTRIBUTOR',
   PROJECT_MANAGER = 'PROJECT_MANAGER',
   PROJECT_ADMIN = 'PROJECT_ADMIN',
+
+  // TEMPLATE ROLES
+  // ================
+  TEMPLATE_ADMIN = 'TEMPLATE_ADMIN',
+  TEMPLATE_GUEST = 'TEMPLATE_GUEST',
+
+  // TEAM ROLES
+  // ================
+  TEAM_MEMBER = 'TEAM_MEMBER',
+  TEAM_MANAGER = 'TEAM_MANAGER',
+  TEAM_ADMIN = 'TEAM_ADMIN',
 }
 
 // Define role scope for clarity
@@ -596,6 +732,42 @@ export const roleDetails: Record<Role, RoleDetails> = {
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
+
+  // Template roles
+  [Role.TEMPLATE_ADMIN]: {
+    name: 'Template Administrator',
+    description: 'Full control over a template.',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEMPLATE,
+  },
+  [Role.TEMPLATE_GUEST]: {
+    name: 'Template Manager',
+    description: 'Guest access to a template.',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEMPLATE,
+  },
+
+  // Team roles
+  [Role.TEAM_ADMIN]: {
+    name: 'Team Administrator',
+    description:
+      'Full control over a specific team, including deletion and admin user management',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEAM,
+  },
+  [Role.TEAM_MANAGER]: {
+    name: 'Team Manager',
+    description:
+      'Can manage team settings and member permissions within a team',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEAM,
+  },
+  [Role.TEAM_MEMBER]: {
+    name: 'Team Member',
+    description: 'Basic membership in a team with standard access privileges',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEAM,
+  },
 };
 
 // Maps resources into a list of role details + Role enum so you can ask the
@@ -624,7 +796,11 @@ export const resourceRoles: Record<Resource, (RoleDetails & {role: Role})[]> =
 // Map roles directly to the actions they grant
 export const roleActions: Record<
   Role,
-  {actions: Action[]; inheritedRoles?: Role[]}
+  {
+    actions: Action[];
+    inheritedRoles?: Role[];
+    virtualRoles?: Map<Resource, Role[]>;
+  }
 > = {
   // PROJECT ROLES
   [Role.PROJECT_GUEST]: {
@@ -683,19 +859,26 @@ export const roleActions: Record<
     inheritedRoles: [Role.PROJECT_MANAGER],
   },
 
-  // GLOBAL ROLES
-  [Role.GENERAL_USER]: {
-    actions: [Action.LIST_PROJECTS, Action.VIEW_TEMPLATES],
+  // TEMPLATE ROLES
+  [Role.TEMPLATE_GUEST]: {
+    actions: [Action.READ_TEMPLATE_DETAILS],
   },
-  [Role.GENERAL_CREATOR]: {
+  [Role.TEMPLATE_ADMIN]: {
     actions: [
-      Action.CREATE_PROJECT,
-      Action.CREATE_TEMPLATE,
-      Action.UPDATE_TEMPLATE_CONTENT,
       Action.UPDATE_TEMPLATE_DETAILS,
+      Action.UPDATE_TEMPLATE_UISPEC,
       Action.CHANGE_TEMPLATE_STATUS,
       Action.DELETE_TEMPLATE,
     ],
+    inheritedRoles: [Role.TEMPLATE_GUEST],
+  },
+
+  // GLOBAL ROLES
+  [Role.GENERAL_USER]: {
+    actions: [Action.LIST_PROJECTS, Action.LIST_TEMPLATES],
+  },
+  [Role.GENERAL_CREATOR]: {
+    actions: [Action.CREATE_PROJECT, Action.CREATE_TEMPLATE],
   },
   [Role.GENERAL_ADMIN]: {
     actions: [
@@ -706,9 +889,64 @@ export const roleActions: Record<
       Action.INITIALISE_SYSTEM_API,
       Action.RESTORE_FROM_BACKUP,
       Action.VALIDATE_DBS,
+      Action.CREATE_TEAM,
       Action.SEND_TEST_EMAIL,
     ],
-    inheritedRoles: [Role.GENERAL_CREATOR, Role.PROJECT_ADMIN],
+    inheritedRoles: [
+      // God role
+      Role.GENERAL_CREATOR,
+      Role.PROJECT_ADMIN,
+      Role.TEAM_ADMIN,
+      Role.TEMPLATE_ADMIN,
+    ],
+  },
+
+  // TEAM ROLES
+  [Role.TEAM_MEMBER]: {
+    actions: [Action.VIEW_TEAM_DETAILS, Action.VIEW_TEAM_MEMBERS],
+    virtualRoles: new Map([
+      // Projects owned by team -> contributor
+      [Resource.PROJECT, [Role.PROJECT_CONTRIBUTOR]],
+      // Template owned by team -> guest
+      [Resource.TEMPLATE, [Role.TEMPLATE_GUEST]],
+    ]),
+  },
+
+  [Role.TEAM_MANAGER]: {
+    actions: [
+      // Other team based things
+      Action.UPDATE_TEAM_DETAILS, // resource
+      Action.ADD_MEMBER_TO_TEAM, // resource
+      Action.REMOVE_MEMBER_FROM_TEAM, // resource
+
+      // Being a manager of a team also gives you the ability to create new key
+      // resources in that team
+      Action.CREATE_PROJECT_IN_TEAM, // resource
+      Action.CREATE_TEMPLATE_IN_TEAM, // resource
+    ],
+    // TODO make templates managed with their own roles/ownership model so that
+    // we can do virtualRoles over templates owned by the team
+    // NOTE this is a bit of a permission leak here re: general creator
+    inheritedRoles: [Role.TEAM_MEMBER],
+    // Projects owned by team -> manager
+    virtualRoles: new Map([[Resource.PROJECT, [Role.PROJECT_MANAGER]]]),
+  },
+
+  [Role.TEAM_ADMIN]: {
+    actions: [
+      Action.DELETE_TEAM,
+      Action.ADD_ADMIN_TO_TEAM,
+      Action.REMOVE_ADMIN_FROM_TEAM,
+      Action.ADD_MANAGER_TO_TEAM,
+      Action.REMOVE_MANAGER_FROM_TEAM,
+    ],
+    inheritedRoles: [Role.TEAM_MANAGER],
+    virtualRoles: new Map([
+      // Projects owned by team -> manager
+      [Resource.PROJECT, [Role.PROJECT_ADMIN]],
+      // Template owned by team -> admin
+      [Resource.TEMPLATE, [Role.TEMPLATE_ADMIN]],
+    ]),
   },
 };
 

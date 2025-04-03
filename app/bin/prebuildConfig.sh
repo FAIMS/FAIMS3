@@ -6,7 +6,7 @@ PROJECT_DIR="${SCRIPT_DIR}/../"
 APP_NAME_PLACEHOLDER=APPNAME
 APP_ID_PLACEHOLDER=org.fedarch.faims3
 
-# replace occurences of the app name 'Fieldmark' and id 'org.fedarch.faims3'
+# replace occurrences of the app name 'Fieldmark' and id 'org.fedarch.faims3'
 # with configured values VITE_APP_NAME and VITE_APP_ID
 
 echo "Configuring app name ${VITE_APP_NAME} and id ${VITE_APP_ID}"
@@ -51,7 +51,6 @@ if test -f icons/icon-48.webp; then
   mv icons ./public/assets/icons
 fi
 
-
 ## IOS specific configuration
 
 # Setting the IOS build version
@@ -60,6 +59,8 @@ fi
 version=$(grep '"version":' $PROJECT_DIR/package.json | cut -d: -f 2 | sed -e 's/[", ]//g')
 buildNumber=$(date -u "+%Y%m%d%H%M")
 
+# create Info.plist
+cp ./ios/App/App/Info.plist.dist ./ios/App/App/Info.plist
 if test -f /usr/libexec/PlistBuddy; then
   echo "\nIOS: Configuring Info.plist settings"
   /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $buildNumber" ./ios/App/App/Info.plist
@@ -67,3 +68,8 @@ if test -f /usr/libexec/PlistBuddy; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $VITE_APP_ID" ./ios/App/App/Info.plist
   /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLName $VITE_APP_ID" ./ios/App/App/Info.plist
 fi
+
+# update project file for local build
+sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" ./ios/App/App.xcodeproj/project.pbxproj.dist |\
+  sed -e "s/APP_STORE_CONNECT_TEAM_ID/${APP_STORE_CONNECT_TEAM_ID}/g" > ./ios/App/App.xcodeproj/project.pbxproj
+

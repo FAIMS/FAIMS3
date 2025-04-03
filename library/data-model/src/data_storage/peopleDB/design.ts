@@ -57,6 +57,29 @@ const designDoc = {
         }
       }),
     },
+    byTeam: {
+      map: convertToCouchDBString(doc => {
+        if (doc.resourceRoles) {
+          // only emit once per team Id !
+          const emitted = [];
+          for (const {resourceId} of doc.teamRoles) {
+            if (emitted.indexOf(resourceId) === -1) {
+              emit(resourceId, 1);
+              emitted.push(resourceId);
+            }
+          }
+        }
+      }),
+    },
+    byTeamRoles: {
+      map: convertToCouchDBString(doc => {
+        if (doc.resourceRoles) {
+          for (const {role, resourceId} of doc.teamRoles) {
+            emit([role, resourceId], 1);
+          }
+        }
+      }),
+    },
   },
 };
 

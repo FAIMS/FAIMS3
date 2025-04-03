@@ -30,21 +30,22 @@ import {
   EncodedProjectUIModel,
   logError,
   notebookRecordIterator,
+  ProjectDBFields,
+  ProjectDocument,
   ProjectID,
-  ProjectObject,
+  PROJECTS_BY_TEAM_ID,
   Resource,
   resourceRoles,
   Role,
-  userCanDo,
-  userHasResourceRole,
+  userHasProjectRole,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
 import {
+  getDataDb,
   getMetadataDb,
   initialiseDataDb,
   initialiseMetadataDb,
-  getDataDb,
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
@@ -65,16 +66,49 @@ import {
   setAttachmentLoaderForType,
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
+import {userCanDo} from '../middleware';
 import {slugify} from '../utils';
+
+/**
+ * Gets project IDs by teamID (who owns it)
+ * @returns an array of template ids
+ */
+export const getProjectIdsByTeamId = async ({
+  teamId,
+}: {
+  teamId: string;
+}): Promise<string[]> => {
+  const projectsDb = localGetProjectsDb();
+  try {
+    const resultList = await projectsDb.query<ProjectDBFields>(
+      PROJECTS_BY_TEAM_ID,
+      {
+        key: teamId,
+        include_docs: false,
+      }
+    );
+    return resultList.rows
+      .filter(res => {
+        return !res.id.startsWith('_');
+      })
+      .map(res => {
+        return res.id;
+      });
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading projects by team ID from the Project DB.'
+    );
+  }
+};
 
 /**
  * getAllProjects - get the internal project documents that reference
  * the project databases that the front end will connnect to
  */
-export const getAllProjectsDirectory = async (): Promise<ProjectObject[]> => {
+export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
   const projectsDb = localGetProjectsDb();
-  const projects: ProjectObject[] = [];
-  const res = await projectsDb.allDocs<ProjectObject>({
+  const projects: ProjectDocument[] = [];
+  const res = await projectsDb.allDocs<ProjectDocument>({
     include_docs: true,
   });
   res.rows.forEach(e => {
@@ -100,7 +134,7 @@ export const getAllProjectsDirectory = async (): Promise<ProjectObject[]> => {
  */
 export const getUserProjectsDirectory = async (
   user: Express.User
-): Promise<ProjectObject[]> => {
+): Promise<ProjectDocument[]> => {
   return (await getAllProjectsDirectory()).filter(p =>
     userCanDo({
       user,
@@ -113,7 +147,7 @@ export const getUserProjectsDirectory = async (
 /**
  * getNotebooks -- return an array of notebooks from the database
  * @param user - only return notebooks that this user can see
- * @returns an array of ProjectObject objects
+ * @returns an array of ProjectDocument objects
  */
 export const getUserProjectsDetailed = async (
   user: Express.User
@@ -122,7 +156,7 @@ export const getUserProjectsDetailed = async (
   const projectsDb = localGetProjectsDb();
 
   // Get all projects and filter for user access
-  const allDocs = await projectsDb.allDocs<ProjectObject>({
+  const allDocs = await projectsDb.allDocs<ProjectDocument>({
     include_docs: true,
   });
 
@@ -146,10 +180,10 @@ export const getUserProjectsDetailed = async (
 
         return {
           name: project!.name,
-          is_admin: userHasResourceRole({
+          is_admin: userHasProjectRole({
             user,
-            resourceId: projectId,
-            resourceRole: Role.PROJECT_ADMIN,
+            projectId,
+            role: Role.PROJECT_ADMIN,
           }),
           last_updated: project!.last_updated,
           created: project!.created,
@@ -270,7 +304,8 @@ export const createNotebook = async (
   projectName: string,
   uispec: EncodedProjectUIModel,
   metadata: any,
-  template_id: string | undefined = undefined
+  template_id: string | undefined = undefined,
+  teamId: string | undefined = undefined
 ) => {
   const projectId = generateProjectID(projectName);
 
@@ -287,7 +322,8 @@ export const createNotebook = async (
       db_name: dataDBName,
     },
     status: 'published',
-  } satisfies ProjectObject;
+    ownedByTeamId: teamId,
+  } satisfies ProjectDocument;
 
   try {
     // first add an entry to the projects db about this project
@@ -454,7 +490,7 @@ export const writeProjectMetadata = async (
 /**
  * getNotebookMetadata -- return metadata for a single notebook from the database
  * @param project_id a project identifier
- * @returns a ProjectObject object or null if it doesn't exist
+ * @returns a ProjectDocument object or null if it doesn't exist
  */
 export const getNotebookMetadata = async (
   project_id: string

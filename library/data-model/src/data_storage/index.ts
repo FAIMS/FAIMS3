@@ -43,4 +43,5 @@ export * from './migrations';
 export * from './migrationsDB';
 export * from './peopleDB';
 export * from './projectsDB';
+export * from './teamsDB';
 export * from './templatesDB';
