@@ -53,6 +53,9 @@ export const migrateNotebook = (notebook: unknown) => {
   // fix old hrid format
   fixOldHridPrefix(notebookCopy);
 
+  // ensure visible_types exists in the ui-specification
+  updateVisibleTypes(notebookCopy);
+
   return notebookCopy;
 };
 
@@ -335,4 +338,17 @@ const fixOldHridPrefix = (notebook: Notebook) => {
   }
 
   return notebook;
+};
+
+/**
+ * Ensure that the `visible_types` property exists in the ui-specification.
+ * If not, initialise it to the keys of the viewsets (or an empty array if there are none).
+ *
+ * @param notebook A notebook that might be out of date, modified
+ */
+const updateVisibleTypes = (notebook: Notebook) => {
+  if (!notebook['ui-specification'].present.visible_types) {
+    notebook['ui-specification'].present.visible_types =
+      Object.keys(notebook['ui-specification'].present.viewsets) || [];
+  }
 };
