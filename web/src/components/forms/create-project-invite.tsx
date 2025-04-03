@@ -3,17 +3,16 @@ import {Form} from '@/components/form';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
-import {roleDetails} from '@faims3/data-model';
+import {Role, roleDetails, RoleScope} from '@/lib/roles';
 
 export const fields = [
   {
     name: 'role',
     label: 'Role',
     options: Object.entries(roleDetails)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      .filter(([_, {scope}]) => scope === 'RESOURCE_SPECIFIC')
+      .filter(([_, {scope}]) => scope === RoleScope.RESOURCE_SPECIFIC)
       .map(([value, {name: label}]) => ({label, value})),
-    schema: z.any(),
+    schema: z.nativeEnum(Role),
   },
 ];
 

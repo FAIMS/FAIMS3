@@ -3,7 +3,7 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
 import {RoleCard} from '../ui/role-card';
-import {Role, roleDetails} from '@faims3/data-model';
+import {Role, roleDetails} from '@/lib/roles';
 
 export const columns: ColumnDef<any>[] = [
   {
@@ -36,7 +36,7 @@ export const columns: ColumnDef<any>[] = [
     cell: ({row}: any) => (
       <div className="flex flex-wrap gap-1">
         {row.getValue('projectRoles').map((role: string) => (
-          <RoleCard key={role}>{roleDetails[role as Role].name}</RoleCard>
+          <RoleCard key={role}>{role}</RoleCard>
         ))}
       </div>
     ),

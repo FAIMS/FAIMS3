@@ -8,8 +8,7 @@ import {AddRolePopover} from '../popovers/add-role-popover';
 import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
 import {toast} from 'sonner';
-import {Role, RoleDetails} from '@faims3/data-model';
-import {roleDetails} from '@faims3/data-model';
+import {Role, roleDetails, RoleScope} from '@/lib/roles';
 
 export const getColumns = ({
   onReset,
@@ -43,12 +42,9 @@ export const getColumns = ({
         <div className="flex flex-wrap gap-1 items-center">
           {userId !== user?.user.id && (
             <AddRolePopover
-              roles={Object.values(roleDetails)
-                .filter(
-                  (role: RoleDetails) =>
-                    role.scope === 'GLOBAL' && !globalRoles.includes(role.name)
-                )
-                .map((role: RoleDetails) => role.name)}
+              roles={Object.entries(roleDetails)
+                .filter(([_, {scope}]) => scope === RoleScope.GLOBAL)
+                .map(([value]) => value)}
               userId={userId}
             />
           )}

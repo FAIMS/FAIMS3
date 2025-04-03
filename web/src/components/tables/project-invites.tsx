@@ -3,8 +3,7 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
 import {CopyButton} from '../ui/copy-button';
 import {QRCodeDialog} from '../dialogs/qr-code-dialog';
-import {Role, roleDetails} from '@faims3/data-model';
-
+import {Role, roleDetails} from '@/lib/roles';
 export const columns: ColumnDef<any>[] = [
   {
     accessorKey: 'role',
