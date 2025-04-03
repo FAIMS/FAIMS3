@@ -30,11 +30,8 @@ function RouteComponent() {
   return (
     <DataTable
       columns={columns}
-      // TODO work out why this is broken ts?
-      // @ts-ignore
-      data={data?.teams}
+      data={data ? data?.teams : []}
       loading={isPending}
-      // @ts-ignore
       onRowClick={({_id}) => navigate({to: `/teams/${_id}`})}
       button={<CreateTeamDialog />}
     />

@@ -128,7 +128,7 @@ export const useGetTeams = (user: User | null) =>
   useQuery({
     queryKey: ['teams'],
     queryFn: async () => {
-      return (await get(`/api/teams/`, user)) as GetListTeamsResponse;
+      return (await get('/api/teams/', user)) as GetListTeamsResponse;
     },
   });
 

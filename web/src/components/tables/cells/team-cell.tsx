@@ -10,7 +10,7 @@ interface TeamCellComponentProps {
 /**
  * Component: TeamCellComponent
  * Renders a team name as a clickable link in a table cell
-*/
+ */
 export const TeamCellComponent = ({teamId}: TeamCellComponentProps) => {
   const {user} = useAuth();
 

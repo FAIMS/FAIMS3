@@ -3,7 +3,7 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {GetListTeamsResponse} from '@faims3/data-model';
 import {displayUnixTimestampMs} from '@/lib/utils';
 
-export const columns: ColumnDef<GetListTeamsResponse['teams']>[] = [
+export const columns: ColumnDef<GetListTeamsResponse['teams'][number]>[] = [
   {
     accessorKey: 'name',
     header: ({column}) => (

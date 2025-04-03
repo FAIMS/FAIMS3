@@ -11,7 +11,11 @@ import {useState} from 'react';
 import {CreateProjectForm} from '../forms/create-project-form';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
-export const CreateProjectDialog = ({defaultValues} : {defaultValues? : {teamId?: string}}) => {
+export const CreateProjectDialog = ({
+  defaultValues,
+}: {
+  defaultValues?: {teamId?: string};
+}) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -27,7 +31,10 @@ export const CreateProjectDialog = ({defaultValues} : {defaultValues? : {teamId?
             template or uploading a JSON notebook specification file.
           </DialogDescription>
         </DialogHeader>
-        <CreateProjectForm setDialogOpen={setOpen} defaultValues={defaultValues}/>
+        <CreateProjectForm
+          setDialogOpen={setOpen}
+          defaultValues={defaultValues}
+        />
       </DialogContent>
     </Dialog>
   );

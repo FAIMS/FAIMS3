@@ -297,7 +297,7 @@ api.post(
 
     // Check appropriate permission based on role and operation
     let rolesOfTargetUser: Role[] = [];
-    let requiredActions: Action[] = [];
+    const requiredActions: Action[] = [];
 
     if (action === 'REMOVE_USER') {
       rolesOfTargetUser = targetUser.teamRoles

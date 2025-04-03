@@ -29,7 +29,10 @@ export const CreateTemplateDialog = ({
             Create a new template by uploading a JSON template file.
           </DialogDescription>
         </DialogHeader>
-        <CreateTemplateForm setDialogOpen={setOpen} defaultValues={defaultValues}/>
+        <CreateTemplateForm
+          setDialogOpen={setOpen}
+          defaultValues={defaultValues}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -8,7 +8,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {useAuth} from '@/context/auth-provider';
-import {useGetTeam} from '@/hooks/get-hooks';
 import {ErrorComponent} from '@tanstack/react-router';
 import React, {useState} from 'react';
 import {Button} from '../../ui/button';

@@ -84,7 +84,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                 icon: Users,
               },
               {
-                title: `Teams`,
+                title: 'Teams',
                 url: '/teams',
                 icon: House,
                 isActive: pathname.startsWith('/teams'),
@@ -95,7 +95,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                         title: name,
                         url: `/teams/${_id}`,
                       }))
-                    : [{id: 'no-teams', title: `No teams...`}],
+                    : [{id: 'no-teams', title: 'No teams...'}],
               },
             ]}
           />
