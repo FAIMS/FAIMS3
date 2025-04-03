@@ -3,14 +3,17 @@ import {Form} from '@/components/form';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
-import {Role, roleDetails, RoleScope} from '@faims3/data-model';
+import {Resource, Role, roleDetails, RoleScope} from '@faims3/data-model';
 
 export const fields = [
   {
     name: 'role',
     label: 'Role',
     options: Object.entries(roleDetails)
-      .filter(([_, {scope}]) => scope === RoleScope.RESOURCE_SPECIFIC)
+      .filter(
+        ([_, {scope, resource}]) =>
+          scope === RoleScope.RESOURCE_SPECIFIC && resource === Resource.PROJECT
+      )
       .map(([value, {name: label}]) => ({label, value})),
     schema: z.nativeEnum(Role),
   },
