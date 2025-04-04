@@ -259,15 +259,19 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       const redirect = validateRedirect(req.query.redirect || '/');
       const invite_id = req.params.invite_id;
       (req.session as any)['invite'] = invite_id;
+      console.log("Getting invite id " + invite_id)
       const invite = await getInvite({inviteId: invite_id});
       if (!invite) {
+        console.log("Couldn't find!" + invite_id)
         res.render('invite-error', {redirect});
       } else if (req.user) {
+        console.log("Already user for found invite: " + invite_id)
         // user already registered, sign them up for this notebook
         // should there be conditions on this? Eg. check the email.
         await useInvite({user: req.user, invite});
         redirect_with_token(res, req.user, redirect);
       } else {
+        console.log("New user for found invite " + invite_id)
         // need to sign up the user, show the registration page
         const available_provider_info = [];
         for (const handler of CONDUCTOR_AUTH_PROVIDERS) {
@@ -337,7 +341,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
       }
 
       // Check the invite TODO Validate usages/expiry etc
-      const invite = await getInvite(req.session.invite);
+      const invite = await getInvite({inviteId: req.session.invite});
 
       if (!invite) {
         res.status(400);

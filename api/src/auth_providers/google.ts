@@ -117,7 +117,7 @@ async function oauth_register(
     }
   }
   if (!dbUser) {
-    const invite = await getInvite(req.session.invite);
+    const invite = await getInvite({inviteId : req.session.invite});
     if (invite) {
       const [dbUser, errorMsg] = await createUser({
         email: emails[0],
