@@ -38,6 +38,8 @@ interface ToolbarProps {
   handleQueryFunction: any;
 }
 
+const enableFilters = import.meta.env.VITE_ENABLE_RECORD_FILTERS !== 'false';
+
 /**
  * Custom search button with improved layout handling
  */
@@ -92,12 +94,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
         backgroundColor: 'transparent',
       }}
     >
-      <Grid
-        container
-        spacing={1}
-        alignItems="center"
-        wrap="nowrap" // Prevent wrapping
-      >
+      <Grid container spacing={1} alignItems="center" wrap="nowrap">
         <Grid item xs>
           <TextField
             placeholder="Search record data (case sensitive)"
@@ -186,44 +183,46 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
           />
         </Grid>
 
-        <Grid item sx={{flexShrink: 0, ml: 1}}>
-          <GridToolbarFilterButton
-            componentsProps={{
-              button: {
-                startIcon: (
-                  <TuneIcon
-                    style={{
-                      color: theme.palette.primary.main,
-                      fontSize: '1.85rem',
-                      fontWeight: 'bold',
-                      marginRight: theme.spacing(1),
-                    }}
-                  />
-                ),
-              },
-            }}
-            sx={{
-              borderRadius: '8px',
-              padding: '8px',
-              minWidth: 'auto',
-              backgroundColor: theme.palette.background.default,
-              border: '2px solid #e0e0e0',
-              transition: 'all 0.2s ease-in-out',
-              textTransform: 'none',
-              boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
-              '&:hover': {
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                borderColor: theme => theme.palette.primary.main,
-              },
-              '& .MuiButton-startIcon': {
-                margin: 0,
-              },
-              '& .MuiButton-endIcon': {
-                display: 'none',
-              },
-            }}
-          />
-        </Grid>
+        {enableFilters && (
+          <Grid item sx={{flexShrink: 0, ml: 1}}>
+            <GridToolbarFilterButton
+              componentsProps={{
+                button: {
+                  startIcon: (
+                    <TuneIcon
+                      style={{
+                        color: theme.palette.primary.main,
+                        fontSize: '1.85rem',
+                        fontWeight: 'bold',
+                        marginRight: theme.spacing(1),
+                      }}
+                    />
+                  ),
+                },
+              }}
+              sx={{
+                borderRadius: '8px',
+                padding: '8px',
+                minWidth: 'auto',
+                backgroundColor: theme.palette.background.default,
+                border: '2px solid #e0e0e0',
+                transition: 'all 0.2s ease-in-out',
+                textTransform: 'none',
+                boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
+                '&:hover': {
+                  backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                  borderColor: theme => theme.palette.primary.main,
+                },
+                '& .MuiButton-startIcon': {
+                  margin: 0,
+                },
+                '& .MuiButton-endIcon': {
+                  display: 'none',
+                },
+              }}
+            />
+          </Grid>
+        )}
       </Grid>
     </Box>
   );
@@ -269,11 +268,11 @@ export function NotebookDraftDataGridToolbar() {
         justifyContent="space-between"
         alignItems="center"
       >
-        <Grid item>
-          {/*<GridToolbarColumnsButton />*/}
-          <GridToolbarFilterButton />
-          {/*<GridToolbarDensitySelector />*/}
-        </Grid>
+        {enableFilters && (
+          <Grid item>
+            <GridToolbarFilterButton />
+          </Grid>
+        )}
       </Grid>
     </GridToolbarContainer>
   );
