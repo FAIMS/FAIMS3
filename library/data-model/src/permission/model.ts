@@ -1017,6 +1017,7 @@ export const roleActions: Record<
       Action.CREATE_MEMBER_TEAM_INVITE,
       Action.EDIT_MEMBER_TEAM_INVITE,
       Action.DELETE_MEMBER_TEAM_INVITE,
+
       // manager invites CRUD
       Action.CREATE_MANAGER_TEAM_INVITE,
       Action.EDIT_MANAGER_TEAM_INVITE,

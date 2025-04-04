@@ -3,11 +3,11 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
 import {CopyButton} from '../ui/copy-button';
 import {QRCodeDialog} from '../dialogs/qr-code-dialog';
-import {GetProjectInvitesResponse, roleDetails} from '@faims3/data-model';
+import {GetTeamInvitesResponse, roleDetails} from '@faims3/data-model';
 import {displayUnixTimestampMs} from '@/lib/utils';
 
 export const columns: ColumnDef<
-  GetProjectInvitesResponse[number] & {url: string; qrCode: string}
+  GetTeamInvitesResponse[number] & {url: string; qrCode: string}
 >[] = [
   {
     accessorKey: 'name',

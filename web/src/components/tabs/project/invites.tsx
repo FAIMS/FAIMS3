@@ -2,7 +2,9 @@ import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectInvite} from '@/components/dialogs/create-project-invite';
 import {columns} from '@/components/tables/project-invites';
 import {useAuth} from '@/context/auth-provider';
-import {useGetInvites} from '@/hooks/get-hooks';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useGetProjectInvites} from '@/hooks/get-hooks';
+import {Action} from '@faims3/data-model';
 
 /**
  * ProjectInvites component renders a table of invites for a project.
@@ -14,14 +16,37 @@ import {useGetInvites} from '@/hooks/get-hooks';
 const ProjectInvites = ({projectId}: {projectId: string}) => {
   const {user} = useAuth();
 
-  const {data, isLoading} = useGetInvites(user, projectId);
+  const {data, isLoading} = useGetProjectInvites(user, projectId);
+
+  // can we add a user to the team?
+  const canInviteGuestToTeam = useIsAuthorisedTo({
+    action: Action.CREATE_GUEST_PROJECT_INVITE,
+    resourceId: projectId,
+  });
+  const canInviteContributorToTeam = useIsAuthorisedTo({
+    action: Action.CREATE_CONTRIBUTOR_PROJECT_INVITE,
+    resourceId: projectId,
+  });
+  const canInviteManagerToTeam = useIsAuthorisedTo({
+    action: Action.CREATE_MANAGER_PROJECT_INVITE,
+    resourceId: projectId,
+  });
+  const canInviteAdminToTeam = useIsAuthorisedTo({
+    action: Action.CREATE_ADMIN_PROJECT_INVITE,
+    resourceId: projectId,
+  });
+  const canInviteSomeUser =
+    canInviteAdminToTeam ||
+    canInviteManagerToTeam ||
+    canInviteContributorToTeam ||
+    canInviteGuestToTeam;
 
   return (
     <DataTable
       columns={columns}
       data={data || []}
       loading={isLoading}
-      button={<CreateProjectInvite />}
+      button={canInviteSomeUser && <CreateProjectInvite />}
     />
   );
 };

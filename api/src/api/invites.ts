@@ -23,15 +23,13 @@ import {
   GetInviteByIdResponse,
   GetProjectInvitesResponse,
   GetTeamInvitesResponse,
-  getTeamMembershipAction,
   isAuthorized,
   PostCreateInviteInputSchema,
   PostCreateProjectInviteResponse,
   PostCreateTeamInviteResponse,
-  PostUseInviteResponse,
   projectInviteToAction,
   Resource,
-  Role,
+  teamInviteToAction,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
@@ -42,7 +40,6 @@ import {
   getInvite,
   getInvitesForResource,
   isInviteValid,
-  useInvite,
 } from '../couchdb/invites';
 import * as Exceptions from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
@@ -62,7 +59,10 @@ api.get(
   processRequest({
     params: z.object({projectId: z.string()}),
   }),
-  async ({user, params: {projectId}}, res: Response<GetProjectInvitesResponse>) => {
+  async (
+    {user, params: {projectId}},
+    res: Response<GetProjectInvitesResponse>
+  ) => {
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -83,10 +83,13 @@ api.get(
       );
     }
 
-    const invites = await getInvitesForResource({
-      resourceType: Resource.PROJECT,
-      resourceId: projectId,
-    });
+    // Project invites
+    const invites = (
+      await getInvitesForResource({
+        resourceType: Resource.PROJECT,
+        resourceId: projectId,
+      })
+    ).filter(invite => isInviteValid({invite}).isValid);
 
     res.json(invites);
   }
@@ -122,10 +125,13 @@ api.get(
       );
     }
 
-    const invites = await getInvitesForResource({
-      resourceType: Resource.TEAM,
-      resourceId: teamId,
-    });
+    // only return valid invites
+    const invites = (
+      await getInvitesForResource({
+        resourceType: Resource.TEAM,
+        resourceId: teamId,
+      })
+    ).filter(invite => isInviteValid({invite}).isValid);
 
     res.json(invites);
   }
@@ -141,7 +147,10 @@ api.post(
     params: z.object({projectId: z.string()}),
     body: PostCreateInviteInputSchema,
   }),
-  async ({user, body, params: {projectId}}, res: Response<PostCreateProjectInviteResponse>) => {
+  async (
+    {user, body, params: {projectId}},
+    res: Response<PostCreateProjectInviteResponse>
+  ) => {
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -191,16 +200,19 @@ api.post(
     params: z.object({teamId: z.string()}),
     body: PostCreateInviteInputSchema,
   }),
-  async ({user, body, params: {teamId}}, res: Response<PostCreateTeamInviteResponse>) => {
+  async (
+    {user, body, params: {teamId}},
+    res: Response<PostCreateTeamInviteResponse>
+  ) => {
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
 
     // Get the action needed
-    const actionNeeded = getTeamMembershipAction(
-      body.role,
-      true // Adding a role
-    );
+    const actionNeeded = teamInviteToAction({
+      action: 'create',
+      role: body.role,
+    });
 
     if (
       !isAuthorized({
@@ -321,10 +333,10 @@ api.delete(
     }
 
     // Get the action needed
-    const actionNeeded = getTeamMembershipAction(
-      invite.role,
-      false // Removing a role
-    );
+    const actionNeeded = teamInviteToAction({
+      action: 'delete',
+      role: invite.role,
+    });
 
     if (
       !isAuthorized({
@@ -378,47 +390,6 @@ api.get(
       usesRemaining: invite.usesOriginal
         ? Math.max(0, invite.usesOriginal - invite.usesConsumed)
         : undefined,
-    });
-  }
-);
-
-/**
- * POST use/redeem an invite
- */
-api.post(
-  '/:inviteId/use',
-  requireAuthenticationAPI,
-  processRequest({
-    params: z.object({inviteId: z.string()}),
-  }),
-  async ({user, params: {inviteId}}, res: Response<PostUseInviteResponse>) => {
-    if (!user) {
-      throw new Exceptions.UnauthorizedException();
-    }
-    
-    const invite = await getInvite({inviteId});
-    
-    if (!invite) {
-      throw new Exceptions.ItemNotFoundException('Invite not found');
-    }
-    
-    // Check if invite is valid
-    const validityCheck = isInviteValid({invite});
-    if (!validityCheck.isValid) {
-      throw new Exceptions.ValidationException(validityCheck.reason || 'Invalid invite');
-    }
-    
-    // Record usage of the invite (assuming this is implemented)
-    await useInvite({
-      invite,
-      user,
-    });
-    
-    res.status(200).json({
-      success: true,
-      resourceType: invite.resourceType,
-      resourceId: invite.resourceId,
-      role: invite.role,
     });
   }
 );
