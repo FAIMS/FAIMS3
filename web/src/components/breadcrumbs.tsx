@@ -10,7 +10,6 @@ import {Fragment} from 'react';
 import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {Skeleton} from './ui/skeleton';
-import {capitalize} from '@/lib/utils';
 
 /**
  * Breadcrumbs component renders a breadcrumb navigation for the current page.
@@ -45,8 +44,9 @@ export default function Breadcrumbs() {
               <BreadcrumbItem>
                 <Link to={pathname.at(0)}>
                   {pathname.at(0) === 'projects'
-                    ? `${NOTEBOOK_NAME_CAPITALIZED}s`
-                    : capitalize(pathname.at(0) || '')}
+                    ? NOTEBOOK_NAME_CAPITALIZED
+                    : 'Template'}
+                  s
                 </Link>
               </BreadcrumbItem>
             )}

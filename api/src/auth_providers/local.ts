@@ -84,9 +84,15 @@ export const registerLocalUser = async (
   email: string,
   name: string,
   password: string
+<<<<<<< HEAD
+): Promise<[Express.User | null, string]> => {
+  const [user, error] = await createUser(email, username);
+=======
 ): Promise<[PeopleDBDocument | null, string]> => {
   const [user, error] = await createUser({email, username, name});
+>>>>>>> origin/main
   if (user) {
+    user.name = name;
     addLocalPasswordForUser(user, password);
   }
   return [user, error];

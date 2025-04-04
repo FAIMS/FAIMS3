@@ -29,12 +29,18 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
+<<<<<<< HEAD
+import {getNotebooks, getProjectUIModel} from '../src/couchdb/notebooks';
+import {getUserFromEmailOrUsername} from '../src/couchdb/users';
+import {generateTokenContentsForUser} from '../src/utils';
+=======
 import {
   getUserProjectsDetailed,
   getProjectUIModel,
 } from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
 import {mockTokenContentsForUser} from '../src/utils';
+>>>>>>> origin/main
 import {
   callbackObject,
   cleanDataDBS,
@@ -58,7 +64,7 @@ describe('Backup and restore', () => {
     const user = await getExpressUserFromEmailOrUsername('admin');
     expect(user).not.to.be.undefined;
     if (user) {
-      const notebooks = await getUserProjectsDetailed(user);
+      const notebooks = await getNotebooks(user);
       expect(notebooks.length).to.equal(2);
       expect(notebooks[0].name).to.equal('Campus Survey Demo');
 
@@ -82,7 +88,7 @@ describe('Backup and restore', () => {
       expect(count).to.equal(17);
 
       // throw in a test of getRecordsWithRegex while we're here
-      const tokenContents = mockTokenContentsForUser(user);
+      const tokenContents = generateTokenContentsForUser(user);
       const records = await getRecordsWithRegex({
         dataDb,
         regex: '.*',

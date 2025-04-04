@@ -18,10 +18,9 @@
  */
 
 import {
+  PublicServerInfo,
   PostRefreshTokenInputSchema,
   PostRefreshTokenResponse,
-  PublicServerInfo,
-  Action,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import multer from 'multer';
@@ -31,33 +30,43 @@ import {
   CONDUCTOR_PUBLIC_URL,
   CONDUCTOR_SHORT_CODE_PREFIX,
   DEVELOPER_MODE,
+<<<<<<< HEAD
+=======
   EMAIL_CONFIG,
   EMAIL_SERVICE,
   EMAIL_SERVICE_TYPE,
   TEST_EMAIL_ADDRESS,
   RUNNING_UNDER_TEST,
+>>>>>>> origin/main
 } from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
-import {getUserProjectsDirectory} from '../couchdb/notebooks';
+import {getUserProjects} from '../couchdb/notebooks';
+import {userIsClusterAdmin} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {
-  isAllowedToMiddleware,
   optionalAuthenticationJWT,
   requireAuthenticationAPI,
+  requireClusterAdmin,
 } from '../middleware';
 import {slugify} from '../utils';
 
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
 
+<<<<<<< HEAD
+=======
 import {processRequest} from 'zod-express-middleware';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
 } from '../authkeys/create';
 import {validateRefreshToken} from '../couchdb/refreshTokens';
+>>>>>>> origin/main
 import patch from '../utils/patchExpressAsync';
+import {processRequest} from 'zod-express-middleware';
+import {validateRefreshToken} from '../couchdb/refreshTokens';
+import {generateUserToken} from '../authkeys/create';
 
 // This must occur before express api is used
 patch();
@@ -86,9 +95,9 @@ api.post('/initialise/', async (req, res) => {
 api.post(
   '/forceInitialise',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({action: Action.INITIALISE_SYSTEM_API}),
+  requireClusterAdmin,
   async (req, res) => {
-    await initialiseDbAndKeys({force: true});
+    initialiseDbAndKeys({force: true});
     res.json({success: true});
   }
 );
@@ -107,19 +116,14 @@ api.get('/info', async (req, res) => {
   res.json(response);
 });
 
-api.get(
-  '/directory/',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({action: Action.LIST_PROJECTS}),
-  async (req, res) => {
-    // get the directory of notebooks on this server
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException();
-    }
-    const projects = await getUserProjectsDirectory(req.user);
-    res.json(projects);
+api.get('/directory/', requireAuthenticationAPI, async (req, res) => {
+  // get the directory of notebooks on this server
+  if (!req.user) {
+    throw new Exceptions.UnauthorizedException();
   }
-);
+  const projects = await getUserProjects(req.user);
+  res.json(projects);
+});
 
 /**
  * Refresh - get a new JWT using a refresh token.
@@ -165,15 +169,19 @@ api.post(
 if (DEVELOPER_MODE) {
   api.post(
     '/restore',
-    requireAuthenticationAPI,
-    isAllowedToMiddleware({action: Action.RESTORE_FROM_BACKUP}),
     upload.single('backup'),
+    requireAuthenticationAPI,
     async (req: any, res) => {
+      if (!userIsClusterAdmin(req.user)) {
+        throw new Exceptions.UnauthorizedException();
+      }
       await restoreFromBackup(req.file.path);
       res.json({status: 'success'});
     }
   );
 }
+<<<<<<< HEAD
+=======
 
 /**
  * Email testing route to verify email service configuration
@@ -339,3 +347,4 @@ If you received this email, the email service is configured correctly.
     }
   }
 );
+>>>>>>> origin/main

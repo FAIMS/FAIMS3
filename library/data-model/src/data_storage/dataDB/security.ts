@@ -2,28 +2,25 @@
  * This module exports the security document to be used for the auth database.
  */
 
-import {Action, necessaryActionToCouchRoleList, Role} from '../../permission';
-import {SecurityDocument} from '../utils';
+import {CLUSTER_ADMIN_GROUP_NAME} from '../../auth';
+import {buildCouchRoleFromProjectId, SecurityDocument} from '../utils';
 
 export const DataDBSecurityDocument = ({
   projectId,
+  roles,
 }: {
   projectId: string;
+  roles: string[];
 }): SecurityDocument => {
   return {
-    // General admins have complete access
+    // Cluster admins have admin ownership
     admins: {
       names: [],
-      roles: [Role.GENERAL_ADMIN],
+      roles: [CLUSTER_ADMIN_GROUP_NAME],
     },
     members: {
       names: [],
-      // We have to stoop to reading here since there is no differentiation
-      // possible in couch (for read)
-      roles: necessaryActionToCouchRoleList({
-        action: Action.READ_MY_PROJECT_RECORDS,
-        resourceId: projectId,
-      }),
+      roles: roles.map(role => buildCouchRoleFromProjectId({projectId, role})),
     },
   };
 };

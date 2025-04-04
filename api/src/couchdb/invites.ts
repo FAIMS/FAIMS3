@@ -18,45 +18,37 @@
  *   Provide an interface for manipulating invites to the system
  */
 
-import {
-  ExistingInvitesDBDocument,
-  InvitesDBFields,
-  NewInvitesDBDocument,
-  NonUniqueProjectID,
-  ProjectID,
-  Role,
-  writeNewDocument,
-} from '@faims3/data-model';
+import {NonUniqueProjectID, ProjectID} from '@faims3/data-model';
 import {getInvitesDB} from '.';
+import {ConductorRole, RoleInvite} from '../datamodel/users';
 import {CONDUCTOR_SHORT_CODE_PREFIX} from '../buildconfig';
 
 /**
  * Create an invite for this project and role if there isn't already
  * one.  If it already exists, return it.
- * @param projectId Project identifier
+ * @param project_id Project identifier
  * @param role Project role
  * @returns A RoleInvite object
  */
 export async function createInvite(
-  projectId: NonUniqueProjectID,
-  role: Role
-): Promise<NewInvitesDBDocument> {
-  const existing = (
-    await getInvitesDB().query<InvitesDBFields>('indexes/byProjectAndRole', {
-      key: [projectId, role],
-      include_docs: true,
-    })
-  ).rows
-    .map(r => r.doc)
-    .filter(d => !!d);
+  project_id: NonUniqueProjectID,
+  role: ConductorRole
+) {
+  // if there is already an invite for this role,
+  // just return that
+  const allInvites = await getInvitesForNotebook(project_id);
+  const existing = allInvites.filter(
+    i => i.project_id === project_id && i.role === role
+  );
 
   if (existing.length === 0) {
     // make a new one
-    const invite: InvitesDBFields = {
-      projectId: projectId,
+    const invite: RoleInvite = {
+      _id: generateId(),
+      project_id: project_id,
       role: role,
     };
-    return await writeNewInvite(invite);
+    return await saveInvite(invite);
   } else {
     return existing[0];
   }
@@ -67,7 +59,7 @@ export async function createInvite(
  * be unique.
  * @returns a six character identifier
  */
-function generateInviteId() {
+function generateId() {
   const INVITE_LENGTH = 6;
   const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
 
@@ -80,74 +72,68 @@ function generateInviteId() {
 }
 
 /**
- * Store an invite, ensure that the identifier is unique.
+ * Store an invite, ensure that the identifier is unique
  * @param invite An invite object
  * @returns The invite, possibly with a new identifier
  */
-export async function writeNewInvite(invite: InvitesDBFields) {
-  // get the invites DB
-  const inviteDb = getInvitesDB();
-
-  // just be careful here - we don't want infinite loops if something else is
-  // going on
-  const maxCount = 5;
-  let count = 0;
-
-  // Build our document with ID
-  const doc: NewInvitesDBDocument = {...invite, _id: generateInviteId()};
-
-  // This could throw in case of other DB errors - but should happen
-  while (count < maxCount) {
-    const res = await writeNewDocument({db: inviteDb, data: doc});
-    if (res.wrote) {
-      return doc;
-    } else {
-      count = count + 1;
-      doc._id = generateInviteId();
+export async function saveInvite(invite: RoleInvite) {
+  const invite_db = getInvitesDB();
+  if (invite_db) {
+    let done = false;
+    while (!done) {
+      try {
+        await invite_db.put(invite);
+        done = true;
+      } catch {
+        invite._id = generateId();
+      }
     }
-  }
-
-  throw new Error(
-    'Reached the maximum number of retries at generating unique invites! Consider a more durable/unique ID generation function or clear out the invites database. Cannot safely proceed.'
-  );
-}
-
-export async function deleteInvite(invite: NewInvitesDBDocument) {
-  const inviteDb = getInvitesDB();
-  // get the invite from the db to ensure we have the most recent revision
-  const fetched = await getInvite(invite._id);
-  if (fetched) {
-    await inviteDb.put({
-      ...fetched,
-      _deleted: true,
-    });
-    return fetched;
+    return invite;
   } else {
-    throw Error('Unable to find invite in database to delete');
+    throw Error('Unable to connect to invites database');
   }
 }
 
-export async function getInvite(
-  inviteId: string
-): Promise<null | ExistingInvitesDBDocument> {
-  const inviteDb = getInvitesDB();
-  try {
-    return await inviteDb.get(inviteId);
-  } catch {
-    // invite not found
-    return null;
+export async function deleteInvite(invite: RoleInvite) {
+  const invite_db = getInvitesDB();
+  if (invite_db) {
+    // get the invite from the db to ensure we have the most recent revision
+    const fetched = await getInvite(invite._id);
+    if (fetched) {
+      fetched._deleted = true;
+      await invite_db.put(fetched);
+      return fetched;
+    } else {
+      throw Error('Unable to find invite in database to delete');
+    }
+  } else {
+    throw Error('Unable to connect to invites database');
+  }
+}
+
+export async function getInvite(invite_id: string): Promise<null | RoleInvite> {
+  const invite_db = getInvitesDB();
+  if (invite_db) {
+    try {
+      return await invite_db.get(invite_id);
+    } catch {
+      // invite not found
+      return null;
+    }
+  } else {
+    throw Error('Unable to connect to invites database');
   }
 }
 
 export async function getInvitesForNotebook(
-  projectId: ProjectID
-): Promise<ExistingInvitesDBDocument[]> {
+  project_id: ProjectID
+): Promise<RoleInvite[]> {
   const invite_db = getInvitesDB();
   if (invite_db) {
     const result = await invite_db.find({
-      selector: {projectId: {$eq: projectId}},
+      selector: {project_id: {$eq: project_id}},
     });
-    return result.docs as ExistingInvitesDBDocument[];
+    return result.docs as RoleInvite[];
   } else {
     throw Error('Unable to connect to invites database');
   }

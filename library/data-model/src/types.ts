@@ -19,8 +19,11 @@
  */
 
 import {z} from 'zod';
+<<<<<<< HEAD
+=======
 import {DecodedTokenPermissions, Role} from './permission';
 import {ExistingProjectDocument} from './data_storage';
+>>>>>>> origin/main
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -62,12 +65,10 @@ export type FAIMSTypeName = string;
 
 export type Annotations = {annotation: string; uncertainty: boolean};
 
-export interface TokenContents extends DecodedTokenPermissions {
-  // First/last name
-  name?: string;
-  // Username (i.e. email)
+export interface TokenContents {
   username: string;
-  // Server generating
+  roles: string[];
+  name?: string;
   server: string;
   // This is required now - all tokens must have an expiry
   exp: number;
@@ -86,6 +87,18 @@ export interface SyncStatusCallbacks {
   sync_denied: () => void;
 }
 
+export type LocationState = {
+  parent_record_id?: string; // parent or linked record id, set from parent or linked record
+  field_id?: string; // parent or linked field id, set from parent or linked record
+  type?: string; // type of relationship: Child or Linked
+  parent_link?: string; // link of parent/linked record, so when child/link record saved, this is the redirect link
+  parent?: any; // parent to save upper level information for nest related, for example, grandparent
+  record_id?: RecordID; // child/linked record ID, set in child/linked record, should be pass back to parent
+  hrid?: string; // child/linked record HRID, this is the value displayed in field, set in child/linked record, should be pass back to parent
+  relation_type_vocabPair?: string[] | null; //pass the parent information to child
+  child_record_id?: RecordID; //child/linked record ID created from parent
+  parent_hrid?: string;
+};
 export interface LinkedRelation {
   record_id: RecordID;
   field_id: string;
@@ -120,6 +133,22 @@ export type PossibleConnectionInfo =
       };
       jwt_token?: string;
     };
+<<<<<<< HEAD
+export interface ProjectObject {
+  _id: NonUniqueProjectID;
+  name: string;
+  project_id: string;
+  description?: string;
+  // Was the project created from a template?
+  template_id?: string;
+  data_db?: PossibleConnectionInfo;
+  metadata_db?: PossibleConnectionInfo;
+  last_updated?: string;
+  created?: string;
+  status?: string;
+}
+=======
+>>>>>>> origin/main
 
 // TODO make this better, currently there is no real explanation for this
 // structure
@@ -127,7 +156,7 @@ export type PossibleConnectionInfo =
 // This is returned from the list project endpoints
 export const APINotebookListSchema = z.object({
   name: z.string(),
-  is_admin: z.boolean(),
+  is_admin: z.boolean().optional(),
   last_updated: z.string().optional(),
   created: z.string().optional(),
   template_id: z.string().optional(),
@@ -449,7 +478,6 @@ export interface ProjectUIViewset {
   hridField?: string;
   // Layout option
   layout?: 'inline' | 'tabs';
-  publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
 }
 
 export interface ProjectUIViewsets {
@@ -476,7 +504,6 @@ export interface ProjectUIViews {
     is_logic?: {[key: string]: string[]}; //add for branching logic
     condition?: ConditionalExpression; // new conditional logic
     conditionFn?: (v: RecordValues) => boolean; // compiled conditional function
-    description?: string;
   };
 }
 
@@ -759,7 +786,7 @@ export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
 // Information about users and roles for a notebook
 export const NotebookAuthSummarySchema = z.object({
   // What roles does the notebook have
-  roles: z.array(z.nativeEnum(Role)),
+  roles: z.array(z.string()),
   // users permissions for this notebook
   users: z.array(
     z.object({
@@ -767,7 +794,7 @@ export const NotebookAuthSummarySchema = z.object({
       username: z.string(),
       roles: z.array(
         z.object({
-          name: z.nativeEnum(Role),
+          name: z.string(),
           value: z.boolean(),
         })
       ),

@@ -226,11 +226,15 @@ describe('token refresh tests', () => {
 
   it('use refresh token to generate new token', async () => {
     // Get local user profile and setup refresh
+<<<<<<< HEAD
+    const localUser = (await getUserFromEmailOrUsername(localUserName))!;
+=======
     const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
 
     // This should work now
     await listTemplates(app, localUserToken);
 
+>>>>>>> origin/main
     const refresh = (await generateUserToken(localUser, true)).refreshToken!;
 
     // now run the refresh method

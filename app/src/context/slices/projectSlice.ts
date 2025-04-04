@@ -1629,7 +1629,7 @@ export const activateProject = createAsyncThunk<
   await couchInitialiser({
     db: localDb,
     config: {forceWrite: true, applyPermissions: false},
-    content: initDataDB({projectId: payload.projectId}),
+    content: initDataDB({projectId: payload.projectId, roles: []}),
   });
 });
 
@@ -1894,7 +1894,7 @@ export const rebuildDbs = async (
           });
           // Setup design documents and permissions for local data DB
           await couchInitialiser({
-            content: initDataDB({projectId: project.projectId}),
+            content: initDataDB({projectId: project.projectId, roles: []}),
             db: localDb,
             config: {applyPermissions: false, forceWrite: true},
           });

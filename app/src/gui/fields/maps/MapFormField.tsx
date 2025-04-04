@@ -23,9 +23,15 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {Alert, Box, Button, Typography} from '@mui/material';
 import {FieldProps} from 'formik';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
+<<<<<<< HEAD
+import {useEffect, useRef, useState} from 'react';
+import {useNotification} from '../../../context/popup';
+import {useIsOnline} from '../../../utils/customHooks';
+=======
 import {useEffect, useMemo, useState} from 'react';
 import {getCoordinates, useCurrentLocation} from '../../../utils/useLocation';
 import {canShowMapNear} from '../../components/map/map-component';
+>>>>>>> origin/main
 import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
 import {theme} from '../../themes';
 import FieldWrapper from '../fieldWrapper';
@@ -34,44 +40,34 @@ import MapWrapper, {MapAction} from './MapWrapper';
 
 // If no center is available - pass this through
 // Sydney CBD
-const FALLBACK_CENTER: [number, number] = [151.2093, -33.8688];
+const FALLBACK_CENTER = [151.2093, -33.8688];
 
 export interface MapFieldProps extends FieldProps {
   label?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
   geoTiff?: string;
   projection?: string;
-  center?: [number, number];
+  center?: Array<number>;
   zoom?: number;
   FormLabelProps?: any;
   helperText: string;
   required: boolean;
 }
 
-const createPointFeature = (
-  center: [number, number]
-): GeoJSONFeatureCollection => {
-  return {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: center,
-        },
-        properties: null,
-      },
-    ],
-  };
-};
-
 export function MapFormField({
   field,
   form,
   ...props
 }: MapFieldProps): JSX.Element {
-  const [canShowMap, setCanShowMap] = useState(false);
+  // State
+
+  const {isOnline} = useIsOnline();
+
+  // center location of map - use provided center if any
+  const [center, setCenter] = useState<number[] | undefined>(props.center);
+
+  // and a ref to track if gps location has already been requested
+  const gpsCenterRequested = useRef<boolean>(false);
 
   // flag set if we find we don't have location permission
   const [noPermission, setNoPermission] = useState(false);
@@ -80,7 +76,7 @@ export function MapFormField({
   const drawnFeatures = form.values[field.name] ?? {};
 
   // Default zoom level
-  const zoom = typeof props.zoom === 'number' ? props.zoom : 14;
+  const zoom = props.zoom ?? 14;
 
   // default to point if not specified
   const featureType = props.featureType ?? 'Point';
@@ -95,29 +91,8 @@ export function MapFormField({
   // state for visual indicators
   const [animateCheck, setAnimateCheck] = useState(false);
 
-  // Use the custom hook for location
-  const {data: currentPosition} = useCurrentLocation();
-
-  // Determine map center based on props or current location
-  const center = useMemo(() => {
-    if (props.center) {
-      return props.center;
-    }
-    return getCoordinates(currentPosition);
-  }, [props.center, currentPosition]);
-
-  // when the center changes, check if we can show this map
-  useEffect(() => {
-    if (isLocationSelected) {
-      // can we draw a map around the drawn features?
-      canShowMapNear(drawnFeatures).then(flag => setCanShowMap(flag));
-    } else if (center) {
-      // can we draw a map around the configured center
-      canShowMapNear(createPointFeature(center)).then(flag =>
-        setCanShowMap(flag)
-      );
-    }
-  }, [center]);
+  // notification manager
+  const notify = useNotification();
 
   // Callback function when a location is selected
   const setFeaturesCallback = (
@@ -134,9 +109,53 @@ export function MapFormField({
     }
   };
 
+  useEffect(() => {
+    const getCoords = async () => {
+      // Always get current position on component mount - this forces a permission
+      // request
+      if (!gpsCenterRequested.current) {
+        // Mark that we've requested already
+        gpsCenterRequested.current = true;
+        Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        })
+          .then(result => {
+            // Only store the center result if we actually need it
+            if (center === undefined) {
+              setCenter([result.coords.longitude, result.coords.latitude]);
+            }
+            // Since we use a ref to track this running, we can safely run a state
+            // update here without infinite loop
+            setNoPermission(false);
+          })
+          .catch(() => {
+            notify.showWarning(
+              'We were unable to access your current location. Map fields may not work as expected.'
+            );
+            setNoPermission(true);
+          });
+      }
+    };
+    getCoords();
+  }, []);
+
   const handleCurrentLocation = () => {
     if (center) {
-      const pointFeature = createPointFeature(center);
+      const pointFeature = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: center,
+            },
+            properties: null,
+          },
+        ],
+      };
       form.setFieldValue(field.name, pointFeature, true);
     }
   };
@@ -167,11 +186,9 @@ export function MapFormField({
         valueText = 'Line String: ' + geom.coordinates.length + ' points';
         break;
     }
-  } else if (canShowMap) {
-    valueText = `No ${featureLabel} selected, click above to choose one!`;
   } else {
     // if no location selected update msg dynamically.
-    valueText = `No ${featureLabel} selected.`;
+    valueText = `No ${featureLabel} selected, click above to choose one!`;
   }
 
   return (
@@ -180,7 +197,7 @@ export function MapFormField({
       subheading={props.helperText}
       required={props.required}
     >
-      {/* if offline and no downloaded map, offer to use current location for point features only */}
+      {/* if offline, offer to use current location for point features only */}
 
       <Box
         sx={{
@@ -190,28 +207,15 @@ export function MapFormField({
           width: '100%',
         }}
       >
-        {!canShowMap ? (
+        {!isOnline && featureType === 'Point' ? (
           <>
-            {featureType === 'Point' && (
-              <>
-                <Alert variant="outlined" severity="warning">
-                  The interactive map is not available while <b>offline</b> and
-                  and there is no downloaded map covering this location. Use the
-                  button below to submit your current GPS location.
-                </Alert>
-                <Button variant="outlined" onClick={handleCurrentLocation}>
-                  Use my current location
-                </Button>
-              </>
-            )}
-            {featureType !== 'Point' && (
-              <>
-                <Alert variant="outlined" severity="warning">
-                  The interactive map is not available while <b>offline</b> and
-                  and there is no downloaded map covering this location.
-                </Alert>
-              </>
-            )}
+            <Alert variant="outlined" severity="warning">
+              The interactive map is not available while <b>offline</b>. Use the
+              button below to submit your current GPS location.
+            </Alert>
+            <Button variant="outlined" onClick={handleCurrentLocation}>
+              Use my current location
+            </Button>
           </>
         ) : (
           <MapWrapper

@@ -22,21 +22,26 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
+import {NOTEBOOK_CREATOR_GROUP_NAME} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
 import {addLocalPasswordForUser} from '../src/auth_providers/local';
+<<<<<<< HEAD
+import {createAuthKey} from '../src/authkeys/create';
+=======
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
 } from '../src/authkeys/create';
+>>>>>>> origin/main
 import {KEY_SERVICE} from '../src/buildconfig';
 import {
+  addOtherRoleToUser,
   createUser,
   getExpressUserFromEmailOrUsername,
   saveCouchUser,
 } from '../src/couchdb/users';
 import {cleanDataDBS, resetDatabases} from './mocks';
-import {addGlobalRole, Role} from '@faims3/data-model';
 
 export let adminToken = '';
 export let localUserToken = '';
@@ -77,13 +82,10 @@ export const beforeApiTests = async () => {
   const adminUser = possibleAdminUser!;
 
   // Create the admin token
-  adminToken = await generateJwtFromUser({user: adminUser!, signingKey});
+  adminToken = await createAuthKey(adminUser!, signingKey);
 
   // create the local user
-  const [possibleLocalUser] = await createUser({
-    username: localUserName,
-    name: localUserName,
-  });
+  const [possibleLocalUser] = await createUser('', localUserName);
   // If this is null then the createUser function is not working
   expect(possibleLocalUser, 'Local user was null from create function.').to.not
     .be.null;
@@ -92,15 +94,16 @@ export const beforeApiTests = async () => {
   // save user and create password
   await saveCouchUser(localUser);
   await addLocalPasswordForUser(localUser, localUserPassword); // saves the user
+<<<<<<< HEAD
+  localUserToken = await createAuthKey(localUser, signingKey);
+=======
   // Upgrade
   const upgraded = await upgradeCouchUserToExpressUser({dbUser: localUser});
   localUserToken = await generateJwtFromUser({user: upgraded, signingKey});
+>>>>>>> origin/main
 
   // create the nb user
-  const [possibleNbUser] = await createUser({
-    username: notebookUserName,
-    name: notebookUserName,
-  });
+  const [possibleNbUser] = await createUser('', notebookUserName);
 
   // If this is null then the createUser function is not working
   expect(possibleNbUser, 'Notebook user was null from create user function.').to
@@ -108,11 +111,18 @@ export const beforeApiTests = async () => {
   const nbUser = possibleNbUser!;
 
   // save user and create password
+<<<<<<< HEAD
+  await saveUser(nbUser);
+  addOtherRoleToUser(nbUser, NOTEBOOK_CREATOR_GROUP_NAME);
+  await addLocalPasswordForUser(nbUser, notebookPassword);
+  notebookUserToken = await createAuthKey(nbUser, signingKey);
+=======
   await saveCouchUser(nbUser);
   addGlobalRole({user: nbUser, role: Role.GENERAL_CREATOR});
   await addLocalPasswordForUser(nbUser, notebookPassword);
   const upgradedNb = await upgradeCouchUserToExpressUser({dbUser: nbUser});
   notebookUserToken = await generateJwtFromUser({user: upgradedNb, signingKey});
+>>>>>>> origin/main
 };
 
 /**

@@ -21,6 +21,7 @@
 
 // Files in this module
 export * from './api';
+export * from './auth';
 export * from './callbacks';
 export * from './logging';
 export * from './types';
@@ -29,4 +30,3 @@ export * from './utils';
 // Nested folders
 export * from './datamodel';
 export * from './data_storage';
-export * from './permission';

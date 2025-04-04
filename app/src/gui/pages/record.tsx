@@ -50,12 +50,11 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React, {useEffect, useRef, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {localGetDataDb} from '../..';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {addAlert} from '../../context/slices/alertSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
+import {addAlert} from '../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {logError} from '../../logging';
 import RecordDelete from '../components/notebook/delete';
@@ -82,6 +81,7 @@ import BackButton from '../components/ui/BackButton';
 import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
+import {localGetDataDb} from '../..';
 
 export default function Record() {
   /**
@@ -105,7 +105,6 @@ export default function Record() {
     revisionId: RevisionID;
     draftId?: string;
   }>();
-
   const [updatedRevisionId, setUpdatedRevisionId] = React.useState(revisionId);
 
   const dispatch = useAppDispatch();

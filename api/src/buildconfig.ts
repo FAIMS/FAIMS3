@@ -19,16 +19,9 @@
  *   which server to use and whether to include test data
  */
 
-import {existsSync} from 'fs';
 import {v4 as uuidv4} from 'uuid';
-import {
-  createEmailService,
-  EmailConfig,
-  EmailServiceType,
-  IEmailService,
-  SMTPEmailServiceConfig,
-} from './services/emailService';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
+import {existsSync} from 'fs';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
@@ -481,6 +474,8 @@ export const AWS_SECRET_KEY_ARN: string | undefined =
   KEY_SOURCE === KeySource.AWS_SM ? getAwsSecretKeyArn() : undefined;
 
 export const KEY_SERVICE: IKeyService = getKeyService(KEY_SOURCE);
+<<<<<<< HEAD
+=======
 
 /**
  * Determines which email service type to use based on environment variables.
@@ -626,3 +621,4 @@ function getTestEmailAddress(): string {
 
 // Export the test email address
 export const TEST_EMAIL_ADDRESS = getTestEmailAddress();
+>>>>>>> origin/main

@@ -27,17 +27,24 @@ import {
   EncodedProjectUIModel,
   getDataDB,
   registerClient,
+<<<<<<< HEAD
+=======
   resourceRoles,
   Role,
   userHasProjectRole,
+>>>>>>> origin/main
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import fs from 'fs';
 import request from 'supertest';
+<<<<<<< HEAD
+import {createAuthKey} from '../src/authkeys/create';
+=======
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
 } from '../src/authkeys/create';
+>>>>>>> origin/main
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
@@ -46,13 +53,24 @@ import {
   DEVELOPER_MODE,
   KEY_SERVICE,
 } from '../src/buildconfig';
+import {
+  CLUSTER_ADMIN_GROUP_NAME,
+  NOTEBOOK_CREATOR_GROUP_NAME,
+} from '@faims3/data-model';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
 import {
   createNotebook,
   getNotebookMetadata,
-  getUserProjectsDetailed,
+  getNotebooks,
 } from '../src/couchdb/notebooks';
+<<<<<<< HEAD
+import {
+  getUserFromEmailOrUsername,
+  userHasProjectRole,
+} from '../src/couchdb/users';
+=======
 import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
+>>>>>>> origin/main
 import {app} from '../src/routes';
 import {callbackObject, databaseList} from './mocks';
 import {
@@ -180,6 +198,9 @@ describe('API tests', () => {
       await getExpressUserFromEmailOrUsername(notebookUserName);
     if (notebookUser) {
       // check that this user now has the right roles on this notebook
+<<<<<<< HEAD
+      expect(userHasProjectRole(notebookUser, project_id, 'admin')).to.be.true;
+=======
       expect(
         userHasProjectRole({
           user: notebookUser,
@@ -187,6 +208,7 @@ describe('API tests', () => {
           role: Role.PROJECT_ADMIN,
         })
       ).to.be.true;
+>>>>>>> origin/main
     } else {
       console.log('notebookUser', notebookUser);
       expect(notebookUser).not.to.be.null;
@@ -232,6 +254,7 @@ describe('API tests', () => {
       },
       validationSchema: [['yup.string'], ['yup.required']],
       initialValue: null,
+      access: ['admin'],
       meta: {
         annotation_label: 'annotation',
         annotation: true,
@@ -295,6 +318,25 @@ describe('API tests', () => {
       dbUser: adminDbUser,
     });
 
+<<<<<<< HEAD
+    if (adminUser) {
+      const project_id = await createNotebook(
+        'test-notebook',
+        uiSpec,
+        metadata
+      );
+      let notebooks = await getNotebooks(adminUser);
+      const dataDb = await getDataDB(project_id!);
+      expect(notebooks).to.have.lengthOf(1);
+      expect(project_id).not.to.be.undefined;
+      await request(app)
+        .post('/api/notebooks/' + project_id + '/delete')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Content-Type', 'application/json')
+        .expect(200);
+      notebooks = await getNotebooks(adminUser);
+      expect(notebooks).to.be.empty;
+=======
     const project_id = await createNotebook('test-notebook', uiSpec, metadata);
     let notebooks = await getUserProjectsDetailed(adminUser);
     const dataDb = await getDataDB(project_id!);
@@ -307,6 +349,7 @@ describe('API tests', () => {
       .expect(200);
     notebooks = await getUserProjectsDetailed(adminUser);
     expect(notebooks).to.be.empty;
+>>>>>>> origin/main
 
     // Because of how mocks work with db list, we need to manually remove the
     // data db from the list TODO make the mock respect database deletion
@@ -324,7 +367,7 @@ describe('API tests', () => {
   it('update admin user - no auth', async () => {
     await request(app)
       .post(`/api/users/${localUserName}/admin`)
-      .send({addrole: true, role: Role.GENERAL_ADMIN})
+      .send({addrole: true, role: CLUSTER_ADMIN_GROUP_NAME})
       .set('Content-Type', 'application/json')
       .expect(401);
   });
@@ -334,7 +377,7 @@ describe('API tests', () => {
       .post(`/api/users/${localUserName}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
-      .send({addrole: true, role: Role.GENERAL_ADMIN})
+      .send({addrole: true, role: CLUSTER_ADMIN_GROUP_NAME})
       .expect(200);
   });
 
@@ -343,7 +386,7 @@ describe('API tests', () => {
       .post(`/api/users/${localUserName}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
-      .send({addrole: false, role: Role.GENERAL_ADMIN})
+      .send({addrole: false, role: CLUSTER_ADMIN_GROUP_NAME})
       .expect(200);
   });
 
@@ -352,7 +395,7 @@ describe('API tests', () => {
       .post(`/api/users/${localUserName}/admin`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
-      .send({addrole: true, role: Role.GENERAL_CREATOR})
+      .send({addrole: true, role: NOTEBOOK_CREATOR_GROUP_NAME})
       .expect(200);
   });
 
@@ -378,12 +421,22 @@ describe('API tests', () => {
       .set('Content-Type', 'application/json')
       .expect(200)
       .then(response => {
+<<<<<<< HEAD
+        expect(response.body.roles).to.deep.equal([
+          'admin',
+          'moderator',
+          'team',
+          'user',
+        ]);
+        expect(response.body.users.length).to.equal(1);
+=======
         expect(response.body.roles).to.deep.equal(
           resourceRoles.PROJECT.map(r => r.role)
         );
         // only includes users who have at least one resource role on this
         // notebook
         expect(response.body.users.length).to.equal(0);
+>>>>>>> origin/main
       });
   });
 
@@ -398,7 +451,7 @@ describe('API tests', () => {
         .set('Content-Type', 'application/json')
         .send({
           username: localUserName,
-          role: Role.PROJECT_CONTRIBUTOR,
+          role: 'user',
           addrole: true,
         })
         .expect(200);
@@ -410,7 +463,7 @@ describe('API tests', () => {
         .set('Content-Type', 'application/json')
         .send({
           username: localUserName,
-          role: Role.PROJECT_CONTRIBUTOR,
+          role: 'user',
           addrole: false,
         })
         .expect(200);
@@ -431,7 +484,7 @@ describe('API tests', () => {
         .set('Content-Type', 'application/json')
         .send({
           username: localUserName,
-          role: Role.PROJECT_CONTRIBUTOR,
+          role: 'user',
           addrole: true,
         })
         .expect(404);
@@ -457,14 +510,34 @@ describe('API tests', () => {
         .set('Content-Type', 'application/json')
         .send({
           username: 'fred dag',
-          role: Role.PROJECT_CONTRIBUTOR,
+          role: 'user',
           addrole: true,
         })
         .expect(404);
 
+<<<<<<< HEAD
+      const bobby = await getUserFromEmailOrUsername(localUserName);
+      if (bobby) {
+        const signingKey = await KEY_SERVICE.getSigningKey();
+        const bobbyToken = await createAuthKey(bobby, signingKey);
+
+        // invalid user name
+        console.log('bobby token');
+        await request(app)
+          .post(`/api/notebooks/${nb1}/users/`)
+          .set('Authorization', `Bearer ${bobbyToken}`)
+          .set('Content-Type', 'application/json')
+          .send({
+            username: localUserName,
+            role: 'user',
+            addrole: true,
+          })
+          .expect(401);
+=======
       const bobbyDb = await getExpressUserFromEmailOrUsername(localUserName);
       if (!bobbyDb) {
         throw new Error('Bobby gone-a missin!');
+>>>>>>> origin/main
       }
       const bobby = await upgradeCouchUserToExpressUser({dbUser: bobbyDb});
       const signingKey = await KEY_SERVICE.getSigningKey();
@@ -489,9 +562,23 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
 
+<<<<<<< HEAD
+    const adminUser = await getUserFromEmailOrUsername('admin');
+    if (adminUser) {
+      const notebooks = await getNotebooks(adminUser);
+      expect(notebooks).to.have.lengthOf(2);
+
+      await request(app)
+        .get('/api/notebooks/1693291182736-campus-survey-demo/records/')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Content-Type', 'application/json')
+        .expect(200)
+        .expect('Content-Type', 'application/json; charset=utf-8');
+=======
     const admin = await getExpressUserFromEmailOrUsername('admin');
     if (!admin) {
       throw new Error('Admin gone missing');
+>>>>>>> origin/main
     }
 
     const notebooks = await getUserProjectsDetailed(admin);
@@ -511,7 +598,7 @@ describe('API tests', () => {
 
     const adminUser = await getExpressUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const notebooks = await getUserProjectsDetailed(adminUser);
+      const notebooks = await getNotebooks(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
@@ -543,7 +630,7 @@ describe('API tests', () => {
 
     const adminUser = await getExpressUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const notebooks = await getUserProjectsDetailed(adminUser);
+      const notebooks = await getNotebooks(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
@@ -559,89 +646,6 @@ describe('API tests', () => {
             'take-photo/DuplicateHRID-take-photo_1.png'
           );
         });
-    }
-  });
-
-  it('test email route - not authenticated', async () => {
-    const result = await request(app).post('/api/admin/test-email');
-    expect(result.statusCode).to.equal(401);
-  });
-
-  it('test email route - not admin', async () => {
-    const result = await request(app)
-      .post('/api/admin/test-email')
-      .set('Authorization', `Bearer ${localUserToken}`);
-    expect(result.statusCode).to.equal(401);
-  });
-
-  it('test email route - admin user', async () => {
-    // Mock the email service
-    const originalEmailService = require('../src/buildconfig').EMAIL_SERVICE;
-    const mockSendEmail = async () => ({
-      messageId: 'test-message-id-123',
-      response: 'Test email sent successfully',
-      envelope: {
-        from: 'test@example.com',
-        to: ['test-recipient@example.com'],
-      },
-    });
-
-    // Replace with mock temporarily
-    require('../src/buildconfig').EMAIL_SERVICE = {
-      sendEmail: mockSendEmail,
-    };
-
-    try {
-      const result = await request(app)
-        .post('/api/admin/test-email')
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(result.statusCode).to.equal(200);
-      expect(result.body.success).to.be.true;
-      expect(result.body.status).to.equal('sent');
-      expect(result.body.details.messageId).to.equal('test-message-id-123');
-      expect(result.body.timings).to.have.property('total');
-    } finally {
-      // Restore original email service
-      require('../src/buildconfig').EMAIL_SERVICE = originalEmailService;
-    }
-  });
-
-  it('test email route - handles errors', async () => {
-    // Mock the email service with an error
-    const originalEmailService = require('../src/buildconfig').EMAIL_SERVICE;
-    const mockSendEmail = async () => {
-      const error: any = new Error('SMTP connection failed');
-      error.code = 'ECONNREFUSED';
-      throw error;
-    };
-
-    // Replace with mock temporarily
-    require('../src/buildconfig').EMAIL_SERVICE = {
-      sendEmail: mockSendEmail,
-    };
-
-    try {
-      const result = await request(app)
-        .post('/api/admin/test-email')
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(result.statusCode).to.equal(200);
-      expect(result.body.success).to.be.false;
-      expect(result.body.status).to.equal('error');
-      expect(result.body.message).to.include('Failed to send test email');
-      expect(result.body.details.error).to.have.property('name', 'Error');
-      expect(result.body.details.error).to.have.property(
-        'message',
-        'SMTP connection failed'
-      );
-      expect(result.body.details.error).to.have.property('suggestion');
-      expect(result.body.details.error.suggestion).to.include(
-        'Check your SMTP host'
-      );
-    } finally {
-      // Restore original email service
-      require('../src/buildconfig').EMAIL_SERVICE = originalEmailService;
     }
   });
 

@@ -4,20 +4,20 @@ import {DataTableColumnHeader} from '../data-table/column-header';
 import {Button} from '../ui/button';
 import {RemoveUserDialog} from '../dialogs/remove-user';
 import {RoleCard} from '../ui/role-card';
+<<<<<<< HEAD
+=======
 import {AddRolePopover} from '../popovers/add-role-popover';
 import {useAuth} from '@/context/auth-provider';
 import {useQueryClient} from '@tanstack/react-query';
 import {toast} from 'sonner';
 import {Role, roleDetails, RoleScope} from '@faims3/data-model';
+>>>>>>> origin/main
 
 export const getColumns = ({
   onReset,
 }: {
   onReset: (id: string) => void;
 }): ColumnDef<any>[] => {
-  const {user} = useAuth();
-  const queryClient = useQueryClient();
-
   return [
     {
       accessorKey: 'name',
@@ -32,6 +32,18 @@ export const getColumns = ({
       ),
     },
     {
+<<<<<<< HEAD
+      accessorKey: 'roles',
+      header: 'Roles',
+      cell: ({row}: any) => (
+        <div className="flex flex-wrap gap-1">
+          {row
+            .getValue('roles')
+            .filter((role: string) => !role.includes('||'))
+            .map((role: string) => (
+              <RoleCard key={role}>{role}</RoleCard>
+            ))}
+=======
       accessorKey: 'globalRoles',
       header: 'Roles',
       cell: ({
@@ -85,6 +97,7 @@ export const getColumns = ({
               {roleDetails[role as Role].name}
             </RoleCard>
           ))}
+>>>>>>> origin/main
         </div>
       ),
     },

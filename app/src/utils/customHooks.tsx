@@ -1,10 +1,8 @@
 import {
-  Action,
   getHridFieldMap,
   getMinimalRecordData,
   getMinimalRecordDataWithRegex,
   hydrateIndividualRecord,
-  isAuthorized,
   ProjectUIModel,
   RecordMetadata,
   UnhydratedRecord,
@@ -289,7 +287,7 @@ export function filterOutDrafts<T extends UnhydratedRecord>(rows: T[]): T[] {
 }
 
 /**
- * Filters records to include only those created by the active user.
+ * Filters records to include only thosse created by the active user.
  *
  * @param rows - The dataset of records.
  * @param username - The active user's username.
@@ -448,8 +446,7 @@ export const useRecordList = ({
       query,
       filterDeleted,
       activeUser?.username,
-      token?.globalRoles,
-      token?.resourceRoles,
+      token?.roles,
     ],
     networkMode: 'always',
     gcTime: 0,
@@ -670,30 +667,3 @@ export function useLoadingDebounce(
 
   return stabilizedLoading;
 }
-
-/**
- * A simple custom hook which returns whether the user can do the thing, and
- * re-renders if token changes. Applies to the active user.
- */
-export const useIsAuthorisedTo = ({
-  action,
-  resourceId,
-}: {
-  action: Action;
-  resourceId?: string;
-}): boolean => {
-  const activeUser = useAppSelector(selectActiveUser);
-  if (!activeUser) {
-    return false;
-  }
-
-  return useMemo(
-    () =>
-      isAuthorized({
-        decodedToken: activeUser.parsedToken,
-        action,
-        resourceId,
-      }),
-    [action, resourceId, activeUser.token]
-  );
-};

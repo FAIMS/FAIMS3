@@ -27,7 +27,6 @@ import {
   markInitialised,
   rebuildDbs,
 } from '../context/slices/projectSlice';
-import {MapTileDatabase} from '../gui/components/map/tile-source';
 
 /**
  *
@@ -56,7 +55,4 @@ export async function initialize() {
 
   // TODO bring this back?
   // register_basic_automerge_resolver(events);
-
-  // initialise the tile store used for offline maps
-  await MapTileDatabase.getInstance().initDB();
 }

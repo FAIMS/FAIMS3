@@ -1,5 +1,4 @@
 import styled from '@emotion/styled';
-import {Action} from '@faims3/data-model';
 import {AppBar, Box, Paper, Tab, Tabs, TabScrollButton} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -14,7 +13,6 @@ import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
   useDraftsList,
-  useIsAuthorisedTo,
   useQueryParams,
   useRecordList,
 } from '../../../utils/customHooks';
@@ -25,7 +23,6 @@ import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
-import {getVisibleTypes} from '../../../uiSpecification';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -127,11 +124,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
   const queryClient = useQueryClient();
 
-  const isAllowedToAddRecords = useIsAuthorisedTo({
-    action: Action.CREATE_PROJECT_RECORD,
-    resourceId: project.projectId,
-  });
-
   const {uiSpecificationId} = project;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
   if (!uiSpecification) {
@@ -212,37 +204,27 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
         uiSpecification.visible_types[0]
       : 'Record';
 
-  const visibleTypes = getVisibleTypes(uiSpecification);
-  const visibleMyRecords = records.myRecords.filter(r =>
-    visibleTypes.includes(r.type)
-  );
-  const visibleOtherRecords = records.otherRecords.filter(r =>
-    visibleTypes.includes(r.type)
-  );
-
   return (
     <Box>
       <Box>
-        {isAllowedToAddRecords && (
-          <Box sx={{mb: 1.5}}>
-            <AddRecordButtons
-              project={project}
-              recordLabel={recordLabel}
-              refreshList={() => {
-                invalidateProjectRecordList({
-                  client: queryClient,
-                  projectId: project.projectId,
-                  reset: true,
-                });
-                invalidateProjectHydration({
-                  client: queryClient,
-                  projectId: project.projectId,
-                  reset: true,
-                });
-              }}
-            />
-          </Box>
-        )}
+        <Box sx={{mb: 1.5}}>
+          <AddRecordButtons
+            project={project}
+            recordLabel={recordLabel}
+            refreshList={() => {
+              invalidateProjectRecordList({
+                client: queryClient,
+                projectId: project.projectId,
+                reset: true,
+              });
+              invalidateProjectHydration({
+                client: queryClient,
+                projectId: project.projectId,
+                reset: true,
+              });
+            }}
+          />
+        </Box>
         <Box
           mb={2}
           sx={{
@@ -294,7 +276,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               allowScrollButtonsMobile={true}
             >
               <Tab
-                label={`My ${recordLabel}s (${visibleMyRecords.length})`}
+                label={`My ${recordLabel}s (${records.myRecords.length})`}
                 value={0}
                 {...a11yProps(0, `${NOTEBOOK_NAME}-myrecords`)}
               />
@@ -306,10 +288,10 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 />
               )}
 
-              {(tabIndex === 2 || visibleOtherRecords.length > 0) && (
+              {(tabIndex === 2 || records.otherRecords.length > 0) && (
                 <Tab
                   value={2}
-                  label={`Other ${recordLabel}s (${visibleOtherRecords.length})`}
+                  label={`Other ${recordLabel}s (${records.otherRecords.length})`}
                   {...a11yProps(2, `${NOTEBOOK_NAME}-otherrecords`)}
                 />
               )}

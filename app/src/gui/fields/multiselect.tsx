@@ -104,15 +104,7 @@ export const ExpandedChecklist = ({
 
   return (
     <FormControl sx={{width: '100%'}}>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 1,
-          borderBottom: '1px solid #eee',
-          pb: 1.5,
-        }}
-      >
+      <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
         {options.map(option => (
           <FormControlLabel
             key={option.key || option.value}
@@ -124,32 +116,13 @@ export const ExpandedChecklist = ({
                   selectedExclusiveOption !== undefined &&
                   option.value !== selectedExclusiveOption
                 }
-                sx={{
-                  padding: '4px 8px 0 0',
-                  alignSelf: 'flex-start',
-                }}
               />
             }
-            label={
-              <Box
-                component="span"
-                sx={{
-                  display: 'contents',
-                  whiteSpace: 'normal',
-                  wordBreak: 'break-word',
-                  lineHeight: '1.8rem',
-                  paddingTop: '4px',
-                }}
-              >
-                {option.label}
-              </Box>
-            }
+            label={option.label}
             sx={{
-              alignItems: 'center',
-              mb: 1.5,
-              m: 0, // reset default margins
               '& .MuiFormControlLabel-label': {
-                marginTop: 0,
+                whiteSpace: 'normal',
+                wordWrap: 'break-word',
               },
             }}
           />

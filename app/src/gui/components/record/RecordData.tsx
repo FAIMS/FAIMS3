@@ -29,7 +29,7 @@ import {Box} from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import {grey} from '@mui/material/colors';
 import React from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import RecordForm from './form';
 import RelationshipsViewComponent from './relationships';
 import {ParentLinkProps, RecordLinkProps} from './relationships/types';
@@ -67,7 +67,6 @@ export default function RecordData(props: RecordDataTypes) {
   const navigate = useNavigate();
   // const [revision_id, setRevision_id] = React.useState(props.revision_id);
   const [ViewName, setViewName] = React.useState(null);
-  const location = useLocation();
 
   return (
     <Box bgcolor={grey[100]}>
@@ -109,8 +108,7 @@ export default function RecordData(props: RecordDataTypes) {
         mq_above_md={props.mq_above_md}
         navigate={navigate}
         setProgress={props.setProgress}
-        disabled={false}
-        location={location}
+        buttonRef={props.buttonRef}
       />
     </Box>
   );

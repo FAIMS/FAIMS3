@@ -43,6 +43,11 @@ import {
 } from '../src/couchdb';
 import {
   createNotebook,
+<<<<<<< HEAD
+  getNotebookMetadata,
+  getNotebooks,
+=======
+>>>>>>> origin/main
   getEncodedNotebookUISpec,
   getNotebookMetadata,
   getRolesForNotebook,
@@ -51,12 +56,24 @@ import {
   validateNotebookID,
 } from '../src/couchdb/notebooks';
 import {
+  addProjectRoleToUser,
   createUser,
+<<<<<<< HEAD
+  getUserFromEmailOrUsername,
+  removeProjectRoleFromUser,
+  saveUser,
+  userHasPermission,
+} from '../src/couchdb/users';
+import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
+import {EncodedProjectUIModel} from '@faims3/data-model';
+import {expect} from 'chai';
+=======
   getExpressUserFromEmailOrUsername,
   saveCouchUser,
   saveExpressUser,
 } from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
+>>>>>>> origin/main
 import {resetDatabases} from './mocks';
 
 const uispec: EncodedProjectUIModel = {
@@ -75,7 +92,7 @@ describe('notebook api', () => {
     await resetDatabases();
     const adminUser = await getExpressUserFromEmailOrUsername('admin');
     if (adminUser) {
-      const [user, error] = await createUser({username, name: username});
+      const [user, error] = await createUser('', username);
       if (user) {
         await saveCouchUser(user);
         bobalooba = await upgradeCouchUserToExpressUser({dbUser: user});
@@ -109,6 +126,14 @@ describe('notebook api', () => {
 
     if (nb1 && nb2) {
       // give user access to two of them
+<<<<<<< HEAD
+      addProjectRoleToUser(bobalooba, nb1, 'user');
+      expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(true);
+      addProjectRoleToUser(bobalooba, nb2, 'admin');
+      expect(userHasPermission(bobalooba, nb2, 'modify')).to.equal(true);
+      // and this should still be true
+      expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(true);
+=======
       addProjectRole({
         user: bobalooba,
         projectId: nb1,
@@ -199,15 +224,12 @@ describe('notebook api', () => {
           action: Action.READ_MY_PROJECT_RECORDS,
         })
       ).to.equal(false);
+>>>>>>> origin/main
 
+      removeProjectRoleFromUser(bobalooba, nb1, 'user');
+      expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(false);
       // but still...
-      expect(
-        userCanDo({
-          user: bobalooba,
-          resourceId: nb2,
-          action: Action.DELETE_PROJECT,
-        })
-      ).to.equal(true);
+      expect(userHasPermission(bobalooba, nb2, 'modify')).to.equal(true);
     }
   });
 
@@ -220,6 +242,11 @@ describe('notebook api', () => {
 
     if (nb1 && nb2 && nb3 && nb4) {
       // give user access to two of them
+<<<<<<< HEAD
+      addProjectRoleToUser(bobalooba, nb1, 'user');
+      addProjectRoleToUser(bobalooba, nb2, 'user');
+      await saveUser(bobalooba);
+=======
       addProjectRole({
         user: bobalooba,
         projectId: nb1,
@@ -234,8 +261,9 @@ describe('notebook api', () => {
 
       // Update permissions
       bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
+>>>>>>> origin/main
 
-      const notebooks = await getUserProjectsDetailed(bobalooba);
+      const notebooks = await getNotebooks(bobalooba);
       expect(notebooks.length).to.equal(2);
     } else {
       throw new Error('could not make test notebooks');
@@ -264,7 +292,7 @@ describe('notebook api', () => {
     if (projectID && user) {
       expect(projectID.substring(13)).to.equal('-test-notebook');
 
-      const notebooks = await getUserProjectsDetailed(user);
+      const notebooks = await getNotebooks(user);
       expect(notebooks.length).to.equal(1);
       const db = await getMetadataDb(projectID);
       if (db) {
@@ -357,8 +385,12 @@ describe('notebook api', () => {
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const roles = getRolesForNotebook();
-      expect(roles.length).to.equal(resourceRoles.PROJECT.length);
+      const roles = await getRolesForNotebook(projectID);
+      expect(roles.length).to.equal(4);
+      expect(roles).to.include('admin'); // admin role should always be present
+      expect(roles).to.include('team'); // specified in the UISpec
+      expect(roles).to.include('moderator'); // specified in the UISpec
+      expect(roles).to.include('user'); // user role should always be present
     }
   });
 
@@ -405,6 +437,7 @@ describe('notebook api', () => {
         },
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: null,
+        access: ['admin'],
         meta: {
           annotation_label: 'annotation',
           annotation: true,
@@ -425,7 +458,7 @@ describe('notebook api', () => {
 
       expect(projectID.substring(13)).to.equal('-test-notebook');
 
-      const notebooks = await getUserProjectsDetailed(user);
+      const notebooks = await getNotebooks(user);
       expect(notebooks.length).to.equal(1);
       const newUISpec = await getEncodedNotebookUISpec(projectID);
       if (newUISpec) {

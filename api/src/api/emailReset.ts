@@ -1,5 +1,4 @@
 import {
-  Action,
   PostRequestPasswordResetRequestSchema,
   PostRequestPasswordResetResponse,
   PutRequestPasswordResetRequestSchema,
@@ -18,7 +17,7 @@ import {
   updateUserPassword,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {requireAuthenticationAPI, requireClusterAdmin} from '../middleware';
 
 export const api = express.Router();
 
@@ -40,14 +39,14 @@ api.post(
     body: PostRequestPasswordResetRequestSchema,
   }),
   requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.RESET_USER_PASSWORD,
-    getResourceId(req) {
-      // TODO validate this is always a suitable ID to check the resource ID for
-      return req.body.email;
-    },
-  }),
+  requireClusterAdmin,
   async (req, res: Response<PostRequestPasswordResetResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to initiate password resets.'
+      );
+    }
+
     const {email} = req.body;
 
     // Get the user by email

@@ -19,6 +19,8 @@
  *   which server to use and whether to include test data
  */
 
+<<<<<<< HEAD
+=======
 import {
   couchUserToResourceRoles,
   expressUserToTokenPermissions,
@@ -27,7 +29,9 @@ import {
   ResourceAssociation,
   TokenPayload,
 } from '@faims3/data-model';
+>>>>>>> origin/main
 import {SignJWT} from 'jose';
+import type {SigningKey} from '../services/keyService';
 import {
   ACCESS_TOKEN_EXPIRY_MINUTES,
   CONDUCTOR_PUBLIC_URL,
@@ -35,6 +39,29 @@ import {
 } from '../buildconfig';
 import {getProjectIdsByTeamId} from '../couchdb/notebooks';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
+<<<<<<< HEAD
+
+export async function createAuthKey(
+  user: Express.User,
+  signingKey: SigningKey
+) {
+  const jwt = await new SignJWT({
+    '_couchdb.roles': user.roles ?? [],
+    name: user.name,
+    server: CONDUCTOR_PUBLIC_URL,
+  })
+    .setProtectedHeader({
+      alg: signingKey.alg,
+      kid: signingKey.kid,
+    })
+    .setSubject(user.user_id)
+    .setIssuedAt()
+    .setIssuer(signingKey.instanceName)
+    // Expiry in minutes
+    .setExpirationTime(ACCESS_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+    .sign(signingKey.privateKey);
+  return jwt;
+=======
 import {getTemplateIdsByTeamId} from '../couchdb/templates';
 import type {SigningKey} from '../services/keyService';
 
@@ -173,6 +200,7 @@ export async function generateJwtFromUser({
     console.error('ERROR: ' + e);
     throw e;
   }
+>>>>>>> origin/main
 }
 
 /**
@@ -188,7 +216,7 @@ export async function generateUserToken(user: Express.User, refresh = false) {
   if (signingKey === null || signingKey === undefined) {
     throw new Error('No signing key is available, check configuration');
   } else {
-    const token = await generateJwtFromUser({user, signingKey});
+    const token = await createAuthKey(user, signingKey);
 
     return {
       token: token,

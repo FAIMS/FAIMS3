@@ -19,15 +19,18 @@
  *   which server to use and whether to include test data
  */
 
+<<<<<<< HEAD
+=======
 import {
   Action,
   isAuthorized,
   PeopleDBDocument,
   ResourceRole,
 } from '@faims3/data-model';
+>>>>>>> origin/main
 import Express from 'express';
 import {validateToken} from './authkeys/read';
-import * as Exceptions from './exceptions';
+import {userHasPermission, userIsClusterAdmin} from './couchdb/users';
 
 export const userCanDo = ({
   user,
@@ -120,6 +123,8 @@ export async function requireAuthenticationAPI(
   }
 }
 
+<<<<<<< HEAD
+=======
 export const isAllowedToMiddleware = ({
   action,
   getAction,
@@ -178,6 +183,7 @@ export const isAllowedToMiddleware = ({
     }
   };
 };
+>>>>>>> origin/main
 /**
  * Opportunistically parses the user and populates req.user from DB if JWT is
  * valid. If not, then passes through with no-op.
@@ -230,16 +236,26 @@ export function requireNotebookMembership(
 ) {
   if (req.user) {
     const project_id = req.params.notebook_id;
-    if (
-      userCanDo({
-        user: req.user,
-        resourceId: project_id,
-        action: Action.READ_PROJECT_METADATA,
-      })
-    ) {
+    if (userHasPermission(req.user, project_id, 'read')) {
       next();
     } else {
       res.status(404).end();
+    }
+  } else {
+    res.redirect('/auth/');
+  }
+}
+
+export function requireClusterAdmin(
+  req: Express.Request,
+  res: Express.Response,
+  next: Express.NextFunction
+) {
+  if (req.user) {
+    if (userIsClusterAdmin(req.user)) {
+      next();
+    } else {
+      res.status(401).end();
     }
   } else {
     res.redirect('/auth/');

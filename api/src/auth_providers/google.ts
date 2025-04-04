@@ -20,13 +20,19 @@
 
 import {Strategy, VerifyCallback} from 'passport-google-oauth20';
 
-import {addEmails} from '@faims3/data-model';
 import {GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET} from '../buildconfig';
 import {getInvite} from '../couchdb/invites';
 import {
+<<<<<<< HEAD
+  addEmailsToUser,
+  saveUser,
+  getUserFromEmailOrUsername,
+  createUser,
+=======
   createUser,
   getCouchUserFromEmailOrUsername,
   saveCouchUser,
+>>>>>>> origin/main
 } from '../couchdb/users';
 import {acceptInvite} from '../registration';
 import {upgradeCouchUserToExpressUser} from '../authkeys/create';
@@ -120,6 +126,14 @@ async function oauth_register(
   if (!dbUser) {
     const invite = await getInvite(req.session.invite);
     if (invite) {
+<<<<<<< HEAD
+      [user, errorMsg] = await createUser(emails[0], emails[0]);
+
+      if (user) {
+        user.name = profile.displayName;
+        user.profiles['google'] = profile;
+        addEmailsToUser(user, emails);
+=======
       const [dbUser, errorMsg] = await createUser({
         email: emails[0],
         username: emails[0],
@@ -129,6 +143,7 @@ async function oauth_register(
       if (dbUser) {
         dbUser.profiles['google'] = profile;
         addEmails({user: dbUser, emails});
+>>>>>>> origin/main
         // accepting the invite will add roles and save the user record
         await acceptInvite(dbUser, invite);
         // Upgrade by drilling permissions/associations

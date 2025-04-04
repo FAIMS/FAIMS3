@@ -2,27 +2,26 @@
  * This module exports the security document to be used for the auth database.
  */
 
-import {Action, necessaryActionToCouchRoleList, Role} from '../../permission';
-import {SecurityDocument} from '../utils';
+import {CLUSTER_ADMIN_GROUP_NAME} from '../../auth';
+import {buildCouchRoleFromProjectId, SecurityDocument} from '../utils';
 
 export const MetadataDBSecurityDocument = ({
   projectId,
+  roles,
 }: {
   projectId: string;
+  roles: string[];
 }): SecurityDocument => {
   return {
-    // admins have admin ownership
+    // Cluster admins have admin ownership
     admins: {
       names: [],
-      roles: [Role.GENERAL_ADMIN],
+      roles: [CLUSTER_ADMIN_GROUP_NAME],
     },
+    // Otherwise project scoped roles
     members: {
       names: [],
-      // Must be at least able to read project metadata!
-      roles: necessaryActionToCouchRoleList({
-        action: Action.READ_PROJECT_METADATA,
-        resourceId: projectId,
-      }),
+      roles: roles.map(role => buildCouchRoleFromProjectId({projectId, role})),
     },
   };
 };

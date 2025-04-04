@@ -29,15 +29,14 @@ export const slugify = (str: string) => {
 /**
  * Generate a TokenContents object for use in API code
  *
- * Not to be used for real authentication use cases.
- *
  * @param user A user object
  * @returns a token that can be used where authentication is required
  */
-export const mockTokenContentsForUser = (user: Express.User): TokenContents => {
+export const generateTokenContentsForUser = (
+  user: Express.User
+): TokenContents => {
   return {
-    globalRoles: user.globalRoles,
-    resourceRoles: user.resourceRoles,
+    roles: user.roles,
     server: slugify(CONDUCTOR_INSTANCE_NAME),
     username: user.user_id,
     // Five minutes from now

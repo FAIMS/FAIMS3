@@ -18,30 +18,37 @@
  *   Provides a function to validate a user token and return user details
  */
 
+<<<<<<< HEAD
+import {jwtVerify} from 'jose';
+import {getUserFromEmailOrUsername} from '../couchdb/users';
+import {KEY_SERVICE} from '../buildconfig';
+=======
 import {decodeAndValidateToken} from '@faims3/data-model';
 import {jwtVerify} from 'jose';
 import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
 import {getCouchUserFromEmailOrUsername} from '../couchdb/users';
+>>>>>>> origin/main
 
 /**
  * validateToken
  * @param token bearer token received in a request
  * @returns Details of the verified user or undefined
  */
-export const validateToken = async (
-  token: string
-): Promise<Express.User | undefined> => {
+export const validateToken = async (token: string) => {
   const signingKey = await KEY_SERVICE.getSigningKey();
   try {
     const {payload} = await jwtVerify(token, signingKey.publicKey, {
       algorithms: [signingKey.alg],
-      // verify issuer
-      issuer: signingKey.instanceName,
     });
 
-    if (payload.server !== CONDUCTOR_PUBLIC_URL) {
-      throw Error('Invalid server claim.');
+    if (payload.sub) {
+      const user = await getUserFromEmailOrUsername(payload.sub);
+      return user;
+    } else {
+      return undefined;
     }
+<<<<<<< HEAD
+=======
 
     if (!payload.sub) {
       throw Error('No sub claim!');
@@ -63,6 +70,7 @@ export const validateToken = async (
 
     // overwrite user details with the token permissions!
     return {...user, ...validatedToken};
+>>>>>>> origin/main
   } catch (error) {
     console.error(error);
     return undefined;

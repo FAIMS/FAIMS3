@@ -1,0 +1,1046 @@
+{
+  "metadata": {
+    "project_status": "",
+    "accesses": [
+      "admin",
+      "moderator",
+      "team"
+    ],
+    "forms": {
+      "FORM1": {
+        "submitActionFORM1": "Save and New",
+        "annotationFORM1": false,
+        "uncertaintyFORM1": false,
+        "formaccessinheritFORM1": false,
+        "visibleFORM1": true
+      },
+      "FORM2": {
+        "submitActionFORM2": "Save and New",
+        "annotationFORM2": true,
+        "uncertaintyFORM2": true,
+        "formaccessinheritFORM2": false,
+        "visibleFORM2": true
+      }
+    },
+    "sections": {},
+    "meta": {
+      "Focus Group ID": "",
+      "Group": "A"
+    },
+    "access": {
+      "accessFORM1": [
+        "admin"
+      ],
+      "accessFORM2": [
+        "admin"
+      ]
+    },
+    "ispublic": false,
+    "isrequest": false,
+    "behavious": {},
+    "project_lead": "Penny Crook",
+    "lead_institution": "Macquarie University",
+    "pre_description": "This is a demonstration module create for FAIMS3 focus groups held in April and May 2022.",
+    "filenames": "Attachment.pdf",
+    "notebook_version": "1.0",
+    "schema_version": "1.0",
+    "name": "Campus Survey Demo"
+  },
+  "ui-specification": {
+    "fields": {
+      "take-gps-starting-point": {
+        "component-namespace": "faims-custom",
+        "component-name": "TakePoint",
+        "type-returned": "faims-pos::Location",
+        "component-parameters": {
+          "fullWidth": true,
+          "name": "take-gps-starting-point",
+          "id": "take-gps-starting-point",
+          "helperText": "Tap to select the starting point for the survey.",
+          "variant": "outlined",
+          "label": "Take GPS Starting Point"
+        },
+        "validationSchema": [
+          [
+            "yup.object"
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
+        "is_logic": {
+          "campus-zone": [
+            "Zone Alpha; ",
+            "Zone Charlie; "
+          ]
+        },
+        "initialValue": null,
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "campus-zone": {
+        "component-namespace": "faims-custom",
+        "component-name": "Select",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Select your campus area from the list. (For other, use annotation icon)",
+          "variant": "outlined",
+          "required": false,
+          "select": true,
+          "InputProps": {},
+          "SelectProps": {},
+          "ElementProps": {
+            "options": [
+              {
+                "value": "Zone Alpha; ",
+                "label": "Zone Alpha; "
+              },
+              {
+                "value": "Zone Beta; ",
+                "label": "Zone Beta; "
+              },
+              {
+                "value": "Zone Charlie; ",
+                "label": "Zone Charlie; "
+              },
+              {
+                "value": "Zone Delta; ",
+                "label": "Zone Delta; "
+              },
+              {
+                "value": "Zone Other; ",
+                "label": "Zone Other; "
+              }
+            ]
+          },
+          "InputLabelProps": {
+            "label": "Campus Zone"
+          },
+          "id": "campus-zone",
+          "name": "campus-zone"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "Other area",
+          "annotation": true,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        },
+        "logic_select": {
+          "type": [
+            "field",
+            "view"
+          ]
+        }
+      },
+      "survey-note": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "MultipleTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Note comments about survey area here",
+          "variant": "outlined",
+          "required": false,
+          "multiline": true,
+          "InputProps": {
+            "type": "text",
+            "rows": 4
+          },
+          "SelectProps": {},
+          "InputLabelProps": {
+            "label": "Survey Note"
+          },
+          "FormHelperTextProps": {},
+          "id": "survey-note",
+          "name": "survey-note"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "take-gps-end-point": {
+        "component-namespace": "faims-custom",
+        "component-name": "TakePoint",
+        "type-returned": "faims-pos::Location",
+        "component-parameters": {
+          "fullWidth": true,
+          "name": "take-gps-end-point",
+          "id": "take-gps-end-point",
+          "helperText": "Tap to select the end point for the survey.",
+          "variant": "outlined",
+          "label": "Take GPS End Point"
+        },
+        "validationSchema": [
+          [
+            "yup.object"
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
+        "is_logic": {
+          "campus-zone": [
+            "Zone Alpha; ",
+            "Zone Charlie; "
+          ]
+        },
+        "initialValue": null,
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "hridFORM2": {
+        "component-namespace": "faims-custom",
+        "component-name": "TemplatedStringField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "name": "hridFORM2",
+          "id": "hridFORM2",
+          "helperText": "This is unique ID for each landscape element composed from an auto-incrementer and the element type.",
+          "variant": "filled",
+          "required": true,
+          "template": "Element: {{element-type}}-{{autoincrementer}}",
+          "InputProps": {
+            "type": "text",
+            "readOnly": true
+          },
+          "InputLabelProps": {
+            "label": "Element ID"
+          },
+          "hrid": true,
+          "linked": "newfieldc18d25ed",
+          "numberfield": 3,
+          "fieldselect10": "A",
+          "fieldselect11": "element-type",
+          "fieldselect12": "autoincrementer"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": true,
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "autoincrementer": {
+        "component-namespace": "faims-custom",
+        "component-name": "BasicAutoIncrementer",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "name": "autoincrementer",
+          "id": "autoincrementer",
+          "variant": "outlined",
+          "required": true,
+          "num_digits": 5,
+          "form_id": "FORM2SECTION1",
+          "label": "AutoIncrementer"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
+        "initialValue": null,
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": true,
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "element-type": {
+        "component-namespace": "faims-custom",
+        "component-name": "Select",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Select the type of landscape element that you see, e.g. bench seat, street lamp etc. Fill other in annotation.",
+          "variant": "outlined",
+          "required": false,
+          "select": true,
+          "InputProps": {},
+          "SelectProps": {},
+          "ElementProps": {
+            "options": [
+              {
+                "value": "Bench seat",
+                "label": "Bench seat"
+              },
+              {
+                "value": "Movable Chair",
+                "label": "Movable Chair"
+              },
+              {
+                "value": "Garden bed",
+                "label": "Garden bed"
+              },
+              {
+                "value": "Plant",
+                "label": "Plant"
+              },
+              {
+                "value": "Rubbish bin",
+                "label": "Rubbish bin"
+              },
+              {
+                "value": "Sculpture",
+                "label": "Sculpture"
+              },
+              {
+                "value": "Signage",
+                "label": "Signage"
+              },
+              {
+                "value": "Street lamp",
+                "label": "Street lamp"
+              },
+              {
+                "value": "Table",
+                "label": "Table"
+              },
+              {
+                "value": "Tree",
+                "label": "Tree"
+              },
+              {
+                "value": "Other",
+                "label": "Other"
+              }
+            ]
+          },
+          "InputLabelProps": {
+            "label": "Element Type"
+          },
+          "id": "element-type",
+          "name": "element-type"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "Other",
+          "annotation": true,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "take-gps-point": {
+        "component-namespace": "faims-custom",
+        "component-name": "TakePoint",
+        "type-returned": "faims-pos::Location",
+        "component-parameters": {
+          "fullWidth": true,
+          "name": "take-gps-point",
+          "id": "take-gps-point",
+          "helperText": "",
+          "variant": "outlined",
+          "label": "Take GPS Point"
+        },
+        "validationSchema": [
+          [
+            "yup.object"
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
+        "initialValue": null,
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "asset-number": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "TextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Enter the asset number of the item, if known. In annotation, note difficulties.",
+          "variant": "outlined",
+          "required": false,
+          "InputProps": {
+            "type": "text"
+          },
+          "SelectProps": {},
+          "InputLabelProps": {
+            "label": "Asset number"
+          },
+          "FormHelperTextProps": {},
+          "id": "asset-number",
+          "name": "asset-number"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "Difficulties",
+          "annotation": true,
+          "uncertainty": {
+            "include": true,
+            "label": "Questionable"
+          }
+        }
+      },
+      "condition": {
+        "component-namespace": "faims-custom",
+        "component-name": "RadioGroup",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "name": "condition",
+          "id": "condition",
+          "variant": "outlined",
+          "required": false,
+          "ElementProps": {
+            "options": [
+              {
+                "value": "Good",
+                "label": "Good",
+                "RadioProps": {
+                  "id": "radio-group-field-0"
+                }
+              },
+              {
+                "value": " Satisfactory",
+                "label": " Satisfactory",
+                "RadioProps": {
+                  "id": "radio-group-field-1"
+                }
+              },
+              {
+                "value": " Poor",
+                "label": " Poor",
+                "RadioProps": {
+                  "id": "radio-group-field-2"
+                }
+              },
+              {
+                "value": " Dangerous",
+                "label": " Dangerous",
+                "RadioProps": {
+                  "id": "radio-group-field-3"
+                }
+              },
+              {
+                "value": " Not able to assess ",
+                "label": " Not able to assess ",
+                "RadioProps": {
+                  "id": "radio-group-field-4"
+                }
+              }
+            ]
+          },
+          "FormLabelProps": {
+            "children": "Condition"
+          },
+          "FormHelperTextProps": {
+            "children": "Select an option for the overall condition of the landscape element. Add notes, if needed, in annotation."
+          }
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "1",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "Assessment note",
+          "annotation": true,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "element-notes": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "MultipleTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Add additional description or observations as needed.",
+          "variant": "outlined",
+          "required": false,
+          "multiline": true,
+          "InputProps": {
+            "type": "text",
+            "rows": 4
+          },
+          "SelectProps": {},
+          "InputLabelProps": {
+            "label": "Element Notes"
+          },
+          "FormHelperTextProps": {},
+          "id": "element-notes",
+          "name": "element-notes"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": true,
+          "uncertainty": {
+            "include": true,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "take-photo": {
+        "component-namespace": "faims-custom",
+        "component-name": "TakePhoto",
+        "type-returned": "faims-attachment::Files",
+        "component-parameters": {
+          "fullWidth": true,
+          "name": "take-photo",
+          "id": "take-photo",
+          "helperText": "Take a photo",
+          "variant": "outlined",
+          "label": "Take Photo"
+        },
+        "validationSchema": [
+          [
+            "yup.object"
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
+        "initialValue": null,
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "nearest-building": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "TextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Make a note of the nearest identifiable building. Check uncertain in the field annotation if uncertain.",
+          "variant": "outlined",
+          "required": false,
+          "InputProps": {},
+          "SelectProps": {},
+          "InputLabelProps": {
+            "label": "Nearest building"
+          },
+          "FormHelperTextProps": {},
+          "id": "nearest-building",
+          "name": "nearest-building"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": true,
+            "label": "Uncertain"
+          }
+        }
+      },
+      "hridFORM1": {
+        "component-namespace": "faims-custom",
+        "component-name": "TemplatedStringField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "name": "hridFORM1",
+          "id": "hridFORM1",
+          "helperText": "A read-only field composited from campus-zone and nickname to make a custom ID.",
+          "variant": "filled",
+          "required": true,
+          "template": "Survey Area: {{campus-zone}} {{survey-area-nickname}}",
+          "InputProps": {
+            "type": "text",
+            "readOnly": true
+          },
+          "InputLabelProps": {
+            "label": "Survey Area ID"
+          },
+          "hrid": true,
+          "numberfield": 2,
+          "fieldselect10": "campus-zone",
+          "fieldselect11": "survey-area-nickname",
+          "linked": "newfield757083da"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "landscape-elements": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Associate/record new street furniture with this survey area",
+          "variant": "outlined",
+          "required": false,
+          "related_type": "FORM2",
+          "relation_type": "faims-core::Child",
+          "InputProps": {
+            "type": "text"
+          },
+          "multiple": true,
+          "SelectProps": {},
+          "InputLabelProps": {
+            "label": "Landscape Elements"
+          },
+          "FormHelperTextProps": {},
+          "id": "landscape-elements",
+          "name": "landscape-elements"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": [],
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "survey-area-nickname": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "TextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Give a memorable name to your survey area.",
+          "variant": "outlined",
+          "required": false,
+          "InputProps": {
+            "type": "text"
+          },
+          "SelectProps": {},
+          "InputLabelProps": {
+            "label": "Survey Area Nickname"
+          },
+          "FormHelperTextProps": {},
+          "id": "survey-area-nickname",
+          "name": "survey-area-nickname"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "take-photo-2": {
+        "component-namespace": "faims-custom",
+        "component-name": "TakePhoto",
+        "type-returned": "faims-attachment::Files",
+        "component-parameters": {
+          "fullWidth": true,
+          "name": "take-photo-2",
+          "id": "take-photo-2",
+          "helperText": "Take a photo",
+          "variant": "outlined",
+          "label": "Take Photo"
+        },
+        "validationSchema": [
+          [
+            "yup.object"
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
+        "initialValue": null,
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "journal": {
+        "component-namespace": "formik-material-ui",
+        "component-name": "MultipleTextField",
+        "type-returned": "faims-core::String",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Journal entries as needed",
+          "variant": "outlined",
+          "required": false,
+          "multiline": true,
+          "InputProps": {
+            "type": "text",
+            "rows": 4
+          },
+          "SelectProps": {},
+          "InputLabelProps": {
+            "label": "Journal"
+          },
+          "FormHelperTextProps": {},
+          "id": "journal",
+          "name": "journal"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "checkbox": {
+        "component-namespace": "faims-custom",
+        "component-name": "Checkbox",
+        "type-returned": "faims-core::Bool",
+        "component-parameters": {
+          "name": "checkbox",
+          "id": "checkbox",
+          "required": false,
+          "type": "checkbox",
+          "FormControlLabelProps": {
+            "label": "Safety Hazard"
+          },
+          "FormHelperTextProps": {
+            "children": "Selecting this box will alert maintenance (eventually)"
+          }
+        },
+        "validationSchema": [
+          [
+            "yup.bool"
+          ]
+        ],
+        "initialValue": false,
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "draw-bounding-box-around-survey-area": {
+        "component-namespace": "mapping-plugin",
+        "component-name": "MapFormField",
+        "type-returned": "faims-core::JSON",
+        "component-parameters": {
+          "name": "draw-bounding-box-around-survey-area",
+          "id": "draw-bounding-box-around-survey-area",
+          "variant": "outlined",
+          "required": false,
+          "featureType": "Polygon",
+          "zoom": "",
+          "label": "Draw bounding box around survey area",
+          "FormLabelProps": {
+            "children": "Survey Area Polygon"
+          }
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": "1",
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": false,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "related-survey-area": {
+        "component-namespace": "faims-custom",
+        "component-name": "RelatedRecordSelector",
+        "type-returned": "faims-core::Relationship",
+        "component-parameters": {
+          "fullWidth": true,
+          "helperText": "Select or Add new related survey area",
+          "variant": "outlined",
+          "required": false,
+          "related_type": "FORM1",
+          "relation_type": "faims-core::Linked",
+          "InputProps": {
+            "type": "text"
+          },
+          "multiple": true,
+          "SelectProps": {},
+          "InputLabelProps": {
+            "label": "Related Survey Area"
+          },
+          "FormHelperTextProps": {},
+          "id": "related-survey-area",
+          "name": "related-survey-area",
+          "relation_linked_vocabPair": [
+            [
+              "performe after",
+              "performed before"
+            ],
+            [
+              "is similiar to",
+              "is similiar to"
+            ],
+            [
+              "overlaps with",
+              "is overlapped by"
+            ]
+          ],
+          "related_type_label": "Area",
+          "current_form": "FORM1",
+          "current_form_label": "Area"
+        },
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
+        "initialValue": [],
+        "access": [
+          "admin"
+        ],
+        "meta": {
+          "annotation_label": "annotation",
+          "annotation": true,
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      }
+    },
+    "fviews": {
+      "FORM1SECTION1": {
+        "fields": [
+          "hridFORM1",
+          "campus-zone",
+          "survey-area-nickname",
+          "draw-bounding-box-around-survey-area",
+          "take-gps-starting-point",
+          "take-gps-end-point",
+          "survey-note",
+          "landscape-elements",
+          "related-survey-area"
+        ],
+        "uidesign": "form",
+        "label": "Survey Details",
+        "description": "Here you will describe the survey session."
+      },
+      "FORM2SECTION1": {
+        "fields": [
+          "hridFORM2",
+          "autoincrementer",
+          "asset-number",
+          "element-type",
+          "take-gps-point",
+          "nearest-building",
+          "checkbox",
+          "condition",
+          "take-photo",
+          "element-notes"
+        ],
+        "uidesign": "form",
+        "label": "Description"
+      },
+      "FORM1SECTION2": {
+        "fields": [
+          "take-photo-2",
+          "journal"
+        ],
+        "uidesign": "form",
+        "label": "Journal",
+        "is_logic": {
+          "campus-zone": [
+            "Zone Beta; ",
+            "Zone Charlie; "
+          ]
+        }
+      }
+    },
+    "viewsets": {
+      "FORM1": {
+        "views": [
+          "FORM1SECTION1",
+          "FORM1SECTION2"
+        ],
+        "label": "Survey Area"
+      },
+      "FORM2": {
+        "views": [
+          "FORM2SECTION1"
+        ],
+        "label": "Landscape Element"
+      }
+    },
+    "visible_types": [
+      "FORM1",
+      "FORM2"
+    ]
+  }
+}

@@ -1,11 +1,13 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 
-import {convertToCouchDBString} from '../utils';
-
 /**
- * Design document for indexing people
+ * Exports all design documents for the people database
+ * (None)
  */
+<<<<<<< HEAD
+export const peopleDbDesignDocuments = {};
+=======
 const designDoc = {
   _id: '_design/indexes',
   views: {
@@ -95,3 +97,4 @@ const designDoc = {
 };
 
 export const peopleDesignDocuments = {designDoc};
+>>>>>>> origin/main

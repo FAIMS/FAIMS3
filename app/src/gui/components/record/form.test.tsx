@@ -1331,8 +1331,7 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            // TODO fix missing props
-            {...({} as any)}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );
@@ -1411,8 +1410,7 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            // TODO fix missing props
-            {...({} as any)}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );
@@ -1455,8 +1453,7 @@ describe('Check form component', () => {
             serverId="todo"
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            // TODO fix missing props
-            {...({} as any)}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );
@@ -1496,8 +1493,7 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            // TODO fix missing props
-            {...({} as any)}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );
@@ -1540,8 +1536,7 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            // TODO fix missing props
-            {...({} as any)}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );
@@ -1587,8 +1582,7 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
             setProgress={null as any}
-            // TODO fix missing props
-            {...({} as any)}
+            buttonRef={null as any}
           />
         </BrowserRouter>
       );

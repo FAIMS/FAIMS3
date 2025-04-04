@@ -259,7 +259,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     async (req, res) => {
       const redirect = validateRedirect(req.query.redirect || '/');
       const invite_id = req.params.invite_id;
-      (req.session as any)['invite'] = invite_id;
+      req.session['invite'] = invite_id;
       const invite = await getInvite(invite_id);
       if (!invite) {
         res.render('invite-error', {redirect});
@@ -337,17 +337,39 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         return;
       }
 
-      // Check the invite TODO Validate usages/expiry etc
       const invite = await getInvite(req.session.invite);
 
       if (!invite) {
         res.status(400);
         req.flash('error', {registration: 'No valid invite for registration.'});
         res.redirect('/');
-        return;
-      }
-
-      if (password !== repeat) {
+      } else if (password === repeat) {
+        const [user, error] = await registerLocalUser(
+          username,
+          email,
+          name,
+          password
+        );
+        if (user) {
+          await acceptInvite(user, invite);
+          req.flash('message', 'Registration successful. Please login below.');
+          req.login(user, (err: any) => {
+            if (err) {
+              return next(err);
+            }
+            return redirect_with_token(res, user, redirect);
+          });
+        } else {
+          req.flash('error', {registration: error});
+          req.flash('username', username);
+          req.flash('email', email);
+          req.flash('name', name);
+          res.status(400);
+          res.redirect(
+            '/register/' + req.session.invite + `?redirect=${redirect}`
+          );
+        }
+      } else {
         req.flash('error', {repeat: {msg: "Password and repeat don't match."}});
         req.flash('username', username);
         req.flash('email', email);
@@ -356,8 +378,9 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         res.redirect(
           '/register/' + req.session.invite + `?redirect=${redirect}`
         );
-        return;
       }
+<<<<<<< HEAD
+=======
 
       const [user, error] = await registerLocalUser(
         username,
@@ -390,6 +413,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         const expressUser = await upgradeCouchUserToExpressUser({dbUser: user});
         return redirect_with_token(res, expressUser, redirect);
       });
+>>>>>>> origin/main
     }
   );
 

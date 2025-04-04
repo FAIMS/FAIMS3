@@ -1,4 +1,4 @@
-import {InitialisationContent, peopleDesignDocuments} from '../';
+import {InitialisationContent} from '../';
 import {PeopleDBSecurityDocument} from './security';
 
 export type PeopleDBInitialisationConfig = {};
@@ -7,7 +7,7 @@ export function initPeopleDB(
   config: PeopleDBInitialisationConfig
 ): InitialisationContent {
   return {
-    designDocuments: [peopleDesignDocuments.designDoc],
+    designDocuments: [],
     securityDocument: PeopleDBSecurityDocument,
   };
 }
