@@ -97,6 +97,8 @@ export const SectionEditor = ({
 
   const dispatch = useAppDispatch();
 
+  console.log('SectionEditor', {viewId, viewSet, fView});
+
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openMoveDialog, setOpenMoveDialog] = useState(false);
   const [targetViewSetId, setTargetViewSetId] = useState('');
@@ -209,6 +211,7 @@ export const SectionEditor = ({
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
+    console.log('condition changed', condition);
     dispatch({
       type: 'ui-specification/sectionConditionChanged',
       payload: {viewId, condition},

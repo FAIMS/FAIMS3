@@ -29,6 +29,8 @@ import {PropertyMap} from '../state/initial';
 import {MdxEditor} from './mdx-editor';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 
+import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
+
 export const InfoPanel = () => {
   const metadata = useAppSelector(state => state.notebook.metadata);
   const dispatch = useAppDispatch();
@@ -39,6 +41,11 @@ export const InfoPanel = () => {
   const [metadataFieldValue, setMetadataFieldValue] = useState('');
   const [extraFields, setExtraFields] = useState<PropertyMap>({});
   const [alert, setAlert] = useState('');
+
+  const derivedFrom =
+    VITE_TEMPLATE_PROTECTIONS && metadata['derived-from']
+      ? (metadata['derived-from'] as string)
+      : '';
 
   useEffect(() => {
     const knownFields = [
@@ -100,6 +107,18 @@ export const InfoPanel = () => {
   return (
     <div>
       <Typography variant="h2">General Information</Typography>
+
+      {derivedFrom?.trim() && (
+        <Typography
+          variant="body1"
+          sx={{mt: 1}}
+          data-testid="derived-from-info"
+        >
+          This notebook is derived from <i>{derivedFrom}</i>. Some fields may be
+          protected.
+        </Typography>
+      )}
+
       <Card variant="outlined" sx={{mt: 2}}>
         <Grid container spacing={5} p={3}>
           <Grid container item xs={12} spacing={2.5}>
