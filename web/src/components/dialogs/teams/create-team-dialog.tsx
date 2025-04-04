@@ -6,17 +6,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {Button} from '../ui/button';
-import {NOTEBOOK_NAME} from '@/constants';
-import {CreateProjectInviteForm} from '../forms/create-project-invite';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useState} from 'react';
+import {CreateTeamForm} from '../../forms/teams/create-team-form';
+import {Button} from '../../ui/button';
 import {Plus} from 'lucide-react';
 
-/**
- * Component for rendering a dialog to create a new project from a template.
- * @returns {JSX.Element} The rendered dialog component.
- */
-export const CreateProjectInvite = () => {
+export const CreateTeamDialog = () => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -27,17 +23,18 @@ export const CreateProjectInvite = () => {
           className="bg-primary text-primary-foreground"
         >
           <Plus />
-          Create Invite
+          Create Team
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Invite</DialogTitle>
+          <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>
-            Create a new invitation for this {NOTEBOOK_NAME}.
+            Create a new team to help manage users and share access to{' '}
+            {NOTEBOOK_NAME_CAPITALIZED}s and Templates.
           </DialogDescription>
         </DialogHeader>
-        <CreateProjectInviteForm setDialogOpen={setOpen} />
+        <CreateTeamForm setDialogOpen={setOpen} />
       </DialogContent>
     </Dialog>
   );
