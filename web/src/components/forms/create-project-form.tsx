@@ -1,17 +1,16 @@
-import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
-import {z} from 'zod';
-import {useQueryClient} from '@tanstack/react-query';
-import {useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
-import {Divider} from '../ui/word-divider';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {useAuth} from '@/context/auth-provider';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {
   createProjectFromFile,
   createProjectFromTemplate,
 } from '@/hooks/create-project';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {Action, isAuthorized} from '@faims3/data-model';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import TeamDetails from '../tabs/teams/team-details';
+import {useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
+import {Action} from '@faims3/data-model';
+import {useQueryClient} from '@tanstack/react-query';
+import {z} from 'zod';
+import {Divider} from '../ui/word-divider';
 
 interface CreateProjectFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;

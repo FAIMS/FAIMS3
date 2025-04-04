@@ -110,77 +110,95 @@ export function Form<
         className="flex flex-col gap-6"
       >
         <div className="flex flex-col gap-2">
-          {fields.map(({name, label, description, type, options, excludes, min, max, step, placeholder}, index) => {
-            const fieldName = name as Path<TSchema>;
-            const isDisabled = excludes !== undefined && form.watch(excludes as Path<TSchema>);
-            
-            return (
-              <div key={name}>
-                {dividers?.find(divider => divider.index === index)?.component}
-                <FormField
-                  control={form.control}
-                  name={fieldName}
-                  render={({field}) => (
-                    <FormItem>
-                      {label && <FormLabel>{label}</FormLabel>}
-                      {description && (
-                        <FormDescription>{description}</FormDescription>
-                      )}
-                      <FormControl>
-                        {options ? (
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                            disabled={isDisabled}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder={`Select ${name}`} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {options.map(({label, value}) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            {...field}
-                            type={type || 'text'}
-                            min={type === 'number' ? min : undefined}
-                            max={type === 'number' ? max : undefined}
-                            step={type === 'number' ? step : undefined}
-                            disabled={isDisabled}
-                            className={type === 'file' ? 'cursor-pointer' : ''}
-                            value={
-                              type === 'file' 
-                                ? undefined 
-                                : field.value
-                            }
-                            placeholder={placeholder}
-                            onChange={event =>
-                              type === 'file'
-                                ? event.target.files &&
-                                  field.onChange(event.target.files[0])
-                                : type === 'number'
-                                ? field.onChange(
-                                    event.target.value === '' 
-                                      ? undefined 
-                                      : Number(event.target.value)
-                                  )
-                                : field.onChange(event)
-                            }
-                          />
+          {fields.map(
+            (
+              {
+                name,
+                label,
+                description,
+                type,
+                options,
+                excludes,
+                min,
+                max,
+                step,
+                placeholder,
+              },
+              index
+            ) => {
+              const fieldName = name as Path<TSchema>;
+              const isDisabled =
+                excludes !== undefined && form.watch(excludes as Path<TSchema>);
+
+              return (
+                <div key={name}>
+                  {
+                    dividers?.find(divider => divider.index === index)
+                      ?.component
+                  }
+                  <FormField
+                    control={form.control}
+                    name={fieldName}
+                    render={({field}) => (
+                      <FormItem>
+                        {label && <FormLabel>{label}</FormLabel>}
+                        {description && (
+                          <FormDescription>{description}</FormDescription>
                         )}
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            );
-          })}
+                        <FormControl>
+                          {options ? (
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              disabled={isDisabled}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={`Select ${name}`} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {options.map(({label, value}) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              {...field}
+                              type={type || 'text'}
+                              min={type === 'number' ? min : undefined}
+                              max={type === 'number' ? max : undefined}
+                              step={type === 'number' ? step : undefined}
+                              disabled={isDisabled}
+                              className={
+                                type === 'file' ? 'cursor-pointer' : ''
+                              }
+                              value={type === 'file' ? undefined : field.value}
+                              placeholder={placeholder}
+                              onChange={event =>
+                                type === 'file'
+                                  ? event.target.files &&
+                                    field.onChange(event.target.files[0])
+                                  : type === 'number'
+                                    ? field.onChange(
+                                        event.target.value === ''
+                                          ? undefined
+                                          : Number(event.target.value)
+                                      )
+                                    : field.onChange(event)
+                              }
+                            />
+                          )}
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              );
+            }
+          )}
         </div>
         {warningMessage && (
           <Alert variant="destructive">

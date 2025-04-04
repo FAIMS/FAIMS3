@@ -31,15 +31,9 @@ import {
   Resource,
   Role,
   userHasProjectRole,
-  userHasTeamRole,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
-import {
-  generateJwtFromUser,
-  upgradeCouchUserToExpressUser,
-} from '../src/authkeys/create';
-import {KEY_SERVICE} from '../src/buildconfig';
 import {
   createInvite,
   deleteInvite,

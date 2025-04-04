@@ -1,8 +1,7 @@
-import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
+import {useAuth} from '@/context/auth-provider';
+import {userCanDo} from '@/hooks/auth-hooks';
 import {Route} from '@/routes/_protected/projects/$projectId';
-import {z} from 'zod';
-import {useQueryClient} from '@tanstack/react-query';
 import {
   PostCreateInviteInput,
   projectInviteToAction,
@@ -10,10 +9,10 @@ import {
   Role,
   roleDetails,
   RoleScope,
-  teamInviteToAction,
 } from '@faims3/data-model';
-import {userCanDo} from '@/hooks/auth-hooks';
+import {useQueryClient} from '@tanstack/react-query';
 import {ErrorComponent} from '@tanstack/react-router';
+import {z} from 'zod';
 
 interface UpdateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;

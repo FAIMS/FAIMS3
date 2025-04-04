@@ -117,7 +117,7 @@ async function oauth_register(
     }
   }
   if (!dbUser) {
-    const invite = await getInvite({inviteId : req.session.invite});
+    const invite = await getInvite({inviteId: req.session.invite});
     if (invite) {
       const [dbUser, errorMsg] = await createUser({
         email: emails[0],
@@ -129,7 +129,7 @@ async function oauth_register(
         dbUser.profiles['google'] = profile;
         addEmails({user: dbUser, emails});
         // accepting the invite will add roles and save the user record
-        await useInvite({user: dbUser, invite,});
+        await useInvite({user: dbUser, invite});
         // Upgrade by drilling permissions/associations
         const user = await upgradeCouchUserToExpressUser({dbUser});
         done(null, user, profile);
