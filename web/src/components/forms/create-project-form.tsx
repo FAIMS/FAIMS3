@@ -1,5 +1,5 @@
 import {useAuth} from '@/context/auth-provider';
-import {Form} from '@/components/form';
+import {Field, Form} from '@/components/form';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
@@ -11,10 +11,12 @@ import {
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {Action, isAuthorized} from '@faims3/data-model';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import TeamDetails from '../tabs/teams/team-details';
 
 interface CreateProjectFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   defaultValues?: {teamId?: string};
+  specifiedTeam?: string;
 }
 
 /**
@@ -27,6 +29,7 @@ interface CreateProjectFormProps {
 export function CreateProjectForm({
   setDialogOpen,
   defaultValues,
+  specifiedTeam = undefined,
 }: CreateProjectFormProps) {
   const {user} = useAuth();
   const QueryClient = useQueryClient();
@@ -37,7 +40,7 @@ export function CreateProjectForm({
   const {data: templates} = useGetTemplates(user);
   const {data: teams} = useGetTeams(user);
 
-  const fields = [
+  const fields: Field[] = [
     {
       name: 'name',
       label: 'Name',
@@ -65,15 +68,6 @@ export function CreateProjectForm({
         .optional(),
       excludes: 'template',
     },
-    {
-      name: 'team',
-      label: `Create ${NOTEBOOK_NAME} in this team${canCreateGlobally && ' (optional)'}`,
-      options: teams?.teams.map(({_id, name}) => ({
-        label: name,
-        value: _id,
-      })),
-      schema: canCreateGlobally ? z.string().optional() : z.string(),
-    },
   ];
 
   const dividers = [
@@ -85,11 +79,23 @@ export function CreateProjectForm({
       index: 2,
       component: <Divider word="OR" />,
     },
-    {
+  ];
+
+  if (!specifiedTeam) {
+    fields.push({
+      name: 'team',
+      label: `Create ${NOTEBOOK_NAME} in this team${canCreateGlobally && ' (optional)'}`,
+      options: teams?.teams.map(({_id, name}) => ({
+        label: name,
+        value: _id,
+      })),
+      schema: canCreateGlobally ? z.string().optional() : z.string(),
+    });
+    dividers.push({
       index: 3,
       component: <div className="h-5" />,
-    },
-  ];
+    });
+  }
 
   interface onSubmitProps {
     name: string;
@@ -116,14 +122,16 @@ export function CreateProjectForm({
           user,
           name,
           template: template || '',
-          teamId: team,
+          teamId: specifiedTeam ?? team,
         });
 
     if (!response.ok)
       return {type: 'submit', message: 'Error creating project'};
 
-    if (team) {
-      QueryClient.invalidateQueries({queryKey: ['projectsbyteam', team]});
+    if (specifiedTeam || team) {
+      QueryClient.invalidateQueries({
+        queryKey: ['projectsbyteam', specifiedTeam || team],
+      });
     }
     QueryClient.invalidateQueries({queryKey: ['projects']});
 

@@ -110,10 +110,13 @@ export const useGetUsersForTeam = ({
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching projects.
  */
-export const useGetTeam = (user: User | null, teamId: string) =>
+export const useGetTeam = (user: User | null, teamId: string | undefined) =>
   useQuery({
     queryKey: ['teams', teamId],
     queryFn: async () => {
+      if (!teamId) {
+        return null;
+      }
       return (await get(`/api/teams/${teamId}`, user)) as GetTeamByIdResponse;
     },
   });

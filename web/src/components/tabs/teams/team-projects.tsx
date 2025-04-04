@@ -28,7 +28,7 @@ const TeamProjects = ({teamId}: {teamId: string}) => {
       loading={isPending}
       onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
       button={
-        canAddProjectInTeam && <CreateProjectDialog defaultValues={{teamId}} />
+        canAddProjectInTeam && <CreateProjectDialog specifiedTeam={teamId} />
       }
     />
   );

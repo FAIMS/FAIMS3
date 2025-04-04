@@ -1,13 +1,16 @@
 import {useAuth} from '@/context/auth-provider';
-import {Form} from '@/components/form';
+import {Field, Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/get-hooks';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {Action} from '@faims3/data-model';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   defaultValues?: {teamId?: string};
+  specifiedTeam?: string;
 }
 
 /**
@@ -20,28 +23,22 @@ interface CreateTemplateFormProps {
 export function CreateTemplateForm({
   setDialogOpen,
   defaultValues,
+  specifiedTeam = undefined,
 }: CreateTemplateFormProps) {
   const {user} = useAuth();
   const QueryClient = useQueryClient();
-
   const {data: teams} = useGetTeams(user);
 
-  const fields = [
+  // can they create projects outside team?
+  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_TEMPLATE});
+
+  const fields: Field[] = [
     {
       name: 'name',
       label: 'Name',
       schema: z.string().min(5, {
         message: 'Template name must be at least 5 characters.',
       }),
-    },
-    {
-      name: 'team',
-      label: 'Create template in team?',
-      options: teams?.teams.map(({_id, name}) => ({
-        label: name,
-        value: _id,
-      })),
-      schema: z.string().optional(),
     },
     {
       name: 'file',
@@ -52,6 +49,17 @@ export function CreateTemplateForm({
         .refine(file => file.type === 'application/json'),
     },
   ];
+  if (!specifiedTeam) {
+    fields.push({
+      name: 'team',
+      label: `Create template in this team${canCreateGlobally && ' (optional)'}`,
+      options: teams?.teams.map(({_id, name}) => ({
+        label: name,
+        value: _id,
+      })),
+      schema: canCreateGlobally ? z.string().optional() : z.string(),
+    });
+  }
 
   const onSubmit = async ({
     file,
@@ -83,7 +91,7 @@ export function CreateTemplateForm({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${user.token}`,
           },
-          body: JSON.stringify({teamId: team, ...json}),
+          body: JSON.stringify({teamId: team ?? specifiedTeam, ...json}),
         }
       );
 
@@ -93,8 +101,10 @@ export function CreateTemplateForm({
     }
 
     // query invals
-    if (team) {
-      QueryClient.invalidateQueries({queryKey: ['templatesbyteam', team]});
+    if (specifiedTeam || team) {
+      QueryClient.invalidateQueries({
+        queryKey: ['templatesbyteam', specifiedTeam || team],
+      });
     }
     QueryClient.invalidateQueries({queryKey: ['templates', undefined]});
 

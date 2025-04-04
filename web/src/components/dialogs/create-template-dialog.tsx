@@ -10,13 +10,24 @@ import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateTemplateForm} from '../forms/create-template-form';
 import {Plus} from 'lucide-react';
+import {useGetTeam} from '@/hooks/get-hooks';
+import {useAuth} from '@/context/auth-provider';
+import {ErrorComponent} from '@tanstack/react-router';
 
 export const CreateTemplateDialog = ({
   defaultValues,
+  specifiedTeam = undefined,
 }: {
   defaultValues?: {teamId?: string};
+  specifiedTeam?: string;
 }) => {
   const [open, setOpen] = useState(false);
+  const {user} = useAuth();
+  if (!user) {
+    return <ErrorComponent error="Unauthenticated" />;
+  }
+
+  const {data: team} = useGetTeam(user, specifiedTeam);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -31,7 +42,10 @@ export const CreateTemplateDialog = ({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Template</DialogTitle>
+          <DialogTitle>
+            Create Template{specifiedTeam && <> in '{team?.name ?? 'Team'}'</>}
+          </DialogTitle>
+          <DialogTitle></DialogTitle>
           <DialogDescription>
             Create a new template by uploading a JSON template file.
           </DialogDescription>
@@ -39,6 +53,7 @@ export const CreateTemplateDialog = ({
         <CreateTemplateForm
           setDialogOpen={setOpen}
           defaultValues={defaultValues}
+          specifiedTeam={specifiedTeam}
         />
       </DialogContent>
     </Dialog>

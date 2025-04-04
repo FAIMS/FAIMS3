@@ -29,7 +29,9 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
       button={
         canAddTemplateInTeam && (
-          <CreateTemplateDialog defaultValues={{teamId}} />
+          <CreateTemplateDialog
+            specifiedTeam={teamId}
+          />
         )
       }
     />
