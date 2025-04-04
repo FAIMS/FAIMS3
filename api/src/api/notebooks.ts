@@ -41,6 +41,7 @@ import {
   PutUpdateNotebookInputSchema,
   PutUpdateNotebookResponse,
   removeProjectRole,
+  Resource,
   Role,
   userHasProjectRole,
 } from '@faims3/data-model';
@@ -50,7 +51,12 @@ import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
 import {getDataDb, localGetProjectsDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
-import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
+import {
+  createInvite,
+  deleteInvite,
+  getInvite,
+  getInvitesForResource,
+} from '../couchdb/invites';
 import {
   createNotebook,
   deleteNotebook,
@@ -560,7 +566,10 @@ api.get(
   }),
   processRequest({params: z.object({notebookId: z.string()})}),
   async ({params: {notebookId}}, res) => {
-    const invites = await getInvitesForNotebook(notebookId);
+    const invites = await getInvitesForResource({
+      resourceType: Resource.PROJECT,
+      resourceId: notebookId,
+    });
     res.json(invites);
   }
 );
@@ -570,16 +579,24 @@ api.post(
   '/:notebookId/invites',
   requireAuthenticationAPI,
   processRequest({
-    body: z.object({role: z.nativeEnum(Role)}),
+    body: z.object({
+      role: z.nativeEnum(Role),
+      name: z.string().min(1),
+      uses: z.number().min(1).optional(),
+      expiry: z.number().optional(),
+    }),
     params: z.object({notebookId: z.string()}),
   }),
-  async ({body: {role}, params: {notebookId}, user}, res) => {
+  async ({body, params: {notebookId}, user}, res) => {
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
 
     // Get the action needed
-    const actionNeeded = projectInviteToAction({action: 'create', role});
+    const actionNeeded = projectInviteToAction({
+      action: 'create',
+      role: body.role,
+    });
     if (
       !isAuthorized({
         action: actionNeeded,
@@ -594,8 +611,74 @@ api.post(
         'You are not authorised to create this invite'
       );
     }
-    const invite = await createInvite(notebookId, role);
+
+    const invite = await createInvite({
+      resourceType: Resource.PROJECT,
+      resourceId: notebookId,
+      role: body.role,
+      name: body.name,
+      createdBy: user.user_id,
+      expiry: body.expiry,
+      usesOriginal: body.uses,
+    });
+
     res.json(invite);
+  }
+);
+
+/** Delete an invite for a notebook */
+api.delete(
+  '/:notebookId/invites/:inviteId',
+  requireAuthenticationAPI,
+  processRequest({
+    params: z.object({
+      notebookId: z.string(),
+      inviteId: z.string(),
+    }),
+  }),
+  async ({user, body, params: {notebookId, inviteId}}, res) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    // Get the action needed
+    const actionNeeded = projectInviteToAction({
+      action: 'delete',
+      role: body.role,
+    });
+    if (
+      !isAuthorized({
+        action: actionNeeded,
+        decodedToken: {
+          globalRoles: user.globalRoles,
+          resourceRoles: user.resourceRoles,
+        },
+        resourceId: notebookId,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorised to remove this invite'
+      );
+    }
+
+    const invite = await getInvite({inviteId});
+
+    if (!invite) {
+      throw new Exceptions.ItemNotFoundException('Invite not found');
+    }
+
+    // Verify this invite belongs to the specified notebook
+    if (
+      invite.resourceType !== Resource.PROJECT ||
+      invite.resourceId !== notebookId
+    ) {
+      throw new Exceptions.ValidationException(
+        'Invite does not belong to this notebook!'
+      );
+    }
+
+    await deleteInvite({invite});
+    res.status(200).end();
   }
 );
 
