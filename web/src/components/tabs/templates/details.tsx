@@ -4,13 +4,26 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
 import {useGetTemplates} from '@/hooks/get-hooks';
+import {TeamCellComponent} from '@/components/tables/cells/team-cell';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
   {field: 'pre_description', label: 'Description'},
   {field: 'project_lead', label: 'Created by'},
-  {field: 'lead_institution', label: 'Team'},
   {field: 'notebook_version', label: 'Version'},
+
+  {
+    field: 'ownedByTeamId',
+    label: 'Team',
+    render: (teamId: string | undefined) => {
+      if (!teamId) {
+        return 'Not created in a team';
+      } else {
+        return <TeamCellComponent teamId={teamId} />;
+      }
+    },
+    isMetadata: false,
+  },
 ];
 
 interface TemplateDetailsProps {
@@ -33,16 +46,21 @@ const TemplateDetails = ({templateId}: TemplateDetailsProps) => {
   return (
     <Card>
       <List>
-        {detailsFields.map(({field, label}) => (
-          <ListItem key={field}>
-            <ListLabel>{label}</ListLabel>
-            {isPending ? (
-              <Skeleton />
-            ) : (
-              <ListDescription>{data.metadata[field]}</ListDescription>
-            )}
-          </ListItem>
-        ))}
+        {detailsFields.map(({field, label, render, isMetadata = true}) => {
+          const cellData = isMetadata ? data?.metadata[field] : data?.[field];
+          return (
+            <ListItem key={field}>
+              <ListLabel>{label}</ListLabel>
+              {isPending ? (
+                <Skeleton />
+              ) : (
+                <ListDescription>
+                  {render ? render(cellData) : cellData}
+                </ListDescription>
+              )}
+            </ListItem>
+          );
+        })}
       </List>
     </Card>
   );
