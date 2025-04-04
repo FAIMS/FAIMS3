@@ -1,6 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-
 import {convertToCouchDBString} from '../utils';
 
 /**
@@ -10,27 +9,84 @@ import {convertToCouchDBString} from '../utils';
 const designDoc = {
   _id: '_design/indexes',
   views: {
+    // Get invites by project resource
     byProject: {
       map: convertToCouchDBString(doc => {
-        if (doc.projectId) {
-          emit(doc.projectId, 1);
+        if (
+          doc.resourceType === 'PROJECT' &&
+          doc.resourceId &&
+          doc.resourceId.length > 0
+        ) {
+          emit(doc.resourceId, 1);
         }
       }),
     },
+
+    // Get invites by team resource
+    byTeam: {
+      map: convertToCouchDBString(doc => {
+        if (
+          doc.resourceType === 'TEAM' &&
+          doc.resourceId &&
+          doc.resourceId.length > 0
+        ) {
+          emit(doc.resourceId, 1);
+        }
+      }),
+    },
+
+    // Get invites by any resource ID (project or team)
+    byResourceId: {
+      map: convertToCouchDBString(doc => {
+        if (doc.resourceId && doc.resourceId.length > 0) {
+          emit(doc.resourceId, 1);
+        }
+      }),
+    },
+
+    // Get invites by resource type and ID combination
+    byResourceTypeAndId: {
+      map: convertToCouchDBString(doc => {
+        if (doc.resourceType && doc.resourceId && doc.resourceId.length > 0) {
+          emit([doc.resourceType, doc.resourceId], 1);
+        }
+      }),
+    },
+
+    // Get invites by project and role (for backward compatibility)
     byProjectAndRole: {
       map: convertToCouchDBString(doc => {
-        if (doc.projectId && doc.role) {
-          emit([doc.projectId, doc.role], 1);
+        if (doc.resourceType === 'PROJECT' && doc.resourceId && doc.role) {
+          emit([doc.resourceId, doc.role], 1);
         }
       }),
     },
-    countByProject: {
+
+    // Get invites by team and role
+    byTeamAndRole: {
       map: convertToCouchDBString(doc => {
-        if (doc.projectId) {
-          emit(doc.projectId, 1);
+        if (doc.resourceType === 'TEAM' && doc.resourceId && doc.role) {
+          emit([doc.resourceId, doc.role], 1);
         }
       }),
-      reduce: '_count',
+    },
+
+    // Get invites by resource type, resource id, and role
+    byResourceAndRole: {
+      map: convertToCouchDBString(doc => {
+        if (doc.resourceType && doc.resourceId && doc.role) {
+          emit([doc.resourceType, doc.resourceId, doc.role], 1);
+        }
+      }),
+    },
+
+    // Get invites by creator
+    byCreator: {
+      map: convertToCouchDBString(doc => {
+        if (doc.createdBy) {
+          emit(doc.createdBy, 1);
+        }
+      }),
     },
   },
 };

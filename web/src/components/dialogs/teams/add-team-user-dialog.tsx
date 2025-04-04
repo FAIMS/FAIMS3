@@ -11,7 +11,6 @@ import {useAuth} from '@/context/auth-provider';
 import {ErrorComponent} from '@tanstack/react-router';
 import React, {useState} from 'react';
 import {Button} from '../../ui/button';
-import {Plus} from 'lucide-react';
 
 export const AddTeamUserDialog = ({
   teamId,

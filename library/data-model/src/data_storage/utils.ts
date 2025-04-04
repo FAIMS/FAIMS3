@@ -101,7 +101,11 @@ export async function writeNewDocument<T extends {}>({
 }: {
   db: PouchDB.Database<T>;
   data: PouchDB.Core.Document<T>;
-}): Promise<{wrote: boolean; existing?: PouchDB.Core.ExistingDocument<T>}> {
+}): Promise<{
+  wrote: boolean;
+  _rev: string;
+  existing?: PouchDB.Core.ExistingDocument<T>;
+}> {
   try {
     // Try to get the existing document
     let existingDoc: PouchDB.Core.ExistingDocument<T> | undefined;
@@ -117,11 +121,11 @@ export async function writeNewDocument<T extends {}>({
 
     if (!existingDoc) {
       // Put the document (create only since it's new)
-      await db.put(data);
-      return {wrote: true, existing: undefined};
+      const res = await db.put(data);
+      return {wrote: true, _rev: res.rev, existing: undefined};
     } else {
       // Already exists - return it
-      return {wrote: false, existing: existingDoc};
+      return {wrote: false, _rev: existingDoc._rev, existing: existingDoc};
     }
   } catch (error) {
     console.error(`Error creating new document ${data._id}:`, error);

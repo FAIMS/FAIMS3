@@ -28,14 +28,12 @@ import {
   GetNotebookResponse,
   GetNotebookUsersResponse,
   getRecordsWithRegex,
-  isAuthorized,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
   PostCreateNotebookResponse,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
-  projectInviteToAction,
   projectRoleToAction,
   ProjectUIModel,
   PutUpdateNotebookInputSchema,
@@ -50,7 +48,6 @@ import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
 import {getDataDb, localGetProjectsDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
-import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {
   createNotebook,
   deleteNotebook,
@@ -478,12 +475,9 @@ api.post(
     });
 
     if (
-      !isAuthorized({
+      !userCanDo({
         action: actionNeeded,
-        decodedToken: {
-          globalRoles: req.user.globalRoles,
-          resourceRoles: req.user.resourceRoles,
-        },
+        user: req.user,
         resourceId: req.params.id,
       })
     ) {
@@ -545,57 +539,6 @@ api.post(
 
     // 200 OK indicating successful deletion
     res.status(200).end();
-  }
-);
-
-/** Gets a list of invites for a given notebook */
-api.get(
-  '/:notebookId/invites',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.VIEW_PROJECT_INVITES,
-    getResourceId(req) {
-      return req.params.notebookId;
-    },
-  }),
-  processRequest({params: z.object({notebookId: z.string()})}),
-  async ({params: {notebookId}}, res) => {
-    const invites = await getInvitesForNotebook(notebookId);
-    res.json(invites);
-  }
-);
-
-/** Creates a new invite for a given notebook */
-api.post(
-  '/:notebookId/invites',
-  requireAuthenticationAPI,
-  processRequest({
-    body: z.object({role: z.nativeEnum(Role)}),
-    params: z.object({notebookId: z.string()}),
-  }),
-  async ({body: {role}, params: {notebookId}, user}, res) => {
-    if (!user) {
-      throw new Exceptions.UnauthorizedException();
-    }
-
-    // Get the action needed
-    const actionNeeded = projectInviteToAction({action: 'create', role});
-    if (
-      !isAuthorized({
-        action: actionNeeded,
-        decodedToken: {
-          globalRoles: user.globalRoles,
-          resourceRoles: user.resourceRoles,
-        },
-        resourceId: notebookId,
-      })
-    ) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not authorised to create this invite'
-      );
-    }
-    const invite = await createInvite(notebookId, role);
-    res.json(invite);
   }
 );
 

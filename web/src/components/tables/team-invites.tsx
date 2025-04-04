@@ -5,10 +5,10 @@ import {CopyButton} from '../ui/copy-button';
 import {QRCodeDialog} from '../dialogs/qr-code-dialog';
 import {
   Action,
-  GetProjectInvitesResponse,
+  GetTeamInvitesResponse,
   roleDetails,
   Role,
-  projectInviteToAction,
+  teamInviteToAction,
 } from '@faims3/data-model';
 import {displayUnixTimestampMs} from '@/lib/utils';
 import {useAuth} from '@/context/auth-provider';
@@ -24,14 +24,14 @@ import {
 import {Button} from '../ui/button';
 import {toast} from 'sonner';
 
-export const useGetInviteColumns = ({
-  projectId,
+export const useGetTeamInviteColumns = ({
+  teamId,
   deleteInviteHandler,
 }: {
-  projectId: string;
+  teamId: string;
   deleteInviteHandler: (inviteId: string) => Promise<Response>;
 }): ColumnDef<
-  GetProjectInvitesResponse[number] & {url: string; qrCode: string}
+  GetTeamInvitesResponse[number] & {url: string; qrCode: string}
 >[] => {
   const {user} = useAuth();
   if (!user) {
@@ -40,37 +40,30 @@ export const useGetInviteColumns = ({
   const queryClient = useQueryClient();
 
   const canDeleteAdminInvite = useIsAuthorisedTo({
-    action: Action.DELETE_ADMIN_PROJECT_INVITE,
-    resourceId: projectId,
+    action: Action.DELETE_ADMIN_TEAM_INVITE,
+    resourceId: teamId,
   });
   const canDeleteManagerInvite = useIsAuthorisedTo({
-    action: Action.DELETE_MANAGER_PROJECT_INVITE,
-    resourceId: projectId,
+    action: Action.DELETE_MANAGER_TEAM_INVITE,
+    resourceId: teamId,
   });
-  const canDeleteContributorInvite = useIsAuthorisedTo({
-    action: Action.DELETE_CONTRIBUTOR_PROJECT_INVITE,
-    resourceId: projectId,
-  });
-  const canDeleteGuestInvite = useIsAuthorisedTo({
-    action: Action.DELETE_GUEST_PROJECT_INVITE,
-    resourceId: projectId,
+  const canDeleteMemberInvite = useIsAuthorisedTo({
+    action: Action.DELETE_MEMBER_TEAM_INVITE,
+    resourceId: teamId,
   });
 
   const canRemoveSomeInvite =
-    canDeleteAdminInvite ||
-    canDeleteManagerInvite ||
-    canDeleteGuestInvite ||
-    canDeleteContributorInvite;
+    canDeleteAdminInvite || canDeleteManagerInvite || canDeleteMemberInvite;
 
   const canRemoveInvite = (role: Role) =>
     userCanDo({
       user,
-      action: projectInviteToAction({action: 'delete', role}),
-      resourceId: projectId,
+      action: teamInviteToAction({action: 'delete', role}),
+      resourceId: teamId,
     });
 
   const baseColumns: ColumnDef<
-    GetProjectInvitesResponse[number] & {url: string; qrCode: string}
+    GetTeamInvitesResponse[number] & {url: string; qrCode: string}
   >[] = [
     {
       accessorKey: 'name',
@@ -189,7 +182,7 @@ export const useGetInviteColumns = ({
                         if (!response.ok) throw new Error(response.statusText);
 
                         queryClient.invalidateQueries({
-                          queryKey: ['projectinvites', projectId],
+                          queryKey: ['teaminvites', teamId],
                         });
 
                         toast.success('Invite removed successfully');
@@ -210,7 +203,7 @@ export const useGetInviteColumns = ({
                 <TooltipContent className="w-40 text-balance">
                   {!canRemove
                     ? 'You are not authorised to remove this invite'
-                    : 'Removes this invite from the project.'}
+                    : 'Removes this invite from the team.'}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
