@@ -27,7 +27,10 @@ export const migrateNotebook = (notebook: unknown) => {
   validateNotebook(notebook);
   // error will be thrown by validateNotebook if invalid, let it go through
 
-  const notebookCopy = JSON.parse(JSON.stringify(notebook)) as Notebook; // deep copy
+  const notebookCopy = JSON.parse(JSON.stringify(notebook)) as any;
+
+  // wrap the ui-specification in redux-undo shape
+  wrapUiSpecInUndoableShape(notebookCopy);
 
   // move field labels from old locations to .label
   updateFieldLabels(notebookCopy);
@@ -49,6 +52,9 @@ export const migrateNotebook = (notebook: unknown) => {
 
   // fix old hrid format
   fixOldHridPrefix(notebookCopy);
+
+  // ensure visible_types exists in the ui-specification
+  updateVisibleTypes(notebookCopy);
 
   return notebookCopy;
 };
@@ -87,6 +93,25 @@ export const validateNotebook = (n: unknown) => {
 };
 
 /**
+ * Ensures that the `ui-specification` in the notebook is in redux-undo format.
+ *
+ * @param notebook A mutable notebook object
+ */
+const wrapUiSpecInUndoableShape = (notebook: any) => {
+  if (
+    notebook['ui-specification'] &&
+    !('present' in notebook['ui-specification'])
+  ) {
+    const uiSpec = notebook['ui-specification'];
+    notebook['ui-specification'] = {
+      past: [],
+      present: uiSpec,
+      future: [],
+    };
+  }
+};
+
+/**
  * Update notebook fields so that labels are directly on component-parameters
  *
  * @param notebook A notebook that might be out of date, modified
@@ -94,8 +119,8 @@ export const validateNotebook = (n: unknown) => {
 const updateFieldLabels = (notebook: Notebook) => {
   const fields: {[key: string]: FieldType} = {};
 
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
+  for (const fieldName in notebook['ui-specification'].present.fields) {
+    const field = notebook['ui-specification'].present.fields[fieldName];
 
     // clean up all the different ways that label could be stored
     const params = field['component-parameters'];
@@ -117,7 +142,7 @@ const updateFieldLabels = (notebook: Notebook) => {
       'component-parameters': params,
     };
   }
-  notebook['ui-specification'].fields = fields;
+  notebook['ui-specification'].present.fields = fields;
 };
 
 type LabelInclude = {
@@ -142,8 +167,8 @@ type OldMetaType = {
 const updateAnnotationFormat = (notebook: Notebook) => {
   const fields: {[key: string]: FieldType} = {};
 
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
+  for (const fieldName in notebook['ui-specification'].present.fields) {
+    const field = notebook['ui-specification'].present.fields[fieldName];
     const meta = field.meta as OldMetaType;
     if (typeof meta?.annotation === 'boolean') {
       field.meta = {
@@ -160,7 +185,7 @@ const updateAnnotationFormat = (notebook: Notebook) => {
     fields[fieldName] = field;
   }
 
-  notebook['ui-specification'].fields = fields;
+  notebook['ui-specification'].present.fields = fields;
 };
 
 /**
@@ -171,8 +196,8 @@ const updateAnnotationFormat = (notebook: Notebook) => {
 const updateHelperText = (notebook: Notebook) => {
   const fields: {[key: string]: FieldType} = {};
 
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
+  for (const fieldName in notebook['ui-specification'].present.fields) {
+    const field = notebook['ui-specification'].present.fields[fieldName];
 
     const params = field['component-parameters'];
     const originalValue = params?.helperText;
@@ -188,7 +213,7 @@ const updateHelperText = (notebook: Notebook) => {
     fields[fieldName] = field;
   }
 
-  notebook['ui-specification'].fields = fields;
+  notebook['ui-specification'].present.fields = fields;
 };
 
 /**
@@ -209,7 +234,7 @@ type SectionType = {
  */
 const updateFormSectionMeta = (notebook: Notebook) => {
   const sections = notebook.metadata?.sections as SectionType;
-  const fviews = notebook['ui-specification'].fviews;
+  const fviews = notebook['ui-specification'].present.fviews;
   const prefix = 'sectiondescription';
 
   if (sections) {
@@ -233,8 +258,8 @@ const fixPhotoValidation = (notebook: Notebook) => {
 
   const fields: {[key: string]: FieldType} = {};
 
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
+  for (const fieldName in notebook['ui-specification'].present.fields) {
+    const field = notebook['ui-specification'].present.fields[fieldName];
 
     if (field['component-name'] === 'TakePhoto') {
       if (field.validationSchema?.length === 2)
@@ -244,7 +269,7 @@ const fixPhotoValidation = (notebook: Notebook) => {
     fields[fieldName] = field;
   }
 
-  notebook['ui-specification'].fields = fields;
+  notebook['ui-specification'].present.fields = fields;
 };
 
 /**
@@ -257,8 +282,8 @@ const fixPhotoValidation = (notebook: Notebook) => {
 const fixAutoIncrementerInitialValue = (notebook: Notebook) => {
   const fields: {[key: string]: FieldType} = {};
 
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
+  for (const fieldName in notebook['ui-specification'].present.fields) {
+    const field = notebook['ui-specification'].present.fields[fieldName];
 
     if (field['component-name'] === 'BasicAutoIncrementer') {
       if (field.initialValue === null) field.initialValue = '';
@@ -267,7 +292,7 @@ const fixAutoIncrementerInitialValue = (notebook: Notebook) => {
     fields[fieldName] = field;
   }
 
-  notebook['ui-specification'].fields = fields;
+  notebook['ui-specification'].present.fields = fields;
 };
 
 /**
@@ -278,10 +303,12 @@ const fixOldHridPrefix = (notebook: Notebook) => {
   const fieldToViewset: {[key: string]: string} = {};
 
   // Build map of fields to their containing viewsets
-  for (const viewsetId of Object.keys(notebook['ui-specification'].viewsets)) {
-    const viewset = notebook['ui-specification'].viewsets[viewsetId];
+  for (const viewsetId of Object.keys(
+    notebook['ui-specification'].present.viewsets
+  )) {
+    const viewset = notebook['ui-specification'].present.viewsets[viewsetId];
     for (const viewId of viewset.views) {
-      const view = notebook['ui-specification'].fviews[viewId];
+      const view = notebook['ui-specification'].present.fviews[viewId];
       for (const fieldName of view.fields) {
         fieldToViewset[fieldName] = viewsetId;
       }
@@ -289,10 +316,14 @@ const fixOldHridPrefix = (notebook: Notebook) => {
   }
 
   // Process fields, moving HRID fields to viewset settings
-  for (const fieldName of Object.keys(notebook['ui-specification'].fields)) {
+  for (const fieldName of Object.keys(
+    notebook['ui-specification'].present.fields
+  )) {
     // Always strip off the hrid true property - this is no longer present
     const params =
-      notebook['ui-specification'].fields[fieldName]['component-parameters'];
+      notebook['ui-specification'].present.fields[fieldName][
+        'component-parameters'
+      ];
     if (params && 'hrid' in params) {
       delete params.hrid;
     }
@@ -300,11 +331,24 @@ const fixOldHridPrefix = (notebook: Notebook) => {
     if (fieldName.startsWith('hrid')) {
       const viewsetName = fieldToViewset[fieldName];
       if (viewsetName) {
-        notebook['ui-specification'].viewsets[viewsetName].hridField =
+        notebook['ui-specification'].present.viewsets[viewsetName].hridField =
           fieldName;
       }
     }
   }
 
   return notebook;
+};
+
+/**
+ * Ensure that the `visible_types` property exists in the ui-specification.
+ * If not, initialise it to the keys of the viewsets (or an empty array if there are none).
+ *
+ * @param notebook A notebook that might be out of date, modified
+ */
+const updateVisibleTypes = (notebook: Notebook) => {
+  if (!notebook['ui-specification'].present.visible_types) {
+    notebook['ui-specification'].present.visible_types =
+      Object.keys(notebook['ui-specification'].present.viewsets) || [];
+  }
 };
