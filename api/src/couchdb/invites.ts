@@ -25,9 +25,14 @@ import {
   Resource,
   Role,
   writeNewDocument,
+  PeopleDBDocument,
+  addTeamRole,
+  addProjectRole,
 } from '@faims3/data-model';
 import {getInvitesDB} from '.';
 import {CONDUCTOR_SHORT_CODE_PREFIX} from '../buildconfig';
+import * as Exceptions from '../exceptions';
+import {saveCouchUser} from './users';
 
 // Default 30 days expiry
 export const DEFAULT_INVITE_EXPIRY = 30 * 24 * 60 * 60 * 1000;
@@ -63,33 +68,20 @@ export async function createInvite({
   expiry?: number;
   usesOriginal?: number;
 }): Promise<ExistingInvitesDBDocument> {
-  const existing = (
-    await getInvitesDB().query<InvitesDBFields>('indexes/byResourceAndRole', {
-      key: [resourceType, resourceId, role],
-      include_docs: true,
-    })
-  ).rows
-    .map(r => r.doc)
-    .filter(d => !!d);
-
-  if (existing.length === 0) {
-    // Create a new invite
-    const invite: InvitesDBFields = {
-      resourceType,
-      resourceId,
-      role,
-      name,
-      createdBy,
-      createdAt: Date.now(),
-      expiry,
-      usesOriginal,
-      usesConsumed: 0,
-      uses: [],
-    };
-    return await writeNewInvite(invite);
-  } else {
-    return existing[0];
-  }
+  // Create a new invite
+  const invite: InvitesDBFields = {
+    resourceType,
+    resourceId,
+    role,
+    name,
+    createdBy,
+    createdAt: Date.now(),
+    expiry,
+    usesOriginal,
+    usesConsumed: 0,
+    uses: [],
+  };
+  return await writeNewInvite(invite);
 }
 
 /**
@@ -200,18 +192,15 @@ export async function getInvite({
  * @param {Object} params - The parameters for recording invite usage
  * @param {ExistingInvitesDBDocument} params.invite - The invite document
  * @param {string} params.userId - ID of the user using the invite
- * @param {boolean} params.isExistingUser - Whether this is an existing user
  * @returns {Promise<ExistingInvitesDBDocument>} The updated invite document
  * @throws {Error} If the invite has expired or exceeded usage limits
  */
 export async function useInvite({
   invite,
-  userId,
-  isExistingUser,
+  user,
 }: {
   invite: ExistingInvitesDBDocument;
-  userId: string;
-  isExistingUser: boolean;
+  user: PeopleDBDocument;
 }): Promise<ExistingInvitesDBDocument> {
   const now = Date.now();
 
@@ -229,9 +218,8 @@ export async function useInvite({
     uses: [
       ...invite.uses,
       {
-        userId,
+        userId: user._id,
         usedAt: now,
-        isExistingUser,
       },
     ],
   };
@@ -239,6 +227,20 @@ export async function useInvite({
   // Save the updated invite
   const inviteDb = getInvitesDB();
   const result = await inviteDb.put(updatedInvite);
+
+  // Now grant the associated role
+  if (invite.resourceType === Resource.TEAM) {
+    addTeamRole({user, role: invite.role, teamId: invite.resourceId});
+  } else if (invite.resourceType === Resource.PROJECT) {
+    addProjectRole({user, role: invite.role, projectId: invite.resourceId});
+  } else {
+    throw new Exceptions.InternalSystemError(
+      'No invite target for resource type: ' + invite.resourceType
+    );
+  }
+
+  // Save the user
+  saveCouchUser(user);
 
   return {
     ...updatedInvite,

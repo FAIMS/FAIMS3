@@ -71,8 +71,6 @@ export type V3InviteDBFields = {
     userId: string;
     // When
     usedAt: number;
-    // Was this an existing user, or did it grant system access?
-    isExistingUser: boolean;
   }[];
 };
 
