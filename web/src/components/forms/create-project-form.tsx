@@ -5,7 +5,7 @@ import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {
   createProjectFromFile,
   createProjectFromTemplate,
-} from '@/hooks/create-project';
+} from '@/hooks/project-hooks';
 import {useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
 import {Action} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';

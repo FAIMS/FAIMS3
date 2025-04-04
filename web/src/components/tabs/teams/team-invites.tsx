@@ -1,10 +1,12 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateTeamInvite} from '@/components/dialogs/teams/create-team-invite';
-import {columns} from '@/components/tables/team-invites';
+import {useGetTeamInviteColumns} from '@/components/tables/team-invites';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTeamInvites} from '@/hooks/get-hooks';
+import {removeInviteForTeam} from '@/hooks/teams-hooks';
 import {Action} from '@faims3/data-model';
+import {ErrorComponent} from '@tanstack/react-router';
 
 /**
  * ProjectInvites component renders a table of invites for a project.
@@ -15,8 +17,18 @@ import {Action} from '@faims3/data-model';
  */
 const TeamInvites = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
+  if (!user) {
+    return <ErrorComponent error="Not authenticated" />;
+  }
 
   const {data, isLoading} = useGetTeamInvites(user, teamId);
+
+  const columns = useGetTeamInviteColumns({
+    teamId,
+    deleteInviteHandler: async inviteId => {
+      return await removeInviteForTeam({teamId, inviteId, user});
+    },
+  });
 
   // can we add a user to the team?
   const canInviteMemberToTeam = useIsAuthorisedTo({
