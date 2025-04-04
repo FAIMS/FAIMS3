@@ -18,7 +18,7 @@
  *   Data models related to users.
  */
 
-import {Role} from '../../permission';
+import {Resource, Role} from '../../permission';
 
 export type V1InviteDBFields = {
   // The project it refers to
@@ -33,9 +33,51 @@ export type V2InviteDBFields = {
   // Role (enum)
   role: Role;
 };
+export type V2InvitesDocument = PouchDB.Core.Document<V2InviteDBFields>;
 
-export type InvitesDBFields = V2InviteDBFields;
+export type V3InviteDBFields = {
+  // What was the purpose of creating this invite?
+  name: string;
+
+  // What is the expiry timestamp
+  expiry: number;
+
+  // What type of resource is this invite for? (Currently supports teams and
+  // surveys)
+  resourceType: Resource.TEAM | Resource.PROJECT;
+
+  // What type of resource is this invite for? (Currently supports teams and
+  // surveys)
+  resourceId: string;
+
+  // What role should it grant?
+  role: Role;
+
+  // What is the ID of the user who created the invite?
+  createdBy: string;
+
+  // What is the ms timestamp when this was first created?
+  createdAt: number;
+
+  // How many uses were originally requested (optional -> infinite)
+  usesOriginal?: number;
+
+  // How many uses have been used (optional -> infinite)
+  usesConsumed: number;
+
+  // The log of user IDs for who have consumed this invite
+  uses: {
+    // Who
+    userId: string;
+    // When
+    usedAt: number;
+    // Was this an existing user, or did it grant system access?
+    isExistingUser: boolean;
+  }[];
+};
+
+export type InvitesDBFields = V3InviteDBFields;
 export type ExistingInvitesDBDocument =
   PouchDB.Core.ExistingDocument<InvitesDBFields>;
-export type NewInvitesDBDocument = PouchDB.Core.Document<InvitesDBFields>;
+export type InvitesDBDocument = PouchDB.Core.Document<InvitesDBFields>;
 export type InvitesDB = PouchDB.Database<InvitesDBFields>;
