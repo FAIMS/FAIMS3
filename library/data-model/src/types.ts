@@ -20,6 +20,7 @@
 
 import {z} from 'zod';
 import {DecodedTokenPermissions, Role} from './permission';
+import {ExistingProjectDocument} from './data_storage';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -119,18 +120,6 @@ export type PossibleConnectionInfo =
       };
       jwt_token?: string;
     };
-export interface ProjectObject {
-  _id: NonUniqueProjectID;
-  name: string;
-  description?: string;
-  // Was the project created from a template?
-  template_id?: string;
-  data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
-  last_updated?: string;
-  created?: string;
-  status?: string;
-}
 
 // TODO make this better, currently there is no real explanation for this
 // structure
@@ -145,6 +134,7 @@ export const APINotebookListSchema = z.object({
   status: z.string().optional(),
   project_id: z.string(),
   metadata: z.record(z.unknown()).optional().nullable(),
+  ownedByTeamId: z.string().min(1).optional(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 
@@ -153,11 +143,12 @@ export const APINotebookGetSchema = z.object({
   // metadata and spec to match notebook json schema
   metadata: z.record(z.unknown()),
   'ui-specification': z.record(z.unknown()),
+  ownedByTeamId: z.string().min(1).optional(),
 });
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 
 export type ProjectsList = {
-  [key: string]: ProjectObject;
+  [key: string]: ExistingProjectDocument;
 };
 
 export interface ProjectSchema {
@@ -804,6 +795,9 @@ export type TemplateEditableDetails = z.infer<
 export const TemplateDerivedDetailsSchema = z.object({
   // Version identifier for the template
   version: z.number().default(1),
+
+  // Is this owned by a team?
+  ownedByTeamId: z.string().min(1).optional(),
 });
 export type TemplateDerivedDetails = z.infer<
   typeof TemplateDerivedDetailsSchema

@@ -20,7 +20,7 @@
 
 import {
   Action,
-  addResourceRole,
+  addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
   EncodedProjectUIModel,
@@ -28,6 +28,7 @@ import {
   GetNotebookResponse,
   GetNotebookUsersResponse,
   getRecordsWithRegex,
+  isAuthorized,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
@@ -39,17 +40,15 @@ import {
   ProjectUIModel,
   PutUpdateNotebookInputSchema,
   PutUpdateNotebookResponse,
-  removeResourceRole,
-  Resource,
+  removeProjectRole,
   Role,
-  userCanDo,
-  userResourceRoles,
+  userHasProjectRole,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
-import {getDataDb} from '../couchdb';
+import {getDataDb, localGetProjectsDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {
@@ -67,13 +66,18 @@ import {
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
 import {
-  getUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUsername,
   getUserInfoForProject,
   getUsers,
-  saveUser,
+  saveCouchUser,
+  saveExpressUser,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
@@ -88,12 +92,13 @@ export const api = express.Router();
 api.get(
   '/',
   requireAuthenticationAPI,
+  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
   async (req, res: Response<GetNotebookListResponse>) => {
     // get a list of notebooks from the db
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const notebooks = await getUserProjectsDetailed(req.user);
+    const notebooks = await getUserProjectsDetailed(req.user, req.query.teamId);
     res.json(notebooks);
   }
 );
@@ -109,9 +114,30 @@ api.get(
 api.post(
   '/',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({action: Action.CREATE_PROJECT}),
   processRequest({
     body: PostCreateNotebookInputSchema,
+  }),
+  isAllowedToMiddleware({
+    getAction(req) {
+      const body = req.body as PostCreateNotebookInput;
+      // If in team - suitable action (which is against team ID)
+      if (body.teamId) {
+        return Action.CREATE_PROJECT_IN_TEAM;
+      } else {
+        // Otherwise global create project required
+        return Action.CREATE_PROJECT;
+      }
+    },
+    getResourceId(req) {
+      const body = req.body as PostCreateNotebookInput;
+      if (body.teamId) {
+        // If creating a project in a team, the resource ID is the team!
+        return body.teamId;
+      } else {
+        // If creating a project globally - there is no resource ID!
+        return undefined;
+      }
+    },
   }),
   async (req, res: Response<PostCreateNotebookResponse>) => {
     // Force a check to be sure
@@ -174,16 +200,18 @@ api.post(
       uiSpec,
       metadata,
       // link to template ID if necessary
-      templateId
+      templateId,
+      // team ID if provided (authorisation to do so already checked)
+      req.body.teamId
     );
     if (projectID) {
       // Make the user an admin of this notebook
-      addResourceRole({
+      addProjectRole({
         user: req.user,
-        resourceId: projectID,
+        projectId: projectID,
         role: Role.PROJECT_ADMIN,
       });
-      await saveUser(req.user);
+      await saveExpressUser(req.user);
       res.json({notebook: projectID} satisfies PostCreateNotebookResponse);
     } else {
       throw new Exceptions.InternalSystemError(
@@ -210,6 +238,16 @@ api.get(
 
     // get full details of a single notebook
     const project_id = req.params.id;
+    let project;
+    try {
+      project = await localGetProjectsDb().get(project_id);
+    } catch (e) {
+      // Could not find the project
+      throw new Exceptions.ItemNotFoundException(
+        `Failed to find the project with ID ${project_id}.`
+      );
+    }
+
     const metadata = await getNotebookMetadata(project_id);
     const uiSpec = await getEncodedNotebookUISpec(project_id);
     if (metadata && uiSpec) {
@@ -218,7 +256,8 @@ api.get(
         // TODO fully implement a UI Spec zod model, and do runtime validation
         // in all client apps
         'ui-specification': uiSpec as unknown as Record<string, unknown>,
-      });
+        ownedByTeamId: project.ownedByTeamId,
+      } satisfies GetNotebookResponse);
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found.');
     }
@@ -397,15 +436,17 @@ api.get(
       roles: allRoles,
       users: users
         .map(u => {
-          const has = userResourceRoles({
-            resource: Resource.PROJECT,
-            user: u,
-            resourceId: req.params.id,
-          });
           return {
             name: u.name,
             username: u.user_id,
-            roles: allRoles.map(r => ({value: has.includes(r), name: r})),
+            roles: allRoles.map(r => ({
+              value: userHasProjectRole({
+                user: u,
+                projectId: req.params.id,
+                role: r,
+              }),
+              name: r,
+            })),
           };
         })
         .filter(d => d.roles.filter(r => r.value).length > 0),
@@ -437,9 +478,12 @@ api.post(
     });
 
     if (
-      !userCanDo({
+      !isAuthorized({
         action: actionNeeded,
-        user: req.user,
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
         resourceId: req.params.id,
       })
     ) {
@@ -449,7 +493,7 @@ api.post(
     }
 
     // Get the user specified
-    const user = await getUserFromEmailOrUsername(username);
+    const user = await getCouchUserFromEmailOrUsername(username);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
@@ -468,18 +512,18 @@ api.post(
 
     if (addRole) {
       // Add project role to the user
-      addResourceRole({
+      addProjectRole({
         user,
-        resourceId: req.params.id,
+        projectId: req.params.id,
         role: role,
       });
     } else {
       // Remove project role from the user
-      removeResourceRole({user, resourceId: notebookMetadata.project_id, role});
+      removeProjectRole({user, projectId: notebookMetadata.project_id, role});
     }
 
     // save the user after modifications have been made
-    await saveUser(user);
+    await saveCouchUser(user);
     res.status(200).end();
   }
 );
@@ -537,9 +581,12 @@ api.post(
     // Get the action needed
     const actionNeeded = projectInviteToAction({action: 'create', role});
     if (
-      !userCanDo({
+      !isAuthorized({
         action: actionNeeded,
-        user: user,
+        decodedToken: {
+          globalRoles: user.globalRoles,
+          resourceRoles: user.resourceRoles,
+        },
         resourceId: notebookId,
       })
     ) {
@@ -613,7 +660,7 @@ api.delete(
       }
     }
 
-    const user = await getUserFromEmailOrUsername(req.params.user_id);
+    const user = await getCouchUserFromEmailOrUsername(req.params.user_id);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
@@ -622,17 +669,17 @@ api.delete(
     }
 
     // Remove all resource roles associated with this user
-    for (const role of user.resourceRoles) {
+    for (const role of user.projectRoles) {
       if (role.resourceId === req.params.notebook_id) {
-        removeResourceRole({
-          resourceId: req.params.notebook_id,
+        removeProjectRole({
+          projectId: req.params.notebook_id,
           role: role.role,
           user,
         });
       }
     }
 
-    await saveUser(user);
+    await saveCouchUser(user);
     res.status(200).end();
   }
 );

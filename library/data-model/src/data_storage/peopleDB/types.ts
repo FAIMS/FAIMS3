@@ -39,7 +39,7 @@ export type OtherRoles = ConductorRole[];
 
 // This is the v1.1 or prior user model - these represent entries in the people
 // DB
-export interface UserV1Fields {
+export interface PeopleV1Fields {
   user_id: string;
   name: string;
   emails: Email[];
@@ -54,13 +54,13 @@ export interface UserV1Fields {
   // This is deprecated - never used
   owned: NonUniqueProjectID[];
 }
-export type UserV1Document = PouchDB.Core.ExistingDocument<UserV1Fields>;
+export type PeopleV1Document = PouchDB.Core.ExistingDocument<PeopleV1Fields>;
 
 export type ResourceRoleMap = {
   [resource in Resource]?: {resourceId: string; role: Role}[] | undefined;
 };
 
-export interface PeopleDBFields {
+export interface PeopleV2Fields {
   // Unique user ID - same as _id in all cases thus far
   user_id: string;
 
@@ -81,7 +81,41 @@ export interface PeopleDBFields {
   // This links profile information to profiles
   profiles: UserServiceProfiles;
 }
-export type UserV2Document = PouchDB.Core.ExistingDocument<PeopleDBFields>;
+export type PeopleV2Document = PouchDB.Core.ExistingDocument<PeopleV2Fields>;
+
+// V3 adds teams
+export interface PeopleV3Fields {
+  // Unique user ID - same as _id in all cases thus far
+  user_id: string;
+
+  // Full name
+  name: string;
+
+  // Emails associated with this profile
+  emails: Email[];
+
+  // This links profile information to profiles
+  profiles: UserServiceProfiles;
+
+  // Explicitly granted roles - we don't store the flattened/resolved roles
+  // This way we can be more careful about understanding where roles came from
+
+  // Project roles
+  projectRoles: ResourceRole[];
+
+  // Team roles
+  teamRoles: ResourceRole[];
+
+  // Template roles
+  templateRoles: ResourceRole[];
+
+  // Global (non resource-specific roles)
+  globalRoles: Role[];
+}
+export type PeopleV3Document = PouchDB.Core.ExistingDocument<PeopleV3Fields>;
+// We are at v3
+export type PeopleDBFields = PeopleV3Fields;
+
 export type PeopleDBDocument = PouchDB.Core.Document<PeopleDBFields>;
 export type ExistingPeopleDBDocument =
   PouchDB.Core.ExistingDocument<PeopleDBFields>;

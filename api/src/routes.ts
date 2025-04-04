@@ -25,9 +25,8 @@ import {
   Role,
   roleDetails,
   RoleScope,
-  userCanDo,
   userHasGlobalRole,
-  userHasResourceRole,
+  userHasProjectRole,
 } from '@faims3/data-model';
 import QRCode from 'qrcode';
 import {z} from 'zod';
@@ -66,6 +65,7 @@ import {
   isAllowedToMiddleware,
   requireAuthentication,
   requireNotebookMembership,
+  userCanDo,
 } from './middleware';
 
 export {app};
@@ -206,8 +206,8 @@ app.get(
         ownNotebooks: ownNotebooks,
         otherNotebooks: otherNotebooks,
         cluster_admin: userHasGlobalRole({role: Role.GENERAL_ADMIN, user}),
-        can_create_notebooks: userHasGlobalRole({
-          role: Role.GENERAL_CREATOR,
+        can_create_notebooks: userCanDo({
+          action: Action.CREATE_PROJECT,
           user,
         }),
         developer: DEVELOPER_MODE,
@@ -235,10 +235,10 @@ app.get(
     const uiSpec = await getEncodedNotebookUISpec(project_id);
     const invitesQR: any[] = [];
     if (notebook && uiSpec) {
-      const isAdmin = userHasResourceRole({
+      const isAdmin = userHasProjectRole({
         user,
-        resourceId: project_id,
-        resourceRole: Role.PROJECT_ADMIN,
+        projectId: project_id,
+        role: Role.PROJECT_ADMIN,
       });
       if (isAdmin) {
         const invites = await getInvitesForNotebook(project_id);
@@ -277,10 +277,14 @@ app.get(
 app.get(
   '/templates/',
   requireAuthentication,
-  isAllowedToMiddleware({action: Action.VIEW_TEMPLATES}),
+  isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
   async (req, res) => {
     const user = req.user!;
-    const templates = await getTemplates();
+    // permission visibility filter (TODO optimise lookup by filtering based on
+    // user visibility pre-query?)
+    const templates = (await getTemplates({})).filter(t =>
+      userCanDo({action: Action.READ_TEMPLATE_DETAILS, user, resourceId: t._id})
+    );
     res.render('templates', {
       user: user,
       templates: templates,
@@ -367,11 +371,10 @@ app.get(
         const roles: {name: Role; value: boolean}[] = [];
         for (const r of relevantRoles) {
           roles.push({
-            value: userHasResourceRole({
-              resourceRole: r,
+            value: userHasProjectRole({
+              role: r,
               user,
-              resourceId: projectId,
-              drill: false,
+              projectId: projectId,
             }),
             name: r,
           });

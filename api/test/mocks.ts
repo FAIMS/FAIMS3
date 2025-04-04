@@ -11,6 +11,7 @@ import {
   getTemplatesDb,
   getUsersDB,
   initialiseDbAndKeys,
+  getTeamsDB,
 } from '../src/couchdb';
 import {registerAdminUser} from '../src/couchdb/users';
 
@@ -48,21 +49,20 @@ const clearDB = async (db: PouchDB.Database) => {
 export const resetDatabases = async () => {
   // Fetch and clear all mocked in memory DBs
   const usersDB = getUsersDB();
-  if (usersDB) {
-    await clearDB(usersDB);
-  }
+  await clearDB(usersDB);
+
   const authDB = getAuthDB();
-  if (authDB) {
-    await clearDB(authDB);
-  }
+  await clearDB(authDB);
+
   const projectsDB = localGetProjectsDb();
-  if (projectsDB) {
-    await clearDB(projectsDB);
-  }
+  await clearDB(projectsDB);
+
   const templatesDB = getTemplatesDb();
-  if (templatesDB) {
-    await clearDB(templatesDB);
-  }
+  await clearDB(templatesDB);
+
+  const teamsDB = getTeamsDB();
+  await clearDB(teamsDB);
+
   for (const dbKey of Object.keys(databaseList)) {
     const toClear = ['metadata', 'projects'];
     if (toClear.some(prefix => dbKey.startsWith(prefix))) {

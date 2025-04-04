@@ -18,10 +18,10 @@
  *   Provides a function to validate a user token and return user details
  */
 
-import {jwtVerify} from 'jose';
-import {getUserFromEmailOrUsername} from '../couchdb/users';
-import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
 import {decodeAndValidateToken} from '@faims3/data-model';
+import {jwtVerify} from 'jose';
+import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
+import {getCouchUserFromEmailOrUsername} from '../couchdb/users';
 
 /**
  * validateToken
@@ -47,7 +47,7 @@ export const validateToken = async (
       throw Error('No sub claim!');
     }
 
-    const user = await getUserFromEmailOrUsername(payload.sub);
+    const user = await getCouchUserFromEmailOrUsername(payload.sub);
     if (!user) {
       // TODO here we could check more sophisticated things
       throw Error('User not present in database.');

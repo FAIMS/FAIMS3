@@ -34,10 +34,28 @@ const designDoc = {
         }
       }),
     },
-    byResourceRoles: {
+    byProjectRoles: {
       map: convertToCouchDBString(doc => {
-        if (doc.resourceRoles) {
-          for (const {role, resourceId} of doc.resourceRoles) {
+        if (doc.projectRoles) {
+          for (const {role, resourceId} of doc.projectRoles) {
+            emit([role, resourceId], 1);
+          }
+        }
+      }),
+    },
+    byTemplateRoles: {
+      map: convertToCouchDBString(doc => {
+        if (doc.templateRoles) {
+          for (const {role, resourceId} of doc.templateRoles) {
+            emit([role, resourceId], 1);
+          }
+        }
+      }),
+    },
+    byTeamRoles: {
+      map: convertToCouchDBString(doc => {
+        if (doc.teamRoles) {
+          for (const {role, resourceId} of doc.teamRoles) {
             emit([role, resourceId], 1);
           }
         }
@@ -45,10 +63,26 @@ const designDoc = {
     },
     byResource: {
       map: convertToCouchDBString(doc => {
-        if (doc.resourceRoles) {
-          // only emit once per resource Id !
-          const emitted = [];
-          for (const {resourceId} of doc.resourceRoles) {
+        // only emit once per resource Id !
+        const emitted = [];
+        if (doc.projectRoles) {
+          for (const {resourceId} of doc.projectRoles) {
+            if (emitted.indexOf(resourceId) === -1) {
+              emit(resourceId, 1);
+              emitted.push(resourceId);
+            }
+          }
+        }
+        if (doc.teamRoles) {
+          for (const {resourceId} of doc.teamRoles) {
+            if (emitted.indexOf(resourceId) === -1) {
+              emit(resourceId, 1);
+              emitted.push(resourceId);
+            }
+          }
+        }
+        if (doc.templateRoles) {
+          for (const {resourceId} of doc.templateRoles) {
             if (emitted.indexOf(resourceId) === -1) {
               emit(resourceId, 1);
               emitted.push(resourceId);

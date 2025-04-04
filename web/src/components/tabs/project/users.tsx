@@ -29,13 +29,18 @@ const ProjectUsers = ({projectId}: {projectId: string}) => {
 
       const data = await response.json();
 
-      return data
-        .filter((user: any) => user.project_roles[projectId])
+      const tableData = data
+        .filter((user: any) =>
+          user.resourceRoles.find((role: any) => role.resourceId === projectId)
+        )
         .map((user: any) => ({
           ...user,
-          'team-roles': user.other_roles,
-          'project-roles': user.project_roles[projectId],
+          projectRoles: user.resourceRoles
+            .filter((role: any) => role.resourceId === projectId)
+            .map((role: any) => role.role),
         }));
+
+      return tableData;
     },
   });
 

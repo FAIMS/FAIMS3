@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import {Transporter, SendMailOptions, SentMessageInfo} from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import NodeCache from 'node-cache';
+import {RUNNING_UNDER_TEST} from '../buildconfig';
 
 /**
  * Enum representing the possible email service implementations.
@@ -245,11 +246,13 @@ export class MockEmailService extends BaseEmailService {
   }: {
     options: EmailOptions;
   }): Promise<SentMessageInfo> {
-    console.log('[MockEmailService] Sending email:', {
-      from: `${this.config.fromName} <${this.config.fromEmail}>`,
-      to: options.to,
-      subject: options.subject,
-    });
+    if (!RUNNING_UNDER_TEST) {
+      console.log('[MockEmailService] Sending email:', {
+        from: `${this.config.fromName} <${this.config.fromEmail}>`,
+        to: options.to,
+        subject: options.subject,
+      });
+    }
 
     // Store the email for later inspection
     this.sentEmails.push({

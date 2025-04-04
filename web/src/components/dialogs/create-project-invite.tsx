@@ -10,6 +10,7 @@ import {Button} from '../ui/button';
 import {NOTEBOOK_NAME} from '@/constants';
 import {CreateProjectInviteForm} from '../forms/create-project-invite';
 import {useState} from 'react';
+import {Plus} from 'lucide-react';
 
 /**
  * Component for rendering a dialog to create a new project from a template.
@@ -21,7 +22,13 @@ export const CreateProjectInvite = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant="outline">Create Invite</Button>
+        <Button
+          variant="outline"
+          className="bg-primary text-primary-foreground"
+        >
+          <Plus />
+          Create Invite
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
