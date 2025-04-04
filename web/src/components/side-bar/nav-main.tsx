@@ -17,7 +17,7 @@ import {
 import {Link, useLocation} from '@tanstack/react-router';
 import {cn} from '@/lib/utils';
 
-interface NavItem {
+export interface NavItem {
   title: string;
   url: string;
   icon?: LucideIcon;

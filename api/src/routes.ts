@@ -282,7 +282,7 @@ app.get(
     const user = req.user!;
     // permission visibility filter (TODO optimise lookup by filtering based on
     // user visibility pre-query?)
-    const templates = (await getTemplates()).filter(t =>
+    const templates = (await getTemplates({})).filter(t =>
       userCanDo({action: Action.READ_TEMPLATE_DETAILS, user, resourceId: t._id})
     );
     res.render('templates', {

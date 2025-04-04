@@ -346,13 +346,33 @@ export type PutUpdateTeamResponse = z.infer<typeof PutUpdateTeamResponseSchema>;
 /**
  * Schema for managing team membership
  */
-export const TeamMembershipInputSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  role: z.nativeEnum(Role, {
-    errorMap: () => ({message: 'Must be a valid role'}),
-  }),
-  add: z.boolean(),
-});
+export const TeamMembershipInputSchema = z
+  .object({
+    username: z.string().min(1, 'Username is required'),
+    role: z
+      .nativeEnum(Role, {
+        errorMap: () => ({message: 'Must be a valid role'}),
+      })
+      .optional(),
+    action: z.enum(['ADD_ROLE', 'REMOVE_ROLE', 'REMOVE_USER']),
+  })
+  .refine(
+    // Cannot remove and include role
+    ({action, role}) => !(action === 'REMOVE_USER' && !!role),
+    {
+      message:
+        'Invalid payload. You cannot specify a role when removing a user.',
+      path: ['role', 'action'],
+    }
+  )
+  .refine(
+    ({action, role}) =>
+      !((action === 'ADD_ROLE' || action === 'REMOVE_ROLE') && !role),
+    {
+      message: 'Must specify a role if removing or adding a role to the user.',
+      path: ['role', 'action'],
+    }
+  );
 
 /**
  * Team member role schema

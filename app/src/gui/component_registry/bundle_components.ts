@@ -77,15 +77,6 @@ registerField(
 );
 
 registerField(
-  'core-material-ui',
-  'TextField',
-  'HTML text field',
-  'A simple text field',
-  'Simple',
-  TextField
-);
-
-registerField(
   'formik-material-ui',
   'TextField',
   'Input field',
@@ -247,6 +238,15 @@ registerField(
   'Multiple line Input Box',
   'Text',
   FormikTextField
+);
+
+registerField(
+  'core-material-ui',
+  'TextField',
+  'HTML text field',
+  'A simple text field',
+  'Simple',
+  TextField
 );
 
 registerField(

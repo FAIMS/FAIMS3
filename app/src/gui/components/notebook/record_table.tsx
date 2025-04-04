@@ -43,7 +43,7 @@ import {
   GridColDef,
   GridEventListener,
 } from '@mui/x-data-grid';
-import {ReactNode, useCallback, useMemo, useState} from 'react';
+import {ReactNode, useCallback, useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
