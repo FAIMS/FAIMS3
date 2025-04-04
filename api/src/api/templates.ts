@@ -66,8 +66,10 @@ patch();
 export const api = express.Router();
 
 /**
- * GET list templates
- * Gets a list of templates from the templates DB.
+ * GET list templates Gets a list of templates from the templates DB.
+ *
+ * Can filter by team if desired -  uses an efficient index to do so.
+ *
  */
 api.get(
   '/',
@@ -89,13 +91,14 @@ api.get(
     res.json({templates: await getTemplates()});
 =======
   isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
+  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
   async (req, res: Response<GetListTemplatesResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
 
     res.json({
-      templates: (await getTemplates()).filter(t =>
+      templates: (await getTemplates({teamId: req.query.teamId})).filter(t =>
         userCanDo({
           action: Action.READ_TEMPLATE_DETAILS,
           user: req.user!,

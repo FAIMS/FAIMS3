@@ -69,6 +69,8 @@ const tokenPayloadSchema = z
     name: z.string(),
     // The server which generated this token - this is the URL
     server: z.string(),
+    // username
+    username: z.string(),
   })
   .merge(tokenPermissionsSchema);
 export type TokenPayload = z.infer<typeof tokenPayloadSchema>;

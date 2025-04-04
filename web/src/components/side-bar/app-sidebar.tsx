@@ -1,5 +1,4 @@
-import {useAuth} from '@/context/auth-provider';
-import {NavMain} from '@/components/side-bar/nav-main';
+import {NavItem, NavMain} from '@/components/side-bar/nav-main';
 import {NavUser} from '@/components/side-bar/nav-user';
 import {
   Sidebar,
@@ -8,12 +7,15 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {useGetProjects, useGetTemplates} from '@/hooks/get-hooks';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {useAuth} from '@/context/auth-provider';
+import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
 import {Link, useLocation} from '@tanstack/react-router';
-import {LayoutTemplate, LetterText, Users} from 'lucide-react';
+import {LayoutTemplate, LetterText, Users, House} from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {Action} from '@faims3/data-model';
 
 /**
  * AppSidebar component renders the main application sidebar with navigation items
@@ -29,8 +31,79 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
   if (!user) return <></>;
 
+  // Can see different bits
+  const canSeeProjects = useIsAuthorisedTo({action: Action.LIST_PROJECTS});
+  const canSeeTemplates = useIsAuthorisedTo({action: Action.LIST_TEMPLATES});
+  const canSeeUsers = useIsAuthorisedTo({action: Action.VIEW_USER_LIST});
+
+  // currently anyone can list teams - but it is filtered per resource
+  const canSeeTeams = true;
+
   const {data: projects} = useGetProjects(user);
+  const {data: teams} = useGetTeams(user);
   const {data: templates} = useGetTemplates(user);
+
+  const topSectionNavItems: NavItem[] = [];
+  const bottomSectionNavItems: NavItem[] = [];
+
+  if (canSeeProjects) {
+    topSectionNavItems.push({
+      title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+      url: '/projects',
+      icon: LetterText,
+      isActive: pathname.startsWith('/templates'),
+      items:
+        projects?.length > 0
+          ? projects.map(({name, project_id}: any) => ({
+              id: project_id,
+              title: name,
+              url: `/projects/${project_id}`,
+            }))
+          : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME}s...`}],
+    });
+  }
+
+  if (canSeeTemplates) {
+    topSectionNavItems.push({
+      title: 'Templates',
+      url: '/templates',
+      icon: LayoutTemplate,
+      isActive: pathname.startsWith('/templates'),
+      items:
+        templates?.length > 0
+          ? templates.map(({_id, metadata: {name}}: any) => ({
+              id: _id,
+              title: name,
+              url: `/templates/${_id}`,
+            }))
+          : [{id: 'no-templates', title: 'No templates...'}],
+    });
+  }
+
+  if (canSeeUsers) {
+    bottomSectionNavItems.push({
+      title: 'Users',
+      url: '/users',
+      icon: Users,
+    });
+  }
+
+  if (canSeeTeams) {
+    bottomSectionNavItems.push({
+      title: 'Teams',
+      url: '/teams',
+      icon: House,
+      isActive: pathname.startsWith('/teams'),
+      items:
+        teams && teams.teams.length > 0
+          ? teams.teams.map(({_id, name}) => ({
+              id: _id,
+              title: name,
+              url: `/teams/${_id}`,
+            }))
+          : [{id: 'no-teams', title: 'No teams...'}],
+    });
+  }
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -40,50 +113,9 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain
-          title="Content"
-          items={[
-            {
-              title: 'Templates',
-              url: '/templates',
-              icon: LayoutTemplate,
-              isActive: pathname.startsWith('/templates'),
-              items:
-                templates?.length > 0
-                  ? templates.map(({_id, metadata: {name}}: any) => ({
-                      id: _id,
-                      title: name,
-                      url: `/templates/${_id}`,
-                    }))
-                  : [{id: 'no-templates', title: 'No templates...'}],
-            },
-            {
-              title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-              url: '/projects',
-              icon: LetterText,
-              isActive: pathname.startsWith('/templates'),
-              items:
-                projects?.length > 0
-                  ? projects.map(({name, project_id}: any) => ({
-                      id: project_id,
-                      title: name,
-                      url: `/projects/${project_id}`,
-                    }))
-                  : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME}s...`}],
-            },
-          ]}
-        />
-        {user.user.cluster_admin && (
-          <NavMain
-            title="Management"
-            items={[
-              {
-                title: 'Users',
-                url: '/users',
-                icon: Users,
-              },
-            ]}
-          />
+        <NavMain title="Content" items={topSectionNavItems} />
+        {bottomSectionNavItems.length > 0 && (
+          <NavMain title="Management" items={bottomSectionNavItems} />
         )}
       </SidebarContent>
       <SidebarFooter>

@@ -179,6 +179,7 @@ export async function generateJwtFromUser({
       ...permissionsComponent,
       name: user.name,
       server: CONDUCTOR_PUBLIC_URL,
+      username: user.user_id,
     };
 
     // Then there are other parts we wish to include

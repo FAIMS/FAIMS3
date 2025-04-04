@@ -27,6 +27,8 @@ PouchDB.plugin(SecurityPlugin);
 import {
   APINotebookList,
   EncodedProjectUIModel,
+  GetNotebookListResponse,
+  logError,
   notebookRecordIterator,
   ProjectDBFields,
   ProjectDocument,
@@ -169,8 +171,9 @@ export const getUserProjects = async (
  * @returns an array of ProjectDocument objects
 >>>>>>> origin/main
  */
-export const getNotebooks = async (
-  user: Express.User
+export const getUserProjectsDetailed = async (
+  user: Express.User,
+  teamId: string | undefined = undefined
 ): Promise<APINotebookList[]> => {
   // Respond with notebook list model
   const output: APINotebookList[] = [];
@@ -202,9 +205,18 @@ export const getNotebooks = async (
           status: project.status,
 =======
   // Get all projects and filter for user access
-  const allDocs = await projectsDb.allDocs<ProjectDocument>({
-    include_docs: true,
-  });
+
+  let allDocs;
+  if (!teamId) {
+    allDocs = await projectsDb.allDocs<ProjectDocument>({
+      include_docs: true,
+    });
+  } else {
+    allDocs = await projectsDb.query<ProjectDocument>(PROJECTS_BY_TEAM_ID, {
+      key: teamId,
+      include_docs: true,
+    });
+  }
 
   const userProjects = allDocs.rows
     .map(r => r.doc)
@@ -238,7 +250,12 @@ export const getNotebooks = async (
 >>>>>>> origin/main
           project_id: projectId,
           metadata: projectMeta,
-        });
+          ownedByTeamId: project!.ownedByTeamId,
+        } satisfies GetNotebookListResponse[number];
+      } catch (e) {
+        console.error('Error occurred during detailed notebook listing');
+        logError(e);
+        return undefined;
       }
     }
   }

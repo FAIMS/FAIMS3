@@ -313,17 +313,16 @@ export async function getUsersForTeam({
 }): Promise<ExistingPeopleDBDocument[]> {
   // Get the users database
   const usersDb = getUsersDB();
+
   // Fetch all user records from the database and get doc
   return (
-    await usersDb.query<PeopleDBFields>('indexes/byTeam', {
+    await usersDb.query<PeopleDBFields>('indexes/byResource', {
       key: teamId,
       include_docs: true,
     })
-  ).rows.reduce((filtered, option) => {
-    if (option.doc) filtered.push(option.doc);
-    return filtered;
-  }, [] as ExistingPeopleDBDocument[]);
->>>>>>> origin/main
+  ).rows
+    .filter(r => !!r.doc && !r.id.startsWith('_'))
+    .map(r => r.doc!);
 }
 
 /**
