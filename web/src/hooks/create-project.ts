@@ -8,11 +8,17 @@ import {readFileAsText} from '@/lib/utils';
  * @param {string} template - The template ID
  * @returns {Promise<Response>} The response from the API
  */
-export const createProjectFromTemplate = async (
-  user: User,
-  name: string,
-  template: string
-) =>
+export const createProjectFromTemplate = async ({
+  user,
+  name,
+  template,
+  teamId,
+}: {
+  user: User;
+  name: string;
+  template: string;
+  teamId?: string;
+}) =>
   await fetch(`${import.meta.env.VITE_API_URL}/api/notebooks`, {
     method: 'POST',
     headers: {
@@ -22,6 +28,7 @@ export const createProjectFromTemplate = async (
     body: JSON.stringify({
       template_id: template,
       name,
+      teamId,
     }),
   });
 
@@ -32,11 +39,17 @@ export const createProjectFromTemplate = async (
  * @param {File} file - The file to upload
  * @returns {Promise<Response>} The response from the API
  */
-export const createProjectFromFile = async (
-  user: User,
-  name: string,
-  file: File
-) => {
+export const createProjectFromFile = async ({
+  user,
+  name,
+  file,
+  teamId,
+}: {
+  user: User;
+  name: string;
+  file: File;
+  teamId?: string;
+}) => {
   const jsonString = await readFileAsText(file);
 
   return await fetch(`${import.meta.env.VITE_API_URL}/api/notebooks`, {
@@ -45,6 +58,6 @@ export const createProjectFromFile = async (
       'Content-Type': 'application/json',
       Authorization: `Bearer ${user.token}`,
     },
-    body: JSON.stringify({name, ...JSON.parse(jsonString)}),
+    body: JSON.stringify({name, teamId, ...JSON.parse(jsonString)}),
   });
 };

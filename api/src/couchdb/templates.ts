@@ -19,12 +19,27 @@ import {generateRandomString, slugify} from '../utils';
  * validate with Zod.
  * @returns an array of template objects
  */
-export const getTemplates = async (): Promise<TemplateDocument[]> => {
+export const getTemplates = async ({
+  teamId,
+}: {
+  teamId?: string;
+}): Promise<TemplateDocument[]> => {
   const templatesDb = getTemplatesDb();
   try {
-    const resultList = await templatesDb.allDocs({
-      include_docs: true,
-    });
+    let resultList;
+    if (teamId) {
+      resultList = await templatesDb.query<TemplateDocument>(
+        TEMPLATES_BY_TEAM_ID,
+        {
+          key: teamId,
+          include_docs: true,
+        }
+      );
+    } else {
+      resultList = await templatesDb.allDocs({
+        include_docs: true,
+      });
+    }
     return resultList.rows
       .filter(document => {
         return !!document.doc && !document.id.startsWith('_');
@@ -129,7 +144,7 @@ export const createTemplate = async ({
   const templateDoc: TemplateDocument = {
     _id: templateId,
     version: 1,
-    ...payload,
+    'ui-specification': payload['ui-specification'],
     metadata: {
       ...payload.metadata,
       project_status: 'active',

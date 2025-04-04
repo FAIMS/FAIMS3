@@ -48,7 +48,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
-import {getDataDb} from '../couchdb';
+import {getDataDb, localGetProjectsDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {
@@ -92,12 +92,13 @@ export const api = express.Router();
 api.get(
   '/',
   requireAuthenticationAPI,
+  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
   async (req, res: Response<GetNotebookListResponse>) => {
     // get a list of notebooks from the db
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const notebooks = await getUserProjectsDetailed(req.user);
+    const notebooks = await getUserProjectsDetailed(req.user, req.query.teamId);
     res.json(notebooks);
   }
 );
@@ -237,6 +238,16 @@ api.get(
 
     // get full details of a single notebook
     const project_id = req.params.id;
+    let project;
+    try {
+      project = await localGetProjectsDb().get(project_id);
+    } catch (e) {
+      // Could not find the project
+      throw new Exceptions.ItemNotFoundException(
+        `Failed to find the project with ID ${project_id}.`
+      );
+    }
+
     const metadata = await getNotebookMetadata(project_id);
     const uiSpec = await getEncodedNotebookUISpec(project_id);
     if (metadata && uiSpec) {
@@ -245,7 +256,8 @@ api.get(
         // TODO fully implement a UI Spec zod model, and do runtime validation
         // in all client apps
         'ui-specification': uiSpec as unknown as Record<string, unknown>,
-      });
+        ownedByTeamId: project.ownedByTeamId,
+      } satisfies GetNotebookResponse);
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found.');
     }

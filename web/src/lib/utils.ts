@@ -90,11 +90,23 @@ export const downloadFile = async (
   link.click();
 };
 
-/**
- * roleLabel function returns the label of a role.
- *
- * @param {string} role - The role to get the label for.
- * @returns {string} The label of the role.
- */
-export const roleLabel = (role: string) =>
-  role.split('_').at(1)?.toLowerCase() || role;
+export function displayUnixTimestampMs({
+  timestamp,
+}: {
+  timestamp: number;
+}): string {
+  const date = new Date(timestamp);
+  // Format: Apr 2, 2025, 3:30 PM
+  return (
+    date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }) +
+    ', ' +
+    date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  );
+}
