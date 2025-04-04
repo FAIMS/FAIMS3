@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Alert, Box, Button, Grid, Tab, Tabs, TextField} from '@mui/material';
-
+import {Alert, Box, Button, Grid, Tab, Tabs} from '@mui/material';
+import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
 
 import {TabContext} from '@mui/lab';
@@ -42,6 +42,14 @@ export const DesignPanel = () => {
   const [alertMessage, setAlertMessage] = useState<string>('');
   const [untickedForms, setUntickedForms] = useState<string[]>(
     Object.keys(viewSets).filter(form => !visibleTypes.includes(form))
+  );
+
+  console.log('DesignPanel');
+  console.log(
+    'visible forms ',
+    visibleTypes,
+    '& unticked forms ',
+    untickedForms
   );
 
   const maxKeys = Object.keys(viewSets).length;
@@ -345,7 +353,7 @@ export const DesignPanel = () => {
                     addNewForm();
                   }}
                 >
-                  <TextField
+                  <DebouncedTextField
                     fullWidth
                     required
                     label="Form Name"

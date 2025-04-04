@@ -20,7 +20,6 @@ import {
   MenuItem,
   Stack,
   Divider,
-  TextField,
   Button,
   IconButton,
   Tooltip,
@@ -32,6 +31,7 @@ import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import QuizIcon from '@mui/icons-material/Quiz';
 import {useState, useMemo} from 'react';
+import DebouncedTextField from './debounced-text-field';
 
 // Defines the Condition component to create a conditional expression
 // that can be attached to a View or Field (and maybe more)
@@ -781,7 +781,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       cName !== 'Checkbox'
     ) {
       return (
-        <TextField
+        <DebouncedTextField
           variant="outlined"
           label="Value"
           value={condition.value ?? ''}
@@ -879,7 +879,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       default: {
         if (possibleOptions.length === 0) {
           return (
-            <TextField
+            <DebouncedTextField
               variant="outlined"
               label="Value"
               value={condition.value ?? ''}
@@ -892,7 +892,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             (opt: any) => opt.value === condition.value
           );
           return (
-            <TextField
+            <DebouncedTextField
               variant="outlined"
               label="Value"
               value={condition.value ?? ''}
@@ -1007,7 +1007,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
         {targetFieldDef ? (
           renderValueEditor(targetFieldDef)
         ) : (
-          <TextField label="Value" sx={{minWidth: 200}} />
+          <DebouncedTextField label="Value" sx={{minWidth: 200}} />
         )}
 
         <Tooltip describeChild title="Make this an 'and' or 'or' condition">

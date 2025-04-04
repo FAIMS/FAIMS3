@@ -33,6 +33,7 @@ import {FieldEditor} from './field-editor';
 import {useEffect, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {getFieldNames} from '../fields';
+import Typography from '@mui/material/Typography';
 
 type Props = {
   viewSetId: string;
@@ -41,10 +42,28 @@ type Props = {
 };
 
 export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
+  console.log('FieldList', viewSetId, viewId);
+
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].fviews[viewId]
   );
+
+  const fields = useAppSelector(
+    state => state.notebook['ui-specification'].fields
+  );
+
   const dispatch = useAppDispatch();
+
+  const [hiddenExpanded, setHiddenExpanded] = useState(true);
+
+  // Updated to check 'component-parameters.hidden'
+  const hiddenFields = fView.fields.filter(
+    fieldName => fields[fieldName]?.['component-parameters']?.hidden
+  );
+
+  const visibleFields = fView.fields.filter(
+    fieldName => !fields[fieldName]?.['component-parameters']?.hidden
+  );
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogState, setDialogState] = useState({
@@ -64,6 +83,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   };
 
   const addFieldAfterCallback = (fieldName: string) => {
+    console.log('adding a field after', fieldName);
     setAddAfterField(fieldName);
     setDialogOpen(true);
   };
@@ -91,9 +111,6 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const updateAllToggles = () => {
     fView.fields.forEach((fieldName: string) => {
       allClosed[fieldName] = false;
-    });
-
-    fView.fields.forEach((fieldName: string) => {
       allOpen[fieldName] = true;
     });
   };
@@ -171,59 +188,69 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         )}
       </Stack>
 
-      {fView.fields.map((fieldName: string) => {
-        return (
-          <FieldEditor
-            key={fieldName}
-            fieldName={fieldName}
-            viewSetId={viewSetId}
-            viewId={viewId}
-            expanded={isExpanded[fieldName] ?? false}
-            addFieldCallback={addFieldAfterCallback}
-            handleExpandChange={handleExpandChange(fieldName)}
-            moveFieldCallback={(targetViewId: string) =>
-              moveFieldCallback(targetViewId)
-            }
-          />
-        );
-      })}
-
-      <Stack direction="row" spacing={1} mt={2}>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={openDialog}
-          startIcon={<AddCircleOutlineRoundedIcon />}
-        >
-          Add a Field
-        </Button>
-
-        {showCollapseButton ? (
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => {
-              setIsExpanded(allClosed);
-              setShowCollapseButton(false);
-            }}
-            startIcon={<UnfoldLessDoubleRoundedIcon />}
-          >
-            Collapse All Fields
-          </Button>
-        ) : (
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => {
-              setIsExpanded(allOpen);
-              setShowCollapseButton(true);
-            }}
-            startIcon={<UnfoldMoreDoubleRoundedIcon />}
-          >
-            Expand All Fields
-          </Button>
-        )}
+      <Stack spacing={0} mt={2} mb={2}>
+        <Typography variant="h6">Visible Fields</Typography>
+        <Typography variant="body2" color="textSecondary">
+          Visible fields will appear in the survey.
+        </Typography>
       </Stack>
+      {visibleFields.map((fieldName: string) => (
+        <FieldEditor
+          key={fieldName}
+          fieldName={fieldName}
+          viewSetId={viewSetId}
+          viewId={viewId}
+          expanded={isExpanded[fieldName] ?? false}
+          addFieldCallback={addFieldAfterCallback}
+          handleExpandChange={handleExpandChange(fieldName)}
+          moveFieldCallback={(targetViewId: string) =>
+            moveFieldCallback(targetViewId)
+          }
+        />
+      ))}
+
+      <Typography variant="h6" mt={2}>
+        Hidden Fields
+      </Typography>
+      {hiddenFields.length > 0 ? (
+        <>
+          <div style={{padding: '16px 0'}}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setHiddenExpanded(!hiddenExpanded)}
+              startIcon={
+                hiddenExpanded ? (
+                  <UnfoldLessDoubleRoundedIcon />
+                ) : (
+                  <UnfoldMoreDoubleRoundedIcon />
+                )
+              }
+            >
+              {hiddenExpanded
+                ? 'Collapse Hidden Fields'
+                : 'Expand Hidden Fields'}
+            </Button>
+          </div>
+          {hiddenExpanded &&
+            hiddenFields.map((fieldName: string) => (
+              <FieldEditor
+                key={fieldName}
+                fieldName={fieldName}
+                viewSetId={viewSetId}
+                viewId={viewId}
+                expanded={isExpanded[fieldName] ?? false}
+                addFieldCallback={addFieldAfterCallback}
+                moveFieldCallback={moveFieldCallback}
+                handleExpandChange={handleExpandChange(fieldName)}
+              />
+            ))}
+        </>
+      ) : (
+        <Typography variant="body2" color="textSecondary">
+          No hidden fields
+        </Typography>
+      )}
 
       <Dialog open={dialogOpen} onClose={closeDialog}>
         <DialogTitle>New Field</DialogTitle>

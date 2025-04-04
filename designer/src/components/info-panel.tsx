@@ -19,15 +19,17 @@ import {
   FormControlLabel,
   FormHelperText,
   Grid,
-  TextField,
   Typography,
   Card,
 } from '@mui/material';
+import DebouncedTextField from './debounced-text-field';
 import {useEffect, useState, useRef} from 'react';
 import {useAppSelector, useAppDispatch} from '../state/hooks';
 import {PropertyMap} from '../state/initial';
 import {MdxEditor} from './mdx-editor';
 import {MDXEditorMethods} from '@mdxeditor/editor';
+
+import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
 
 export const InfoPanel = () => {
   const metadata = useAppSelector(state => state.notebook.metadata);
@@ -39,6 +41,11 @@ export const InfoPanel = () => {
   const [metadataFieldValue, setMetadataFieldValue] = useState('');
   const [extraFields, setExtraFields] = useState<PropertyMap>({});
   const [alert, setAlert] = useState('');
+
+  const derivedFrom =
+    VITE_TEMPLATE_PROTECTIONS && metadata['derived-from']
+      ? (metadata['derived-from'] as string)
+      : '';
 
   useEffect(() => {
     const knownFields = [
@@ -100,11 +107,23 @@ export const InfoPanel = () => {
   return (
     <div>
       <Typography variant="h2">General Information</Typography>
+
+      {derivedFrom?.trim() && (
+        <Typography
+          variant="body1"
+          sx={{mt: 1}}
+          data-testid="derived-from-info"
+        >
+          This notebook is derived from <i>{derivedFrom}</i>. Some fields may be
+          protected.
+        </Typography>
+      )}
+
       <Card variant="outlined" sx={{mt: 2}}>
         <Grid container spacing={5} p={3}>
           <Grid container item xs={12} spacing={2.5}>
             <Grid item xs={12} sm={4}>
-              <TextField
+              <DebouncedTextField
                 fullWidth
                 required
                 label="Project Name"
@@ -121,7 +140,7 @@ export const InfoPanel = () => {
             </Grid>
 
             <Grid item xs={12} sm={4}>
-              <TextField
+              <DebouncedTextField
                 fullWidth
                 label="Project Lead"
                 name="project_lead"
@@ -133,7 +152,7 @@ export const InfoPanel = () => {
             </Grid>
 
             <Grid item xs={12} sm={4}>
-              <TextField
+              <DebouncedTextField
                 fullWidth
                 label="Lead Institution"
                 name="lead_institution"
@@ -189,7 +208,7 @@ export const InfoPanel = () => {
               </Grid>
               <Grid item xs={12}>
                 <Grid item xs={12} sm={10}>
-                  <TextField
+                  <DebouncedTextField
                     fullWidth
                     label="Notebook Version"
                     name="notebook_version"
@@ -224,7 +243,7 @@ export const InfoPanel = () => {
                         addNewMetadataField();
                       }}
                     >
-                      <TextField
+                      <DebouncedTextField
                         fullWidth
                         label="Metadata Field Name"
                         name="metadata_field_name"
@@ -232,7 +251,7 @@ export const InfoPanel = () => {
                         value={metadataFieldName}
                         onChange={updateMetadataFieldName}
                       />
-                      <TextField
+                      <DebouncedTextField
                         fullWidth
                         sx={{mt: 1.5}}
                         label="Metadata Field Value"
@@ -267,7 +286,7 @@ export const InfoPanel = () => {
                     {Object.keys(extraFields).map(key => {
                       return (
                         <Grid item xs={12} key={key}>
-                          <TextField
+                          <DebouncedTextField
                             fullWidth
                             label={key}
                             name={key}
