@@ -19,12 +19,16 @@
  */
 
 import {
+  Action,
+  addTemplateRole,
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
+  PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
+  Role,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
@@ -37,10 +41,14 @@ import {
   getTemplates,
   updateExistingTemplate,
 } from '../couchdb/templates';
-import {userCanDoWithTemplate} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {requireAuthenticationAPI} from '../middleware';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
 
+import {saveExpressUser} from '../couchdb/users';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -55,20 +63,21 @@ export const api = express.Router();
 api.get(
   '/',
   requireAuthenticationAPI,
+  isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
   async (req, res: Response<GetListTemplatesResponse>) => {
     if (!req.user) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to get templates.'
-      );
+      throw new Exceptions.UnauthorizedException();
     }
 
-    // User is not authorised to read the list of templates
-    if (!userCanDoWithTemplate(req.user, undefined, 'list')) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to get templates.'
-      );
-    }
-    res.json({templates: await getTemplates()});
+    res.json({
+      templates: (await getTemplates()).filter(t =>
+        userCanDo({
+          action: Action.READ_TEMPLATE_DETAILS,
+          user: req.user!,
+          resourceId: t._id,
+        })
+      ),
+    });
   }
 );
 
@@ -78,98 +87,104 @@ api.get(
  */
 api.get(
   '/:id',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.READ_TEMPLATE_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
   processRequest({
     params: z.object({id: z.string()}),
   }),
-  requireAuthenticationAPI,
   async (req, res: Response<GetTemplateByIdResponse>) => {
-    const id = req.params.id;
-
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to get templates.'
-      );
-    }
-
-    // User is not authorised to create a template
-    if (!userCanDoWithTemplate(req.user, id, 'read')) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to read this template.'
-      );
-    }
-
-    const template = await getTemplate(id);
+    const template = await getTemplate(req.params.id);
     res.json(template);
   }
 );
 
 /**
  * POST create new template
+ *
  * Creates a new template. The payload is validated by Zod before reaching this
- * function. Expects a document as the response JSON. Requires cluster admin
- * privileges.
+ * function. Expects a document as the response JSON.
+ *
+ * Permissions respect team context.
  */
 api.post(
   '/',
+  requireAuthenticationAPI,
   processRequest({
     body: PostCreateTemplateInputSchema,
   }),
-  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    getAction(req) {
+      const body = req.body as PostCreateTemplateInput;
+      if (body.teamId) {
+        return Action.CREATE_TEMPLATE_IN_TEAM;
+      } else {
+        return Action.CREATE_TEMPLATE;
+      }
+    },
+    getResourceId(req) {
+      const body = req.body as PostCreateTemplateInput;
+      if (body.teamId) {
+        // If creating a template in a team, the resource ID is the team!
+        return body.teamId;
+      } else {
+        // If creating a template globally - there is no resource ID!
+        return undefined;
+      }
+    },
+  }),
   async (req, res: Response<PostCreateTemplateResponse>) => {
-    // Parse the input schema to strip keys
-
-    // First check the user has permissions to do this action
     if (!req.user) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to create templates.'
-      );
-    }
-
-    // User is not authorised to create a template
-    if (!userCanDoWithTemplate(req.user, undefined, 'create')) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to create a template.'
-      );
+      throw new Exceptions.UnauthorizedException();
     }
 
     // Now we can create the new template and return it
-    const newTemplate = await createTemplate(req.body);
+    const newTemplate = await createTemplate({
+      payload: req.body,
+    });
+
+    // Make the creator the admin
+    addTemplateRole({
+      user: req.user,
+      role: Role.TEMPLATE_ADMIN,
+      templateId: newTemplate._id,
+    });
+    await saveExpressUser(req.user);
+
     res.json(newTemplate);
   }
 );
 
 /**
- * PUT update existing template
- * Updates an existing template. The payload is validated by Zod before reaching this
- * function. Expects a document as the response JSON. Requires cluster admin
- * privileges.
+ * PUT update existing template Updates an existing template. The payload is
+ * validated by Zod before reaching this function. Expects a document as the
+ * response JSON. Requires cluster admin privileges.
+ *
+ * TODO distinguish between the different types of template updates permission
+ * wise. Right now we look for just the update content action.
  */
 api.put(
   '/:id',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    // TODO be more specific about the kind of update (i.e. ui spec or not)
+    action: Action.UPDATE_TEMPLATE_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
   processRequest({
     params: z.object({id: z.string()}),
     body: PutUpdateTemplateInputSchema,
   }),
-  requireAuthenticationAPI,
   async (req, res: Response<PutUpdateTemplateResponse>) => {
     // pull out template Id
     const templateId = req.params.id;
 
-    // First check the user has permissions to do this action
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to update templates.'
-      );
-    }
-
-    // User is not authorised to create a template
-    if (!userCanDoWithTemplate(req.user, templateId, 'update')) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to update this template.'
-      );
-    }
-
-    // Now update the existing document
     // And respond with fulfilled document after updating
     const updatedTemplate = await updateExistingTemplate(templateId, req.body);
     res.json(updatedTemplate);
@@ -183,62 +198,47 @@ api.put(
  */
 api.post(
   '/:id/delete',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.DELETE_TEMPLATE,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
   processRequest({
     params: z.object({id: z.string()}),
   }),
-  requireAuthenticationAPI,
-  async (req, res: Response<{message: string}>) => {
+  async (req, res: Response<PutUpdateTemplateResponse>) => {
     // pull out template Id
     const templateId = req.params.id;
-
-    // First check the user has permissions to do this action
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to delete templates.'
-      );
-    }
-
-    // User is not authorised to delete a template
-    if (!userCanDoWithTemplate(req.user, templateId, 'delete')) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to delete this template.'
-      );
-    }
 
     // Now delete the existing document
     await deleteExistingTemplate(templateId);
 
     // Indicate successful deletion and send
-    res.status(200).json({
-      message: 'Template deleted successfully',
-    });
+    res.status(200);
   }
 );
 
 // Archive a template
 api.put(
   '/:id/archive',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_TEMPLATE_STATUS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
   processRequest({
     params: z.object({id: z.string()}),
     body: z.object({archive: z.boolean()}),
   }),
-  requireAuthenticationAPI,
   async (
-    {
-      params: {id},
-      user,
-      body: {archive},
-    }: {params: {id: string}; user?: Express.User; body: {archive: boolean}},
-    res: Response<{message: string}>
+    {params: {id}, body: {archive}},
+    res: Response<PutUpdateTemplateResponse>
   ) => {
-    if (!user || !userCanDoWithTemplate(user, id, 'update'))
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to archive this template.'
-      );
-
     await archiveTemplate(id, archive);
-    res.status(200).json({
-      message: `Template ${archive ? 'archived' : 'unarchived'} successfully`,
-    });
+    res.status(200);
   }
 );

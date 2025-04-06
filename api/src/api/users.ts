@@ -17,26 +17,28 @@
  *   This module contains user based API routes at /api/users
  */
 
-import express, {Response} from 'express';
-import * as Exceptions from '../exceptions';
-import {requireAuthenticationAPI} from '../middleware';
 import {
-  addOtherRoleToUser,
-  addProjectRoleToUser,
-  getUserFromEmailOrUsername,
-  getUsers,
-  removeOtherRoleFromUser,
-  removeProjectRoleFromUser,
-  removeUser,
-  saveUser,
-  userIsClusterAdmin,
-} from '../couchdb/users';
-import {processRequest} from 'zod-express-middleware';
-import {z} from 'zod';
-import {
-  CLUSTER_ADMIN_GROUP_NAME,
+  Action,
+  addGlobalRole,
+  ExistingPeopleDBDocument,
   PostUpdateUserInputSchema,
+  removeGlobalRole,
+  Role,
+  roleDetails,
+  RoleScope,
+  userHasGlobalRole,
 } from '@faims3/data-model';
+import express, {Response} from 'express';
+import {z} from 'zod';
+import {processRequest} from 'zod-express-middleware';
+import {
+  getCouchUserFromEmailOrUsername,
+  getUsers,
+  removeUser,
+  saveCouchUser,
+} from '../couchdb/users';
+import * as Exceptions from '../exceptions';
+import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 
 import patch from '../utils/patchExpressAsync';
 
@@ -45,77 +47,56 @@ patch();
 
 export const api = express.Router();
 
-// update a user
+// update a users roles
 api.post(
   '/:id/admin',
   requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
   processRequest({
     params: z.object({id: z.string()}),
     body: PostUpdateUserInputSchema,
   }),
-  async (req, res) => {
-    // Cluster admins only
-    if (!userIsClusterAdmin(req.user)) {
-      throw new Exceptions.ForbiddenException(
-        'You are not authorised to update user details.'
+  async ({body: {role, addrole: addRole}, user, params: {id}}, res) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not allowed to update user details.'
       );
     }
 
     // Get the current user from DB
-    const user = await getUserFromEmailOrUsername(req.params.id);
-    if (!user) {
+    const foundUser = await getCouchUserFromEmailOrUsername(id);
+    if (!foundUser) {
       throw new Exceptions.ItemNotFoundException(
         'Username cannot be found in user database.'
       );
     }
 
-    if (req.body.addrole) {
-      addOtherRoleToUser(user, req.body.role);
-    } else {
-      removeOtherRoleFromUser(user, req.body.role);
+    // Check that the role is a global role
+    if (!(roleDetails[role].scope === RoleScope.GLOBAL)) {
+      throw new Exceptions.ValidationException(
+        `The provided role ${role} is not a globally scoped role, and therefore cannot be added using this API method.`
+      );
     }
 
-    await saveUser(user);
-    res.status(200).json({
-      message: `User role ${req.body.addrole ? 'added' : 'removed'} successfully`,
-    });
-  }
-);
-
-// Update a users project role
-api.put(
-  '/:id/projects/:project/roles',
-  requireAuthenticationAPI,
-  processRequest({
-    params: z.object({id: z.string(), project: z.string()}),
-    body: z.object({action: z.string(), role: z.string()}),
-  }),
-  async (req, res) => {
-    if (!userIsClusterAdmin(req.user)) {
+    if (id === user.user_id) {
       throw new Exceptions.ForbiddenException(
-        'You are not authorised to update user details.'
+        'You are not allowed to update your own roles.'
       );
     }
 
-    const {
-      params: {id, project},
-      body: {action, role},
-    } = req;
-
-    const user = await getUserFromEmailOrUsername(id);
-    if (!user) {
-      throw new Exceptions.ItemNotFoundException(
-        'Username cannot be found in user database.'
-      );
+    if (addRole) {
+      addGlobalRole({role, user: foundUser});
+    } else {
+      removeGlobalRole({role, user: foundUser});
     }
 
-    if (action === 'add') addProjectRoleToUser(user, project, role);
-    if (action === 'remove') removeProjectRoleFromUser(user, project, role);
-
-    await saveUser(user);
-    return res.status(200).json({
-      message: `Project role ${action === 'add' ? 'added to' : 'removed from'} user successfully`,
-    });
+    await saveCouchUser(foundUser);
+    res.status(200).send();
   }
 );
 
@@ -144,7 +125,10 @@ api.get(
       id,
       name,
       email: emails[0],
-      cluster_admin: req.user.other_roles.includes(CLUSTER_ADMIN_GROUP_NAME),
+      cluster_admin: userHasGlobalRole({
+        role: Role.GENERAL_ADMIN,
+        user: req.user,
+      }),
     });
   }
 );
@@ -153,8 +137,13 @@ api.get(
 api.get(
   '/',
   requireAuthenticationAPI,
-  async (req: any, res: Response<Express.User[]>) => {
-    if (!req.user || !userIsClusterAdmin(req.user)) {
+  isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
+  async (req: any, res: Response<ExistingPeopleDBDocument[]>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('You are not logged in.');
+    }
+
+    if (!userHasGlobalRole({user: req.user, role: Role.GENERAL_ADMIN})) {
       throw new Exceptions.ForbiddenException(
         'You are not allowed to get users.'
       );
@@ -164,29 +153,51 @@ api.get(
   }
 );
 
+// GET all roles
+api.get(
+  '/roles',
+  requireAuthenticationAPI,
+  async (req: any, res: Response<string[]>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('You are not logged in.');
+    }
+
+    // TODO fix this
+    if (!userHasGlobalRole({user: req.user, role: Role.GENERAL_ADMIN})) {
+      throw new Exceptions.ForbiddenException(
+        'You are not allowed to get roles.'
+      );
+    }
+
+    // TODO fix this
+    return res.json(['cluster-admin']);
+  }
+);
+
 // REMOVE a user
 api.delete(
   '/:id',
   requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.DELETE_USER,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
   processRequest({
     params: z.object({id: z.string()}),
   }),
-  async ({params: {id}, user}, res) => {
-    if (!userIsClusterAdmin(user))
-      throw new Exceptions.ForbiddenException(
-        'Only cluster admins can remove users.'
-      );
-
+  async ({params: {id}}, res) => {
     if (!id) throw new Exceptions.ValidationException('User ID not specified');
 
-    const userToRemove = await getUserFromEmailOrUsername(id);
+    const userToRemove = await getCouchUserFromEmailOrUsername(id);
 
     if (!userToRemove)
       throw new Exceptions.ItemNotFoundException(
         'Username cannot be found in user database.'
       );
 
-    if (userIsClusterAdmin(userToRemove))
+    if (userHasGlobalRole({role: Role.GENERAL_ADMIN, user: userToRemove}))
       throw new Exceptions.ForbiddenException(
         'You are not allowed to remove cluster admins.'
       );

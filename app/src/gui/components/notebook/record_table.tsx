@@ -43,7 +43,7 @@ import {
   GridColDef,
   GridEventListener,
 } from '@mui/x-data-grid';
-import {ReactNode, useCallback, useMemo} from 'react';
+import {ReactNode, useCallback, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -245,6 +245,31 @@ function buildColumnFromSystemField({
 
   switch (columnType) {
     case 'LAST_UPDATED':
+      return {
+        ...baseColumn,
+        type: 'dateTime',
+        sortable: true,
+        valueGetter: params => {
+          const rawValue = params.row.updated;
+          return rawValue ? new Date(rawValue) : null;
+        },
+        sortComparator: (v1, v2) => {
+          return new Date(v1).getTime() - new Date(v2).getTime();
+        },
+        renderCell: (params: GridCellParams) => {
+          const value = getDataForColumn({
+            record: params.row,
+            column: columnType,
+            uiSpecification,
+          });
+          return (
+            <Typography>
+              {value || CONSTANTS.MISSING_DATA_PLACEHOLDER}
+            </Typography>
+          );
+        },
+      };
+
     case 'CREATED':
       return {
         ...baseColumn,
@@ -940,7 +965,7 @@ export function RecordsTable(props: RecordsTableProps) {
           toolbar: {handleQueryFunction: props.handleQueryFunction},
         }}
         initialState={{
-          sorting: {sortModel: [{field: 'created', sort: 'desc'}]},
+          sorting: {sortModel: [{field: 'last_updated', sort: 'desc'}]},
           pagination: {paginationModel: {pageSize: pageSize(maxRows)}},
         }}
         sx={styles.grid}

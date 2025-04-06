@@ -41,7 +41,6 @@ function formHandler(event) {
     })
     .then(response => response.json())
     .then(data => {
-      console.log('response', data);
       if (data.status === 'success') {
         message.innerText = 'Backup restored successfully';
       } else {

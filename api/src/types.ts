@@ -19,13 +19,7 @@
  *   uses in relation to third-party code.
  */
 import type {OAuth2} from 'oauth';
-import type {
-  Email,
-  AllProjectRoles,
-  OtherRoles,
-  UserServiceProfiles,
-} from './datamodel/users';
-import type {NonUniqueProjectID} from '@faims3/data-model';
+import {PeopleDBDocument, ResourceRole} from '@faims3/data-model';
 
 export type DoneFunction = (err?: Error | null, profile?: any) => void;
 export type UserProfileCallback = (
@@ -39,20 +33,22 @@ export type VerifyCallback = (
   info?: object
 ) => void;
 
+interface Flash {
+  flash(type: string, message?: any): any;
+  flash(type: string): any[];
+  flash(): {[key: string]: any[]};
+  session: any;
+}
+
 // See https://stackoverflow.com/questions/65772869/how-do-i-type-hint-the-user-argument-when-calling-passport-serializeuser-in-type
 declare global {
   namespace Express {
-    interface User {
-      user_id: string;
-      _id?: string;
-      _rev?: string;
-      name: string;
-      emails: Email[];
-      roles: string[];
-      project_roles: AllProjectRoles;
-      other_roles: OtherRoles;
-      profiles: UserServiceProfiles;
-      owned: NonUniqueProjectID[];
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface User extends PeopleDBDocument {
+      // The drilled resource roles which pre-compute the teams membership etc
+      resourceRoles: ResourceRole[];
     }
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface Request extends Flash {}
   }
 }

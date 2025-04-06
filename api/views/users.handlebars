@@ -21,14 +21,14 @@
       <tbody>
       {{#each users}}
       <tr>
-        <th>{{this.name}} ({{this.username}})</th>
+        <th>{{this.name}} ({{this._id}})</th>
         {{#each this.roles}}
           <td>
             <input type="checkbox" 
               class="form-check-input" 
               value="{{this.name}}"
-              id="role-{{../this.username}}-{{this}}"
-              data-username="{{../this.username}}"
+              id="role-{{../this.username}}-{{this._id}}"
+              data-username="{{../this._id}}"
               {{#if this.value}}checked{{/if}}>
           </td>
         {{/each}}
@@ -48,7 +48,7 @@ function formHandler(event) {
   if (username) {
       const data = {
         username: username,
-        role: "user",
+        role: "PROJECT_GUEST",
         addrole: true
       }
       fetch(url, {

@@ -3,7 +3,6 @@ import {useAuth} from '@/context/auth-provider';
 import {RoleCard} from '@/components/ui/role-card';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {Route} from '@/routes/_protected/projects/$projectId';
 import {toast} from 'sonner';
 import {Button} from '../ui/button';
 import {
@@ -26,7 +25,6 @@ export const AddRolePopover = ({
   roles: string[];
   userId: string;
 }) => {
-  const {projectId} = Route.useParams();
   const {user} = useAuth();
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -62,15 +60,15 @@ export const AddRolePopover = ({
             onClick={async () => {
               try {
                 const response = await fetch(
-                  `${import.meta.env.VITE_API_URL}/api/users/${userId}/projects/${projectId}/roles`,
+                  `${import.meta.env.VITE_API_URL}/api/users/${userId}/admin`,
                   {
-                    method: 'PUT',
+                    method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
                       Authorization: `Bearer ${user?.token}`,
                     },
                     body: JSON.stringify({
-                      action: 'add',
+                      addrole: true,
                       role,
                     }),
                   }
@@ -78,13 +76,16 @@ export const AddRolePopover = ({
 
                 if (!response.ok) throw new Error(response.statusText);
 
-                queryClient.invalidateQueries({
-                  queryKey: ['project-users', projectId],
-                });
+                queryClient.invalidateQueries({queryKey: ['users']});
 
                 setOpen(false);
               } catch (error) {
-                toast.error(`Failed to add role: ${error}`);
+                toast.error('Failed to add role', {
+                  description:
+                    error instanceof Error
+                      ? error.message
+                      : 'Unknown error occurred',
+                });
               }
             }}
           >
