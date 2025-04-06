@@ -1,52 +1,42 @@
 <div class="container">
-
 <h1>Manage Users</h1>
-
 <p>This page allows you to add or remove the cluster admin or
   notebook creation roles 
   for individual users.  Note that cluster admins can perform any task
   on the server. Notebook Creation permission allows the user to
   make new notebooks that they will then be admin users on.
 </p>
-
 <p>Note that 'Cluster Admin' implies that the user can 'Create Notebooks'.
 </p>
-
 <div id="message">&nbsp;</div>
-
 <table class="table">
     <thead>
       <th>Name</th>
-      <th>Create Notebooks</th>
-      <th>Cluster Admin</th>
+      {{#each roles}}
+      <th>{{this}}</th>
+      {{/each}}
     </thead>
     <tbody>
     {{#each users}}
      <tr>
       <th>{{this.name}} ({{this.username}})</th>
-        <td>
-          <input type="checkbox" 
-            class="form-check-input" 
-            value="{{this.name}}"
-            data-username="{{this.username}}"
-            data-role="notebook-creator"
-            {{#if this.can_create_notebooks}}checked{{/if}}>
-        </td>
-        <td>
-          <input type="checkbox" 
-            class="form-check-input" 
-            value="{{this.name}}"
-            data-username="{{this.username}}"
-            data-role="cluster-admin"
-            {{#if this.is_cluster_admin}}checked{{/if}}>
-        </td>
+      {{#each ../roles}}
+        {{#with ..}}
+          <td>
+            <input type="checkbox" 
+              class="form-check-input" 
+              value="{{../this}}"
+              data-username="{{username}}"
+              data-role="{{../this}}"
+              {{#if (lookup . ../this)}}checked{{/if}}>
+          </td>
+        {{/with}}
+      {{/each}}
       </tr>
     {{/each}}
     </tbody>
 </table>
-
 </div>
-
 <script>
 function toggleRole(event) {
   const target = event.target;
@@ -67,20 +57,17 @@ function toggleRole(event) {
         document.getElementById('message').innerHTML = `User ${target.dataset.username} status changed`;
         setInterval(() => {
           document.getElementById('message').innerHTML = "&nbsp;";
-        }, 2000)
+        }, 2000);
       } else {
         const data = await response.json();
-        console.log(data);
         document.getElementById('message').innerHTML = data.error;
         setInterval(() => {
           document.getElementById('message').innerHTML = "&nbsp;";
-        }, 2000)
+        }, 2000);
       }
   });
 }
-
-const inputs = document.getElementsByClassName('form-check-input')
-
+const inputs = document.getElementsByClassName('form-check-input');
 for(let i=0; i<inputs.length; i++) {
   inputs[i].onclick = toggleRole;
 }

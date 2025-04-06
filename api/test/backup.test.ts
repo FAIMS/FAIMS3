@@ -29,9 +29,12 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {restoreFromBackup} from '../src/couchdb/backupRestore';
-import {getNotebooks, getProjectUIModel} from '../src/couchdb/notebooks';
-import {getUserFromEmailOrUsername} from '../src/couchdb/users';
-import {generateTokenContentsForUser} from '../src/utils';
+import {
+  getUserProjectsDetailed,
+  getProjectUIModel,
+} from '../src/couchdb/notebooks';
+import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
+import {mockTokenContentsForUser} from '../src/utils';
 import {
   callbackObject,
   cleanDataDBS,
@@ -52,10 +55,10 @@ describe('Backup and restore', () => {
     await restoreFromBackup('test/backup.jsonl');
 
     // should now have the notebooks from the backup defined
-    const user = await getUserFromEmailOrUsername('admin');
+    const user = await getExpressUserFromEmailOrUsername('admin');
     expect(user).not.to.be.undefined;
     if (user) {
-      const notebooks = await getNotebooks(user);
+      const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(2);
       expect(notebooks[0].name).to.equal('Campus Survey Demo');
 
@@ -79,7 +82,7 @@ describe('Backup and restore', () => {
       expect(count).to.equal(17);
 
       // throw in a test of getRecordsWithRegex while we're here
-      const tokenContents = generateTokenContentsForUser(user);
+      const tokenContents = mockTokenContentsForUser(user);
       const records = await getRecordsWithRegex({
         dataDb,
         regex: '.*',

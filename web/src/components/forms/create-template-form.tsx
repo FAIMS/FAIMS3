@@ -10,13 +10,6 @@ interface CreateTemplateFormProps {
 
 const fields = [
   {
-    name: 'name',
-    label: 'Name',
-    schema: z.string().min(5, {
-      message: 'Template name must be at least 5 characters.',
-    }),
-  },
-  {
     name: 'file',
     label: 'Template File',
     type: 'file',
@@ -35,7 +28,7 @@ export function CreateTemplateForm({setDialogOpen}: CreateTemplateFormProps) {
   const {user} = useAuth();
   const QueryClient = useQueryClient();
 
-  const onSubmit = async ({name, file}: {name: string; file: File}) => {
+  const onSubmit = async ({file}: {file: File}) => {
     if (!user) return {type: 'submit', message: 'User not authenticated'};
 
     const jsonString = await readFileAsText(file);
@@ -49,20 +42,21 @@ export function CreateTemplateForm({setDialogOpen}: CreateTemplateFormProps) {
       return {type: 'submit', message: 'Error parsing file'};
     }
 
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/templates/`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({template_name: name, ...json}),
-      }
-    );
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/templates/`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`,
+          },
+          body: JSON.stringify(json),
+        }
+      );
 
-    if (!response.ok) {
-      console.log(response);
+      if (!response.ok) throw Error(response.statusText);
+    } catch (e) {
       return {type: 'submit', message: 'Error creating template'};
     }
 

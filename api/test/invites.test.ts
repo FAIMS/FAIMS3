@@ -23,18 +23,18 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
-import {EncodedProjectUIModel} from '@faims3/data-model';
-import {createNotebook} from '../src/couchdb/notebooks';
+import {EncodedProjectUIModel, Role} from '@faims3/data-model';
+import {assert, expect} from 'chai';
+import request from 'supertest';
 import {
   createInvite,
   deleteInvite,
   getInvite,
   getInvitesForNotebook,
 } from '../src/couchdb/invites';
-import {initialiseDbAndKeys} from '../src/couchdb';
-import request from 'supertest';
+import {createNotebook} from '../src/couchdb/notebooks';
 import {app} from '../src/routes';
-import {expect, assert} from 'chai';
+import {beforeApiTests} from './utils';
 
 const uispec: EncodedProjectUIModel = {
   _id: '',
@@ -46,12 +46,12 @@ const uispec: EncodedProjectUIModel = {
 
 describe('Invites', () => {
   beforeEach(async () => {
-    await initialiseDbAndKeys({});
+    await beforeApiTests();
   });
 
   it('create invite', async () => {
     const project_id = await createNotebook('Test Notebook', uispec, {});
-    const role = 'user';
+    const role = Role.PROJECT_GUEST;
 
     if (project_id) {
       const invite = await createInvite(project_id, role);
@@ -60,15 +60,17 @@ describe('Invites', () => {
       const fetched = await getInvite(invite._id);
 
       if (fetched) {
-        expect(fetched.project_id).to.equal(project_id);
+        expect(fetched.projectId).to.equal(project_id);
 
         // get invites for notebook
-        const invites = await getInvitesForNotebook(project_id);
+        let invites = await getInvitesForNotebook(project_id);
         expect(invites.length).to.equal(1);
 
         // and now delete it
-        const deleted = await deleteInvite(fetched);
-        expect(deleted._deleted).to.be.true;
+        await deleteInvite(fetched);
+        invites = await getInvitesForNotebook(project_id);
+        // ensure it's not there
+        expect(invites.length).to.equal(0);
       } else {
         assert.fail('could not retrieve newly created invite');
       }
@@ -79,7 +81,7 @@ describe('Invites', () => {
 
   it('will not duplicate an invite', async () => {
     const project_id = await createNotebook('Test Notebook', uispec, {});
-    const role = 'user';
+    const role = Role.PROJECT_GUEST;
 
     if (project_id) {
       const invite1 = await createInvite(project_id, role);
@@ -94,6 +96,10 @@ describe('Invites', () => {
 });
 
 describe('Registration', () => {
+  beforeEach(async () => {
+    await beforeApiTests();
+  });
+
   it('redirects with a token on registration', async () => {
     const payload = {
       email: 'bob@here.com',
@@ -104,7 +110,7 @@ describe('Registration', () => {
     };
 
     const project_id = await createNotebook('Test Notebook', uispec, {});
-    const role = 'user';
+    const role = Role.PROJECT_GUEST;
 
     if (project_id) {
       const invite = await createInvite(project_id, role);

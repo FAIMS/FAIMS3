@@ -20,6 +20,7 @@ import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import DuplicateIcon from '@mui/icons-material/ContentCopy';
 import {
+  Alert,
   Accordion,
   AccordionDetails,
   AccordionSummary,
@@ -53,7 +54,10 @@ import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
 import {useState, useMemo} from 'react';
-import {findFieldCondtionUsage} from './condition';
+import {
+  findFieldCondtionUsage,
+  findInvalidConditionReferences,
+} from './condition';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -63,6 +67,12 @@ type FieldEditorProps = {
   addFieldCallback: (fieldName: string) => void;
   handleExpandChange: (event: React.SyntheticEvent, newState: boolean) => void;
   moveFieldCallback: (targetViewId: string) => void;
+};
+
+type ConflictError = {
+  title: string;
+  message: string;
+  conflicts: string[];
 };
 
 export const FieldEditor = ({
@@ -88,6 +98,15 @@ export const FieldEditor = ({
     state => state.notebook['ui-specification'].fviews
   );
 
+  const invalidRefs = useMemo(() => {
+    return findInvalidConditionReferences(
+      fieldName,
+      field,
+      allFields,
+      allFviews
+    );
+  }, [fieldName, field, allFields, allFviews]);
+
   const dispatch = useAppDispatch();
 
   const [openMoveDialog, setOpenMoveDialog] = useState(false);
@@ -100,6 +119,10 @@ export const FieldEditor = ({
 
   const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
   const [conditionsAffected, setConditionsAffected] = useState<string[]>([]);
+
+  const [conflictError, setConflictError] = useState<ConflictError | null>(
+    null
+  );
 
   const deleteField = (evt: React.SyntheticEvent) => {
     evt.stopPropagation();
@@ -176,6 +199,7 @@ export const FieldEditor = ({
   };
 
   const handleCloseMoveDialog = () => {
+    setConflictError(null);
     setOpenMoveDialog(false);
     setSelectedFormId(null); // reset selectedFormId when dialog is closed
     setTargetViewId(''); // reset section value when dialog is closed
@@ -183,6 +207,22 @@ export const FieldEditor = ({
 
   const moveFieldToSection = () => {
     if (targetViewId) {
+      const usage = findFieldCondtionUsage(fieldName, allFields, allFviews);
+      const targetSectionLabel = allFviews[targetViewId]?.label || '';
+      const conflicts = usage.filter(u =>
+        u.includes(`Section: ${targetSectionLabel}`)
+      );
+
+      if (conflicts.length > 0) {
+        setConflictError({
+          title: `Cannot move field "${label}" to "${targetSectionLabel}"`,
+          message:
+            'This section has conditions that already depend on this field. To proceed, first remove or update these conditions in the target section.',
+          conflicts,
+        });
+        return;
+      }
+
       dispatch({
         type: 'ui-specification/fieldMovedToSection',
         payload: {
@@ -387,33 +427,32 @@ export const FieldEditor = ({
         <Dialog
           open={deleteWarningOpen}
           onClose={() => setDeleteWarningOpen(false)}
+          TransitionProps={{
+            onExited: () => {
+              setConditionsAffected([]);
+            },
+          }}
         >
-          <DialogTitle>Can Not Delete Field</DialogTitle>
+          <DialogTitle>Cannot Delete Field</DialogTitle>
           <DialogContent>
-            <p>
-              This field is referenced in the following{' '}
-              {conditionsAffected.length === 1 ? 'condition' : 'conditions'}:
-            </p>
-            <ul>
-              {conditionsAffected.map((condition, index) => (
-                <li key={index}>{condition}</li>
-              ))}
-            </ul>
-            <p>
-              Please remove this field from{' '}
-              {conditionsAffected.length === 1 ? 'this' : 'these'} condition
-              condition{conditionsAffected.length === 1 ? '' : 's'} before
-              deleting this field.
-            </p>
+            <Alert severity="warning">
+              This field is referenced in the following conditions:
+              <ul>
+                {conditionsAffected.map((condition, index) => (
+                  <li key={index}>{condition}</li>
+                ))}
+              </ul>
+              Please remove all dependencies on this field before deleting it.
+            </Alert>
           </DialogContent>
           <DialogActions>
             <Button
-              onClick={e => {
-                e.stopPropagation();
+              onClick={event => {
+                event.stopPropagation();
                 setDeleteWarningOpen(false);
               }}
             >
-              Dismiss
+              Close
             </Button>
           </DialogActions>
         </Dialog>
@@ -429,6 +468,18 @@ export const FieldEditor = ({
           Move Question
         </DialogTitle>
         <DialogContent>
+          {conflictError && (
+            <Alert severity="error" sx={{mb: 2}}>
+              <Typography variant="body2" sx={{mb: 1}}>
+                {conflictError.message}
+              </Typography>
+              <ul style={{marginTop: 8, paddingLeft: 20}}>
+                {conflictError.conflicts.map((ref, idx) => (
+                  <li key={idx}>{ref}</li>
+                ))}
+              </ul>
+            </Alert>
+          )}
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
@@ -443,6 +494,7 @@ export const FieldEditor = ({
                 onChange={(_event, newValue) => {
                   setSelectedFormId(newValue ? newValue.id : null);
                   setTargetViewId(''); // reset section when form changes
+                  setConflictError(null);
                 }}
                 options={formOptions}
                 getOptionLabel={option => option.label}
@@ -462,6 +514,7 @@ export const FieldEditor = ({
                 value={selectedFormId ? sectionValue : null}
                 onChange={(_event, newValue) => {
                   setTargetViewId(newValue ? newValue.id : '');
+                  setConflictError(null);
                 }}
                 options={sectionOptions}
                 getOptionLabel={option => option.label}
@@ -515,6 +568,21 @@ export const FieldEditor = ({
       </Dialog>
 
       <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
+        {invalidRefs.length > 0 && (
+          <Grid item xs={12} sx={{marginBottom: 3.5}}>
+            <Alert severity="warning">
+              The following fields/sections have visibility conditions that
+              depend on this field having a specific option available:
+              <ul style={{marginTop: '8px', paddingLeft: '20px'}}>
+                {invalidRefs.map((msg, idx) => (
+                  <li key={idx}>{msg}</li>
+                ))}
+              </ul>
+              Please update this field, or remove/modify affected conditions.
+            </Alert>
+          </Grid>
+        )}
+
         {(fieldComponent === 'MultipleTextField' && (
           <MultipleTextFieldEditor fieldName={fieldName} />
         )) ||

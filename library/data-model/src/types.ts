@@ -19,6 +19,8 @@
  */
 
 import {z} from 'zod';
+import {DecodedTokenPermissions, Role} from './permission';
+import {ExistingProjectDocument} from './data_storage';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -60,10 +62,12 @@ export type FAIMSTypeName = string;
 
 export type Annotations = {annotation: string; uncertainty: boolean};
 
-export interface TokenContents {
-  username: string;
-  roles: string[];
+export interface TokenContents extends DecodedTokenPermissions {
+  // First/last name
   name?: string;
+  // Username (i.e. email)
+  username: string;
+  // Server generating
   server: string;
   // This is required now - all tokens must have an expiry
   exp: number;
@@ -82,18 +86,6 @@ export interface SyncStatusCallbacks {
   sync_denied: () => void;
 }
 
-export type LocationState = {
-  parent_record_id?: string; // parent or linked record id, set from parent or linked record
-  field_id?: string; // parent or linked field id, set from parent or linked record
-  type?: string; // type of relationship: Child or Linked
-  parent_link?: string; // link of parent/linked record, so when child/link record saved, this is the redirect link
-  parent?: any; // parent to save upper level information for nest related, for example, grandparent
-  record_id?: RecordID; // child/linked record ID, set in child/linked record, should be pass back to parent
-  hrid?: string; // child/linked record HRID, this is the value displayed in field, set in child/linked record, should be pass back to parent
-  relation_type_vocabPair?: string[] | null; //pass the parent information to child
-  child_record_id?: RecordID; //child/linked record ID created from parent
-  parent_hrid?: string;
-};
 export interface LinkedRelation {
   record_id: RecordID;
   field_id: string;
@@ -128,19 +120,6 @@ export type PossibleConnectionInfo =
       };
       jwt_token?: string;
     };
-export interface ProjectObject {
-  _id: NonUniqueProjectID;
-  name: string;
-  project_id: string;
-  description?: string;
-  // Was the project created from a template?
-  template_id?: string;
-  data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
-  last_updated?: string;
-  created?: string;
-  status?: string;
-}
 
 // TODO make this better, currently there is no real explanation for this
 // structure
@@ -148,7 +127,7 @@ export interface ProjectObject {
 // This is returned from the list project endpoints
 export const APINotebookListSchema = z.object({
   name: z.string(),
-  is_admin: z.boolean().optional(),
+  is_admin: z.boolean(),
   last_updated: z.string().optional(),
   created: z.string().optional(),
   template_id: z.string().optional(),
@@ -167,7 +146,7 @@ export const APINotebookGetSchema = z.object({
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 
 export type ProjectsList = {
-  [key: string]: ProjectObject;
+  [key: string]: ExistingProjectDocument;
 };
 
 export interface ProjectSchema {
@@ -468,6 +447,7 @@ export interface ProjectUIViewset {
   hridField?: string;
   // Layout option
   layout?: 'inline' | 'tabs';
+  publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
 }
 
 export interface ProjectUIViewsets {
@@ -494,6 +474,7 @@ export interface ProjectUIViews {
     is_logic?: {[key: string]: string[]}; //add for branching logic
     condition?: ConditionalExpression; // new conditional logic
     conditionFn?: (v: RecordValues) => boolean; // compiled conditional function
+    description?: string;
   };
 }
 
@@ -776,7 +757,7 @@ export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
 // Information about users and roles for a notebook
 export const NotebookAuthSummarySchema = z.object({
   // What roles does the notebook have
-  roles: z.array(z.string()),
+  roles: z.array(z.nativeEnum(Role)),
   // users permissions for this notebook
   users: z.array(
     z.object({
@@ -784,7 +765,7 @@ export const NotebookAuthSummarySchema = z.object({
       username: z.string(),
       roles: z.array(
         z.object({
-          name: z.string(),
+          name: z.nativeEnum(Role),
           value: z.boolean(),
         })
       ),
@@ -799,11 +780,6 @@ export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;
 
 // The editable properties for a template
 export const TemplateEditableDetailsSchema = z.object({
-  // What is the display name of the template?
-  template_name: z
-    .string()
-    .trim()
-    .min(5, 'Please provide a template name of at least 5 character length.'),
   // The UI specification for this template
   'ui-specification': UiSpecificationSchema,
   // The metadata from the designer - copied into new notebooks
@@ -817,6 +793,9 @@ export type TemplateEditableDetails = z.infer<
 export const TemplateDerivedDetailsSchema = z.object({
   // Version identifier for the template
   version: z.number().default(1),
+
+  // Is this owned by a team?
+  ownedByTeamId: z.string().min(1).optional(),
 });
 export type TemplateDerivedDetails = z.infer<
   typeof TemplateDerivedDetailsSchema

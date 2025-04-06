@@ -71,3 +71,30 @@ export const readFileAsText = (file: File): Promise<string> =>
 export async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/**
+ * downloadFile function downloads a file from a URL.
+ *
+ * @param {string} filename - The name of the file to download.
+ * @param {Blob | MediaSource} obj - The object to download.
+ */
+export const downloadFile = async (
+  obj: Blob | MediaSource,
+  filename: string
+) => {
+  const link = document.createElement('a');
+
+  link.href = window.URL.createObjectURL(obj);
+  link.download = filename;
+
+  link.click();
+};
+
+/**
+ * roleLabel function returns the label of a role.
+ *
+ * @param {string} role - The role to get the label for.
+ * @returns {string} The label of the role.
+ */
+export const roleLabel = (role: string) =>
+  role.split('_').at(1)?.toLowerCase() || role;

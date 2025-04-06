@@ -25,9 +25,12 @@ import {body, validationResult} from 'express-validator';
 import {registerLocalUser} from './auth_providers/local';
 import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
 import {getInvite} from './couchdb/invites';
-import {getUserFromEmailOrUsername} from './couchdb/users';
+import {getCouchUserFromEmailOrUsername} from './couchdb/users';
 import {acceptInvite} from './registration';
-import {generateUserToken} from './authkeys/create';
+import {
+  generateUserToken,
+  upgradeCouchUserToExpressUser,
+} from './authkeys/create';
 import {NextFunction, Request, Response, Router} from 'express';
 import {processRequest} from 'zod-express-middleware';
 import {
@@ -52,9 +55,16 @@ passport.serializeUser((user: Express.User, done: DoneFunction) => {
 });
 
 passport.deserializeUser((id: string, done: DoneFunction) => {
-  getUserFromEmailOrUsername(id)
+  getCouchUserFromEmailOrUsername(id)
     .then(user_data => {
-      done(null, user_data);
+      if (!user_data) {
+        return Promise.reject('User could not be found!');
+      } else {
+        return upgradeCouchUserToExpressUser({dbUser: user_data});
+      }
+    })
+    .then(user => {
+      done(null, user);
     })
     .catch(err => done(err, null));
 });
@@ -180,7 +190,8 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         if (loginErr) {
           return next(loginErr);
         }
-        return redirect_with_token(res, user, redirect);
+        const fullUser = await upgradeCouchUserToExpressUser({dbUser: user});
+        return redirect_with_token(res, fullUser, redirect);
       });
     };
   };
@@ -248,7 +259,7 @@ export function add_auth_routes(app: Router, handlers: string[]) {
     async (req, res) => {
       const redirect = validateRedirect(req.query.redirect || '/');
       const invite_id = req.params.invite_id;
-      req.session['invite'] = invite_id;
+      (req.session as any)['invite'] = invite_id;
       const invite = await getInvite(invite_id);
       if (!invite) {
         res.render('invite-error', {redirect});
@@ -326,39 +337,17 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         return;
       }
 
+      // Check the invite TODO Validate usages/expiry etc
       const invite = await getInvite(req.session.invite);
 
       if (!invite) {
         res.status(400);
         req.flash('error', {registration: 'No valid invite for registration.'});
         res.redirect('/');
-      } else if (password === repeat) {
-        const [user, error] = await registerLocalUser(
-          username,
-          email,
-          name,
-          password
-        );
-        if (user) {
-          await acceptInvite(user, invite);
-          req.flash('message', 'Registration successful. Please login below.');
-          req.login(user, (err: any) => {
-            if (err) {
-              return next(err);
-            }
-            return redirect_with_token(res, user, redirect);
-          });
-        } else {
-          req.flash('error', {registration: error});
-          req.flash('username', username);
-          req.flash('email', email);
-          req.flash('name', name);
-          res.status(400);
-          res.redirect(
-            '/register/' + req.session.invite + `?redirect=${redirect}`
-          );
-        }
-      } else {
+        return;
+      }
+
+      if (password !== repeat) {
         req.flash('error', {repeat: {msg: "Password and repeat don't match."}});
         req.flash('username', username);
         req.flash('email', email);
@@ -367,7 +356,40 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         res.redirect(
           '/register/' + req.session.invite + `?redirect=${redirect}`
         );
+        return;
       }
+
+      const [user, error] = await registerLocalUser(
+        username,
+        email,
+        name,
+        password
+      );
+
+      if (!user) {
+        req.flash('error', {registration: error});
+        req.flash('username', username);
+        req.flash('email', email);
+        req.flash('name', name);
+        res.status(400);
+        res.redirect(
+          '/register/' + req.session.invite + `?redirect=${redirect}`
+        );
+        return;
+      }
+
+      // This also saves the user!
+      await acceptInvite(user, invite);
+
+      req.flash('message', 'Registration successful. Please login below.');
+      req.login(user, async (err: any) => {
+        if (err) {
+          return next(err);
+        }
+        // Upgrade by drilling permissions/associations
+        const expressUser = await upgradeCouchUserToExpressUser({dbUser: user});
+        return redirect_with_token(res, expressUser, redirect);
+      });
     }
   );
 
