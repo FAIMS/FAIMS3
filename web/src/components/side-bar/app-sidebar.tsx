@@ -50,9 +50,9 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               isActive: pathname.startsWith('/templates'),
               items:
                 templates && templates?.length > 0
-                  ? templates.map(({_id, template_name}: any) => ({
+                  ? templates.map(({_id, metadata: {name}}: any) => ({
                       id: _id,
-                      title: template_name,
+                      title: name,
                       url: `/templates/${_id}`,
                     }))
                   : [{id: 'no-templates', title: 'No templates...'}],

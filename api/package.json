@@ -17,13 +17,12 @@
     "start": "node .",
     "start:prod": "node build/src/index.js",
     "local": "env-cmd nodemon --ignore build --ext ts --exec 'tsc --incremental && node .'",
-    "initdb": "env-cmd node scripts/initialise.js",
-    "forceinitdb": "env-cmd node scripts/initialise.js --force",
-    "load-notebooks": "env-cmd node scripts/loadNotebook.js ./notebooks/*.json",
-    "load-templates": "env-cmd node scripts/loadTemplate.js ./notebooks/*.json",
+    "load-projects": "env-cmd ts-node src/scripts/loadProjects.ts ./notebooks/*.json",
+    "load-templates": "env-cmd ts-node src/scripts/loadTemplates.ts ./notebooks/*.json",
     "test": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha --exit",
     "test:watch": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha -w",
-    "coverage": "nyc --reporter=html --reporter=lcov env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha"
+    "coverage": "nyc --reporter=html --reporter=lcov env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha",
+    "migrate": "env-cmd ts-node src/scripts/migrate.ts"
   },
   "dependencies": {
     "@faims3/data-model": "*",
@@ -48,7 +47,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "node-cache": "^5.1.2",
-    "nodemailer": "^6.9.9",
+    "nodemailer": "^6.10.0",
     "nyc": "^15.1.0",
     "oauth": "0.10.0",
     "passport": "^0.7.0",

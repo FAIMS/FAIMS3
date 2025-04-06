@@ -1,4 +1,0 @@
-git_url("https://github.com/FAIMS/fastlane-keys.git")
-app_identifier('au.edu.faims.electronicfieldnotebook')
-storage_mode("git")
-type("appstore")

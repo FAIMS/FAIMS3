@@ -7,6 +7,14 @@ Github workflows in this repository.
 
 Create an account on the Apple Developer Portal.
 
+To create a new app. First register a new App ID for your app (eg. au.edu.faims.bss); do
+this on your Apple Developer account (under Certificates, Identifiers & Profiles). 
+In the App page on App Store Connect click on the + button and select "New App", fill in
+the details and select the App ID you created above as the Bundle ID.  SKU can be any
+memorable name, unique among your apps.
+
+Complete the entry of data about your app, fill out the App Information, upload screenshots.
+
 ## Workflows
 
 There are two workflows, one for the nightly build and one for the production build. Both
@@ -18,6 +26,33 @@ to push to the TestFlight deployment.
 Similar to the Android workflows, the workflows basically just build the
 React app adn then use Fastlane to compile the iOS app and upload it to the
 App Store.
+
+## Fastlane Match
+
+[Fastlane match](https://docs.fastlane.tools/actions/match/) is used to store signing keys
+for the App Store.  It requires that we create a new **private** repository on Github
+to store the signing certificates.  Create this repository and set the value of
+MATCH_GIT_URL in the configuration environment.
+
+To generate the secrets we need to run `fastlane match`.  This requires a temporary file
+`Matchfile` to be created, this can be done outside of the project repository.  First, 
+create the Matchfile with:
+
+```shell
+bundle exec fastlane match init
+```
+
+This will prompt you for the URL of your new private repository and will generate a file `Matchfile`.
+Next we run the following command to initialise the signing keys for app store deployment:
+
+```shell
+bundle exec fastlane match appstore       
+```
+
+This will ask you for a passphrase to encrypt the certificates which will be the
+value of `MATCH_PASSWORD` in your configuration.
+
+Once this is complete you can remove the `Matchfile` that was created.
 
 ## Settings
 
@@ -37,7 +72,7 @@ by looking at your personal account which will list the id of your team.
 `FASTLANE_APPLE_ID` - Apple ID used by Fastlane to publish the app.
 
 `GIT_AUTHORIZATION` - A Github personal access token with access to the
-Fastlane secrets repository.
+Fastlane certificates repository.
 
 `APPLE_KEY_ID` - The key id from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.
 `APPLE_ISSUER_ID` - the Issuer ID from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.
@@ -45,6 +80,8 @@ Fastlane secrets repository.
 
 `BROWSERSTACK_USERNAME` - username on BrowserStack (for app testing);
 'BROWSERSTACK_ACCESS_KEY` - api access key for BrowserStack.
+
+`MATCH_PASSWORD` - password used to encrypt certificates in fastlane match.
 
 ### Variables
 
@@ -58,7 +95,7 @@ general information.
 in the app store, can be different to APP_ID (which is used for the app URL scheme)
 `au.edu.faims.electronicfieldnotebook`.
 
-TODO: make `APPLE_BUNDLE_IDENTIFIER` fully configurable in the build 
+TODO: make `APPLE_BUNDLE_IDENTIFIER` fully configurable in the build
 process. Look at
 the Fastlane `update_app_identifier` action which can do this
 during the build. For now we will keep the Fieldmark id to the
