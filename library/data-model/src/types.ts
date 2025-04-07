@@ -106,20 +106,18 @@ export interface Relationship {
  * Do not use with UI code; sync code only
  */
 
-export type PossibleConnectionInfo =
-  | undefined
-  | {
-      base_url?: string | undefined;
-      proto?: string | undefined;
-      host?: string | undefined;
-      port?: number | undefined;
-      db_name?: string | undefined;
-      auth?: {
-        username: string;
-        password: string;
-      };
-      jwt_token?: string;
-    };
+export type PossibleConnectionInfo = {
+  base_url?: string | undefined;
+  proto?: string | undefined;
+  host?: string | undefined;
+  port?: number | undefined;
+  db_name?: string | undefined;
+  auth?: {
+    username: string;
+    password: string;
+  };
+  jwt_token?: string;
+};
 
 // TODO make this better, currently there is no real explanation for this
 // structure

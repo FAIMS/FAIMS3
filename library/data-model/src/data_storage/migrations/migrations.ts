@@ -5,6 +5,7 @@ import {
   PeopleV2Document,
   PeopleV3Document,
 } from '../peopleDB';
+import {ProjectStatus, ProjectV1Fields, ProjectV2Fields} from '../projectsDB';
 import {
   DatabaseType,
   DBTargetVersions,
@@ -154,6 +155,49 @@ export const invitesV1toV2Migration: MigrationFunc = doc => {
   return {action: 'update', updatedRecord: outputDoc};
 };
 
+/**
+ * Adds the status field, renames/removes other fields which were never
+ * populated anyway
+ */
+export const projectsV1toV2Migration: MigrationFunc = doc => {
+  // Cast input document to V1 type
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<ProjectV1Fields>;
+
+  if (!inputDoc.data_db) {
+    console.error(
+      `The project document with ID: ${inputDoc._id} did not have a data_db entry. This project is broken! Recommend deletion but will mark record as migrated and leave this entry undefined.`
+    );
+  }
+  if (!inputDoc.metadata_db) {
+    console.error(
+      `The project document with ID: ${inputDoc._id} did not have a metadata_db entry. This project is broken! Recommend deletion but will mark record as migrated and leave this entry undefined.`
+    );
+  }
+
+  // Create the new V2 document structure
+  const outputDoc: PouchDB.Core.ExistingDocument<ProjectV2Fields> = {
+    // Basic couch db fields
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+
+    // basic name changes
+    name: inputDoc.name,
+    ownedByTeamId: inputDoc.ownedByTeamId,
+    templateId: inputDoc.template_id,
+
+    // default to open
+    status: ProjectStatus.OPEN,
+
+    // we check these to be defined above (just force the migration here - it is
+    // probably the best option as deleting a project could result in data loss)
+    dataDb: inputDoc.data_db!,
+    metadataDb: inputDoc.metadata_db!,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
@@ -165,7 +209,7 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
   // people v2
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 3},
-  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };
@@ -192,5 +236,13 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       "Refactors the invites database to use a typed Role enum for new permissions system, removes records it can't understand",
     migrationFunction: invitesV1toV2Migration,
+  },
+  {
+    dbType: DatabaseType.PROJECTS,
+    from: 1,
+    to: 2,
+    description:
+      'Renames and cleans up the projects DB and adds the status enum field.',
+    migrationFunction: projectsV1toV2Migration,
   },
 ];

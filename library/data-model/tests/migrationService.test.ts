@@ -739,8 +739,14 @@ describe('Migration System Tests', () => {
           DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion;
         const originalTargetVersion =
           DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
+        const originalProjectDefaultVersion =
+          DB_TARGET_VERSIONS[DatabaseType.PROJECTS].defaultVersion;
+        const originalProjectTargetVersion =
+          DB_TARGET_VERSIONS[DatabaseType.PROJECTS].targetVersion;
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].defaultVersion = 1;
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion = 2;
+        DB_TARGET_VERSIONS[DatabaseType.PROJECTS].defaultVersion = 1;
+        DB_TARGET_VERSIONS[DatabaseType.PROJECTS].targetVersion = 1;
         DB_MIGRATIONS[0].migrationFunction = record => {
           return {
             action: 'update',
@@ -800,6 +806,10 @@ describe('Migration System Tests', () => {
           originalDefaultVersion;
         DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion =
           originalTargetVersion;
+        DB_TARGET_VERSIONS[DatabaseType.PROJECTS].defaultVersion =
+          originalProjectDefaultVersion;
+        DB_TARGET_VERSIONS[DatabaseType.PROJECTS].targetVersion =
+          originalProjectTargetVersion;
       } finally {
         // Clean up
         await testProjectsDb.destroy();
