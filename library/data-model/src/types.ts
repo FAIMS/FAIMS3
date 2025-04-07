@@ -818,21 +818,6 @@ export const TemplateDocumentSchema = z.intersection(
 );
 export type TemplateDocument = z.infer<typeof TemplateDocumentSchema>;
 
-export interface ExpressUser {
-  user_id: string;
-  _id?: string;
-  _rev?: string;
-  name: string;
-  emails: string[];
-  roles: string[];
-  project_roles: {[NonUniqueProjectID: string]: string[]};
-  other_roles: string[];
-  profiles: {
-    [ServiceID: string]: unknown;
-  };
-  owned: NonUniqueProjectID[];
-}
-
 export interface RoleInvite {
   _id: string;
   _rev?: string;
