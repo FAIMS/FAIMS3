@@ -20,9 +20,8 @@ sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g"  ./capacitor.config.dist.j
 
 sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" ./public/manifest.dist.json > ./public/manifest.json
 
-# android/app/src/main/AndroidManifest.xml
-
-sed -i -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" android/app/src/main/AndroidManifest.xml
+# Generate android/app/src/main/AndroidManifest.xml
+sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" android/app/src/main/AndroidManifest-dist.xml > ./android/app/src/main/AndroidManifest.xml
 
 # android/app/src/main/res/values/strings.xml
 
