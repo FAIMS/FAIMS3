@@ -1,15 +1,25 @@
 import styled from '@emotion/styled';
-import {Action} from '@faims3/data-model';
-import {AppBar, Box, Paper, Tab, Tabs, TabScrollButton} from '@mui/material';
+import {Action, ProjectStatus} from '@faims3/data-model';
+import {
+  Alert,
+  AlertTitle,
+  AppBar,
+  Box,
+  Paper,
+  Tab,
+  Tabs,
+  TabScrollButton,
+} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
 import React, {useState} from 'react';
-import {NOTEBOOK_NAME} from '../../../buildconfig';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
+import {getVisibleTypes} from '../../../uiSpecification';
 import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
@@ -25,7 +35,6 @@ import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
-import {getVisibleTypes} from '../../../uiSpecification';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -127,10 +136,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const isMedium = useMediaQuery(theme.breakpoints.up('md'));
   const queryClient = useQueryClient();
 
-  const isAllowedToAddRecords = useIsAuthorisedTo({
-    action: Action.CREATE_PROJECT_RECORD,
-    resourceId: project.projectId,
-  });
+  const isAllowedToAddRecords =
+    useIsAuthorisedTo({
+      action: Action.CREATE_PROJECT_RECORD,
+      resourceId: project.projectId,
+    }) && project.status === ProjectStatus.OPEN;
 
   const {uiSpecificationId} = project;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
@@ -222,6 +232,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
   return (
     <Box>
+      <Alert variant="standard" severity="warning" sx={{mb: 1}}>
+        <AlertTitle>{NOTEBOOK_NAME_CAPITALIZED} is closed</AlertTitle>
+        This {NOTEBOOK_NAME} is <b>closed</b>. Your existing records can be
+        uploaded, but no additional data can be collected. It is recommended to
+        deactivate this {NOTEBOOK_NAME} in the settings tab below.
+      </Alert>
       <Box>
         {isAllowedToAddRecords && (
           <Box sx={{mb: 1.5}}>

@@ -1,4 +1,9 @@
-import {EncodedProjectUIModel, ProjectUIModel} from '@faims3/data-model';
+import {
+  EncodedProjectUIModel,
+  GetNotebookListResponse,
+  GetNotebookResponse,
+  ProjectUIModel,
+} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
 import {
   DEBUG_APP,
@@ -351,22 +356,23 @@ export const fetchProjectMetadataAndSpec = async ({
   serverUrl: string;
   projectId: string;
   compile: boolean;
-}): Promise<{uiSpec: ProjectUIModel; metadata: ProjectMetadata}> => {
+}): Promise<GetNotebookResponse & {decodedSpec: ProjectUIModel}> => {
   const url = `${serverUrl}/api/notebooks/${projectId}`;
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
-  const notebook = await response.json();
+  const notebook = (await response.json()) as GetNotebookResponse;
 
   // TODO runtime validation. This is a dangerous assumption! This should do a
-  // Zod model validation.
-  const metadata = notebook.metadata as ProjectMetadata;
-  const rawUiSpec = notebook['ui-specification'] as EncodedProjectUIModel;
+  // cast this because of poor typing!!
+  const rawUiSpec = notebook[
+    'ui-specification'
+  ] as any as EncodedProjectUIModel;
   const uiSpec = decodeUiSpec(rawUiSpec);
   if (compile) {
     compileUiSpecConditionals(uiSpec);
   }
-  return {metadata, uiSpec};
+  return {...notebook, decodedSpec: uiSpec};
 };
