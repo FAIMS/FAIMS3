@@ -6,6 +6,7 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/get-hooks';
 import {Route} from '@/routes/_protected/projects/$projectId';
+import { ProjectStatusDialog } from '@/components/dialogs/change-project-status-dialog';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -55,6 +56,9 @@ const ProjectActions = (): JSX.Element => {
             <EditProjectDialog />
           </ListItem>
         </List>
+      </Card>
+      <Card className="flex-1">
+            <ProjectStatusDialog projectId={projectId} />
       </Card>
     </div>
   );
