@@ -11,6 +11,7 @@ export const fields = [
     label: 'Role',
     options: Object.entries(roleDetails)
       .filter(
+        /* eslint-disable @typescript-eslint/no-unused-vars */
         ([_, {scope, resource}]) =>
           scope === RoleScope.RESOURCE_SPECIFIC && resource === Resource.PROJECT
       )
