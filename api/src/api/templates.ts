@@ -216,7 +216,7 @@ api.post(
     await deleteExistingTemplate(templateId);
 
     // Indicate successful deletion and send
-    res.status(200);
+    res.sendStatus(200);
   }
 );
 
@@ -239,6 +239,6 @@ api.put(
     res: Response<PutUpdateTemplateResponse>
   ) => {
     await archiveTemplate(id, archive);
-    res.status(200);
+    res.sendStatus(200);
   }
 );

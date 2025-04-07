@@ -207,8 +207,6 @@ api.delete(
     } catch (e) {
       throw new Exceptions.InternalSystemError('Error removing user');
     }
-    res.status(200).json({
-      message: 'User removed successfully',
-    });
+    res.status(200).send();
   }
 );
