@@ -19,11 +19,7 @@
  */
 
 import {z} from 'zod';
-<<<<<<< HEAD
-=======
-import {DecodedTokenPermissions, Role} from './permission';
 import {ExistingProjectDocument} from './data_storage';
->>>>>>> origin/main
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -133,22 +129,6 @@ export type PossibleConnectionInfo =
       };
       jwt_token?: string;
     };
-<<<<<<< HEAD
-export interface ProjectObject {
-  _id: NonUniqueProjectID;
-  name: string;
-  project_id: string;
-  description?: string;
-  // Was the project created from a template?
-  template_id?: string;
-  data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
-  last_updated?: string;
-  created?: string;
-  status?: string;
-}
-=======
->>>>>>> origin/main
 
 // TODO make this better, currently there is no real explanation for this
 // structure
