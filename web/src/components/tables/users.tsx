@@ -43,6 +43,7 @@ export const getColumns = ({
           {userId !== user?.user.id && (
             <AddRolePopover
               roles={Object.entries(roleDetails)
+                /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
                 .filter(([_, {scope}]) => scope === RoleScope.GLOBAL)
                 .map(([value]) => value)}
               userId={userId}

@@ -3,7 +3,7 @@ import {AddTeamUserDialog} from '@/components/dialogs/teams/add-team-user-dialog
 import {useGetColumns} from '@/components/tables/team-users';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {useGetUsersForTeam} from '@/hooks/get-hooks';
+import {useGetUsersForTeam} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 import {ErrorComponent} from '@tanstack/react-router';
 import {LoaderCircle, Plus} from 'lucide-react';

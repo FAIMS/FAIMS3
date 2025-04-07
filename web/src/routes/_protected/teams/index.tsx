@@ -1,7 +1,7 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/teams';
 import {useAuth} from '@/context/auth-provider';
-import {useGetTeams} from '@/hooks/get-hooks';
+import {useGetTeams} from '@/hooks/queries';
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
 
 import {CreateTeamDialog} from '@/components/dialogs/teams/create-team-dialog';
