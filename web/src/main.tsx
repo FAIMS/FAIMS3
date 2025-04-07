@@ -6,8 +6,7 @@ import {routeTree} from './routeTree.gen';
 import './index.css';
 import {AuthProvider, useAuth} from './context/auth-provider';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {Toaster} from 'sonner';
-
+import {Toaster} from '@/components/ui/sonner';
 /**
  * App component renders the main application layout.
  * It includes the main navigation and the main content.

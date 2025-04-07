@@ -1,9 +1,9 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
 import {RoleCard} from '../ui/role-card';
 import {Role, roleDetails} from '@faims3/data-model';
+import {RemoveUserFromProjectDialog} from '../dialogs/remove-user-from-project-dialog';
 
 export const columns: ColumnDef<any>[] = [
   {
