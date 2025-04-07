@@ -134,6 +134,7 @@ export const APINotebookListSchema = z.object({
   status: z.string().optional(),
   project_id: z.string(),
   metadata: z.record(z.unknown()).optional().nullable(),
+  ownedByTeamId: z.string().min(1).optional(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 
@@ -142,6 +143,7 @@ export const APINotebookGetSchema = z.object({
   // metadata and spec to match notebook json schema
   metadata: z.record(z.unknown()),
   'ui-specification': z.record(z.unknown()),
+  ownedByTeamId: z.string().min(1).optional(),
 });
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 

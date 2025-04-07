@@ -4,14 +4,26 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
 import {useGetProject} from '@/hooks/queries';
+import {TeamCellComponent} from '@/components/tables/cells/team-cell';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
   {field: 'pre_description', label: 'Description'},
   {field: 'project_lead', label: 'Created by'},
-  {field: 'lead_institution', label: 'Team'},
   {field: 'notebook_version', label: 'Version'},
-] as const;
+  {
+    field: 'ownedByTeamId',
+    label: 'Team',
+    render: (teamId: string | undefined) => {
+      if (!teamId) {
+        return 'Not created in a team';
+      } else {
+        return <TeamCellComponent teamId={teamId} />;
+      }
+    },
+    isMetadata: false,
+  },
+];
 
 /**
  * ProjectDetails component renders a list of details for a project.

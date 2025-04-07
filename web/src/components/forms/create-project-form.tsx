@@ -1,17 +1,21 @@
 import {useAuth} from '@/context/auth-provider';
-import {Form} from '@/components/form';
+import {Field, Form} from '@/components/form';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
-import {useGetTemplates} from '@/hooks/queries';
+import {useGetTeams, useGetTemplates} from '@/hooks/queries';
 import {Divider} from '../ui/word-divider';
 import {
   createProjectFromFile,
   createProjectFromTemplate,
 } from '@/hooks/create-project';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {Action} from '@faims3/data-model';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 
 interface CreateProjectFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  defaultValues?: {teamId?: string};
+  specifiedTeam?: string;
 }
 
 /**
@@ -21,13 +25,21 @@ interface CreateProjectFormProps {
  * @param {CreateProjectFormProps} props - The props for the form.
  * @returns {JSX.Element} The rendered CreateProjectForm component.
  */
-export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
+export function CreateProjectForm({
+  setDialogOpen,
+  defaultValues,
+  specifiedTeam = undefined,
+}: CreateProjectFormProps) {
   const {user} = useAuth();
   const QueryClient = useQueryClient();
 
-  const {data: templates} = useGetTemplates(user);
+  // can they create projects outside team?
+  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
-  const fields = [
+  const {data: templates} = useGetTemplates(user);
+  const {data: teams} = useGetTeams(user);
+
+  const fields: Field[] = [
     {
       name: 'name',
       label: 'Name',
@@ -37,7 +49,7 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
     },
     {
       name: 'template',
-      label: 'Existing Survey Template',
+      label: `Existing ${NOTEBOOK_NAME_CAPITALIZED} Template`,
       options: templates?.map(({_id, template_name}: any) => ({
         label: template_name,
         value: _id,
@@ -47,7 +59,7 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
     },
     {
       name: 'file',
-      label: 'Project File',
+      label: `${NOTEBOOK_NAME_CAPITALIZED} File`,
       type: 'file',
       schema: z
         .instanceof(File)
@@ -60,7 +72,7 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
   const dividers = [
     {
       index: 1,
-      component: <div className="h-4" />,
+      component: <div className="h-5" />,
     },
     {
       index: 2,
@@ -68,8 +80,25 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
     },
   ];
 
+  if (!specifiedTeam) {
+    fields.push({
+      name: 'team',
+      label: `Create ${NOTEBOOK_NAME} in this team${canCreateGlobally && ' (optional)'}`,
+      options: teams?.teams.map(({_id, name}) => ({
+        label: name,
+        value: _id,
+      })),
+      schema: canCreateGlobally ? z.string().optional() : z.string(),
+    });
+    dividers.push({
+      index: 3,
+      component: <div className="h-5" />,
+    });
+  }
+
   interface onSubmitProps {
     name: string;
+    team?: string;
     template?: string;
     file?: File;
   }
@@ -80,20 +109,30 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
    * @param {{name: string, template?: string, file?: File}} params - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
-  const onSubmit = async ({name, template, file}: onSubmitProps) => {
+  const onSubmit = async ({name, template, file, team}: onSubmitProps) => {
     if (!user) return {type: 'submit', message: 'User not authenticated'};
 
     if (!template && !file)
       return {type: 'submit', message: 'No file or template selected'};
 
     const response = file
-      ? await createProjectFromFile(user, name, file)
-      : await createProjectFromTemplate(user, name, template || '');
+      ? await createProjectFromFile({user, name, file, teamId: team})
+      : await createProjectFromTemplate({
+          user,
+          name,
+          template: template || '',
+          teamId: specifiedTeam ?? team,
+        });
 
     if (!response.ok)
       return {type: 'submit', message: 'Error creating project'};
 
-    QueryClient.invalidateQueries({queryKey: ['projects', undefined]});
+    if (specifiedTeam || team) {
+      QueryClient.invalidateQueries({
+        queryKey: ['projectsbyteam', specifiedTeam || team],
+      });
+    }
+    QueryClient.invalidateQueries({queryKey: ['projects']});
 
     setDialogOpen(false);
   };
@@ -103,7 +142,9 @@ export function CreateProjectForm({setDialogOpen}: CreateProjectFormProps) {
       fields={fields}
       dividers={dividers}
       onSubmit={onSubmit}
-      submitButtonText={NOTEBOOK_NAME_CAPITALIZED}
+      submitButtonText={`Create ${NOTEBOOK_NAME_CAPITALIZED}`}
+      // pass in team ID default, if provided
+      defaultValues={{team: defaultValues?.teamId}}
     />
   );
 }
