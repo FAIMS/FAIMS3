@@ -1,5 +1,5 @@
 import {useAuth} from '@/context/auth-provider';
-import {isAuthorized, Action, decodeAndValidateToken} from '@faims3/data-model';
+import {Action, isAuthorized} from '@faims3/data-model';
 import {useMemo} from 'react';
 
 /**

@@ -49,7 +49,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
-import {getDataDb, localGetProjectsDb} from '../couchdb';
+import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {

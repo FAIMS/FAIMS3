@@ -5,7 +5,7 @@ import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
 import {useGetProjects} from '@/hooks/get-hooks';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
-import { ProjectStatus } from '@faims3/data-model';
+import {ProjectStatus} from '@faims3/data-model';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -24,11 +24,11 @@ const detailsFields = [
     },
     isMetadata: false,
   },
-{
+  {
     field: 'status',
     label: 'Status',
     render: (status: string | undefined) => {
-      if (status ===ProjectStatus.OPEN) {
+      if (status === ProjectStatus.OPEN) {
         return (
           <div className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full bg-emerald-500"></div>

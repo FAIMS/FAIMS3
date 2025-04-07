@@ -1,9 +1,9 @@
-import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
+import {useAuth} from '@/context/auth-provider';
 import {Route} from '@/routes/_protected/projects/$projectId';
-import {z} from 'zod';
-import {useQueryClient} from '@tanstack/react-query';
 import {Resource, Role, roleDetails, RoleScope} from '@faims3/data-model';
+import {useQueryClient} from '@tanstack/react-query';
+import {z} from 'zod';
 
 export const fields = [
   {
@@ -11,7 +11,7 @@ export const fields = [
     label: 'Role',
     options: Object.entries(roleDetails)
       .filter(
-        ([_, {scope, resource}]) =>
+        ([, {scope, resource}]) =>
           scope === RoleScope.RESOURCE_SPECIFIC && resource === Resource.PROJECT
       )
       .map(([value, {name: label}]) => ({label, value})),

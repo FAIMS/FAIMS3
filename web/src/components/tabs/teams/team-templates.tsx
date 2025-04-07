@@ -28,11 +28,7 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
       loading={isPending}
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
       button={
-        canAddTemplateInTeam && (
-          <CreateTemplateDialog
-            specifiedTeam={teamId}
-          />
-        )
+        canAddTemplateInTeam && <CreateTemplateDialog specifiedTeam={teamId} />
       }
     />
   );

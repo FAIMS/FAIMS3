@@ -299,7 +299,7 @@ describe('API tests', () => {
     response = await request(app)
       .put(`/api/notebooks/${projectId}/status`)
       .send({
-        status: ProjectStatus.OPEN
+        status: ProjectStatus.OPEN,
       })
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
@@ -318,7 +318,7 @@ describe('API tests', () => {
     response = await request(app)
       .put(`/api/notebooks/${projectId}/status`)
       .send({
-        status: ProjectStatus.CLOSED
+        status: ProjectStatus.CLOSED,
       })
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
@@ -337,7 +337,7 @@ describe('API tests', () => {
     response = await request(app)
       .put(`/api/notebooks/${projectId}/status`)
       .send({
-        status: ProjectStatus.OPEN
+        status: ProjectStatus.OPEN,
       })
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
@@ -352,7 +352,6 @@ describe('API tests', () => {
         const body = content.body as GetNotebookResponse;
         expect(body.status).to.eq(ProjectStatus.OPEN);
       });
-
   });
 
   it('get notebook', async () => {
@@ -605,7 +604,9 @@ describe('API tests', () => {
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
-        .get('/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv')
+        .get(
+          '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv'
+        )
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json')
         .expect(200)
@@ -637,7 +638,9 @@ describe('API tests', () => {
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
-        .get('/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip')
+        .get(
+          '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip'
+        )
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect('Content-Type', 'application/zip')
