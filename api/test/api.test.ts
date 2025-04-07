@@ -26,6 +26,8 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 import {
   EncodedProjectUIModel,
   getDataDB,
+  GetNotebookResponse,
+  ProjectStatus,
   registerClient,
   resourceRoles,
   Role,
@@ -263,6 +265,94 @@ describe('API tests', () => {
     } else {
       expect(newNotebook).not.to.be.null;
     }
+  });
+
+  it('update notebook status', async () => {
+    const filename = 'notebooks/sample_notebook.json';
+    const jsonText = fs.readFileSync(filename, 'utf-8');
+    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
+
+    // create notebook
+    let response = await request(app)
+      .post('/api/notebooks')
+      .send({
+        'ui-specification': uiSpec,
+        metadata: metadata,
+        name: 'test notebook',
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const projectId = response.body.notebook as string;
+
+    // Get the notebook
+    response = await request(app)
+      .get(`/api/notebooks/${projectId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(content => {
+        const body = content.body as GetNotebookResponse;
+        expect(body.status).to.eq(ProjectStatus.OPEN);
+      });
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.OPEN
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    // Get the notebook expect OPEN
+    response = await request(app)
+      .get(`/api/notebooks/${projectId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(content => {
+        const body = content.body as GetNotebookResponse;
+        expect(body.status).to.eq(ProjectStatus.OPEN);
+      });
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.CLOSED
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    // Get the notebook expect CLOSED
+    response = await request(app)
+      .get(`/api/notebooks/${projectId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(content => {
+        const body = content.body as GetNotebookResponse;
+        expect(body.status).to.eq(ProjectStatus.CLOSED);
+      });
+
+    response = await request(app)
+      .put(`/api/notebooks/${projectId}/status`)
+      .send({
+        status: ProjectStatus.OPEN
+      })
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    // Get the notebook expect OPEN
+    response = await request(app)
+      .get(`/api/notebooks/${projectId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .expect(content => {
+        const body = content.body as GetNotebookResponse;
+        expect(body.status).to.eq(ProjectStatus.OPEN);
+      });
+
   });
 
   it('get notebook', async () => {
@@ -515,7 +605,7 @@ describe('API tests', () => {
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
-        .get('/api/notebooks/1693291182736-campus-survey-demo/FORM2.csv')
+        .get('/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv')
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json')
         .expect(200)
@@ -547,7 +637,7 @@ describe('API tests', () => {
       expect(notebooks).to.have.lengthOf(2);
 
       await request(app)
-        .get('/api/notebooks/1693291182736-campus-survey-demo/FORM2.zip')
+        .get('/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect('Content-Type', 'application/zip')

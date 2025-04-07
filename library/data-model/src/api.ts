@@ -8,6 +8,7 @@ import {
   TemplateEditableDetailsSchema,
   UiSpecificationSchema,
 } from './types';
+import {ProjectStatus} from './data_storage';
 
 // ==================
 // WIP USERS
@@ -136,6 +137,15 @@ export const PostCreateNotebookInputSchema = z.union([
 ]);
 export type PostCreateNotebookInput = z.infer<
   typeof PostCreateNotebookInputSchema
+>;
+
+// PUT :/id change project status
+export const PutChangeNotebookStatusInputSchema = z.object({
+  status: z.nativeEnum(ProjectStatus),
+});
+
+export type PutChangeNotebookStatusInput = z.infer<
+  typeof PutChangeNotebookStatusInputSchema
 >;
 
 // POST create new notebook from template response
