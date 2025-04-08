@@ -65,7 +65,7 @@ const detailsFields = [
 const ProjectDetails = ({projectId}: {projectId: string}) => {
   const {user} = useAuth();
 
-  const {data, isPending} = useGetProject(user, projectId);
+  const {data, isPending} = useGetProject({user, projectId});
 
   return (
     <Card>

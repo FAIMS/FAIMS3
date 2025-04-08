@@ -8,12 +8,12 @@ import {
 } from '@/components/ui/dialog';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
-import {useGetProject} from '@/hooks/get-hooks';
 import {ProjectStatus} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {AlertCircle, CheckCircle} from 'lucide-react';
 import {useState} from 'react';
 import {Button} from '../ui/button';
+import {useGetProject} from '@/hooks/queries';
 
 export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
   const {user} = useAuth();

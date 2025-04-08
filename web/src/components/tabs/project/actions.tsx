@@ -22,7 +22,7 @@ import {Action} from '@faims3/data-model';
 const ProjectActions = (): JSX.Element => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
-  const {data} = useGetProject(user, projectId);
+  const {data} = useGetProject({user, projectId});
 
   // Permissions
   const canChangeProjectStatus = useIsAuthorisedTo({

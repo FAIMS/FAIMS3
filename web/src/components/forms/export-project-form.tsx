@@ -13,7 +13,7 @@ import {useGetProject} from '@/hooks/queries';
 const ExportProjectForm = ({type} : {type: 'zip' | 'csv'}) => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
-  const {data} = useGetProject(user, projectId);
+  const {data} = useGetProject({user, projectId});
 
   const fields = [
     {

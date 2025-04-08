@@ -26,7 +26,7 @@ export const EditProjectDialog = () => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
 
-  const {data} = useGetProject(user, projectId);
+  const {data} = useGetProject({user, projectId});
 
   const [open, setOpen] = useState(false);
 

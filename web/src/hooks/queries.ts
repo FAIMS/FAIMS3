@@ -1,4 +1,10 @@
 import {User} from '@/context/auth-provider';
+import type {
+  GetNotebookListResponse,
+  GetTemplateByIdResponse,
+  PeopleDBDocument,
+  RecordMetadata,
+} from '@faims3/data-model';
 import {
   GetListTeamsResponse,
   GetListTemplatesResponse,
@@ -10,15 +16,6 @@ import {
 } from '@faims3/data-model';
 import {useQuery} from '@tanstack/react-query';
 import QRCode from 'qrcode';
-import type {
-  ExpressUser,
-  RecordMetadata,
-  RoleInvite,
-  GetListTemplatesResponse,
-  GetNotebookListResponse,
-  GetNotebookResponse,
-  GetTemplateByIdResponse,
-} from '@faims3/data-model';
 
 /**
  * get function is a utility function for making GET requests to the API.
@@ -50,11 +47,18 @@ export const get = async <T = any>(path: string, user: User | null) => {
  * @param {string} projectId - The ID of the project.
  * @returns {Query} A query for fetching a project.
  */
-export const useGetProject = (user: User | null, projectId: string) =>
+export const useGetProject = ({
+  user,
+  projectId,
+}: {
+  user: User | null;
+  projectId: string;
+}) =>
   useQuery({
     queryKey: ['projects', projectId],
     queryFn: () =>
       get<GetNotebookResponse>(`/api/notebooks/${projectId}`, user),
+    enabled: !!user,
   });
 
 /**
@@ -67,6 +71,7 @@ export const useGetProjects = (user: User | null) =>
   useQuery({
     queryKey: ['projects'],
     queryFn: () => get<GetNotebookListResponse>('/api/notebooks/', user),
+    enabled: !!user,
   });
 
 /**
@@ -84,27 +89,6 @@ export const useGetTemplate = (user: User | null, templateId: string) =>
   });
 
 /**
- * useGetProject hook returns a query for fetching an individual project
- */
-export const useGetProject = ({
-  user,
-  projectId,
-}: {
-  user: User | null;
-  projectId: string;
-}) =>
-  useQuery({
-    queryKey: ['projects', projectId],
-    queryFn: async () => {
-      return (await get(
-        `/api/notebooks/${projectId}`,
-        user
-      )) as GetNotebookResponse;
-    },
-    enabled: !!user,
-  });
-
-/**
  * useGetProjectsForTeam hook returns a query for fetching projects.
  *
  * @param {User} user - The user object.
@@ -119,7 +103,8 @@ export const useGetProjectsForTeam = ({
 }) =>
   useQuery({
     queryKey: ['projectsbyteam', teamId],
-    queryFn: () => get(`/api/notebooks?teamId=${teamId}`, user),
+    queryFn: () =>
+      get<GetNotebookListResponse>(`/api/notebooks?teamId=${teamId}`, user),
   });
 
 /**
@@ -137,12 +122,9 @@ export const useGetTemplatesForTeam = ({
 }) =>
   useQuery({
     queryKey: ['templatesbyteam', teamId],
-    queryFn: async () => {
-      return (await get(
-        `/api/templates?teamId=${teamId}`,
-        user
-      )) as GetListTemplatesResponse;
-    },
+    queryFn: async () =>
+      get<GetListTemplatesResponse>(`/api/templates?teamId=${teamId}`, user),
+    enabled: !!user,
   });
 
 /**
@@ -174,12 +156,8 @@ export const useGetUsersForTeam = ({
 export const useGetTeam = (user: User | null, teamId: string | undefined) =>
   useQuery({
     queryKey: ['teams', teamId],
-    queryFn: async () => {
-      if (!teamId) {
-        return null;
-      }
-      return (await get(`/api/teams/${teamId}`, user)) as GetTeamByIdResponse;
-    },
+    queryFn: async () => get<GetTeamByIdResponse>(`/api/teams/${teamId}`, user),
+    enabled: !!user && !!teamId,
   });
 
 /**
@@ -191,9 +169,8 @@ export const useGetTeam = (user: User | null, teamId: string | undefined) =>
 export const useGetTeams = (user: User | null) =>
   useQuery({
     queryKey: ['teams'],
-    queryFn: async () => {
-      return (await get('/api/teams/', user)) as GetListTeamsResponse;
-    },
+    queryFn: async () => get<GetListTeamsResponse>('/api/teams/', user),
+    enabled: !!user,
   });
 
 /**
@@ -207,7 +184,6 @@ export const useGetTemplates = (user: User | null) =>
     queryKey: ['templates'],
     queryFn: async () => {
       const data = await get<GetListTemplatesResponse>('/api/templates/', user);
-
       return data.templates;
     },
   });
@@ -221,13 +197,8 @@ export const useGetTemplates = (user: User | null) =>
 export const useGetUsers = (user: User | null) =>
   useQuery({
     queryKey: ['users'],
-    queryFn: () => get<ExpressUser[]>('/api/users', user),
+    queryFn: () => get<PeopleDBDocument[]>('/api/users', user),
   });
-
-interface GetInvitesResponse extends RoleInvite {
-  url: string;
-  qrCode: string;
-}
 
 /**
  * useGetProjectInvites hook returns a query for fetching invites.
@@ -240,10 +211,10 @@ export const useGetProjectInvites = (user: User | null, notebookId: string) =>
   useQuery({
     queryKey: ['projectinvites', notebookId],
     queryFn: async () => {
-      const invites = (await get(
+      const invites = await get<GetProjectInvitesResponse>(
         `/api/invites/notebook/${notebookId}`,
         user
-      )) as GetProjectInvitesResponse;
+      );
       const promises = invites.map(async invite => {
         const url = `${import.meta.env.VITE_API_URL}/register/${invite._id}`;
         return {
@@ -252,9 +223,11 @@ export const useGetProjectInvites = (user: User | null, notebookId: string) =>
           qrCode: await QRCode.toDataURL(url),
         };
       });
-      return Promise.all(promises); // Resolving all promises to get enhanced invites
+      // Resolving all promises to get enhanced invites
+      return Promise.all(promises);
     },
-    enabled: !!user && !!notebookId, // Only run the query if both user and notebookId are available
+    // Only run the query if both user and notebookId are available
+    enabled: !!user && !!notebookId,
   });
 
 /**
@@ -276,10 +249,10 @@ export const useGetTeamInvites = ({
   useQuery({
     queryKey: ['teaminvites', teamId],
     queryFn: async () => {
-      const invites = (await get(
+      const invites = await get<GetTeamInvitesResponse>(
         `/api/invites/team/${teamId}`,
         user
-      )) as GetTeamInvitesResponse;
+      );
       const promises = invites.map(async invite => {
         const url = `${import.meta.env.VITE_API_URL}/register/${invite._id}${redirect ? '?redirect=' + redirect : ''}`;
         return {
@@ -308,15 +281,5 @@ export const useGetRecords = (user: User | null, projectId: string) =>
         `/api/notebooks/${projectId}/records/`,
         user
       ),
-  });
-
-/**
- * useGetRoles hook returns a query for fetching roles.
- * @param {User} user - The user object.
- * @returns {Query} A query for fetching roles.
- */
-export const useGetRoles = (user: User | null) =>
-  useQuery({
-    queryKey: ['roles'],
-    queryFn: () => get('/api/users/roles', user),
+    enabled: !!user,
   });
