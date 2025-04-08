@@ -2,7 +2,7 @@ import {z} from 'zod';
 import {Form} from '../form';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {useAuth} from '@/context/auth-provider';
-import {useGetProjects} from '@/hooks/get-hooks';
+import {useGetProject} from '@/hooks/queries';
 
 /**
  * ExportProjectForm component renders a form for downloading a project's data.
@@ -13,17 +13,20 @@ import {useGetProjects} from '@/hooks/get-hooks';
 const ExportProjectForm = ({type}: {type: 'zip' | 'csv'}) => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
-  const {data} = useGetProjects(user, projectId);
+  const {data} = useGetProject({user, projectId});
 
   const fields = [
     {
       name: 'form',
       label: 'Form',
       schema: z.string().nonempty(),
-      options: Object.keys(data['ui-specification'].viewsets).map(name => ({
-        label: name,
-        value: name,
-      })),
+      options:
+        data && data['ui-specification']?.viewsets
+          ? Object.keys(data['ui-specification']?.viewsets).map(name => ({
+              label: name,
+              value: name,
+            }))
+          : [],
     },
   ];
 

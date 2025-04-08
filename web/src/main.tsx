@@ -7,6 +7,7 @@ import './index.css';
 import {AuthProvider, useAuth} from './context/auth-provider';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {Toaster} from '@/components/ui/sonner';
+import {BreadcrumbProvider} from './context/breadcrumb-provider';
 /**
  * App component renders the main application layout.
  * It includes the main navigation and the main content.
@@ -49,12 +50,14 @@ if (!rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-        <AuthProvider>
-          <QueryClientProvider client={queryClient}>
-            <App />
-            <Toaster />
-          </QueryClientProvider>
-        </AuthProvider>
+        <BreadcrumbProvider>
+          <AuthProvider>
+            <QueryClientProvider client={queryClient}>
+              <App />
+              <Toaster />
+            </QueryClientProvider>
+          </AuthProvider>
+        </BreadcrumbProvider>
       </ThemeProvider>
     </StrictMode>
   );

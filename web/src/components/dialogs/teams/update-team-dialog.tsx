@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {useAuth} from '@/context/auth-provider';
-import {useGetTeam} from '@/hooks/get-hooks';
+import {useGetTeam} from '@/hooks/queries';
 import {ErrorComponent} from '@tanstack/react-router';
 import {LoaderCircleIcon} from 'lucide-react';
 import React, {useState} from 'react';

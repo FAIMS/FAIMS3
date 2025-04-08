@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/sidebar';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
-import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
+import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
 import {Link, useLocation} from '@tanstack/react-router';
 import {LayoutTemplate, LetterText, Users, House} from 'lucide-react';
 import * as React from 'react';
@@ -55,7 +55,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       icon: LetterText,
       isActive: pathname.startsWith('/projects') || pathname === '/',
       items:
-        projects?.length > 0
+        projects && projects?.length > 0
           ? projects.map(({name, project_id}: any) => ({
               id: project_id,
               title: name,
@@ -72,7 +72,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       icon: LayoutTemplate,
       isActive: pathname.startsWith('/templates'),
       items:
-        templates?.length > 0
+        templates && templates?.length > 0
           ? templates.map(({_id, metadata: {name}}: any) => ({
               id: _id,
               title: name,

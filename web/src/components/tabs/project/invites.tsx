@@ -4,7 +4,7 @@ import {useGetInviteColumns} from '@/components/tables/project-invites';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {removeInviteForProject} from '@/hooks/project-hooks';
-import {useGetProjectInvites} from '@/hooks/get-hooks';
+import {useGetProjectInvites} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 import {ErrorComponent} from '@tanstack/react-router';
 

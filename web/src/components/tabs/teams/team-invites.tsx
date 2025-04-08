@@ -3,7 +3,7 @@ import {CreateTeamInvite} from '@/components/dialogs/teams/create-team-invite';
 import {useGetTeamInviteColumns} from '@/components/tables/team-invites';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {useGetTeamInvites} from '@/hooks/get-hooks';
+import {useGetTeamInvites} from '@/hooks/queries';
 import {removeInviteForTeam} from '@/hooks/teams-hooks';
 import {Action} from '@faims3/data-model';
 import {ErrorComponent} from '@tanstack/react-router';
