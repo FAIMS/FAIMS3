@@ -264,6 +264,20 @@ function MapWrapper(props: MapProps) {
             }),
           })
         );
+
+        //  direction arrow rotation
+        directionFeature.setStyle(
+          new Style({
+            image: new RegularShape({
+              points: 3,
+              radius: 10,
+              rotation: heading,
+              angle: Math.PI / 3,
+              fill: new Fill({color: '#1a73e8'}),
+              stroke: new Stroke({color: '#fff', width: 2}),
+            }),
+          })
+        );
       },
       err => console.error('Live tracking error', err),
       {enableHighAccuracy: true, maximumAge: 0, timeout: 10000}
