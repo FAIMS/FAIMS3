@@ -232,12 +232,14 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
 
   return (
     <Box>
-      <Alert variant="standard" severity="warning" sx={{mb: 1}}>
-        <AlertTitle>{NOTEBOOK_NAME_CAPITALIZED} is closed</AlertTitle>
-        This {NOTEBOOK_NAME} is <b>closed</b>. Your existing records can be
-        uploaded, but no additional data can be collected. It is recommended to
-        deactivate this {NOTEBOOK_NAME} in the settings tab below.
-      </Alert>
+      {project.status === ProjectStatus.CLOSED && (
+        <Alert variant="standard" severity="warning" sx={{mb: 1}}>
+          <AlertTitle>{NOTEBOOK_NAME_CAPITALIZED} is closed</AlertTitle>
+          This {NOTEBOOK_NAME} is <b>closed</b>. Your existing records can be
+          uploaded, but no additional data can be collected. It is recommended
+          to deactivate this {NOTEBOOK_NAME} in the settings tab below.
+        </Alert>
+      )}
       <Box>
         {isAllowedToAddRecords && (
           <Box sx={{mb: 1.5}}>
