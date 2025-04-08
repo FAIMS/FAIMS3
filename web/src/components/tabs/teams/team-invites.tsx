@@ -21,7 +21,11 @@ const TeamInvites = ({teamId}: {teamId: string}) => {
     return <ErrorComponent error="Not authenticated" />;
   }
 
-  const {data, isLoading} = useGetTeamInvites(user, teamId);
+  const {data, isLoading} = useGetTeamInvites({
+    user,
+    teamId,
+    redirect: `${import.meta.env.VITE_WEB_URL}/teams/${teamId}`,
+  });
 
   const columns = useGetTeamInviteColumns({
     teamId,

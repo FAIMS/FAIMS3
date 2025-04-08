@@ -72,7 +72,7 @@ export const removeInviteForProject = async ({
   user: User;
 }) =>
   await fetch(
-    `${import.meta.env.VITE_API_URL}/api/invites/project/${projectId}/${inviteId}`,
+    `${import.meta.env.VITE_API_URL}/api/invites/notebook/${projectId}/${inviteId}`,
     {
       method: 'DELETE',
       headers: {

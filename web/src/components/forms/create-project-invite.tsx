@@ -97,7 +97,7 @@ export function CreateProjectInviteForm({
     if (!user) return {type: 'submit', message: 'Not logged in'};
 
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/invites/project/${projectId}`,
+      `${import.meta.env.VITE_API_URL}/api/invites/notebook/${projectId}`,
       {
         method: 'POST',
         headers: {

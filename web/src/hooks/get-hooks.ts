@@ -179,7 +179,7 @@ export const useGetProjectInvites = (user: User | null, notebookId: string) =>
     queryKey: ['projectinvites', notebookId],
     queryFn: async () => {
       const invites = (await get(
-        `/api/invites/project/${notebookId}`,
+        `/api/invites/notebook/${notebookId}`,
         user
       )) as GetProjectInvitesResponse;
       const promises = invites.map(async invite => {
@@ -202,7 +202,15 @@ export const useGetProjectInvites = (user: User | null, notebookId: string) =>
  * @param {string} teamId - The ID of the notebook.
  * @returns {Query} A query for fetching invites.
  */
-export const useGetTeamInvites = (user: User | null, teamId: string) =>
+export const useGetTeamInvites = ({
+  user,
+  teamId,
+  redirect,
+}: {
+  user: User | null;
+  teamId: string;
+  redirect?: string;
+}) =>
   useQuery({
     queryKey: ['teaminvites', teamId],
     queryFn: async () => {
@@ -211,16 +219,17 @@ export const useGetTeamInvites = (user: User | null, teamId: string) =>
         user
       )) as GetTeamInvitesResponse;
       const promises = invites.map(async invite => {
-        const url = `${import.meta.env.VITE_API_URL}/register/${invite._id}`;
+        const url = `${import.meta.env.VITE_API_URL}/register/${invite._id}${redirect ? '?redirect=' + redirect : ''}`;
         return {
           ...invite,
           url: url,
           qrCode: await QRCode.toDataURL(url),
         };
       });
-      return Promise.all(promises); // Resolving all promises to get enhanced invites
+      return Promise.all(promises);
     },
-    enabled: !!user && !!teamId, // Only run the query if both user and notebookId are available
+    // Only run the query if both user and notebookId are available
+    enabled: !!user && !!teamId,
   });
 
 /**

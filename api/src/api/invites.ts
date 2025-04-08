@@ -54,7 +54,7 @@ export const api = express.Router();
  * GET all project invites
  */
 api.get(
-  '/project/:projectId',
+  '/notebook/:projectId',
   requireAuthenticationAPI,
   processRequest({
     params: z.object({projectId: z.string()}),
@@ -141,7 +141,7 @@ api.get(
  * POST create a project invite
  */
 api.post(
-  '/project/:projectId',
+  '/notebook/:projectId',
   requireAuthenticationAPI,
   processRequest({
     params: z.object({projectId: z.string()}),
@@ -247,7 +247,7 @@ api.post(
  * DELETE a project invite
  */
 api.delete(
-  '/project/:projectId/:inviteId',
+  '/notebook/:projectId/:inviteId',
   requireAuthenticationAPI,
   processRequest({
     params: z.object({
