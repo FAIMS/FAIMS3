@@ -218,33 +218,61 @@ function MapWrapper(props: MapProps) {
     const directionFeature = new Feature(new Point([0, 0]));
     const accuracyFeature = new Feature(new Point([0, 0]));
 
-    // initial styles
-    directionFeature.setStyle(
-      new Style({
-        image: new RegularShape({
-          points: 3,
-          radius: 10,
-          rotation: 0, //  rotate based on heading
-          angle: Math.PI / 3,
-          fill: new Fill({color: '#1a73e8'}),
-          stroke: new Stroke({color: '#fff', width: 2}),
+    const getDirectionDotStyle = (headingRadians: number) => {
+      return [
+        // 🔵 Core dot
+        new Style({
+          image: new CircleStyle({
+            radius: 12,
+            fill: new Fill({color: '#1a73e8'}),
+            stroke: new Stroke({color: '#ffffff', width: 3}),
+          }),
         }),
-      })
-    );
+        // 🔺 Pointer triangle (direction)
+        new Style({
+          image: new RegularShape({
+            points: 3,
+            radius: 10,
+            radius2: 4, // creates sharper tip
+            angle: 0, // base angle
+            rotation: headingRadians,
+            fill: new Fill({color: '#1a73e8'}),
+            stroke: new Stroke({color: '#ffffff', width: 2}),
+          }),
+          geometry: function (feature) {
+            const geometry = feature.getGeometry() as Point;
+            const coord = geometry?.getCoordinates();
+            if (!coord) return geometry;
 
+            // move the triangle slightly above the center
+            const offset = 11;
+            const dx = Math.sin(headingRadians) * offset;
+            const dy = -Math.cos(headingRadians) * offset;
+
+            const newCoord = [coord[0] + dx, coord[1] + dy];
+            return new Point(newCoord);
+          },
+        }),
+      ];
+    };
+
+    // Initial style with dummy heading
+    directionFeature.setStyle(getDirectionDotStyle(0));
+
+    // Accuracy circle
     accuracyFeature.setStyle(
       new Style({
         image: new CircleStyle({
-          radius: 30, // todo ranisa to try dyanmic radius
+          radius: 30,
           fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
           stroke: new Stroke({color: 'rgba(100, 149, 237, 0.3)', width: 1}),
         }),
       })
     );
 
+    // Add both to layer source
     positionSource.addFeatures([accuracyFeature, directionFeature]);
 
-    // continuous location work in progress..
     watchIdRef.current = navigator.geolocation.watchPosition(
       pos => {
         const coords = transform(
@@ -253,43 +281,27 @@ function MapWrapper(props: MapProps) {
           projection
         );
 
-        const heading = pos.coords.heading ?? 0; // Use real heading, or fallback
+        const heading = pos.coords.heading ?? 0;
         const accuracy = pos.coords.accuracy ?? 30;
 
         directionFeature.getGeometry()?.setCoordinates(coords);
         accuracyFeature.getGeometry()?.setCoordinates(coords);
 
-        // Update accuracy circle
         accuracyFeature.setStyle(
           new Style({
             image: new CircleStyle({
-              radius: Math.max(20, accuracy / 2),
+              radius: Math.max(25, accuracy / 2),
               fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
               stroke: new Stroke({color: 'rgba(100, 149, 237, 0.3)', width: 1}),
             }),
           })
         );
 
-        //  direction arrow rotation
-        directionFeature.setStyle(
-          new Style({
-            image: new RegularShape({
-              points: 3,
-              radius: 10,
-              rotation: heading,
-              angle: Math.PI / 3,
-              fill: new Fill({color: '#1a73e8'}),
-              stroke: new Stroke({color: '#fff', width: 2}),
-            }),
-          })
-        );
+        // 🆕 Apply rotated arrow + blue dot
+        directionFeature.setStyle(getDirectionDotStyle(heading));
       },
       err => console.error('Live tracking error', err),
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000,
-      }
+      {enableHighAccuracy: true, maximumAge: 0, timeout: 10000}
     );
   };
 
