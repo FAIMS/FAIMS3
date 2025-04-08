@@ -1,5 +1,5 @@
-import { useBreadcrumb } from '@/context/breadcrumb-provider';
-import { useEffect } from 'react';
+import {useBreadcrumb} from '@/context/breadcrumb-provider';
+import {useEffect} from 'react';
 
 type UseBreadcrumbUpdateProps = {
   // highest -> lowest

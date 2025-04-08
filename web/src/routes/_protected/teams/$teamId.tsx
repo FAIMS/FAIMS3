@@ -6,7 +6,7 @@ import TeamTemplates from '@/components/tabs/teams/team-templates';
 import TeamUsers from '@/components/tabs/teams/team-users';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {useAuth} from '@/context/auth-provider';
-import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTeam} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {Action} from '@faims3/data-model';

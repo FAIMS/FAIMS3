@@ -5,7 +5,7 @@ import {createFileRoute} from '@tanstack/react-router';
 import {useGetUsers} from '@/hooks/queries';
 import {useMemo, useState} from 'react';
 import {GeneratePasswordReset} from '@/components/dialogs/generate-password-reset';
-import { useBreadcrumbUpdate } from '@/hooks/use-breadcrumbs';
+import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 
 export const Route = createFileRoute('/_protected/_admin/users')({
   component: RouteComponent,

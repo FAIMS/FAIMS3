@@ -7,8 +7,8 @@ import {createFileRoute, useNavigate, useRouter} from '@tanstack/react-router';
 import {CreateTeamDialog} from '@/components/dialogs/teams/create-team-dialog';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
-import { useBreadcrumbUpdate } from '@/hooks/use-breadcrumbs';
-import { useMemo } from 'react';
+import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
+import {useMemo} from 'react';
 
 export const Route = createFileRoute('/_protected/teams/')({
   component: RouteComponent,

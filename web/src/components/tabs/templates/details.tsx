@@ -10,7 +10,6 @@ const detailsFields = [
   {field: 'pre_description', label: 'Description'},
   {field: 'project_lead', label: 'Created by'},
   {field: 'notebook_version', label: 'Version'},
-
   {
     field: 'ownedByTeamId',
     label: 'Team',

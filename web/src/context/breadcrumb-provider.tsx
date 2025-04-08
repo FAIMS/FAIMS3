@@ -57,7 +57,7 @@ export function BreadcrumbProvider({children}: {children: ReactNode}) {
     setBreadcrumbs(prev => {
       // Only update if the info has actually changed
       if (prev[path] !== undefined) {
-        let updated = {...prev};
+        const updated = {...prev};
         delete updated[path];
         return updated;
       } else {
