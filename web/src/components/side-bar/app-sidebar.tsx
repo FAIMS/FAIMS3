@@ -51,7 +51,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
       url: '/projects',
       icon: LetterText,
-      isActive: pathname.startsWith('/templates'),
+      isActive: pathname.startsWith('/projects') || pathname === '/',
       items:
         projects && projects?.length > 0
           ? projects.map(({name, project_id}: any) => ({

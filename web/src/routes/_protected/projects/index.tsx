@@ -8,7 +8,7 @@ import {createFileRoute, useNavigate, useRouter} from '@tanstack/react-router';
 import {useMemo} from 'react';
 
 export const Route = createFileRoute('/_protected/projects/')({
-  component: RouteComponent,
+  component: ProjectsRouteComponent,
 });
 
 /**
@@ -17,7 +17,7 @@ export const Route = createFileRoute('/_protected/projects/')({
  *
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
-function RouteComponent() {
+export function ProjectsRouteComponent() {
   const {user} = useAuth();
 
   const {isLoading, data} = useGetProjects(user);

@@ -816,11 +816,3 @@ export const TemplateDocumentSchema = z.intersection(
   CouchDocumentFieldsSchema
 );
 export type TemplateDocument = z.infer<typeof TemplateDocumentSchema>;
-
-export interface RoleInvite {
-  _id: string;
-  _rev?: string;
-  _deleted?: boolean;
-  project_id: NonUniqueProjectID;
-  role: string;
-}
