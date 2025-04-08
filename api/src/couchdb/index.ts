@@ -309,14 +309,14 @@ export const getMetadataDb = async (
   }
 
   // Now get the metadata DB from the project document
-  if (!projectDoc.metadata_db) {
+  if (!projectDoc.metadataDb) {
     throw new Exceptions.InternalSystemError(
       "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
     );
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.metadata_db.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.metadataDb.db_name;
   const pouch_options = pouchOptions();
 
   // Authorise against this DB
@@ -355,14 +355,14 @@ export const getDataDb = async (
   }
 
   // Now get the data DB for this project
-  if (!projectDoc.data_db) {
+  if (!projectDoc.dataDb) {
     throw new Exceptions.InternalSystemError(
       "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
     );
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.data_db.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.dataDb.db_name;
   const pouch_options = pouchOptions();
   // Authorize against this DB
   if (LOCAL_COUCHDB_AUTH !== undefined) {

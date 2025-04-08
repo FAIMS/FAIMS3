@@ -1,14 +1,14 @@
+import {useAuth} from '@/context/auth-provider';
+import {Role, roleDetails, RoleScope} from '@faims3/data-model';
+import {useQueryClient} from '@tanstack/react-query';
 import {ColumnDef} from '@tanstack/react-table';
 import {KeyRound} from 'lucide-react';
-import {DataTableColumnHeader} from '../data-table/column-header';
-import {Button} from '../ui/button';
-import {RemoveUserDialog} from '../dialogs/remove-user';
-import {RoleCard} from '../ui/role-card';
-import {AddRolePopover} from '../popovers/add-role-popover';
-import {useAuth} from '@/context/auth-provider';
-import {useQueryClient} from '@tanstack/react-query';
 import {toast} from 'sonner';
-import {Role, roleDetails, RoleScope} from '@faims3/data-model';
+import {DataTableColumnHeader} from '../data-table/column-header';
+import {RemoveUserDialog} from '../dialogs/remove-user';
+import {AddRolePopover} from '../popovers/add-role-popover';
+import {Button} from '../ui/button';
+import {RoleCard} from '../ui/role-card';
 
 export const getColumns = ({
   onReset,
@@ -43,8 +43,7 @@ export const getColumns = ({
           {userId !== user?.user.id && (
             <AddRolePopover
               roles={Object.entries(roleDetails)
-                /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-                .filter(([_, {scope}]) => scope === RoleScope.GLOBAL)
+                .filter(([, {scope}]) => scope === RoleScope.GLOBAL)
                 .map(([value]) => value)}
               userId={userId}
             />

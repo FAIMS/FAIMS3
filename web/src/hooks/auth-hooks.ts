@@ -1,6 +1,25 @@
-import {useAuth} from '@/context/auth-provider';
-import {isAuthorized, Action} from '@faims3/data-model';
-import {useMemo} from 'react';
+import { useAuth, User } from '@/context/auth-provider';
+import { Action, isAuthorized } from '@faims3/data-model';
+import { useMemo } from 'react';
+
+/**
+ * helper to map our user to the isAuthorized user
+ */
+export const userCanDo = ({
+  user,
+  action,
+  resourceId,
+}: {
+  user: User;
+  action: Action;
+  resourceId?: string;
+}): boolean => {
+  return isAuthorized({
+    decodedToken: user.decodedToken!,
+    action,
+    resourceId,
+  });
+};
 
 /**
  * A simple custom hook which returns whether the user can do the thing, and
@@ -15,18 +34,14 @@ export const useIsAuthorisedTo = ({
 }): boolean => {
   const {user} = useAuth();
 
-  console.log('Checking auth with input: ', {action, resourceId});
-  console.log('User: ', {user});
-
   if (!user || !user.decodedToken) {
-    console.log('User or decoded token not defined');
     return false;
   }
 
   return useMemo(
     () =>
-      isAuthorized({
-        decodedToken: user.decodedToken!,
+      userCanDo({
+        user,
         action,
         resourceId,
       }),

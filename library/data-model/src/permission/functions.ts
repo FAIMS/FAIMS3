@@ -213,6 +213,49 @@ export function projectInviteToAction({
 }
 
 /**
+ * Maps a create/delete invite operation to the corresponding action needed
+ * for teams
+ * @param action Whether this is a create or delete operation
+ * @param role The role level for the invitation
+ * @returns The action needed to perform this operation
+ */
+export function teamInviteToAction({
+  action,
+  role,
+}: {
+  action: 'create' | 'delete';
+  role: Role;
+}): Action {
+  // Trying to add a role is a specific action for each role level
+  let actionNeeded = undefined;
+  if (role === Role.TEAM_ADMIN) {
+    if (action === 'create') {
+      actionNeeded = Action.CREATE_ADMIN_TEAM_INVITE;
+    } else {
+      actionNeeded = Action.DELETE_ADMIN_TEAM_INVITE;
+    }
+  } else if (role === Role.TEAM_MANAGER) {
+    if (action === 'create') {
+      actionNeeded = Action.CREATE_MANAGER_TEAM_INVITE;
+    } else {
+      actionNeeded = Action.DELETE_MANAGER_TEAM_INVITE;
+    }
+  } else if (role === Role.TEAM_MEMBER) {
+    if (action === 'create') {
+      actionNeeded = Action.CREATE_MEMBER_TEAM_INVITE;
+    } else {
+      actionNeeded = Action.DELETE_MEMBER_TEAM_INVITE;
+    }
+  }
+
+  if (!actionNeeded) {
+    throw Error('Could not find suitable action for this role change!');
+  }
+
+  return actionNeeded;
+}
+
+/**
  * Maps a role and operation to the corresponding action
  * @param role The role being modified
  * @param add Whether adding (true) or removing (false)

@@ -1,11 +1,14 @@
-import {useQuery} from '@tanstack/react-query';
 import {User} from '@/context/auth-provider';
 import {
   GetListTeamsResponse,
   GetListTemplatesResponse,
+  GetNotebookResponse,
+  GetProjectInvitesResponse,
   GetTeamByIdResponse,
+  GetTeamInvitesResponse,
   GetTeamMembersResponse,
 } from '@faims3/data-model';
+import {useQuery} from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import type {
   ExpressUser,
@@ -78,6 +81,27 @@ export const useGetTemplate = (user: User | null, templateId: string) =>
     queryKey: ['templates', templateId],
     queryFn: () =>
       get<GetTemplateByIdResponse>(`/api/templates/${templateId}`, user),
+  });
+
+/**
+ * useGetProject hook returns a query for fetching an individual project
+ */
+export const useGetProject = ({
+  user,
+  projectId,
+}: {
+  user: User | null;
+  projectId: string;
+}) =>
+  useQuery({
+    queryKey: ['projects', projectId],
+    queryFn: async () => {
+      return (await get(
+        `/api/notebooks/${projectId}`,
+        user
+      )) as GetNotebookResponse;
+    },
+    enabled: !!user,
   });
 
 /**
@@ -206,28 +230,68 @@ interface GetInvitesResponse extends RoleInvite {
 }
 
 /**
- * useGetInvites hook returns a query for fetching invites.
+ * useGetProjectInvites hook returns a query for fetching invites.
  *
  * @param {User} user - The user object.
  * @param {string} notebookId - The ID of the notebook.
  * @returns {Query} A query for fetching invites.
  */
-export const useGetInvites = (user: User | null, notebookId: string) =>
+export const useGetProjectInvites = (user: User | null, notebookId: string) =>
   useQuery({
-    queryKey: ['invites', notebookId],
+    queryKey: ['projectinvites', notebookId],
     queryFn: async () => {
-      const invites = await get<GetInvitesResponse[]>(
-        `/api/notebooks/${notebookId}/invites`,
+      const invites = (await get(
+        `/api/invites/notebook/${notebookId}`,
         user
-      );
-
-      for (const invite of invites) {
-        invite.url = `${import.meta.env.VITE_API_URL}/register/${invite._id}`;
-        invite.qrCode = await QRCode.toDataURL(invite.url);
-      }
-
-      return invites;
+      )) as GetProjectInvitesResponse;
+      const promises = invites.map(async invite => {
+        const url = `${import.meta.env.VITE_API_URL}/register/${invite._id}`;
+        return {
+          ...invite,
+          url: url,
+          qrCode: await QRCode.toDataURL(url),
+        };
+      });
+      return Promise.all(promises); // Resolving all promises to get enhanced invites
     },
+    enabled: !!user && !!notebookId, // Only run the query if both user and notebookId are available
+  });
+
+/**
+ * useGetTeamInvites hook returns a query for fetching invites.
+ *
+ * @param {User} user - The user object.
+ * @param {string} teamId - The ID of the notebook.
+ * @returns {Query} A query for fetching invites.
+ */
+export const useGetTeamInvites = ({
+  user,
+  teamId,
+  redirect,
+}: {
+  user: User | null;
+  teamId: string;
+  redirect?: string;
+}) =>
+  useQuery({
+    queryKey: ['teaminvites', teamId],
+    queryFn: async () => {
+      const invites = (await get(
+        `/api/invites/team/${teamId}`,
+        user
+      )) as GetTeamInvitesResponse;
+      const promises = invites.map(async invite => {
+        const url = `${import.meta.env.VITE_API_URL}/register/${invite._id}${redirect ? '?redirect=' + redirect : ''}`;
+        return {
+          ...invite,
+          url: url,
+          qrCode: await QRCode.toDataURL(url),
+        };
+      });
+      return Promise.all(promises);
+    },
+    // Only run the query if both user and notebookId are available
+    enabled: !!user && !!teamId,
   });
 
 /**
