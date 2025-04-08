@@ -12,8 +12,9 @@ import {
   ProjectV2Fields,
   V1InviteDBFields,
   V2InviteDBFields,
+  V3InviteDBFields,
 } from '../src/data_storage';
-import {Role} from '../src';
+import {Resource, Role} from '../src';
 import {areDocsEqual} from './utils';
 
 // Register memory adapter
@@ -367,6 +368,181 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   },
 ];
 
+// Test cases for invitesV2toV3Migration
+const INVITES_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  // Basic migration test - Admin role
+  {
+    name: 'invitesV2toV3Migration - admin role',
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'invite_123',
+      _rev: '1-abc123',
+      projectId: 'project_xyz',
+      role: Role.PROJECT_ADMIN,
+    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_123',
+      _rev: '1-abc123',
+      name: `${Role.PROJECT_ADMIN} invite for project_xyz`,
+      resourceId: 'project_xyz',
+      resourceType: Resource.PROJECT,
+      role: Role.PROJECT_ADMIN,
+      expiry: expect.any(Number), // Test will use a matcher for timestamp
+      createdAt: expect.any(Number),
+      createdBy: 'admin',
+      usesConsumed: 0,
+      uses: [],
+    } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: (actual, expected) => {
+      // Custom equality function to handle timestamps
+      return (
+        actual._id === expected._id &&
+        actual._rev === expected._rev &&
+        actual.name === expected.name &&
+        actual.resourceId === expected.resourceId &&
+        actual.resourceType === expected.resourceType &&
+        actual.role === expected.role &&
+        typeof actual.expiry === 'number' &&
+        typeof actual.createdAt === 'number' &&
+        actual.createdBy === expected.createdBy &&
+        actual.usesConsumed === expected.usesConsumed &&
+        Array.isArray(actual.uses) &&
+        actual.uses.length === 0
+      );
+    },
+  },
+
+  // Contributor role test
+  {
+    name: 'invitesV2toV3Migration - contributor role',
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'invite_456',
+      _rev: '1-def456',
+      projectId: 'project_abc',
+      role: Role.PROJECT_CONTRIBUTOR,
+    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_456',
+      _rev: '1-def456',
+      name: `${Role.PROJECT_CONTRIBUTOR} invite for project_abc`,
+      resourceId: 'project_abc',
+      resourceType: Resource.PROJECT,
+      role: Role.PROJECT_CONTRIBUTOR,
+      expiry: expect.any(Number),
+      createdAt: expect.any(Number),
+      createdBy: 'admin',
+      usesConsumed: 0,
+      uses: [],
+    } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: (actual, expected) => {
+      return (
+        actual._id === expected._id &&
+        actual._rev === expected._rev &&
+        actual.name === expected.name &&
+        actual.resourceId === expected.resourceId &&
+        actual.resourceType === expected.resourceType &&
+        actual.role === expected.role &&
+        typeof actual.expiry === 'number' &&
+        typeof actual.createdAt === 'number' &&
+        actual.createdBy === expected.createdBy &&
+        actual.usesConsumed === expected.usesConsumed &&
+        Array.isArray(actual.uses) &&
+        actual.uses.length === 0
+      );
+    },
+  },
+
+  // Test with additional fields in input (should be ignored)
+  {
+    name: 'invitesV2toV3Migration - with extra fields',
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'invite_789',
+      _rev: '1-ghi789',
+      projectId: 'project_def',
+      role: Role.PROJECT_ADMIN,
+      extraField1: 'should be ignored',
+      extraField2: 123,
+    } as unknown as PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_789',
+      _rev: '1-ghi789',
+      name: `${Role.PROJECT_ADMIN} invite for project_def`,
+      resourceId: 'project_def',
+      resourceType: Resource.PROJECT,
+      role: Role.PROJECT_ADMIN,
+      expiry: expect.any(Number),
+      createdAt: expect.any(Number),
+      createdBy: 'admin',
+      usesConsumed: 0,
+      uses: [],
+    } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: (actual, expected) => {
+      // Ensure extra fields are not carried over
+      return (
+        actual._id === expected._id &&
+        actual._rev === expected._rev &&
+        actual.name === expected.name &&
+        actual.resourceId === expected.resourceId &&
+        actual.resourceType === expected.resourceType &&
+        actual.role === expected.role &&
+        typeof actual.expiry === 'number' &&
+        typeof actual.createdAt === 'number' &&
+        actual.createdBy === expected.createdBy &&
+        actual.usesConsumed === expected.usesConsumed &&
+        Array.isArray(actual.uses) &&
+        actual.uses.length === 0 &&
+        !('extraField1' in actual) &&
+        !('extraField2' in actual)
+      );
+    },
+  },
+
+  // Edge case - Missing projectId
+  {
+    name: 'invitesV2toV3Migration - missing projectId',
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'invite_012',
+      _rev: '1-jkl012',
+      role: Role.PROJECT_CONTRIBUTOR,
+      // projectId is missing
+    } as unknown as PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedOutputDoc: null, // No output expected for deletion
+    expectedResult: {action: 'delete'},
+    equalityFunction: (actual, expected) => actual === expected, // Simple equality for null check
+  },
+
+  // Edge case - Missing role
+  {
+    name: 'invitesV2toV3Migration - missing role',
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'invite_345',
+      _rev: '1-mno345',
+      projectId: 'project_ghi',
+      // role is missing
+    } as unknown as PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedOutputDoc: null, // No output expected for deletion
+    expectedResult: {action: 'delete'},
+    equalityFunction: (actual, expected) => actual === expected, // Simple equality for null check
+  },
+];
+
 /**
  * Collection of test cases for all migration functions
  */
@@ -644,6 +820,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
 ];
 
 MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);
 
 describe('Migration Specific Tests', () => {
   /**
