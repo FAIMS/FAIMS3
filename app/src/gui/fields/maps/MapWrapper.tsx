@@ -168,6 +168,8 @@ function MapWrapper(props: MapProps) {
       watchIdRef.current = null;
     }
     if (map && positionLayer) {
+      const source = positionLayer.getSource();
+      source?.clear(); // clear any lingering features
       map.removeLayer(positionLayer);
       setPositionLayer(undefined);
     }
