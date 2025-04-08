@@ -3,7 +3,7 @@ import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
-import {useGetProjects} from '@/hooks/get-hooks';
+import {useGetProject} from '@/hooks/queries';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
 import {ProjectStatus} from '@faims3/data-model';
 
@@ -65,13 +65,15 @@ const detailsFields = [
 const ProjectDetails = ({projectId}: {projectId: string}) => {
   const {user} = useAuth();
 
-  const {data, isPending} = useGetProjects(user, projectId);
+  const {data, isPending} = useGetProject({user, projectId});
 
   return (
     <Card>
       <List>
         {detailsFields.map(({field, label, render, isMetadata = true}) => {
-          const cellData = isMetadata ? data?.metadata[field] : data?.[field];
+          const cellData = isMetadata
+            ? data?.metadata[field]
+            : (data as any | undefined)?.[field];
           return (
             <ListItem key={field}>
               <ListLabel>{label}</ListLabel>

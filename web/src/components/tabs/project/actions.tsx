@@ -4,7 +4,7 @@ import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
-import {useGetProjects} from '@/hooks/get-hooks';
+import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
@@ -22,7 +22,7 @@ import {Action} from '@faims3/data-model';
 const ProjectActions = (): JSX.Element => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
-  const {data} = useGetProjects(user, projectId);
+  const {data} = useGetProject({user, projectId});
 
   // Permissions
   const canChangeProjectStatus = useIsAuthorisedTo({
