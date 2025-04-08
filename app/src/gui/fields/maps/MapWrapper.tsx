@@ -220,7 +220,7 @@ function MapWrapper(props: MapProps) {
 
     const getDirectionDotStyle = (headingRadians: number) => {
       return [
-        // 🔵 Core dot
+        // core dot
         new Style({
           image: new CircleStyle({
             radius: 12,
@@ -228,7 +228,7 @@ function MapWrapper(props: MapProps) {
             stroke: new Stroke({color: '#ffffff', width: 3}),
           }),
         }),
-        // 🔺 Pointer triangle (direction)
+        // Pointer triangle (direction)
         new Style({
           image: new RegularShape({
             points: 3,
