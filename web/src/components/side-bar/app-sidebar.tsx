@@ -46,8 +46,6 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const topSectionNavItems: NavItem[] = [];
   const bottomSectionNavItems: NavItem[] = [];
 
-  console.log(pathname, pathname === '/');
-
   if (canSeeProjects) {
     topSectionNavItems.push({
       title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
