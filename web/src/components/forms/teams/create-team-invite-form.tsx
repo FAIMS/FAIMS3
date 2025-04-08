@@ -1,14 +1,13 @@
 import {Field, Form} from '@/components/form';
 import {useAuth} from '@/context/auth-provider';
 import {userCanDo} from '@/hooks/auth-hooks';
-import {Route} from '@/routes/_protected/projects/$projectId';
 import {
   PostCreateInviteInput,
-  projectInviteToAction,
   Resource,
   Role,
   roleDetails,
   RoleScope,
+  teamInviteToAction,
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {ErrorComponent} from '@tanstack/react-router';
@@ -16,6 +15,7 @@ import {z} from 'zod';
 
 interface UpdateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  teamId: string;
 }
 
 /**
@@ -24,17 +24,17 @@ interface UpdateTemplateFormProps {
  * @param {UpdateTemplateFormProps} props - The props for the form
  * @returns {JSX.Element} The rendered form
  */
-export function CreateProjectInviteForm({
+export function CreateTeamInviteForm({
   setDialogOpen,
+  teamId,
 }: UpdateTemplateFormProps) {
   const {user} = useAuth();
+
+  const QueryClient = useQueryClient();
 
   if (!user) {
     return <ErrorComponent error="Not authenticated" />;
   }
-
-  const {projectId} = Route.useParams();
-  const QueryClient = useQueryClient();
 
   const fields: Field[] = [
     {
@@ -49,11 +49,11 @@ export function CreateProjectInviteForm({
         .filter(
           ([role, {scope, resource}]) =>
             scope === RoleScope.RESOURCE_SPECIFIC &&
-            resource === Resource.PROJECT &&
+            resource === Resource.TEAM &&
             userCanDo({
               user,
-              resourceId: projectId,
-              action: projectInviteToAction({
+              resourceId: teamId,
+              action: teamInviteToAction({
                 action: 'create',
                 role: role as Role,
               }),
@@ -80,7 +80,6 @@ export function CreateProjectInviteForm({
   /**
    * Handles the form submission
    *
-   * @param {z.infer<typeof fields[0]['schema']>} role - The role to invite
    * @returns {Promise<void>} A promise that resolves when the invite is created
    */
   const onSubmit = async ({
@@ -97,7 +96,7 @@ export function CreateProjectInviteForm({
     if (!user) return {type: 'submit', message: 'Not logged in'};
 
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/invites/notebook/${projectId}`,
+      `${import.meta.env.VITE_API_URL}/api/invites/team/${teamId}`,
       {
         method: 'POST',
         headers: {
@@ -116,7 +115,7 @@ export function CreateProjectInviteForm({
     if (!response.ok)
       return {type: 'submit', message: 'Error creating invite.'};
 
-    QueryClient.invalidateQueries({queryKey: ['projectinvites', projectId]});
+    QueryClient.invalidateQueries({queryKey: ['teaminvites', teamId]});
 
     setDialogOpen(false);
   };

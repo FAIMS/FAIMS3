@@ -1,5 +1,6 @@
 import {UpdateTeamDialog} from '@/components/dialogs/teams/update-team-dialog';
 import TeamDetails from '@/components/tabs/teams/team-details';
+import TeamInvites from '@/components/tabs/teams/team-invites';
 import TeamProjects from '@/components/tabs/teams/team-projects';
 import TeamTemplates from '@/components/tabs/teams/team-templates';
 import TeamUsers from '@/components/tabs/teams/team-users';
@@ -10,7 +11,7 @@ import {createFileRoute} from '@tanstack/react-router';
 import {Edit} from 'lucide-react';
 import {useState} from 'react';
 
-type TabLabel = 'Details' | 'Surveys' | 'Templates' | 'Users';
+type TabLabel = 'Details' | 'Invites' | 'Surveys' | 'Templates' | 'Users';
 
 export const Route = createFileRoute('/_protected/teams/$teamId')({
   component: RouteComponent,
@@ -22,6 +23,10 @@ function RouteComponent() {
   // Access checks
   const canSeeTeamDetails = useIsAuthorisedTo({
     action: Action.VIEW_TEAM_DETAILS,
+    resourceId: teamId,
+  });
+  const canSeeTeamInvites = useIsAuthorisedTo({
+    action: Action.VIEW_TEAM_INVITES,
     resourceId: teamId,
   });
   const canEditTeamDetails = useIsAuthorisedTo({
@@ -38,6 +43,9 @@ function RouteComponent() {
   // details?
   if (canSeeTeamDetails) {
     tabs.push({name: 'Details', Component: TeamDetails});
+  }
+  if (canSeeTeamInvites) {
+    tabs.push({name: 'Invites', Component: TeamInvites});
   }
   tabs.push({name: 'Surveys', Component: TeamProjects});
   tabs.push({name: 'Templates', Component: TeamTemplates});
