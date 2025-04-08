@@ -195,8 +195,8 @@ function MapWrapper(props: MapProps) {
           'EPSG:4326',
           projection
         );
-        view.setCenter(coords); // auto-zoom to current location
-        view.setZoom(17); // adjust zoom level as needed
+        view.setCenter(coords);
+        view.setZoom(17);
       },
       err => console.error('Initial location error', err),
       {enableHighAccuracy: true}
