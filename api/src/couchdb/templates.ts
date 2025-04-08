@@ -4,25 +4,42 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
+  PostCreateTemplateInput,
   ProjectID,
   TemplateDocument,
   TemplateEditableDetails,
+  TEMPLATES_BY_TEAM_ID,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
-import {slugify} from '../utils';
 import * as Exceptions from '../exceptions';
+import {generateRandomString, slugify} from '../utils';
 
 /**
  * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
  * validate with Zod.
  * @returns an array of template objects
  */
-export const getTemplates = async (): Promise<TemplateDocument[]> => {
+export const getTemplates = async ({
+  teamId,
+}: {
+  teamId?: string;
+}): Promise<TemplateDocument[]> => {
   const templatesDb = getTemplatesDb();
   try {
-    const resultList = await templatesDb.allDocs({
-      include_docs: true,
-    });
+    let resultList;
+    if (teamId) {
+      resultList = await templatesDb.query<TemplateDocument>(
+        TEMPLATES_BY_TEAM_ID,
+        {
+          key: teamId,
+          include_docs: true,
+        }
+      );
+    } else {
+      resultList = await templatesDb.allDocs({
+        include_docs: true,
+      });
+    }
     return resultList.rows
       .filter(document => {
         return !!document.doc && !document.id.startsWith('_');
@@ -33,6 +50,38 @@ export const getTemplates = async (): Promise<TemplateDocument[]> => {
   } catch (error) {
     throw new Exceptions.InternalSystemError(
       'An error occurred while reading templates from the Template DB.'
+    );
+  }
+};
+
+/**
+ * Gets template IDs by teamID (who owns it)
+ * @returns an array of template ids
+ */
+export const getTemplateIdsByTeamId = async ({
+  teamId,
+}: {
+  teamId: string;
+}): Promise<string[]> => {
+  const templatesDb = getTemplatesDb();
+  try {
+    const resultList = await templatesDb.query<TemplateDocument>(
+      TEMPLATES_BY_TEAM_ID,
+      {
+        key: teamId,
+        include_docs: false,
+      }
+    );
+    return resultList.rows
+      .filter(res => {
+        return !res.id.startsWith('_');
+      })
+      .map(res => {
+        return res.id;
+      });
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading templates by team ID from the Template DB.'
     );
   }
 };
@@ -55,27 +104,37 @@ export const getTemplate = async (id: string) => {
 
 /**
  * Generate a good project identifier for a new project
+ *
+ * Uses MS time + also a random short prefix in case of very very fast or parallel
+ * execution
+ *
  * @param projectName the project name string
  * @returns a suitable project identifier
  */
 const generateTemplateId = (templateName: string): ProjectID => {
-  return `${Date.now().toFixed()}-${slugify(templateName)}`;
+  const randomPrefix = generateRandomString(3);
+  return `${Date.now().toFixed()}-${randomPrefix}-${slugify(templateName)}`;
 };
 
 /**
  * Sets up and lodges a new template record into the template database. Error is
  * thrown under failure to lodge.
+ *
+ * NOTE this does not add any permissions!
+ *
  * @param payload The document details for a template
  * @returns The ID of the minted template
  */
-export const createTemplate = async (
-  payload: TemplateEditableDetails
-): Promise<TemplateDocument> => {
+export const createTemplate = async ({
+  payload,
+}: {
+  payload: PostCreateTemplateInput;
+}): Promise<TemplateDocument> => {
   // Get the templates DB so we can interact with it
   const templatesDb = getTemplatesDb();
 
   // Get a unique id for the template Id
-  const templateId = generateTemplateId(payload.template_name);
+  const templateId = generateTemplateId(payload.metadata.name);
 
   // inject templateId into the metadata
   // TODO see BSS-343
@@ -85,11 +144,12 @@ export const createTemplate = async (
   const templateDoc: TemplateDocument = {
     _id: templateId,
     version: 1,
-    ...payload,
+    'ui-specification': payload['ui-specification'],
     metadata: {
       ...payload.metadata,
       project_status: 'active',
     },
+    ownedByTeamId: payload.teamId,
   };
 
   // Try putting the new document
@@ -97,7 +157,8 @@ export const createTemplate = async (
     await templatesDb.put(templateDoc);
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An unexpected error occurred while trying to PUT the new template document into the templates DB.'
+      'An unexpected error occurred while trying to PUT the new template document into the template DB. Exception ' +
+        e
     );
   }
 
@@ -143,12 +204,15 @@ export const updateExistingTemplate = async (
   payload.metadata.template_id = templateId;
 
   const newDocument = {
+    ...payload,
+
+    // explicitly retain these details!
     _id: templateId,
     _rev: existingTemplate._rev,
     // Increment version by 1 when updated
     version: existingTemplate.version + 1,
-    ...payload,
-  };
+    ownedByTeamId: existingTemplate.ownedByTeamId,
+  } satisfies TemplateDocument;
   try {
     await templateDb.put(newDocument);
   } catch (e) {
@@ -213,7 +277,8 @@ export const archiveTemplate = async (id: string, archive: boolean) => {
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An unexpected error occurred while trying to PUT the new template document into the templates DB.'
+      'An unexpected error occurred while trying to PUT the new template document into the teams DB. Exception ' +
+        e
     );
   }
 

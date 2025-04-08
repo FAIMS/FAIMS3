@@ -62,14 +62,14 @@ const ExportProjectForm = ({type}: ExportProjectFormProps) => {
       const blob = new Blob([JSON.stringify(filteredRecords, null, 2)], {
         type: 'application/json',
       });
-      const url = URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${projectId}_${form}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(url);
     } else {
       const url = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}.${type}`;
       window.open(url, '_blank');

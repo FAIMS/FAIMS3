@@ -19,6 +19,8 @@
  */
 
 import {
+  Action,
+  addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
   EncodedProjectUIModel,
@@ -26,21 +28,27 @@ import {
   GetNotebookResponse,
   GetNotebookUsersResponse,
   getRecordsWithRegex,
+  isAuthorized,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
   PostCreateNotebookResponse,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
+  projectInviteToAction,
+  projectRoleToAction,
   ProjectUIModel,
   PutUpdateNotebookInputSchema,
   PutUpdateNotebookResponse,
+  removeProjectRole,
+  Role,
+  userHasProjectRole,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
-import {getDataDb} from '../couchdb';
+import {getDataDb, localGetProjectsDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {createInvite, getInvitesForNotebook} from '../couchdb/invites';
 import {
@@ -49,9 +57,9 @@ import {
   generateFilenameForAttachment,
   getEncodedNotebookUISpec,
   getNotebookMetadata,
-  getNotebooks,
   getProjectUIModel,
   getRolesForNotebook,
+  getUserProjectsDetailed,
   streamNotebookFilesAsZip,
   streamNotebookRecordsAsCSV,
   streamNotebookRecordsAsXLSX,
@@ -59,18 +67,19 @@ import {
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
 import {
-  addProjectRoleToUser,
-  getUserFromEmailOrUsername,
-  getUserInfoForNotebook,
-  removeProjectRoleFromUser,
-  saveUser,
-  userCanCreateNotebooks,
-  userHasPermission,
-  userIsClusterAdmin,
+  getCouchUserFromEmailOrUsername,
+  getUserInfoForProject,
+  getUsers,
+  saveCouchUser,
+  saveExpressUser,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
-import {requireAuthenticationAPI} from '../middleware';
-import {generateTokenContentsForUser} from '../utils';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
+import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -84,12 +93,13 @@ export const api = express.Router();
 api.get(
   '/',
   requireAuthenticationAPI,
+  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
   async (req, res: Response<GetNotebookListResponse>) => {
     // get a list of notebooks from the db
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const notebooks = await getNotebooks(req.user);
+    const notebooks = await getUserProjectsDetailed(req.user, req.query.teamId);
     res.json(notebooks);
   }
 );
@@ -104,25 +114,37 @@ api.get(
  */
 api.post(
   '/',
+  requireAuthenticationAPI,
   processRequest({
     body: PostCreateNotebookInputSchema,
   }),
-  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    getAction(req) {
+      const body = req.body as PostCreateNotebookInput;
+      // If in team - suitable action (which is against team ID)
+      if (body.teamId) {
+        return Action.CREATE_PROJECT_IN_TEAM;
+      } else {
+        // Otherwise global create project required
+        return Action.CREATE_PROJECT;
+      }
+    },
+    getResourceId(req) {
+      const body = req.body as PostCreateNotebookInput;
+      if (body.teamId) {
+        // If creating a project in a team, the resource ID is the team!
+        return body.teamId;
+      } else {
+        // If creating a project globally - there is no resource ID!
+        return undefined;
+      }
+    },
+  }),
   async (req, res: Response<PostCreateNotebookResponse>) => {
-    // First check the user has permissions to do this action
+    // Force a check to be sure
     if (!req.user) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not authorised to create a notebook.'
-      );
+      throw new Exceptions.UnauthorizedException();
     }
-
-    // User is not authorised to create a notebook
-    if (!userCanCreateNotebooks(req.user)) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not authorised to create a notebook.'
-      );
-    }
-
     // Validate payload combination
     if ('ui-specification' in req.body && 'template_id' in req.body) {
       throw new Exceptions.ValidationException(
@@ -179,13 +201,19 @@ api.post(
       uiSpec,
       metadata,
       // link to template ID if necessary
-      templateId
+      templateId,
+      // team ID if provided (authorisation to do so already checked)
+      req.body.teamId
     );
     if (projectID) {
-      // allow this user to modify the new notebook
-      addProjectRoleToUser(req.user, projectID, 'admin');
-      await saveUser(req.user);
-      res.json({notebook: projectID} as PostCreateNotebookResponse);
+      // Make the user an admin of this notebook
+      addProjectRole({
+        user: req.user,
+        projectId: projectID,
+        role: Role.PROJECT_ADMIN,
+      });
+      await saveExpressUser(req.user);
+      res.json({notebook: projectID} satisfies PostCreateNotebookResponse);
     } else {
       throw new Exceptions.InternalSystemError(
         'Error occurred during notebook creation.'
@@ -196,14 +224,31 @@ api.post(
 
 api.get(
   '/:id',
-  processRequest({params: z.object({id: z.string()})}),
   requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.READ_PROJECT_METADATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({params: z.object({id: z.string()})}),
   async (req, res: Response<GetNotebookResponse>) => {
-    // get full details of a single notebook
-    const project_id = req.params.id;
-    if (!req.user || !userHasPermission(req.user, project_id, 'read')) {
+    if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
+
+    // get full details of a single notebook
+    const project_id = req.params.id;
+    let project;
+    try {
+      project = await localGetProjectsDb().get(project_id);
+    } catch (e) {
+      // Could not find the project
+      throw new Exceptions.ItemNotFoundException(
+        `Failed to find the project with ID ${project_id}.`
+      );
+    }
+
     const metadata = await getNotebookMetadata(project_id);
     const uiSpec = await getEncodedNotebookUISpec(project_id);
     if (metadata && uiSpec) {
@@ -212,7 +257,8 @@ api.get(
         // TODO fully implement a UI Spec zod model, and do runtime validation
         // in all client apps
         'ui-specification': uiSpec as unknown as Record<string, unknown>,
-      });
+        ownedByTeamId: project.ownedByTeamId,
+      } satisfies GetNotebookResponse);
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found.');
     }
@@ -223,16 +269,19 @@ api.get(
 api.put(
   '/:id',
   requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.UPDATE_PROJECT_UISPEC,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
   processRequest({
     params: z.object({id: z.string()}),
     body: PutUpdateNotebookInputSchema,
   }),
   async (req, res: Response<PutUpdateNotebookResponse>) => {
-    // user must have modify permissions on this notebook
-    if (!userHasPermission(req.user, req.params.id, 'modify')) {
-      throw new Exceptions.UnauthorizedException(
-        'You do not have permission to modify this notebook'
-      );
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
     }
     const uiSpec = req.body['ui-specification'];
     const metadata = req.body.metadata;
@@ -245,16 +294,22 @@ api.put(
 // export current versions of all records in this notebook
 api.get(
   '/:id/records/',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
   processRequest({
     params: z.object({id: z.string()}),
   }),
-  requireAuthenticationAPI,
   // TODO complete type annotations for this method
   async (req, res: Response<{records: any}>) => {
-    if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
+    if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const tokenContents = generateTokenContentsForUser(req.user);
+    const tokenContents = mockTokenContentsForUser(req.user);
     const {id: projectId} = req.params;
     const uiSpecification = (await getProjectUIModel(
       req.params.id
@@ -306,13 +361,15 @@ api.get(
 // export current versions of all records in this notebook as csv
 api.get(
   '/:id/:viewID.csv',
-  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
   requireAuthenticationAPI,
-  // TODO complete type annotations for this method
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
   async (req, res) => {
-    if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
-      throw new Exceptions.ItemNotFoundException('Notebook not found');
-    }
     // get the label for this form for the filename header
     const uiSpec = await getEncodedNotebookUISpec(req.params.id);
     if (uiSpec && req.params.viewID in uiSpec.viewsets) {
@@ -335,13 +392,15 @@ api.get(
 // export files for all records in this notebook as zip
 api.get(
   '/:id/:viewID.zip',
-  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
   requireAuthenticationAPI,
-  // TODO complete type annotations for this method
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
   async (req, res) => {
-    if (!req.user || !userHasPermission(req.user, req.params.id, 'read')) {
-      throw new Exceptions.ItemNotFoundException('Notebook not found');
-    }
     // get the label for this form for the filename header
     const uiSpec = await getEncodedNotebookUISpec(req.params.id);
     if (uiSpec && req.params.viewID in uiSpec.viewsets) {
@@ -391,32 +450,83 @@ api.get(
 
 api.get(
   '/:id/users/',
-  processRequest({params: z.object({id: z.string()})}),
   requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.VIEW_PROJECT_USERS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({params: z.object({id: z.string()})}),
   async (req, res: Response<GetNotebookUsersResponse>) => {
-    // user must have modify access to this notebook
-    if (!userHasPermission(req.user, req.params.id, 'modify')) {
-      throw new Exceptions.UnauthorizedException(
-        'You do not have permission to view users for this notebook.'
-      );
-    }
-    const userInfo = await getUserInfoForNotebook(req.params.id);
-    res.json(userInfo);
+    const users = await getUsers();
+    const allRoles = getRolesForNotebook().map(r => r.role);
+    res.json({
+      roles: allRoles,
+      users: users
+        .map(u => {
+          return {
+            name: u.name,
+            username: u.user_id,
+            roles: allRoles.map(r => ({
+              value: userHasProjectRole({
+                user: u,
+                projectId: req.params.id,
+                role: r,
+              }),
+              name: r,
+            })),
+          };
+        })
+        .filter(d => d.roles.filter(r => r.value).length > 0),
+    });
   }
 );
 
 // POST to give a user permissions on this notebook
 api.post(
   '/:id/users/',
+  requireAuthenticationAPI,
   processRequest({
     body: PostAddNotebookUserInputSchema,
     params: z.object({id: z.string()}),
   }),
-  requireAuthenticationAPI,
   async (req, res) => {
-    if (!userHasPermission(req.user, req.params.id, 'modify')) {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    // Destructure request body
+    const {username, role, addrole: addRole} = req.body;
+
+    // Work out what action this is (specifically protected given role elevation
+    // risks)
+    const actionNeeded = projectRoleToAction({
+      add: addRole,
+      role,
+    });
+
+    if (
+      !isAuthorized({
+        action: actionNeeded,
+        decodedToken: {
+          globalRoles: req.user.globalRoles,
+          resourceRoles: req.user.resourceRoles,
+        },
+        resourceId: req.params.id,
+      })
+    ) {
       throw new Exceptions.UnauthorizedException(
-        "User does not have permission to modify this project's permissions."
+        'You are not authorised to perform this role change.'
+      );
+    }
+
+    // Get the user specified
+    const user = await getCouchUserFromEmailOrUsername(username);
+
+    if (!user) {
+      throw new Exceptions.ItemNotFoundException(
+        'The username provided cannot be found in the user database.'
       );
     }
 
@@ -429,62 +539,38 @@ api.post(
       );
     }
 
-    // Destructure request body
-    const {username, role, addrole} = req.body;
-
-    // check that this is a legitimate role for this notebook - pass in the
-    // metadata to avoid refetching it
-    const notebookRoles = await getRolesForNotebook(
-      notebookMetadata.project_id,
-      notebookMetadata
-    );
-
-    // Check for invalid role
-    if (!notebookRoles.includes(role)) {
-      // The role isn't valid for the notebook
-      throw new Exceptions.InvalidRequestException(
-        "You cannot add a role which doesn't exist within the notebooks configured roles."
-      );
-    }
-
-    // Get the user specified
-    const user = await getUserFromEmailOrUsername(username);
-
-    if (!user) {
-      throw new Exceptions.ItemNotFoundException(
-        'The username provided cannot be found in the user database.'
-      );
-    }
-
-    if (addrole) {
+    if (addRole) {
       // Add project role to the user
-      addProjectRoleToUser(user, notebookMetadata.project_id, role);
+      addProjectRole({
+        user,
+        projectId: req.params.id,
+        role: role,
+      });
     } else {
       // Remove project role from the user
-      removeProjectRoleFromUser(user, notebookMetadata.project_id, role);
+      removeProjectRole({user, projectId: notebookMetadata.project_id, role});
     }
 
     // save the user after modifications have been made
-    await saveUser(user);
+    await saveCouchUser(user);
     res.status(200).end();
   }
 );
 
 /** Deletes a given notebook by ID */
 api.post(
-  '/:notebook_id/delete',
-  processRequest({params: z.object({notebook_id: z.string()})}),
+  '/:notebookId/delete',
   requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.DELETE_PROJECT,
+    getResourceId(req) {
+      return req.params.notebookId;
+    },
+  }),
+  processRequest({params: z.object({notebookId: z.string()})}),
   async (req, res) => {
-    if (!userIsClusterAdmin(req.user)) {
-      // Not authorised
-      throw new Exceptions.UnauthorizedException(
-        'Not authorised to delete a notebook.'
-      );
-    }
-
     // Delete the notebook
-    await deleteNotebook(req.params.notebook_id);
+    await deleteNotebook(req.params.notebookId);
 
     // 200 OK indicating successful deletion
     res.status(200).end();
@@ -493,61 +579,72 @@ api.post(
 
 /** Gets a list of invites for a given notebook */
 api.get(
-  '/:notebook_id/invites',
-  processRequest({params: z.object({notebook_id: z.string()})}),
+  '/:notebookId/invites',
   requireAuthenticationAPI,
-  async ({params: {notebook_id}, user}, res) => {
-    if (!userHasPermission(user, notebook_id, 'modify')) {
-      throw new Exceptions.UnauthorizedException(
-        'You do not have permission to view invites for this notebook.'
-      );
-    }
-
-    const invites = await getInvitesForNotebook(notebook_id);
-
+  isAllowedToMiddleware({
+    action: Action.VIEW_PROJECT_INVITES,
+    getResourceId(req) {
+      return req.params.notebookId;
+    },
+  }),
+  processRequest({params: z.object({notebookId: z.string()})}),
+  async ({params: {notebookId}}, res) => {
+    const invites = await getInvitesForNotebook(notebookId);
     res.json(invites);
   }
 );
 
 /** Creates a new invite for a given notebook */
 api.post(
-  '/:notebook_id/invites',
-  processRequest({
-    body: z.object({role: z.string()}),
-    params: z.object({notebook_id: z.string()}),
-  }),
+  '/:notebookId/invites',
   requireAuthenticationAPI,
-  async ({body: {role}, params: {notebook_id}, user}, res) => {
-    if (!userHasPermission(user, notebook_id, 'modify')) {
-      throw new Exceptions.UnauthorizedException(
-        'You do not have permission to add invites to this notebook.'
-      );
+  processRequest({
+    body: z.object({role: z.nativeEnum(Role)}),
+    params: z.object({notebookId: z.string()}),
+  }),
+  async ({body: {role}, params: {notebookId}, user}, res) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
     }
 
-    const invite = await createInvite(notebook_id, role);
-
+    // Get the action needed
+    const actionNeeded = projectInviteToAction({action: 'create', role});
+    if (
+      !isAuthorized({
+        action: actionNeeded,
+        decodedToken: {
+          globalRoles: user.globalRoles,
+          resourceRoles: user.resourceRoles,
+        },
+        resourceId: notebookId,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorised to create this invite'
+      );
+    }
+    const invite = await createInvite(notebookId, role);
     res.json(invite);
   }
 );
 
 if (DEVELOPER_MODE) {
   api.post(
-    '/:notebook_id/generate',
+    '/:notebookId/generate',
     requireAuthenticationAPI,
+    isAllowedToMiddleware({
+      action: Action.GENERATE_RANDOM_PROJECT_RECORDS,
+      getResourceId(req) {
+        return req.params.notebookId;
+      },
+    }),
     processRequest({
       body: PostRandomRecordsInputSchema,
-      params: z.object({notebook_id: z.string()}),
+      params: z.object({notebookId: z.string()}),
     }),
     async (req, res: Response<PostRandomRecordsResponse>) => {
-      if (!userIsClusterAdmin(req.user)) {
-        // Not authorised
-        throw new Exceptions.UnauthorizedException(
-          'Not authorised to generate random records.'
-        );
-      }
-
       const record_ids = await createManyRandomRecords(
-        req.params.notebook_id,
+        req.params.notebookId,
         req.body.count
       );
       res.json({record_ids});
@@ -558,18 +655,41 @@ if (DEVELOPER_MODE) {
 // DELETE a user from a notebook
 api.delete(
   '/:notebook_id/users/:user_id',
+  requireAuthenticationAPI,
   processRequest({
     params: z.object({notebook_id: z.string(), user_id: z.string()}),
   }),
-  requireAuthenticationAPI,
   async (req, res: Response<PutUpdateNotebookResponse>) => {
-    if (!userHasPermission(req.user, req.params.notebook_id, 'modify')) {
-      throw new Exceptions.UnauthorizedException(
-        'You do not have permission to remove this user from this notebook.'
-      );
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Must be authenticated.');
     }
 
-    const user = await getUserFromEmailOrUsername(req.params.user_id);
+    // Check what resource role the user has on this notebook
+    const userInfo = await getUserInfoForProject({
+      projectId: req.params.notebook_id,
+    });
+    const userHasRoles =
+      userInfo.users.find(u => u.username === req.params.user_id)?.roles ?? [];
+
+    // Need all actions from these roles
+    const requiredActions = userHasRoles.map(role =>
+      projectRoleToAction({add: false, role: role.name})
+    );
+    for (const required of requiredActions) {
+      if (
+        !userCanDo({
+          action: required,
+          user: req.user,
+          resourceId: req.params.notebook_id,
+        })
+      ) {
+        throw new Exceptions.UnauthorizedException(
+          'You are not authorised to remove the user from this notebook.'
+        );
+      }
+    }
+
+    const user = await getCouchUserFromEmailOrUsername(req.params.user_id);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
@@ -577,17 +697,18 @@ api.delete(
       );
     }
 
-    if (user.project_roles[req.params.notebook_id].includes('admin')) {
-      throw new Exceptions.UnauthorizedException(
-        'You cannot remove an admin user from this notebook.'
-      );
+    // Remove all resource roles associated with this user
+    for (const role of user.projectRoles) {
+      if (role.resourceId === req.params.notebook_id) {
+        removeProjectRole({
+          projectId: req.params.notebook_id,
+          role: role.role,
+          user,
+        });
+      }
     }
 
-    for (const role of user.project_roles[req.params.notebook_id]) {
-      await removeProjectRoleFromUser(user, req.params.notebook_id, role);
-    }
-
-    await saveUser(user);
+    await saveCouchUser(user);
     res.status(200).end();
   }
 );

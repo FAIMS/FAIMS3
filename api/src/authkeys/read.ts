@@ -18,28 +18,51 @@
  *   Provides a function to validate a user token and return user details
  */
 
+import {decodeAndValidateToken} from '@faims3/data-model';
 import {jwtVerify} from 'jose';
-import {getUserFromEmailOrUsername} from '../couchdb/users';
-import {KEY_SERVICE} from '../buildconfig';
+import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
+import {getCouchUserFromEmailOrUsername} from '../couchdb/users';
 
 /**
  * validateToken
  * @param token bearer token received in a request
  * @returns Details of the verified user or undefined
  */
-export const validateToken = async (token: string) => {
+export const validateToken = async (
+  token: string
+): Promise<Express.User | undefined> => {
   const signingKey = await KEY_SERVICE.getSigningKey();
   try {
     const {payload} = await jwtVerify(token, signingKey.publicKey, {
       algorithms: [signingKey.alg],
+      // verify issuer
+      issuer: signingKey.instanceName,
     });
 
-    if (payload.sub) {
-      const user = await getUserFromEmailOrUsername(payload.sub);
-      return user;
-    } else {
-      return undefined;
+    if (payload.server !== CONDUCTOR_PUBLIC_URL) {
+      throw Error('Invalid server claim.');
     }
+
+    if (!payload.sub) {
+      throw Error('No sub claim!');
+    }
+
+    const user = await getCouchUserFromEmailOrUsername(payload.sub);
+    if (!user) {
+      // TODO here we could check more sophisticated things
+      throw Error('User not present in database.');
+    }
+
+    // Better to use the token provided to build the user! This ensures
+    // synchronisation between API resources and the client's browser.
+    // NOTE we intentionally ANY this since zod validation occurs
+    const validatedToken = decodeAndValidateToken({...(payload as any)});
+
+    // TODO consider if we want a more sophisticated permission merge, for
+    // example in the case of blacklisting
+
+    // overwrite user details with the token permissions!
+    return {...user, ...validatedToken};
   } catch (error) {
     console.error(error);
     return undefined;

@@ -8,6 +8,7 @@
 
 import {
   AuthRecordIdPrefixMap,
+  ExistingPeopleDBDocument,
   GetRefreshTokenIndex,
   RefreshRecord,
   RefreshRecordFields,
@@ -16,7 +17,7 @@ import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
-import {getUserFromEmailOrUsername} from './users';
+import {getCouchUserFromEmailOrUsername} from './users';
 
 // Expiry time in hours
 const TOKEN_EXPIRY_MS = REFRESH_TOKEN_EXPIRY_MINUTES * 60 * 1000;
@@ -78,7 +79,11 @@ export const createNewRefreshToken = async (
 export const validateRefreshToken = async (
   refreshToken: string,
   userId?: string
-): Promise<{valid: boolean; user?: Express.User; validationError?: string}> => {
+): Promise<{
+  valid: boolean;
+  user?: ExistingPeopleDBDocument;
+  validationError?: string;
+}> => {
   try {
     const tokenDoc = await getTokenByToken(refreshToken);
 
@@ -109,7 +114,7 @@ export const validateRefreshToken = async (
 
     // Get the user by the user ID
     const user =
-      (await getUserFromEmailOrUsername(tokenDoc.userId)) ?? undefined;
+      (await getCouchUserFromEmailOrUsername(tokenDoc.userId)) ?? undefined;
 
     if (!user) {
       return {

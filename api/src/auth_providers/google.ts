@@ -20,15 +20,16 @@
 
 import {Strategy, VerifyCallback} from 'passport-google-oauth20';
 
+import {addEmails} from '@faims3/data-model';
 import {GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET} from '../buildconfig';
 import {getInvite} from '../couchdb/invites';
 import {
-  addEmailsToUser,
-  saveUser,
-  getUserFromEmailOrUsername,
   createUser,
+  getCouchUserFromEmailOrUsername,
+  saveCouchUser,
 } from '../couchdb/users';
 import {acceptInvite} from '../registration';
+import {upgradeCouchUserToExpressUser} from '../authkeys/create';
 
 async function oauth_verify(
   req: Request,
@@ -43,8 +44,10 @@ async function oauth_verify(
   //   - we already have a user with the email address in this profile,
   //     add the profile if not there
 
-  let user = await getUserFromEmailOrUsername(profile.id);
-  if (user) {
+  let dbUser = await getCouchUserFromEmailOrUsername(profile.id);
+  if (dbUser) {
+    // Upgrade by drilling permissions/associations
+    const user = await upgradeCouchUserToExpressUser({dbUser});
     // TODO: do we need to validate further? could check that the profiles match???
     done(null, user, profile);
   }
@@ -54,17 +57,19 @@ async function oauth_verify(
     .map((o: any) => o.value);
 
   for (let i = 0; i < emails.length; i++) {
-    user = await getUserFromEmailOrUsername(emails[i]);
-    if (user) {
+    dbUser = await getCouchUserFromEmailOrUsername(emails[i]);
+    if (dbUser) {
       // add the profile if not already there
-      if (!('google' in user.profiles)) {
-        user.profiles['google'] = profile;
-        await saveUser(user);
+      if (!('google' in dbUser.profiles)) {
+        dbUser.profiles['google'] = profile;
+        await saveCouchUser(dbUser);
       }
+      // Upgrade by drilling permissions/associations
+      const user = await upgradeCouchUserToExpressUser({dbUser});
       return done(null, user, profile);
     }
   }
-  if (!user) {
+  if (!dbUser) {
     return done(null, false);
   }
 }
@@ -83,8 +88,12 @@ async function oauth_register(
   //     add the profile if not there
   //   - we don't, create a new user record and add the profile
 
-  let user = await getUserFromEmailOrUsername(profile.id);
-  if (user) {
+  // Get the base db user
+  let dbUser = await getCouchUserFromEmailOrUsername(profile.id);
+
+  if (dbUser) {
+    // Upgrade by drilling permissions/associations
+    const user = await upgradeCouchUserToExpressUser({dbUser});
     // TODO: do we need to validate further? could check that the profiles match???
     done(null, user, profile);
   }
@@ -94,29 +103,36 @@ async function oauth_register(
     .map((o: any) => o.value);
 
   for (let i = 0; i < emails.length; i++) {
-    user = await getUserFromEmailOrUsername(emails[i]);
-    if (user) {
+    dbUser = await getCouchUserFromEmailOrUsername(emails[i]);
+    if (dbUser) {
       // add the profile if not already there
-      if (!('google' in user.profiles)) {
-        user.profiles['google'] = profile;
-        await saveUser(user);
+      if (!('google' in dbUser.profiles)) {
+        dbUser.profiles['google'] = profile;
+        await saveCouchUser(dbUser);
       }
+
+      // Upgrade by drilling permissions/associations
+      const user = await upgradeCouchUserToExpressUser({dbUser});
       done(null, user, profile);
       break;
     }
   }
-  if (!user) {
-    let errorMsg = '';
+  if (!dbUser) {
     const invite = await getInvite(req.session.invite);
     if (invite) {
-      [user, errorMsg] = await createUser(emails[0], emails[0]);
+      const [dbUser, errorMsg] = await createUser({
+        email: emails[0],
+        username: emails[0],
+        name: profile.displayName,
+      });
 
-      if (user) {
-        user.name = profile.displayName;
-        user.profiles['google'] = profile;
-        addEmailsToUser(user, emails);
+      if (dbUser) {
+        dbUser.profiles['google'] = profile;
+        addEmails({user: dbUser, emails});
         // accepting the invite will add roles and save the user record
-        await acceptInvite(user, invite);
+        await acceptInvite(dbUser, invite);
+        // Upgrade by drilling permissions/associations
+        const user = await upgradeCouchUserToExpressUser({dbUser});
         done(null, user, profile);
       } else {
         throw Error(errorMsg);
