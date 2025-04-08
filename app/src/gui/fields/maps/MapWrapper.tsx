@@ -29,8 +29,8 @@ import {register} from 'ol/proj/proj4';
 import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
-import {useCallback, useEffect, useState} from 'react';
-
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {transform} from 'ol/proj';
 // define some EPSG codes - these are for two sample images
 // TODO: we need to have a better way to include a useful set or allow
 // them to be defined by a project
@@ -78,17 +78,30 @@ import {useNotification} from '../../../context/popup';
 import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
 import {Extent} from 'ol/extent';
+import Feature from 'ol/Feature';
+import {Geometry, Point} from 'ol/geom';
+import {unByKey} from 'ol/Observable';
 
 function MapWrapper(props: MapProps) {
   const [mapOpen, setMapOpen] = useState<boolean>(false);
   const [map, setMap] = useState<Map | undefined>();
-  const [featuresLayer, setFeaturesLayer] = useState<VectorLayer<any>>();
+  const [featuresLayer, setFeaturesLayer] = useState<VectorLayer>();
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
-  const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
+  const [featuresExtent, setFeaturesExtent] = useState<Extent>();
 
   // notifications
   const notify = useNotification();
+
+  // trakcing user's real-time location, make precise after test inputs-  @todo ranisa
+  const [positionFeature, setPositionFeature] = useState<Feature<Point> | null>(
+    null
+  );
+  const [positionLayer, setPositionLayer] = useState<VectorLayer>();
+  const watchIdRef = useRef<number | null>(null);
+  const [accuracyFeature, setAccuracyFeature] = useState<Feature<Point> | null>(
+    null
+  );
 
   const addDrawInteraction = useCallback(
     (theMap: Map, props: MapProps) => {
@@ -147,6 +160,119 @@ function MapWrapper(props: MapProps) {
     [setFeaturesLayer]
   );
 
+  // auto-clean tracking
+  const stopTracking = () => {
+    if (watchIdRef.current) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    if (map && positionLayer) {
+      map.removeLayer(positionLayer);
+      setPositionLayer(undefined);
+    }
+  };
+
+  // real-time blue dot + accuracy tracking
+  const startLocationTracking = (theMap: Map) => {
+    stopTracking();
+
+    const view = theMap.getView();
+    const projection = view.getProjection();
+
+    // get initial position for zooming
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const coords = transform(
+          [pos.coords.longitude, pos.coords.latitude],
+          'EPSG:4326',
+          projection
+        );
+        view.setCenter(coords); // auto-zoom to current location
+        view.setZoom(17); // adjust zoom level as needed
+      },
+      err => console.error('Initial location error', err),
+      {enableHighAccuracy: true}
+    );
+
+    const positionSource = new VectorSource();
+    const positionLayer = new VectorLayer({
+      source: positionSource,
+      zIndex: 999,
+    });
+    theMap.addLayer(positionLayer);
+    setPositionLayer(positionLayer);
+
+    // blue Dot
+    const dotFeature = new Feature(new Point([0, 0]));
+    // background pluse
+    const accuracyFeature = new Feature(new Point([0, 0]));
+
+    // css opacity and scale pulse chages
+    dotFeature.setStyle(
+      new Style({
+        image: new CircleStyle({
+          radius: 10,
+          fill: new Fill({color: '#1a73e8'}),
+          stroke: new Stroke({color: '#fff', width: 3}),
+        }),
+      })
+    );
+
+    accuracyFeature.setStyle(
+      new Style({
+        image: new CircleStyle({
+          radius: 25,
+          fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
+          stroke: new Stroke({color: 'rgba(100, 149, 237, 0.3)', width: 1}),
+        }),
+      })
+    );
+
+    positionSource.addFeatures([accuracyFeature, dotFeature]);
+
+    // continuous location work in progress..
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      pos => {
+        const coords = transform(
+          [pos.coords.longitude, pos.coords.latitude],
+          'EPSG:4326',
+          projection
+        );
+        const accuracy = pos.coords.accuracy || 30;
+
+        dotFeature.getGeometry()?.setCoordinates(coords);
+        accuracyFeature.getGeometry()?.setCoordinates(coords);
+
+        // resize accuracy radius
+        accuracyFeature.setStyle(
+          new Style({
+            image: new CircleStyle({
+              radius: Math.max(25, accuracy / 3),
+              fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
+              stroke: new Stroke({color: 'rgba(100, 149, 237, 0.3)', width: 1}),
+            }),
+          })
+        );
+      },
+      err => console.error('Live tracking error', err),
+      {enableHighAccuracy: true, maximumAge: 0, timeout: 10000}
+    );
+  };
+
+  useEffect(() => {
+    if (mapOpen && map) {
+      addDrawInteraction(map, props);
+      startLocationTracking(map);
+    }
+    return stopTracking;
+  }, [mapOpen, map]);
+
+  useEffect(() => {
+    if (map) {
+      addDrawInteraction(map, props);
+    }
+  }, [map]);
+
   const handleClose = (action: 'save' | 'clear' | 'close') => {
     if (featuresLayer) {
       const source = featuresLayer.getSource();
@@ -187,12 +313,6 @@ function MapWrapper(props: MapProps) {
     // We always provide a center, so it's always safe to open the map
     setMapOpen(true);
   };
-
-  useEffect(() => {
-    if (map) {
-      addDrawInteraction(map, props);
-    }
-  }, [map]);
 
   return (
     <div>
