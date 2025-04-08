@@ -81,6 +81,7 @@ import {Extent} from 'ol/extent';
 import Feature from 'ol/Feature';
 import {Geometry, Point} from 'ol/geom';
 import {unByKey} from 'ol/Observable';
+import {RegularShape} from 'ol/style';
 
 function MapWrapper(props: MapProps) {
   const [mapOpen, setMapOpen] = useState<boolean>(false);
@@ -202,17 +203,17 @@ function MapWrapper(props: MapProps) {
       {enableHighAccuracy: true}
     );
 
+    // set up new position layer
     const positionSource = new VectorSource();
     const positionLayer = new VectorLayer({
       source: positionSource,
-      zIndex: 999,
+      zIndex: 999, // keeping it above layers
     });
     theMap.addLayer(positionLayer);
     setPositionLayer(positionLayer);
 
-    // blue Dot
-    const dotFeature = new Feature(new Point([0, 0]));
-    // background pluse
+    // blue directional arrow + accuracy circle
+    const directionFeature = new Feature(new Point([0, 0]));
     const accuracyFeature = new Feature(new Point([0, 0]));
 
     // initial styles
@@ -239,7 +240,7 @@ function MapWrapper(props: MapProps) {
       })
     );
 
-    positionSource.addFeatures([accuracyFeature, dotFeature]);
+    positionSource.addFeatures([accuracyFeature, directionFeature]);
 
     // continuous location work in progress..
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -249,16 +250,18 @@ function MapWrapper(props: MapProps) {
           'EPSG:4326',
           projection
         );
-        const accuracy = pos.coords.accuracy || 30;
 
-        dotFeature.getGeometry()?.setCoordinates(coords);
+        const heading = pos.coords.heading ?? 0; // Use real heading, or fallback
+        const accuracy = pos.coords.accuracy ?? 30;
+
+        directionFeature.getGeometry()?.setCoordinates(coords);
         accuracyFeature.getGeometry()?.setCoordinates(coords);
 
-        // resize accuracy radius
+        // Update accuracy circle
         accuracyFeature.setStyle(
           new Style({
             image: new CircleStyle({
-              radius: Math.max(25, accuracy / 3),
+              radius: Math.max(20, accuracy / 2),
               fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
               stroke: new Stroke({color: 'rgba(100, 149, 237, 0.3)', width: 1}),
             }),
@@ -280,7 +283,11 @@ function MapWrapper(props: MapProps) {
         );
       },
       err => console.error('Live tracking error', err),
-      {enableHighAccuracy: true, maximumAge: 0, timeout: 10000}
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000,
+      }
     );
   };
 
